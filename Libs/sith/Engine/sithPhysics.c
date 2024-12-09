@@ -29,12 +29,12 @@ void sithPhysics_InstallHooks(void)
     // J3D_HOOKFUNC(sithPhysics_FindFloor);
     // J3D_HOOKFUNC(sithPhysics_FindWaterSurface);
     // J3D_HOOKFUNC(sithPhysics_UpdateThing);
-    // J3D_HOOKFUNC(sithPhysics_ApplyForce);
+     J3D_HOOKFUNC(sithPhysics_ApplyForce);
     // J3D_HOOKFUNC(sithPhysics_SetThingLook);
     // J3D_HOOKFUNC(sithPhysics_ApplyDrag);
     // J3D_HOOKFUNC(sithPhysics_ParseArg);
-    // J3D_HOOKFUNC(sithPhysics_ResetThingMovement);
-    // J3D_HOOKFUNC(sithPhysics_GetThingHeight);
+     J3D_HOOKFUNC(sithPhysics_ResetThingMovement);
+     J3D_HOOKFUNC(sithPhysics_GetThingHeight);
     // J3D_HOOKFUNC(sithPhysics_UpdateThingPhysics);
     // J3D_HOOKFUNC(sithPhysics_UpdatePlayerPhysics);
     // J3D_HOOKFUNC(sithPhysics_UpdateUnderwaterThingPhysics);
@@ -149,7 +149,37 @@ void J3DAPI sithPhysics_UpdateThing(SithThing* pThing, float secDeltaTime)
 
 void J3DAPI sithPhysics_ApplyForce(SithThing* pThing, const rdVector3* force)
 {
-    J3D_TRAMPOLINE_CALL(sithPhysics_ApplyForce, pThing, force);
+    //J3D_TRAMPOLINE_CALL(sithPhysics_ApplyForce, pThing, force);
+
+    SITH_ASSERTREL(pThing != ((void*)0));
+    SITH_ASSERTREL(pThing->moveType == SITH_MT_PHYSICS);
+
+    if (pThing->moveInfo.physics.mass > 0.0 && (force->x != 0.0 || force->y != 0.0 || force->z != 0.0)) {
+
+        double invMass = 1.0 / pThing->moveInfo.physics.mass;
+
+        double velY = 0.0;
+        double velZ = 0.0;
+
+        SithPhysicsFlags physflags;
+        float xForce = force->x * invMass;
+        float yForce = force->y * invMass;
+        float zForce = force->z * invMass;
+
+        velY = yForce + pThing->moveInfo.physics.velocity.y;
+        velZ = zForce + pThing->moveInfo.physics.velocity.z;
+        pThing->moveInfo.physics.velocity.x = xForce + pThing->moveInfo.physics.velocity.x;
+
+        physflags = pThing->moveInfo.physics.flags;
+
+        pThing->moveInfo.physics.velocity.y = velY;
+
+        physflags |= SITH_PF_UNKNOWN_8000;
+
+        pThing->moveInfo.physics.velocity.z = velZ;
+
+        pThing->moveInfo.physics.flags = physflags;
+    }
 }
 
 void J3DAPI sithPhysics_SetThingLook(SithThing* pThing, const rdVector3* pNormal, float secDeltaTime)
@@ -159,7 +189,94 @@ void J3DAPI sithPhysics_SetThingLook(SithThing* pThing, const rdVector3* pNormal
 
 void J3DAPI sithPhysics_ApplyDrag(rdVector3* pVelocity, float drag, float mag, float secDeltaTime)
 {
-    J3D_TRAMPOLINE_CALL(sithPhysics_ApplyDrag, pVelocity, drag, mag, secDeltaTime);
+    double v5;
+    double v6;
+    double v7;
+    double v9;
+    char v10;
+    double v11;
+    double v13;
+    char v14;
+    double v15;
+    double v17;
+    char v18;
+    float speed;
+    float speedSqr;
+    float draga;
+    float maga;
+
+    if (mag == 0.0f
+        || (speedSqr = rdVector_Dot3(&pVelocity, &pVelocity),
+            speed = sqrt(speedSqr),
+            speed >= (double)mag))
+    {
+        if (drag != 0.0f)
+        {
+            v5 = secDeltaTime * drag;
+            if (v5 > 1.0f)
+            {
+                v5 = 1.0f;
+            }
+
+            v6 = -v5;
+            maga = pVelocity->x * v6 + pVelocity->x;
+            pVelocity->x = maga;
+            draga = pVelocity->y * v6 + pVelocity->y;
+            pVelocity->y = draga;
+            v7 = v6 * pVelocity->z + pVelocity->z;
+            pVelocity->z = v7;
+            v9 = maga;
+            if (v9 < 0.0f)
+            {
+                v9 = -v9;
+            }
+
+            if (v9 <= 0.0000099999997f)
+            {
+                v11 = 0.0f;
+            }
+            else
+            {
+                v11 = maga;
+            }
+
+            pVelocity->x = v11;
+            v13 = draga;
+            if (v13 < 0.0f)
+            {
+                v13 = -v13;
+            }
+
+            if (v13 <= 0.0000099999997f)
+            {
+                v15 = 0.0f;
+            }
+            else
+            {
+                v15 = draga;
+            }
+
+            pVelocity->y = v15;
+            v17 = v7;
+            if (v17 < 0.0f)
+            {
+                v17 = -v7;
+            }
+
+            if (v17 <= 0.0000099999997f)
+            {
+                v7 = 0.0f;
+            }
+
+            pVelocity->z = v7;
+        }
+    }
+    else
+    {
+        pVelocity->x = 0.0f;
+        pVelocity->y = 0.0f;
+        pVelocity->z = 0.0f;
+    }
 }
 
 signed int J3DAPI sithPhysics_ParseArg(StdConffileArg* pArg, SithThing* pThing, int adjNum)
@@ -169,12 +286,56 @@ signed int J3DAPI sithPhysics_ParseArg(StdConffileArg* pArg, SithThing* pThing, 
 
 void J3DAPI sithPhysics_ResetThingMovement(SithThing* pThing)
 {
-    J3D_TRAMPOLINE_CALL(sithPhysics_ResetThingMovement, pThing);
+    SITH_ASSERTREL((pThing != ((void*)0)) && (pThing->moveType == SITH_MT_PHYSICS));
+    pThing->moveInfo.physics.velocity.x = 0.0f;  
+    pThing->moveInfo.physics.velocity.y = 0.0f;
+    pThing->moveInfo.physics.velocity.z = 0.0f;
+
+    pThing->moveInfo.physics.angularVelocity.x = 0.0f;
+    pThing->moveInfo.physics.angularVelocity.y = 0.0f;
+    pThing->moveInfo.physics.angularVelocity.z = 0.0f;
+
+    pThing->moveInfo.physics.rotThrust.x = 0.0f;
+    pThing->moveInfo.physics.rotThrust.y = 0.0f;
+    pThing->moveInfo.physics.rotThrust.z = 0.0f;
+
+    pThing->moveInfo.physics.thrust.x = 0.0f;
+    pThing->moveInfo.physics.thrust.y = 0.0f;
+    pThing->moveInfo.physics.thrust.z = 0.0f;
+
+    pThing->moveInfo.physics.deltaVelocity.x = 0.0f;
+    pThing->moveInfo.physics.deltaVelocity.y = 0.0f;
+    pThing->moveInfo.physics.deltaVelocity.z = 0.0f;
+
+    pThing->moveDir.x = 0.0f;
+    pThing->moveDir.y = 0.0f;
+    pThing->moveDir.z = 0.0f;
 }
 
 float J3DAPI sithPhysics_GetThingHeight(const SithThing* pThing)
 {
-    return J3D_TRAMPOLINE_CALL(sithPhysics_GetThingHeight, pThing);
+    double height;
+    float moveSize;
+
+    SITH_ASSERTREL(pThing->moveType == SITH_MT_PHYSICS);
+    height = pThing->moveInfo.physics.height;
+    if (height != 0.0f)
+    {
+        return height;
+    }
+
+    if (pThing->renderData.type == RD_THING_MODEL3)
+    {
+        height = pThing->renderData.data.pModel3->insertOffset.z;
+    }
+
+    moveSize = pThing->collide.movesize + 0.005f;
+    if (height <= moveSize)
+    {
+        return moveSize;
+    }
+
+    return height;
 }
 
 // Updates physics include gravity effect on thing
