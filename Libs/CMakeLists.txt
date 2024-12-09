@@ -5,6 +5,7 @@ set(LIB_MODULES
     j3dcore
     rdroid
     sith
+    smush
     sound
     std
     w32util

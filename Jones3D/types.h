@@ -149,6 +149,29 @@ typedef enum eJonesHudMenuType
     JONESHUD_MENU_EXIT                      = 133,
 } JonesHudMenuType;
 
+typedef enum eJonesStartMode
+{
+    JONES_STARTMODE_STARTGAME       = 0,
+    JONES_STARTMODE_LOADGAME        = 1,
+    JONES_STARTMODE_DEVELOPERDIALOG = 2,
+    JONES_STARTMODE_SOUNDSETTINGS   = 3,
+    JONES_STARTMODE_DISPLAYSETTINGS = 4,
+} JonesStartMode;
+
+typedef enum eJonesOuputMode
+{
+    JONES_OUTPUTMODE_NONE    = 0,
+    JONES_OUTPUTMODE_CONSOLE = 1,
+    JONES_OUTPUTMODE_LOGFILE = 2,
+} JonesOuputMode;
+
+typedef enum eJonesLogLevel
+{
+    JONES_LOGLEVEL_ERROR   = 0,
+    JONES_LOGLEVEL_NORMAL  = 1,
+    JONES_LOGLEVEL_VERBOSE = 2,
+} JonesLogLevel;
+
 typedef struct sJonesDialogData JonesDialogData;
 
 typedef int (J3DAPI* JonesMainProcessFunc)();
@@ -207,7 +230,7 @@ typedef struct sJonesDisplaySettings
 {
     int bWindowMode;
     int bDualMonitor;
-    size_t displayDeviceNum;
+    int displayDeviceNum; // Can be -1
     size_t videoModeNum;
     size_t device3DNum;
     Std3DMipmapFilterType filter;
@@ -224,9 +247,9 @@ static_assert(sizeof(JonesDisplaySettings) == 52, "sizeof(JonesDisplaySettings) 
 
 typedef struct sJonesState
 {
-    int devMode;
+    int bDevMode;
     int startMode;
-    int debugMode;
+    int outputMode;
     int logLevel;
     int performanceLevel;
     char aCurLevelFilename[128];

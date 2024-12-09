@@ -482,7 +482,7 @@ int J3DAPI JonesDialog_ShowDialog(LPCSTR lpTemplateName, HWND hWnd, DLGPROC lpDi
     int v9;
 
     hInstance = (HINSTANCE)GetWindowLong(hWnd, GWL_HINSTANCE);
-    if ( !JonesMain_IsOpen() )
+    if ( !JonesMain_HasStarted() )
     {
         return DialogBoxParam(hInstance, lpTemplateName, hWnd, lpDialogFunc, dwInitParam);
     }
@@ -1362,7 +1362,7 @@ int J3DAPI JonesDialog_FreeOffScreenDIBSection()
 
 BOOL J3DAPI JonesDialog_ShowFileSelectDialog(LPOPENFILENAMEA pofn, int bOpen)
 {
-    if ( !JonesMain_IsOpen() )
+    if ( !JonesMain_HasStarted() )
     {
         return GetOpenFileName(pofn);
     }

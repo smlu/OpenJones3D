@@ -225,7 +225,7 @@ void stdDisplay_InstallHooks(void)
     J3D_HOOKFUNC(stdDisplay_IsFullscreen);
     J3D_HOOKFUNC(stdDisplay_LockBackBuffer);
     J3D_HOOKFUNC(stdDisplay_UnlockBackBuffer);
-    J3D_HOOKFUNC(stdDisplay_EncodeRGB565);
+    J3D_HOOKFUNC(stdDisplay_EncodeFromRGB565);
 }
 
 void stdDisplay_ResetGlobals(void)
@@ -2006,27 +2006,24 @@ void stdDisplay_UnlockBackBuffer(void)
     }
 }
 
-uint32_t J3DAPI stdDisplay_EncodeRGB565(uint32_t pixel)
+uint32_t J3DAPI stdDisplay_EncodeFromRGB565(uint16_t pixel)
 {
-    uint8_t red;
-    uint8_t green;
-    uint8_t blue;
-
     ColorInfo colorInfo;
     memcpy(&colorInfo, &stdDisplay_pCurVideoMode->rasterInfo.colorInfo, sizeof(colorInfo));
-    red = 8 * ((uint16_t)pixel >> 11);
+
+    uint8_t red = 8 * (pixel >> 11);
     if ( (red & 8) != 0 )
     {
         red |= 7;
     }
 
-    green = 4 * (pixel >> 5);
+    uint8_t green = 4 * (pixel >> 5);
     if ( (green & 4) != 0 )
     {
         green |= 3;
     }
 
-    blue = 8 * pixel;
+    uint8_t blue = 8 * pixel;
     if ( (blue & 8) != 0 ) {
         blue = blue | 7;
     }

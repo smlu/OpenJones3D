@@ -102,7 +102,7 @@
 #define stdDisplay_IsFullscreen_ADDR 0x004BCAD0
 #define stdDisplay_LockBackBuffer_ADDR 0x004BCAE0
 #define stdDisplay_UnlockBackBuffer_ADDR 0x004BCBA0
-#define stdDisplay_EncodeRGB565_ADDR 0x004BCC00
+#define stdDisplay_EncodeFromRGB565_ADDR 0x004BCC00
 #define std3D_Startup_ADDR 0x004BCCB0
 #define std3D_Shutdown_ADDR 0x004BCDE0
 #define std3D_GetNumDevices_ADDR 0x004BCE40

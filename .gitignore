@@ -60,3 +60,7 @@ Libs/j3dcore/j3d.h
 # External code
 Libs/external/DirectX61c/include/*
 Libs/external/DirectX61c/libs/*
+
+# vs & vscode
+.vscode/
+.vs/

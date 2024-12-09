@@ -9,6 +9,43 @@ J3D_EXTERN_C_START
 
 // TODO: Add stdColor_GammaCorrect
 
+
+static const ColorInfo stdColor_cfRGB555 =
+{
+    .colorMode          = STDCOLOR_RGB,
+    .bpp                = 16,
+    .redBPP             = 5,
+    .greenBPP           = 5,
+    .blueBPP            = 5,
+    .redPosShift        = 10,
+    .greenPosShift      = 5,
+    .bluePosShift       = 0,
+    .redPosShiftRight   = 3,
+    .greenPosShiftRight = 3,
+    .bluePosShiftRight  = 3,
+    .alphaBPP           = 0,
+    .alphaPosShift      = 0,
+    .alphaPosShiftRight = 0
+};
+
+static const ColorInfo stdColor_cfRGB565 =
+{
+    .colorMode          = STDCOLOR_RGB,
+    .bpp                = 16,
+    .redBPP             = 5,
+    .greenBPP           = 6,
+    .blueBPP            = 5,
+    .redPosShift        = 11,
+    .greenPosShift      = 5,
+    .bluePosShift       = 0,
+    .redPosShiftRight   = 3,
+    .greenPosShiftRight = 2,
+    .bluePosShiftRight  = 3,
+    .alphaBPP           = 0,
+    .alphaPosShift      = 0,
+    .alphaPosShiftRight = 0
+};
+
 static const ColorInfo stdColor_cfBGR888 = {
     .colorMode          = STDCOLOR_RGB,
     .bpp                = 24,
@@ -26,7 +63,8 @@ static const ColorInfo stdColor_cfBGR888 = {
     .alphaPosShiftRight = 0
 };
 
-static const ColorInfo stdColor_cfRGB888 = {
+static const ColorInfo stdColor_cfRGB888 =
+{
     .colorMode          = STDCOLOR_RGB,
     .bpp                = 24,
     .redBPP             = 8,
@@ -43,8 +81,81 @@ static const ColorInfo stdColor_cfRGB888 = {
     .alphaPosShiftRight = 0
 };
 
-static const ColorInfo stdColor_cfRGBA8888 = {
+
+static const ColorInfo stdColor_cfBGR8888 = {
     .colorMode          = STDCOLOR_RGB,
+    .bpp                = 32,
+    .redBPP             = 8,
+    .greenBPP           = 8,
+    .blueBPP            = 8,
+    .redPosShift        = 0,
+    .greenPosShift      = 8,
+    .bluePosShift       = 16,
+    .redPosShiftRight   = 0,
+    .greenPosShiftRight = 0,
+    .bluePosShiftRight  = 0,
+    .alphaBPP           = 0,
+    .alphaPosShift      = 0,
+    .alphaPosShiftRight = 0
+};
+
+static const ColorInfo stdColor_cfRGB8888 =
+{
+    .colorMode          = STDCOLOR_RGB,
+    .bpp                = 32,
+    .redBPP             = 8,
+    .greenBPP           = 8,
+    .blueBPP            = 8,
+    .redPosShift        = 16,
+    .greenPosShift      = 8,
+    .bluePosShift       = 0,
+    .redPosShiftRight   = 0,
+    .greenPosShiftRight = 0,
+    .bluePosShiftRight  = 0,
+    .alphaBPP           = 0,
+    .alphaPosShift      = 0,
+    .alphaPosShiftRight = 0
+};
+
+static const ColorInfo stdColor_cfABGR8888 =
+{
+    .colorMode          = STDCOLOR_RGBA,
+    .bpp                = 32,
+    .redBPP             = 8,
+    .greenBPP           = 8,
+    .blueBPP            = 8,
+    .redPosShift        = 0,
+    .greenPosShift      = 8,
+    .bluePosShift       = 16,
+    .redPosShiftRight   = 0,
+    .greenPosShiftRight = 0,
+    .bluePosShiftRight  = 0,
+    .alphaBPP           = 8,
+    .alphaPosShift      = 24,
+    .alphaPosShiftRight = 0
+};
+
+static const ColorInfo stdColor_cfARGB8888 =
+{
+    .colorMode          = STDCOLOR_RGBA,
+    .bpp                = 32,
+    .redBPP             = 8,
+    .greenBPP           = 8,
+    .blueBPP            = 8,
+    .redPosShift        = 16,
+    .greenPosShift      = 8,
+    .bluePosShift       = 0,
+    .redPosShiftRight   = 0,
+    .greenPosShiftRight = 0,
+    .bluePosShiftRight  = 0,
+    .alphaBPP           = 8,
+    .alphaPosShift      = 24,
+    .alphaPosShiftRight = 0
+};
+
+static const ColorInfo stdColor_cfRGBA8888 =
+{
+    .colorMode          = STDCOLOR_RGBA,
     .bpp                = 32,
     .redBPP             = 8,
     .greenBPP           = 8,

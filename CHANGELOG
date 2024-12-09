@@ -1,0 +1,75 @@
+v0.1
+General:
+  - Fixed minor bugs
+  - Improve game loading times by disabling VSync and blt frame buffers instead of flip.
+  - Changed DPI awareness to per monitor aware v2
+  - Added check for NAN value of provided angle in `stdMath_SinCos`
+  - Fixed issue with float precision in `stdMath_NormalizeAngle` which could result in angles larger than 360 degrees.
+    This fixes array out of bound read in `stdMath_SinCos`, which fixes random crash when opening inventory menu or calling COG function `JonesInvItemChanged` from script.
+  - Fixed deleting hdc on pixel data read error in `stdBmp_Load`
+  - Fixed reading/writing 24 bpp pixel from bytes in `stdColor_ColorConvertOneRow`.
+    This fixes conversion of 24bit RGB image.
+  - Fixed exit code (0) when app successfully exits
+  - Fixed infinitive loop when call to `wkernel_pfProcess` returned value other than -1, 0 or 1 (`wkernel_Run`)
+  - Fixed copying full pixel data row from source mipmap in `std3D_AllocSystemTexture`. Originally was fixed to 16 bpp row.
+  - (`JonesFile`) Fixed path buffer size to 128 chars, was 48 chars
+  - (`JonesFile`) Fixed writing to file by using correct file write function in `JonesFile_FilePrintf`
+  - Added bounds check for number of animating joints when loading keyframe from *.key file
+  - Made save/load dialogs resizable
+  - Fixed a bug in sound compression where clipping of the audio waveform occurred
+  - Fixed infinitive loop bug when voice subtitle contains too long word (`sithVoice_AddSubtitle`)
+
+  - Fixed accessing null pointer in `sithWhip_Reset` when `sithCamera` is already closed.
+    Fixed checking for null `sithWeapon_SendMessageAim` before calling function`sithWeapon_IsLocalPlayerUnableToUseWeapon` in `sithWeapon_SendMessageAim` functions.
+    This 2 fixes solve the game crash when player is aiming with whip and exits the game/program
+    at the same time.
+
+  - Fixed game crash when player aims with the whip and exits the game simultaneously by:
+    - Addressing a null pointer access in `sithWhip_Reset` when `sithCamera` is already closed.
+    - Adding a null check for `sithWeapon_SendMessageAim` before calling `sithWeapon_IsLocalPlayerUnableToUseWeapon`.
+    - Added high poly checkbox option to developer dialog (`High poly objects`)
+    - Added high poly checkbox option to gameplay options (`High poly objects`)
+
+Game play:
+- Fixed the direction of fired projectiles for 2-hand-held weapons by setting the initial direction. This should resolve the issue of random crashes when firing the weapon, as the projectile will now be correctly aimed at the target.
+- Fixed damaging player when game runs at > 40 FPS and Taklit's part, Azerim's part or tool from beyond runs out of energy (`sithPlayer_Update`)
+- Fixed rendering file list in load game dialog
+- Fixed DPI scaling of dialogs
+- Fixed bug where controls could become unresponsive when climbing down a whip and pressing the jump-off key simultaneously.
+- Enabled HD 3D models by default
+
+Display & Render:
+  - Added "simulated" VSync in window mode
+  - Added resolution cap to HD resolutions since Direct3D3 doesn't support higher resolutions
+  - Fixed raster to use correct vertices buffer when in vertex only mode
+  - Fixed clearing raster vertex buffer on startup
+  - Added option to disable VSync in `stdDisplay_Update`
+  - Fixed rendering of sprite when fog is globally disabled
+  - Fixed rendering of polyline when fog is globally disabled
+  - Fixed projecting Z coordinate when camera aspect ratio != 1.0
+    In addition, this resolves rendering of ceiling sky when aspect ratio != 1.0
+  - Fixed screen space projection by correctly applying camera aspect ratio
+  - Fixed restoring backbuffer when surface is lost on surface lock
+  - Removed hardcoded 16 BPP resolution limitation; the game now defaults to the resolution stored in settings.
+  - Removed hardcoded 16 BPP startup resolution limitation when initializing developer dialog allowing for the resolution stored in settings to be selected by default.
+  - Set 32 BPP resolution as default
+  - Fixed using 32 BPP resolution stored in settings
+
+HUD:
+  - (`JonesDialog`) Fixed rendering game background when system dialog box is open
+  - Removed help menu option
+  - Fixed inventory menu position for wide screen resolutions
+  - Fixed inventory menu scaling when aspect ratio is other than 4:3
+  - Fixed inventory changed animation position and scaling when aspect ratio is other than 4:3
+  - Fixed scaling of HUD health & endurance indicators for screen resolutions other than 4:3
+  - Fixed possible menu close lock and game freeze due to uninitialized icon translation move rate.
+  - Fixed start icon transition when closing menu.
+    Properly initialized move rate for the first transitioning icon, preventing its immediate disappearance.
+  - Fixed bug in inventory item change render function (`JonesHud_RenderInventoryItemChange`) which used
+    an unbounded yaw value (yaw > 360°) in the calculation of the item's yaw angle. This could lead to
+    an infinite loop and prevent the menu from opening.
+  - Fixed rotation bug for selected inventory item (`JonesHud_UpdateItem`).
+    The yaw added to delta yaw was not bounded to 360 degrees, which could lead to incorrect rotation of the item.
+  - Fixed rendering end credits on different screen resolutions
+  - Fixed fadeout of credits theme music
+  - Increased credits fadeout to 2 sec

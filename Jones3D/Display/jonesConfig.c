@@ -13,6 +13,7 @@
 #include <sith/DSS/sithGamesave.h>
 #include <sith/Gameplay/sithOverlayMap.h>
 #include <sith/Gameplay/sithPlayer.h>
+#include <sith/World/sithModel.h>
 #include <sith/World/sithVoice.h>
 
 #include <std/General/std.h>
@@ -1499,7 +1500,7 @@ HFONT J3DAPI jonesConfig_InitDialog(HWND hWnd, HFONT hFont, int dlgID)
     }
 
     static float curFontScale = 0; // Changed: Made variable static to preserve state for cases when hFont != NULL. (See jonesConfig_LoadGameDialogHookProc)
-    //                                         Note, original code somehow managed to preserve the state of this variable on the stack and retrieve the value from it on another call
+                                   // Note, original code somehow managed to preserve the state of this variable on the stack and retrieve the value from it on another call
     if ( !hFont )
     {
         fontInfo.hFont = jonesConfig_CreateDialogFont(hWnd, fontInfo.bWindowMode, (uint16_t)dlgID, &curFontScale);
@@ -1576,7 +1577,7 @@ HFONT J3DAPI jonesConfig_CreateDialogFont(HWND hWnd, int bWindowMode, int dlgID,
     int scaledRefHeight = (int)(RD_REF_HEIGHT * dpiScale);
     int scaledRefWidth  = (int)(RD_REF_WIDTH * dpiScale);
 
-    if ( bWindowMode || !JonesMain_IsOpen() )
+    if ( bWindowMode || !JonesMain_HasStarted() )
     {
         cHeight = lf.lfHeight;
         RECT rectDskt;
@@ -1650,7 +1651,7 @@ HFONT J3DAPI jonesConfig_CreateDialogFont(HWND hWnd, int bWindowMode, int dlgID,
         cHeight = -MulDiv(10, systemDPI, USER_DEFAULT_SCREEN_DPI);
     }
 
-    if ( bWindowMode || !JonesMain_IsOpen() )
+    if ( bWindowMode || !JonesMain_HasStarted() )
     {
         *pFontScale = (float)scale;
     }
@@ -1980,7 +1981,7 @@ void J3DAPI jonesConfig_SetDialogTitleAndPosition(HWND hWnd, JonesDialogFontInfo
         RECT rectClient;
         GetClientRect(hWnd, &rectClient);
 
-        if ( !pDlgFontInfo->bWindowMode && JonesMain_IsOpen() )
+        if ( !pDlgFontInfo->bWindowMode && JonesMain_HasStarted() )
         {
             stdDisplay_GetBackBufferSize(&width, &height);
         }
@@ -2376,7 +2377,7 @@ int J3DAPI jonesConfig_GetLoadGameFilePath(HWND hWnd, char* pDestNdsPath)
 
     uint32_t width, height;
     JonesDisplaySettings* pSettings = JonesMain_GetDisplaySettings();
-    if ( pSettings && pSettings->bWindowMode || !JonesMain_IsOpen() )
+    if ( pSettings && pSettings->bWindowMode || !JonesMain_HasStarted() )
     {
         HWND hwndDesktop = GetDesktopWindow();
         RECT rect;
@@ -2525,7 +2526,7 @@ UINT_PTR CALLBACK jonesConfig_LoadGameDialogHookProc(HWND hDlg, UINT uMsg, WPARA
                     {
                         if ( strlen(aPath) )
                         {
-                            if ( !JonesMain_IsOpen()
+                            if ( !JonesMain_HasStarted()
                               || (sithPlayer_g_pLocalPlayerThing->flags & SITH_TF_DYING) != 0
                               || (sithPlayer_g_pLocalPlayerThing->flags & SITH_TF_DESTROYED) != 0
                               || jonesConfig_ShowLoadGameWarningMsgBox(hDlg) == 1 )
@@ -2877,6 +2878,8 @@ INT_PTR CALLBACK jonesConfig_GamePlayOptionsProc(HWND hWnd, UINT uMsg, WPARAM wP
 
 void J3DAPI jonesConfig_HandleWM_HSCROLL(HWND hDlg, HWND hWnd, uint16_t sbValue)
 {
+    J3D_UNUSED(hDlg);
+
     const int maxPos = SendMessageA(hWnd, TBM_GETRANGEMAX, 0, 0);
     const int minPos = SendMessageA(hWnd, TBM_GETRANGEMIN, 0, 0);
     const int curPos = SendMessageA(hWnd, TBM_GETPOS, 0, 0);
@@ -2955,6 +2958,7 @@ int J3DAPI jonesConfig_GamePlayOptionsInitDlg(HWND hDlg)
         GetModuleHandle(NULL), // Instance handle
         NULL                   // Additional creation data
     );
+    J3D_UNUSED(hCBHiPoly);
 
     CheckDlgButton(hDlg, 1053, sithModel_IsHiPolyEnabled());
 

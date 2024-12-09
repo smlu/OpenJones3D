@@ -69,7 +69,7 @@ int J3DAPI stdDisplay_IsFullscreen();
 int J3DAPI stdDisplay_LockBackBuffer(void** ppSurface, uint32_t* pWidth, uint32_t* pHeight, int32_t* pPitch);
 void stdDisplay_UnlockBackBuffer(void);
 
-uint32_t J3DAPI stdDisplay_EncodeRGB565(uint32_t pixel);
+uint32_t J3DAPI stdDisplay_EncodeFromRGB565(uint16_t pixel);
 
 // Helper hooking functions
 void stdDisplay_InstallHooks(void);

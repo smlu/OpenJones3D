@@ -95,7 +95,7 @@
 #define stdDisplay_IsFullscreen_TYPE int (J3DAPI*)()
 #define stdDisplay_LockBackBuffer_TYPE int (J3DAPI*)(void**, uint32_t*, uint32_t *, int32_t*)
 #define stdDisplay_UnlockBackBuffer_TYPE void (*)(void)
-#define stdDisplay_EncodeRGB565_TYPE uint32_t (J3DAPI*)(uint32_t)
+#define stdDisplay_EncodeFromRGB565_TYPE uint32_t (J3DAPI*)(uint16_t)
 #define std3D_Startup_TYPE int (*)(void)
 #define std3D_Shutdown_TYPE void (*)(void)
 #define std3D_GetNumDevices_TYPE size_t (*)(void)

@@ -2950,7 +2950,7 @@ void J3DAPI JonesHud_MenuActivateItem()
                 {
                     if ( strlen(JonesHud_aSlectedNdsFilePath) )
                     {
-                        if ( JonesMain_IsOpen() )
+                        if ( JonesMain_HasStarted() )
                         {
                             JonesHud_bRestoreActivated = 1;
                         }
