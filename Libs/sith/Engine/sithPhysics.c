@@ -31,7 +31,7 @@ void sithPhysics_InstallHooks(void)
     // J3D_HOOKFUNC(sithPhysics_UpdateThing);
      J3D_HOOKFUNC(sithPhysics_ApplyForce);
     // J3D_HOOKFUNC(sithPhysics_SetThingLook);
-    // J3D_HOOKFUNC(sithPhysics_ApplyDrag);
+     J3D_HOOKFUNC(sithPhysics_ApplyDrag);
     // J3D_HOOKFUNC(sithPhysics_ParseArg);
      J3D_HOOKFUNC(sithPhysics_ResetThingMovement);
      J3D_HOOKFUNC(sithPhysics_GetThingHeight);
@@ -189,86 +189,52 @@ void J3DAPI sithPhysics_SetThingLook(SithThing* pThing, const rdVector3* pNormal
 
 void J3DAPI sithPhysics_ApplyDrag(rdVector3* pVelocity, float drag, float mag, float secDeltaTime)
 {
-    double v5;
-    double v6;
-    double v7;
-    double v9;
-    char v10;
-    double v11;
-    double v13;
-    char v14;
-    double v15;
-    double v17;
-    char v18;
+    double totalDrag;
+    double zVelocity;
     float speed;
     float speedSqr;
-    float draga;
-    float maga;
+    float xVelocity;
+    float yVelocity;
 
-    if (mag == 0.0f
-        || (speedSqr = rdVector_Dot3(&pVelocity, &pVelocity),
-            speed = sqrt(speedSqr),
-            speed >= (double)mag))
+    if (mag == 0.0f || (speedSqr = rdVector_Dot3(&pVelocity, &pVelocity), speed = sqrt(speedSqr), speed >= (double)mag))
     {
         if (drag != 0.0f)
         {
-            v5 = secDeltaTime * drag;
-            if (v5 > 1.0f)
+            totalDrag = secDeltaTime * drag;
+            if (totalDrag > 1.0f)
             {
-                v5 = 1.0f;
+                totalDrag = 1.0f;
             }
 
-            v6 = -v5;
-            maga = pVelocity->x * v6 + pVelocity->x;
-            pVelocity->x = maga;
-            draga = pVelocity->y * v6 + pVelocity->y;
-            pVelocity->y = draga;
-            v7 = v6 * pVelocity->z + pVelocity->z;
-            pVelocity->z = v7;
-            v9 = maga;
-            if (v9 < 0.0f)
-            {
-                v9 = -v9;
-            }
+            xVelocity = -1 * pVelocity->x * totalDrag + pVelocity->x;
+            pVelocity->x = xVelocity;
 
-            if (v9 <= 0.0000099999997f)
-            {
-                v11 = 0.0f;
-            }
-            else
-            {
-                v11 = maga;
-            }
+            yVelocity = -1 * pVelocity->y * totalDrag + pVelocity->y;
+            pVelocity->y = yVelocity;
 
-            pVelocity->x = v11;
-            v13 = draga;
-            if (v13 < 0.0f)
-            {
-                v13 = -v13;
-            }
+            zVelocity = -1 * totalDrag * pVelocity->z + pVelocity->z;
+            pVelocity->z = zVelocity;
 
-            if (v13 <= 0.0000099999997f)
+            xVelocity = J3DMAX(xVelocity, -xVelocity);
+            if (xVelocity <= 0.00001f)
             {
-                v15 = 0.0f;
+                xVelocity = 0.0f;
             }
-            else
-            {
-                v15 = draga;
-            }
+            pVelocity->x = xVelocity;
 
-            pVelocity->y = v15;
-            v17 = v7;
-            if (v17 < 0.0f)
+			yVelocity = J3DMAX(yVelocity, -yVelocity);
+            if (yVelocity <= 0.00001f)
             {
-                v17 = -v7;
+                yVelocity = 0.0f;
             }
+            pVelocity->y = yVelocity;
 
-            if (v17 <= 0.0000099999997f)
+			zVelocity = J3DMAX(zVelocity, -zVelocity);
+            if (zVelocity <= 0.00001f)
             {
-                v7 = 0.0f;
+                zVelocity = 0.0f;
             }
-
-            pVelocity->z = v7;
+            pVelocity->z = zVelocity;
         }
     }
     else
