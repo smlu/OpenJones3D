@@ -1029,8 +1029,8 @@ int J3DAPI JonesMain_GameWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPa
 
     return JonesMain_bWndMsgProcessed;
 #else
-    return 0
-    #endif
+    return 0;
+#endif
 }
 
 void J3DAPI JonesMain_HandleWMGetMinMaxInfo(HWND hwnd, LPMINMAXINFO pMinMaxInfo)
@@ -2355,8 +2355,8 @@ int J3DAPI JonesMain_IntroWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lP
 
     return JonesMain_bWndMsgProcessed;
 #else
-    return 0
-    #endif
+    return 0;
+#endif
 }
 
 void J3DAPI JonesMain_IntroHandleWMLButtonUp(HWND hwnd, uint16_t curPosX, uint16_t curPosY, WPARAM mvk)
