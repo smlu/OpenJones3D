@@ -152,8 +152,6 @@ void J3DAPI sithPhysics_UpdateThing(SithThing* pThing, float secDeltaTime)
 
 void J3DAPI sithPhysics_ApplyForce(SithThing* pThing, const rdVector3* force)
 {
-    //J3D_TRAMPOLINE_CALL(sithPhysics_ApplyForce, pThing, force);
-
     SITH_ASSERTREL(pThing != ((void*)0));
     SITH_ASSERTREL(pThing->moveType == SITH_MT_PHYSICS);
 
@@ -187,7 +185,63 @@ void J3DAPI sithPhysics_ApplyForce(SithThing* pThing, const rdVector3* force)
 
 void J3DAPI sithPhysics_SetThingLook(SithThing* pThing, const rdVector3* pNormal, float secDeltaTime)
 {
-    J3D_TRAMPOLINE_CALL(sithPhysics_SetThingLook, pThing, pNormal, secDeltaTime);
+    double lookAngle = 0;
+    double absLookAngle = 0;
+
+    SITH_ASSERTREL(pThing != ((void*)0));
+	// 90º -> 1, 0º -> 0
+    lookAngle = 1.0f - (rdVector_Dot3(&pNormal, &pThing->orient.uvec));
+
+    absLookAngle = J3DMAX(lookAngle, -lookAngle);
+    if (absLookAngle <= 0.00001f)
+    {
+        lookAngle = 0.0f;
+    }
+
+    if (lookAngle == 0.0f)
+    {
+        pThing->moveInfo.physics.flags |= 0x100; // 0x100 - SITH_PF_NO_ORIENT_UPDATE
+    }
+    else if (secDeltaTime == 0.0f)
+    {
+		// Updates Up Vector
+        pThing->orient.uvec.x = pNormal->x;
+        pThing->orient.uvec.y = pNormal->y;
+        pThing->orient.uvec.z = pNormal->z;
+
+		// Updates Right Vector - Cross Product between Up and Left
+        pThing->orient.rvec.x = pThing->orient.lvec.y * pThing->orient.uvec.z - pThing->orient.lvec.z * pThing->orient.uvec.y;
+        pThing->orient.rvec.y = pThing->orient.lvec.z * pThing->orient.uvec.x - pThing->orient.lvec.x * pThing->orient.uvec.z;
+        pThing->orient.rvec.z = pThing->orient.lvec.x * pThing->orient.uvec.y - pThing->orient.lvec.y * pThing->orient.uvec.x;
+        rdVector_Normalize3Acc(&pThing->orient.rvec);
+
+		// Updates Left Vector - Cross Product between Right and Up
+        pThing->orient.lvec.x = pThing->orient.rvec.z * pThing->orient.uvec.y - pThing->orient.rvec.y * pThing->orient.uvec.z;
+        pThing->orient.lvec.y = pThing->orient.rvec.x * pThing->orient.uvec.z - pThing->orient.rvec.z * pThing->orient.uvec.x;
+        pThing->orient.lvec.z = pThing->orient.rvec.y * pThing->orient.uvec.x - pThing->orient.rvec.x * pThing->orient.uvec.y;
+        rdVector_Normalize3Acc(&pThing->orient.lvec);
+
+        pThing->moveInfo.physics.flags |= 0x100; // 0x100 - SITH_PF_NO_ORIENT_UPDATE
+    }
+    else
+    {
+        double secDelta = secDeltaTime * 10.0f;
+        
+        pThing->orient.uvec.x = pNormal->x * secDelta + pThing->orient.uvec.x;
+        pThing->orient.uvec.y = pNormal->y * secDelta + pThing->orient.uvec.y;
+        pThing->orient.uvec.z = pNormal->z * secDelta + pThing->orient.uvec.z;
+        rdVector_Normalize3Acc(&pThing->orient.uvec);
+
+        pThing->orient.lvec.x = pThing->orient.rvec.z * pThing->orient.uvec.y - pThing->orient.rvec.y * pThing->orient.uvec.z;
+        pThing->orient.lvec.y = pThing->orient.rvec.x * pThing->orient.uvec.z - pThing->orient.rvec.z * pThing->orient.uvec.x;
+        pThing->orient.lvec.z = pThing->orient.rvec.y * pThing->orient.uvec.x - pThing->orient.rvec.x * pThing->orient.uvec.y;
+        rdVector_Normalize3Acc(&pThing->orient.lvec);
+
+        pThing->orient.rvec.x = pThing->orient.lvec.y * pThing->orient.uvec.z - pThing->orient.lvec.z * pThing->orient.uvec.y;
+        pThing->orient.rvec.y = pThing->orient.lvec.z * pThing->orient.uvec.x - pThing->orient.lvec.x * pThing->orient.uvec.z;
+        pThing->orient.rvec.z = pThing->orient.lvec.x * pThing->orient.uvec.y - pThing->orient.lvec.y * pThing->orient.uvec.x;
+		rdVector_Normalize3Acc(&pThing->orient.rvec);
+    }
 }
 
 void J3DAPI sithPhysics_ApplyDrag(rdVector3* pVelocity, float drag, float mag, float secDeltaTime)
