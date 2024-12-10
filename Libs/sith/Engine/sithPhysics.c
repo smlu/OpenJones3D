@@ -1,3 +1,4 @@
+
 #include "sithPhysics.h"
 #include <j3dcore/j3dhook.h>
 #include <sith/RTI/symbols.h>
@@ -33,7 +34,7 @@ void sithPhysics_InstallHooks(void)
     // J3D_HOOKFUNC(sithPhysics_FindWaterSurface);
     // J3D_HOOKFUNC(sithPhysics_UpdateThing);
      J3D_HOOKFUNC(sithPhysics_ApplyForce);
-    // J3D_HOOKFUNC(sithPhysics_SetThingLook);
+     J3D_HOOKFUNC(sithPhysics_SetThingLook);
      J3D_HOOKFUNC(sithPhysics_ApplyDrag);
     // J3D_HOOKFUNC(sithPhysics_ParseArg);
      J3D_HOOKFUNC(sithPhysics_ResetThingMovement);
