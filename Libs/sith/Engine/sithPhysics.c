@@ -5,6 +5,8 @@
 #include <rdroid/Math/rdMath.h>
 #include <rdroid/Math/rdMatrix.h>
 #include <rdroid/Math/rdVector.h>
+#include <sith/World/sithThing.h>
+#include <sith/AI/sithAIAwareness.h>
 
 #define sithPhysics_bMineCarEngineRunFx J3D_DECL_FAR_VAR(sithPhysics_bMineCarEngineRunFx, int)
 #define sithPhysics_bMineCarEngineRumbleFx J3D_DECL_FAR_VAR(sithPhysics_bMineCarEngineRumbleFx, int)
@@ -146,9 +148,103 @@ void J3DAPI sithPhysics_FindWaterSurface(SithThing* pThing)
     J3D_TRAMPOLINE_CALL(sithPhysics_FindWaterSurface, pThing);
 }
 
+ 
 void J3DAPI sithPhysics_UpdateThing(SithThing* pThing, float secDeltaTime)
 {
-    J3D_TRAMPOLINE_CALL(sithPhysics_UpdateThing, pThing, secDeltaTime);
+    SithThingType type;
+    SithAttachFlag attachflags;
+    SithPhysicsFlags physflags;
+    SithSectorFlag sectorflags;
+
+    // Not sure how to deal with global .exe variables yet
+    //SITH_ASSERTREL(sithThing_ValidateThingPointer(sithWorld_pCurrentWorld, pThing));
+
+    SITH_ASSERTREL(pThing->moveType == SITH_MT_PHYSICS);
+    if (pThing->pInSector
+        && (pThing->type != SITH_THING_ACTOR || pThing->thingInfo.actorInfo.bForceMovePlay != 1)
+        && (pThing->moveInfo.physics.flags & SITH_PF_NOUPDATE) == 0)
+    {
+        pThing->moveInfo.physics.deltaVelocity.x = 0.0f;
+        pThing->moveInfo.physics.deltaVelocity.y = 0.0f;
+        pThing->moveInfo.physics.deltaVelocity.z = 0.0f;
+
+        pThing->moveInfo.physics.gravityForce.x = 0.0f;
+        pThing->moveInfo.physics.gravityForce.y = 0.0f;
+        pThing->moveInfo.physics.gravityForce.z = 0.0f;
+
+        if ((pThing->type == SITH_THING_ACTOR || pThing->type == SITH_THING_PLAYER)
+            && (pThing->thingInfo.actorInfo.flags & SITH_AF_IMMOBILE) != 0)
+        {
+            pThing->moveInfo.physics.thrust.x = 0.0f;
+            pThing->moveInfo.physics.thrust.y = 0.0f;
+            pThing->moveInfo.physics.thrust.z = 0.0f;
+        }
+
+        attachflags = pThing->attach.flags;
+        if ((attachflags & SITH_ATTACH_THINGFACE) != 0 && pThing->moveStatus == SITHPLAYERMOVE_HANGING)
+        {
+            sithPhysics_UpdateClimbingThingPhysics(pThing, secDeltaTime);
+        }
+
+        physflags = pThing->moveInfo.physics.flags;
+        if ((physflags & SITH_PF_JEEP) != 0)
+        {
+            sithPhysics_UpdateJeepPhysics(pThing, secDeltaTime);
+            if ((((uint8_t)sithMain_g_frameNumber + (pThing->idx & 0xFF)) & 3) == 0)
+            {
+                sithAIAwareness_CreateTransmittingEvent(pThing->pInSector, &pThing->pos, 2, 4.0f, pThing);
+            }
+        }
+        else
+        {
+            if ((physflags & SITH_PF_MINECAR) == 0 || (attachflags & SITH_ATTACH_SURFACE) == 0)
+            {
+                if ((physflags & SITH_PF_RAFT) != 0 && (attachflags & SITH_ATTACH_SURFACE) != 0)
+                {
+                    sithPhysics_UpdateRaftPhysics(pThing, secDeltaTime);
+                    return;
+                }
+
+                if ((attachflags & (SITH_ATTACH_THINGFACE | SITH_ATTACH_SURFACE)) != 0)
+                {
+                    sithPhysics_UpdateAttachedThingPhysics(pThing, secDeltaTime);
+                    return;
+                }
+
+                if ((attachflags & SITH_ATTACH_CLIMBSURFACE) != 0)
+                {
+                    sithPhysics_UpdateClimbingThingPhysics(pThing, secDeltaTime);
+                    return;
+                }
+
+                sectorflags = pThing->pInSector->flags;
+                if ((sectorflags & SITH_SECTOR_UNDERWATER) != 0 || (sectorflags & SITH_SECTOR_AETHERIUM) != 0)// 0x100 - SITH_SECTOR_AETHERIUM
+                {
+                    if (pThing->type == SITH_THING_PLAYER || (sectorflags & 0x100) == 0)// 0x100
+                    {
+                        sithPhysics_UpdateUnderwaterThingPhysics(pThing, secDeltaTime);
+                        return;
+                    }
+                }
+
+                else if (pThing->type == SITH_THING_PLAYER)
+                {
+                    sithPhysics_UpdatePlayerPhysics(pThing, secDeltaTime);
+                    return;
+                }
+
+                sithPhysics_UpdateThingPhysics(pThing, secDeltaTime);
+                return;
+            }
+
+            sithPhysics_UpdateMineCarPhysics(pThing, secDeltaTime);
+
+            if ((((uint8_t)sithMain_g_frameNumber + (pThing->idx & 0xFF)) & 7) == 0)
+            {
+                sithAIAwareness_CreateTransmittingEvent(pThing->pInSector, &pThing->pos, 2, 2.0f, pThing);
+            }
+        }
+    }
 }
 
 void J3DAPI sithPhysics_ApplyForce(SithThing* pThing, const rdVector3* force)
