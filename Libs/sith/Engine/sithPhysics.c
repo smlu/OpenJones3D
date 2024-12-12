@@ -243,63 +243,41 @@ void J3DAPI sithPhysics_SetThingLook(SithThing* pThing, const rdVector3* pNormal
         pThing->orient.rvec.z = pThing->orient.lvec.x * pThing->orient.uvec.y - pThing->orient.lvec.y * pThing->orient.uvec.x;
 		rdVector_Normalize3Acc(&pThing->orient.rvec);
     }
+
 }
 
 void J3DAPI sithPhysics_ApplyDrag(rdVector3* pVelocity, float drag, float mag, float secDeltaTime)
 {
-    float totalDrag;
-    float speed;
-    float speedSqr;
-    float xVelocity;
-    float tempXVelocity;
-
-    float yVelocity;
-    float tempYVelocity;
-
-    float zVelocity;
-    float tempZVelocity;
-
-    speedSqr = rdVector_Dot3(&pVelocity, &pVelocity);
-    speed = sqrt(speedSqr);
+    float speedSqr = rdVector_Dot3(&pVelocity, &pVelocity);
+    float speed = sqrt(speedSqr);
     if (mag == 0.0f || speed >= (double)mag)
     {
         if (drag != 0.0f)
         {
-            totalDrag = secDeltaTime * drag;
+            float totalDrag = secDeltaTime * drag;
             if (totalDrag > 1.0f)
             {
                 totalDrag = 1.0f;
             }
 
-            xVelocity = -1 * pVelocity->x * totalDrag + pVelocity->x;
-            pVelocity->x = xVelocity;
+            pVelocity->x = -1 * pVelocity->x * totalDrag + pVelocity->x;
+            pVelocity->y = -1 * pVelocity->y * totalDrag + pVelocity->y;
+            pVelocity->z = -1 * pVelocity->z * totalDrag  + pVelocity->z;
 
-            yVelocity = -1 * pVelocity->y * totalDrag + pVelocity->y;
-            pVelocity->y = yVelocity;
-
-            zVelocity = -1 * pVelocity->z * totalDrag  + pVelocity->z;
-            pVelocity->z = zVelocity;
-
-            tempXVelocity = J3DMAX(xVelocity, -xVelocity);
-            if (tempXVelocity <= 0.00001f)
+            if (J3DMAX(pVelocity->x, -pVelocity->x) <= 0.00001f)
             {
-                xVelocity = 0.0f;
+                pVelocity->x = 0.0f;
             }
-            pVelocity->x = xVelocity;
 
-			tempYVelocity = J3DMAX(yVelocity, -yVelocity);
-            if (tempYVelocity <= 0.00001f)
+            if (J3DMAX(pVelocity->y, -pVelocity->y) <= 0.00001f)
             {
-                yVelocity = 0.0f;
-            }
-            pVelocity->y = yVelocity;   
+                pVelocity->y = 0.0f;
+            }   
 
-			tempZVelocity = J3DMAX(zVelocity, -zVelocity);
-            if (tempZVelocity <= 0.00001f)
+            if (J3DMAX(pVelocity->z, -pVelocity->z) <= 0.00001f)
             {
-                zVelocity = 0.0f;
+                pVelocity->z = 0.0f;
             }
-            pVelocity->z = zVelocity;
         }
     }
     else
