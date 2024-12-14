@@ -497,80 +497,80 @@ void J3DAPI JonesDisplay_UpdateLoadProgress(float progress)
     }
 }
 
-int JonesDisplay_ShowSplashDemo(void)
-{
-    rdWallpaper* pWallpaper = rdWallpaper_New("mat\\splashdemo");
-
-    sithSoundMixer_StopAll();
-    JonesDisplay_hSndLoadMusic = Sound_GetSoundHandle(SITHWORLD_STATICINDEX(2));
-    if ( JonesDisplay_hSndLoadMusic )
-    {
-        sithSoundMixer_PlaySound(JonesDisplay_hSndLoadMusic, 1.0, 0.0, (SoundPlayFlag)0);
-    }
-
-    bool bFinish = false;
-    while ( !bFinish && pWallpaper )
-    {
-        int numPressed;
-        stdControl_ReadControls();
-        if ( stdControl_ReadKey(DIK_ESCAPE, &numPressed)
-          || stdControl_ReadKey(DIK_SPACE, &numPressed)
-          || stdControl_ReadKey(DIK_F1, &numPressed)
-          || stdControl_ReadKey(DIK_F2, &numPressed)
-          || stdControl_ReadKey(DIK_F3, &numPressed)
-          || stdControl_ReadKey(DIK_F4, &numPressed)
-          || stdControl_ReadKey(DIK_F5, &numPressed)
-          || stdControl_ReadKey(DIK_F6, &numPressed)
-          || stdControl_ReadKey(DIK_F7, &numPressed)
-          || stdControl_ReadKey(DIK_F8, &numPressed)
-          || stdControl_ReadKey(DIK_F9, &numPressed)
-          || stdControl_ReadKey(DIK_F10, &numPressed)
-          || stdControl_ReadKey(DIK_F11, &numPressed)
-          || stdControl_ReadKey(DIK_F12, &numPressed)
-          || stdControl_ReadKey(DIK_RETURN, &numPressed)
-          || stdControl_ReadKey(DIK_NUMPADENTER, &numPressed)
-          || stdControl_ReadKey(DIK_RCONTROL, &numPressed)
-          || stdControl_ReadKey(DIK_LCONTROL, &numPressed)
-          || stdControl_ReadKey(DIK_RMENU, &numPressed)
-          || stdControl_ReadKey(DIK_LMENU, &numPressed)
-          || stdControl_ReadKey(DIK_Q, &numPressed)
-          || stdControl_ReadKey(DIK_X, &numPressed)
-          || stdControl_ReadKey(DIK_W, &numPressed) )
-        {
-            bFinish = 1;
-        }
-
-        else if ( stdControl_ReadKey(DIK_R, &numPressed) )
-        {
-            JonesMain_RestartGame();
-            if ( !pWallpaper )
-            {
-                return 0;
-            }
-
-            rdWallpaper_Free(pWallpaper);
-            pWallpaper = 0;
-            return 0;
-        }
-
-        std3D_ClearZBuffer();
-        rdCache_AdvanceFrame();
-        if ( !std3D_StartScene() )
-        {
-            rdWallpaper_Draw(pWallpaper);
-            rdCache_Flush();
-            rdCache_FlushAlpha();
-            std3D_EndScene();
-            stdDisplay_Update();
-        }
-    }
-
-    if ( !pWallpaper )
-    {
-        return 1;
-    }
-
-    rdWallpaper_Free(pWallpaper);
-    pWallpaper = NULL;
-    return 1;
-}
+//int JonesDisplay_ShowSplashDemo(void)
+//{
+//    rdWallpaper* pWallpaper = rdWallpaper_New("mat\\splashdemo");
+//
+//    sithSoundMixer_StopAll();
+//    JonesDisplay_hSndLoadMusic = Sound_GetSoundHandle(SITHWORLD_STATICINDEX(2));
+//    if ( JonesDisplay_hSndLoadMusic )
+//    {
+//        sithSoundMixer_PlaySound(JonesDisplay_hSndLoadMusic, 1.0, 0.0, (SoundPlayFlag)0);
+//    }
+//
+//    bool bFinish = false;
+//    while ( !bFinish && pWallpaper )
+//    {
+//        int numPressed;
+//        stdControl_ReadControls();
+//        if ( stdControl_ReadKey(DIK_ESCAPE, &numPressed)
+//          || stdControl_ReadKey(DIK_SPACE, &numPressed)
+//          || stdControl_ReadKey(DIK_F1, &numPressed)
+//          || stdControl_ReadKey(DIK_F2, &numPressed)
+//          || stdControl_ReadKey(DIK_F3, &numPressed)
+//          || stdControl_ReadKey(DIK_F4, &numPressed)
+//          || stdControl_ReadKey(DIK_F5, &numPressed)
+//          || stdControl_ReadKey(DIK_F6, &numPressed)
+//          || stdControl_ReadKey(DIK_F7, &numPressed)
+//          || stdControl_ReadKey(DIK_F8, &numPressed)
+//          || stdControl_ReadKey(DIK_F9, &numPressed)
+//          || stdControl_ReadKey(DIK_F10, &numPressed)
+//          || stdControl_ReadKey(DIK_F11, &numPressed)
+//          || stdControl_ReadKey(DIK_F12, &numPressed)
+//          || stdControl_ReadKey(DIK_RETURN, &numPressed)
+//          || stdControl_ReadKey(DIK_NUMPADENTER, &numPressed)
+//          || stdControl_ReadKey(DIK_RCONTROL, &numPressed)
+//          || stdControl_ReadKey(DIK_LCONTROL, &numPressed)
+//          || stdControl_ReadKey(DIK_RMENU, &numPressed)
+//          || stdControl_ReadKey(DIK_LMENU, &numPressed)
+//          || stdControl_ReadKey(DIK_Q, &numPressed)
+//          || stdControl_ReadKey(DIK_X, &numPressed)
+//          || stdControl_ReadKey(DIK_W, &numPressed) )
+//        {
+//            bFinish = 1;
+//        }
+//
+//        else if ( stdControl_ReadKey(DIK_R, &numPressed) )
+//        {
+//            JonesMain_RestartGame();
+//            if ( !pWallpaper )
+//            {
+//                return 0;
+//            }
+//
+//            rdWallpaper_Free(pWallpaper);
+//            pWallpaper = 0;
+//            return 0;
+//        }
+//
+//        std3D_ClearZBuffer();
+//        rdCache_AdvanceFrame();
+//        if ( !std3D_StartScene() )
+//        {
+//            rdWallpaper_Draw(pWallpaper);
+//            rdCache_Flush();
+//            rdCache_FlushAlpha();
+//            std3D_EndScene();
+//            stdDisplay_Update();
+//        }
+//    }
+//
+//    if ( !pWallpaper )
+//    {
+//        return 1;
+//    }
+//
+//    rdWallpaper_Free(pWallpaper);
+//    pWallpaper = NULL;
+//    return 1;
+//}

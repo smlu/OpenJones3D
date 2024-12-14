@@ -26,7 +26,7 @@ void J3DAPI JonesDisplay_OpenLoadScreen(const char* pMatFilePath, float wlStartX
 void JonesDisplay_CloseLoadScreen(void);
 void J3DAPI JonesDisplay_UpdateLoadProgress(float progress);
 
-int JonesDisplay_ShowSplashDemo(void); // Added
+//int JonesDisplay_ShowSplashDemo(void); // Added
 
 // Helper hooking functions
 void JonesDisplay_InstallHooks(void);
