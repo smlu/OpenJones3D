@@ -31,12 +31,12 @@ This project does ***not*** include any original game assets. A valid copy of th
 
 ### Build Steps
 1. Copy the headers and library files of DirectX 6.1 SDK into `Libs\external\DirectX61c\` under `include` and `lib` folders.
-2. Use CMake to generate the project for Visual Studio:
+2. Navigate into the `Build` folder and use CMake to generate the project for Visual Studio:
    ```bash
    cmake -A win32 -DJONES3D_ENABLE_POST_BUILD_COPY=ON -DJONES3D_POST_BUILD_COPY_DIR="<game-install-folder>\Resource" ..
    ```
    *Note: If copying compiled binaries is not required the 2 extra configuration options can be omitted in.*
-3. Build the project
+3. Build the project.
 
 ## High-Level Overview of Engine Architecture
 The Jones3D game engine is an upgraded version of the *Sith* game engine, originally used in games like *Star Wars Jedi Knight: Dark Forces II* and *Star Wars Jedi Knight: Mysteries of the Sith*. The engine consists of various modules that do specific tasks, with 8 original modules and 1 module (`j3dcore`) specific to this implementation of the engine.

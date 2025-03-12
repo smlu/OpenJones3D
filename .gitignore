@@ -52,7 +52,7 @@ Mkfile.old
 dkms.conf
 
 # Build
-build/*
+Build/*
 
 # Generated code
 Libs/j3dcore/j3d.h
