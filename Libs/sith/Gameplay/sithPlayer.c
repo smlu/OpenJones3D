@@ -299,7 +299,11 @@ void J3DAPI sithPlayer_Update(SithPlayer* pPlayer, float secDetaTime)
                 if ( sithPlayer_g_impState > 180.0f )
                 {
                     sithPlayer_g_impState = 180.0f;
-                    float damage = J3DMAX(sithGetIMPDamageScalar() * secDetaTime * 40.0f, 1.0f); // Fixed: Set min damage to 1.0f as sithThing_DamageThing cuts off damages lower than 1.0f. ( >40 fps)
+                    float damage = sithGetIMPDamageScalar() * secDetaTime * 40.0f;
+                    // Fixed: Set min damage to 1.0f as sithThing_DamageThing cuts off damages lower than 1.0f. ( >40 fps)
+                #ifdef J3D_QOL_IMPROVEMENTS
+                    damage = J3DMAX(damage, 1.0f);
+                #endif
                     sithThing_DamageThing(pThing, pThing, damage, SITH_DAMAGE_IMP_BLAST);
                 }
 
