@@ -15,6 +15,9 @@
 #include "Shaders/std_default_vs.h"
 #include "Shaders/std_default_ps.h"
 #include "Shaders/std_default_wf_ps.h"
+#include "Shaders/std_composite_ps.h"
+#include "Shaders/std_wave_vs.h"
+#include "Shaders/std_wave_ps.h"
 
 #define STD3D_DEFAULT_MAX_VERTICES 512
 
@@ -112,6 +115,27 @@ static StdShaderHandle std3D_defaultShader = STDSHADER_INVALIDHANDLE;
 static StdShaderHandle std3D_defaultShaderWf = STDSHADER_INVALIDHANDLE;
 static StdShaderHandle std3D_activeShader = STDSHADER_INVALIDHANDLE;
 
+
+// Multi-pass rendering state
+static bool std3D_bMultiPassActive = false;
+static LPDIRECT3DTEXTURE9 std3D_pRenderTargets[STDSHADER_RT_COUNT] = { NULL };
+static LPDIRECT3DSURFACE9 std3D_pRTSurfaces[STDSHADER_RT_COUNT] = { NULL };
+static LPDIRECT3DSURFACE9 std3D_pOriginalRenderTarget = NULL;
+static LPDIRECT3DSURFACE9 std3D_pOriginalDepthStencil = NULL;
+
+// Current rendering pass
+static int std3D_currentPass = 0;
+static StdShaderHandle std3D_compositeShader = STDSHADER_INVALIDHANDLE;
+static StdShaderHandle std3D_lightingShader = STDSHADER_INVALIDHANDLE;
+static StdShaderHandle std3D_waveShader = STDSHADER_INVALIDHANDLE;
+
+// Global shader parameters
+//static StdShaderGlobalParams std3D_globalParams = { 0 };
+
+// Custom shader for current draw call
+static StdShaderHandle std3D_customShader = STDSHADER_INVALIDHANDLE;
+
+
 static int std3D_InitRenderState(void);
 static int std3D_BuildDeviceList(void);
 static void std3D_InitTextureFormats(void);
@@ -127,6 +151,9 @@ void std3D_ReleaseVertexBuffers(void);
 
 int std3D_InitShaderSystem(void);
 void std3D_ShutdownShaderSystem(void);
+
+bool std3D_InitMultiPassRenderTargets(void);
+void std3D_ReleaseMultiPassRenderTargets(void);
 
 static void std3D_UpdateShaderState(StdShaderHandle activeShader);
 
@@ -458,6 +485,37 @@ size_t std3D_GetNumTextureFormats(void)
     return std3D_numTextureFormats;
 }
 
+//int std3D_StartScene(void)
+//{
+//    ++std3D_frameCount;
+//
+//    HRESULT d3dres = IDirect3DDevice9_BeginScene(std3D_pD3Device);
+//    if ( d3dres != D3D_OK ) {
+//        STDLOG_ERROR("Error %s beginning scene.\n", std3D_D3DGetStatus(d3dres));
+//    }
+//
+//    std3D_pD3DTex = NULL;
+//
+//    if ( std3D_bShadersActive )
+//    {
+//        StdShaderViewport vp =
+//        {
+//            (float)std3D_activeRect.x1, // x
+//            (float)std3D_activeRect.y1, // y
+//            (float)std3D_activeRect.x2, // width
+//            (float)std3D_activeRect.y2  // height
+//        };
+//        if ( !stdShader_SetViewport(vp) )
+//        {
+//            // error
+//        }
+//    }
+//
+//    return d3dres;
+//}
+
+
+// Enhanced StartScene for multi-pass
 int std3D_StartScene(void)
 {
     ++std3D_frameCount;
@@ -472,6 +530,21 @@ int std3D_StartScene(void)
 
     std3D_pD3DTex = NULL;
 
+    // Initialize multi-pass if shaders are active
+    if ( std3D_bShadersActive && std3D_pRenderTargets[0] )
+    {
+        std3D_bMultiPassActive = true;
+        std3D_currentPass = 0;
+
+        // Store original render target
+        IDirect3DDevice9_GetRenderTarget(std3D_pD3Device, 0, &std3D_pOriginalRenderTarget);
+        IDirect3DDevice9_GetDepthStencilSurface(std3D_pD3Device, &std3D_pOriginalDepthStencil);
+
+        // Start with albedo pass
+        IDirect3DDevice9_SetRenderTarget(std3D_pD3Device, 0, std3D_pRTSurfaces[STDSHADER_RT_ALBEDO]);
+        IDirect3DDevice9_Clear(std3D_pD3Device, 0, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, 0x00000000, 1.0f, 0);
+    }
+
     if ( std3D_bShadersActive )
     {
         StdShaderViewport vp =
@@ -481,17 +554,161 @@ int std3D_StartScene(void)
             (float)std3D_activeRect.x2, // width
             (float)std3D_activeRect.y2  // height
         };
-        if ( !stdShader_SetViewport(vp) )
-        {
-            // error
-        }
+        stdShader_SetViewport(vp);
+
+        // Apply global parameters
+        //stdShader_SetGlobalParams(&std3D_globalParams);
     }
 
     return d3dres;
 }
 
+static void std3D_DoMultiPassComposite(void)
+{
+    if ( !std3D_bMultiPassActive || !std3D_compositeShader ) return;
+
+    // Set final render target
+    IDirect3DDevice9_SetRenderTarget(std3D_pD3Device, 0, std3D_pOriginalRenderTarget);
+
+    // Clear final target
+    IDirect3DDevice9_Clear(std3D_pD3Device, 0, NULL, D3DCLEAR_TARGET, 0x00000000, 1.0f, 0);
+
+    // Set composite shader
+    std3D_UpdateShaderState(std3D_compositeShader);
+
+    // Bind render target textures
+    for ( int i = 0; i < STDSHADER_RT_COUNT - 1; i++ )
+    {
+        IDirect3DDevice9_SetTexture(std3D_pD3Device, i, (IDirect3DBaseTexture9*)std3D_pRenderTargets[i]);
+    }
+
+    // Draw fullscreen quad for compositing
+    D3DTLVERTEX quad[4] =
+    {
+        { 0.0f, 0.0f, 0.0f, 1.0f, 0xFFFFFFFF, 0xFF000000, 0.0f, 0.0f },
+        { (float)stdDisplay_g_backBuffer.rasterInfo.width, 0.0f, 0.0f, 1.0f, 0xFFFFFFFF, 0xFF000000, 1.0f, 0.0f },
+        { (float)stdDisplay_g_backBuffer.rasterInfo.width, (float)stdDisplay_g_backBuffer.rasterInfo.height, 0.0f, 1.0f, 0xFFFFFFFF, 0xFF000000, 1.0f, 1.0f },
+        { 0.0f, (float)stdDisplay_g_backBuffer.rasterInfo.height, 0.0f, 1.0f, 0xFFFFFFFF, 0xFF000000, 0.0f, 1.0f }
+    };
+
+    WORD indices[6] = { 0, 1, 2, 0, 2, 3 };
+
+    HRESULT hr = IDirect3DDevice9_DrawIndexedPrimitiveUP(
+        std3D_pD3Device,
+        D3DPT_TRIANGLELIST,
+        0, 4, 2,
+        indices, D3DFMT_INDEX16,
+        quad, sizeof(D3DTLVERTEX)
+    );
+
+    if ( FAILED(hr) )
+    {
+        STDLOG_ERROR("Failed composite draw: %s\n", std3D_D3DGetStatus(hr));
+    }
+
+    // Clean up texture bindings
+    for ( int i = 0; i < STDSHADER_RT_COUNT - 1; i++ )
+    {
+        IDirect3DDevice9_SetTexture(std3D_pD3Device, i, NULL);
+    }
+}
+
+
+//void std3D_EndScene(void)
+//{
+//    HRESULT d3dres = IDirect3DDevice9_EndScene(std3D_pD3Device);
+//    if ( d3dres != D3D_OK ) {
+//        STDLOG_ERROR("Error %s ending scene.\n", std3D_D3DGetStatus(d3dres));
+//    }
+//    std3D_pD3DTex = NULL;
+//}
+
 void std3D_EndScene(void)
 {
+    if ( std3D_bMultiPassActive )
+    {
+        // Do lighting pass if we have a lighting shader
+        if ( std3D_lightingShader != STDSHADER_INVALIDHANDLE )
+        {
+            // Set lighting render target
+            IDirect3DDevice9_SetRenderTarget(std3D_pD3Device, 0, std3D_pRTSurfaces[STDSHADER_RT_LIGHTING]);
+            IDirect3DDevice9_Clear(std3D_pD3Device, 0, NULL, D3DCLEAR_TARGET, 0x00000000, 1.0f, 0);
+
+            // Bind albedo texture
+            IDirect3DDevice9_SetTexture(std3D_pD3Device, 0, (IDirect3DBaseTexture9*)std3D_pRenderTargets[STDSHADER_RT_ALBEDO]);
+
+            std3D_UpdateShaderState(std3D_lightingShader);
+
+            // Draw fullscreen quad for lighting
+            D3DTLVERTEX quad[4] =
+            {
+                { 0.0f, 0.0f, 0.0f, 1.0f, 0xFFFFFFFF, 0xFF000000, 0.0f, 0.0f },
+                { (float)stdDisplay_g_backBuffer.rasterInfo.width, 0.0f, 0.0f, 1.0f, 0xFFFFFFFF, 0xFF000000, 1.0f, 0.0f },
+                { (float)stdDisplay_g_backBuffer.rasterInfo.width, (float)stdDisplay_g_backBuffer.rasterInfo.height, 0.0f, 1.0f, 0xFFFFFFFF, 0xFF000000, 1.0f, 1.0f },
+                { 0.0f, (float)stdDisplay_g_backBuffer.rasterInfo.height, 0.0f, 1.0f, 0xFFFFFFFF, 0xFF000000, 0.0f, 1.0f }
+            };
+
+            WORD indices[6] = { 0, 1, 2, 0, 2, 3 };
+
+            IDirect3DDevice9_DrawIndexedPrimitiveUP(
+                std3D_pD3Device,
+                D3DPT_TRIANGLELIST,
+                0, 4, 2,
+                indices, D3DFMT_INDEX16,
+                quad, sizeof(D3DTLVERTEX)
+            );
+        }
+
+        //if ( std3D_waveShader != STDSHADER_INVALIDHANDLE )
+        //{
+        //    // Set lighting render target
+        //    IDirect3DDevice9_SetRenderTarget(std3D_pD3Device, 0, std3D_pRTSurfaces[STDSHADER_RT_EFFECTS]);
+        //    IDirect3DDevice9_Clear(std3D_pD3Device, 0, NULL, D3DCLEAR_TARGET, 0x00000000, 1.0f, 0);
+
+        //    // Bind albedo texture
+        //    IDirect3DDevice9_SetTexture(std3D_pD3Device, 0, (IDirect3DBaseTexture9*)std3D_pRenderTargets[STDSHADER_RT_ALBEDO]);
+
+        //    std3D_UpdateShaderState(std3D_waveShader);
+
+        //    // Draw fullscreen quad for lighting
+        //    D3DTLVERTEX quad[4] =
+        //    {
+        //        { 0.0f, 0.0f, 0.0f, 1.0f, 0xFFFFFFFF, 0xFF000000, 0.0f, 0.0f },
+        //        { (float)stdDisplay_g_backBuffer.rasterInfo.width, 0.0f, 0.0f, 1.0f, 0xFFFFFFFF, 0xFF000000, 1.0f, 0.0f },
+        //        { (float)stdDisplay_g_backBuffer.rasterInfo.width, (float)stdDisplay_g_backBuffer.rasterInfo.height, 0.0f, 1.0f, 0xFFFFFFFF, 0xFF000000, 1.0f, 1.0f },
+        //        { 0.0f, (float)stdDisplay_g_backBuffer.rasterInfo.height, 0.0f, 1.0f, 0xFFFFFFFF, 0xFF000000, 0.0f, 1.0f }
+        //    };
+
+        //    WORD indices[6] = { 0, 1, 2, 0, 2, 3 };
+
+        //    IDirect3DDevice9_DrawIndexedPrimitiveUP(
+        //        std3D_pD3Device,
+        //        D3DPT_TRIANGLELIST,
+        //        0, 4, 2,
+        //        indices, D3DFMT_INDEX16,
+        //        quad, sizeof(D3DTLVERTEX)
+        //    );
+        //}
+
+        // Do final composite
+        std3D_DoMultiPassComposite();
+
+        // Clean up multi-pass state
+        std3D_bMultiPassActive = false;
+
+        if ( std3D_pOriginalRenderTarget )
+        {
+            IDirect3DSurface9_Release(std3D_pOriginalRenderTarget);
+            std3D_pOriginalRenderTarget = NULL;
+        }
+
+        if ( std3D_pOriginalDepthStencil )
+        {
+            IDirect3DSurface9_Release(std3D_pOriginalDepthStencil);
+            std3D_pOriginalDepthStencil = NULL;
+        }
+    }
+
     HRESULT d3dres = IDirect3DDevice9_EndScene(std3D_pD3Device);
     if ( d3dres != D3D_OK ) {
         STDLOG_ERROR("Error %s ending scene.\n", std3D_D3DGetStatus(d3dres));
@@ -637,82 +854,83 @@ void std3D_UpdateShaderState(StdShaderHandle activeShader)
 
 void J3DAPI std3D_DrawRenderList(tSysTexture* pTex, Std3DRenderState rdflags, LPD3DTLVERTEX aVerts, size_t numVerts, LPWORD aIndices, size_t numIndices)
 {
-    if ( numVerts > (unsigned int)std3D_g_maxVertices )
-    {
-        STDLOG_ERROR("Error %d > %d maxVertices.\n", numVerts, std3D_g_maxVertices);
-        return;
-    }
+    std3D_DrawRenderListEx(pTex, rdflags, aVerts, numVerts, aIndices, numIndices, STDSHADER_INVALIDHANDLE);
+    //if ( numVerts > (unsigned int)std3D_g_maxVertices )
+    //{
+    //    STDLOG_ERROR("Error %d > %d maxVertices.\n", numVerts, std3D_g_maxVertices);
+    //    return;
+    //}
 
-    if ( std3D_bShadersActive )
-    {
-        std3D_UpdateShaderState(std3D_defaultShader);
-    }
+    //if ( std3D_bShadersActive )
+    //{
+    //    std3D_UpdateShaderState(std3D_defaultShader);
+    //}
 
-    std3D_SetRenderState(rdflags);
+    //std3D_SetRenderState(rdflags);
 
-    // Set texture
-    if ( pTex != std3D_pD3DTex )
-    {
-        HRESULT d3dres = IDirect3DDevice9_SetTexture(std3D_pD3Device, 0, (IDirect3DBaseTexture9*)pTex);
-        if ( d3dres != D3D_OK )
-        {
-            STDLOG_ERROR("Error %s SetTexture.\n", std3D_D3DGetStatus(d3dres));
-        }
-        else
-        {
-            std3D_pD3DTex = pTex;
-        }
-    }
+    //// Set texture
+    //if ( pTex != std3D_pD3DTex )
+    //{
+    //    HRESULT d3dres = IDirect3DDevice9_SetTexture(std3D_pD3Device, 0, (IDirect3DBaseTexture9*)pTex);
+    //    if ( d3dres != D3D_OK )
+    //    {
+    //        STDLOG_ERROR("Error %s SetTexture.\n", std3D_D3DGetStatus(d3dres));
+    //    }
+    //    else
+    //    {
+    //        std3D_pD3DTex = pTex;
+    //    }
+    //}
 
-    // Fog processing
-    if ( std3D_bFogTable )
-    {
-        for ( size_t i = 0; i < numVerts; ++i )
-        {
-            D3DTLVERTEX* pCurVert = &aVerts[i];
-            pCurVert->specular = 0xFF000000;
-            if ( pCurVert->rhw > 0.0 )
-            {
-                pCurVert->specular = 0;
-                float depth = (std3D_fogEndDepth - pCurVert->rhw * std3D_zDepth) * std3D_fogDepthFactor;
-                if ( depth < 1.0 )
-                {
-                    pCurVert->specular = 0xFF000000;
-                    if ( depth >= 0.0 )
-                    {
-                        pCurVert->specular = (int)((1.0 - depth) * 255.0) << 24;
-                    }
-                }
-            }
-        }
-    }
+    //// Fog processing
+    //if ( std3D_bFogTable )
+    //{
+    //    for ( size_t i = 0; i < numVerts; ++i )
+    //    {
+    //        D3DTLVERTEX* pCurVert = &aVerts[i];
+    //        pCurVert->specular = 0xFF000000;
+    //        if ( pCurVert->rhw > 0.0 )
+    //        {
+    //            pCurVert->specular = 0;
+    //            float depth = (std3D_fogEndDepth - pCurVert->rhw * std3D_zDepth) * std3D_fogDepthFactor;
+    //            if ( depth < 1.0 )
+    //            {
+    //                pCurVert->specular = 0xFF000000;
+    //                if ( depth >= 0.0 )
+    //                {
+    //                    pCurVert->specular = (int)((1.0 - depth) * 255.0) << 24;
+    //                }
+    //            }
+    //        }
+    //    }
+    //}
 
-    if ( std3D_bUseBuffers )
-    {
-        if ( !std3D_DrawIndexedPrimitive(D3DPT_TRIANGLELIST, aVerts, numVerts, aIndices, numIndices) )
-        {
-             // draw failed
-        }
-    }
-    else
-    {
-        HRESULT d3dres = IDirect3DDevice9_DrawIndexedPrimitiveUP(
-            std3D_pD3Device,
-            D3DPT_TRIANGLELIST,
-            0,
-            numVerts,
-            numIndices / 3,
-            aIndices,
-            D3DFMT_INDEX16,
-            aVerts,
-            sizeof(D3DTLVERTEX)
-        );
+    //if ( std3D_bUseBuffers )
+    //{
+    //    if ( !std3D_DrawIndexedPrimitive(D3DPT_TRIANGLELIST, aVerts, numVerts, aIndices, numIndices) )
+    //    {
+    //         // draw failed
+    //    }
+    //}
+    //else
+    //{
+    //    HRESULT d3dres = IDirect3DDevice9_DrawIndexedPrimitiveUP(
+    //        std3D_pD3Device,
+    //        D3DPT_TRIANGLELIST,
+    //        0,
+    //        numVerts,
+    //        numIndices / 3,
+    //        aIndices,
+    //        D3DFMT_INDEX16,
+    //        aVerts,
+    //        sizeof(D3DTLVERTEX)
+    //    );
 
-        if ( d3dres != D3D_OK )
-        {
-            STDLOG_ERROR("Error %s DrawIndexedPrimitiveUP.\n", std3D_D3DGetStatus(d3dres));
-        }
-    }
+    //    if ( d3dres != D3D_OK )
+    //    {
+    //        STDLOG_ERROR("Error %s DrawIndexedPrimitiveUP.\n", std3D_D3DGetStatus(d3dres));
+    //    }
+    //}
 }
 
 void std3D_SetWireframeRenderState(void)
@@ -2281,12 +2499,50 @@ int std3D_InitShaderSystem(void)
         return 0;
     }
 
+    // Create composite shader
+    std3D_compositeShader = stdShader_Create("std_composite", std_default_vs, std_composite_ps);
+    if ( !std3D_compositeShader )
+    {
+        STDLOG_ERROR("Failed to create composite shader\n");
+        return 0;
+    }
+
+    // Create wave shader
+    std3D_waveShader = stdShader_Create("std_wave", std_wave_vs, std_wave_ps);
+    if ( !std3D_waveShader )
+    {
+        STDLOG_ERROR("Failed to create wave shader\n");
+        return 0;
+    }
+
+    // Initialize multi-pass render targets
+    if ( !std3D_InitMultiPassRenderTargets() )
+    {
+        STDLOG_ERROR("Failed to initialize multi-pass render targets\n");
+        return 1; // Continue without multi-pass
+    }
+
     std3D_bShadersActive = true;
     return 1;
 }
 
 void std3D_ShutdownShaderSystem(void)
 {
+    // Release multi-pass render targets
+    std3D_ReleaseMultiPassRenderTargets();
+
+    if ( std3D_compositeShader )
+    {
+        stdShader_Free(std3D_compositeShader);
+        std3D_compositeShader = STDSHADER_INVALIDHANDLE;
+    }
+
+    if ( std3D_lightingShader )
+    {
+        stdShader_Free(std3D_lightingShader);
+        std3D_lightingShader = STDSHADER_INVALIDHANDLE;
+    }
+
     if ( std3D_defaultShader )
     {
         stdShader_Free(std3D_defaultShader);
@@ -2297,6 +2553,67 @@ void std3D_ShutdownShaderSystem(void)
     stdShader_Close();
 }
 
+bool std3D_InitMultiPassRenderTargets(void)
+{
+    if ( !std3D_pD3Device )
+    {
+        return false;
+    }
+
+    UINT width = stdDisplay_g_backBuffer.rasterInfo.width;
+    UINT height = stdDisplay_g_backBuffer.rasterInfo.height;
+
+    // Create render targets for each pass
+    for ( int i = 0; i < STDSHADER_RT_COUNT; i++ )
+    {
+        HRESULT hr = IDirect3DDevice9_CreateTexture(
+            std3D_pD3Device,
+            width, height,
+            1, // mip levels
+            D3DUSAGE_RENDERTARGET,
+            stdDisplay_g_backBuffer.surface.desc.Format, // Use same format as back buffer
+            D3DPOOL_DEFAULT,
+            &std3D_pRenderTargets[i],
+            NULL
+        );
+
+        if ( FAILED(hr) )
+        {
+            STDLOG_ERROR("Failed to create render target %d: %s\n", i, std3D_D3DGetStatus(hr));
+            return false;
+        }
+
+        // Get render target surface
+        hr = IDirect3DTexture9_GetSurfaceLevel(std3D_pRenderTargets[i], 0, &std3D_pRTSurfaces[i]);
+        if ( FAILED(hr) )
+        {
+            STDLOG_ERROR("Failed to get render target surface %d: %s\n", i, std3D_D3DGetStatus(hr));
+            return false;
+        }
+    }
+
+    return true;
+}
+
+void std3D_ReleaseMultiPassRenderTargets(void)
+{
+    for ( int i = 0; i < STDSHADER_RT_COUNT; i++ )
+    {
+        if ( std3D_pRTSurfaces[i] )
+        {
+            IDirect3DSurface9_Release(std3D_pRTSurfaces[i]);
+            std3D_pRTSurfaces[i] = NULL;
+        }
+
+        if ( std3D_pRenderTargets[i] )
+        {
+            IDirect3DTexture9_Release(std3D_pRenderTargets[i]);
+            std3D_pRenderTargets[i] = NULL;
+        }
+    }
+}
+
+
 tSysDevice3D* std3D_GetD3DDevice(void)
 {
     return std3D_pD3Device;
@@ -2305,4 +2622,97 @@ tSysDevice3D* std3D_GetD3DDevice(void)
 bool J3DAPI std3D_IsShaderSystemActive(void)
 {
     return std3D_bShadersActive;
+}
+
+void J3DAPI std3D_DrawRenderListEx(tSysTexture* pTex, Std3DRenderState rdflags, LPD3DTLVERTEX aVerts, size_t numVerts, LPWORD aIndices, size_t numIndices, StdShaderHandle customShader)
+{
+    if ( numVerts > (unsigned int)std3D_g_maxVertices )
+    {
+        STDLOG_ERROR("Error %d > %d maxVertices.\n", numVerts, std3D_g_maxVertices);
+        return;
+    }
+
+    StdShaderHandle activeShader = STDSHADER_INVALIDHANDLE;
+
+    if ( std3D_bShadersActive )
+    {
+        // Use custom shader if provided, otherwise use default
+        if ( customShader != STDSHADER_INVALIDHANDLE )
+        {
+            activeShader = customShader;
+        }
+        else
+        {
+            activeShader = std3D_defaultShader;
+        }
+
+        std3D_UpdateShaderState(activeShader);
+    }
+
+    // Rest of original DrawRenderList implementation...
+    std3D_SetRenderState(rdflags);
+
+    if ( pTex != std3D_pD3DTex )
+    {
+        HRESULT d3dres = IDirect3DDevice9_SetTexture(std3D_pD3Device, 0, (IDirect3DBaseTexture9*)pTex);
+        if ( d3dres != D3D_OK )
+        {
+            STDLOG_ERROR("Error %s SetTexture.\n", std3D_D3DGetStatus(d3dres));
+        }
+        else
+        {
+            std3D_pD3DTex = pTex;
+        }
+    }
+
+    // Fog processing (unchanged)
+    if ( std3D_bFogTable )
+    {
+        for ( size_t i = 0; i < numVerts; ++i )
+        {
+            D3DTLVERTEX* pCurVert = &aVerts[i];
+            pCurVert->specular = 0xFF000000;
+            if ( pCurVert->rhw > 0.0 )
+            {
+                pCurVert->specular = 0;
+                float depth = (std3D_fogEndDepth - pCurVert->rhw * std3D_zDepth) * std3D_fogDepthFactor;
+                if ( depth < 1.0 )
+                {
+                    pCurVert->specular = 0xFF000000;
+                    if ( depth >= 0.0 )
+                    {
+                        pCurVert->specular = (int)((1.0 - depth) * 255.0) << 24;
+                    }
+                }
+            }
+        }
+    }
+
+    // Draw geometry
+    if ( std3D_bUseBuffers )
+    {
+        if ( !std3D_DrawIndexedPrimitive(D3DPT_TRIANGLELIST, aVerts, numVerts, aIndices, numIndices) )
+        {
+             // draw failed
+        }
+    }
+    else
+    {
+        HRESULT d3dres = IDirect3DDevice9_DrawIndexedPrimitiveUP(
+            std3D_pD3Device,
+            D3DPT_TRIANGLELIST,
+            0,
+            numVerts,
+            numIndices / 3,
+            aIndices,
+            D3DFMT_INDEX16,
+            aVerts,
+            sizeof(D3DTLVERTEX)
+        );
+
+        if ( d3dres != D3D_OK )
+        {
+            STDLOG_ERROR("Error %s DrawIndexedPrimitiveUP.\n", std3D_D3DGetStatus(d3dres));
+        }
+    }
 }

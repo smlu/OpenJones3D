@@ -43,6 +43,8 @@
 #include <math.h>
 #include <stdint.h>
 
+#define SITHRENDER_NOCLIP TRUE
+
 #define SITHRENDER_MAXTHINGLIGHTS  RDCAMERA_MAX_LIGHTS / 2 // 64; note this var must not exceed RDCAMERA_MAX_LIGHTS-1
 #define SITHRENDER_MAXSECTORLIGHTS (RDCAMERA_MAX_LIGHTS - SITHRENDER_MAXTHINGLIGHTS)
 
@@ -239,6 +241,75 @@ void sithRender_TogglePVS(void)
     sithRender_bPVSClipEnabled = !sithRender_bPVSClipEnabled;
 }
 
+void ConvertRdMatrix34To4x4(const rdMatrix34* rdMat, Matrix4x4* mat4x4)
+{
+    mat4x4->_11 = rdMat->rvec.x; mat4x4->_12 = rdMat->lvec.x; mat4x4->_13 = rdMat->uvec.x; mat4x4->_14 = 0.0f;
+    mat4x4->_21 = rdMat->rvec.y; mat4x4->_22 = rdMat->lvec.y; mat4x4->_23 = rdMat->uvec.y; mat4x4->_24 = 0.0f;
+    mat4x4->_31 = rdMat->rvec.z; mat4x4->_32 = rdMat->lvec.z; mat4x4->_33 = rdMat->uvec.z; mat4x4->_34 = 0.0f;
+    mat4x4->_41 = rdMat->dvec.x; mat4x4->_42 = rdMat->dvec.y; mat4x4->_43 = rdMat->dvec.z; mat4x4->_44 = 1.0f;
+}
+
+void TransposeMatrix4x4(Matrix4x4* pOut, const Matrix4x4* pIn)
+{
+    pOut->_11 = pIn->_11; pOut->_12 = pIn->_21; pOut->_13 = pIn->_31; pOut->_14 = pIn->_41;
+    pOut->_21 = pIn->_12; pOut->_22 = pIn->_22; pOut->_23 = pIn->_32; pOut->_24 = pIn->_42;
+    pOut->_31 = pIn->_13; pOut->_32 = pIn->_23; pOut->_33 = pIn->_33; pOut->_34 = pIn->_43;
+    pOut->_41 = pIn->_14; pOut->_42 = pIn->_24; pOut->_43 = pIn->_34; pOut->_44 = pIn->_44;
+}
+
+// Use this for WORLD transforms (like rdCamera_g_camMatrix)
+void ConvertRdMatrix34To4x4_World(const rdMatrix34* rdMat, Matrix4x4* mat4x4)
+{
+    mat4x4->_11 = rdMat->rvec.x; mat4x4->_12 = rdMat->lvec.x; mat4x4->_13 = rdMat->uvec.x; mat4x4->_14 = 0.0f;
+    mat4x4->_21 = rdMat->rvec.y; mat4x4->_22 = rdMat->lvec.y; mat4x4->_23 = rdMat->uvec.y; mat4x4->_24 = 0.0f;
+    mat4x4->_31 = rdMat->rvec.z; mat4x4->_32 = rdMat->lvec.z; mat4x4->_33 = rdMat->uvec.z; mat4x4->_34 = 0.0f;
+    mat4x4->_41 = rdMat->dvec.x; mat4x4->_42 = rdMat->dvec.y; mat4x4->_43 = rdMat->dvec.z; mat4x4->_44 = 1.0f;
+}
+
+// Use this for VIEW matrices (like rdCamera_g_pCurCamera->orient)
+void ConvertRdMatrix34To4x4_View(const rdMatrix34* rdMat, Matrix4x4* mat4x4)
+{
+    // Rotation part is transposed for view matrix
+    mat4x4->_11 = rdMat->rvec.x; mat4x4->_12 = rdMat->rvec.y; mat4x4->_13 = rdMat->rvec.z; mat4x4->_14 = 0.0f;
+    mat4x4->_21 = rdMat->lvec.x; mat4x4->_22 = rdMat->lvec.y; mat4x4->_23 = rdMat->lvec.z; mat4x4->_24 = 0.0f;
+    mat4x4->_31 = rdMat->uvec.x; mat4x4->_32 = rdMat->uvec.y; mat4x4->_33 = rdMat->uvec.z; mat4x4->_34 = 0.0f;
+
+    // Translation for view matrix needs dot product with rotated axes
+    float tx = -(rdMat->rvec.x * rdMat->dvec.x + rdMat->rvec.y * rdMat->dvec.y + rdMat->rvec.z * rdMat->dvec.z);
+    float ty = -(rdMat->lvec.x * rdMat->dvec.x + rdMat->lvec.y * rdMat->dvec.y + rdMat->lvec.z * rdMat->dvec.z);
+    float tz = -(rdMat->uvec.x * rdMat->dvec.x + rdMat->uvec.y * rdMat->dvec.y + rdMat->uvec.z * rdMat->dvec.z);
+
+    mat4x4->_41 = tx; mat4x4->_42 = ty; mat4x4->_43 = tz; mat4x4->_44 = 1.0f;
+}
+
+
+void CreateExactProjectionMatrix(Matrix4x4* pOut, const rdCamera* camera, float viewportWidth, float viewportHeight)
+{
+    memset(pOut, 0, sizeof(Matrix4x4));
+
+    float focalLength = camera->focalLength * camera->aspectRatio;
+    float centerX = camera->pCanvas->center.x;
+    float centerY = camera->pCanvas->center.y;
+    float invNearPlane = camera->invNearClipPlane;
+    float invFarPlane = camera->invFarClipPlane;
+
+    // Transform: sx = viewX * (focalLength / viewY) + centerX
+    // In matrix form: screenX = (viewX * focalLength + viewY * centerX) / viewY
+    pOut->_11 = focalLength * 2.0f / viewportWidth;          // X scale
+    pOut->_41 = (2.0f * centerX / viewportWidth - 1.0f);     // X offset (moved to W component)
+
+    // Transform: sy = centerY - viewZ * (focalLength / viewY)  
+    pOut->_32 = -focalLength * 2.0f / viewportHeight;         // -Z to Y
+    pOut->_42 = (1.0f - 2.0f * centerY / viewportHeight);    // Y offset
+
+    // Transform: sz = (1/viewY - 1/nearPlane) / farPlane
+    pOut->_23 = invFarPlane;                                  // 1/viewY component  
+    pOut->_43 = -invNearPlane * invFarPlane;                 // Constant term
+
+    // Transform: rhw = 1/(viewY * 32)
+    pOut->_24 = 1.0f / 32.0f;                                // RHW component
+}
+
 void sithRender_Draw(void)
 {
     rdSetLightingMode(sithRender_lightMode);
@@ -289,6 +360,8 @@ void sithRender_Draw(void)
     sithRender_curCamSectorIdx = sithCamera_g_pCurCamera->pSector - sithWorld_g_pCurrentWorld->aSectors; // TODO: ?? redundant
 
     // Collect sector and things to draw
+#if !SITHRENDER_NOCLIP
+
     if ( sithRender_bPVSClipEnabled && sithWorld_g_pCurrentWorld->aPVS )
     {
         sithRender_PVSBuildVisibleSectorList(sithCamera_g_pCurCamera->pSector, rdCamera_g_pCurCamera->pFrustum);
@@ -297,6 +370,41 @@ void sithRender_Draw(void)
     {
         sithRender_BuildVisibleSectorList(sithCamera_g_pCurCamera->pSector, rdCamera_g_pCurCamera->pFrustum);
     }
+#else
+    {
+        rdVector3 camPos = sithCamera_g_pCurCamera->lookPos;
+        for ( int i = 0; i < sithWorld_g_pCurrentWorld->numSectors; i++ )
+        {
+            SithSector* pCurSec = &sithWorld_g_pCurrentWorld->aSectors[i];
+            //if ( pCurSec == sithCamera_g_pCurCamera->pSector ) {
+            //    //continue;
+            //}
+            //if ( pCurSec->renderTick == sithMain_g_curRenderTick ) {
+            //    continue;
+            //}
+
+            // Only render sectors that are in front of the camera near plane
+            /*flex_t dist = rdMath_DistancePointToPlane(&sithCamera_currentCamera->vec3_1, &rdCamera_pCurCamera->view_matrix.uvec, &pSectorIter->center);
+            if (dist + (pSectorIter->radius * 3.5) < 0.0) {
+                continue;
+            }
+            if (dist - (pSectorIter->radius) > SITHCAMERA_ZFAR) {
+                continue;
+            }*/
+
+       /*     rdVector3 centerTrans = pCurSec->center;
+            rdMatrix_TransformPoint34Acc(&centerTrans, &rdCamera_g_pCurCamera->orient);
+            if ( rdClip_SphereInFrustrum(rdCamera_g_pCurCamera->pFrustum, &centerTrans, pCurSec->radius * 3.5) == RDFRUSTUMCULL_OUTSIDE ) {
+                float dist = rdVector_Dist3(&sithCamera_g_pCurCamera->lookPos, &pCurSec->center);
+                if ( dist + (pCurSec->radius * 3.5) < 0.0 ) {
+                    continue;
+                }
+            }*/
+
+            sithRender_BuildVisibleSectorList(pCurSec, rdCamera_g_pCurCamera->pFrustum);
+        }
+    }
+#endif
 
     sithRender_BuildVisibleSectorsThingList();
     if ( sithRender_numVisibleThingSectors > STD_ARRAYLEN(sithRender_aThingSectors) )
@@ -312,7 +420,80 @@ void sithRender_Draw(void)
     // Set projection
     std3D_SetProjection(sithCamera_g_pCurCamera->rdCamera.fov, sithCamera_g_pCurCamera->rdCamera.pFrustum->nearPlane, sithCamera_g_pCurCamera->rdCamera.pFrustum->farPlane);
 
-    // Now draw everything
+
+    // ADDED FOR TEST
+    Matrix4x4 matView;
+    ConvertRdMatrix34To4x4(&rdCamera_g_pCurCamera->viewMatrix, &matView);
+
+        // Get your inverse view matrix (rdCamera_g_camMatrix) and convert it
+    Matrix4x4 matInvView;
+    ConvertRdMatrix34To4x4(&rdCamera_g_camMatrix, &matInvView);
+
+    Matrix4x4 matProj;
+    uint32_t width, height;
+    stdDisplay_GetBackBufferSize(&width, &height);
+    //MatrixPerspectiveFovLH(&matProj, sithCamera_g_pCurCamera->rdCamera.fov, (float)width / (float)height, sithCamera_g_pCurCamera->rdCamera.pFrustum->nearPlane, sithCamera_g_pCurCamera->rdCamera.pFrustum->farPlane);
+
+    CreateExactProjectionMatrix(&matProj, rdCamera_g_pCurCamera, (float)width, (float)height);
+
+
+        // 1. Calculate g_matWorldViewProj
+    Matrix4x4 matViewProj;
+    // (Assuming World matrix is identity)
+    MatrixMultiply4x4(&matViewProj, &matView, &matProj);
+
+
+    // 2. Calculate g_matInvViewProj
+    Matrix4x4 matInvProj = { 0 }, matInvViewProj = { 0 };
+    MatrixInverse4x4(&matInvProj, &matProj); // Invert the projection matrix
+    // Multiply in reverse order: InvViewProj = InvProj * InvView
+    //MatrixMultiply4x4(&matInvViewProj, &matInvProj, &matInvView);
+
+    // Test inverting matViewProj
+    MatrixInverse4x4(&matInvViewProj, &matViewProj); // Invert the projection matrix
+
+    StdShaderMatrix shmatViewProj;
+    memcpy(shmatViewProj, &matViewProj, sizeof(shmatViewProj));
+
+    StdShaderMatrix shmatInvViewProj;
+    memcpy(shmatInvViewProj, &matInvViewProj, sizeof(shmatInvViewProj));
+
+    stdShader_SetViewProjectMatrix(shmatViewProj);
+    stdShader_SetInvViewProjectMatrix(shmatInvViewProj);
+
+
+    Matrix4x4 test;
+    MatrixMultiply4x4(&test, &matProj, &matInvProj);
+
+
+    MatrixMultiply4x4(&test, &matViewProj, &matInvViewProj);
+
+
+    rdMatrix34 tet34;
+    rdMatrix_Multiply34(&tet34, &rdCamera_g_pCurCamera->viewMatrix, &rdCamera_g_camMatrix);
+
+    int a = 0;
+
+
+
+
+    // Then modify your matrix setup:
+    //Matrix4x4 matViewProjTransposed, matInvViewProjTransposed;
+    //TransposeMatrix4x4(&matViewProjTransposed, &matViewProj);
+    //TransposeMatrix4x4(&matInvViewProjTransposed, &matInvViewProj);
+
+    //StdShaderMatrix shmatViewProj;
+    //memcpy(shmatViewProj, &matViewProjTransposed, sizeof(shmatViewProj));
+    //StdShaderMatrix shmatInvViewProj;
+    //memcpy(shmatInvViewProj, &matInvViewProjTransposed, sizeof(shmatInvViewProj));
+
+    //stdShader_SetViewProjectMatrix(shmatViewProj);
+    //stdShader_SetInvViewProjectMatrix(shmatInvViewProj);
+
+        ////
+
+
+                // Now draw everything
     sithRender_RenderSectors();
 
     if ( sithRender_numThingSectors > 0 )
@@ -769,7 +950,8 @@ void sithRender_RenderSectors(void)
                 else // Not a sky surface
                 {
                     // Clip vertices and transform to NDC screen space
-                    if ( !rdClip_FaceToPlane(pSector->pClipFrustum, pPoly, &pSurf->face, sithWorld_g_pCurrentWorld->aTransformedVertices, sithWorld_g_pCurrentWorld->aTexVerticies, sithWorld_g_pCurrentWorld->aVertDynamicLights, pSurf->aIntensities) )
+                    int numVerts = rdClip_FaceToPlane(pSector->pClipFrustum, pPoly, &pSurf->face, sithWorld_g_pCurrentWorld->aTransformedVertices, sithWorld_g_pCurrentWorld->aTexVerticies, sithWorld_g_pCurrentWorld->aVertDynamicLights, pSurf->aIntensities);
+                    if ( numVerts == 0 )
                     {
                         // Face is fully outside frustrum
                         continue;
@@ -798,7 +980,7 @@ void sithRender_RenderSectors(void)
 
                     pPoly->pMaterial = pSurf->face.pMaterial;
                     pPoly->matCelNum = pSurf->face.matCelNum;
-                    rdCache_AddProcFace(pSurf->face.numVertices);
+                    rdCache_AddProcFace(numVerts);
 
                     ++sithRender_g_numArchPolys;
                 }
@@ -1210,7 +1392,8 @@ void sithRender_RenderAlphaAdjoins(void)
 
         pPoly->lightingMode = pSurf->face.lightingMode >= sithRender_lightMode ? sithRender_lightMode : pSurf->face.lightingMode;
 
-        if ( !rdClip_FaceToPlane(pSector->pClipFrustum, pPoly, &pSurf->face, sithWorld_g_pCurrentWorld->aTransformedVertices, sithWorld_g_pCurrentWorld->aTexVerticies, sithWorld_g_pCurrentWorld->aVertDynamicLights, pSurf->aIntensities) )
+        int numVerts = rdClip_FaceToPlane(pSector->pClipFrustum, pPoly, &pSurf->face, sithWorld_g_pCurrentWorld->aTransformedVertices, sithWorld_g_pCurrentWorld->aTexVerticies, sithWorld_g_pCurrentWorld->aVertDynamicLights, pSurf->aIntensities);
+        if ( numVerts == 0 )
         {
             // Face is fully outside frustrum
             continue;
@@ -1223,7 +1406,7 @@ void sithRender_RenderAlphaAdjoins(void)
         pPoly->flags     = extraFaceFlags | pSurf->face.flags;
         pPoly->pMaterial = pSurf->face.pMaterial;
 
-        rdCache_AddAlphaProcFace(pSurf->face.numVertices);
+        rdCache_AddAlphaProcFace(numVerts);
 
         ++sithRender_g_numAlphaArchPolys;
         bFlush = true;

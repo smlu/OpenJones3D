@@ -45,6 +45,7 @@ static const rdModel3Mesh* pCurMesh           = NULL;
 static rdLightMode lightingMode               = RD_LIGHTING_NONE;
 static rdVector3 localCamera                  = { 0 };
 static rdVector3 aView[RDMODEL3_MAX_VERTICES] = { 0 };
+static rdVector3 aNormalView[RDMODEL3_MAX_VERTICES] = { 0 };
 
 static size_t numMeshLights = 0;
 static rdLight* apMeshLights[RDCAMERA_MAX_LIGHTS] = { 0 };
@@ -1613,6 +1614,9 @@ void J3DAPI rdModel3_DrawMesh(const rdModel3Mesh* pMesh, const rdMatrix34* orien
         rdMatrix_Multiply34(&tmat, &rdCamera_g_pCurCamera->viewMatrix, orient); // Combine model-view matrices
         rdMatrix_TransformPointList34(&tmat, pCurMesh->apVertices, aView, pCurMesh->numVertices); // Transform vertices to view space (i.e. rotate to orinet and convert to view space)
 
+        rdMatrix_TransformPointList34(orient, pCurMesh->aVertNormals, aNormalView, pCurMesh->numVertices); // Orient normals to world space
+
+
         // Calculate model matrix
         rdMatrix34 InvModelMatrix;
         rdMatrix_InvertOrtho34(&InvModelMatrix, orient);
@@ -1729,7 +1733,9 @@ void J3DAPI rdModel3_DrawFace(const rdFace* pFace, const rdVector3* aTransformed
     // Project vertices to view space and assign to poly
     // Fyi, grimengine uses either rdPrim3_ClipFace or rdPrim3_NoClipFace because it does manual clipping of polys that are not in clip frustum 
     // We expect HW / GPU API will do the clipping for us
-    if ( !rdClip_FaceToPlane(rdCamera_g_pCurCamera->pFrustum, pPoly, pFace, aTransformedVertices, pCurMesh->apTexVertices, pCurMesh->aLightIntensities, NULL) )
+    int numVerts = rdClip_FaceToPlaneEx(rdCamera_g_pCurCamera->pFrustum, pPoly, pFace, aTransformedVertices, aNormalView, pCurMesh->apTexVertices, pCurMesh->aLightIntensities, NULL);
+    //int numVerts = rdClip_FaceToPlane(rdCamera_g_pCurCamera->pFrustum, pPoly, pFace, aTransformedVertices, pCurMesh->apTexVertices, pCurMesh->aLightIntensities, NULL);
+    if ( numVerts == 0 )
     {
         // Poly is fully outside of the frustum
         return;
@@ -1787,12 +1793,12 @@ void J3DAPI rdModel3_DrawFace(const rdFace* pFace, const rdVector3* aTransformed
     if ( bTranslucent )
     {
         ++rdModel3_g_numDrawnAlphaFaces;
-        rdCache_AddAlphaProcFace(pFace->numVertices);
+        rdCache_AddAlphaProcFace(numVerts);
     }
     else
     {
         ++rdModel3_g_numDrawnFaces;
-        rdCache_AddProcFace(pFace->numVertices);
+        rdCache_AddProcFace(numVerts);
     }
 }
 

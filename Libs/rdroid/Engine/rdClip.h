@@ -52,6 +52,8 @@ void J3DAPI rdClip_QClipFaceW(const rdClipFrustum* pFrustrum, const rdPrimit3* p
 // aVerts here should be transformed to camera space.
 int J3DAPI rdClip_FaceToPlane(const rdClipFrustum* pFrustrum, rdCacheProcEntry* pProcFace, const rdFace* pFace, const rdVector3* aVerts, const rdVector2* aTexVerts, const rdVector4* aLightColors, const rdVector4* aVertColors);
 
+int J3DAPI rdClip_FaceToPlaneEx(const rdClipFrustum* pFrustrum, rdCacheProcEntry* pProcFace, const rdFace* pFace, const rdVector3* aVerts, const rdVector3* aVertNormals, const rdVector2* aTexVerts, const rdVector4* aLightColors, const rdVector4* aVertColors); // new
+
 // Function transforms vertices to screen space and assigns them to out pProcFace 
 // aVerts here should be transformed to camera space.
 void J3DAPI rdClip_VerticesToPlane(rdCacheProcEntry* pProcFace, const rdVector3* aVerts, const rdVector2* aTexVerts, size_t numVerts);

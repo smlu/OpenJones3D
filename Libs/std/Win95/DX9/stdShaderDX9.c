@@ -39,6 +39,8 @@ static size_t stdShader_maxVsParams = 0;
 
 LPDIRECT3DDEVICE9 stdShader_pDevice;
 
+size_t stdShader_numLights = 0;
+
 // Vertex declaration for shader pipeline
 static D3DVERTEXELEMENT9 std3D_vertexElements[] =
 {
@@ -46,6 +48,8 @@ static D3DVERTEXELEMENT9 std3D_vertexElements[] =
     {0, 16, D3DDECLTYPE_D3DCOLOR, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_COLOR, 0},
     {0, 20, D3DDECLTYPE_D3DCOLOR, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_COLOR, 1},
     {0, 24, D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 0},
+    {0, 32, D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 1},
+    {0, 44, D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_NORMAL, 0},
     D3DDECL_END()
 };
 
@@ -205,12 +209,166 @@ void stdShader_Close(void)
 
 bool J3DAPI stdShader_SetViewport(const StdShaderViewport vp)
 {
-    HRESULT hr = IDirect3DDevice9_SetVertexShaderConstantF(stdShader_pDevice, /*StartRegister=*/STDSHADERDX9_VS_VIEWPORT_REGISTER, vp, 1);
+    if ( !stdShader_bOpen || !vp )
+    {
+        return false;
+    }
+
+    HRESULT hr = IDirect3DDevice9_SetVertexShaderConstantF(stdShader_pDevice, STDSHADERDX9_VS_VIEWPORT_REGISTER, vp, 1);
     if ( FAILED(hr) )
     {
         STDLOG_ERROR("Error %s setting shader global viewport!\n", std3D_D3DGetStatus(hr));
         return false;
     }
+    return true;
+}
+
+
+bool J3DAPI stdShader_SetWorldMatrix(const StdShaderMatrix mat)
+{
+    if ( !stdShader_bOpen || !mat )
+    {
+        return false;
+    }
+
+    HRESULT hr = IDirect3DDevice9_SetVertexShaderConstantF(stdShader_pDevice, STDSHADERDX9_VS_WORLDMATRIX_REGISTER, (const float*)mat, 4);
+    if ( FAILED(hr) )
+    {
+        STDLOG_ERROR("Error %s setting world matrix!\n", std3D_D3DGetStatus(hr));
+        return false;
+    }
+
+    return true;
+}
+
+bool J3DAPI stdShader_SetViewMatrix(const StdShaderMatrix mat)
+{
+    if ( !stdShader_bOpen || !mat )
+    {
+        return false;
+    }
+
+    HRESULT hr = IDirect3DDevice9_SetVertexShaderConstantF(stdShader_pDevice, STDSHADERDX9_VS_VIEWMATRIX_REGISTER, (const float*)mat, 4);
+    if ( FAILED(hr) )
+    {
+        STDLOG_ERROR("Error %s setting view matrix!\n", std3D_D3DGetStatus(hr));
+        return false;
+    }
+    return true;
+}
+
+bool J3DAPI stdShader_SetViewPosition(const StdShaderVector pos)
+{
+    if ( !stdShader_bOpen || !pos )
+    {
+        return false;
+    }
+
+    HRESULT hr = IDirect3DDevice9_SetVertexShaderConstantF(stdShader_pDevice, STDSHADERDX9_VS_VIEWPOS_REGISTER, pos, 1);
+    if ( FAILED(hr) )
+    {
+        STDLOG_ERROR("Error %s setting view position!\n", std3D_D3DGetStatus(hr));
+        return false;
+    }
+    return true;
+}
+
+bool J3DAPI stdShader_SetViewProjectMatrix(const StdShaderMatrix mat)
+{
+    if ( !stdShader_bOpen || !mat )
+    {
+        return false;
+    }
+
+    HRESULT hr = IDirect3DDevice9_SetVertexShaderConstantF(stdShader_pDevice, STDSHADERDX9_VS_VIEWPROJMATRIX_REGISTER, (const float*)mat, 4);
+    if ( FAILED(hr) )
+    {
+        STDLOG_ERROR("Error %s setting view-projection matrix!\n", std3D_D3DGetStatus(hr));
+        return false;
+    }
+
+    return true;
+}
+
+bool J3DAPI stdShader_SetInvViewProjectMatrix(const StdShaderMatrix mat)
+{
+    if ( !stdShader_bOpen || !mat )
+    {
+        return false;
+    }
+
+    HRESULT hr = IDirect3DDevice9_SetVertexShaderConstantF(stdShader_pDevice, STDSHADERDX9_VS_INVVIEWPROJMATRIX_REGISTER, (const float*)mat, 4);
+    if ( FAILED(hr) )
+    {
+        STDLOG_ERROR("Error %s setting inverse view-projection matrix!\n", std3D_D3DGetStatus(hr));
+        return false;
+    }
+
+    return true;
+}
+
+bool J3DAPI stdShader_AddLight(const StdShaderLight* pLight)
+{
+    if ( !stdShader_bOpen || !pLight )
+    {
+        return false;
+    }
+
+    if ( !pLight->bEnabled )
+    {
+        // Light disabled, ignore
+        return true;
+    }
+
+    if ( stdShader_numLights > STDSHADER_MAX_LIGHTS )
+    {
+        STDLOG_WARNING("Warning: Maximum number of lights (%d) exceeded, ignoring extra lights.\n", STDSHADER_MAX_LIGHTS);
+        return false;
+    }
+
+    //// Set light position + type
+    //StdShaderVector pos = *pLight->position;
+    //pos[4] = (float)pLight->type; // Store type in w component
+    //HRESULT hr = IDirect3DDevice9_SetPixelShaderConstantF(stdShader_pDevice, STDSHADERDX9_PS_LIGHTS_START_REGISTER + stdShader_numLights * 3, pos, 1);
+    //if ( FAILED(hr) )
+    //{
+    //    STDLOG_ERROR("Error %s setting lights!\n", std3D_D3DGetStatus(hr));
+    //    return false;
+    //}
+
+    //// Set Light direction + min range
+    //StdShaderVector dir = *pLight->direction;
+    //dir[4] = pLight->minRadius; // Store min radius in w component
+    //hr = IDirect3DDevice9_SetPixelShaderConstantF(stdShader_pDevice, STDSHADERDX9_PS_LIGHTS_START_REGISTER + stdShader_numLights * 3 + 1, dir, 1);
+    //if ( FAILED(hr) )
+    //{
+    //    STDLOG_ERROR("Error %s setting lights!\n", std3D_D3DGetStatus(hr));
+    //    return false;
+    //}
+
+    //// Set light color + max range
+    //StdShaderVector col = *pLight->color;
+    //col[4] = pLight->maxRadius; // Store max radius in w component
+    //hr = IDirect3DDevice9_SetPixelShaderConstantF(stdShader_pDevice, STDSHADERDX9_PS_LIGHTS_START_REGISTER + stdShader_numLights * 3 + 2, col, 1);
+    //if ( FAILED(hr) )
+    //{
+    //    STDLOG_ERROR("Error %s setting lights!\n", std3D_D3DGetStatus(hr));
+    //    return false;
+    //}
+
+    StdShaderVector data[3] = { *pLight->position, *pLight->direction,*pLight->color };
+    data[0][3] = (float)pLight->type; // Store type in w component of position
+    data[1][3] = pLight->minRadius;   // Store min radius in w component of direction
+    data[2][3] = pLight->maxRadius;   // Store max radius in w component of color
+    HRESULT hr = IDirect3DDevice9_SetPixelShaderConstantF(stdShader_pDevice, STDSHADERDX9_PS_LIGHTS_START_REGISTER + stdShader_numLights * 3, (const float*)data, 3);
+    if ( FAILED(hr) )
+    {
+        STDLOG_ERROR("Error %s setting light data to pixel shader!\n", std3D_D3DGetStatus(hr));
+        return false;
+    }
+
+    stdShader_numLights++;
+
     return true;
 }
 

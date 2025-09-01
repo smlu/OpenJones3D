@@ -72,6 +72,39 @@ typedef struct sStdShader
     bool bDirty;
 } StdShader;
 
+// Light structure for shader system (simplified version of rdLight)
+
+typedef enum eStdShaderLightType
+{
+    STDSHADER_LIGHT_DIRECTIONAL = 0,
+    STDSHADER_LIGHT_POINT       = 1,
+    STDSHADER_LIGHT_SPOT        = 2,
+    STDSHADER_LIGHTTYPE_COUNT
+} StdShaderLightType;
+
+typedef struct sStdShaderLight
+{
+    StdShaderLightType type;    // Light type as float for shader compatibility
+    bool bEnabled;
+    float minRadius;            // Max light range
+    float maxRadius;            // Max light intensity before falloff
+    StdShaderVector direction;  // Light direction (normalized)
+    StdShaderVector color;      // RGBA color, note missing ambient, specular components
+    StdShaderVector position;   // World position for point lights
+} StdShaderLight;
+
+#define STDSHADER_MAX_LIGHTS 1
+
+// Multi-pass render target types
+typedef enum eStdShaderRenderTarget
+{
+    STDSHADER_RT_ALBEDO   = 0,  // Base color/texture
+    STDSHADER_RT_LIGHTING = 1,  // Lighting pass
+    STDSHADER_RT_EFFECTS  = 2,  // Special effects (waves, etc.)
+    STDSHADER_RT_FINAL    = 3,  // Final composite
+    STDSHADER_RT_COUNT
+} StdShaderRenderTarget;
+
 
 bool J3DAPI stdShader_Startup(void);
 void stdShader_Shutdown(void);
@@ -80,7 +113,14 @@ bool J3DAPI stdShader_Open(void);
 void stdShader_Close(void);
 
 // Global constants
+bool J3DAPI stdShader_SetWorldMatrix(const StdShaderMatrix mat);
 bool J3DAPI stdShader_SetViewport(const StdShaderViewport vp);
+bool J3DAPI stdShader_SetViewMatrix(const StdShaderMatrix mat);
+bool J3DAPI stdShader_SetViewPosition(const StdShaderVector pos);
+bool J3DAPI stdShader_SetViewProjectMatrix(const StdShaderMatrix mat);
+bool J3DAPI stdShader_SetInvViewProjectMatrix(const StdShaderMatrix mat);
+bool J3DAPI stdShader_AddLight(const StdShaderLight* pLight);
+
 bool J3DAPI stdShader_SetFog(bool enable, float start, float end, float depthDactor, const StdShaderVector color);
 bool stdShader_DisableFog(void);
 

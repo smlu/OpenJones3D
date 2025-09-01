@@ -3969,6 +3969,121 @@ void J3DAPI rdClip_QClipFaceW(const rdClipFrustum* pFrustrum, const rdPrimit3* p
     }
 }
 
+#include <rdroid/Primitives/rdPrimit3.h>
+//int J3DAPI rdClip_FaceToPlane(const rdClipFrustum* pFrustrum, rdCacheProcEntry* pProcFace, const rdFace* pFace, const rdVector3* aVerts, const rdVector2* aTexVerts, const rdVector4* aLightColors, const rdVector4* aVertColors)
+//{
+//    // Clip and transform face vertices to screen space then assigns pProcFace
+//
+//    // Added bounds check
+//    RD_ASSERTREL(pFace->numVertices < STD_ARRAYLEN(rdClip_aWorkFaceVerts));
+//
+//    for ( size_t i = 0; i < pFace->numVertices; ++i )
+//    {
+//        rdClip_aWorkFaceVerts[i] = aVerts[pFace->aVertices[i]];
+//    }
+//
+//    if ( !rdQClip_VerticesInFrustrum(pFrustrum, rdClip_aWorkFaceVerts, pFace->numVertices) )
+//    {
+//        return 0;
+//    }
+//
+//    rdPrimit3 view;
+//    view.aVertices = aVerts;
+//    view.aVertIdxs = pFace->aVertices;
+//    view.aTexVertices= aTexVerts;
+//    view.aTexVertIdxs = pFace->aTexVertices;
+//    view.numVertices = pFace->numVertices;
+//    view.aVertLights = aLightColors;
+//    view.aVertIntensities = aVertColors;
+//
+//
+//    rdPrimit3 viewClipped;
+//    viewClipped.aVertices = rdClip_aWorkFaceVerts;
+//    viewClipped.aTexVertices = rdClip_aWorkFaceTVerts;
+//    viewClipped.aVertLights = rdClip_aWorkFaceVertLight;
+//    viewClipped.aVertIntensities = rdClip_aWorkFaceVertIntensities;
+//
+//    rdPrimit3_ClipFace(pFrustrum, pFace->geometryMode, pFace->lightingMode, &view, &viewClipped, &pFace->texVertOffset);
+//    if ( viewClipped.numVertices < 3 )
+//    {
+//        return 0;
+//    }
+//
+//    float ccenterX = rdCamera_g_pCurCamera->pCanvas->center.x;
+//    float ccenterY = rdCamera_g_pCurCamera->pCanvas->center.y;
+//
+//    float invNearPlane = rdCamera_g_pCurCamera->invNearClipPlane;
+//    float invFarPlane  = rdCamera_g_pCurCamera->invFarClipPlane;
+//    float focalLength  = rdCamera_g_pCurCamera->focalLength * rdCamera_g_pCurCamera->aspectRatio; // Fixed: Multiplied focalLength by aspectRatio to account camera aspect ratio
+//
+//    if ( aLightColors )
+//    {
+//        if ( aVertColors )
+//        {
+//            for ( size_t i = 0; i < viewClipped.numVertices; ++i )
+//            {
+//                float invY = 1.0f / rdClip_aWorkFaceVerts[i].y;
+//                float  scale = focalLength * invY;
+//
+//                LPD3DTLVERTEX pOutVert = &pProcFace->aVertices[i];
+//                pOutVert->sx = rdClip_aWorkFaceVerts[i].x * scale + ccenterX;
+//                pOutVert->sy = ccenterY - rdClip_aWorkFaceVerts[i].z * scale;
+//                pOutVert->sz = (invY - invNearPlane) * invFarPlane;
+//
+//                pOutVert->rhw = invY / 32;
+//
+//                pOutVert->tu = rdClip_aWorkFaceTVerts[i].x;
+//                pOutVert->tv = rdClip_aWorkFaceTVerts[i].y;
+//
+//                int vertIdx = pFace->aVertices[i];
+//                rdVector_Add4(&pProcFace->aVertIntensities[i], &rdClip_aWorkFaceVertLight[i], &rdClip_aWorkFaceVertIntensities[i]);
+//                rdMath_ClampVector4Acc(&pProcFace->aVertIntensities[i], 0.0f, 1.0f);
+//            }
+//        }
+//        else
+//        {
+//            for ( size_t i = 0; i < viewClipped.numVertices; ++i )
+//            {
+//                float invY = 1.0f / rdClip_aWorkFaceVerts[i].y;
+//                float  scale = focalLength * invY;
+//
+//                LPD3DTLVERTEX pOutVert = &pProcFace->aVertices[i];
+//                pOutVert->sx = rdClip_aWorkFaceVerts[i].x * scale + ccenterX;
+//                pOutVert->sy = ccenterY - rdClip_aWorkFaceVerts[i].z * scale;
+//                pOutVert->sz = (invY - invNearPlane) * invFarPlane;
+//
+//                pOutVert->rhw = invY / 32;
+//
+//                pOutVert->tu = rdClip_aWorkFaceTVerts[i].x;
+//                pOutVert->tv = rdClip_aWorkFaceTVerts[i].y;
+//
+//                pProcFace->aVertIntensities[i] = rdClip_aWorkFaceVertIntensities[i];
+//            }
+//        }
+//    }
+//    else
+//    {
+//        for ( size_t i = 0; i < viewClipped.numVertices; ++i )
+//        {
+//            float invY  = 1.0f / rdClip_aWorkFaceVerts[i].y;
+//            float  scale = focalLength * invY;
+//
+//            LPD3DTLVERTEX pOutVert = &pProcFace->aVertices[i];
+//            pOutVert->sx = rdClip_aWorkFaceVerts[i].x * scale + ccenterX;
+//            pOutVert->sy = ccenterY - rdClip_aWorkFaceVerts[i].z * scale;
+//            pOutVert->sz = (invY - invNearPlane) * invFarPlane;
+//
+//            pOutVert->rhw = invY / 32;
+//
+//            pOutVert->tu = rdClip_aWorkFaceTVerts[i].x;
+//            pOutVert->tv = rdClip_aWorkFaceTVerts[i].y;
+//        }
+//    }
+//
+//    return viewClipped.numVertices;
+//}
+
+#include <rdroid/Math/rdMatrix.h>
 int J3DAPI rdClip_FaceToPlane(const rdClipFrustum* pFrustrum, rdCacheProcEntry* pProcFace, const rdFace* pFace, const rdVector3* aVerts, const rdVector2* aTexVerts, const rdVector4* aLightColors, const rdVector4* aVertColors)
 {
     // Clip and transform face vertices to screen space then assigns pProcFace
@@ -4012,6 +4127,20 @@ int J3DAPI rdClip_FaceToPlane(const rdClipFrustum* pFrustrum, rdCacheProcEntry* 
                 pOutVert->tu = aTexVerts[pFace->aTexVertices[i]].x + pFace->texVertOffset.x;
                 pOutVert->tv = aTexVerts[pFace->aTexVertices[i]].y + pFace->texVertOffset.y;
 
+                /// Test with world vert
+                rdVector3 wvert;
+                rdMatrix_TransformPoint34(&wvert, &rdClip_aWorkFaceVerts[i], &rdCamera_g_camMatrix);
+                pOutVert->wx = wvert.x;
+                pOutVert->wy = wvert.y;
+                pOutVert->wz = wvert.z;
+
+                pOutVert->nx = pFace->normal.x;
+                pOutVert->ny = pFace->normal.y;
+                pOutVert->nz = pFace->normal.z;
+
+                ///
+
+
                 int vertIdx = pFace->aVertices[i];
                 rdVector_Add4(&pProcFace->aVertIntensities[i], &aLightColors[vertIdx], &aVertColors[i]);
                 rdMath_ClampVector4Acc(&pProcFace->aVertIntensities[i], 0.0f, 1.0f);
@@ -4035,6 +4164,21 @@ int J3DAPI rdClip_FaceToPlane(const rdClipFrustum* pFrustrum, rdCacheProcEntry* 
                 pOutVert->tv = aTexVerts[pFace->aTexVertices[i]].y + pFace->texVertOffset.y;
 
                 pProcFace->aVertIntensities[i] = aLightColors[pFace->aVertices[i]];
+
+
+                /// Test with world vert
+                rdVector3 wvert;
+                rdMatrix_TransformPoint34(&wvert, &rdClip_aWorkFaceVerts[i], &rdCamera_g_camMatrix);
+                pOutVert->wx = wvert.x;
+                pOutVert->wy = wvert.y;
+                pOutVert->wz = wvert.z;
+
+                pOutVert->nx = pFace->normal.x;
+                pOutVert->ny = pFace->normal.y;
+                pOutVert->nz = pFace->normal.z;
+
+
+                ///
             }
         }
     }
@@ -4054,11 +4198,259 @@ int J3DAPI rdClip_FaceToPlane(const rdClipFrustum* pFrustrum, rdCacheProcEntry* 
 
             pOutVert->tu = aTexVerts[pFace->aTexVertices[i]].x + pFace->texVertOffset.x;
             pOutVert->tv = aTexVerts[pFace->aTexVertices[i]].y + pFace->texVertOffset.y;
+
+            /// Test with world vert
+            rdVector3 wvert;
+            rdMatrix_TransformPoint34(&wvert, &rdClip_aWorkFaceVerts[i], &rdCamera_g_camMatrix);
+            pOutVert->wx = wvert.x;
+            pOutVert->wy = wvert.y;
+            pOutVert->wz = wvert.z;
+
+            pOutVert->nx = pFace->normal.x;
+            pOutVert->ny = pFace->normal.y;
+            pOutVert->nz = pFace->normal.z;
+
+
+        ///
         }
     }
 
-    return 1;
+    return pFace->numVertices;
 }
+
+int J3DAPI rdClip_FaceToPlaneEx(const rdClipFrustum* pFrustrum, rdCacheProcEntry* pProcFace, const rdFace* pFace, const rdVector3* aVerts, const rdVector3* aVertNormals, const rdVector2* aTexVerts, const rdVector4* aLightColors, const rdVector4* aVertColors)
+{
+    // Clip and transform face vertices to screen space then assigns pProcFace
+
+    // Added bounds check
+    RD_ASSERTREL(pFace->numVertices < STD_ARRAYLEN(rdClip_aWorkFaceVerts));
+
+    for ( size_t i = 0; i < pFace->numVertices; ++i )
+    {
+        rdClip_aWorkFaceVerts[i] = aVerts[pFace->aVertices[i]];
+    }
+
+    if ( !rdQClip_VerticesInFrustrum(pFrustrum, rdClip_aWorkFaceVerts, pFace->numVertices) )
+    {
+        return 0;
+    }
+
+    float ccenterX = rdCamera_g_pCurCamera->pCanvas->center.x;
+    float ccenterY = rdCamera_g_pCurCamera->pCanvas->center.y;
+
+    float invNearPlane = rdCamera_g_pCurCamera->invNearClipPlane;
+    float invFarPlane  = rdCamera_g_pCurCamera->invFarClipPlane;
+    float focalLength  = rdCamera_g_pCurCamera->focalLength * rdCamera_g_pCurCamera->aspectRatio; // Fixed: Multiplied focalLength by aspectRatio to account camera aspect ratio
+
+    if ( aLightColors )
+    {
+        if ( aVertColors )
+        {
+            for ( size_t i = 0; i < pFace->numVertices; ++i )
+            {
+                float invY = 1.0f / rdClip_aWorkFaceVerts[i].y;
+                float  scale = focalLength * invY;
+
+                LPD3DTLVERTEX pOutVert = &pProcFace->aVertices[i];
+                memset(pOutVert, 0, sizeof(D3DTLVERTEX));
+                pOutVert->sx = rdClip_aWorkFaceVerts[i].x * scale + ccenterX;
+                pOutVert->sy = ccenterY - rdClip_aWorkFaceVerts[i].z * scale;
+                pOutVert->sz = (invY - invNearPlane) * invFarPlane;
+
+                pOutVert->rhw = invY / 32;
+
+                pOutVert->tu = aTexVerts[pFace->aTexVertices[i]].x + pFace->texVertOffset.x;
+                pOutVert->tv = aTexVerts[pFace->aTexVertices[i]].y + pFace->texVertOffset.y;
+
+                /// Test with world vert
+                rdVector3 wvert;
+                rdMatrix_TransformPoint34(&wvert, &rdClip_aWorkFaceVerts[i], &rdCamera_g_camMatrix);
+                pOutVert->wx = wvert.x;
+                pOutVert->wy = wvert.y;
+                pOutVert->wz = wvert.z;
+
+                pOutVert->nx = aVertNormals[pFace->aVertices[i]].x;
+                pOutVert->ny = aVertNormals[pFace->aVertices[i]].y;
+                pOutVert->nz = aVertNormals[pFace->aVertices[i]].z;
+
+                ///
+
+
+                int vertIdx = pFace->aVertices[i];
+                rdVector_Add4(&pProcFace->aVertIntensities[i], &aLightColors[vertIdx], &aVertColors[i]);
+                rdMath_ClampVector4Acc(&pProcFace->aVertIntensities[i], 0.0f, 1.0f);
+            }
+        }
+        else
+        {
+            for ( size_t i = 0; i < pFace->numVertices; ++i )
+            {
+                float invY = 1.0f / rdClip_aWorkFaceVerts[i].y;
+                float  scale = focalLength * invY;
+
+                LPD3DTLVERTEX pOutVert = &pProcFace->aVertices[i];
+                memset(pOutVert, 0, sizeof(D3DTLVERTEX));
+
+                pOutVert->sx = rdClip_aWorkFaceVerts[i].x * scale + ccenterX;
+                pOutVert->sy = ccenterY - rdClip_aWorkFaceVerts[i].z * scale;
+                pOutVert->sz = (invY - invNearPlane) * invFarPlane;
+
+                pOutVert->rhw = invY / 32;
+
+                pOutVert->tu = aTexVerts[pFace->aTexVertices[i]].x + pFace->texVertOffset.x;
+                pOutVert->tv = aTexVerts[pFace->aTexVertices[i]].y + pFace->texVertOffset.y;
+
+                pProcFace->aVertIntensities[i] = aLightColors[pFace->aVertices[i]];
+
+
+                /// Test with world vert
+                rdVector3 wvert;
+                rdMatrix_TransformPoint34(&wvert, &rdClip_aWorkFaceVerts[i], &rdCamera_g_camMatrix);
+                pOutVert->wx = wvert.x;
+                pOutVert->wy = wvert.y;
+                pOutVert->wz = wvert.z;
+
+                pOutVert->nx = aVertNormals[pFace->aVertices[i]].x;
+                pOutVert->ny = aVertNormals[pFace->aVertices[i]].y;
+                pOutVert->nz = aVertNormals[pFace->aVertices[i]].z;
+
+
+                ///
+            }
+        }
+    }
+    else
+    {
+        for ( size_t i = 0; i < pFace->numVertices; ++i )
+        {
+            float invY  = 1.0f / rdClip_aWorkFaceVerts[i].y;
+            float  scale = focalLength * invY;
+
+            LPD3DTLVERTEX pOutVert = &pProcFace->aVertices[i];
+            memset(pOutVert, 0, sizeof(D3DTLVERTEX));
+
+            pOutVert->sx = rdClip_aWorkFaceVerts[i].x * scale + ccenterX;
+            pOutVert->sy = ccenterY - rdClip_aWorkFaceVerts[i].z * scale;
+            pOutVert->sz = (invY - invNearPlane) * invFarPlane;
+
+            pOutVert->rhw = invY / 32;
+
+            pOutVert->tu = aTexVerts[pFace->aTexVertices[i]].x + pFace->texVertOffset.x;
+            pOutVert->tv = aTexVerts[pFace->aTexVertices[i]].y + pFace->texVertOffset.y;
+
+            /// Test with world vert
+            rdVector3 wvert;
+            rdMatrix_TransformPoint34(&wvert, &rdClip_aWorkFaceVerts[i], &rdCamera_g_camMatrix);
+            pOutVert->wx = wvert.x;
+            pOutVert->wy = wvert.y;
+            pOutVert->wz = wvert.z;
+
+            pOutVert->nx = aVertNormals[pFace->aVertices[i]].x;
+            pOutVert->ny = aVertNormals[pFace->aVertices[i]].y;
+            pOutVert->nz = aVertNormals[pFace->aVertices[i]].z;
+
+
+        ///
+        }
+    }
+
+    return pFace->numVertices;
+}
+
+
+
+
+
+//int J3DAPI rdClip_FaceToPlane(const rdClipFrustum* pFrustrum, rdCacheProcEntry* pProcFace, const rdFace* pFace, const rdVector3* aVerts, const rdVector2* aTexVerts, const rdVector4* aLightColors, const rdVector4* aVertColors)
+//{
+//    // Clip and transform face vertices to screen space then assigns pProcFace
+//
+//    // Added bounds check
+//    RD_ASSERTREL(pFace->numVertices < STD_ARRAYLEN(rdClip_aWorkFaceVerts));
+//
+//    for ( size_t i = 0; i < pFace->numVertices; ++i )
+//    {
+//        rdClip_aWorkFaceVerts[i] = aVerts[pFace->aVertices[i]];
+//    }
+//
+//    if ( !rdQClip_VerticesInFrustrum(pFrustrum, rdClip_aWorkFaceVerts, pFace->numVertices) )
+//    {
+//        return 0;
+//    }
+//
+//    float ccenterX = rdCamera_g_pCurCamera->pCanvas->center.x;
+//    float ccenterY = rdCamera_g_pCurCamera->pCanvas->center.y;
+//
+//    float invNearPlane = rdCamera_g_pCurCamera->invNearClipPlane;
+//    float invFarPlane  = rdCamera_g_pCurCamera->invFarClipPlane;
+//    float focalLength  = rdCamera_g_pCurCamera->focalLength * rdCamera_g_pCurCamera->aspectRatio; // Fixed: Multiplied focalLength by aspectRatio to account camera aspect ratio
+//
+//    if ( aLightColors )
+//    {
+//        if ( aVertColors )
+//        {
+//            for ( size_t i = 0; i < pFace->numVertices; ++i )
+//            {
+//                float invY = 1.0f / rdClip_aWorkFaceVerts[i].y;
+//                float  scale = focalLength * invY;
+//
+//                LPD3DTLVERTEX pOutVert = &pProcFace->aVertices[i];
+//                pOutVert->sx = rdClip_aWorkFaceVerts[i].x * scale + ccenterX;
+//                pOutVert->sy = ccenterY - rdClip_aWorkFaceVerts[i].z * scale;
+//                pOutVert->sz = (invY - invNearPlane) * invFarPlane;
+//
+//                pOutVert->rhw = invY / 32;
+//
+//                pOutVert->tu = aTexVerts[pFace->aTexVertices[i]].x + pFace->texVertOffset.x;
+//                pOutVert->tv = aTexVerts[pFace->aTexVertices[i]].y + pFace->texVertOffset.y;
+//
+//                int vertIdx = pFace->aVertices[i];
+//                rdVector_Add4(&pProcFace->aVertIntensities[i], &aLightColors[vertIdx], &aVertColors[i]);
+//                rdMath_ClampVector4Acc(&pProcFace->aVertIntensities[i], 0.0f, 1.0f);
+//            }
+//        }
+//        else
+//        {
+//            for ( size_t i = 0; i < pFace->numVertices; ++i )
+//            {
+//                float invY = 1.0f / rdClip_aWorkFaceVerts[i].y;
+//                float  scale = focalLength * invY;
+//
+//                LPD3DTLVERTEX pOutVert = &pProcFace->aVertices[i];
+//                pOutVert->sx = rdClip_aWorkFaceVerts[i].x * scale + ccenterX;
+//                pOutVert->sy = ccenterY - rdClip_aWorkFaceVerts[i].z * scale;
+//                pOutVert->sz = (invY - invNearPlane) * invFarPlane;
+//
+//                pOutVert->rhw = invY / 32;
+//
+//                pOutVert->tu = aTexVerts[pFace->aTexVertices[i]].x + pFace->texVertOffset.x;
+//                pOutVert->tv = aTexVerts[pFace->aTexVertices[i]].y + pFace->texVertOffset.y;
+//
+//                pProcFace->aVertIntensities[i] = aLightColors[pFace->aVertices[i]];
+//            }
+//        }
+//    }
+//    else
+//    {
+//        for ( size_t i = 0; i < pFace->numVertices; ++i )
+//        {
+//            float invY  = 1.0f / rdClip_aWorkFaceVerts[i].y;
+//            float  scale = focalLength * invY;
+//
+//            LPD3DTLVERTEX pOutVert = &pProcFace->aVertices[i];
+//            pOutVert->sx = rdClip_aWorkFaceVerts[i].x * scale + ccenterX;
+//            pOutVert->sy = ccenterY - rdClip_aWorkFaceVerts[i].z * scale;
+//            pOutVert->sz = (invY - invNearPlane) * invFarPlane;
+//
+//            pOutVert->rhw = invY / 32;
+//
+//            pOutVert->tu = aTexVerts[pFace->aTexVertices[i]].x + pFace->texVertOffset.x;
+//            pOutVert->tv = aTexVerts[pFace->aTexVertices[i]].y + pFace->texVertOffset.y;
+//        }
+//    }
+//
+//    return 1;
+//}
 
 void J3DAPI rdClip_VerticesToPlane(rdCacheProcEntry* pProcFace, const rdVector3* aVerts, const rdVector2* aTexVerts, size_t numVerts)
 {

@@ -75,6 +75,15 @@ typedef struct sD3DTLVERTEX
     float tu;
     float tv;
 
+
+    float wx;
+    float wy;
+    float wz;
+
+    float nx;
+    float ny;
+    float nz;
+
 } D3DTLVERTEX, * LPD3DTLVERTEX;
 
 // The FVF format for D3DTLVERTEX

@@ -1,10 +1,17 @@
 #ifndef J3D_COMMON_HLSL
 #define J3D_COMMON_HLSL
 
+#pragma pack_matrix(row_major)
+
 #define MERGE_TOKENS(a, b) a##b
 
 // ===== VERTEX SHADER CONSTANTS (c24-c255) =====
-#define VS_VIEWPORT_REGISTER c0
+#define VS_WORLDMAT_REGISTER       c0  // World matrix c0 - c3
+#define VS_VIEWPORT_REGISTER       c4
+#define VS_VIEWMAT_REGISTER        c5  // View matrix c5 - c8
+#define VS_VIEWPOS_REGISTER        c9  // View position (camera world space)
+#define VS_VIEWPROJMAT_REGISTER    c10 // view-projection matrrix c10 - c13
+#define VS_INVVIEWPROJMAT_REGISTER c14 // Inverse view-projection matrrix c14 - c17
 
 #define VS_CONSTANTS_START_REGISTER 24  // Start after common matrices/lights
 
@@ -81,11 +88,15 @@
 
 // ===== VERTEX SHADER CONSTANTS =====
 // Global constant registers - RESERVED, do not use in custom shaders!
-float4 g_viewport : register(VS_VIEWPORT_REGISTER); // x1, y1, x2, y2
+float4 g_viewport            : register(VS_VIEWPORT_REGISTER); // x1, y1, x2, y2
+float4x4 g_worldMatrix       : register(VS_WORLDMAT_REGISTER); // World matrix
+float4x4 g_viewMatrix        : register(VS_VIEWMAT_REGISTER); // View matrix
+float4x4 g_viewProjMatrix    : register(VS_VIEWPROJMAT_REGISTER); // view-projection matrix
+float4x4 g_invViewProjMatrix : register(VS_INVVIEWPROJMAT_REGISTER); // Inverse view-projection matrix
 
 // ===== VERTEX PIXEL CONSTANTS =====
 float4 g_fogParams : register(PS_FOGPARAMS_REGISTER); // start, end, factor, enabled
-float4 g_fogColor : register(PS_FOGCOLOR_REGISTER); // r, g, b, a
+float4 g_fogColor  : register(PS_FOGCOLOR_REGISTER); // r, g, b, a
 
 // ===== HELPER FUNCTIONS =====
 
@@ -99,7 +110,7 @@ float4 ScreenToClip(float4 screenPos)
     float ndc_x  = ((screenPos.x - g_viewport.x) / width) * 2.0 - 1.0;
     float ndc_y  = (1.0 - (screenPos.y - g_viewport.y) / height) * 2.0 - 1.0; 
     float clip_w = 1.0 / screenPos.w; // rhw = 1/w, so clip_w = 1/rhw
-    
+
     // Recreate clip-space
     float4 clip;
     clip.x = ndc_x * clip_w;
@@ -108,6 +119,44 @@ float4 ScreenToClip(float4 screenPos)
     clip.w = clip_w;
 
     return clip;
+}
+
+float3 ClipToWorld(float4 clipPos)
+{
+    //float y = clipPos.z;
+    //clipPos.z = clipPos.y;
+    //clipPos.y = y;
+    float4 worldPos = mul(clipPos, g_invViewProjMatrix);  
+    float invW = 1.0f / worldPos.w;
+    float3 worldPosOut = worldPos.xyz * invW;
+    
+    //float y = worldPosOut.z;
+    //worldPosOut.z = worldPosOut.y;
+    //worldPosOut.y = y;
+    return worldPosOut;
+
+}
+
+float3 ScreenToWorld(float4 screenPos)
+{
+    float4 clipPos = ScreenToClip(screenPos);
+    //clipPos.z = clamp(clipPos.z, clipPos.w * 0.1, clipPos.w * 0.9);
+
+    return ClipToWorld(clipPos);
+}
+
+// Convert world position to screen space
+float4 WorldToScreen(float3 worldPos)
+{
+    float4 clipPos = mul(float4(worldPos, 1.0f), g_viewProjMatrix);
+    
+    float4 screenPos;
+    screenPos.x = (clipPos.x / clipPos.w + 1.0) * 0.5 * (g_viewport.z - g_viewport.x) + g_viewport.x;
+    screenPos.y = (1.0 - clipPos.y / clipPos.w) * 0.5 * (g_viewport.w - g_viewport.y) + g_viewport.y;
+    screenPos.z = clipPos.z / clipPos.w;
+    screenPos.w = 1.0 / clipPos.w; // rhw
+
+    return screenPos;
 }
 
 // Apply fog to a color based on depth
@@ -129,18 +178,24 @@ float4 ApplyFog(float4 color, float depth) // depth should be vertex rhw in scre
     return color;
 }
 
-// Convert world position to screen space
-float4 WorldToScreen(float4 worldPos, float4x4 viewProjMatrix)
-{
-    float4 clipPos = mul(worldPos, viewProjMatrix);
-    
-    float4 screenPos;
-    screenPos.x = (clipPos.x / clipPos.w + 1.0) * 0.5 * (g_viewport.z - g_viewport.x) + g_viewport.x;
-    screenPos.y = (1.0 - clipPos.y / clipPos.w) * 0.5 * (g_viewport.w - g_viewport.y) + g_viewport.y;
-    screenPos.z = clipPos.z / clipPos.w;
-    screenPos.w = 1.0 / clipPos.w; // rhw
 
-    return screenPos;
+// Wave effect function for earthquake-like distortion
+float3 ApplyWaveEffect(float3 worldPos, float3 waveCenter, float waveRadius,
+                      float waveStrength, float time, float frequency)
+{
+    float3 offset = worldPos - waveCenter;
+    float distance = length(offset);
+    
+    if (distance > waveRadius)
+        return worldPos;
+    
+    float falloff = saturate(1.0 - (distance / waveRadius));
+    falloff = falloff * falloff; // squared falloff
+
+    float wave = sin(distance * frequency - time * 8.0) * waveStrength * falloff;
+    float3 waveDir = normalize(offset);
+    
+    return worldPos + waveDir * wave;
 }
 
 #endif // J3D_COMMON_HLSL
