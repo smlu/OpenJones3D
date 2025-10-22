@@ -1,6 +1,12 @@
 cmake_minimum_required(VERSION 3.15)
 
-if (J3D_DIRECTX6)
+if (J3D_OPENGL)
+    set(EXTERNAL_MODULES
+            SDL3
+    )
+    #find_package(OpenGL REQUIRED)
+    #target_link_libraries(SDL3Vendor INTERFACE OpenGL::GL)
+elseif (J3D_DIRECTX6)
     set(EXTERNAL_MODULES
         DirectX61c
     )

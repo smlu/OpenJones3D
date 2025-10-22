@@ -18,8 +18,11 @@ option(JONES3D_QOL_IMPROVEMENTS "Enable quality-of-life improvements" ON)
 option(JONES3D_SPEEDRUN_BUILD "Enable vanilla bugs and glitches used in speedruns" OFF)
 
 # --- GAPI options ---
-# Add an option to enable DirectX 9 support. Default is ON, meaning DirectX 6 is used.
-option(JONES3D_USE_DIRECTX9 "Build with DirectX 9 support" ON)
+# Add an option to choose graphics API. Default is DirectX9.
+set(JONES3D_RENDERER "OpenGL" CACHE STRING "Choose graphics backend")
+set_property(CACHE JONES3D_RENDERER PROPERTY STRINGS "OpenGL;DirectX9;DirectX6")
+#option(JONES3D_USE_DIRECTX9 "Build with DirectX 9 support" ON)
+
 #---------------------
 
 if(JONES3D_QOL_IMPROVEMENTS)
@@ -38,13 +41,18 @@ if (JONES3D_SPEEDRUN_BUILD)
     endif()
 endif()
 
-if(JONES3D_USE_DIRECTX9)
+if (JONES3D_RENDERER STREQUAL "OpenGL")
+    message(STATUS "Configuring for OpenGL")
+    set(J3D_OPENGL ON) # Set the variable for the header template
+elseif(JONES3D_RENDERER STREQUAL "DirectX9")
     message(STATUS "Configuring for DirectX 9")
     set(J3D_DIRECTX9 ON) # Set the variable for the header template
-else()
+elseif(JONES3D_RENDERER STREQUAL "DirectX6")
     message(STATUS "Configuring for vanilla DirectX 6 (default)")
     set(J3D_DIRECTX6 ON) # Set the variable for the header template
     set(J3D_COLORKEYSUPPORTED ON)
+else()
+    message(FATAL_ERROR "Unsupported graphics API : ${JONES3D_RENDERER}")
 endif()
 
 # Configure the version header file

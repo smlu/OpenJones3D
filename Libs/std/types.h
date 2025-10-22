@@ -6,6 +6,8 @@
 #include <d3d.h>
 #include <ddraw.h>
 #include <DirectX6/dplay.h>
+
+#include <external/DirectX61c/include/dplay.h>
 #elif defined(J3D_DIRECTX9)
 #undef DIRECT3D_VERSION
 #ifdef J3D_DEBUG
