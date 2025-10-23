@@ -8,7 +8,7 @@ J3D_EXTERN_C_START
 
 #if defined (J3D_DIRECTX6)
 typedef IDirectSound tDirectSound;
-#elif defined (J3D_DIRECTX9)
+#elif defined(J3D_DIRECTX9) || defined(J3D_OPENGL)
 typedef IDirectSound8 tDirectSound;
 #else
 #error "Unsuported system sound API. Please define J3D_DIRECTX6 or J3D_DIRECTX9 in your project."

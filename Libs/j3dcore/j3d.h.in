@@ -32,6 +32,7 @@
 
 #cmakedefine J3D_DIRECTX6
 #cmakedefine J3D_DIRECTX9
+#cmakedefine J3D_OPENGL
 
 #cmakedefine J3D_COLORKEYSUPPORTED
 

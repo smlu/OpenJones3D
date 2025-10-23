@@ -7691,7 +7691,7 @@ int J3DAPI jonesConfig_DisplaySettings_Get3DDeviceSupportsBPP(const StdDisplayIn
         case 32:
             return pDisplayInfo->aDevices[pSettings->device3DNum].d3dDesc.dwDeviceRenderBitDepth & DDBD_32;
     }
-#elif defined(J3D_DIRECTX9)
+#elif defined(J3D_DIRECTX9) || defined(J3D_OPENGL)
     J3D_UNUSED(pDisplayInfo);
     J3D_UNUSED(pSettings);
     if ( bpp == 24 || bpp == 32 ) return 1;

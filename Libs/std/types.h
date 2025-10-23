@@ -8,12 +8,15 @@
 #include <DirectX6/dplay.h>
 
 #include <external/DirectX61c/include/dplay.h>
-#elif defined(J3D_DIRECTX9)
+#elif defined(J3D_DIRECTX9) || defined(J3D_OPENGL)
 #undef DIRECT3D_VERSION
 #ifdef J3D_DEBUG
 #define D3D_DEBUG_INFO // TODO: comment out when done
 #endif
 #include <d3d9.h>
+#elif defined J3D_OPENGL
+#include <d3d9.h>
+#include <SDL3/SDL.h>
 #else
 #error "Unsupported GAPI"
 #endif
@@ -36,7 +39,7 @@ typedef DDSURFACEDESC2 tSysSurfaceDesc;
 typedef IDirectDrawSurface4 tSysSurface;
 typedef IDirect3DTexture2 tSysTexture;
 
-#elif defined(J3D_DIRECTX9)
+#elif defined(J3D_DIRECTX9) || defined(J3D_OPENGL)
 // DirectPlay
 #define DPID_ALLPLAYERS   0
 #define DPSEND_GUARANTEED 0x00000001
