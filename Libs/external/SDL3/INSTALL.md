@@ -1,13 +1,14 @@
+# To build and use SDL:
 
-# Using this package
+SDL supports a number of development environments:
+- [CMake](docs/INTRO-cmake.md)
+- [Visual Studio on Windows](docs/INTRO-visualstudio.md)
+- [gcc on Windows](docs/INTRO-mingw.md)
+- [Xcode on Apple platforms](docs/INTRO-xcode.md)
+- [Android Studio](docs/INTRO-androidstudio.md)
+- [Emscripten for web](docs/INTRO-emscripten.md)
 
-This package contains SDL3 built for Visual Studio.
-
-To use this package, edit your project properties:
-- Add the include directory to "VC++ Directories" -> "Include Directories"
-- Add the lib/_arch_ directory to "VC++ Directories" -> "Library Directories"
-- Add SDL3.lib to Linker -> Input -> "Additional Dependencies"
-- Copy lib/_arch_/SDL3.dll to your project directory.
+SDL is also usable in other environments. The basic steps are to use CMake to build the library and then use the headers and library that you built in your project. You can search online to see if anyone has specific steps for your setup.
 
 # Documentation
 
@@ -17,9 +18,11 @@ https://wiki.libsdl.org/SDL3
 
 # Example code
 
-There are simple example programs available at:
+There are simple example programs in the examples directory, and you can view them online at:
 
 https://examples.libsdl.org/SDL3
+
+More in-depth test programs are available in the tests directory and can be built by adding `-DSDL_TESTS=ON` to the CMake command line when building SDL.
 
 # Discussions
 

@@ -3333,7 +3333,7 @@ bool J3DAPI JonesMain_CurDisplaySupportsBPP(const JonesDisplaySettings* pSetting
         case 32:
             return (pDisplay->aDevices[pSettings->device3DNum].d3dDesc.dwDeviceRenderBitDepth & DDBD_32) != 0;
     }
-#elif defined(J3D_DIRECTX9)
+#elif defined(J3D_DIRECTX9) || defined(J3D_OPENGL)
     J3D_UNUSED(pSettings);
     if ( bpp == 24 || bpp == 32 ) return 1;
 #else 

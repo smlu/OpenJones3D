@@ -1,11 +1,11 @@
 cmake_minimum_required(VERSION 3.15)
 
 if (J3D_OPENGL)
-    set(EXTERNAL_MODULES
-            SDL3
+    add_subdirectory(SDL3)
+    add_library(glad STATIC
+            glad/src/glad.c
     )
-    #find_package(OpenGL REQUIRED)
-    #target_link_libraries(SDL3Vendor INTERFACE OpenGL::GL)
+    target_include_directories(glad PUBLIC glad/include)
 elseif (J3D_DIRECTX6)
     set(EXTERNAL_MODULES
         DirectX61c
@@ -36,6 +36,7 @@ foreach(MODULE ${EXTERNAL_MODULES})
 endforeach()
 
 
+
 # Add Jansson subdirectory
 add_library(jansson_interface INTERFACE)
 target_link_libraries(jansson_interface INTERFACE ${JANSSON_LIBRARIES})
@@ -46,9 +47,8 @@ add_library(Jansson ALIAS jansson_interface)
 
 # Disable the problematic warning for MSVC on Jansson target
 if(MSVC)
-    target_compile_options(${JANSSON_LIBRARIES} PRIVATE 
+    target_compile_options(${JANSSON_LIBRARIES} PRIVATE
         /wd4146  # Disable C4146: unary minus operator applied to unsigned type
         /wd4703  # Disable C4703: potentially uninitialized local pointer variable
     )
 endif()
-

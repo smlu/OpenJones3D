@@ -7,7 +7,7 @@ file(GLOB_RECURSE HEADERS *.h)
 if(J3D_DIRECTX6)
   # Remove DX9 files.
     list(FILTER SOURCES EXCLUDE REGEX ".*DX9\\.c$")
-elseif(J3D_DIRECTX9)
+elseif(J3D_DIRECTX9 OR J3D_OPENGL) #TODO: Make extra case for OpenGL, once SDL is fully implemented
     # Remove DX6 files.
     list(FILTER SOURCES EXCLUDE REGEX ".*DX6\\.c$")
 endif()

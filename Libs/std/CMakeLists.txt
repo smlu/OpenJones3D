@@ -3,18 +3,32 @@ project(std C)
 file(GLOB_RECURSE SOURCES *.c)
 file(GLOB_RECURSE HEADERS *.h)
 
-# Remove DirectX 6/9 specific files based on the build option
-if(J3D_DIRECTX6)
-  # Remove DX9 files.
+macro(remove_dx9_files)
+    # Remove DX9 files.
     list(FILTER SOURCES EXCLUDE REGEX ".*DX9\\.c$")
     list(FILTER SOURCES EXCLUDE REGEX "stdComm.c$")
 
     set(SHADERS "")
     set(SHADER_INCLUDES "")
-elseif(J3D_DIRECTX9)
+endmacro()
+
+macro(remove_dx6_files)
     # Remove DX6 files.
     list(FILTER SOURCES EXCLUDE REGEX ".*DX6\\.c$")
+endmacro()
 
+macro(remove_gl_files)
+    # Remove DX6 files.
+    list(FILTER SOURCES EXCLUDE REGEX ".*GL\\.c$")
+endmacro()
+
+# Remove DirectX 6/9 and OpenGL specific files based on the build option
+if(J3D_DIRECTX6)
+    remove_dx9_files()
+    remove_gl_files()
+elseif(J3D_DIRECTX9)
+    remove_dx6_files()
+    remove_gl_files()
     # Collect shader files
     set(SHADER_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Win95/DX9/Shaders")
     file(GLOB SHADERS
@@ -22,6 +36,18 @@ elseif(J3D_DIRECTX9)
     )
     file(GLOB SHADER_INCLUDES
         "${SHADER_DIR}/*.hlsli"
+    )
+elseif (J3D_OPENGL)
+
+    remove_dx6_files()
+    remove_dx9_files()
+    # Collect shader files
+    set(SHADER_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Win95/GL/Shaders")
+    file(GLOB SHADERS
+            "${SHADER_DIR}/*.hlsl"
+    )
+    file(GLOB SHADER_INCLUDES
+            "${SHADER_DIR}/*.hlsli"
     )
 endif()
 
@@ -56,6 +82,18 @@ elseif(J3D_DIRECTX9)
         dinput8
         ${EXTRA_LIBS}
     )
+elseif(J3D_OPENGL)
+    find_package(OpenGL REQUIRED)
+    target_link_libraries(${PROJECT_NAME} PUBLIC
+            d3d9
+            dxguid
+            dinput8
+            SDL3::SDL3
+            glad
+            OpenGL::GL
+            ${EXTRA_LIBS}
+    )
+
 
     # Define HLSL shaders to be compiled
     foreach(SHADER ${SHADERS})
