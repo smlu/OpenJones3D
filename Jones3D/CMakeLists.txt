@@ -74,6 +74,22 @@ if(JONES3D_ENABLE_POST_BUILD_COPY)
         COMMENT "Copying output file Jones3D.dll and Jones3D.pdb to '${JONES3D_POST_BUILD_COPY_DIR}'"
     )
 
+    # Add post-build copy command for the built SDL3.dll
+    if(J3D_OPENGL)
+        add_custom_command(
+                TARGET Jones3D_DLL
+                POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "$<TARGET_FILE:SDL3::SDL3>"
+                "${JONES3D_POST_BUILD_COPY_DIR}"
+                COMMENT "Copying SDL3.dll to '${JONES3D_POST_BUILD_COPY_DIR}'"
+        )
+    endif()
+
+endif()
+
+if (J3D_OPENGL)
+    #target_link_libraries(${PROJECT_NAME} PRIVATE SDL3::SDL3)
 endif()
 
 # # Set up post-build event for Debug configuration

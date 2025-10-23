@@ -7,7 +7,7 @@
 
 #if defined (J3D_DIRECTX6)
 #include <DirectX6/dsound.h>
-#elif defined (J3D_DIRECTX9)
+#elif defined(J3D_DIRECTX9) || defined(J3D_OPENGL)
 #include <dsound.h>
 #else
 #error "Unsuported system sound API. Please define J3D_DIRECTX6 or J3D_DIRECTX9 in your project."
@@ -17,7 +17,7 @@ J3D_EXTERN_C_START
 
 #if defined (J3D_DIRECTX6)
 typedef IDirectSoundBuffer tSysSoundBuffer;
-#elif defined (J3D_DIRECTX9)
+#elif defined(J3D_DIRECTX9) || defined(J3D_OPENGL)
 typedef IDirectSoundBuffer8 tSysSoundBuffer;
 #else
 #error "Unsuported system sound API. Please define J3D_DIRECTX6 or J3D_DIRECTX9 in your project."

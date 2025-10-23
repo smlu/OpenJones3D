@@ -36,3 +36,5 @@ target_include_directories(${PROJECT_NAME} INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}
 
 # Group all lib modules under "Libs" in Visual Studio
 set_target_properties(${LIB_MODULES} PROPERTIES FOLDER "Libs")
+
+
