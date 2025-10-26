@@ -79,7 +79,16 @@ static tDisplayDeviceReleaseCallback stdDisplay_pfDeviceReleaseCallback     = NU
 static bool stdDisplay_bMSAAEnabled       = false;
 static DWORD stdDisplay_msaaSampleQuality = 0;
 static int stdDisplay_msaaSampleCount     = 0;
-static D3DMULTISAMPLE_TYPE stdDisplay_msaaSampleType = D3DMULTISAMPLE_NONE;
+enum GLMultiSample
+{
+    GL_MULTISAMPLE_NONE = 0,
+    GL_MULTISAMPLE_2_SAMPLES = 2,
+    GL_MULTISAMPLE_4_SAMPLES = 4,
+    GL_MULTISAMPLE_8_SAMPLES = 8,
+    GL_MULTISAMPLE_16_SAMPLES = 16,
+};
+static enum GLMultiSample stdDisplay_msaaSampleType = GL_MULTISAMPLE_NONE;
+
 
 // DirectX 9 status table - simplified version of common errors
 static const DXStatus stdDisplay_aD3DStatusTbl[] =
@@ -244,22 +253,23 @@ static void stdDisplay_InitMSAASettings(void)
         stdDisplay_msaaSampleCount = 16;
     }
 
-    // Convert sample count to D3D multisample type
+    // Convert sample count to GL multisample type
+    // Change that later? Enum seems unneccessary, stdDisplay_msaaSampleCount should be enough to store
     switch ( stdDisplay_msaaSampleCount )
     {
-        case 2:  stdDisplay_msaaSampleType = D3DMULTISAMPLE_2_SAMPLES; break;
-        case 4:  stdDisplay_msaaSampleType = D3DMULTISAMPLE_4_SAMPLES; break;
-        case 8:  stdDisplay_msaaSampleType = D3DMULTISAMPLE_8_SAMPLES; break;
-        case 16: stdDisplay_msaaSampleType = D3DMULTISAMPLE_16_SAMPLES; break;
+        case 2:  stdDisplay_msaaSampleType = GL_MULTISAMPLE_2_SAMPLES; break;
+        case 4:  stdDisplay_msaaSampleType = GL_MULTISAMPLE_4_SAMPLES; break;
+        case 8:  stdDisplay_msaaSampleType = GL_MULTISAMPLE_8_SAMPLES; break;
+        case 16: stdDisplay_msaaSampleType = GL_MULTISAMPLE_16_SAMPLES; break;
         default:
-            stdDisplay_msaaSampleType  = D3DMULTISAMPLE_4_SAMPLES;
+            stdDisplay_msaaSampleType  = GL_MULTISAMPLE_4_SAMPLES;
             stdDisplay_msaaSampleCount = 4;
             break;
     }
 
     if ( !stdDisplay_bMSAAEnabled )
     {
-        stdDisplay_msaaSampleType    = D3DMULTISAMPLE_NONE;
+        stdDisplay_msaaSampleType    = GL_MULTISAMPLE_NONE;
         stdDisplay_msaaSampleQuality = 0;
     }
 
@@ -320,7 +330,7 @@ static void stdDisplay_ValidateMSAASettings(UINT adapter, D3DFORMAT format, BOOL
 
 int stdDisplay_Startup(void)
 {
-    STDLOG_STATUS("Starting display system using DirectX 9 GAPI ...\n");
+    STDLOG_STATUS("Starting display system using OpenGL GAPI ...\n");
     if ( stdDisplay_bStartup )
     {
         return 1;
@@ -344,21 +354,14 @@ int stdDisplay_Startup(void)
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
 
-    SDL_Window* window = SDL_CreateWindow("OpenGLTest", 640, 480, SDL_WINDOW_OPENGL);
-    SDL_GLContext context =  SDL_GL_CreateContext(window);
-
-    SDL_GL_MakeCurrent(window, context);
-    if (!gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress)) {
-        STDLOG_ERROR("Failed to initialize GLAD.\n");
-        return 0;
-    }
-    //Create Direct3D9 object
-    stdDisplay_pD3D9 = Direct3DCreate9(D3D_SDK_VERSION);
-    if ( !stdDisplay_pD3D9 )
-    {
-        STDLOG_ERROR("Failed to create Direct3D9 object.\n");
-        return 0;
-    }
+    // SDL_Window* window = SDL_CreateWindow("OpenGLTest", 640, 480, SDL_WINDOW_OPENGL);
+    // SDL_GLContext context =  SDL_GL_CreateContext(window);
+    //
+    // SDL_GL_MakeCurrent(window, context);
+    // if (!gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress)) {
+    //     STDLOG_ERROR("Failed to initialize GLAD.\n");
+    //     return 0;
+    // }
 
     // Initialize MSAA settings from config
     stdDisplay_InitMSAASettings();
@@ -1165,7 +1168,7 @@ int J3DAPI stdDisplay_CreateZBuffer(const tSysPixelFormat* pPixelFormat, int bSy
     return 0;
 }
 
-static int J3DAPI stdDisplay_InitDirect3D9(HWND hwnd)
+static int J3DAPI stdDisplay_InitDirect3D9(HWND hwnd) //needed?
 {
     J3D_UNUSED(hwnd);
 
@@ -1188,64 +1191,38 @@ static int J3DAPI stdDisplay_InitDirect3D9(HWND hwnd)
 
 static int J3DAPI stdDisplay_EnumerateDevices(void)
 {
-    if ( !stdDisplay_pD3D9 )
-    {
-        return 0;
-    }
-
-    UINT adapterCount = IDirect3D9_GetAdapterCount(stdDisplay_pD3D9);
+    int adapterCount;
+    SDL_GetDisplays(&adapterCount);
     stdDisplay_numDevices = 0;
 
-    for ( UINT i = 0; i < adapterCount && i < STD_ARRAYLEN(stdDisplay_aDisplayDevices); i++ )
+    for (int i = 0; i < adapterCount && i < STD_ARRAYLEN(stdDisplay_aDisplayDevices); i++)
     {
-        D3DADAPTER_IDENTIFIER9 identifier;
-        HRESULT hr = IDirect3D9_GetAdapterIdentifier(stdDisplay_pD3D9, i, 0, &identifier);
-        if ( FAILED(hr) )
-        {
-            continue;
-        }
-
         StdDisplayDevice* pDevice = &stdDisplay_aDisplayDevices[stdDisplay_numDevices];
 
         // Fill device information
-        char* pDisplayName = strrchr(identifier.DeviceName, '\\'); // Left strip name to the last '\' (.e.g. "\\.\DISPLAY1" -> "\DISPLAY1")
-        STD_STRCPY(pDevice->aDriverName, pDisplayName ? pDisplayName + 1 : identifier.DeviceName); //aDriver should be actually aDisplayDevice
-        STD_STRCPY(pDevice->aDeviceName, identifier.Description);  // aDeviceName should be a3DDevice
+        const char* pDisplayName = SDL_GetDisplayName(i);; // Left strip name to the last '\' (.e.g. "\\.\DISPLAY1" -> "\DISPLAY1")
+        STD_STRCPY(pDevice->aDriverName, pDisplayName + 1); //aDriver should be actually aDisplayDevice
+        STD_STRCPY(pDevice->aDeviceName, pDisplayName);  // aDeviceName should be a3DDevice
+
 
         // Try to get monitor friendly name
         DISPLAY_DEVICE displayDevice;
         displayDevice.cb = sizeof(displayDevice);
-        if ( EnumDisplayDevices(identifier.DeviceName, 0, &displayDevice, 0) )
+        if ( EnumDisplayDevices(pDisplayName, 0, &displayDevice, 0) )
         {
             STD_STRCPY(pDevice->aDriverName, displayDevice.DeviceString);
         }
 
         // Get device capabilities
         ZeroMemory(&pDevice->caps, sizeof(pDevice->caps));
-        hr = IDirect3D9_GetDeviceCaps(stdDisplay_pD3D9, i, D3DDEVTYPE_HAL, &pDevice->caps);
-        if ( SUCCEEDED(hr) )
-        {
             pDevice->bHAL                      = TRUE;
-            pDevice->bWindowRenderNotSupported = FALSE; // D3D9 always supports windowed rendering
-            pDevice->guid                      = identifier.DeviceIdentifier;
-            // TODO: Enhance required ram estimation
-            pDevice->totalVideoMemory = pDevice->caps.MaxTextureWidth * pDevice->caps.MaxTextureHeight * 4; // Approximation
-            pDevice->freeVideoMemory  = pDevice->totalVideoMemory / 2; // Approximation
-        }
-        else
-        {
-            // Try REF device
-            hr = IDirect3D9_GetDeviceCaps(stdDisplay_pD3D9, i, D3DDEVTYPE_REF, &pDevice->caps);
-            pDevice->bHAL                      = SUCCEEDED(hr) ? FALSE : TRUE;
-            pDevice->bWindowRenderNotSupported = FALSE;
-            pDevice->guid                      = identifier.DeviceIdentifier;
+            pDevice->bWindowRenderNotSupported = FALSE; // OpenGL always supports windowed rendering
+            //pDevice->guid                      = identifier.DeviceIdentifier;
+        // TODO: Enhance required ram estimation
+        pDevice->totalVideoMemory = 64 * 1024 * 1024; // 64MB default
+        pDevice->freeVideoMemory  = 32 * 1024 * 1024; // 32MB default
 
-            // TODO: Enhance required ram estimation
-            pDevice->totalVideoMemory = 64 * 1024 * 1024; // 64MB default
-            pDevice->freeVideoMemory  = 32 * 1024 * 1024; // 32MB default
-        }
-
-        STDLOG_STATUS("Found %s D3D9 Device: %s [%s]\n", pDevice->bHAL ? "HAL" : "REF", pDevice->aDeviceName, pDevice->aDriverName);
+        STDLOG_STATUS("Found %s OpenGL Device: %s [%s]\n", pDevice->bHAL ? "HAL" : "REF", pDevice->aDeviceName, pDevice->aDriverName);
         STDLOG_STATUS("Memory: 0x%x out of 0x%x free\n", pDevice->freeVideoMemory, pDevice->totalVideoMemory);
         ++stdDisplay_numDevices;
     }
@@ -1255,36 +1232,7 @@ static int J3DAPI stdDisplay_EnumerateDevices(void)
 
 static int J3DAPI stdDisplay_EnumerateVideoModes(UINT adapter)
 {
-    if ( !stdDisplay_pD3D9 )
-    {
-        return 0;
-    }
-
-    D3DDISPLAYMODE curDesktopMode = { 0 };
-    HRESULT hr = IDirect3D9_GetAdapterDisplayMode(stdDisplay_pD3D9, adapter, &curDesktopMode);
-    if ( FAILED(hr) )
-    {
-        STDLOG_ERROR("Error: Could not get adapter display mode for adapter %d.\n", adapter);
-        return 0;
-    }
-
-    // Check that the current desktop mode is supported
-    bool bFmtSupported = false;
-    for ( size_t i = 0; i < STD_ARRAYLEN(stdDisplay_aSupportedFormats); i++ )
-    {
-        if ( stdDisplay_aSupportedFormats[i] == curDesktopMode.Format )
-        {
-            bFmtSupported  = true;
-            break;
-        }
-    }
-
-    if ( !bFmtSupported )
-    {
-        STDLOG_ERROR("stdDisplay_EnumerateVideoModes: Current desktop mode format %d is not supported by stdDisplay.\n", curDesktopMode.Format);
-        return 0;
-    }
-    STDLOG_DEBUG("stdDisplay_EnumerateVideoModes: Using current desktop mode format: %d\n", curDesktopMode.Format);
+    //Check that the current desktop mode is supported is skipped in GL. Is that needed?
 
     UINT modeCount = IDirect3D9_GetAdapterModeCount(stdDisplay_pD3D9, adapter, curDesktopMode.Format);
     for ( UINT i = 0; i < modeCount && stdDisplay_numVideoModes < STD_ARRAYLEN(stdDisplay_aVideoModes); i++ )
