@@ -113,10 +113,10 @@ static const char* J3DAPI stdDisplay_D3DGetStatus(HRESULT status);
 
 static int J3DAPI stdDisplay_InitDirect3D9(HWND hwnd);
 static int stdDisplay_EnumerateDevices(void);
-static int J3DAPI stdDisplay_EnumerateVideoModes(UINT adapter);
+static int J3DAPI stdDisplay_EnumerateVideoModes(SDL_DisplayID adapter);
 static D3DFORMAT J3DAPI stdDisplay_GetD3DFormat(int bpp);
-static int J3DAPI stdDisplay_BppFromD3DFormat(D3DFORMAT format);
-static bool stdDisplay_GetVideoColorFormat(D3DFORMAT format, ColorInfo* pFormat);
+static int J3DAPI stdDisplay_BppFromSDLPixelFormat(SDL_PixelFormat format);
+static bool stdDisplay_GetVideoColorFormat(SDL_PixelFormat format, ColorInfo* pFormat);
 
 static inline void J3DAPI stdDisplay_SetAspectRatio(StdVideoMode* pMode);
 static inline int J3DAPI stdDisplay_SetWindowMode(HWND hWnd, StdVideoMode* pDisplayMode);
@@ -237,7 +237,7 @@ static bool J3DAPI stdDisplay_CheckMSAASupport(UINT adapter, D3DFORMAT format, B
     return SUCCEEDED(hr);
 }
 
-static void stdDisplay_InitMSAASettings(void)
+static void stdDisplay_InitMSAASettings(void) //checked
 {
     // Read MSAA settings from registry/config
     stdDisplay_bMSAAEnabled    = stdConfig_GetBool(STD3D_CFG_MSAAENABLED, true);
@@ -422,10 +422,10 @@ int J3DAPI stdDisplay_Open(size_t deviceNum)
     stdDisplay_curDevice  = deviceNum;
     stdDisplay_pCurDevice = &stdDisplay_aDisplayDevices[deviceNum];
 
-    if ( !stdDisplay_InitDirect3D9(stdWin95_GetWindow()) )
-    {
-        return 0;
-    }
+    // if ( !stdDisplay_InitDirect3D9(stdWin95_GetWindow()) )
+    // {
+    //     return 0;
+    // }
 
     // Enumerate display modes for this adapter
     stdDisplay_numVideoModes = 0;
@@ -1189,7 +1189,7 @@ static int J3DAPI stdDisplay_InitDirect3D9(HWND hwnd) //needed?
     return 1;
 }
 
-static int J3DAPI stdDisplay_EnumerateDevices(void)
+static int J3DAPI stdDisplay_EnumerateDevices(void) //check
 {
     int adapterCount;
     SDL_GetDisplays(&adapterCount);
@@ -1230,36 +1230,39 @@ static int J3DAPI stdDisplay_EnumerateDevices(void)
     return stdDisplay_numDevices > 0;
 }
 
-static int J3DAPI stdDisplay_EnumerateVideoModes(UINT adapter)
+static int J3DAPI stdDisplay_EnumerateVideoModes(SDL_DisplayID adapter)
 {
     //Check that the current desktop mode is supported is skipped in GL. Is that needed?
 
-    UINT modeCount = IDirect3D9_GetAdapterModeCount(stdDisplay_pD3D9, adapter, curDesktopMode.Format);
-    for ( UINT i = 0; i < modeCount && stdDisplay_numVideoModes < STD_ARRAYLEN(stdDisplay_aVideoModes); i++ )
+    int modeCount = 0;
+    SDL_DisplayMode** modes = SDL_GetFullscreenDisplayModes(adapter, &modeCount);
+
+    if (!modes || modeCount <= 0) {
+        STDLOG_ERROR("  SDL_GetFullscreenDisplayModes failed: %s", SDL_GetError());
+    }
+
+
+    for ( int i = 0; i < modeCount && stdDisplay_numVideoModes < STD_ARRAYLEN(stdDisplay_aVideoModes); i++ )
     {
-        D3DDISPLAYMODE mode;
-        hr = IDirect3D9_EnumAdapterModes(stdDisplay_pD3D9, adapter, curDesktopMode.Format, i, &mode);
-        if ( FAILED(hr) )
-        {
-            continue;
-        }
+        SDL_DisplayMode* mode = modes[i];
+
 
         // Filter out modes below 24-bit color and 30 Hz
-        int bpp = stdDisplay_BppFromD3DFormat(mode.Format);
-        if ( bpp < 24 || mode.RefreshRate < STDDISPLAY_MINFRAMERATE || mode.RefreshRate > STDDISPLAY_MAXFRAMERATE )
+        const int bpp = stdDisplay_BppFromSDLPixelFormat(mode->format);
+        if ( bpp < 24 || mode->refresh_rate < STDDISPLAY_MINFRAMERATE || mode->refresh_rate > STDDISPLAY_MAXFRAMERATE )
         {
             continue;
         }
 
         StdVideoMode* pVideoMode = &stdDisplay_aVideoModes[stdDisplay_numVideoModes];
-        pVideoMode->refreshRate       = mode.RefreshRate;
-        pVideoMode->rasterInfo.width  = mode.Width;
-        pVideoMode->rasterInfo.height = mode.Height;
+        pVideoMode->refreshRate       = (uint32_t)(mode->refresh_rate + 0.5f);;
+        pVideoMode->rasterInfo.width  = mode->w;
+        pVideoMode->rasterInfo.height = mode->h;
 
         // Set color bit information based on format
-        if ( !stdDisplay_GetVideoColorFormat(mode.Format, &pVideoMode->rasterInfo.colorInfo) )
+        if ( !stdDisplay_GetVideoColorFormat(mode->format, &pVideoMode->rasterInfo.colorInfo) )
         {
-            STDLOG_ERROR("Couldn't get color info for format %d, adapter: %d videomode: %d ", mode.Format, adapter, i);
+            STDLOG_ERROR("Couldn't get color info for format %d, adapter: %d videomode: %d ", mode->format, adapter, i);
             continue;
         }
 
@@ -1282,6 +1285,8 @@ static int J3DAPI stdDisplay_EnumerateVideoModes(UINT adapter)
         STDLOG_WARNING("Too many video modes for adapter %d, only %zu modes supported.\n", adapter, STD_ARRAYLEN(stdDisplay_aVideoModes) - stdDisplay_numVideoModes);
     }
 
+    SDL_free(modes);
+
 
     return stdDisplay_numVideoModes;
 }
@@ -1297,47 +1302,42 @@ D3DFORMAT J3DAPI stdDisplay_GetD3DFormat(int bpp)
     }
 }
 
-int J3DAPI stdDisplay_BppFromD3DFormat(D3DFORMAT format)
+int J3DAPI stdDisplay_BppFromSDLPixelFormat(SDL_PixelFormat format)
 {
-    switch ( format )
-    {
-        case D3DFMT_R5G6B5:
-        case D3DFMT_X1R5G5B5:
-        case D3DFMT_A1R5G5B5:
-            return 16;
-        case D3DFMT_R8G8B8:
-            return 24;
-        case D3DFMT_X8R8G8B8:
-        case D3DFMT_A8R8G8B8:
-            return 32;
-        default:
-            return 32;
+    const int bpp = SDL_BITSPERPIXEL(format);
+
+    if (bpp == 0) {
+        //Fallback, if format is unkown
+        return 32;
     }
+    return bpp;
 }
 
 // Get color info for format of video mode and video surface
-bool stdDisplay_GetVideoColorFormat(D3DFORMAT format, ColorInfo* pFormat)
+bool stdDisplay_GetVideoColorFormat(SDL_PixelFormat format, ColorInfo* pFormat)
 {
     switch ( format )
     {
-        case D3DFMT_R8G8B8:
+        case SDL_PIXELFORMAT_RGB24:
             *pFormat = stdColor_cfRGB888;
             return true;
-        case D3DFMT_X8R8G8B8:
-        case D3DFMT_A8R8G8B8:
+        case SDL_PIXELFORMAT_XRGB8888:
+        case SDL_PIXELFORMAT_ARGB8888:
             *pFormat = stdColor_cfRGB8888;
             // Note, no alpha for video mode color format
             return true;
 
-        case D3DFMT_R5G6B5:
+        case SDL_PIXELFORMAT_RGB565:
             *pFormat = stdColor_cfRGB565;
             return true;
 
-        case D3DFMT_X1R5G5B5:
+        case SDL_PIXELFORMAT_XRGB1555:
             *pFormat = stdColor_cfRGB555;
             return true;
+
+        default:
+            return false;
     }
-    return false;
 }
 
 void J3DAPI stdDisplay_SetAspectRatio(StdVideoMode* pMode)
