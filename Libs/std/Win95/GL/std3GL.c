@@ -190,17 +190,17 @@ int std3D_Startup(void)
     memset(std3D_aDevices, 0, sizeof(std3D_aDevices));
 
     std3D_pDirect3D = stdDisplay_GetDirect3D();
-    if ( !std3D_pDirect3D )
-    {
-        STDLOG_ERROR("Direct3D9 not created yet!\n");
-        return 0;
-    }
-
-    if ( !stdShader_Startup() )
-    {
-        STDLOG_ERROR("Error initializing shader system.\n");
-        return 0;
-    }
+    // if ( !std3D_pDirect3D )
+    // {
+    //     STDLOG_ERROR("Direct3D9 not created yet!\n");
+    //     return 0;
+    // }
+    //
+    // if ( !stdShader_Startup() )
+    // {
+    //     STDLOG_ERROR("Error initializing shader system.\n");
+    //     return 0;
+    // }
 
     if ( !std3D_BuildDeviceList() )
     {

@@ -17,6 +17,31 @@
 #define STDDISPLAY_MINFRAMERATE 30
 #define STDDISPLAY_MAXFRAMERATE 256
 
+typedef struct GLCaps {
+    const char* vendor;
+    const char* renderer;
+    const char* version;
+    const char* glslVersion;
+
+    GLint  maxTextureSize;
+    GLint  maxCombinedTexUnits;
+    GLint  maxTexUnitsFS;
+    GLint  maxTexUnitsVS;
+    GLint  maxVertexAttribs;
+
+    GLint  maxVertexUniformComponents;
+    GLint  maxFragmentUniformComponents;
+    GLint  maxVaryingComponents;
+
+    GLint  maxDrawBuffers;         // MRT
+    GLint  maxColorAttachments;    // FBO color attachments
+    GLint  maxSamples;             // MSAA (grob)
+
+    GLfloat maxAnisotropy;         // 1.0 wenn nicht vorhanden
+    GLfloat pointSizeRange[2];
+    GLfloat lineWidthRange[2];
+} GLCaps;
+
 // Public globals
 tVBuffer stdDisplay_g_frontBuffer = { 0 };
 tVBuffer stdDisplay_g_backBuffer  = { 0 };
@@ -59,7 +84,8 @@ static StdVideoMode stdDisplay_primaryVideoMode = { 0 };
 static size_t stdDisplay_numVideoModes          = 0;
 static StdVideoMode stdDisplay_aVideoModes[512] = { 0 };
 
-static size_t stdDisplay_curDevice;
+static SDL_DisplayID stdDisplay_curDevice;
+static SDL_DisplayID* stdDisplay_availableDisplays = NULL;
 static StdDisplayDevice* stdDisplay_pCurDevice = NULL;
 
 static size_t stdDisplay_numDevices = 0;
@@ -330,6 +356,7 @@ static void stdDisplay_ValidateMSAASettings(UINT adapter, D3DFORMAT format, BOOL
 
 int stdDisplay_Startup(void)
 {
+    SDL_Delay(10000);
     STDLOG_STATUS("Starting display system using OpenGL GAPI ...\n");
     if ( stdDisplay_bStartup )
     {
@@ -354,14 +381,18 @@ int stdDisplay_Startup(void)
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
 
-    // SDL_Window* window = SDL_CreateWindow("OpenGLTest", 640, 480, SDL_WINDOW_OPENGL);
-    // SDL_GLContext context =  SDL_GL_CreateContext(window);
-    //
-    // SDL_GL_MakeCurrent(window, context);
-    // if (!gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress)) {
-    //     STDLOG_ERROR("Failed to initialize GLAD.\n");
-    //     return 0;
-    // }
+    SDL_Window* window = SDL_CreateWindow(
+    "gl-probe",
+    64, 64,
+    SDL_WINDOW_OPENGL | SDL_WINDOW_HIDDEN | SDL_WINDOW_BORDERLESS
+);
+    SDL_GLContext context =  SDL_GL_CreateContext(window);
+
+    SDL_GL_MakeCurrent(window, context);
+    if (!gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress)) {
+        STDLOG_ERROR("Failed to initialize GLAD.\n");
+        return 0;
+    }
 
     // Initialize MSAA settings from config
     stdDisplay_InitMSAASettings();
@@ -419,13 +450,13 @@ int J3DAPI stdDisplay_Open(size_t deviceNum)
         return 0;
     }
 
-    stdDisplay_curDevice  = deviceNum;
+    stdDisplay_curDevice  = stdDisplay_availableDisplays[deviceNum];
     stdDisplay_pCurDevice = &stdDisplay_aDisplayDevices[deviceNum];
 
-    // if ( !stdDisplay_InitDirect3D9(stdWin95_GetWindow()) )
-    // {
-    //     return 0;
-    // }
+    if ( !stdDisplay_InitDirect3D9(stdWin95_GetWindow()) )
+    {
+        return 0;
+    }
 
     // Enumerate display modes for this adapter
     stdDisplay_numVideoModes = 0;
@@ -1191,17 +1222,27 @@ static int J3DAPI stdDisplay_InitDirect3D9(HWND hwnd) //needed?
 
 static int J3DAPI stdDisplay_EnumerateDevices(void) //check
 {
+    if (stdDisplay_availableDisplays)
+    {
+        SDL_free(stdDisplay_availableDisplays);
+    }
     int adapterCount;
-    SDL_GetDisplays(&adapterCount);
+    stdDisplay_availableDisplays = SDL_GetDisplays(&adapterCount);
     stdDisplay_numDevices = 0;
+
+    if (!stdDisplay_availableDisplays || adapterCount <= 0) {
+        STDLOG_ERROR("SDL_GetDisplays failed or found no displays: %s\n", SDL_GetError());
+        stdDisplay_numDevices = 0;
+        return 0;
+    }
 
     for (int i = 0; i < adapterCount && i < STD_ARRAYLEN(stdDisplay_aDisplayDevices); i++)
     {
         StdDisplayDevice* pDevice = &stdDisplay_aDisplayDevices[stdDisplay_numDevices];
 
         // Fill device information
-        const char* pDisplayName = SDL_GetDisplayName(i);; // Left strip name to the last '\' (.e.g. "\\.\DISPLAY1" -> "\DISPLAY1")
-        STD_STRCPY(pDevice->aDriverName, pDisplayName + 1); //aDriver should be actually aDisplayDevice
+        const char* pDisplayName = SDL_GetDisplayName(stdDisplay_availableDisplays[i]);; // Left strip name to the last '\' (.e.g. "\\.\DISPLAY1" -> "\DISPLAY1")
+        STD_STRCPY(pDevice->aDriverName, pDisplayName); //aDriver should be actually aDisplayDevice
         STD_STRCPY(pDevice->aDeviceName, pDisplayName);  // aDeviceName should be a3DDevice
 
 
