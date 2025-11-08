@@ -8,14 +8,15 @@
 #include <DirectX6/dplay.h>
 
 #include <external/DirectX61c/include/dplay.h>
-#elif defined(J3D_DIRECTX9) || defined(J3D_OPENGL)
+#elif defined(J3D_DIRECTX9)
 #undef DIRECT3D_VERSION
 #ifdef J3D_DEBUG
 #define D3D_DEBUG_INFO // TODO: comment out when done
 #endif
 #include <d3d9.h>
-#elif defined J3D_OPENGL
+#elif defined(J3D_OPENGL)
 #include <d3d9.h>
+#include <glad/glad.h>
 #include <SDL3/SDL.h>
 #else
 #error "Unsupported GAPI"
@@ -58,10 +59,19 @@ typedef IDirect3DDevice9 tSysDisplayDevice;
 typedef D3DCAPS9 tSysDevice3DDesc;
 typedef IDirect3DDevice9 tSysDevice3D;
 
+#if defined(J3D_OPENGL)
+typedef struct sGLTexture
+{
+    GLuint id;
+} GLTexture;
+typedef SDL_PixelFormat tSysPixelFormat;
+typedef GLTexture tSysTexture;
+#else
 typedef D3DFORMAT tSysPixelFormat;
+typedef IDirect3DTexture9 tSysTexture;
+#endif
 typedef D3DSURFACE_DESC tSysSurfaceDesc;
 typedef IDirect3DSurface9 tSysSurface;
-typedef IDirect3DTexture9 tSysTexture;
 typedef void* LPDDCOLORKEY;
 
 typedef struct sD3DTLVERTEX
@@ -75,10 +85,10 @@ typedef struct sD3DTLVERTEX
     float rhw;
 
     /* Vertex color */
-    D3DCOLOR color;
+    uint32_t color;
 
     /* Specular component of vertex */
-    D3DCOLOR specular;
+    uint32_t specular;
 
     /* Texture coordinates */
     float tu;
@@ -386,6 +396,15 @@ typedef struct sVBuffer
     uint8_t* pPixels;
     int unknown1; // could be another surface option
     tVSurface surface;
+#if defined(J3D_OPENGL)
+    struct {
+        GLuint tex;         // GL-Texturhandle (Hardware)
+        GLint internalFormat;// gemappte GL Formate
+        GLenum format;
+        GLenum type;
+    } gl;
+#endif
+
 } tVBuffer;
 //static_assert(sizeof(tVBuffer) == 224, "sizeof(tVBuffer) == 224");
 
@@ -437,6 +456,9 @@ typedef struct sStdVideoMode
     float aspectRatio;
     tRasterInfo rasterInfo;
     uint32_t refreshRate;
+#if defined(J3D_OPENGL)
+    SDL_PixelFormat format;
+#endif
 } StdVideoMode;
 //static_assert(sizeof(StdVideoMode) == 80, "sizeof(StdVideoMode) == 80");
 

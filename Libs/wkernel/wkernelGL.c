@@ -8,6 +8,8 @@
 #include <glad/glad.h>
 #include <SDL3/SDL.h>
 
+#include "std/General/std.h"
+
 
 #define IDI_APPICON 108
 DEFINE_GUID(wkernel_guid, 0x82CE4DA0, 0x9CBF, 0x1D1, 0x90, 0x85, 0x00, 0x60, 0x97, 0x76, 0x0EA, 0x02);
@@ -46,7 +48,9 @@ int J3DAPI wkernel_Run(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmd
     J3D_UNUSED(hinstance); // old DX6/9 path still passes it, ignore for SDL/OpenGL
     J3D_UNUSED(hPrevInstance);
 
-    HINSTANCE glInstance = GetModuleHandle(NULL);
+    //SDL_Delay(10000);
+
+
     // Added: Refactored to run main proc via callback
     if ( wkernel_pfProcess == NULL )
     {
@@ -59,9 +63,12 @@ int J3DAPI wkernel_Run(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmd
         return -1;
     }
 
+    HINSTANCE glInstance = GetModuleHandle(NULL);
     stdWin95_SetWindow(wkernel_hwnd);
     stdWin95_SetInstance(glInstance);
     stdWin95_SetGuid(&wkernel_guid);
+    stdWin95_SetGLContext(wkernel_gl_context);
+    stdWin95_SetSDLWindow(wkernel_sdl_window);
 
     InitCommonControls();
 
@@ -117,7 +124,6 @@ WKERNELSHUTDOWNPROC J3DAPI wkernel_SetShutdownCallback(WKERNELSHUTDOWNPROC pfOnC
     return pfCurProc;
 }
 
-// Ersatz für Peek/ProcessEvents
 int wkernel_PeekProcessEvents(void)
 {
     SDL_Event e;
@@ -134,10 +140,9 @@ int wkernel_PeekProcessEvents(void)
 int wkernel_ProcessEvents(void)
 {
     SDL_Event e;
-    while (SDL_WaitEvent(&e)) {
+    while (SDL_PollEvent(&e)) {
         if (e.type == SDL_EVENT_QUIT) return 1;
         wkernel_DispatchSdlEvent(&e);
-        // wenn Queue leer → raus wie früher
         int pending = SDL_PeepEvents(NULL, 0, SDL_PEEKEVENT, SDL_EVENT_FIRST, SDL_EVENT_LAST);
         if (pending == 0) return 0;
     }
@@ -152,9 +157,7 @@ static void wkernel_DispatchSdlEvent(const SDL_Event* ev)
     switch (ev->type) {
     case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
         if (wkernel_pfOnShutdown) wkernel_pfOnShutdown();
-        // analog WM_CLOSE:
         wkernel_pfWndProc(wkernel_hwnd, WM_CLOSE, 0, 0, &ret);
-        // SDL_QUIT pushen, damit die Schleifen wie früher enden:
         SDL_PushEvent(&(SDL_Event){ .type = SDL_EVENT_QUIT });
         break;
     case SDL_EVENT_WINDOW_DESTROYED:
@@ -175,7 +178,6 @@ static void wkernel_DispatchSdlEvent(const SDL_Event* ev)
     case SDL_EVENT_MOUSE_BUTTON_UP: {
             UINT msg =
                 (ev->type == SDL_EVENT_MOUSE_BUTTON_DOWN) ? WM_LBUTTONDOWN : WM_LBUTTONUP;
-            // (für rechte/mittlere Taste ggf. WM_RBUTTONDOWN/… unterscheiden)
             LPARAM lp = ((int)ev->button.y << 16) | ((int)ev->button.x & 0xFFFF);
             wkernel_pfWndProc(wkernel_hwnd, msg, 0, lp, &ret);
             break;
@@ -190,7 +192,6 @@ void J3DAPI wkernel_SetWindowStyle(LONG dwNewLong)
 {
     if (!wkernel_sdl_window) return;
 
-    // Border (entspricht grob WS_BORDER/WS_CAPTION an/aus)
     bool bordered = (dwNewLong & (WS_BORDER | WS_CAPTION)) != 0;
     SDL_SetWindowBordered(wkernel_sdl_window, bordered);
 }
@@ -198,6 +199,7 @@ void J3DAPI wkernel_SetWindowStyle(LONG dwNewLong)
 
 BOOL J3DAPI wkernel_SetWindowSize(int width, int height)
 {
+    SDL_SetWindowPosition(wkernel_sdl_window, 0, 0);
     return SDL_SetWindowSize(wkernel_sdl_window,width, height);
     // return SetWindowPos(
     //     wkernel_hwnd,
@@ -239,20 +241,14 @@ int J3DAPI wkernel_CreateWindow(HINSTANCE hInstance, int nShowCmd, LPCSTR lpWind
         }
     }
 
-    // --- GL-Attribute (z. B. 3.3 Core, anpassbar) ---
+
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-    // optional:
-    // SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
-    // SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-    // SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
-    // SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
+    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+    SDL_GL_SetSwapInterval(1);
 
-    // Vollbild wie im alten Code? Der alte Win32-Teil setzte Fenster auf Bildschirmgröße.
-    // Entweder borderless fullscreen (empfohlen) ...
-    // Uint32 flags = SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_FULLSCREEN_DESKTOP;
-    // ... oder klassisches Fenster (hier zunächst normal, Größe anpassbar):
     Uint32 flags = SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE;
 
     height = GetSystemMetrics(1);
@@ -265,7 +261,8 @@ int J3DAPI wkernel_CreateWindow(HINSTANCE hInstance, int nShowCmd, LPCSTR lpWind
         return 1;
     }
 
-    // GL-Kontext erstellen
+
+
     wkernel_gl_context = SDL_GL_CreateContext(wkernel_sdl_window);
     if (!wkernel_gl_context)
     {
@@ -273,7 +270,8 @@ int J3DAPI wkernel_CreateWindow(HINSTANCE hInstance, int nShowCmd, LPCSTR lpWind
         return 1;
     }
 
-    // GL-Funktionen laden
+
+
     if (!gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress))
     {
         fprintf(stderr, "Failed to initialize GLAD\n");
@@ -288,6 +286,7 @@ int J3DAPI wkernel_CreateWindow(HINSTANCE hInstance, int nShowCmd, LPCSTR lpWind
     }
 
     wkernel_SetWindowSize(100, 25);
+
 
     return 0;
 }
