@@ -227,7 +227,7 @@ int J3DAPI wkernel_CreateWindow(HINSTANCE hInstance, int nShowCmd, LPCSTR lpWind
     // SDL-Fenster haben standardmäßig die Klasse "SDL_app"
     if (FindWindow("SDL_app", lpWindowName))
     {
-        fprintf(stdout, "INFO: wkernel_CreateWindow: An existing instance of window already running!\n");
+        STDLOG_STATUS("INFO: wkernel_CreateWindow: An existing instance of window already running!\n");
         return 1;
     }
 
@@ -236,7 +236,7 @@ int J3DAPI wkernel_CreateWindow(HINSTANCE hInstance, int nShowCmd, LPCSTR lpWind
     {
         if (SDL_InitSubSystem(SDL_INIT_VIDEO) < 0)
         {
-            fprintf(stderr, "SDL video init failed: %s\n", SDL_GetError());
+            STDLOG_ERROR("SDL video init failed: %s\n", SDL_GetError());
             return 1;
         }
     }
@@ -257,7 +257,7 @@ int J3DAPI wkernel_CreateWindow(HINSTANCE hInstance, int nShowCmd, LPCSTR lpWind
     wkernel_sdl_window = SDL_CreateWindow(lpWindowName, width, height, flags);
     if (!wkernel_sdl_window)
     {
-        fprintf(stderr, "SDL_CreateWindow failed: %s\n", SDL_GetError());
+        STDLOG_ERROR("SDL_CreateWindow failed: %s\n", SDL_GetError());
         return 1;
     }
 
@@ -266,7 +266,7 @@ int J3DAPI wkernel_CreateWindow(HINSTANCE hInstance, int nShowCmd, LPCSTR lpWind
     wkernel_gl_context = SDL_GL_CreateContext(wkernel_sdl_window);
     if (!wkernel_gl_context)
     {
-        fprintf(stderr, "SDL_GL_CreateContext failed: %s\n", SDL_GetError());
+        STDLOG_ERROR("SDL_GL_CreateContext failed: %s\n", SDL_GetError());
         return 1;
     }
 
@@ -274,7 +274,7 @@ int J3DAPI wkernel_CreateWindow(HINSTANCE hInstance, int nShowCmd, LPCSTR lpWind
 
     if (!gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress))
     {
-        fprintf(stderr, "Failed to initialize GLAD\n");
+        STDLOG_ERROR("Failed to initialize GLAD\n");
         return 1;
     }
 

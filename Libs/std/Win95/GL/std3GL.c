@@ -572,8 +572,6 @@ int std3D_DrawIndexedPrimitive(GLenum type, LPD3DTLVERTEX aVerts, size_t numVert
     glUseProgram(std3D_activeShader->handle);
 
     glBindVertexArray(std3D_pVertexArrayObject);
-    glDisable(GL_CULL_FACE);
-    glDisable(GL_DEPTH_TEST);
 
 
     const GLvoid* indexPtr = (const GLvoid*)(std3D_ibOffset * sizeof(WORD));
@@ -1311,14 +1309,14 @@ int std3D_InitRenderState(void)
     glDisable(GL_FOG);
 
 
-    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    glPolygonMode(GL_BACK, GL_FILL);
 
     glEnable(GL_DITHER);
 
     std3D_renderState |= STD3D_RS_UNKNOWN_2;
 
     // --- 9️⃣ Culling ---
-    glDisable(GL_CULL_FACE); // D3DCULL_NONE
+    //glDisable(GL_CULL_FACE); // D3DCULL_NONE
     glFrontFace(GL_CCW);
 
     GLenum err = glGetError();
