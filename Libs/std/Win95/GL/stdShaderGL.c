@@ -25,7 +25,7 @@ static size_t stdShader_shaderCount = 0;
 
 void stdShader_ResetShader(GLShaderProgram* shaderProgram)
 {
-    if (shaderProgram->handle > 0)
+    if ( shaderProgram->handle > 0 )
     {
         glDeleteProgram(shaderProgram->handle);
         shaderProgram->handle = 0;
@@ -113,14 +113,15 @@ bool J3DAPI stdShader_SetViewport(const StdShaderViewport vp)
     for ( size_t i = 0; i < MAX_SHADER_PROGRAMS; i++ )
     {
         GLShaderProgram* shaderProgram = &stdShader_ShaderPrograms[i];
-        if (shaderProgram->handle > 0)
+        if ( shaderProgram->handle > 0 )
         {
             STDLOG_WARNING("Viewport width and height set to: %.2f, %.2f.\n", vp[2], vp[3]);
             glUseProgram(shaderProgram->handle);
             int loc = glGetUniformLocation(shaderProgram->handle, "viewPort");
             glUniform4f(loc, vp[0], vp[1], vp[2], vp[3]);
             GLenum err = glGetError();
-            if (err != GL_NO_ERROR) {
+            if ( err != GL_NO_ERROR )
+            {
                 STDLOG_ERROR("OpenGL error 0x%x in stdShader_SetViewport.\n", err);
                 return false;
             }
@@ -194,9 +195,11 @@ bool J3DAPI stdShader_SetActiveShader(GLShaderProgram* pSp)
     return true;
 }
 
-static char* stdShader_readGLSLFile(const char* path) {
+static char* stdShader_readGLSLFile(const char* path)
+{
     FILE* f = fopen(path, "rb");
-    if (!f) {
+    if ( !f )
+    {
         STDLOG_ERROR("read_text_file: can't open %s\n", path);
         return NULL;
     }
@@ -205,7 +208,7 @@ static char* stdShader_readGLSLFile(const char* path) {
     rewind(f);
 
     char* buf = STDMALLOC(len + 1);
-    if (!buf)
+    if ( !buf )
     {
         fclose(f);
         return NULL;
@@ -218,18 +221,20 @@ static char* stdShader_readGLSLFile(const char* path) {
     return buf;
 }
 
-static GLuint stdShader_compileShader(GLenum type, const char* source, const char* debugName) {
+static GLuint stdShader_compileShader(GLenum type, const char* source, const char* debugName)
+{
     GLuint sh = glCreateShader(type);
     glShaderSource(sh, 1, &source, NULL);
     glCompileShader(sh);
 
     GLint ok = GL_FALSE;
     glGetShaderiv(sh, GL_COMPILE_STATUS, &ok);
-    if (!ok) {
+    if ( !ok )
+    {
         GLint logLen = 0;
         glGetShaderiv(sh, GL_INFO_LOG_LENGTH, &logLen);
         char* log = STDMALLOC(logLen > 1 ? logLen : 1);
-        if (logLen > 1) glGetShaderInfoLog(sh, logLen, NULL, log); else log[0] = '\0';
+        if ( logLen > 1 ) glGetShaderInfoLog(sh, logLen, NULL, log); else log[0] = '\0';
         STDLOG_ERROR("[GLSL] Compile error in %s:\n%s\n", debugName ? debugName : "(shader)", log);
         STDFREE(log);
         glDeleteShader(sh);
@@ -238,7 +243,8 @@ static GLuint stdShader_compileShader(GLenum type, const char* source, const cha
     return sh;
 }
 
-static GLuint std_LinkShaderProgram(GLuint vs, GLuint fs) {
+static GLuint stdShader_LinkShaderProgram(GLuint vs, GLuint fs)
+{
     GLuint prog = glCreateProgram();
     glAttachShader(prog, vs);
     glAttachShader(prog, fs);
@@ -252,11 +258,12 @@ static GLuint std_LinkShaderProgram(GLuint vs, GLuint fs) {
 
     GLint ok = GL_FALSE;
     glGetProgramiv(prog, GL_LINK_STATUS, &ok);
-    if (!ok) {
+    if ( !ok )
+    {
         GLint logLen = 0;
         glGetProgramiv(prog, GL_INFO_LOG_LENGTH, &logLen);
         char* log = STDMALLOC(logLen > 1 ? logLen : 1);
-        if (logLen > 1) glGetProgramInfoLog(prog, logLen, NULL, log); else log[0] = '\0';
+        if ( logLen > 1 ) glGetProgramInfoLog(prog, logLen, NULL, log); else log[0] = '\0';
         STDLOG_ERROR("[GLSL] Link error:\n%s\n", log);
         STDFREE(log);
         glDeleteProgram(prog);
@@ -287,16 +294,16 @@ GLShaderProgram* stdShader_CompileAndCreate(const char* pName, const char* pVert
     }
 
     GLShaderProgram* pProgram = NULL;
-    for (size_t i = 0; i < MAX_SHADER_PROGRAMS; i++)
+    for ( size_t i = 0; i < MAX_SHADER_PROGRAMS; i++ )
     {
-        if (stdShader_ShaderPrograms[i].handle == 0)
+        if ( stdShader_ShaderPrograms[i].handle == 0 )
         {
             pProgram = &stdShader_ShaderPrograms[i];
             break;
         }
     }
 
-    if (!pProgram)
+    if ( !pProgram )
     {
         STDLOG_ERROR("There should be a free shader available, but couldn't find one.\n");
         return NULL;
@@ -305,28 +312,29 @@ GLShaderProgram* stdShader_CompileAndCreate(const char* pName, const char* pVert
 
     char* vsrc = stdShader_readGLSLFile(pVertexShaderCode);
     char* fsrc = stdShader_readGLSLFile(pPixelShaderCode);
-    if (!vsrc || !fsrc)
+    if ( !vsrc || !fsrc )
     {
         if ( vsrc ) STDFREE(vsrc);
         if ( fsrc ) STDFREE(fsrc);
         return NULL;
     }
 
-    GLuint vs = stdShader_compileShader(GL_VERTEX_SHADER,   vsrc, pPixelShaderCode);
-    GLuint fs = stdShader_compileShader(GL_FRAGMENT_SHADER,   fsrc, pPixelShaderCode);
+    GLuint vs = stdShader_compileShader(GL_VERTEX_SHADER, vsrc, pPixelShaderCode);
+    GLuint fs = stdShader_compileShader(GL_FRAGMENT_SHADER, fsrc, pPixelShaderCode);
 
     STDFREE(vsrc);
     STDFREE(fsrc);
 
-    if (!vs || !fs) {
-        if (vs) glDeleteShader(vs);
-        if (fs) glDeleteShader(fs);
+    if ( !vs || !fs )
+    {
+        if ( vs ) glDeleteShader(vs);
+        if ( fs ) glDeleteShader(fs);
         return NULL;
     }
 
 
     // Create shader
-    pProgram->handle = std_LinkShaderProgram(vs, fs);
+    pProgram->handle = stdShader_LinkShaderProgram(vs, fs);
     pProgram->name = pName;
     stdHashtbl_Add(stdShader_pTable, pName, pProgram);
     stdShader_shaderCount++;
@@ -337,5 +345,3 @@ void J3DAPI stdShader_Free(GLShaderProgram* sh)
 {
     stdShader_ResetShader(sh);
 }
-
-
