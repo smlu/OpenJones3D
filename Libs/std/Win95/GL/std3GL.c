@@ -17,20 +17,22 @@
 #include "Shaders/std_default_ps.h"
 #include "Shaders/std_default_wf_ps.h"
 
+#include "glad/glad.h"
+#include "SDL3/SDL.h"
+#include "std/Win95/stdWin95.h"
+
 #define STD3D_DEFAULT_MAX_VERTICES 512
 
 static bool bStartup    = false;
 static bool std3D_bOpen = false;
 
-static LPDIRECT3D9 std3D_pDirect3D       = NULL;
-static LPDIRECT3DDEVICE9 std3D_pD3Device = NULL;
 static D3DRECT std3D_activeRect          = { 0 };
 static_assert(sizeof(std3D_activeRect) == 4 * sizeof(float), "sizeof(std3D_activeRect) == 4 * sizeof(float)"); // Must be 4 floats to be used in shader
 
 static size_t std3D_frameCount            = 1;
 static float std3D_zDepth                 = 0.0f;
 static Std3DRenderState std3D_renderState = 0;
-static LPDIRECT3DTEXTURE9 std3D_pD3DTex   = NULL;
+static tSysTexture* std3D_pD3DTex   = NULL;
 
 static bool std3D_bAnisotropicFilter; // Added
 static bool std3D_bAutoGenMipmap;     // Added
@@ -61,6 +63,8 @@ static size_t std3D_RGBAKeyTextureFormat;
 static bool std3D_bHasRGBTextureFormat           = false;
 static size_t std3D_numTextureFormats            = 0;
 static StdTextureFormat std3D_aTextureFormats[8] = { 0 };
+
+static GLenum std3D_currentMipmapFiler = 0;
 
 static const DXStatus std3D_aD3DStatusTbl[30] =
 {
@@ -101,27 +105,28 @@ static const DXStatus std3D_aD3DStatusTbl[30] =
 // VBO & IBO
 #define STD3D_VERTBUFFERSIZE STD3D_MAXVERTICES * STD3D_MAXFACEVERTICES
 
-static bool std3D_bUseBuffers    = false; // Slow for small geometry, so disabled by default. Consider hybrid approach later
+static bool std3D_bUseBuffers    = true; // Slow for small geometry, so disabled by default. Consider hybrid approach later
+static GLuint std3D_pVertexArrayObject = 0;
 static const size_t std3D_vbSize = STD3D_VERTBUFFERSIZE;
 static size_t std3D_vbOffset     = 0;
-static IDirect3DVertexBuffer9* std3D_pVertexBuffer = NULL;
+static GLuint std3D_pVertexBuffer = 0;
 
 static const size_t std3D_ibSize = STD3D_VERTBUFFERSIZE * 3;
 static size_t std3D_ibOffset     = 0;
-static IDirect3DIndexBuffer9* std3D_pIndexBuffer = NULL;
+static GLuint std3D_pIndexBuffer = 0;
 
 // Shader system state
 static bool std3D_bShadersActive = true;
-static StdShaderHandle std3D_defaultShader = STDSHADER_INVALIDHANDLE;
-static StdShaderHandle std3D_defaultShaderWf = STDSHADER_INVALIDHANDLE;
-static StdShaderHandle std3D_activeShader = STDSHADER_INVALIDHANDLE;
+static GLShaderProgram* std3D_defaultShader = NULL;
+static GLShaderProgram* std3D_defaultShaderWf = NULL;
+static GLShaderProgram* std3D_activeShader = NULL;
 
 static int std3D_InitRenderState(void);
 static int std3D_BuildDeviceList(void);
 static void std3D_InitTextureFormats(void);
 
 static int std3D_CreateViewport(void);
-static bool J3DAPI std3D_GetZBufferFormat(tSysPixelFormat* pPixelFormat);
+static bool J3DAPI std3D_GetZBufferFormat(GLenum* pPixelFormat);
 static void J3DAPI std3D_AddTextureToCacheList(tSystemTexture* pTexture);
 static void J3DAPI std3D_RemoveTextureFromCacheList(tSystemTexture* pCacheTexture);
 static int J3DAPI std3D_PurgeTextureCache(size_t size);
@@ -132,7 +137,7 @@ void std3D_ReleaseVertexBuffers(void);
 bool std3D_InitShaderSystem(void);
 void std3D_ShutdownShaderSystem(void);
 
-static void std3D_UpdateShaderState(StdShaderHandle activeShader);
+static void std3D_UpdateShaderState(GLShaderProgram* activeShader);
 
 void std3D_InstallHooks(void)
 {
@@ -189,18 +194,12 @@ int std3D_Startup(void)
     memset(std3D_aTextureFormats, 0, sizeof(std3D_aTextureFormats));
     memset(std3D_aDevices, 0, sizeof(std3D_aDevices));
 
-    std3D_pDirect3D = stdDisplay_GetDirect3D();
-    // if ( !std3D_pDirect3D )
-    // {
-    //     STDLOG_ERROR("Direct3D9 not created yet!\n");
-    //     return 0;
-    // }
-    //
-    // if ( !stdShader_Startup() )
-    // {
-    //     STDLOG_ERROR("Error initializing shader system.\n");
-    //     return 0;
-    // }
+
+    if ( !stdShader_Startup() )
+    {
+        STDLOG_ERROR("Error initializing shader system.\n");
+        return 0;
+    }
 
     if ( !std3D_BuildDeviceList() )
     {
@@ -235,8 +234,6 @@ void std3D_Shutdown(void)
     memset(std3D_aTextureFormats, 0, sizeof(std3D_aTextureFormats));
     memset(std3D_aDevices, 0, sizeof(std3D_aDevices));
 
-    std3D_pD3Device     = NULL;
-    std3D_pDirect3D     = NULL;
     std3D_numDevices    = 0;
     bStartup            = false;
 }
@@ -258,10 +255,10 @@ const Device3D* std3D_GetAllDevices(void)
 
 static bool std3D_InitSystem(void)
 {
-    tSysPixelFormat pixelFormat = { 0 };
+    GLenum pixelFormat = { 0 };
     if ( std3D_GetZBufferFormat(&pixelFormat) )
     {
-        if ( stdDisplay_CreateZBuffer(&pixelFormat, std3D_pCurDevice->bHAL == 0) )
+        if ( stdDisplay_CreateZBuffer(NULL, std3D_pCurDevice->bHAL == 0) )
         {
             STDLOG_ERROR("Error creating Z buffer.\n");
             return false;
@@ -364,7 +361,7 @@ static void std3D_OnDisplayDeviceReset(tSysDevice3D* pDevice)
 static void std3D_OnDisplayDevicePostReset(tSysDevice3D* pDevice)
 {
     STDLOG_DEBUG("Received display device reset signal. Re-initializing the system...\n");
-    std3D_pD3Device = pDevice;
+
     std3D_InitSystem();
 }
 
@@ -399,14 +396,6 @@ int J3DAPI std3D_Open(size_t deviceNum)
     std3D_curDevice  = deviceNum;
     std3D_pCurDevice = &std3D_aDevices[deviceNum];
 
-    // Get D3D device from stdDisplay (should be already created)
-    // Note, should be called before std3D_InitSystem()
-    std3D_pD3Device = stdDisplay_GetSystemDevice();
-    if ( !std3D_pD3Device )
-    {
-        STDLOG_ERROR("Error getting Direct3D device from stdDisplay.\n");
-        return 0;
-    }
 
     // Register device changed callback
     stdDisplay_RegisterDevicePreResetCallback(std3D_OnDisplayDeviceReset);
@@ -500,19 +489,9 @@ int std3D_StartScene(void)
 {
     ++std3D_frameCount;
 
-    HRESULT d3dres = IDirect3DDevice9_BeginScene(std3D_pD3Device);
-    if ( d3dres != D3D_OK )
-    {
-        STDLOG_ERROR("Error %s beginning scene.\n", std3D_D3DGetStatus(d3dres));
-        std3D_pD3DTex = NULL;
-        return d3dres;
-    }
-
-    std3D_pD3DTex = NULL;
-
     if ( std3D_bShadersActive )
     {
-        StdShaderViewport vp =
+        const float vp[4] =
         {
             (float)std3D_activeRect.x1, // x
             (float)std3D_activeRect.y1, // y
@@ -525,103 +504,87 @@ int std3D_StartScene(void)
         }
     }
 
-    return d3dres;
+    // glEnable(GL_SCISSOR_TEST);
+    // glScissor(
+    //     (GLint)std3D_activeRect.x1,
+    //     (GLint)std3D_activeRect.y1,
+    //     (GLint)std3D_activeRect.x2,
+    //     (GLint)std3D_activeRect.y2
+    // );
+
+    GLenum err = glGetError();
+    if (err != GL_NO_ERROR) {
+        STDLOG_ERROR("OpenGL error 0x%x in std3D_StartScene.\n", err);
+        return 1;
+    }
+
+    return 0;
 }
 
 void std3D_EndScene(void)
 {
-    HRESULT d3dres = IDirect3DDevice9_EndScene(std3D_pD3Device);
-    if ( d3dres != D3D_OK )
-    {
-        STDLOG_ERROR("Error %s ending scene.\n", std3D_D3DGetStatus(d3dres));
-    }
     std3D_pD3DTex = NULL;
 }
 
 static int std3D_CopyVertexDataToBuffer(const LPD3DTLVERTEX aVerts, size_t numVerts, LPWORD aIndices, size_t numIndices)
 {
-    // Check for buffer wraparound
-    DWORD vbLockFlags = D3DLOCK_NOOVERWRITE;
-    DWORD ibLockFlags = D3DLOCK_NOOVERWRITE;
 
-    // Only discard if we actually need to wrap
-    bool vbNeedsWrap = (std3D_vbOffset + numVerts > std3D_vbSize);
-    bool ibNeedsWrap = (std3D_ibOffset + numIndices > std3D_ibSize);
+    const size_t vbNeeded = std3D_vbOffset + numVerts;
+    glBindBuffer(GL_ARRAY_BUFFER, std3D_pVertexBuffer);
 
-    if ( vbNeedsWrap )
-    {
-        vbLockFlags = D3DLOCK_DISCARD;
+    if (vbNeeded > std3D_vbSize) {
+        glBufferData(GL_ARRAY_BUFFER, std3D_vbSize * sizeof(D3DTLVERTEX), NULL, GL_DYNAMIC_DRAW);
         std3D_vbOffset = 0;
     }
 
-    if ( ibNeedsWrap )
-    {
-        ibLockFlags = D3DLOCK_DISCARD;
-        std3D_ibOffset = 0;
-    }
+
+    const GLsizeiptr vbByteOffset = (GLsizeiptr)(std3D_vbOffset * sizeof(D3DTLVERTEX));
+    const GLsizeiptr vbByteSize   = (GLsizeiptr)(numVerts * sizeof(D3DTLVERTEX));
+
+    glBufferSubData(GL_ARRAY_BUFFER, vbByteOffset, vbByteSize, aVerts);
 
 
-    // Copy vertices to vertex buffer at current offset
-    size_t vbOffsetBytes   = std3D_vbOffset * sizeof(D3DTLVERTEX);
-    size_t vbCopySizeBytes = numVerts * sizeof(D3DTLVERTEX);
-    void* pVertData        = NULL;
-    HRESULT hr = IDirect3DVertexBuffer9_Lock(std3D_pVertexBuffer, (UINT)vbOffsetBytes, (UINT)vbCopySizeBytes, &pVertData, vbLockFlags);
-    if ( hr != D3D_OK )
-    {
-        STDLOG_ERROR("Error %s while locking vertex buffer.\n", std3D_D3DGetStatus(hr));
-        return 0;
-    }
+    if (aIndices && numIndices) {
+        const size_t ibNeeded = std3D_ibOffset + numIndices;
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, std3D_pIndexBuffer);
 
-    memcpy(pVertData, aVerts, vbCopySizeBytes);
-    IDirect3DVertexBuffer9_Unlock(std3D_pVertexBuffer);
-
-    // Copy indices to buffer at current offset
-    // Lock index buffer (if needed)
-    if ( aIndices && numIndices > 0 )
-    {
-        size_t ibOffsetBytes   = std3D_ibOffset * sizeof(WORD);
-        size_t ibCopySizeBytes = numIndices * sizeof(WORD);
-        void* pIndexData       = NULL;
-        hr = IDirect3DIndexBuffer9_Lock(std3D_pIndexBuffer, ibOffsetBytes, ibCopySizeBytes, &pIndexData, ibLockFlags);
-        if ( hr != D3D_OK )
-        {
-            STDLOG_ERROR("Error %s while locking index buffer.\n", std3D_D3DGetStatus(hr));
-            return 0;
+        if (ibNeeded > std3D_ibSize) {
+            glBufferData(GL_ELEMENT_ARRAY_BUFFER, std3D_ibSize * sizeof(WORD), NULL, GL_DYNAMIC_DRAW);
+            std3D_ibOffset = 0;
         }
 
-        memcpy(pIndexData, aIndices, ibCopySizeBytes);
-        IDirect3DIndexBuffer9_Unlock(std3D_pIndexBuffer);
+        const GLsizeiptr ibByteOffset = (GLsizeiptr)(std3D_ibOffset * sizeof(WORD));
+        const GLsizeiptr ibByteSize   = (GLsizeiptr)(numIndices * sizeof(WORD));
+
+        glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, ibByteOffset, ibByteSize, aIndices);
     }
 
     return 1;
 }
 
-int std3D_DrawIndexedPrimitive(D3DPRIMITIVETYPE type, LPD3DTLVERTEX aVerts, size_t numVerts, LPWORD aIndices, size_t numIndices)
+int std3D_DrawIndexedPrimitive(GLenum type, LPD3DTLVERTEX aVerts, size_t numVerts, LPWORD aIndices, size_t numIndices)
 {
-     // Copy vertices to buffers
-    if ( !std3D_CopyVertexDataToBuffer(aVerts, numVerts, aIndices, numIndices) )
-    {
+    STDLOG_DEBUG("Draw %d vertices\n", numVerts);
+    if (!std3D_CopyVertexDataToBuffer(aVerts, numVerts, aIndices, numIndices))
         return 0;
-    }
 
-    // Draw
-    HRESULT hr = IDirect3DDevice9_DrawIndexedPrimitive(
-        std3D_pD3Device,
-        type,
-        (INT)std3D_vbOffset,
-        0,
-        (UINT)numVerts,
-        (UINT)std3D_ibOffset,
-        (UINT)(numIndices / 3)
-    );
 
-    if ( FAILED(hr) )
-    {
-        STDLOG_ERROR("DrawIndexedPrimitive failed: %s\n", std3D_D3DGetStatus(hr));
-        return 0;
-    }
+    glUseProgram(std3D_activeShader->handle);
 
-    // Drawing succeeded, advance offsets
+    glBindVertexArray(std3D_pVertexArrayObject);
+    glDisable(GL_CULL_FACE);
+    glDisable(GL_DEPTH_TEST);
+
+
+    const GLvoid* indexPtr = (const GLvoid*)(std3D_ibOffset * sizeof(WORD));
+    GLsizei indexCount = (GLsizei)numIndices;
+    const GLint   baseVertex = (GLint)std3D_vbOffset;
+
+    glDrawElementsBaseVertex(type, indexCount, GL_UNSIGNED_SHORT, indexPtr, baseVertex);
+    //glDrawElements(type, indexCount, GL_UNSIGNED_SHORT, indexPtr);
+
+    glBindVertexArray(0);
+    // Offsets fortschreiben (wie in D3D)
     std3D_vbOffset += numVerts;
     std3D_ibOffset += numIndices;
 
@@ -630,37 +593,37 @@ int std3D_DrawIndexedPrimitive(D3DPRIMITIVETYPE type, LPD3DTLVERTEX aVerts, size
 
 int std3D_DrawPrimitive(D3DPRIMITIVETYPE type, LPD3DTLVERTEX aVerts, size_t numVerts)
 {
-     // Copy vertices to buffers
-    if ( !std3D_CopyVertexDataToBuffer(aVerts, numVerts, NULL, 0) )
-    {
-        return 0;
-    }
-
-    // Draw
-    HRESULT hr = IDirect3DDevice9_DrawPrimitive(
-        std3D_pD3Device,
-        type,
-        (UINT)std3D_vbOffset,
-        numVerts - 1
-    );
-
-    if ( FAILED(hr) )
-    {
-        STDLOG_ERROR("DrawPrimitive failed: %s\n", std3D_D3DGetStatus(hr));
-        return 0;
-    }
-
-    // Drawing succeeded, advance offsets
-    std3D_vbOffset += numVerts;
+    //  // Copy vertices to buffers
+    // if ( !std3D_CopyVertexDataToBuffer(aVerts, numVerts, NULL, 0) )
+    // {
+    //     return 0;
+    // }
+    //
+    // // Draw
+    // HRESULT hr = IDirect3DDevice9_DrawPrimitive(
+    //     std3D_pD3Device,
+    //     type,
+    //     (UINT)std3D_vbOffset,
+    //     numVerts - 1
+    // );
+    //
+    // if ( FAILED(hr) )
+    // {
+    //     STDLOG_ERROR("DrawPrimitive failed: %s\n", std3D_D3DGetStatus(hr));
+    //     return 0;
+    // }
+    //
+    // // Drawing succeeded, advance offsets
+    // std3D_vbOffset += numVerts;
     return 1;
 }
 
-void std3D_UpdateShaderState(StdShaderHandle activeShader)
+void std3D_UpdateShaderState(GLShaderProgram* activeShader)
 {
-    if ( activeShader == STDSHADER_INVALIDHANDLE ) return;
+    if ( activeShader->handle == STDSHADER_INVALIDHANDLE ) return;
 
     // Set shader
-    if ( activeShader != std3D_activeShader || stdShader_IsShaderDirty(activeShader) )
+    if ( activeShader != std3D_activeShader )
     {
         if ( !stdShader_SetActiveShader(activeShader) )
         {
@@ -669,13 +632,14 @@ void std3D_UpdateShaderState(StdShaderHandle activeShader)
         }
 
         // Apply shader parameters
-        stdShader_ApplyShaderParams(activeShader);
+        //stdShader_ApplyShaderParams(activeShader);
         std3D_activeShader = activeShader;
     }
 }
 
 void J3DAPI std3D_DrawRenderList(tSysTexture* pTex, Std3DRenderState rdflags, LPD3DTLVERTEX aVerts, size_t numVerts, LPWORD aIndices, size_t numIndices)
 {
+    //STDLOG_DEBUG("Draw %d vertices\n", numVerts);
     if ( numVerts > (unsigned int)std3D_g_maxVertices )
     {
         STDLOG_ERROR("Error %d > %d maxVertices.\n", numVerts, std3D_g_maxVertices);
@@ -692,285 +656,248 @@ void J3DAPI std3D_DrawRenderList(tSysTexture* pTex, Std3DRenderState rdflags, LP
     // Set texture
     if ( pTex != std3D_pD3DTex )
     {
-        HRESULT d3dres = IDirect3DDevice9_SetTexture(std3D_pD3Device, 0, (IDirect3DBaseTexture9*)pTex);
-        if ( d3dres != D3D_OK )
-        {
-            STDLOG_ERROR("Error %s SetTexture.\n", std3D_D3DGetStatus(d3dres));
-        }
-        else
-        {
-            std3D_pD3DTex = pTex;
-        }
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, pTex->id);
+        GLint loc = glGetUniformLocation(std3D_activeShader->handle, "sTexture");
+        glUniform1i(loc, 0);
+        std3D_pD3DTex = pTex;
+        // HRESULT d3dres = IDirect3DDevice9_SetTexture(std3D_pD3Device, 0, (IDirect3DBaseTexture9*)pTex);
+        // if ( d3dres != D3D_OK )
+        // {
+        //     STDLOG_ERROR("Error %s SetTexture.\n", std3D_D3DGetStatus(d3dres));
+        // }
+        // else
+        // {
+        //     std3D_pD3DTex = pTex;
+        // }
     }
 
     // Fog processing
-    if ( std3D_bFogTable )
-    {
-        for ( size_t i = 0; i < numVerts; ++i )
-        {
-            D3DTLVERTEX* pCurVert = &aVerts[i];
-            pCurVert->specular = 0xFF000000;
-            if ( pCurVert->rhw > 0.0 )
-            {
-                pCurVert->specular = 0;
-                float depth = (std3D_fogEndDepth - pCurVert->rhw * std3D_zDepth) * std3D_fogDepthFactor;
-                if ( depth < 1.0 )
-                {
-                    pCurVert->specular = 0xFF000000;
-                    if ( depth >= 0.0 )
-                    {
-                        pCurVert->specular = (int)((1.0 - depth) * 255.0) << 24;
-                    }
-                }
-            }
-        }
-    }
+    // if ( std3D_bFogTable )
+    // {
+    //     for ( size_t i = 0; i < numVerts; ++i )
+    //     {
+    //         D3DTLVERTEX* pCurVert = &aVerts[i];
+    //         pCurVert->specular = 0xFF000000;
+    //         if ( pCurVert->rhw > 0.0 )
+    //         {
+    //             pCurVert->specular = 0;
+    //             float depth = (std3D_fogEndDepth - pCurVert->rhw * std3D_zDepth) * std3D_fogDepthFactor;
+    //             if ( depth < 1.0 )
+    //             {
+    //                 pCurVert->specular = 0xFF000000;
+    //                 if ( depth >= 0.0 )
+    //                 {
+    //                     pCurVert->specular = (int)((1.0 - depth) * 255.0) << 24;
+    //                 }
+    //             }
+    //         }
+    //     }
+    // }
 
     if ( std3D_bUseBuffers )
     {
-        if ( !std3D_DrawIndexedPrimitive(D3DPT_TRIANGLELIST, aVerts, numVerts, aIndices, numIndices) )
+        if ( !std3D_DrawIndexedPrimitive(GL_TRIANGLES, aVerts, numVerts, aIndices, numIndices) )
         {
              // draw failed
         }
-    }
-    else
-    {
-        HRESULT d3dres = IDirect3DDevice9_DrawIndexedPrimitiveUP(
-            std3D_pD3Device,
-            D3DPT_TRIANGLELIST,
-            0,
-            numVerts,
-            numIndices / 3,
-            aIndices,
-            D3DFMT_INDEX16,
-            aVerts,
-            sizeof(D3DTLVERTEX)
-        );
+        //SDL_GL_SwapWindow(stdWin95_GetSDLWindow());
 
-        if ( d3dres != D3D_OK )
-        {
-            STDLOG_ERROR("Error %s DrawIndexedPrimitiveUP.\n", std3D_D3DGetStatus(d3dres));
-        }
     }
+    // else
+    // {
+    //     HRESULT d3dres = IDirect3DDevice9_DrawIndexedPrimitiveUP(
+    //         std3D_pD3Device,
+    //         D3DPT_TRIANGLELIST,
+    //         0,
+    //         numVerts,
+    //         numIndices / 3,
+    //         aIndices,
+    //         D3DFMT_INDEX16,
+    //         aVerts,
+    //         sizeof(D3DTLVERTEX)
+    //     );
+    //
+    //     if ( d3dres != D3D_OK )
+    //     {
+    //         STDLOG_ERROR("Error %s DrawIndexedPrimitiveUP.\n", std3D_D3DGetStatus(d3dres));
+    //     }
+    // }
 }
 
 void std3D_SetWireframeRenderState(void)
 {
-    Std3DRenderState rdstate = std3D_renderState & ~(STD3D_RS_FOG_ENABLED | STD3D_RS_UNKNOWN_400 | STD3D_RS_UNKNOWN_200);
-    std3D_SetRenderState(rdstate);
-
-    HRESULT d3dres = IDirect3DDevice9_SetTexture(std3D_pD3Device, 0, NULL);
-    if ( d3dres != D3D_OK )
-    {
-        STDLOG_ERROR("Error %s SetTexture.\n", std3D_D3DGetStatus(d3dres));
-        return;
-    }
-
-    std3D_pD3DTex = NULL;
+    // Std3DRenderState rdstate = std3D_renderState & ~(STD3D_RS_FOG_ENABLED | STD3D_RS_UNKNOWN_400 | STD3D_RS_UNKNOWN_200);
+    // std3D_SetRenderState(rdstate);
+    //
+    // HRESULT d3dres = IDirect3DDevice9_SetTexture(std3D_pD3Device, 0, NULL);
+    // if ( d3dres != D3D_OK )
+    // {
+    //     STDLOG_ERROR("Error %s SetTexture.\n", std3D_D3DGetStatus(d3dres));
+    //     return;
+    // }
+    //
+    // std3D_pD3DTex = NULL;
 }
 
 void J3DAPI std3D_DrawLineStrip(LPD3DTLVERTEX aVerts, size_t numVerts)
 {
-    if ( numVerts > std3D_g_maxVertices )
-    {
-        STDLOG_ERROR("Error %d > %d maxVertices.\n", numVerts, std3D_g_maxVertices);
-        return;
-    }
-
-    if ( std3D_bShadersActive )
-    {
-        std3D_UpdateShaderState(std3D_defaultShaderWf);
-    }
-
-    if ( std3D_bUseBuffers )
-    {
-        if ( !std3D_DrawPrimitive(D3DPT_LINESTRIP, aVerts, numVerts) )
-        {
-             // draw failed
-        }
-    }
-    else
-    {
-        HRESULT d3dres = IDirect3DDevice9_DrawPrimitiveUP(
-            std3D_pD3Device,
-            D3DPT_LINESTRIP,
-            numVerts - 1,
-            aVerts,
-            sizeof(D3DTLVERTEX)
-        );
-
-        if ( d3dres != D3D_OK )
-        {
-            STDLOG_ERROR("Error %s DrawPrimitiveUP.\n", std3D_D3DGetStatus(d3dres));
-        }
-    }
+    // if ( numVerts > std3D_g_maxVertices )
+    // {
+    //     STDLOG_ERROR("Error %d > %d maxVertices.\n", numVerts, std3D_g_maxVertices);
+    //     return;
+    // }
+    //
+    // if ( std3D_bShadersActive )
+    // {
+    //     std3D_UpdateShaderState(std3D_defaultShaderWf);
+    // }
+    //
+    // if ( std3D_bUseBuffers )
+    // {
+    //     if ( !std3D_DrawPrimitive(D3DPT_LINESTRIP, aVerts, numVerts) )
+    //     {
+    //          // draw failed
+    //     }
+    // }
+    // else
+    // {
+    //     HRESULT d3dres = IDirect3DDevice9_DrawPrimitiveUP(
+    //         std3D_pD3Device,
+    //         D3DPT_LINESTRIP,
+    //         numVerts - 1,
+    //         aVerts,
+    //         sizeof(D3DTLVERTEX)
+    //     );
+    //
+    //     if ( d3dres != D3D_OK )
+    //     {
+    //         STDLOG_ERROR("Error %s DrawPrimitiveUP.\n", std3D_D3DGetStatus(d3dres));
+    //     }
+    // }
 }
 
 void J3DAPI std3D_DrawPointList(LPD3DTLVERTEX aVerts, size_t numVerts)
 {
-    if ( numVerts > std3D_g_maxVertices )
-    {
-        STDLOG_ERROR("Error %d > %d maxVertices.\n", numVerts, std3D_g_maxVertices);
-        return;
-    }
-
-    if ( std3D_bShadersActive )
-    {
-        std3D_UpdateShaderState(std3D_defaultShaderWf);
-    }
-
-    if ( std3D_bUseBuffers )
-    {
-        if ( !std3D_DrawPrimitive(D3DPT_LINESTRIP, aVerts, numVerts) )
-        {
-             // draw failed
-        }
-    }
-    else
-    {
-        HRESULT d3dres = IDirect3DDevice9_DrawPrimitiveUP(
-            std3D_pD3Device,
-            D3DPT_POINTLIST,
-            numVerts,
-            aVerts,
-            sizeof(D3DTLVERTEX)
-        );
-
-        if ( d3dres != D3D_OK )
-        {
-            STDLOG_ERROR("Error %s DrawPrimitiveUP.\n", std3D_D3DGetStatus(d3dres));
-        }
-    }
+    // if ( numVerts > std3D_g_maxVertices )
+    // {
+    //     STDLOG_ERROR("Error %d > %d maxVertices.\n", numVerts, std3D_g_maxVertices);
+    //     return;
+    // }
+    //
+    // if ( std3D_bShadersActive )
+    // {
+    //     std3D_UpdateShaderState(std3D_defaultShaderWf);
+    // }
+    //
+    // if ( std3D_bUseBuffers )
+    // {
+    //     if ( !std3D_DrawPrimitive(D3DPT_LINESTRIP, aVerts, numVerts) )
+    //     {
+    //          // draw failed
+    //     }
+    // }
+    // else
+    // {
+    //     HRESULT d3dres = IDirect3DDevice9_DrawPrimitiveUP(
+    //         std3D_pD3Device,
+    //         D3DPT_POINTLIST,
+    //         numVerts,
+    //         aVerts,
+    //         sizeof(D3DTLVERTEX)
+    //     );
+    //
+    //     if ( d3dres != D3D_OK )
+    //     {
+    //         STDLOG_ERROR("Error %s DrawPrimitiveUP.\n", std3D_D3DGetStatus(d3dres));
+    //     }
+    // }
 }
 
 void J3DAPI std3D_SetRenderState(Std3DRenderState rdflags)
 {
-    if ( std3D_renderState != rdflags )
-    {
-        if ( (std3D_renderState & STD3D_RS_ZWRITE_DISABLED) != (rdflags & STD3D_RS_ZWRITE_DISABLED) )
-        {
-            if ( (rdflags & STD3D_RS_ZWRITE_DISABLED) != 0 )
-            {
-                IDirect3DDevice9_SetRenderState(std3D_pD3Device, D3DRS_ZWRITEENABLE, FALSE);
-            }
-            else
-            {
-                IDirect3DDevice9_SetRenderState(std3D_pD3Device, D3DRS_ZWRITEENABLE, TRUE);
-            }
-        }
+    if (std3D_renderState == rdflags)
+        return;
 
-        if ( (std3D_renderState & STD3D_RS_TEX_CPAMP_U) != (rdflags & STD3D_RS_TEX_CPAMP_U) )
-        {
-            if ( (rdflags & STD3D_RS_TEX_CPAMP_U) != 0 )
-            {
-                IDirect3DDevice9_SetSamplerState(std3D_pD3Device, 0, D3DSAMP_ADDRESSU, D3DTADDRESS_CLAMP);
-            }
-            else
-            {
-                IDirect3DDevice9_SetSamplerState(std3D_pD3Device, 0, D3DSAMP_ADDRESSU, D3DTADDRESS_WRAP);
-            }
-        }
-
-        if ( (std3D_renderState & STD3D_RS_TEX_CPAMP_V) != (rdflags & STD3D_RS_TEX_CPAMP_V) )
-        {
-            if ( (rdflags & STD3D_RS_TEX_CPAMP_V) != 0 )
-            {
-                IDirect3DDevice9_SetSamplerState(std3D_pD3Device, 0, D3DSAMP_ADDRESSV, D3DTADDRESS_CLAMP);
-            }
-            else
-            {
-                IDirect3DDevice9_SetSamplerState(std3D_pD3Device, 0, D3DSAMP_ADDRESSV, D3DTADDRESS_WRAP);
-            }
-        }
-
-        if ( (std3D_renderState & STD3D_RS_FOG_ENABLED) != (rdflags & STD3D_RS_FOG_ENABLED) )
-        {
-            if ( (rdflags & STD3D_RS_FOG_ENABLED) != 0 && std3D_bRenderFog )
-            {
-                if ( std3D_bShadersActive )
-                {
-                    stdShader_SetFog(std3D_bRenderFog, std3D_fogStartDepth, std3D_fogEndDepth, std3D_fogDepthFactor, std3D_fogColor);
-                }
-                else
-                {
-                    IDirect3DDevice9_SetRenderState(std3D_pD3Device, D3DRS_FOGENABLE, TRUE);
-
-                }
-            }
-            else
-            {
-                if ( std3D_bShadersActive )
-                {
-                    stdShader_DisableFog();
-                }
-                else
-                {
-                    IDirect3DDevice9_SetRenderState(std3D_pD3Device, D3DRS_FOGENABLE, FALSE);
-                }
-            }
-        }
-
-        // Update texture filtering
-        if ( (std3D_renderState & STD3D_RS_TEXFILTER_ANISOTROPIC) != (rdflags & STD3D_RS_TEXFILTER_ANISOTROPIC) )
-        {
-            if ( (rdflags & STD3D_RS_TEXFILTER_ANISOTROPIC) != 0 && std3D_bAnisotropicFilter )
-            {
-                if ( (std3D_pCurDevice->d3dDesc.TextureFilterCaps & D3DPTFILTERCAPS_MAGFANISOTROPIC) != 0 )
-                {
-                    IDirect3DDevice9_SetSamplerState(std3D_pD3Device, 0, D3DSAMP_MAGFILTER, D3DTEXF_ANISOTROPIC);
-                }
-                else if ( (std3D_pCurDevice->d3dDesc.TextureFilterCaps & D3DPTFILTERCAPS_MAGFPOINT) != 0 )
-                {
-                    IDirect3DDevice9_SetSamplerState(std3D_pD3Device, 0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
-                }
-                else if ( (std3D_pCurDevice->d3dDesc.TextureFilterCaps & D3DPTFILTERCAPS_MAGFPOINT) != 0 )
-                {
-                    IDirect3DDevice9_SetSamplerState(std3D_pD3Device, 0, D3DSAMP_MAGFILTER, D3DTEXF_POINT);
-                }
-
-                IDirect3DDevice9_SetSamplerState(std3D_pD3Device, 0, D3DSAMP_MINFILTER, D3DTEXF_ANISOTROPIC);
-            }
-            else if ( ((rdflags & STD3D_RS_TEXFILTER_BILINEAR) != 0 || !std3D_bAnisotropicFilter)
-                && (std3D_pCurDevice->d3dDesc.TextureFilterCaps & D3DPTFILTERCAPS_MAGFLINEAR) != 0 )
-            {
-                IDirect3DDevice9_SetSamplerState(std3D_pD3Device, 0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
-                IDirect3DDevice9_SetSamplerState(std3D_pD3Device, 0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
-            }
-            else if ( (std3D_pCurDevice->d3dDesc.TextureFilterCaps & D3DPTFILTERCAPS_MAGFPOINT) != 0 )
-            {
-                IDirect3DDevice9_SetSamplerState(std3D_pD3Device, 0, D3DSAMP_MAGFILTER, D3DTEXF_POINT);
-                IDirect3DDevice9_SetSamplerState(std3D_pD3Device, 0, D3DSAMP_MINFILTER, D3DTEXF_POINT);
-            }
-        }
-        else if ( (std3D_renderState & STD3D_RS_TEXFILTER_BILINEAR) != (rdflags & STD3D_RS_TEXFILTER_BILINEAR) )
-        {
-            if ( (rdflags & STD3D_RS_TEXFILTER_BILINEAR) != 0 )
-            {
-                IDirect3DDevice9_SetSamplerState(std3D_pD3Device, 0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
-                IDirect3DDevice9_SetSamplerState(std3D_pD3Device, 0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
-            }
-            else if ( (std3D_pCurDevice->d3dDesc.TextureFilterCaps & D3DPTFILTERCAPS_MAGFPOINT) != 0 )
-            {
-                IDirect3DDevice9_SetSamplerState(std3D_pD3Device, 0, D3DSAMP_MAGFILTER, D3DTEXF_POINT);
-                IDirect3DDevice9_SetSamplerState(std3D_pD3Device, 0, D3DSAMP_MINFILTER, D3DTEXF_POINT);
-            }
-        }
-
-        if ( (std3D_renderState & STD3D_RS_ALPHAREF_SET) != (rdflags & STD3D_RS_ALPHAREF_SET) )
-        {
-            if ( (rdflags & STD3D_RS_ALPHAREF_SET) != 0 )
-            {
-                IDirect3DDevice9_SetRenderState(std3D_pD3Device, D3DRS_ALPHAREF, 160);
-                std3D_renderState = rdflags;
-                return;
-            }
-
-            IDirect3DDevice9_SetRenderState(std3D_pD3Device, D3DRS_ALPHAREF, 0);
-        }
-
-        std3D_renderState = rdflags;
+    // --- ZWRITE ---
+    if ((std3D_renderState & STD3D_RS_ZWRITE_DISABLED) != (rdflags & STD3D_RS_ZWRITE_DISABLED)) {
+        if (rdflags & STD3D_RS_ZWRITE_DISABLED)
+            glDepthMask(GL_FALSE);
+        else
+            glDepthMask(GL_TRUE);
     }
+
+    // --- Texture Address Mode U/V ---
+    if ((std3D_renderState & STD3D_RS_TEX_CPAMP_U) != (rdflags & STD3D_RS_TEX_CPAMP_U)) {
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,
+            (rdflags & STD3D_RS_TEX_CPAMP_U) ? GL_CLAMP_TO_EDGE : GL_REPEAT);
+    }
+
+    if ((std3D_renderState & STD3D_RS_TEX_CPAMP_V) != (rdflags & STD3D_RS_TEX_CPAMP_V)) {
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,
+            (rdflags & STD3D_RS_TEX_CPAMP_V) ? GL_CLAMP_TO_EDGE : GL_REPEAT);
+    }
+
+    // --- Fog ---
+    if ((std3D_renderState & STD3D_RS_FOG_ENABLED) != (rdflags & STD3D_RS_FOG_ENABLED)) {
+        if ((rdflags & STD3D_RS_FOG_ENABLED) && std3D_bRenderFog) {
+            if (std3D_bShadersActive) {
+                stdShader_SetFog(std3D_bRenderFog, std3D_fogStartDepth,
+                                 std3D_fogEndDepth, std3D_fogDepthFactor, std3D_fogColor);
+            } else {
+                glEnable(GL_FOG); // nur Compatibility Profile
+            }
+        } else {
+            if (std3D_bShadersActive)
+                stdShader_DisableFog();
+            else
+                glDisable(GL_FOG);
+        }
+    }
+
+    // --- Texture Filter ---
+    //TODO: add anistropic filtering later
+    if ((std3D_renderState & STD3D_RS_TEXFILTER_ANISOTROPIC) != (rdflags & STD3D_RS_TEXFILTER_ANISOTROPIC)) {
+        // if ((rdflags & STD3D_RS_TEXFILTER_ANISOTROPIC) && std3D_bAnisotropicFilter) {
+        //     GLfloat maxAniso = 0.0f;
+        //     glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY, &maxAniso);
+        //     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY, maxAniso);
+        //     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        //     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        // } else {
+        //     // zurück zu bilinear
+        //     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY, 1.0f);
+        //     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        //     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        // }
+    } else if ((std3D_renderState & STD3D_RS_TEXFILTER_BILINEAR) != (rdflags & STD3D_RS_TEXFILTER_BILINEAR)) {
+        if (rdflags & STD3D_RS_TEXFILTER_BILINEAR) {
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        } else {
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        }
+    }
+
+    // --- Alpha Reference / Alpha Test ---
+    if ((std3D_renderState & STD3D_RS_ALPHAREF_SET) != (rdflags & STD3D_RS_ALPHAREF_SET)) {
+        if (rdflags & STD3D_RS_ALPHAREF_SET) {
+            glEnable(GL_ALPHA_TEST);
+            glAlphaFunc(GL_GREATER, 160.0f / 255.0f);
+        } else {
+            glDisable(GL_ALPHA_TEST);
+        }
+    }
+
+    // Update cached flags
+    std3D_renderState = rdflags;
+
+    GLenum err = glGetError();
+    if (err != GL_NO_ERROR)
+        STDLOG_ERROR("OpenGL error 0x%x in std3D_SetRenderState.\n", err);
 }
+
 
 void J3DAPI std3D_AllocSystemTexture(tSystemTexture* pTexture, tVBuffer** apVBuffers, size_t numMipLevels, StdColorFormatType formatType)
 {
@@ -1109,7 +1036,7 @@ void J3DAPI std3D_ClearSystemTexture(tSystemTexture* pTex)
     if ( pTex->pCachedTexture )
     {
         std3D_RemoveTextureFromCacheList(pTex);
-        IDirect3DTexture9_Release(pTex->pCachedTexture);
+        //IDirect3DTexture9_Release(pTex->pCachedTexture);
     }
 
     memset(pTex, 0, sizeof(tSystemTexture));
@@ -1121,142 +1048,85 @@ void J3DAPI std3D_AddToTextureCache(tSystemTexture* pCacheTexture, StdColorForma
 
     STD_ASSERTREL(pCacheTexture);
 
-    LPDIRECT3DTEXTURE9 pD3DTex = NULL;
-
-    if ( pCacheTexture->numMipLevels == 0 || !pCacheTexture->apMipmaps )
-    {
-        STDLOG_ERROR("No Source texture.\n");
-        goto error;
+    if (pCacheTexture->numMipLevels == 0 || !pCacheTexture->apMipmaps) {
+        STDLOG_ERROR("No source texture.\n");
+        return;
     }
 
-    if ( pCacheTexture->textureSize > std3D_pCurDevice->availableMemory )
-    {
+
+    if (pCacheTexture->textureSize > std3D_pCurDevice->availableMemory) {
         std3D_PurgeTextureCache(pCacheTexture->textureSize);
     }
 
-    const size_t numMipmaps = std3D_bAutoGenMipmap ? 1 : pCacheTexture->numMipLevels;
-    const DWORD usage       = std3D_bAutoGenMipmap ? D3DUSAGE_AUTOGENMIPMAP : 0;
 
-    HRESULT d3dres = IDirect3DDevice9_CreateTexture(
-        std3D_pD3Device,
-        pCacheTexture->apMipmaps[0]->rasterInfo.width,
-        pCacheTexture->apMipmaps[0]->rasterInfo.height,
-        std3D_bAutoGenMipmap ? 0 : numMipmaps,
-        usage,
-        pCacheTexture->format,
-        D3DPOOL_MANAGED, // IMPORTANT: Must be managed video/system memory to copy pixel data to
-        &pD3DTex,
-        NULL
-    );
+    GLuint tex = 0;
+    glGenTextures(1, &tex);
+    glBindTexture(GL_TEXTURE_2D, tex);
 
-    while ( d3dres == D3DERR_OUTOFVIDEOMEMORY )
+
+    bool autoMipmap = std3D_bAutoGenMipmap;
+    const size_t numMipmaps = autoMipmap ? 1 : pCacheTexture->numMipLevels;
+
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, autoMipmap ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+
+    //glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, pCacheTexture->apMipmaps[0]->rasterInfo.width);
+
+
+    for (size_t mm = 0; mm < numMipmaps; ++mm)
     {
-        if ( !std3D_PurgeTextureCache(pCacheTexture->textureSize) )
-        {
-            STDLOG_ERROR("Error: Unable to purge texture cache for %x bytes!!!.\n", pCacheTexture->textureSize);
-            pD3DTex = NULL;
-            goto error;
+        tVBuffer* mip = pCacheTexture->apMipmaps[mm];
+        if (!mip || !mip->pPixels) {
+            STDLOG_ERROR("Missing mipmap %zu.\n", mm);
+            continue;
         }
 
-        d3dres = IDirect3DDevice9_CreateTexture(
-            std3D_pD3Device,
-            pCacheTexture->apMipmaps[0]->rasterInfo.width,
-            pCacheTexture->apMipmaps[0]->rasterInfo.height,
-            std3D_bAutoGenMipmap ? 0 : numMipmaps,
-            usage,
-            pCacheTexture->format,
-            D3DPOOL_MANAGED, // IMPORTANT: Must be managed video/system memory to copy pixel data to
-            &pD3DTex,
-            NULL
+        GLenum formatGL = mip->gl.format;
+        GLenum typeGL   = mip->gl.type; // je nach deiner Farbdefinition
+        GLenum internalFormatGL = mip->gl.internalFormat;        // GPU-interner Speicher
+
+        GLsizei width = (GLsizei)mip->rasterInfo.width;
+        GLsizei height = (GLsizei)mip->rasterInfo.height;
+        for (size_t i = 0; i < width*height; ++i) {
+            mip->pPixels[i*4 + 3] = 255; // A = 1.0
+        }
+        glTexImage2D(
+            GL_TEXTURE_2D,
+            (GLint)mm,
+            internalFormatGL,
+            (GLsizei)mip->rasterInfo.width,
+            (GLsizei)mip->rasterInfo.height,
+            0,
+            formatGL,
+            typeGL,
+            mip->pPixels
         );
     }
 
-    if ( d3dres != D3D_OK )
-    {
-        STDLOG_ERROR("Error %s creating Direct3D texture for cache.\n", std3D_D3DGetStatus(d3dres));
-        goto error;
+    if (autoMipmap) {
+        glGenerateMipmap(GL_TEXTURE_2D);
     }
 
-    // Copy from device-independent texture to video memory using direct pixel access and LOD 0 texture only
-    for ( uint32_t mmNum = 0; mmNum < numMipmaps; ++mmNum )
-    {
-        if ( !stdDisplay_VBufferLock(pCacheTexture->apMipmaps[mmNum]) )
-        {
-            STDLOG_ERROR("Failed to lock source texture level %d.\n", mmNum);
-            goto error;
-        }
-
-        // Lock destination texture (video memory, D3DPOOL_MANAGED)
-        D3DLOCKED_RECT destRect = { 0 };
-        d3dres = IDirect3DTexture9_LockRect(pD3DTex, mmNum, &destRect, NULL, 0);
-
-        while ( d3dres == D3DERR_OUTOFVIDEOMEMORY )
-        {
-            // Unlock source before retrying
-            stdDisplay_VBufferUnlock(pCacheTexture->apMipmaps[mmNum]);
-
-            if ( !std3D_PurgeTextureCache(pCacheTexture->textureSize) )
-            {
-                STDLOG_ERROR("Error: Unable to purge texture cache for %x bytes!!!.\n", pCacheTexture->textureSize);
-                goto error;
-            }
-
-            // Re-lock source
-            if ( !stdDisplay_VBufferLock(pCacheTexture->apMipmaps[mmNum]) )
-            {
-                STDLOG_ERROR("Failed re-locking source texture level %d.\n", mmNum);
-                goto error;
-            }
-
-            // Retry locking destination
-            d3dres = IDirect3DTexture9_LockRect(pD3DTex, mmNum, &destRect, NULL, 0);
-        }
-
-        if ( d3dres != D3D_OK )
-        {
-            stdDisplay_VBufferUnlock(pCacheTexture->apMipmaps[mmNum]);
-            STDLOG_ERROR("Error %s locking destination texture level %d.\n", std3D_D3DGetStatus(d3dres), mmNum);
-            goto error;
-        }
-
-        // Get mip level dimensions
-        D3DSURFACE_DESC desc = { 0 };
-        IDirect3DTexture9_GetLevelDesc(pD3DTex, mmNum, &desc);
-
-        // Copy pixel data row by row
-        for ( uint32_t row = 0; row < desc.Height; ++row )
-        {
-            void* pSrcPixels  = pCacheTexture->apMipmaps[mmNum]->pPixels + row * pCacheTexture->apMipmaps[mmNum]->rasterInfo.rowSize;
-            void* pDestPixels = (uint8_t*)destRect.pBits + row * destRect.Pitch;
-            size_t rowBytes   = J3DMIN(pCacheTexture->apMipmaps[mmNum]->rasterInfo.rowSize, destRect.Pitch);
-            memcpy(pDestPixels, pSrcPixels, rowBytes);
-        }
-
-        // Unlock both textures
-        stdDisplay_VBufferUnlock(pCacheTexture->apMipmaps[mmNum]);
-        d3dres = IDirect3DTexture9_UnlockRect(pD3DTex, mmNum);
-        if ( d3dres != D3D_OK )
-        {
-            STDLOG_ERROR("Error %s unlocking destination texture level %d.\n", std3D_D3DGetStatus(d3dres), mmNum);
-            goto error;
-        }
+    // Fehler prüfen
+    GLenum err = glGetError();
+    if (err != GL_NO_ERROR) {
+        STDLOG_ERROR("OpenGL error 0x%x while uploading texture.\n", err);
+        glDeleteTextures(1, &tex);
+        return;
     }
 
-    // Success
-    pCacheTexture->pCachedTexture = pD3DTex;
-    pCacheTexture->frameNum       = std3D_frameCount;
+    tSysTexture* texture = STDMALLOC(sizeof(tSysTexture));
+    texture->id = tex;
+    // Erfolg: in Cache eintragen
+    pCacheTexture->pCachedTexture = texture;
+    pCacheTexture->frameNum = std3D_frameCount;
     std3D_AddTextureToCacheList(pCacheTexture);
-    return;
-
-error:
-    if ( pD3DTex )
-    {
-        IDirect3DTexture9_Release(pD3DTex);
-    }
-
-    pCacheTexture->pCachedTexture = NULL;
-    pCacheTexture->frameNum       = 0;
-    STDLOG_ERROR("Done error exit from std3D_AddToTextureCache.\n");
 }
 
 size_t J3DAPI std3D_GetMipMapCount(const tSystemTexture* pTexture)
@@ -1272,21 +1142,18 @@ size_t J3DAPI std3D_GetMipMapCount(const tSystemTexture* pTexture)
 void std3D_ResetTextureCache(void)
 {
     STDLOG_DEBUG("Clearing texture cache....\n");
-    if ( std3D_pD3Device )
-    {
-        HRESULT d3dres = IDirect3DDevice9_SetTexture(std3D_pD3Device, 0, NULL);
-        if ( d3dres != D3D_OK )
-        {
-            STDLOG_ERROR("Error %s SetTexture.\n", std3D_D3DGetStatus(d3dres));
-        }
-    }
+
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+
 
     tSystemTexture* pCurTex = std3D_pFirstTexCache;
-    while ( pCurTex )
+    while (pCurTex)
     {
-        if ( pCurTex->pCachedTexture )
+        if (pCurTex->pCachedTexture)
         {
-            IDirect3DTexture9_Release(pCurTex->pCachedTexture);
+            GLuint tex = (GLuint)(uintptr_t)pCurTex->pCachedTexture;
+            glDeleteTextures(1, &tex);
             pCurTex->pCachedTexture = NULL;
         }
 
@@ -1298,17 +1165,24 @@ void std3D_ResetTextureCache(void)
         pCurTex = pNextTex;
     }
 
+    // 3️⃣ Cacheverwaltung zurücksetzen
     std3D_pFirstTexCache    = NULL;
     std3D_pLastTexCache     = NULL;
     std3D_numCachedTextures = 0;
 
-    if ( std3D_pCurDevice )
+    if (std3D_pCurDevice)
     {
         std3D_pCurDevice->availableMemory = std3D_pCurDevice->totalMemory;
     }
 
     std3D_frameCount = 1;
     std3D_pD3DTex    = NULL;
+
+    GLenum err = glGetError();
+    if (err != GL_NO_ERROR)
+    {
+        STDLOG_ERROR("OpenGL error 0x%x while resetting texture cache.\n", err);
+    }
 }
 
 void J3DAPI std3D_UpdateFrameCount(tSystemTexture* pTexture)
@@ -1387,493 +1261,227 @@ int std3D_InitRenderState(void)
 {
     std3D_renderState = 0;
 
-   // Set vertex format for pre-transformed vertices
-    if ( !std3D_bShadersActive )
-    {
-        if ( IDirect3DDevice9_SetFVF(std3D_pD3Device, D3DTLVERTEX_FVF) != D3D_OK )
-        {
-            return 0;
-        }
-    }
-
-    // Make sure clipping is enabled
-    if ( IDirect3DDevice9_SetRenderState(std3D_pD3Device, D3DRS_CLIPPING, TRUE) != D3D_OK )
-    {
-        return 0;
-    }
-
-    if ( IDirect3DDevice9_SetRenderState(std3D_pD3Device, D3DRS_ZENABLE, TRUE) != D3D_OK )
-    {
-        return 0;
-    }
-
-    if ( IDirect3DDevice9_SetRenderState(std3D_pD3Device, D3DRS_ZWRITEENABLE, TRUE) != D3D_OK )
-    {
-        return 0;
-    }
-
-    if ( IDirect3DDevice9_SetRenderState(std3D_pD3Device, D3DRS_ZFUNC, D3DCMP_LESSEQUAL) != D3D_OK )
-    {
-        return 0;
-    }
-
+    glEnable(GL_DEPTH_TEST);
+    glDepthMask(GL_TRUE);
+    glDepthFunc(GL_LEQUAL);
     std3D_renderState |= STD3D_RS_UNKNOWN_1;
 
-    // Set mipmap filter
-    if ( std3D_SetMipmapFilter(STD3D_MIPMAPFILTER_TRILINEAR) )
-    {
-        return 0;
-    }
 
-    // Set texture filtering
-    if ( std3D_bAnisotropicFilter )
-    {
-        if ( IDirect3DDevice9_SetSamplerState(std3D_pD3Device, 0, D3DSAMP_MAXANISOTROPY, std3D_pCurDevice->d3dDesc.MaxAnisotropy) != D3D_OK )
-        {
-            return 0;
-        }
-    }
+    std3D_SetMipmapFilter(STD3D_MIPMAPFILTER_TRILINEAR);
 
-    if ( (std3D_pCurDevice->d3dDesc.TextureFilterCaps & D3DPTFILTERCAPS_MINFANISOTROPIC) != 0 )
-    {
-        if ( (std3D_pCurDevice->d3dDesc.TextureFilterCaps & D3DPTFILTERCAPS_MAGFANISOTROPIC) != 0 )
-        {
-            if ( IDirect3DDevice9_SetSamplerState(std3D_pD3Device, 0, D3DSAMP_MAGFILTER, D3DTEXF_ANISOTROPIC) != D3D_OK )
-            {
-                return 0;
-            }
-        }
-        else
-        {
-            if ( IDirect3DDevice9_SetSamplerState(std3D_pD3Device, 0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR) != D3D_OK )
-            {
-                return 0;
-            }
-        }
+    glBindTexture(GL_TEXTURE_2D, 0); // Default-Basis
 
-        if ( IDirect3DDevice9_SetSamplerState(std3D_pD3Device, 0, D3DSAMP_MINFILTER, D3DTEXF_ANISOTROPIC) != D3D_OK )
-        {
-            return 0;
-        }
+    // if (std3D_bAnisotropicFilter)
+    // {
+    //     GLfloat maxAniso = 0.0f;
+    //     glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY, &maxAniso);
+    //     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY, maxAniso);
+    //     std3D_renderState |= STD3D_RS_TEXFILTER_ANISOTROPIC;
+    // }
+    // else
+    // {
+    //     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    //     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    //     std3D_renderState |= STD3D_RS_TEXFILTER_BILINEAR;
+    // }
 
-        std3D_renderState |= STD3D_RS_TEXFILTER_ANISOTROPIC;
-    }
-    else if ( (std3D_pCurDevice->d3dDesc.TextureFilterCaps & D3DPTFILTERCAPS_MAGFLINEAR) != 0 )
-    {
-        if ( IDirect3DDevice9_SetSamplerState(std3D_pD3Device, 0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR) != D3D_OK )
-        {
-            return 0;
-        }
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    std3D_renderState |= STD3D_RS_TEXFILTER_BILINEAR;
 
-        if ( IDirect3DDevice9_SetSamplerState(std3D_pD3Device, 0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR) != D3D_OK )
-        {
-            return 0;
-        }
+    // // --- 3️⃣ Texture Wrapping ---
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
-        std3D_renderState |= STD3D_RS_TEXFILTER_BILINEAR;
-    }
-    else if ( (std3D_pCurDevice->d3dDesc.TextureFilterCaps & D3DPTFILTERCAPS_MAGFPOINT) != 0 )
-    {
-        if ( IDirect3DDevice9_SetSamplerState(std3D_pD3Device, 0, D3DSAMP_MAGFILTER, D3DTEXF_POINT) != D3D_OK )
-        {
-            return 0;
-        }
+    // --- 4️⃣ Alpha Blending ---
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    // Alpha-Test (falls Fixed-Function-Kompatibilität)
+    glEnable(GL_ALPHA_TEST);
+    glAlphaFunc(GL_GREATER, 0.0f);
 
-        if ( IDirect3DDevice9_SetSamplerState(std3D_pD3Device, 0, D3DSAMP_MINFILTER, D3DTEXF_POINT) != D3D_OK )
-        {
-            return 0;
-        }
-    }
 
-    // Just backport for DirectX 6 state
-    std3D_renderState |= STD3D_RS_SUBPIXEL_CORRECTION;
+    // glShadeModel(GL_SMOOTH); // D3DSHADE_GOURAUD
+    // glDisable(GL_LIGHTING);
+    // glDisable(GL_COLOR_MATERIAL);
+    // glDisable(GL_SEPARATE_SPECULAR_COLOR);
 
-    // Set texture wrapping
-    if ( IDirect3DDevice9_SetSamplerState(std3D_pD3Device, 0, D3DSAMP_ADDRESSU, D3DTADDRESS_WRAP) != D3D_OK )
-    {
-        return 0;
-    }
 
-    if ( IDirect3DDevice9_SetSamplerState(std3D_pD3Device, 0, D3DSAMP_ADDRESSV, D3DTADDRESS_WRAP) != D3D_OK )
-    {
-        return 0;
-    }
+    std3D_bRenderFog = false;
+    glDisable(GL_FOG);
 
-    // Set alpha blend state
-    // TODO: Check for alpha support is backported from vanilla DirectX 6 version.
-    //       Could probably be omitted.
-    if ( (std3D_pCurDevice->d3dDesc.TextureOpCaps & D3DTEXOPCAPS_MODULATE) != 0
-        && (std3D_pCurDevice->d3dDesc.SrcBlendCaps & D3DPBLENDCAPS_SRCALPHA) != 0
-        && (std3D_pCurDevice->d3dDesc.DestBlendCaps & D3DPBLENDCAPS_INVSRCALPHA) != 0 )
-    {
-        if ( IDirect3DDevice9_SetRenderState(std3D_pD3Device, D3DRS_ALPHABLENDENABLE, TRUE) != D3D_OK )
-        {
-            return 0;
-        }
 
-        if ( IDirect3DDevice9_SetTextureStageState(std3D_pD3Device, 0, D3DTSS_COLOROP, D3DTOP_MODULATE) != D3D_OK )
-        {
-            return 0;
-        }
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-        if ( IDirect3DDevice9_SetTextureStageState(std3D_pD3Device, 0, D3DTSS_COLORARG1, D3DTA_TEXTURE) != D3D_OK )
-        {
-            return 0;
-        }
-
-        if ( IDirect3DDevice9_SetTextureStageState(std3D_pD3Device, 0, D3DTSS_COLORARG2, D3DTA_CURRENT) != D3D_OK )
-        {
-            return 0;
-        }
-
-        if ( IDirect3DDevice9_SetTextureStageState(std3D_pD3Device, 0, D3DTSS_ALPHAOP, D3DTOP_MODULATE) != D3D_OK )
-        {
-            return 0;
-        }
-
-        if ( IDirect3DDevice9_SetTextureStageState(std3D_pD3Device, 0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE) != D3D_OK )
-        {
-            return 0;
-        }
-
-        if ( IDirect3DDevice9_SetTextureStageState(std3D_pD3Device, 0, D3DTSS_ALPHAARG2, D3DTA_CURRENT) != D3D_OK )
-        {
-            return 0;
-        }
-
-        if ( IDirect3DDevice9_SetRenderState(std3D_pD3Device, D3DRS_SRCBLEND, D3DBLEND_SRCALPHA) != D3D_OK )
-        {
-            return 0;
-        }
-
-        if ( IDirect3DDevice9_SetRenderState(std3D_pD3Device, D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA) != D3D_OK )
-        {
-            return 0;
-        }
-
-        if ( IDirect3DDevice9_SetRenderState(std3D_pD3Device, D3DRS_ALPHATESTENABLE, TRUE) != D3D_OK )
-        {
-            return 0;
-        }
-
-        if ( (std3D_pCurDevice->d3dDesc.AlphaCmpCaps & D3DPCMPCAPS_GREATER) != 0 )
-        {
-            if ( IDirect3DDevice9_SetRenderState(std3D_pD3Device, D3DRS_ALPHAFUNC, D3DCMP_GREATER) != D3D_OK )
-            {
-                return 0;
-            }
-
-            if ( IDirect3DDevice9_SetRenderState(std3D_pD3Device, D3DRS_ALPHAREF, 0) != D3D_OK )
-            {
-                return 0;
-            }
-        }
-    }
-    else if ( IDirect3DDevice9_SetRenderState(std3D_pD3Device, D3DRS_ALPHABLENDENABLE, FALSE) != D3D_OK ) // No alpha blending supported
-    {
-        return 0;
-    }
-
-    // Set shade mode
-    if ( IDirect3DDevice9_SetRenderState(std3D_pD3Device, D3DRS_SHADEMODE, D3DSHADE_GOURAUD) != D3D_OK )
-    {
-        return 0;
-    }
-
-    // Disable specular highlights
-    if ( IDirect3DDevice9_SetRenderState(std3D_pD3Device, D3DRS_SPECULARENABLE, FALSE) != D3D_OK )
-    {
-        return 0;
-    }
-
-    // Disable lightening
-    if ( IDirect3DDevice9_SetRenderState(std3D_pD3Device, D3DRS_LIGHTING, FALSE) != D3D_OK )
-    {
-        return 0;
-    }
-
-    if ( !(std3D_pCurDevice->d3dDesc.RasterCaps & D3DPRASTERCAPS_FOGTABLE) && !(std3D_pCurDevice->d3dDesc.RasterCaps & D3DPRASTERCAPS_FOGVERTEX) )
-    {
-        std3D_bRenderFog = false;
-    }
-
-    if ( IDirect3DDevice9_SetRenderState(std3D_pD3Device, D3DRS_FOGENABLE, FALSE) != D3D_OK )
-    {
-        return 0;
-    }
-
-    if ( std3D_bShadersActive )
-    {
-        stdShader_DisableFog();
-    }
-
-    if ( IDirect3DDevice9_SetRenderState(std3D_pD3Device, D3DRS_FILLMODE, D3DFILL_SOLID) != D3D_OK )
-    {
-        return 0;
-    }
-
-    if ( IDirect3DDevice9_SetRenderState(std3D_pD3Device, D3DRS_DITHERENABLE, TRUE) != D3D_OK )
-    {
-        return 0;
-    }
+    glEnable(GL_DITHER);
 
     std3D_renderState |= STD3D_RS_UNKNOWN_2;
 
-    return IDirect3DDevice9_SetRenderState(std3D_pD3Device, D3DRS_CULLMODE, D3DCULL_NONE) == D3D_OK;
+    // --- 9️⃣ Culling ---
+    glDisable(GL_CULL_FACE); // D3DCULL_NONE
+    glFrontFace(GL_CCW);
+
+    GLenum err = glGetError();
+    if (err != GL_NO_ERROR)
+    {
+        STDLOG_ERROR("OpenGL error 0x%x during render state init.\n", err);
+        return false;
+    }
+
+    return true;
 }
 
 int J3DAPI std3D_SetMipmapFilter(Std3DMipmapFilterType filter)
 {
-    if ( filter == STD3D_MIPMAPFILTER_TRILINEAR
-        && (std3D_pCurDevice->d3dDesc.TextureFilterCaps & D3DPTFILTERCAPS_MIPFLINEAR) == 0 )
-    {
-        filter = STD3D_MIPMAPFILTER_BILINEAR;
+    if (filter == std3D_mipmapFilter)
+        return 0;
+
+    GLenum minFilter = GL_LINEAR; // default: keine Mipmaps
+    switch (filter) {
+    case STD3D_MIPMAPFILTER_BILINEAR:  minFilter = GL_LINEAR_MIPMAP_NEAREST; break;
+    case STD3D_MIPMAPFILTER_TRILINEAR: minFilter = GL_LINEAR_MIPMAP_LINEAR;  break;
+    case STD3D_MIPMAPFILTER_NONE:      minFilter = GL_LINEAR;                break;
+    default:                           minFilter = GL_LINEAR;                break;
     }
 
-    if ( filter == STD3D_MIPMAPFILTER_BILINEAR
-        && (std3D_pCurDevice->d3dDesc.TextureFilterCaps & D3DPTFILTERCAPS_MIPFPOINT) == 0 )
-    {
-        filter = STD3D_MIPMAPFILTER_NONE;
-    }
-
-    HRESULT d3dres = D3D_OK;
-    if ( filter != std3D_mipmapFilter )
-    {
-        switch ( filter )
-        {
-            case STD3D_MIPMAPFILTER_BILINEAR:
-                d3dres = IDirect3DDevice9_SetSamplerState(std3D_pD3Device, 0, D3DSAMP_MIPFILTER, D3DTEXF_POINT);
-                break;
-            case STD3D_MIPMAPFILTER_TRILINEAR:
-                d3dres = IDirect3DDevice9_SetSamplerState(std3D_pD3Device, 0, D3DSAMP_MIPFILTER, D3DTEXF_LINEAR);
-                break;
-            default:
-                d3dres = IDirect3DDevice9_SetSamplerState(std3D_pD3Device, 0, D3DSAMP_MIPFILTER, D3DTEXF_NONE);
-                break;
-        }
-    }
+    std3D_currentMipmapFiler = minFilter;
 
     std3D_mipmapFilter = filter;
-    return d3dres != D3D_OK;
+    return 0;
 }
 
 int J3DAPI std3D_SetProjection(float fov, float nearPlane, float farPlane)
 {
-    float distance = farPlane - nearPlane;
-    if ( fabs(distance) < 0.009999999776482582 )
-    {
-        return E_INVALIDARG;
-    }
+    if (fabsf(farPlane - nearPlane) < 1e-4f)
+        return 0;
 
-    float hfov = fov / 2.0f;
-    float sinhfov = sinf(hfov);
-    if ( fabs(sinhfov) < 0.009999999776482582f )
-    {
-        return E_INVALIDARG;
-    }
-
-    float Q = farPlane / distance;
-    float s = cosf(hfov) / sinhfov;
-
-    D3DMATRIX proj = { 0 };
-    proj._11 = s;
-    proj._22 = s;
-    proj._33 = Q;
-    proj._34 = 1.0f;
-    proj._43 = -(Q * nearPlane);
-
-    std3D_zDepth = distance * 10.0f;
-    return IDirect3DDevice9_SetTransform(std3D_pD3Device, D3DTS_PROJECTION, &proj);
+    // is this actually needed? Since we don't need extra projection matrix in shader.
+    // float f = 1.0f / tanf(fov * 0.5f * 0.01745329252);
+    //
+    // float proj[16] = {
+    //     f,    0,    0,                              0,
+    //     0,    f,    0,                              0,
+    //     0,    0,   (farPlane + nearPlane) / (nearPlane - farPlane),  -1,
+    //     0,    0,   (2.0f * farPlane * nearPlane) / (nearPlane - farPlane),  0
+    // };
+    //
+    // glMatrixMode(GL_PROJECTION);
+    // glLoadMatrixf(proj);
+    // glMatrixMode(GL_MODELVIEW);
+    return 1;
 }
 
 void J3DAPI std3D_EnableFog(int bEnabled, float density)
 {
-    std3D_bRenderFog = bEnabled;
-    if ( !std3D_pCurDevice || !std3D_pD3Device )
-    {
-        std3D_bFogTable  = false;
-        return;
-    }
-
-    std3D_g_fogDensity = density;
-
-    if ( std3D_bShadersActive )
-    {
-        return;
-    }
-
-     // Get device capabilities
-    D3DCAPS9 caps;
-    if ( FAILED(IDirect3DDevice9_GetDeviceCaps(std3D_pD3Device, &caps)) )
-    {
-        std3D_bRenderFog = false;
-        return;
-    }
-
-    // Check fog support
-    bool bTableFogSupported = (caps.RasterCaps & D3DPRASTERCAPS_FOGTABLE) != 0;
-    bool bVertexFogSupported = (caps.RasterCaps & D3DPRASTERCAPS_FOGVERTEX) != 0;
-
-    if ( !bTableFogSupported && !bVertexFogSupported && !std3D_bShadersActive )
-    {
-        std3D_bRenderFog = false;
-    }
-
-    std3D_bFogTable = bTableFogSupported && std3D_bRenderFog && !std3D_bShadersActive;
+    // std3D_bRenderFog = bEnabled;
+    // if ( !std3D_pCurDevice || !std3D_pD3Device )
+    // {
+    //     std3D_bFogTable  = false;
+    //     return;
+    // }
+    //
+    // std3D_g_fogDensity = density;
+    //
+    // if ( std3D_bShadersActive )
+    // {
+    //     return;
+    // }
+    //
+    //  // Get device capabilities
+    // D3DCAPS9 caps;
+    // if ( FAILED(IDirect3DDevice9_GetDeviceCaps(std3D_pD3Device, &caps)) )
+    // {
+    //     std3D_bRenderFog = false;
+    //     return;
+    // }
+    //
+    // // Check fog support
+    // bool bTableFogSupported = (caps.RasterCaps & D3DPRASTERCAPS_FOGTABLE) != 0;
+    // bool bVertexFogSupported = (caps.RasterCaps & D3DPRASTERCAPS_FOGVERTEX) != 0;
+    //
+    // if ( !bTableFogSupported && !bVertexFogSupported && !std3D_bShadersActive )
+    // {
+    //     std3D_bRenderFog = false;
+    // }
+    //
+    // std3D_bFogTable = bTableFogSupported && std3D_bRenderFog && !std3D_bShadersActive;
 }
 
 void J3DAPI std3D_SetFog(float red, float green, float blue, float startDepth, float endDepth)
 {
-    // Update table stare
-    std3D_EnableFog(std3D_bRenderFog, std3D_g_fogDensity);
-
-    if ( std3D_bShadersActive )
-    {
-        // Store fog parameters for shader use
-        std3D_fogStartDepth  = startDepth;
-        std3D_fogEndDepth    = (2.0f - std3D_g_fogDensity) * endDepth;
-        std3D_fogDepthFactor = 1.0f / (std3D_fogEndDepth - std3D_fogStartDepth);
-
-        std3D_fogColor[0] = red;
-        std3D_fogColor[1] = green;
-        std3D_fogColor[2] = blue;
-        std3D_fogColor[3] = 1.0f;
-    }
-    else
-    {
-        if ( IDirect3DDevice9_SetRenderState(std3D_pD3Device, D3DRS_FOGCOLOR, D3DRGB(red, green, blue)) == D3D_OK )
-        {
-            if ( std3D_g_fogDensity == 0.0f )
-            {
-                IDirect3DDevice9_SetRenderState(std3D_pD3Device, D3DRS_FOGTABLEMODE, D3DFOG_NONE);
-                IDirect3DDevice9_SetRenderState(std3D_pD3Device, D3DRS_FOGVERTEXMODE, D3DFOG_NONE);
-            }
-            else
-            {
-                endDepth = (2.0f - std3D_g_fogDensity) * endDepth;
-
-                bool bSuccess = false;
-                if ( std3D_bFogTable )
-                {
-                    // Use table fog for pre-transformed vertices
-                    if ( SUCCEEDED(IDirect3DDevice9_SetRenderState(std3D_pD3Device, D3DRS_FOGTABLEMODE, D3DFOG_LINEAR)) )
-                    {
-                        bSuccess = IDirect3DDevice9_SetRenderState(std3D_pD3Device, D3DRS_FOGSTART, *(DWORD*)(&startDepth)) == D3D_OK
-                            && IDirect3DDevice9_SetRenderState(std3D_pD3Device, D3DRS_FOGEND, *(DWORD*)(&endDepth)) == D3D_OK;
-                    }
-                }
-                else
-                {
-                    // Use vertex fog (for non-pre-transformed vertices)
-                    if ( SUCCEEDED(IDirect3DDevice9_SetRenderState(std3D_pD3Device, D3DRS_FOGVERTEXMODE, D3DFOG_LINEAR)) )
-                    {
-                        bSuccess = IDirect3DDevice9_SetRenderState(std3D_pD3Device, D3DRS_FOGSTART, *(DWORD*)(&startDepth)) == D3D_OK
-                            && IDirect3DDevice9_SetRenderState(std3D_pD3Device, D3DRS_FOGEND, *(DWORD*)(&endDepth)) == D3D_OK;
-                    }
-                }
-
-                if ( bSuccess )
-                {
-                    std3D_fogStartDepth  = startDepth;
-                    std3D_fogEndDepth    = endDepth;
-                    std3D_fogDepthFactor = 1.0f / (endDepth - startDepth);
-                }
-            }
-        }
-    }
+    // // Update table stare
+    // std3D_EnableFog(std3D_bRenderFog, std3D_g_fogDensity);
+    //
+    // if ( std3D_bShadersActive )
+    // {
+    //     // Store fog parameters for shader use
+    //     std3D_fogStartDepth  = startDepth;
+    //     std3D_fogEndDepth    = (2.0f - std3D_g_fogDensity) * endDepth;
+    //     std3D_fogDepthFactor = 1.0f / (std3D_fogEndDepth - std3D_fogStartDepth);
+    //
+    //     std3D_fogColor[0] = red;
+    //     std3D_fogColor[1] = green;
+    //     std3D_fogColor[2] = blue;
+    //     std3D_fogColor[3] = 1.0f;
+    // }
+    // else
+    // {
+    //     if ( IDirect3DDevice9_SetRenderState(std3D_pD3Device, D3DRS_FOGCOLOR, D3DRGB(red, green, blue)) == D3D_OK )
+    //     {
+    //         if ( std3D_g_fogDensity == 0.0f )
+    //         {
+    //             IDirect3DDevice9_SetRenderState(std3D_pD3Device, D3DRS_FOGTABLEMODE, D3DFOG_NONE);
+    //             IDirect3DDevice9_SetRenderState(std3D_pD3Device, D3DRS_FOGVERTEXMODE, D3DFOG_NONE);
+    //         }
+    //         else
+    //         {
+    //             endDepth = (2.0f - std3D_g_fogDensity) * endDepth;
+    //
+    //             bool bSuccess = false;
+    //             if ( std3D_bFogTable )
+    //             {
+    //                 // Use table fog for pre-transformed vertices
+    //                 if ( SUCCEEDED(IDirect3DDevice9_SetRenderState(std3D_pD3Device, D3DRS_FOGTABLEMODE, D3DFOG_LINEAR)) )
+    //                 {
+    //                     bSuccess = IDirect3DDevice9_SetRenderState(std3D_pD3Device, D3DRS_FOGSTART, *(DWORD*)(&startDepth)) == D3D_OK
+    //                         && IDirect3DDevice9_SetRenderState(std3D_pD3Device, D3DRS_FOGEND, *(DWORD*)(&endDepth)) == D3D_OK;
+    //                 }
+    //             }
+    //             else
+    //             {
+    //                 // Use vertex fog (for non-pre-transformed vertices)
+    //                 if ( SUCCEEDED(IDirect3DDevice9_SetRenderState(std3D_pD3Device, D3DRS_FOGVERTEXMODE, D3DFOG_LINEAR)) )
+    //                 {
+    //                     bSuccess = IDirect3DDevice9_SetRenderState(std3D_pD3Device, D3DRS_FOGSTART, *(DWORD*)(&startDepth)) == D3D_OK
+    //                         && IDirect3DDevice9_SetRenderState(std3D_pD3Device, D3DRS_FOGEND, *(DWORD*)(&endDepth)) == D3D_OK;
+    //                 }
+    //             }
+    //
+    //             if ( bSuccess )
+    //             {
+    //                 std3D_fogStartDepth  = startDepth;
+    //                 std3D_fogEndDepth    = endDepth;
+    //                 std3D_fogDepthFactor = 1.0f / (endDepth - startDepth);
+    //             }
+    //         }
+    //     }
+    // }
 }
 
 void std3D_ClearZBuffer(void)
 {
-    if ( std3D_pD3Device )
+    // Z- und Stencil-Werte, wie in Direct3D
+    glClearDepth(1.0f);
+    glClearStencil(0);
+
+    // Jetzt nur Depth- und Stencil-Buffer löschen
+    glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
+    GLenum err = glGetError();
+    if (err != GL_NO_ERROR)
     {
-        HRESULT d3dres = IDirect3DDevice9_Clear(
-            std3D_pD3Device,
-            1,
-            &std3D_activeRect,
-            D3DCLEAR_ZBUFFER | D3DCLEAR_STENCIL, // TODO: Add D3DCLEAR_TARGET when enabled
-            0,    // Color (black)
-            1.0f, // Z value
-            0     // Stencil value
-        );
-
-        if ( d3dres != D3D_OK )
-        {
-            STDLOG_ERROR("Error %s when clearing Z.\n", std3D_D3DGetStatus(d3dres));
-        }
+        STDLOG_ERROR("OpenGL error 0x%x when clearing Z.\n", err);
     }
-}
-
-int std3D_CreateViewport(void)
-{
-    // DirectX 9 doesn't use separate viewport objects like DX6
-    // The viewport is set directly on the device
-
-    D3DVIEWPORT9 viewport;
-    viewport.X      = 0;
-    viewport.Y      = 0;
-    viewport.Width  = stdDisplay_g_backBuffer.rasterInfo.width;
-    viewport.Height = stdDisplay_g_backBuffer.rasterInfo.height;
-    viewport.MinZ   = 0.0f;
-    viewport.MaxZ   = 1.0f;
-
-    HRESULT d3dres = IDirect3DDevice9_SetViewport(std3D_pD3Device, &viewport);
-    if ( d3dres != D3D_OK )
-    {
-        STDLOG_ERROR("Error %s when setting D3D9 viewport.\n", std3D_D3DGetStatus(d3dres));
-        return 0;
-    }
-
-    // Set the active rectangle (for compatibility with existing code)
-    std3D_activeRect.x1 = 0;
-    std3D_activeRect.y1 = 0;
-    std3D_activeRect.x2 = viewport.Width;
-    std3D_activeRect.y2 = viewport.Height;
-
-    // Clear the back buffer, Z-buffer, and stencil buffer
-    // DirectX 9 uses Clear() on the device instead of viewport Clear2()
-    d3dres = IDirect3DDevice9_Clear(
-        std3D_pD3Device,
-        0,                      // Count (0 = clear entire viewport)
-        NULL,                   // pRects (NULL = clear entire viewport)
-        D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER | D3DCLEAR_STENCIL,
-        0x00000000,            // Color (black)
-        1.0f,                  // Z value
-        0                      // Stencil value
-    );
-
-    if ( d3dres != D3D_OK )
-    {
-        STDLOG_ERROR("Error %s when clearing viewport.\n", std3D_D3DGetStatus(d3dres));
-        return 0;
-    }
-
-    return 1;
-}
-
-static bool J3DAPI std3D_GetZBufferFormat(tSysPixelFormat* pPixelFormat)
-{
-    if ( !std3D_pD3Device || !pPixelFormat )
-    {
-        return false;
-    }
-
-    // Check supported Z-buffer formats
-    D3DFORMAT aFormats[] = {
-        D3DFMT_D24S8,     // 24-bit depth, 8-bit stencil
-    };
-
-    for ( size_t i = 0; i < STD_ARRAYLEN(aFormats); i++ )
-    {
-        HRESULT hr = IDirect3D9_CheckDeviceFormat(std3D_pDirect3D, D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, stdDisplay_g_backBuffer.surface.desc.Format, D3DUSAGE_DEPTHSTENCIL, D3DRTYPE_SURFACE, aFormats[i]);
-        if ( SUCCEEDED(hr) )
-        {
-            *pPixelFormat = aFormats[i];
-            return true;
-        }
-    }
-
-    return false; // No suitable Z-buffer format found
 }
 
 static int std3D_BuildDeviceList(void)
@@ -1936,10 +1544,10 @@ static int std3D_BuildDeviceList(void)
 
         // TODO: proly no point to make log here since same info can be logged in stdDisplay
         STDLOG_STATUS("Found |%s|%s|%s|%s| D3D Device\n",
-            pD3DDriver->hasZBuffer ? "Z" : "Non-Z",
-            pD3DDriver->bAlphaTextureSupported ? "Alpha" : "No Alpha",
-            pD3DDriver->bStippledShadeSupported ? "Stippled" : "Blend",
-            pD3DDriver->bColorkeyTextureSupported ? "Colorkey" : "No Colorkey"
+                      pD3DDriver->hasZBuffer ? "Z" : "Non-Z",
+                      pD3DDriver->bAlphaTextureSupported ? "Alpha" : "No Alpha",
+                      pD3DDriver->bStippledShadeSupported ? "Stippled" : "Blend",
+                      pD3DDriver->bColorkeyTextureSupported ? "Colorkey" : "No Colorkey"
         );
 
         STDLOG_STATUS("Description: %s [%s]\n", pD3DDriver->deviceName, pD3DDriver->deviceDescription);
@@ -1956,77 +1564,124 @@ static void std3D_InitTextureFormats(void)
     std3D_bHasRGBTextureFormat = false;
 
     // Common DX9 texture formats
-    const D3DFORMAT formats[] = {
-        D3DFMT_R8G8B8,      // 24-bit RGB
-        D3DFMT_X8R8G8B8,    // 32-bit RGB
-        D3DFMT_A8R8G8B8,    // 32-bit ARGB
-        D3DFMT_R5G6B5,      // 16-bit RGB
-        D3DFMT_A1R5G5B5,    // 16-bit ARGB
-        D3DFMT_A4R4G4B4,    // 16-bit ARGB
-       // D3DFMT_X1R5G5B5,    // 16-bit RGB
-        D3DFMT_A8L8,        // 8-bit Alpha
-        D3DFMT_L8,          // 8-bit Luminance
-        D3DFMT_L16          // 16-bit Luminance
+    const GLenum formats[] = {
+        SDL_PIXELFORMAT_RGB24,      // 24-bit RGB
+        SDL_PIXELFORMAT_XRGB8888,    // 32-bit RGB
+        SDL_PIXELFORMAT_ARGB8888,    // 32-bit ARGB
+        SDL_PIXELFORMAT_RGB565,      // 16-bit RGB
+        SDL_PIXELFORMAT_ARGB1555,    // 16-bit ARGB
+        SDL_PIXELFORMAT_ABGR4444,    // 16-bit ARGB
     };
 
-    for ( size_t i = 0; i < STD_ARRAYLEN(formats) && std3D_numTextureFormats < STD_ARRAYLEN(std3D_aTextureFormats); ++i )
+    size_t numVideoModes = stdDisplay_GetNumVideoModes();
+    for (size_t i = 0; i < STD_ARRAYLEN(formats) && std3D_numTextureFormats < STD_ARRAYLEN(std3D_aTextureFormats); ++i)
     {
-        // Check if format is supported
-        if ( IDirect3D9_CheckDeviceFormat(std3D_pDirect3D, std3D_curDevice, D3DDEVTYPE_HAL, stdDisplay_g_backBuffer.surface.desc.Format, 0, D3DRTYPE_TEXTURE, formats[i]) == D3D_OK )
+        GLenum format = formats[i];
+        for (size_t j = 0; j < numVideoModes; ++j)
         {
+            struct sStdVideoMode videoMode;
+            stdDisplay_GetVideoMode(i, &videoMode);
+            if (videoMode.format != format)
+            {
+                continue;
+            }
+
             StdTextureFormat* pTexFormat = &std3D_aTextureFormats[std3D_numTextureFormats];
             memset(pTexFormat, 0, sizeof(StdTextureFormat));
 
-            pTexFormat->ddPixelFmt = formats[i];
+            pTexFormat->ddPixelFmt = videoMode.format;
 
-            switch ( formats[i] )
+            switch ( videoMode.format )
             {
-                case D3DFMT_R8G8B8:
-                    pTexFormat->ci = stdColor_cfRGB888;
-                    std3D_bHasRGBTextureFormat = true;
-                    break;
-                case D3DFMT_X8R8G8B8:
-                    pTexFormat->ci = stdColor_cfRGB8888;
-                    std3D_bHasRGBTextureFormat = true;
-                    break;
+            case SDL_PIXELFORMAT_RGB24:
+                pTexFormat->ci = stdColor_cfRGB888;
+                std3D_bHasRGBTextureFormat = true;
+                break;
+            case SDL_PIXELFORMAT_XRGB8888:
+                pTexFormat->ci = stdColor_cfRGB8888;
+                std3D_bHasRGBTextureFormat = true;
+                break;
 
-                case D3DFMT_A8R8G8B8:
-                    pTexFormat->ci = stdColor_cfARGB8888;
-                    std3D_bHasRGBTextureFormat = true;
-                    break;
+            case SDL_PIXELFORMAT_ARGB8888:
+                pTexFormat->ci = stdColor_cfARGB8888;
+                std3D_bHasRGBTextureFormat = true;
+                break;
 
-                case D3DFMT_R5G6B5:
-                    pTexFormat->ci = stdColor_cfRGB565;
-                    std3D_bHasRGBTextureFormat = true;
-                    break;
+            case SDL_PIXELFORMAT_RGB565:
+                pTexFormat->ci = stdColor_cfRGB565;
+                std3D_bHasRGBTextureFormat = true;
+                break;
 
-                case D3DFMT_A1R5G5B5:
-                    pTexFormat->ci = stdColor_cfARGB5551;
-                    std3D_bHasRGBTextureFormat = true;
-                    break;
+            case SDL_PIXELFORMAT_ARGB1555:
+                pTexFormat->ci = stdColor_cfARGB5551;
+                std3D_bHasRGBTextureFormat = true;
+                break;
 
-                case D3DFMT_A4R4G4B4:
-                    pTexFormat->ci = stdColor_cfARGB4444;
-                    std3D_bHasRGBTextureFormat = true;
-                    break;
-                case D3DFMT_L8:
-                    STDLOG_STATUS("Found 8-bit Luminance tex format.\n");
-                    continue;
-                case D3DFMT_L16:
-                    STDLOG_STATUS("Found 16-bit Luminance tex format.\n");
-                    continue;
-                case D3DFMT_A8L8:
-                    STDLOG_STATUS("Found Luminance Alpha tex format (8:8).\n");
-                    continue; // Skip unsupported formats
-                default:
-                    STDLOG_STATUS("Found Unknown tex format.\n");
-                    continue; // Skip unsupported formats
+            case SDL_PIXELFORMAT_ABGR4444:
+                pTexFormat->ci = stdColor_cfARGB4444;
+                std3D_bHasRGBTextureFormat = true;
+                break;
+            default:
+                STDLOG_STATUS("Found Unknown tex format.\n");
+                continue; // Skip unsupported formats
             }
 
             STDLOG_STATUS("Found texture format: %d (%d:%d:%d:%d)\n", formats[i], pTexFormat->ci.redBPP, pTexFormat->ci.greenBPP, pTexFormat->ci.blueBPP, pTexFormat->ci.alphaBPP);
             ++std3D_numTextureFormats;
+            break;
         }
     }
+}
+
+int std3D_CreateViewport(void)
+{
+    GLenum err = glGetError();
+    if (err != GL_NO_ERROR)
+    {
+        STDLOG_ERROR("OpenGL error 0x%x when creating viewport.\n", err);
+        return 0;
+    }
+
+    // Viewport-Größe aus Backbuffer übernehmen
+    GLint width  = (GLint)stdDisplay_g_backBuffer.rasterInfo.width;
+    GLint height = (GLint)stdDisplay_g_backBuffer.rasterInfo.height;
+
+
+    // Viewport setzen
+    glViewport(0, 0, width, height);
+
+    // Aktive Region merken (wie in Original)
+    std3D_activeRect.x1 = 0;
+    std3D_activeRect.y1 = 0;
+    std3D_activeRect.x2 = width;
+    std3D_activeRect.y2 = height;
+
+    // Farbe, Depth und Stencil löschen
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);  // Schwarz
+    glClearDepth(1.0f);                    // Depth auf 1.0 (wie D3D)
+    glClearStencil(0);                     // Stencil auf 0
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
+
+
+    return 1;
+}
+
+static bool J3DAPI std3D_GetZBufferFormat(GLenum* pPixelFormat)
+{
+    if ( !pPixelFormat )
+    {
+        return false;
+    }
+
+    // Check supported Z-buffer formats
+    GLenum aFormats[] = {
+        GL_DEPTH24_STENCIL8,     // 24-bit depth, 8-bit stencil
+    };
+
+    *pPixelFormat = aFormats[0];
+
+    return true;
 }
 
 void J3DAPI std3D_AddTextureToCacheList(tSystemTexture* pTexture)
@@ -2094,7 +1749,7 @@ int J3DAPI std3D_PurgeTextureCache(size_t size)
     {
         if ( pCacheTexture->textureSize == size )
         {
-            IDirect3DTexture9_Release(pCacheTexture->pCachedTexture);
+            //IDirect3DTexture9_Release(pCacheTexture->pCachedTexture);
             pCacheTexture->pCachedTexture = NULL;
             std3D_RemoveTextureFromCacheList(pCacheTexture);
             return 1;
@@ -2109,7 +1764,7 @@ int J3DAPI std3D_PurgeTextureCache(size_t size)
         {
             if ( pCacheTexture->pCachedTexture )
             {
-                IDirect3DTexture9_Release(pCacheTexture->pCachedTexture);
+                //IDirect3DTexture9_Release(pCacheTexture->pCachedTexture);
             }
             pCacheTexture->pCachedTexture = NULL;
             purgedBytes += pCacheTexture->textureSize;
@@ -2259,51 +1914,55 @@ bool std3D_InitVertexBuffers(void)
 {
     std3D_vbOffset = 0;
     std3D_ibOffset = 0;
+    glGenVertexArrays(1, &std3D_pVertexArrayObject);
+    glBindVertexArray(std3D_pVertexArrayObject);
 
-    // Create vertex buffer
-    HRESULT hr = IDirect3DDevice9_CreateVertexBuffer(
-        std3D_pD3Device,
-        std3D_vbSize * sizeof(D3DTLVERTEX),
-        D3DUSAGE_DYNAMIC | D3DUSAGE_WRITEONLY,
-        0, // FVF not used with vertex declarations
-        D3DPOOL_DEFAULT,
-        &std3D_pVertexBuffer,
-        NULL
-    );
-    if ( FAILED(hr) )
-    {
-        STDLOG_ERROR("Failed to create vertex buffer: %s\n", std3D_D3DGetStatus(hr));
-        return false;
-    }
+    glGenBuffers(1, &std3D_pVertexBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, std3D_pVertexBuffer);
+    glBufferData(GL_ARRAY_BUFFER,
+                 std3D_vbSize * sizeof(D3DTLVERTEX),
+                 NULL,
+                 GL_DYNAMIC_DRAW);
 
-    // Create index buffer
-    hr = IDirect3DDevice9_CreateIndexBuffer(
-        std3D_pD3Device,
-        std3D_ibSize * sizeof(WORD),
-        D3DUSAGE_DYNAMIC | D3DUSAGE_WRITEONLY,
-        D3DFMT_INDEX16,
-        D3DPOOL_DEFAULT,
-        &std3D_pIndexBuffer,
-        NULL
-    );
-    if ( FAILED(hr) )
-    {
-        STDLOG_ERROR("Failed to create index buffer: %s\n", std3D_D3DGetStatus(hr));
-        return false;
-    }
+    glGenBuffers(1, &std3D_pIndexBuffer);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, std3D_pIndexBuffer);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER,
+                 std3D_ibSize * sizeof(GLushort),
+                 NULL,
+                 GL_DYNAMIC_DRAW);
 
-    // Set vertex/index buffers
-    hr = IDirect3DDevice9_SetStreamSource(std3D_pD3Device, 0, std3D_pVertexBuffer, 0, sizeof(D3DTLVERTEX));
-    if ( FAILED(hr) )
-    {
-        STDLOG_ERROR("Failed to set vertex buffer: %s\n", std3D_D3DGetStatus(hr));
-        return false;
-    }
+    const GLsizei stride = sizeof(D3DTLVERTEX);
 
-    hr = IDirect3DDevice9_SetIndices(std3D_pD3Device, std3D_pIndexBuffer);
-    if ( FAILED(hr) )
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride,
+                          (void*)offsetof(D3DTLVERTEX, sx));
+    glEnableVertexAttribArray(0);
+
+
+    glVertexAttribPointer(1, 1, GL_FLOAT, GL_FALSE, stride,
+                          (void*)offsetof(D3DTLVERTEX, rhw));
+    glEnableVertexAttribArray(1);
+
+
+    glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, GL_TRUE, stride,
+                          (void*)offsetof(D3DTLVERTEX, color));
+    glEnableVertexAttribArray(2);
+
+
+    glVertexAttribPointer(3, 4, GL_UNSIGNED_BYTE, GL_TRUE, stride,
+                          (void*)offsetof(D3DTLVERTEX, specular));
+    glEnableVertexAttribArray(3);
+
+
+    glVertexAttribPointer(4, 2, GL_FLOAT, GL_FALSE, stride,
+                          (void*)offsetof(D3DTLVERTEX, tu));
+    glEnableVertexAttribArray(4);
+
+
+    glBindVertexArray(0);
+    GLenum err = glGetError();
+    if (err != GL_NO_ERROR)
     {
-        STDLOG_ERROR("Failed to set index buffer: %s\n", std3D_D3DGetStatus(hr));
+        STDLOG_ERROR("Error 0x%x during VBO/attribute init\n", err);
         return false;
     }
 
@@ -2314,14 +1973,14 @@ void std3D_ReleaseVertexBuffers(void)
 {
     if ( std3D_pVertexBuffer )
     {
-        IDirect3DVertexBuffer9_Release(std3D_pVertexBuffer);
-        std3D_pVertexBuffer = NULL;
+        glDeleteBuffers(1, &std3D_pVertexBuffer);
+        std3D_pVertexBuffer = 0;
     }
 
     if ( std3D_pIndexBuffer )
     {
-        IDirect3DIndexBuffer9_Release(std3D_pIndexBuffer);
-        std3D_pIndexBuffer = NULL;
+        glDeleteBuffers(1, &std3D_pIndexBuffer);
+        std3D_pIndexBuffer = 0;
     }
 }
 
@@ -2329,54 +1988,45 @@ bool std3D_InitShaderSystem(void)
 {
     std3D_bShadersActive = false;
 
-    if ( std3D_pCurDevice->d3dDesc.PixelShaderVersion < D3DPS_VERSION(3, 0) ||
-        std3D_pCurDevice->d3dDesc.VertexShaderVersion < D3DVS_VERSION(3, 0) )
-    {
-        STDLOG_STATUS("Shader system disabled, due to not meeting minimum shader version requirements.\n"
-            "  Pixel Shader Version: %d.%d, Vertex Shader Version: %d.%d\n",
-            D3DSHADER_VERSION_MAJOR(std3D_pCurDevice->d3dDesc.PixelShaderVersion),
-            D3DSHADER_VERSION_MINOR(std3D_pCurDevice->d3dDesc.PixelShaderVersion),
-            D3DSHADER_VERSION_MAJOR(std3D_pCurDevice->d3dDesc.VertexShaderVersion),
-            D3DSHADER_VERSION_MINOR(std3D_pCurDevice->d3dDesc.VertexShaderVersion)
-        );
-        return true;
-    }
-
     if ( !stdShader_Open() )
     {
         return false;
     }
 
     // Create default shader
-    std3D_defaultShader = stdShader_Create("std_default", std_default_vs, std_default_ps);
+    // std3D_defaultShader = stdShader_CompileAndCreate("std_default", "C:\\Users\\morit\\Documents\\GitHub\\OpenJones3D\\Libs\\std\\Win95\\GL\\Shaders\\default.vert",
+    //     "C:\\Users\\morit\\Documents\\GitHub\\OpenJones3D\\Libs\\std\\Win95\\GL\\Shaders\\default.frag");
+    std3D_defaultShader = stdShader_CompileAndCreate("std_default", "default.vert",
+         "default.frag");
     if ( !std3D_defaultShader )
     {
         STDLOG_ERROR("Failed to create default shader\n");
         return false;
     }
 
-    std3D_defaultShaderWf = stdShader_Create("std_default", std_default_vs, std_default_wf_ps);
-    if ( !std3D_defaultShader )
-    {
-        STDLOG_ERROR("Failed to create default wf shader\n");
-        return false;
-    }
+    // std3D_defaultShaderWf = stdShader_CompileAndCreate("std_defaultWf", "C:\\Users\\morit\\Documents\\GitHub\\OpenJones3D\\Libs\\std\\Win95\\GL\\Shaders\\default.vert",
+    //     "C:\\Users\\morit\\Documents\\GitHub\\OpenJones3D\\Libs\\std\\Win95\\GL\\Shaders\\default.frag");
+    // if ( !std3D_defaultShader )
+    // {
+    //     STDLOG_ERROR("Failed to create default wf shader\n");
+    //     return false;
+    // }
 
-    if ( !stdShader_RegisterShaderParam(std3D_defaultShaderWf, "g_wireframeColor", STDSHADER_TYPE_PIXEL, STDSHADER_PARAM_VECTOR4, /*registerIndex=*/0) )
-    {
-        return false;
-    }
-
-    StdShaderParamValue val;
-    val.type = STDSHADER_PARAM_VECTOR4;
-    val.value.vector[0] = 1.0f; // Red
-    val.value.vector[1] = 1.0f; // Green
-    val.value.vector[2] = 1.0f; // Blue
-    val.value.vector[3] = 1.0f; // Alpha
-    if ( !stdShader_SetShaderParam(std3D_defaultShaderWf, "g_wireframeColor", STDSHADER_TYPE_PIXEL, &val) )
-    {
-        return false;
-    }
+    // if ( !stdShader_RegisterShaderParam(std3D_defaultShaderWf, "g_wireframeColor", STDSHADER_TYPE_PIXEL, STDSHADER_PARAM_VECTOR4, /*registerIndex=*/0) )
+    // {
+    //     return false;
+    // }
+    //
+    // StdShaderParamValue val;
+    // val.type = STDSHADER_PARAM_VECTOR4;
+    // val.value.vector[0] = 1.0f; // Red
+    // val.value.vector[1] = 1.0f; // Green
+    // val.value.vector[2] = 1.0f; // Blue
+    // val.value.vector[3] = 1.0f; // Alpha
+    // if ( !stdShader_SetShaderParam(std3D_defaultShaderWf, "g_wireframeColor", STDSHADER_TYPE_PIXEL, &val) )
+    // {
+    //     return false;
+    // }
 
     std3D_bShadersActive = true;
     return true;
@@ -2392,11 +2042,6 @@ void std3D_ShutdownShaderSystem(void)
 
     std3D_activeShader = STDSHADER_INVALIDHANDLE; // Important, reset active shader to STDSHADER_INVALIDHANDLE to avoid dangling handle on next system init
     stdShader_Close();
-}
-
-tSysDevice3D* std3D_GetD3DDevice(void)
-{
-    return std3D_pD3Device;
 }
 
 bool J3DAPI std3D_IsShaderSystemActive(void)

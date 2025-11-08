@@ -2,9 +2,7 @@
 #define STD_STD3D_H
 #include <j3dcore/j3d.h>
 #include <std/types.h>
-#include <std/RTI/addresses.h>
 
-#include "stdShader.h"
 
 // Added following macros from rdCache to use for VBO & IBO sizes
 #define STD3D_MAXFACEVERTICES 64 

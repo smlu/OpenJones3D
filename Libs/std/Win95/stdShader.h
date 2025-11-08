@@ -18,6 +18,14 @@ typedef size_t StdShaderHandle;
 
 #define STDSHADER_INVALIDHANDLE ((StdShaderHandle)0)
 
+#if defined(J3D_OPENGL)
+typedef struct GLShaderProgram {
+    GLuint handle;
+    const char* name; // for debugging
+} GLShaderProgram;
+#endif
+
+
 // Shader types
 typedef enum eStdShaderType
 {
@@ -87,11 +95,16 @@ bool stdShader_EnableUntexturedMode(bool bEnable);
 
 // Shader op
 StdShaderHandle stdShader_GetShader(const char* pName); // Get shader handle by name
+#if defined(J3D_OPENGL)
+bool J3DAPI stdShader_SetActiveShader(GLShaderProgram* pSp); // Apply shader to device
+GLShaderProgram* J3DAPI stdShader_CompileAndCreate(const char* pName, const char* pVertexShaderCode, const char* pPixelShaderCode);
+void J3DAPI stdShader_Free(GLShaderProgram* sh);
+#else
 bool J3DAPI stdShader_SetActiveShader(StdShaderHandle sh); // Apply shader to device
-
-StdShaderHandle J3DAPI stdShader_CompileAndCreate(const char* pName, const char* pVertexShaderCode, const char* pPixelShaderCode);     // Compile shader from source code and create new shader
-StdShaderHandle J3DAPI stdShader_Create(const char* pName, const uint8_t* pCompiledVertexShader, const uint8_t* pCompiledPixelShader); // Create shader from compiled shader code
+StdShaderHandle J3DAPI stdShader_CompileAndCreate(const char* pName, const char* pVertexShaderCode, const char* pPixelShaderCode); // Compile shader from source code and create new shader
 void J3DAPI stdShader_Free(StdShaderHandle sh);
+#endif
+StdShaderHandle J3DAPI stdShader_Create(const char* pName, const uint8_t* pCompiledVertexShader, const uint8_t* pCompiledPixelShader); // Create shader from compiled shader code
 
 bool J3DAPI stdShader_RegisterShaderParam(StdShaderHandle sh, const char* pName, StdShaderType type, StdShaderParamType valueType, size_t registerIndex); // Register shader parameter
 bool J3DAPI stdShader_SetShaderParam(StdShaderHandle sh, const char* pName, StdShaderType type, const StdShaderParamValue* pValue); // Set registered shader parameter value
