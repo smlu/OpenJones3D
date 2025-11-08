@@ -1,23 +1,34 @@
 cmake_minimum_required(VERSION 3.15)
 
 if (J3D_OPENGL)
+    # SDL3
+    set(SDL_STATIC ON)
+    set(SDL_SHARED OFF)
+    set(SDL_TESTS  OFF)
+    set(SDL_TEST_LIBRARY  OFF)
+    set(SDL_LIBC  ON)
+
     add_subdirectory(SDL3)
+    set_target_properties(SDL3-static PROPERTIES FOLDER "Libs/external/SDL3") # Group all lib modules under "Libs/external" in Visual Studio
+    set_target_properties(SDL_uclibc PROPERTIES FOLDER "Libs/external/SDL3") # Group all lib modules under "Libs/external" in Visual Studio
+
+    # GLAD
     add_library(glad STATIC
             glad/src/glad.c
     )
     target_include_directories(glad PUBLIC glad/include)
+    set_target_properties(glad PROPERTIES FOLDER "Libs/external") 
 elseif (J3D_DIRECTX6)
     set(EXTERNAL_MODULES
         DirectX61c
     )
 endif()
 
+# Add external modules
 set(EXTERNAL_MODULES
     ${EXTERNAL_MODULES}
     jansson
 )
-
-# Add external modules
 
 # Set Jansson config
 set(JANSSON_BUILD_SHARED_LIBS OFF)
@@ -30,14 +41,14 @@ if (MSVC)
     set(JANSSON_STATIC_CRT ON )
 endif ()
 
+# Include dependency subdirs in CMake project
 foreach(MODULE ${EXTERNAL_MODULES})
     add_subdirectory(${MODULE})
     set_target_properties(${MODULE} PROPERTIES FOLDER "Libs/external") # Group all lib modules under "Libs/external" in Visual Studio
 endforeach()
 
 
-
-# Add Jansson subdirectory
+# Add Jansson library
 add_library(jansson_interface INTERFACE)
 target_link_libraries(jansson_interface INTERFACE ${JANSSON_LIBRARIES})
 target_include_directories(jansson_interface INTERFACE
