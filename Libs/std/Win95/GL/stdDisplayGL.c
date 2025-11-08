@@ -13,6 +13,8 @@
 #include <glad/glad.h>
 #include <SDL3/SDL.h>
 
+#include "SDL3/SDL_opengl_glext.h"
+
 
 #define STDDISPLAY_MINFRAMERATE 30
 #define STDDISPLAY_MAXFRAMERATE 256
@@ -42,9 +44,20 @@ typedef struct GLCaps {
     GLfloat lineWidthRange[2];
 } GLCaps;
 
+typedef struct {
+    HDC      hdc;
+    HBITMAP  hbm;
+    void*    bits;      // Zeiger auf Pixel (z. B. BGRA8)
+    int      w, h, pitch;
+    int      lockRef;
+} GdiBuffer;
+
+static GdiBuffer g_gdi = {0};
+static GdiBuffer g_frontGDI = {0};
+
 // Public globals
-tVBuffer stdDisplay_g_frontBuffer = { 0 };
-tVBuffer stdDisplay_g_backBuffer  = { 0 };
+tVBuffer stdDisplay_g_frontBuffer = {0};
+tVBuffer stdDisplay_g_backBuffer = {0};
 
 // Private globals
 static bool stdDisplay_bStartup    = false;
@@ -54,12 +67,7 @@ static bool stdDisplay_bFullscreen = false;
 static bool stdDisplay_bNoSync     = false;
 static bool stdDisplay_bDeviceLost = false;
 
-static LPDIRECT3D9 stdDisplay_pD3D9;
-
-// Current D3D device created in SetMode
-static D3DPRESENT_PARAMETERS stdDisplay_presentParams;
-static D3DCAPS9 stdDisplay_deviceCaps;
-static LPDIRECT3DDEVICE9 stdDisplay_pD3DDevice;
+static GLCaps stdDisplay_deviceCaps;
 
 // Back buffer local vars
 static int stdDisplay_backbufWidth                 = 0;
@@ -72,12 +80,10 @@ static LPDIRECT3DSURFACE9 stdDisplay_pBackLockSurf = NULL; // temp lockable back
 // Front buffer local vars
 static size_t stdDisplay_frontLockRef               = 0;
 static HDC stdDisplay_hdcFront                      = NULL;
-static LPDIRECT3DSURFACE9 stdDisplay_pFrontLockSurf = NULL; // temp lockable frontbuffer surface when MSAA is enabled
 
 // Z buffer local vars
-static tVSurface stdDisplay_zBuffer;
+static tVBuffer* stdDisplay_zBuffer;
 
-static const D3DFORMAT stdDisplay_aSupportedFormats[] = { D3DFMT_R8G8B8, D3DFMT_A8R8G8B8, D3DFMT_X8R8G8B8 };
 static StdVideoMode* stdDisplay_pCurVideoMode   = NULL;
 static StdVideoMode stdDisplay_primaryVideoMode = { 0 };
 
@@ -137,12 +143,14 @@ static const DXStatus stdDisplay_aD3DStatusTbl[] =
 static int J3DAPI stdDisplay_VideoModeCompare(const StdVideoMode* pMode1, const StdVideoMode* pMode2);
 static const char* J3DAPI stdDisplay_D3DGetStatus(HRESULT status);
 
-static int J3DAPI stdDisplay_InitDirect3D9(HWND hwnd);
+static int J3DAPI stdDisplay_GetGLCaps(void);
 static int stdDisplay_EnumerateDevices(void);
 static int J3DAPI stdDisplay_EnumerateVideoModes(SDL_DisplayID adapter);
-static D3DFORMAT J3DAPI stdDisplay_GetD3DFormat(int bpp);
+static SDL_PixelFormat J3DAPI stdDisplay_GetSDLFormat(int bpp);
 static int J3DAPI stdDisplay_BppFromSDLPixelFormat(SDL_PixelFormat format);
 static bool stdDisplay_GetVideoColorFormat(SDL_PixelFormat format, ColorInfo* pFormat);
+static int stdDisplay_UnlockTexture(tVBuffer* pBuffer);
+static uint8_t* J3DAPI stdDisplay_LockTexture(tVBuffer* pVBuffer);
 
 static inline void J3DAPI stdDisplay_SetAspectRatio(StdVideoMode* pMode);
 static inline int J3DAPI stdDisplay_SetWindowMode(HWND hWnd, StdVideoMode* pDisplayMode);
@@ -152,10 +160,35 @@ static int J3DAPI stdDisplay_InitBuffers(PDIRECT3DDEVICE9 pDevice, StdVideoMode*
 static inline void stdDisplay_ReleaseBuffers(void);
 static inline uint8_t* J3DAPI stdDisplay_LockSurface(tVSurface* pVSurf);
 static inline int J3DAPI stdDisplay_UnlockSurface(tVSurface* pSurf);
-static int J3DAPI stdDisplay_ColorFillSurface(tVSurface* pSurf, uint32_t dwFillColor, const StdRect* lpRect);
+static int J3DAPI stdDisplay_ColorFillSurface(tVBuffer* pBuffer, uint32_t dwFillColor, const StdRect* lpRect);
 static int stdDisplay_CheckDeviceState(void);
 static void stdDisplay_ReleaseDevice(void);
 static int stdDisplay_ResetDevice(void);
+
+
+static int stdDisplay_InitGDIBackbuffer(GdiBuffer* buffer, int w, int h) {
+    if (g_gdi.hdc) return 1; // schon da
+
+    BITMAPINFO bi = {0};
+    bi.bmiHeader.biSize        = sizeof(BITMAPINFOHEADER);
+    bi.bmiHeader.biWidth       = w;
+    bi.bmiHeader.biHeight      = -h;            // top-down
+    bi.bmiHeader.biPlanes      = 1;
+    bi.bmiHeader.biBitCount    = 32;            // BGRA8
+    bi.bmiHeader.biCompression = BI_RGB;
+
+    HDC screen = GetDC(NULL);
+    buffer->hdc = CreateCompatibleDC(screen);
+    ReleaseDC(NULL, screen);
+
+    g_gdi.hbm = CreateDIBSection(g_gdi.hdc, &bi, DIB_RGB_COLORS, &g_gdi.bits, NULL, 0);
+    if (!g_gdi.hbm || !g_gdi.bits) return 0;
+
+    SelectObject(g_gdi.hdc, g_gdi.hbm);
+    g_gdi.w = w; g_gdi.h = h; g_gdi.pitch = w * 4;
+    g_gdi.lockRef = 0;
+    return 1;
+}
 
 // Color format conversion helpers
 static void J3DAPI stdDisplay_SetPixels16(uint16_t* pPixels16, uint16_t pixel, size_t size)
@@ -215,7 +248,7 @@ void stdDisplay_InstallHooks(void)
     J3D_HOOKFUNC(stdDisplay_LockSurface);
     J3D_HOOKFUNC(stdDisplay_UnlockSurface);
     J3D_HOOKFUNC(stdDisplay_Update);
-    J3D_HOOKFUNC(stdDisplay_ColorFillSurface);
+    //J3D_HOOKFUNC(stdDisplay_ColorFillSurface);
     J3D_HOOKFUNC(stdDisplay_BackBufferFill);
     J3D_HOOKFUNC(stdDisplay_SaveScreen);
     J3D_HOOKFUNC(stdDisplay_SetDefaultResolution);
@@ -243,24 +276,46 @@ void stdDisplay_ResetGlobals(void)
     memset(&stdDisplay_g_backBuffer, 0, sizeof(stdDisplay_g_backBuffer));
 }
 
-static bool J3DAPI stdDisplay_CheckMSAASupport(UINT adapter, D3DFORMAT format, BOOL windowed, D3DMULTISAMPLE_TYPE sampleType, DWORD* pQualityLevels)
+static bool J3DAPI stdDisplay_CheckMSAASupport(enum GLMultiSample sampleType, DWORD* pQualityLevels) //checked
 {
-    if ( !stdDisplay_pD3D9 )
+    if ( !stdWin95_GetGLContext() )
     {
         return false;
     }
 
-    HRESULT hr = IDirect3D9_CheckDeviceMultiSampleType(
-        stdDisplay_pD3D9,
-        adapter,
-        D3DDEVTYPE_HAL,
-        format,
-        windowed,
-        sampleType,
-        pQualityLevels
-    );
+    GLint maxSamples = 0;
+    #ifndef GL_MAX_SAMPLES
+    #define GL_MAX_SAMPLES 0x8D57
+    #endif
+    glGetIntegerv(GL_MAX_SAMPLES, &maxSamples);
+    if (pQualityLevels) *pQualityLevels = (maxSamples > 0 ? 1 : 0);
+    return (sampleType > 0 && sampleType <= maxSamples);
 
-    return SUCCEEDED(hr);
+    //alternative in case this doesn't work:
+//
+//     static bool J3DAPI stdDisplay_CheckMSAA_GL_DefaultFB(int requestedSamples)
+//     {
+//         // Set Attributes
+//         SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, requestedSamples > 0 ? 1 : 0);
+//         SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, requestedSamples);
+//
+//         // create hidden window
+//         SDL_Window* w = SDL_CreateWindow("msaa-probe", 320, 200, SDL_WINDOW_OPENGL | SDL_WINDOW_HIDDEN);
+//         if (!w) return false;
+//         SDL_GLContext c = SDL_GL_CreateContext(w);
+//         if (!c) { SDL_DestroyWindow(w); return false; }
+//
+//         // test is msaa samples are supported
+//         int buffers = 0, samples = 0;
+//         SDL_GL_GetAttribute(SDL_GL_MULTISAMPLEBUFFERS, &buffers);
+//         SDL_GL_GetAttribute(SDL_GL_MULTISAMPLESAMPLES, &samples);
+//
+//         SDL_GL_DestroyContext(c);
+//         SDL_DestroyWindow(w);
+//
+//         return (buffers >= 1 && samples >= requestedSamples);
+//     }
+
 }
 
 static void stdDisplay_InitMSAASettings(void) //checked
@@ -302,11 +357,11 @@ static void stdDisplay_InitMSAASettings(void) //checked
     STDLOG_DEBUG("MSAA Settings: Enabled=%d, Samples=%d\n", stdDisplay_bMSAAEnabled, stdDisplay_msaaSampleCount);
 }
 
-static void stdDisplay_ValidateMSAASettings(UINT adapter, D3DFORMAT format, BOOL windowed)
+static void stdDisplay_ValidateMSAASettings() //check
 {
     if ( !stdDisplay_bMSAAEnabled )
     {
-        stdDisplay_msaaSampleType    = D3DMULTISAMPLE_NONE;
+        stdDisplay_msaaSampleType    = GL_MULTISAMPLE_NONE;
         stdDisplay_msaaSampleQuality = 0;
         return;
     }
@@ -314,7 +369,7 @@ static void stdDisplay_ValidateMSAASettings(UINT adapter, D3DFORMAT format, BOOL
     DWORD qualityLevels = 0;
 
     // Check if requested MSAA level is supported
-    if ( stdDisplay_CheckMSAASupport(adapter, format, windowed, stdDisplay_msaaSampleType, &qualityLevels) )
+    if ( stdDisplay_CheckMSAASupport(stdDisplay_msaaSampleType, &qualityLevels) )
     {
         stdDisplay_msaaSampleQuality = qualityLevels > 0 ? qualityLevels - 1 : 0;
         STDLOG_DEBUG("MSAA %dx supported with %d quality levels\n", stdDisplay_msaaSampleCount, qualityLevels);
@@ -322,17 +377,17 @@ static void stdDisplay_ValidateMSAASettings(UINT adapter, D3DFORMAT format, BOOL
     else
     {
         // Fall back to lower MSAA levels
-        D3DMULTISAMPLE_TYPE fallbackTypes[] = {
-            D3DMULTISAMPLE_8_SAMPLES,
-            D3DMULTISAMPLE_4_SAMPLES,
-            D3DMULTISAMPLE_2_SAMPLES
+        enum GLMultiSample fallbackTypes[] = {
+            GL_MULTISAMPLE_8_SAMPLES,
+            GL_MULTISAMPLE_4_SAMPLES,
+            GL_MULTISAMPLE_4_SAMPLES
         };
         int fallbackCounts[] = { 8, 4, 2 };
 
         bool found = false;
         for ( int i = 0; i < 3; i++ )
         {
-            if ( stdDisplay_CheckMSAASupport(adapter, format, windowed, fallbackTypes[i], &qualityLevels) )
+            if ( stdDisplay_CheckMSAASupport(fallbackTypes[i], &qualityLevels) )
             {
                 stdDisplay_msaaSampleType    = fallbackTypes[i];
                 stdDisplay_msaaSampleCount   = fallbackCounts[i];
@@ -348,15 +403,15 @@ static void stdDisplay_ValidateMSAASettings(UINT adapter, D3DFORMAT format, BOOL
         {
             STDLOG_WARNING("MSAA not supported, disabling\n");
             stdDisplay_bMSAAEnabled      = false;
-            stdDisplay_msaaSampleType    = D3DMULTISAMPLE_NONE;
+            stdDisplay_msaaSampleType    = GL_MULTISAMPLE_NONE;
             stdDisplay_msaaSampleQuality = 0;
         }
     }
 }
 
-int stdDisplay_Startup(void)
+int stdDisplay_Startup(void) //check
 {
-    SDL_Delay(10000);
+    //SDL_Delay(10000);
     STDLOG_STATUS("Starting display system using OpenGL GAPI ...\n");
     if ( stdDisplay_bStartup )
     {
@@ -370,27 +425,9 @@ int stdDisplay_Startup(void)
     stdDisplay_bStartup = true;
     stdDisplay_numDevices = 0;
 
-    if (!SDL_Init(SDL_INIT_VIDEO))
+    if (!stdWin95_GetGLContext())
     {
-        STDLOG_ERROR("Failed to initialize SDL_VIDEO.\n");
-        return 0;
-    }
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
-    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
-
-    SDL_Window* window = SDL_CreateWindow(
-    "gl-probe",
-    64, 64,
-    SDL_WINDOW_OPENGL | SDL_WINDOW_HIDDEN | SDL_WINDOW_BORDERLESS
-);
-    SDL_GLContext context =  SDL_GL_CreateContext(window);
-
-    SDL_GL_MakeCurrent(window, context);
-    if (!gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress)) {
-        STDLOG_ERROR("Failed to initialize GLAD.\n");
+        STDLOG_ERROR("No OpenGL context was created yet.\n");
         return 0;
     }
 
@@ -411,17 +448,22 @@ int stdDisplay_Startup(void)
     return 1;
 }
 
-void stdDisplay_Shutdown(void)
+void stdDisplay_Shutdown(void) //checked
 {
     if ( stdDisplay_bOpen )
     {
         stdDisplay_Close();
     }
-
-    if ( stdDisplay_pD3D9 )
+    SDL_GLContext context = stdWin95_GetGLContext();
+    if (context)
     {
-        IDirect3D9_Release(stdDisplay_pD3D9);
-        stdDisplay_pD3D9 = NULL;
+        //SDL_GL_DestroyContext(context);
+    }
+
+    SDL_Window* window = stdWin95_GetSDLWindow();
+    if (window)
+    {
+        //SDL_DestroyWindow(window);
     }
 
     memset(stdDisplay_aDisplayDevices, 0, sizeof(stdDisplay_aDisplayDevices));
@@ -435,7 +477,7 @@ void stdDisplay_Shutdown(void)
     stdDisplay_bStartup      = false;
 }
 
-int J3DAPI stdDisplay_Open(size_t deviceNum)
+int J3DAPI stdDisplay_Open(size_t deviceNum) //checked
 {
     STD_ASSERTREL(stdDisplay_bStartup == true);
     if ( stdDisplay_bOpen )
@@ -453,7 +495,7 @@ int J3DAPI stdDisplay_Open(size_t deviceNum)
     stdDisplay_curDevice  = stdDisplay_availableDisplays[deviceNum];
     stdDisplay_pCurDevice = &stdDisplay_aDisplayDevices[deviceNum];
 
-    if ( !stdDisplay_InitDirect3D9(stdWin95_GetWindow()) )
+    if ( !stdDisplay_GetGLCaps() )
     {
         return 0;
     }
@@ -529,9 +571,9 @@ int J3DAPI stdDisplay_SetMode(size_t modeNum, int bFullscreen, size_t numBackBuf
     }
     else
     {
-        stdDisplay_pCurVideoMode = &stdDisplay_primaryVideoMode;
+        stdDisplay_pCurVideoMode = &stdDisplay_aVideoModes[modeNum];
         HWND hwnd = stdWin95_GetWindow();
-        if ( !stdDisplay_SetWindowMode(hwnd, &stdDisplay_primaryVideoMode) )
+        if ( !stdDisplay_SetWindowMode(hwnd, &stdDisplay_aVideoModes[modeNum]))
         {
             return 1;
         }
@@ -636,79 +678,28 @@ void stdDisplay_RegisterDeviceReleaseCallback(tDisplayDeviceReleaseCallback pCal
 // Device state checking and reset functions
 static int J3DAPI stdDisplay_CheckDeviceState()
 {
-    if ( !stdDisplay_pD3DDevice )
-    {
-        return -1;
-    }
-
-    HRESULT hr = IDirect3DDevice9_TestCooperativeLevel(stdDisplay_pD3DDevice);
-    switch ( hr )
-    {
-        case D3D_OK:
-            stdDisplay_bDeviceLost = false;
-            return 0;
-        case D3DERR_DEVICELOST:
-            stdDisplay_bDeviceLost = true;
-            return 1;
-        case D3DERR_DEVICENOTRESET:
-            return 2;
-        default:
-            return -1;
-    }
+    return 0;
 }
 
 static void stdDisplay_ReleaseDevice(void)
 {
     // Release all default pool resources
     stdDisplay_ReleaseBuffers();
-
-    if ( stdDisplay_pD3DDevice )
-    {
-        if ( stdDisplay_pfDeviceReleaseCallback )
-        {
-            stdDisplay_pfDeviceReleaseCallback(stdDisplay_pD3DDevice);
-        }
-
-        IDirect3DDevice9_SetTexture(stdDisplay_pD3DDevice, 0, NULL);
-        if ( IDirect3DDevice9_Reset(stdDisplay_pD3DDevice, &stdDisplay_presentParams) != D3D_OK )
-        {
-            STDLOG_WARNING("Warning: Failed to reset device before release.\n");
-        }
-
-        ULONG refCount = IDirect3DDevice9_Release(stdDisplay_pD3DDevice);
-        if ( refCount > 0 )
-        {
-            STDLOG_WARNING("Warning: D3D9 device released with %lu references remaining.\n", refCount);
-        }
-
-        stdDisplay_pD3DDevice = NULL;
-    }
 }
 
 static int stdDisplay_ResetDevice(void)
 {
-    if ( !stdDisplay_pD3DDevice )
-    {
-        return 0;
-    }
 
     if ( stdDisplay_pfDevicePreResetCallback )
     {
-        stdDisplay_pfDevicePreResetCallback(stdDisplay_pD3DDevice);
+        stdDisplay_pfDevicePreResetCallback(NULL);
     }
 
     // Release all default pool resources before reset
     stdDisplay_ReleaseBuffers();
 
-    HRESULT hr = IDirect3DDevice9_Reset(stdDisplay_pD3DDevice, &stdDisplay_presentParams);
-    if ( FAILED(hr) )
-    {
-        STDLOG_ERROR("Error %s when resetting D3D device.\n", stdDisplay_D3DGetStatus(hr));
-        return 0;
-    }
-
     // Recreate buffers
-    if ( !stdDisplay_InitBuffers(stdDisplay_pD3DDevice, stdDisplay_pCurVideoMode, stdDisplay_presentParams.Windowed, stdDisplay_presentParams.BackBufferCount) )
+    if ( !stdDisplay_InitBuffers(NULL, stdDisplay_pCurVideoMode, 0, 0) )
     {
         STDLOG_ERROR("Error initializing buffers after device reset.\n");
         return 0;
@@ -718,17 +709,39 @@ static int stdDisplay_ResetDevice(void)
 
     if ( stdDisplay_pfDevicePostResetCallback )
     {
-        stdDisplay_pfDevicePostResetCallback(stdDisplay_pD3DDevice);
+        stdDisplay_pfDevicePostResetCallback(NULL);
     }
 
     return 1;
 }
 
-tVBuffer* J3DAPI stdDisplay_VBufferNew(const tRasterInfo* pRasterInfo, int bUseVSurface, int bUseVideoMemory)
+static bool stdDisplay_mapBppToGL(int bpp, tVBuffer* out) {
+    switch (bpp) {
+    case 16:
+        out->gl.internalFormat = GL_RGB565;
+        out->gl.format         = GL_BGR;
+        out->gl.type           = GL_UNSIGNED_SHORT_5_6_5_REV;
+        return true;
+    case 24:
+        out->gl.internalFormat = GL_RGB8;
+        out->gl.format         = GL_BGR;
+        out->gl.type           = GL_UNSIGNED_BYTE;
+        return true;
+    case 32:
+        out->gl.internalFormat = GL_RGBA8;
+        out->gl.format         = GL_BGRA;
+        out->gl.type           = GL_UNSIGNED_INT_8_8_8_8_REV;
+        return true;
+    default:
+        return false;
+    }
+}
+
+tVBuffer* J3DAPI stdDisplay_VBufferNew(const tRasterInfo* pRasterInfo, int bUseVSurface, int bUseVideoMemory) //check
 {
     STD_ASSERTREL((pRasterInfo->colorInfo.bpp % 8) == 0);
 
-    tVBuffer* vbuffer = (tVBuffer*)STDMALLOC(sizeof(tVBuffer));
+    tVBuffer* vbuffer = STDMALLOC(sizeof(tVBuffer));
     if ( !vbuffer )
     {
         STDLOG_ERROR("Error allocating vbuffer.\n");
@@ -745,93 +758,39 @@ tVBuffer* J3DAPI stdDisplay_VBufferNew(const tRasterInfo* pRasterInfo, int bUseV
     vbuffer->rasterInfo.rowWidth = vbuffer->rasterInfo.width;
     vbuffer->rasterInfo.size     = vbuffer->rasterInfo.rowSize * vbuffer->rasterInfo.height;
 
-    if ( bUseVSurface && stdDisplay_bOpen && stdDisplay_pD3DDevice )
-    {
-        vbuffer->bVideoMemory = bUseVideoMemory ? 1 : 0;
-        vbuffer->type         = VBUFFER_HARDWARE;
-
-        // Create D3D9 surface
-        D3DFORMAT format = stdDisplay_GetD3DFormat(pRasterInfo->colorInfo.bpp);
-        D3DPOOL pool = bUseVideoMemory ? D3DPOOL_MANAGED : D3DPOOL_SCRATCH;
-
-        HRESULT hr = IDirect3DDevice9_CreateOffscreenPlainSurface(
-            stdDisplay_pD3DDevice,
-            vbuffer->rasterInfo.width,
-            vbuffer->rasterInfo.height,
-            format,
-            pool,
-            &vbuffer->surface.pSysSurface,
-            NULL
-        );
-
-        if ( FAILED(hr) )
-        {
-            STDLOG_ERROR("Error %s when creating D3D9 vbuffer surface.\n", stdDisplay_D3DGetStatus(hr));
-            stdMemory_Free(vbuffer);
-            return NULL;
-        }
-
-        hr = IDirect3DSurface9_GetDesc(vbuffer->surface.pSysSurface, &vbuffer->surface.desc);
-        if ( FAILED(hr) )
-        {
-            STDLOG_ERROR("Error %s when getting desc of surface.\n", stdDisplay_D3DGetStatus(hr));
-            return NULL;
-        }
-
-       // Get surface description for pitch information
-        D3DLOCKED_RECT lockedRect;
-        hr = IDirect3DSurface9_LockRect(vbuffer->surface.pSysSurface, &lockedRect, NULL, D3DLOCK_READONLY);
-        if ( SUCCEEDED(hr) )
-        {
-            vbuffer->rasterInfo.rowSize  = lockedRect.Pitch;
-            vbuffer->rasterInfo.rowWidth = vbuffer->surface.desc.Width;
-            IDirect3DSurface9_UnlockRect(vbuffer->surface.pSysSurface);
-        }
-
-        return vbuffer;
+    if (!stdDisplay_mapBppToGL(vbuffer->rasterInfo.colorInfo.bpp, vbuffer)) {
+        STDLOG_ERROR("Unsupported bpp for GL path.\n");
+        stdMemory_Free(vbuffer);
+        return NULL;
     }
-    else
-    {
-        vbuffer->type         = VBUFFER_SOFTWARE;
-        vbuffer->bVideoMemory = 0;
-        vbuffer->pPixels      = (uint8_t*)STDMALLOC(vbuffer->rasterInfo.size);
-        if ( !vbuffer->pPixels )
-        {
-            stdMemory_Free(vbuffer);
-            return NULL;
-        }
 
-        vbuffer->lockRefCount = 1; // Set it to 1 as pPixels is set, which is normally done in VBufferLock function.
-        return vbuffer;
+    vbuffer->type         = VBUFFER_SOFTWARE;
+    vbuffer->bVideoMemory = 0;
+    vbuffer->pPixels      = (uint8_t*)STDMALLOC(vbuffer->rasterInfo.size);
+    if ( !vbuffer->pPixels )
+    {
+        stdMemory_Free(vbuffer);
+        return NULL;
     }
+
+    vbuffer->lockRefCount = 1; // Set it to 1 as pPixels is set, which is normally done in VBufferLock function.
+    return vbuffer;
 }
 
 void J3DAPI stdDisplay_VBufferFree(tVBuffer* pVBuffer)
 {
     STD_ASSERTREL(pVBuffer != NULL);
 
-    if ( pVBuffer->type == VBUFFER_SOFTWARE )
-
+    if ( pVBuffer->pPixels )
     {
-        if ( pVBuffer->pPixels )
-        {
-            stdMemory_Free(pVBuffer->pPixels);
-            pVBuffer->pPixels = NULL;
-        }
-    }
-    else if ( pVBuffer->type == VBUFFER_HARDWARE )
-    {
-        if ( pVBuffer->surface.pSysSurface )
-        {
-            IDirect3DSurface9_Release(pVBuffer->surface.pSysSurface);
-            pVBuffer->surface.pSysSurface = NULL;
-        }
+        stdMemory_Free(pVBuffer->pPixels);
+        pVBuffer->pPixels = NULL;
     }
 
     stdMemory_Free(pVBuffer);
 }
 
-int J3DAPI stdDisplay_VBufferLock(tVBuffer* pVBuffer)
+int J3DAPI stdDisplay_VBufferLock(tVBuffer* pVBuffer) //checked
 {
     STD_ASSERTREL(pVBuffer != NULL);
 
@@ -846,11 +805,7 @@ int J3DAPI stdDisplay_VBufferLock(tVBuffer* pVBuffer)
         {
             uint32_t width, height;
             int pitch;
-            stdDisplay_LockBackBuffer(&pVBuffer->pPixels, &width, &height, &pitch);
-        }
-        else
-        {
-            pVBuffer->pPixels = stdDisplay_LockSurface(&pVBuffer->surface);
+            stdDisplay_LockBackBuffer(pVBuffer->pPixels, &width, &height, &pitch);
         }
 
         if ( !pVBuffer->pPixels )
@@ -887,22 +842,14 @@ int J3DAPI stdDisplay_VBufferUnlock(tVBuffer* pVBuffer)
         return 0;
     }
 
-    int bFailed = 0;
     if ( pVBuffer == &stdDisplay_g_backBuffer )
     {
         stdDisplay_UnlockBackBuffer();
     }
-    else
-    {
-        bFailed = stdDisplay_UnlockSurface(&pVBuffer->surface);
-    }
 
-    if ( !bFailed )
-    {
-        --pVBuffer->lockRefCount;
-    }
+    --pVBuffer->lockRefCount;
 
-    return bFailed; // 1 locked - 0 unlocked
+    return 0; // 1 locked - 0 unlocked
 }
 
 int J3DAPI stdDisplay_VBufferFill(tVBuffer* pVBuffer, uint32_t color, const StdRect* pRect)
@@ -915,7 +862,7 @@ int J3DAPI stdDisplay_VBufferFill(tVBuffer* pVBuffer, uint32_t color, const StdR
         {
             return 1;
         }
-        return stdDisplay_ColorFillSurface(&pVBuffer->surface, color, pRect) == 0;
+        return stdDisplay_ColorFillSurface(pVBuffer, color, pRect) == 0;
     }
 
     // Software fill for system memory buffers
@@ -1089,28 +1036,20 @@ int J3DAPI stdDisplay_VideoModeCompare(const StdVideoMode* pMode1, const StdVide
 
 int J3DAPI stdDisplay_GetTextureMemory(size_t* pTotal, size_t* pFree)
 {
-    if ( !stdDisplay_pD3DDevice )
-    {
-        return 1;
-    }
+    GLint maxTex = 0;
+    glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTex);
+    if (maxTex <= 0) maxTex = 4096; // defensiver Fallback
 
-    // TODO: Enhance 
-    UINT availableTextureMem = IDirect3DDevice9_GetAvailableTextureMem(stdDisplay_pD3DDevice);
-    *pFree  = availableTextureMem;
-    *pTotal = stdDisplay_deviceCaps.MaxTextureWidth * stdDisplay_deviceCaps.MaxTextureHeight * 4; // Approximation
+    *pTotal = (size_t)maxTex * (size_t)maxTex * 4; // RGBA8-Annahme
+    *pFree  = *pTotal; // unbekannt
     return 0;
 }
 
 int J3DAPI stdDisplay_GetTotalMemory(size_t* pTotal, size_t* pFree)
 {
-    if ( !stdDisplay_pD3D9 )
-    {
-        return 1;
-    }
-
     // TODO: Enhance / Fix
     UINT adapter = stdDisplay_numDevices > 0 ? stdDisplay_curDevice : D3DADAPTER_DEFAULT;
-    *pTotal = IDirect3D9_GetAdapterModeCount(stdDisplay_pD3D9, adapter, D3DFMT_X8R8G8B8) * 1024 * 1024; // Approximation
+    *pTotal = stdDisplay_numVideoModes * 1024 * 1024; // Approximation
     *pFree = *pTotal / 2; // Rough estimate
     return 0;
 }
@@ -1129,91 +1068,73 @@ const char* J3DAPI stdDisplay_D3DGetStatus(HRESULT status)
 
 int J3DAPI stdDisplay_CreateZBuffer(const tSysPixelFormat* pPixelFormat, int bSystemMemory)
 {
-    J3D_UNUSED(bSystemMemory);
 
-    if ( !stdDisplay_bOpen || !stdDisplay_pD3DDevice )
+    J3D_UNUSED(bSystemMemory);
+    J3D_UNUSED(pPixelFormat);
+
+    if ( !stdDisplay_bOpen )
     {
         STDLOG_ERROR("Error creating zBuffer, system is closed!\n");
         return 1;
     }
 
-    // Convert DirectDraw pixel format to D3D9 format
-    D3DFORMAT depthFormat = *pPixelFormat;
-    HRESULT hr = IDirect3DDevice9_CreateDepthStencilSurface(
-        stdDisplay_pD3DDevice,
-        stdDisplay_g_backBuffer.rasterInfo.width,
-        stdDisplay_g_backBuffer.rasterInfo.height,
-        depthFormat,
-        stdDisplay_msaaSampleType,        // Use MSAA settings
-        stdDisplay_msaaSampleQuality,     // Use MSAA quality
-        TRUE,
-        &stdDisplay_zBuffer.pSysSurface,
-        NULL
-    );
+    glEnable(GL_DEPTH_TEST);
 
-    if ( FAILED(hr) )
-    {
-        STDLOG_ERROR("Error %s when creating depth/stencil surface with MSAA.\n", stdDisplay_D3DGetStatus(hr));
-
-        // Try without MSAA if it failed
-        if ( stdDisplay_bMSAAEnabled )
-        {
-            STDLOG_WARNING("Retrying depth buffer creation without MSAA...\n");
-            hr = IDirect3DDevice9_CreateDepthStencilSurface(
-                stdDisplay_pD3DDevice,
-                stdDisplay_g_backBuffer.rasterInfo.width,
-                stdDisplay_g_backBuffer.rasterInfo.height,
-                depthFormat,
-                D3DMULTISAMPLE_NONE,
-                0,
-                TRUE,
-                &stdDisplay_zBuffer.pSysSurface,
-                NULL
-            );
-        }
-
-        if ( FAILED(hr) )
-        {
-            STDLOG_ERROR("Error %s when creating depth/stencil surface.\n", stdDisplay_D3DGetStatus(hr));
-            return 1;
-        }
-    }
-
-    hr = IDirect3DDevice9_SetDepthStencilSurface(stdDisplay_pD3DDevice, stdDisplay_zBuffer.pSysSurface);
-    if ( FAILED(hr) )
-    {
-        STDLOG_ERROR("Error %s when setting depth/stencil surface.\n", stdDisplay_D3DGetStatus(hr));
-
-        IDirect3DSurface9_Release(stdDisplay_zBuffer.pSysSurface);
-        stdDisplay_zBuffer.pSysSurface = NULL;
-        return 1;
-    }
-
-    hr = IDirect3DSurface9_GetDesc(stdDisplay_zBuffer.pSysSurface, &stdDisplay_zBuffer.desc);
-    if ( FAILED(hr) )
-    {
-        STDLOG_ERROR("Error %s when getting zbuffer surface description.\n", stdDisplay_D3DGetStatus(hr));
-        return 1;
-    }
+    // stdDisplay_zBuffer = stdDisplay_VBufferNew(&stdDisplay_g_backBuffer->rasterInfo, 0, 0);
+    // stdDisplay_zBuffer->gl.internalFormat = GL_DEPTH24_STENCIL8;
+    // stdDisplay_zBuffer->gl.format = GL_DEPTH_STENCIL;
+    // stdDisplay_zBuffer->gl.type = GL_UNSIGNED_INT_24_8;
 
     return 0;
 }
 
-static int J3DAPI stdDisplay_InitDirect3D9(HWND hwnd) //needed?
+static int J3DAPI stdDisplay_GetGLCaps(void) //checked
 {
-    J3D_UNUSED(hwnd);
+    stdDisplay_deviceCaps.vendor      = (const char*)glGetString(GL_VENDOR);
+    stdDisplay_deviceCaps.renderer    = (const char*)glGetString(GL_RENDERER);
+    stdDisplay_deviceCaps.version     = (const char*)glGetString(GL_VERSION);
+    stdDisplay_deviceCaps.glslVersion = (const char*)glGetString(GL_SHADING_LANGUAGE_VERSION);
 
-    if ( !stdDisplay_pD3D9 )
-    {
-        return 0;
-    }
+    glGetIntegerv(GL_MAX_TEXTURE_SIZE, &stdDisplay_deviceCaps.maxTextureSize);
+    glGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &stdDisplay_deviceCaps.maxCombinedTexUnits);
+    glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS,          &stdDisplay_deviceCaps.maxTexUnitsFS);
+    glGetIntegerv(GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS,   &stdDisplay_deviceCaps.maxTexUnitsVS);
+    glGetIntegerv(GL_MAX_VERTEX_ATTRIBS,               &stdDisplay_deviceCaps.maxVertexAttribs);
 
-    // Get device capabilities
-    UINT adapter = stdDisplay_numDevices > 0 ? stdDisplay_curDevice : D3DADAPTER_DEFAULT;
-    HRESULT hr = IDirect3D9_GetDeviceCaps(stdDisplay_pD3D9, adapter, D3DDEVTYPE_HAL, &stdDisplay_deviceCaps); // TODO: device should already have caps set
-    if ( FAILED(hr) )
+    glGetIntegerv(GL_MAX_VERTEX_UNIFORM_COMPONENTS,    &stdDisplay_deviceCaps.maxVertexUniformComponents);
+    glGetIntegerv(GL_MAX_FRAGMENT_UNIFORM_COMPONENTS,  &stdDisplay_deviceCaps.maxFragmentUniformComponents);
+#ifdef GL_MAX_VARYING_COMPONENTS
+    glGetIntegerv(GL_MAX_VARYING_COMPONENTS,           &stdDisplay_deviceCaps.maxVaryingComponents);
+#else
+    glGetIntegerv(GL_MAX_VARYING_FLOATS,               &stdDisplay_deviceCaps->maxVaryingComponents);
+#endif
+
+#ifdef GL_MAX_DRAW_BUFFERS
+    glGetIntegerv(GL_MAX_DRAW_BUFFERS,                 &stdDisplay_deviceCaps.maxDrawBuffers);
+#else
+    stdDisplay_deviceCaps->maxDrawBuffers = 1;
+#endif
+#ifdef GL_MAX_COLOR_ATTACHMENTS
+    glGetIntegerv(GL_MAX_COLOR_ATTACHMENTS,            &stdDisplay_deviceCaps.maxColorAttachments);
+#else
+    stdDisplay_deviceCaps->maxColorAttachments = 1;
+#endif
+#ifdef GL_MAX_SAMPLES
+    glGetIntegerv(GL_MAX_SAMPLES,                      &stdDisplay_deviceCaps.maxSamples);
+#else
+    stdDisplay_deviceCaps->maxSamples = 0;
+#endif
+
+    // anisotropy
+    stdDisplay_deviceCaps.maxAnisotropy = 1.0f;
+    // Ranges
+    glGetFloatv(GL_POINT_SIZE_RANGE,     stdDisplay_deviceCaps.pointSizeRange);
+    glGetFloatv(GL_ALIASED_LINE_WIDTH_RANGE, stdDisplay_deviceCaps.lineWidthRange);
+
+    GLenum err = glGetError();
+    if (err != GL_NO_ERROR)
     {
-        STDLOG_ERROR("Error %s when getting device capabilities.\n", stdDisplay_D3DGetStatus(hr));
+        STDLOG_ERROR("OpenGL error 0x%x when creating viewport.\n", err);
         return 0;
     }
 
@@ -1226,6 +1147,7 @@ static int J3DAPI stdDisplay_EnumerateDevices(void) //check
     {
         SDL_free(stdDisplay_availableDisplays);
     }
+
     int adapterCount;
     stdDisplay_availableDisplays = SDL_GetDisplays(&adapterCount);
     stdDisplay_numDevices = 0;
@@ -1236,6 +1158,35 @@ static int J3DAPI stdDisplay_EnumerateDevices(void) //check
         return 0;
     }
 
+    //const char* vendor = (const char*)glGetString(GL_VENDOR);
+    const char* renderer = (const char*)glGetString(GL_RENDERER);
+    //const char* version = (const char*)glGetString(GL_VERSION);
+
+    GLint maxTex = 0;
+    glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTex);
+    GLint maxSamples = 0;
+    glGetIntegerv(0x8D57 /*GL_MAX_SAMPLES*/, &maxSamples);
+
+    // Optionaler VRAM-Query (vendor extensions)
+#ifndef GL_GPU_MEMORY_INFO_TOTAL_AVAILABLE_MEMORY_NVX
+#define GL_GPU_MEMORY_INFO_TOTAL_AVAILABLE_MEMORY_NVX    0x9048
+#define GL_GPU_MEMORY_INFO_CURRENT_AVAILABLE_VIDMEM_NVX  0x9049
+#endif
+#ifndef GL_TEXTURE_FREE_MEMORY_ATI
+#define GL_TEXTURE_FREE_MEMORY_ATI                       0x87FC
+#endif
+    GLint total_kb = 0, free_kb = 0;
+    glGetIntegerv(GL_GPU_MEMORY_INFO_TOTAL_AVAILABLE_MEMORY_NVX, &total_kb); // NVIDIA
+    glGetIntegerv(GL_GPU_MEMORY_INFO_CURRENT_AVAILABLE_VIDMEM_NVX, &free_kb);
+    if (!total_kb)
+    {
+        GLint ati[4] = {0, 0, 0, 0};
+        glGetIntegerv(GL_TEXTURE_FREE_MEMORY_ATI, ati); // AMD/ATI
+        // ati[0] = total-ish, ati[1] = largest free block, ati[2]/[3] = aux/tex free
+        total_kb = ati[0];
+        free_kb = ati[0]; // grobe Annahme, wenn nix besseres da ist
+    }
+
     for (int i = 0; i < adapterCount && i < STD_ARRAYLEN(stdDisplay_aDisplayDevices); i++)
     {
         StdDisplayDevice* pDevice = &stdDisplay_aDisplayDevices[stdDisplay_numDevices];
@@ -1243,7 +1194,7 @@ static int J3DAPI stdDisplay_EnumerateDevices(void) //check
         // Fill device information
         const char* pDisplayName = SDL_GetDisplayName(stdDisplay_availableDisplays[i]);; // Left strip name to the last '\' (.e.g. "\\.\DISPLAY1" -> "\DISPLAY1")
         STD_STRCPY(pDevice->aDriverName, pDisplayName); //aDriver should be actually aDisplayDevice
-        STD_STRCPY(pDevice->aDeviceName, pDisplayName);  // aDeviceName should be a3DDevice
+        STD_STRCPY(pDevice->aDeviceName, renderer ? renderer : "OpenGL Device");  // aDeviceName should be a3DDevice
 
 
         // Try to get monitor friendly name
@@ -1259,9 +1210,13 @@ static int J3DAPI stdDisplay_EnumerateDevices(void) //check
             pDevice->bHAL                      = TRUE;
             pDevice->bWindowRenderNotSupported = FALSE; // OpenGL always supports windowed rendering
             //pDevice->guid                      = identifier.DeviceIdentifier;
-        // TODO: Enhance required ram estimation
-        pDevice->totalVideoMemory = 64 * 1024 * 1024; // 64MB default
-        pDevice->freeVideoMemory  = 32 * 1024 * 1024; // 32MB default
+        if (total_kb > 0) {
+            pDevice->totalVideoMemory = total_kb * 1024;
+            pDevice->freeVideoMemory  = free_kb  * 1024;
+        } else {
+            pDevice->totalVideoMemory = maxTex * maxTex * 4; // grobe Schätzung (wie dein D3D-Pfad)
+            pDevice->freeVideoMemory  = pDevice->totalVideoMemory / 2;
+        }
 
         STDLOG_STATUS("Found %s OpenGL Device: %s [%s]\n", pDevice->bHAL ? "HAL" : "REF", pDevice->aDeviceName, pDevice->aDriverName);
         STDLOG_STATUS("Memory: 0x%x out of 0x%x free\n", pDevice->freeVideoMemory, pDevice->totalVideoMemory);
@@ -1271,12 +1226,13 @@ static int J3DAPI stdDisplay_EnumerateDevices(void) //check
     return stdDisplay_numDevices > 0;
 }
 
-static int J3DAPI stdDisplay_EnumerateVideoModes(SDL_DisplayID adapter)
+static int J3DAPI stdDisplay_EnumerateVideoModes(SDL_DisplayID adapter) //checked
 {
     //Check that the current desktop mode is supported is skipped in GL. Is that needed?
 
     int modeCount = 0;
     SDL_DisplayMode** modes = SDL_GetFullscreenDisplayModes(adapter, &modeCount);
+
 
     if (!modes || modeCount <= 0) {
         STDLOG_ERROR("  SDL_GetFullscreenDisplayModes failed: %s", SDL_GetError());
@@ -1299,6 +1255,7 @@ static int J3DAPI stdDisplay_EnumerateVideoModes(SDL_DisplayID adapter)
         pVideoMode->refreshRate       = (uint32_t)(mode->refresh_rate + 0.5f);;
         pVideoMode->rasterInfo.width  = mode->w;
         pVideoMode->rasterInfo.height = mode->h;
+        pVideoMode->format = mode->format;
 
         // Set color bit information based on format
         if ( !stdDisplay_GetVideoColorFormat(mode->format, &pVideoMode->rasterInfo.colorInfo) )
@@ -1332,14 +1289,14 @@ static int J3DAPI stdDisplay_EnumerateVideoModes(SDL_DisplayID adapter)
     return stdDisplay_numVideoModes;
 }
 
-D3DFORMAT J3DAPI stdDisplay_GetD3DFormat(int bpp)
+SDL_PixelFormat J3DAPI stdDisplay_GetSDLFormat(int bpp)
 {
     switch ( bpp )
     {
-        case 16: return D3DFMT_R5G6B5;
-        case 24: return D3DFMT_R8G8B8;
-        case 32: return D3DFMT_X8R8G8B8;
-        default: return D3DFMT_X8R8G8B8;
+        case 16: return SDL_PIXELFORMAT_RGB565;;
+        case 24: return SDL_PIXELFORMAT_RGB24;
+        case 32: return SDL_PIXELFORMAT_XRGB8888;
+        default: return SDL_PIXELFORMAT_XRGB8888;
     }
 }
 
@@ -1403,480 +1360,169 @@ void J3DAPI stdDisplay_SetAspectRatio(StdVideoMode* pMode)
 
 LPDIRECT3D9 stdDisplay_GetDirect3D(void)
 {
-    return stdDisplay_pD3D9;
+    return NULL;
 }
 
 tSysDisplayDevice* stdDisplay_GetSystemDevice(void)
 {
-    return stdDisplay_pD3DDevice;
+    return NULL;
 }
 
 static int J3DAPI stdDisplay_SetWindowMode(HWND hWnd, StdVideoMode* pDisplayMode)
 {
-    if ( !SetWindowPos(hWnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE) )
-    {
-        return 0;
-    }
+    // if ( !SetWindowPos(hWnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE) )
+    // {
+    //     return 0;
+    // }
+    J3D_UNUSED(hWnd);
+    J3D_UNUSED(pDisplayMode);
 
-    // Get desktop format for windowed mode
-    D3DDISPLAYMODE desktopMode;
-    HRESULT hr = IDirect3D9_GetAdapterDisplayMode(stdDisplay_pD3D9, stdDisplay_curDevice, &desktopMode);
-    if ( FAILED(hr) )
-    {
-        STDLOG_ERROR("Error %d getting desktop display mode\n", stdDisplay_D3DGetStatus(hr));
-        return 0;
-    }
+    SDL_Window* window = stdWin95_GetSDLWindow();
 
-    // Validate MSAA settings for windowed mode
-    stdDisplay_ValidateMSAASettings(stdDisplay_curDevice, desktopMode.Format, TRUE);
+    SDL_SetWindowFullscreen(window, false);
 
-    // Setup present parameters for windowed mode
-    ZeroMemory(&stdDisplay_presentParams, sizeof(stdDisplay_presentParams));
-    stdDisplay_presentParams.BackBufferWidth            = pDisplayMode->rasterInfo.width;
-    stdDisplay_presentParams.BackBufferHeight           = pDisplayMode->rasterInfo.height;
-    stdDisplay_presentParams.BackBufferFormat           = D3DFMT_UNKNOWN; // Use desktop format
-    stdDisplay_presentParams.BackBufferCount            = 1;
-    stdDisplay_presentParams.MultiSampleType            = stdDisplay_msaaSampleType;
-    stdDisplay_presentParams.MultiSampleQuality         = stdDisplay_msaaSampleQuality;
-    stdDisplay_presentParams.SwapEffect                 = D3DSWAPEFFECT_DISCARD;
-    stdDisplay_presentParams.hDeviceWindow              = hWnd;
-    stdDisplay_presentParams.Windowed                   = TRUE;
-    stdDisplay_presentParams.EnableAutoDepthStencil     = FALSE; // TODO: In the future this could be enabled and z buffer creation function removed
-    stdDisplay_presentParams.AutoDepthStencilFormat     = D3DFMT_D24S8;
-    stdDisplay_presentParams.Flags                      = stdDisplay_bMSAAEnabled ? 0 : D3DPRESENTFLAG_LOCKABLE_BACKBUFFER; // = D3DPRESENTFLAG_LOCKABLE_BACKBUFFER;
-    stdDisplay_presentParams.FullScreen_RefreshRateInHz = 0; // Must be 0 for window mode
-    stdDisplay_presentParams.PresentationInterval       = stdDisplay_bNoSync ? D3DPRESENT_INTERVAL_IMMEDIATE : D3DPRESENT_INTERVAL_DEFAULT;
-
-    // Reset or Create D3D9 device
-    if ( stdDisplay_pD3DDevice )
-    {
-        if ( !stdDisplay_ResetDevice() )
-        {
-            STDLOG_ERROR("Error resetting D3D9 device when setting window mode.\n");
-            return 0;
-        }
-        return 1;
-    }
-    else
-    {
-        // Create new device
-        hr = IDirect3D9_CreateDevice(
-            stdDisplay_pD3D9,
-            stdDisplay_curDevice,
-            D3DDEVTYPE_HAL,
-            hWnd,
-            D3DCREATE_HARDWARE_VERTEXPROCESSING, // IMPORTANT: Use hardware vertex processing only when shader system is active. Otherwise polygon clipping might not be supported
-                                                 //            even when device caps.PrimitiveMiscCaps have D3DPMISCCAPS_CLIPTLVERTS flag set
-            &stdDisplay_presentParams,
-            &stdDisplay_pD3DDevice
-        );
-
-        if ( FAILED(hr) )
-        {
-            STDLOG_ERROR("Error %s when creating D3D9 device for windowed mode.\n", stdDisplay_D3DGetStatus(hr));
-            return 0;
-        }
-    }
-
-    return stdDisplay_InitBuffers(stdDisplay_pD3DDevice, pDisplayMode, /*bWindowMode=*/true, stdDisplay_presentParams.BackBufferCount);
+    return stdDisplay_InitBuffers(NULL, pDisplayMode, /*bWindowMode=*/true, 1);
 }
 
 int J3DAPI stdDisplay_SetFullscreenMode(HWND hwnd, const StdVideoMode* pDisplayMode, size_t numBackBuffers)
 {
     // NOTE: the return value indicating success or failure changed from original code.
     // Now function will return 0 on error and 1 on success.
-
+    J3D_UNUSED(hwnd);
+    J3D_UNUSED(pDisplayMode);
     J3D_UNUSED(numBackBuffers);
 
-    // Validate MSAA settings for fullscreen mode
-    D3DFORMAT format = stdDisplay_GetD3DFormat(pDisplayMode->rasterInfo.colorInfo.bpp);
-    stdDisplay_ValidateMSAASettings(stdDisplay_curDevice, format, FALSE);
+    SDL_Window* window = stdWin95_GetSDLWindow();
 
-    // Setup present parameters for fullscreen mode
-    ZeroMemory(&stdDisplay_presentParams, sizeof(stdDisplay_presentParams));
-    stdDisplay_presentParams.BackBufferWidth            = pDisplayMode->rasterInfo.width;
-    stdDisplay_presentParams.BackBufferHeight           = pDisplayMode->rasterInfo.height;
-    stdDisplay_presentParams.BackBufferFormat           = stdDisplay_GetD3DFormat(pDisplayMode->rasterInfo.colorInfo.bpp);
-    stdDisplay_presentParams.BackBufferCount            = numBackBuffers;
-    stdDisplay_presentParams.MultiSampleType            = stdDisplay_msaaSampleType;
-    stdDisplay_presentParams.MultiSampleQuality         = stdDisplay_msaaSampleQuality;
-    stdDisplay_presentParams.SwapEffect                 = D3DSWAPEFFECT_DISCARD;
-    stdDisplay_presentParams.hDeviceWindow              = hwnd;
-    stdDisplay_presentParams.Windowed                   = FALSE;
-    stdDisplay_presentParams.EnableAutoDepthStencil     = FALSE; // TODO: In the future this could be enabled and z buffer creation function removed
-    stdDisplay_presentParams.AutoDepthStencilFormat     = D3DFMT_D24S8;
-    stdDisplay_presentParams.Flags                      = stdDisplay_bMSAAEnabled ? 0 : D3DPRESENTFLAG_LOCKABLE_BACKBUFFER; //= D3DPRESENTFLAG_LOCKABLE_BACKBUFFER;
-    stdDisplay_presentParams.FullScreen_RefreshRateInHz = pDisplayMode->refreshRate;
-    stdDisplay_presentParams.PresentationInterval       = stdDisplay_bNoSync ? D3DPRESENT_INTERVAL_IMMEDIATE : D3DPRESENT_INTERVAL_DEFAULT;
+    SDL_SetWindowFullscreen(window, true);
 
-    STDLOG_STATUS("Set video mode %d %d %d with MSAA %dx.\n",
-        pDisplayMode->rasterInfo.width,
-        pDisplayMode->rasterInfo.height,
-        pDisplayMode->rasterInfo.colorInfo.bpp,
-        stdDisplay_bMSAAEnabled ? stdDisplay_msaaSampleCount : 1
-    );
-
-    // Reset or Create D3D9 device
-    if ( stdDisplay_pD3DDevice )
-    {
-        if ( !stdDisplay_ResetDevice() )
-        {
-            STDLOG_ERROR("Error resetting D3D9 device when setting fullscreen mode.\n");
-            return 0;
-        }
-
-        return 1;
-    }
-    else
-    {
-        // Create D3D9 device
-        HRESULT hr = IDirect3D9_CreateDevice(
-            stdDisplay_pD3D9,
-            stdDisplay_curDevice,
-            D3DDEVTYPE_HAL,
-            hwnd,
-            D3DCREATE_HARDWARE_VERTEXPROCESSING, // IMPORTANT: Use hardware vertex processing only when shader system is active. Otherwise polygon clipping might not be supported
-                                                 //            even when device caps.PrimitiveMiscCaps have D3DPMISCCAPS_CLIPTLVERTS flag is set
-            &stdDisplay_presentParams,
-            &stdDisplay_pD3DDevice
-        );
-
-        if ( hr == D3DERR_DEVICELOST )
-        {
-            STDLOG_WARNING("Warning: D3D9 device lost when creating for fullscreen mode, retrying in hybrid mode...\n");
-
-            // Switch to windowed mode for recovery
-            stdDisplay_presentParams.Windowed                   = TRUE;
-            stdDisplay_presentParams.FullScreen_RefreshRateInHz = 0;
-            hr = IDirect3D9_CreateDevice(
-                stdDisplay_pD3D9,
-                stdDisplay_curDevice,
-                D3DDEVTYPE_HAL,
-                hwnd,
-                D3DCREATE_HARDWARE_VERTEXPROCESSING, // IMPORTANT: Use hardware vertex processing only when shader system is active. Otherwise polygon clipping might not be supported
-                                                     //            even when device caps.PrimitiveMiscCaps have D3DPMISCCAPS_CLIPTLVERTS flag set
-                &stdDisplay_presentParams,
-                &stdDisplay_pD3DDevice
-            );
-
-            if ( FAILED(hr) )
-            {
-                STDLOG_ERROR("Error %s when creating D3D9 device for hybrid mode.\n", stdDisplay_D3DGetStatus(hr));
-                return 0;
-            }
-
-            // Restore fullscreen mode
-            stdDisplay_presentParams.Windowed                   = FALSE;
-            stdDisplay_presentParams.FullScreen_RefreshRateInHz = pDisplayMode->refreshRate;
-            hr = IDirect3DDevice9_Reset(stdDisplay_pD3DDevice, &stdDisplay_presentParams);
-        }
-
-        if ( FAILED(hr) )
-        {
-            STDLOG_ERROR("Error %s when creating D3D9 device for fullscreen mode.\n", stdDisplay_D3DGetStatus(hr));
-            return 0;
-        }
-    }
-
-    return stdDisplay_InitBuffers(stdDisplay_pD3DDevice, (StdVideoMode*)pDisplayMode, /*bWindowMode=*/false, stdDisplay_presentParams.BackBufferCount);
+    return stdDisplay_InitBuffers(NULL, pDisplayMode, /*bWindowMode=*/true, 1);
 }
 
 int J3DAPI stdDisplay_InitBuffers(PDIRECT3DDEVICE9 pDevice, StdVideoMode* pDisplayMode, bool bWindowMode, size_t numBuffers)
 {
-    if ( numBuffers == 0 ) numBuffers = 1;
-
-    // Setup front buffer
-    if ( stdDisplay_g_frontBuffer.surface.pSysSurface )
+    tVBuffer* back = stdDisplay_VBufferNew(&pDisplayMode->rasterInfo, 0, 0);
+    tVBuffer* front = stdDisplay_VBufferNew(&pDisplayMode->rasterInfo, 0, 0);
+    if (back && front)
     {
-        STDLOG_WARNING("Front buffer already initialized, skipping re-initialization.\n");
-    }
-    else
-    {
-        stdDisplay_frontLockRef = 0;
-        if ( bWindowMode )
-        {
-            stdDisplay_g_frontBuffer.type         = VBUFFER_HARDWARE;
-            stdDisplay_g_frontBuffer.lockRefCount = 0;
-            stdDisplay_g_frontBuffer.bVideoMemory = 1; // D3D9, surfaces are typically in video memory
-            stdDisplay_g_frontBuffer.pPixels      = NULL;
-
-            // Get front buffer
-            HRESULT hr = IDirect3DDevice9_GetBackBuffer(pDevice, 0, 0, D3DBACKBUFFER_TYPE_MONO, &stdDisplay_g_frontBuffer.surface.pSysSurface);
-
-            if ( FAILED(hr) )
-            {
-                STDLOG_ERROR("Error %s when creating the D3D front buffer surface.\n", stdDisplay_D3DGetStatus(hr));
-                return 0;
-            }
-
-            // Get surface description
-            hr = IDirect3DSurface9_GetDesc(stdDisplay_g_frontBuffer.surface.pSysSurface, &stdDisplay_g_frontBuffer.surface.desc);
-            if ( FAILED(hr) )
-            {
-                STDLOG_ERROR("Error %s when getting desc of D3D front buffer surface.\n", stdDisplay_D3DGetStatus(hr));
-                return 0;
-            }
-
-            pDisplayMode->rasterInfo.width  = stdDisplay_g_frontBuffer.surface.desc.Width;
-            pDisplayMode->rasterInfo.height = stdDisplay_g_frontBuffer.surface.desc.Height;
-
-            // Set up color format based on surface format
-            // TODO: why updating color info of video mode?
-            if ( !stdDisplay_GetVideoColorFormat(stdDisplay_g_frontBuffer.surface.desc.Format, &pDisplayMode->rasterInfo.colorInfo) )
-            {
-                STDLOG_ERROR("Couldn't get front buffer color info for format %d", stdDisplay_g_frontBuffer.surface.desc.Format);
-                return 0;
-            }
-
-            unsigned int bpp = pDisplayMode->rasterInfo.colorInfo.bpp / 8; // note bpp could be changed here
-            pDisplayMode->rasterInfo.rowSize  = pDisplayMode->rasterInfo.width * bpp;
-            pDisplayMode->rasterInfo.rowWidth = pDisplayMode->rasterInfo.rowSize / bpp;
-            pDisplayMode->rasterInfo.size     = pDisplayMode->rasterInfo.rowSize * pDisplayMode->rasterInfo.height;
-            stdDisplay_SetAspectRatio(pDisplayMode);
-
-            // Setup buffer structures
-            stdDisplay_g_frontBuffer.rasterInfo = pDisplayMode->rasterInfo;
-        }
-        else // fullscreen
-        {
-            // TODO: Make sure pSysSurface can be backbuffer in this case
-            HRESULT hr = IDirect3DDevice9_GetBackBuffer(pDevice, 0, 0, D3DBACKBUFFER_TYPE_MONO, &stdDisplay_g_frontBuffer.surface.pSysSurface);
-
-            if ( FAILED(hr) )
-            {
-                STDLOG_ERROR("Error %s when creating the D3D primary surface.\n", stdDisplay_D3DGetStatus(hr));
-                return 0;
-            }
-
-            hr = IDirect3DSurface9_GetDesc(stdDisplay_g_frontBuffer.surface.pSysSurface, &stdDisplay_g_frontBuffer.surface.desc);
-            if ( FAILED(hr) )
-            {
-                STDLOG_ERROR("Error %s when getting desc of D3D primary surface.\n", stdDisplay_D3DGetStatus(hr));
-                return 0;
-            }
-
-            stdDisplay_g_frontBuffer.lockRefCount = 0;
-            stdDisplay_g_frontBuffer.bVideoMemory = 1; // In D3D9, surfaces are typically in video memory
-            stdDisplay_g_frontBuffer.type         = VBUFFER_HARDWARE;
-            stdDisplay_g_frontBuffer.pPixels      = NULL;
-
-            stdDisplay_g_frontBuffer.rasterInfo        = pDisplayMode->rasterInfo;
-            stdDisplay_g_frontBuffer.rasterInfo.width  = stdDisplay_g_frontBuffer.surface.desc.Width;
-            stdDisplay_g_frontBuffer.rasterInfo.height = stdDisplay_g_frontBuffer.surface.desc.Height;
-
-            // Set up color format based on surface format
-            if ( !stdDisplay_GetVideoColorFormat(stdDisplay_g_frontBuffer.surface.desc.Format, &stdDisplay_g_frontBuffer.rasterInfo.colorInfo) )
-            {
-                STDLOG_ERROR("Couldn't get front buffer color info for format %d", stdDisplay_g_frontBuffer.surface.desc.Format);
-                return 0;
-            }
-
-            unsigned int bpp = pDisplayMode->rasterInfo.colorInfo.bpp / 8;
-            stdDisplay_g_frontBuffer.rasterInfo.rowSize  = pDisplayMode->rasterInfo.width * bpp;
-            stdDisplay_g_frontBuffer.rasterInfo.rowWidth = stdDisplay_g_frontBuffer.rasterInfo.rowSize / bpp;
-            stdDisplay_g_frontBuffer.rasterInfo.size     = stdDisplay_g_frontBuffer.rasterInfo.rowSize * pDisplayMode->rasterInfo.height;
-        }
-
-        // Create separate lockable surface for MSAA scenarios
-        if ( stdDisplay_bMSAAEnabled )
-        {
-            if ( stdDisplay_pFrontLockSurf )
-            {
-                IDirect3DSurface9_Release(stdDisplay_pFrontLockSurf);
-            }
-
-            HRESULT hr = IDirect3DDevice9_CreateRenderTarget( // faster than IDirect3DDevice9_CreateOffscreenPlainSurface
-                pDevice,
-                stdDisplay_g_frontBuffer.surface.desc.Width,
-                stdDisplay_g_frontBuffer.surface.desc.Height,
-                stdDisplay_g_frontBuffer.surface.desc.Format,
-                D3DMULTISAMPLE_NONE,  // No MSAA for intermediate surface
-                0,
-                TRUE,  // lockable
-                &stdDisplay_pFrontLockSurf,
-                NULL
-            );
-
-            if ( FAILED(hr) )
-            {
-                STDLOG_ERROR("Error %s when creating lockable backbuffer surface for MSAA.\n", stdDisplay_D3DGetStatus(hr));
-                return 0;
-            }
-        }
+        stdDisplay_g_frontBuffer = *back;
+        stdDisplay_g_backBuffer = *front;
+        STDFREE(back);
+        STDFREE(front);
     }
 
-    // Setup back buffer
-    if ( stdDisplay_g_backBuffer.surface.pSysSurface )
-    {
-        STDLOG_WARNING("Back buffer already initialized, skipping re-initialization.\n");
-    }
-    else
-    {
-        stdDisplay_backLockRef = 0;
-
-        HRESULT hr = IDirect3DDevice9_GetBackBuffer(pDevice, 0, numBuffers - 1, D3DBACKBUFFER_TYPE_MONO, &stdDisplay_g_backBuffer.surface.pSysSurface);
-        if ( FAILED(hr) )
-        {
-            STDLOG_ERROR("Error %s when getting back buffer.\n", stdDisplay_D3DGetStatus(hr));
-            return 0;
-        }
-
-        // Update display mode with actual back buffer format
-        hr = IDirect3DSurface9_GetDesc(stdDisplay_g_backBuffer.surface.pSysSurface, &stdDisplay_g_backBuffer.surface.desc);
-        if ( FAILED(hr) )
-        {
-            STDLOG_ERROR("Error %s when getting desc of Direct3D back surface.\n", stdDisplay_D3DGetStatus(hr));
-            return 0;
-        }
-
-        stdDisplay_g_backBuffer.lockRefCount = 0;
-        stdDisplay_g_backBuffer.bVideoMemory = 1;
-        stdDisplay_g_backBuffer.type         = VBUFFER_HARDWARE;
-        stdDisplay_g_backBuffer.pPixels      = NULL;
-
-        // Update raster info with actual back buffer dimensions
-        stdDisplay_g_backBuffer.rasterInfo        = pDisplayMode->rasterInfo;
-        stdDisplay_g_backBuffer.rasterInfo.width  = stdDisplay_g_backBuffer.surface.desc.Width;
-        stdDisplay_g_backBuffer.rasterInfo.height = stdDisplay_g_backBuffer.surface.desc.Height;
-
-        // Set up color format based on surface format
-        if ( !stdDisplay_GetVideoColorFormat(stdDisplay_g_backBuffer.surface.desc.Format, &stdDisplay_g_backBuffer.rasterInfo.colorInfo) )
-        {
-            STDLOG_ERROR("Couldn't get backbuffer color info for format %d", stdDisplay_g_frontBuffer.surface.desc.Format);
-            return 0;
-        }
-
-        unsigned int bpp = pDisplayMode->rasterInfo.colorInfo.bpp / 8;
-        stdDisplay_g_backBuffer.rasterInfo.rowSize  = pDisplayMode->rasterInfo.width * bpp;
-        stdDisplay_g_backBuffer.rasterInfo.rowWidth = pDisplayMode->rasterInfo.rowSize / bpp;
-        stdDisplay_g_backBuffer.rasterInfo.size     = stdDisplay_g_backBuffer.rasterInfo.rowSize;
-
-        // Create separate lockable surface for MSAA scenarios
-        if ( stdDisplay_bMSAAEnabled )
-        {
-            if ( stdDisplay_pBackLockSurf )
-            {
-                IDirect3DSurface9_Release(stdDisplay_pBackLockSurf);
-            }
-
-            hr = IDirect3DDevice9_CreateRenderTarget( // faster than IDirect3DDevice9_CreateOffscreenPlainSurface
-                pDevice,
-                stdDisplay_g_backBuffer.surface.desc.Width,
-                stdDisplay_g_backBuffer.surface.desc.Height,
-                stdDisplay_g_backBuffer.surface.desc.Format,
-                D3DMULTISAMPLE_NONE,  // No MSAA for intermediate surface
-                0,
-                TRUE,  // lockable
-                &stdDisplay_pBackLockSurf,
-                NULL
-            );
-
-            if ( FAILED(hr) )
-            {
-                STDLOG_ERROR("Error %s when creating lockable backbuffer surface for MSAA.\n", stdDisplay_D3DGetStatus(hr));
-                return 0;
-            }
-        }
-    }
 
     return 1;
 }
 
-void stdDisplay_ReleaseBuffers(void) // TODO: should be release system device
+void stdDisplay_ReleaseBuffers(void) // checked
 {
-    if ( stdDisplay_zBuffer.pSysSurface )
+    // if (stdDisplay_zBuffer)
+    // {
+    //     glDeleteTextures(1, &stdDisplay_zBuffer.glTexID);
+    //     stdDisplay_zBuffer.glTexID = 0;
+    // }
+
+    if (stdDisplay_g_backBuffer.gl.tex)
     {
-        IDirect3DDevice9_SetDepthStencilSurface(stdDisplay_pD3DDevice, NULL);
-        IDirect3DSurface9_Release(stdDisplay_zBuffer.pSysSurface);
-        stdDisplay_zBuffer.pSysSurface = NULL;
+        glDeleteTextures(1, &stdDisplay_g_backBuffer.gl.tex);
+        stdDisplay_g_backBuffer.gl.tex = 0;
     }
 
-    if ( stdDisplay_g_backBuffer.surface.pSysSurface )
+    if (stdDisplay_g_frontBuffer.gl.tex)
     {
-        IDirect3DSurface9_Release(stdDisplay_g_backBuffer.surface.pSysSurface);
-        stdDisplay_g_backBuffer.surface.pSysSurface = NULL;
+        glDeleteTextures(1, &stdDisplay_g_frontBuffer.gl.tex);
+        stdDisplay_g_frontBuffer.gl.tex = 0;
     }
 
-    if ( stdDisplay_pBackLockSurf )
+    if (stdDisplay_g_backBuffer.pPixels)
     {
-        IDirect3DSurface9_Release(stdDisplay_pBackLockSurf);
-        stdDisplay_pBackLockSurf = NULL;
-        stdDisplay_backLockRef   = 0;
+        stdMemory_Free(stdDisplay_g_backBuffer.pPixels);
+        stdDisplay_g_backBuffer.pPixels = NULL;
+    }
+    if (stdDisplay_g_frontBuffer.pPixels)
+    {
+        stdMemory_Free(stdDisplay_g_frontBuffer.pPixels);
+        stdDisplay_g_frontBuffer.pPixels = NULL;
+    }
+}
+
+static uint8_t* J3DAPI stdDisplay_LockTexture(tVBuffer* pVBuffer) //checked
+{
+    if (!pVBuffer) return NULL;
+
+    // Verschachtelte Locks erlauben (D3D-ähnlich)
+    if (pVBuffer->lockRefCount > 0) {
+        return pVBuffer->pPixels; // schon gelockt -> selben Pointer zurückgeben
     }
 
-    if ( stdDisplay_g_frontBuffer.surface.pSysSurface )
-    {
-        IDirect3DSurface9_Release(stdDisplay_g_frontBuffer.surface.pSysSurface);
-        stdDisplay_g_frontBuffer.surface.pSysSurface = NULL;
+    const int bytesPerPixel = (pVBuffer->rasterInfo.colorInfo.bpp / 8);
+    const int pitch         = pVBuffer->rasterInfo.width * bytesPerPixel;
+    const size_t size       = (size_t)pitch * pVBuffer->rasterInfo.height;
+
+    // CPU-Staging-Buffer anlegen
+    pVBuffer->pPixels = (uint8_t*)STDMALLOC(size);
+    if (!pVBuffer->pPixels) {
+        pVBuffer->lockRefCount = 0;
+        return NULL;
     }
 
-    if ( stdDisplay_pFrontLockSurf )
-    {
-        IDirect3DSurface9_Release(stdDisplay_pFrontLockSurf);
-        stdDisplay_pFrontLockSurf = NULL;
-        stdDisplay_frontLockRef   = 0;
+    // Optional: aktuellen Inhalt der Textur in den Staging-Buffer lesen
+    // (nur wenn du beim Lock Lesezugriff brauchst; für reines Schreiben kannst du das weglassen)
+    if (pVBuffer->gl.tex) {
+        glPixelStorei(GL_PACK_ALIGNMENT, 1);
+        // GLES hat kein glGetTexImage -> fallback via FBO + glReadPixels:
+        GLuint fbo = 0;
+        glGenFramebuffers(1, &fbo);
+        glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, pVBuffer->gl.tex, 0);
+        // (Prüfung auf COMPLETE ggf. einbauen)
+        glReadPixels(0, 0, pVBuffer->rasterInfo.width, pVBuffer->rasterInfo.height, pVBuffer->gl.internalFormat, pVBuffer->gl.type, pVBuffer->pPixels);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glDeleteFramebuffers(1, &fbo);
     }
 
-    memset(&stdDisplay_zBuffer, 0, sizeof(stdDisplay_zBuffer));
-    memset(&stdDisplay_g_backBuffer, 0, sizeof(stdDisplay_g_backBuffer));
-    memset(&stdDisplay_g_frontBuffer, 0, sizeof(stdDisplay_g_frontBuffer));
+    return pVBuffer->pPixels;
 }
 
 uint8_t* J3DAPI stdDisplay_LockSurface(tVSurface* pVSurf)
 {
-    D3DLOCKED_RECT lockedRect;
-    HRESULT hr = IDirect3DSurface9_LockRect(pVSurf->pSysSurface, &lockedRect, NULL, 0);
+    return 0;
+}
 
-    if ( SUCCEEDED(hr) )
-    {
-        /*pVSurf->desc.Pitch = lockedRect.Pitch;
-        pVSurf->desc.pBits = lockedRect.pBits;*/
-        return (uint8_t*)lockedRect.pBits;
+static int stdDisplay_UnlockTexture(tVBuffer* pBuffer)
+{
+    if (!pBuffer) return 1;
+    if (pBuffer->lockRefCount <= 0) return 1;
+
+    // Verschachtelte Locks: nur beim letzten freigeben/hochladen
+    if (pBuffer->lockRefCount > 1) {
+        return 0;
     }
 
-    if ( hr == D3DERR_DEVICELOST )
-    {
-        // Try to reset the device
-        hr = IDirect3DDevice9_Reset(stdDisplay_pD3DDevice, &stdDisplay_presentParams);
-        if ( SUCCEEDED(hr) )
-        {
-            // Retry locking after reset
-            hr = IDirect3DSurface9_LockRect(pVSurf->pSysSurface, &lockedRect, NULL, 0);
-            if ( SUCCEEDED(hr) )
-            {
-                /*pVSurf->desc.Pitch = lockedRect.Pitch;
-                pVSurf->desc.pBits = lockedRect.pBits;*/
-                return (uint8_t*)lockedRect.pBits;
-            }
-        }
+    // Wenn wir eine GL-Textur haben und einen Staging-Puffer, lade ihn hoch
+    if (pBuffer->gl.tex && pBuffer->pPixels) {
+        glBindTexture(GL_TEXTURE_2D, pBuffer->gl.tex);
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);  // Pitch = width * bpp/8
+        glTexSubImage2D(
+            GL_TEXTURE_2D, 0, 0, 0,
+            pBuffer->rasterInfo.width, pBuffer->rasterInfo.height,
+            pBuffer->gl.internalFormat,   // z.B. GL_RGBA / GL_BGRA / GL_RGB
+            pBuffer->gl.type,     // z.B. GL_UNSIGNED_BYTE / GL_UNSIGNED_SHORT_5_6_5
+            pBuffer->pPixels
+        );
+        glBindTexture(GL_TEXTURE_2D, 0);
+
+        // Optional: Fehler checken
+        // GLenum err = glGetError(); if (err != GL_NO_ERROR) { /* log */ return 1; }
     }
 
-    STDLOG_ERROR("Error %s when locking the D3D surface.\n", stdDisplay_D3DGetStatus(hr));
     return 0;
 }
 
 int J3DAPI stdDisplay_UnlockSurface(tVSurface* pSurf)
 {
-    HRESULT hr = IDirect3DSurface9_UnlockRect(pSurf->pSysSurface);
-    if ( SUCCEEDED(hr) )
-    {
-        return 0;
-    }
-
-    if ( hr == D3DERR_DEVICELOST )
-    {
-        // Try to reset the device
-        // TODO: should probably call stdDisplay_ResetDevice() instead, but something has to be done about pSurf->pSysSurface in this case
-        hr = IDirect3DDevice9_Reset(stdDisplay_pD3DDevice, &stdDisplay_presentParams);
-        if ( SUCCEEDED(hr) )
-        {
-            // Surface should be valid again after reset
-            return 0;
-        }
-    }
-
-    STDLOG_ERROR("Error %s when unlocking the display surface.\n", stdDisplay_D3DGetStatus(hr));
-    return 1;
+    return 0;
 }
 
 void stdDisplay_DisableVSync(bool bDisable)
@@ -1886,136 +1532,196 @@ void stdDisplay_DisableVSync(bool bDisable)
         // Update presentation parameters
         if ( bDisable )
         {
-            stdDisplay_presentParams.PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
+            SDL_GL_SetSwapInterval(0);
         }
         else
         {
-            stdDisplay_presentParams.PresentationInterval = D3DPRESENT_INTERVAL_DEFAULT;
+            SDL_GL_SetSwapInterval(1);
         }
 
-        if ( !stdDisplay_ResetDevice() )
-        {
-            STDLOG_ERROR("stdDisplay_DisableVSync: Error resetting D3D device.\n");
-            return;
-        }
+        // if ( !stdDisplay_ResetDevice() )
+        // {
+        //     STDLOG_ERROR("stdDisplay_DisableVSync: Error resetting D3D device.\n");
+        //     return;
+        // }
 
         stdDisplay_bNoSync = bDisable;
     }
 }
 
-int stdDisplay_Update(void)
+int stdDisplay_Update(void) //check
 {
-    if ( !stdDisplay_pD3DDevice )
+    GLenum err = glGetError();
+    if (err != GL_NO_ERROR)
     {
-        return 1;
-    }
-
-    // Check device state first
-    HRESULT hr = IDirect3DDevice9_TestCooperativeLevel(stdDisplay_pD3DDevice);
-    if ( hr == D3DERR_DEVICELOST )
-    {
-        STDLOG_WARNING("Warning: D3D device lost, skipping frame.\n");
-        return 0; // Device lost, can't present
-    }
-    else if ( hr == D3DERR_DEVICENOTRESET )
-    {
-        // Device needs to be reset
-        if ( !stdDisplay_ResetDevice() )
-        {
-            STDLOG_ERROR("stdDisplay_Update: Failed to reset device!\n");
-        }
-    }
-
-    if ( stdDisplay_bFullscreen )
-    {
-        // Present the back buffer to the front buffer
-        hr = IDirect3DDevice9_Present(stdDisplay_pD3DDevice, NULL, NULL, NULL, NULL);
-    }
-    else
-    {
-        hr = IDirect3DDevice9_Present(stdDisplay_pD3DDevice, NULL, NULL, NULL, NULL);
-    }
-
-    if ( FAILED(hr) )
-    {
-        if ( hr == D3DERR_DEVICELOST )
-        {
-            return 0; // This is expected, just skip this frame
-        }
-
-        STDLOG_ERROR("Error %s when presenting the frame.\n", stdDisplay_D3DGetStatus(hr));
-        return 1;
-    }
-
-    return 0;
-}
-
-int J3DAPI stdDisplay_ColorFillSurface(tVSurface* pSurf, uint32_t dwFillColor, const StdRect* pRect)
-{
-    if ( !stdDisplay_pD3DDevice || !pSurf->pSysSurface )
-    {
-        return 1;
-    }
-
-    RECT rect;
-    if ( pRect )
-    {
-        if ( pRect->right == 0 )
-        {
-            return 1;
-        }
-        if ( pRect->bottom == 0 )
-        {
-            return 1;
-        }
-
-        rect.left   = pRect->left;
-        rect.top    = pRect->top;
-        rect.right  = pRect->right + rect.left;
-        rect.bottom = pRect->bottom + pRect->top;
-    }
-    else
-    {
-        rect.left   = 0;
-        rect.top    = 0;
-        rect.right  = pSurf->desc.Width;
-        rect.bottom = pSurf->desc.Height;
-    }
-
-    HRESULT hr = IDirect3DDevice9_ColorFill(stdDisplay_pD3DDevice, pSurf->pSysSurface, &rect, dwFillColor);
-
-    if ( SUCCEEDED(hr) )
-    {
+        STDLOG_ERROR("OpenGL error 0x%x when creating viewport.\n", err);
         return 0;
     }
 
-    if ( hr == D3DERR_DEVICELOST )
+    SDL_Window* pWindow = stdWin95_GetSDLWindow();
+    if (!pWindow) {
+        return 1;
+    }
+    // tVBuffer* back = stdDisplay_g_backBuffer;
+    // if (!back->pPixels)
+    //     return 1; // nothing to render
+
+    // TODO: implement msaa stuff
+    // Optional: MSAA resolve, falls aktiv
+    // if (stdDisplay_bMSAAEnabled)
+    // {
+    //     glBindFramebuffer(GL_READ_FRAMEBUFFER, stdDisplay_msaaFBO);
+    //     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, stdDisplay_resolveFBO);
+    //     glBlitFramebuffer(
+    //         0, 0, back->rasterInfo.width, back->rasterInfo.height,
+    //         0, 0, back->rasterInfo.width, back->rasterInfo.height,
+    //         GL_COLOR_BUFFER_BIT, GL_NEAREST
+    //     );
+    //     glBindFramebuffer(GL_FRAMEBUFFER, stdDisplay_resolveFBO);
+    // }
+    // else
+    // {
+    //     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    // }
+
+
+    // const GLsizei w = (GLsizei)back->rasterInfo.width;
+    // const GLsizei h = (GLsizei)back->rasterInfo.height;
+
+
+
+
+    // if (back->rasterInfo.colorInfo.bpp == 32 && back->rasterInfo.colorInfo.alphaBPP == 0)
+    // {
+    //     glPixelTransferf(GL_ALPHA_SCALE, 0.0f);
+    //     glPixelTransferf(GL_ALPHA_BIAS,  1.0f);   // A := 1.0
+    // }
+
+    // Vertikal spiegeln
+    // glWindowPos2i(0, back->rasterInfo.height);
+    // glPixelZoom(1.0f, -1.0f);
+
+    // draw back buffer
+    //glDrawPixels(w, h, back->gl.format, back->gl.type, back->pPixels);
+
+    // glPixelZoom(1.0f, 1.0f);
+    // glPixelTransferf(GL_ALPHA_SCALE, 1.0f);
+    // glPixelTransferf(GL_ALPHA_BIAS,  0.0f);
+
+    //glClearColor(1.f, 0.f, 0.f, 1.f);
+
+
+    err = glGetError();
+    if (err != GL_NO_ERROR)
     {
-        // TODO: Should we call stdDisplay_ResetDevice() here, but something has to be done about pSurf->pSysSurface in this case
-        hr = IDirect3DDevice9_Reset(stdDisplay_pD3DDevice, &stdDisplay_presentParams);
-        if ( SUCCEEDED(hr) )
-        {
-            // Retry after reset
-            hr = IDirect3DDevice9_ColorFill(stdDisplay_pD3DDevice, pSurf->pSysSurface, &rect, dwFillColor);
-            if ( SUCCEEDED(hr) )
-            {
-                return 0;
-            }
-        }
+        STDLOG_ERROR("OpenGL error 0x%x when creating viewport.\n", err);
+        return 0;
     }
 
-    STDLOG_ERROR("Error %s when color filling the surface.\n", stdDisplay_D3DGetStatus(hr));
+    // Zeige das Bild an
+    SDL_GL_SwapWindow(stdWin95_GetSDLWindow());
+
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    STDLOG_DEBUG("Updated frame\n");
+    return 0;
+}
+
+int J3DAPI stdDisplay_ColorFillSurface(tVBuffer* pBuffer, uint32_t dwFillColor, const StdRect* pRect) //checked
+{
+    if ( !pBuffer )
+    {
+        return 1;
+    }
+
+
+    // Determine region
+    int left   = 0;
+    int top    = 0;
+    int right  = (int)pBuffer->rasterInfo.width;
+    int bottom = (int)pBuffer->rasterInfo.height;
+
+    if (pRect)
+    {
+        if (pRect->right == 0 || pRect->bottom == 0)
+            return 1;
+
+        left   = pRect->left;
+        top    = pRect->top;
+        right  = pRect->left + pRect->right;
+        bottom = pRect->top + pRect->bottom;
+    }
+
+    // Case 1: Software surface (RAM buffer)
+    if (pBuffer->type == VBUFFER_SOFTWARE)
+    {
+        uint8_t* pixels = pBuffer->pPixels;
+        const int pitch = (int)pBuffer->rasterInfo.width * 4;
+        const uint8_t a = (uint8_t)((dwFillColor >> 24) & 0xFF);
+        const uint8_t r = (uint8_t)((dwFillColor >> 16) & 0xFF);
+        const uint8_t g = (uint8_t)((dwFillColor >> 8)  & 0xFF);
+        const uint8_t b = (uint8_t)(dwFillColor & 0xFF);
+
+        for (int y = top; y < bottom; ++y)
+        {
+            uint8_t* row = pixels + y * pitch + left * 4;
+            for (int x = left; x < right; ++x)
+            {
+                row[0] = b;
+                row[1] = g;
+                row[2] = r;
+                row[3] = a;
+                row += 4;
+            }
+        }
+
+        return 0;
+    }
+
+    // Case 2: GPU texture surface
+    if (pBuffer->gl.tex)
+    {
+        // Convert color to normalized floats
+        float r = (float)((dwFillColor >> 16) & 0xFF) / 255.0f;
+        float g = (float)((dwFillColor >> 8)  & 0xFF) / 255.0f;
+        float b = (float)((dwFillColor)       & 0xFF) / 255.0f;
+        float a = (float)((dwFillColor >> 24) & 0xFF) / 255.0f;
+
+        glBindTexture(GL_TEXTURE_2D, pBuffer->gl.tex);
+
+        // Fallback: create a temporary color buffer and upload it
+        int width = right - left;
+        int height = bottom - top;
+        size_t size = width * height * 4;
+        uint8_t* temp = SDL_malloc(size);
+        for (int i = 0; i < size; i += 4)
+        {
+            temp[i + 0] = (uint8_t)(b * 255);
+            temp[i + 1] = (uint8_t)(g * 255);
+            temp[i + 2] = (uint8_t)(r * 255);
+            temp[i + 3] = (uint8_t)(a * 255);
+        }
+
+        glTexSubImage2D(GL_TEXTURE_2D, 0, left, top, width, height, pBuffer->gl.internalFormat, GL_UNSIGNED_BYTE, temp);
+        SDL_free(temp);
+
+        return 0;
+    }
+
+    STDLOG_ERROR("Error %s when color filling the surface.\n");
     return 1;
 }
 
 int J3DAPI stdDisplay_BackBufferFill(uint32_t color, const StdRect* pRect)
 {
-    return stdDisplay_ColorFillSurface(&stdDisplay_g_backBuffer.surface, color, pRect);
+    return stdDisplay_ColorFillSurface(&stdDisplay_g_backBuffer, color, pRect);
 }
 
 int J3DAPI stdDisplay_SaveScreen(const char* pFilename)
 {
-    if ( !stdDisplay_pD3DDevice || !stdDisplay_g_backBuffer.surface.pSysSurface )
+    if ( !stdDisplay_g_backBuffer.surface.pSysSurface )
     {
         return 1;
     }
@@ -2064,155 +1770,106 @@ int J3DAPI stdDisplay_GetCurrentVideoMode(StdVideoMode* pDisplayMode)
 
 int stdDisplay_CopyBufferToSurface(LPDIRECT3DSURFACE9 pSrcSurf, LPDIRECT3DSURFACE9 pDestSurf)
 {
-    HRESULT hr = IDirect3DDevice9_StretchRect(
-        stdDisplay_pD3DDevice,
-        pSrcSurf,
-        NULL,
-        pDestSurf,
-        NULL,
-        D3DTEXF_NONE
-    );
-
-    return SUCCEEDED(hr);
+    return 1;
 }
 
 HDC stdDisplay_GetFrontBufferDC(void)
 {
-    if ( !stdDisplay_bOpen || !stdDisplay_bModeSet )
-    {
+    if (!stdDisplay_bOpen || !stdDisplay_bModeSet)
         return NULL;
-    }
 
-    if ( stdDisplay_frontLockRef > 0 )
-    {
+    if (stdDisplay_frontLockRef > 0) {
         stdDisplay_frontLockRef++;
-        return stdDisplay_hdcFront;
+        return g_frontGDI.hdc;
     }
 
-    // Use separate lockable surface for MSAA, otherwise use backbuffer directly
-    LPDIRECT3DSURFACE9 pSurf = stdDisplay_bMSAAEnabled ? stdDisplay_pFrontLockSurf : stdDisplay_g_frontBuffer.surface.pSysSurface;
-    if ( !pSurf )
-    {
-        STDLOG_ERROR("No surface available for locking.\n");
-        return NULL;
-    }
+    int w = (int)stdDisplay_g_frontBuffer.rasterInfo.width;
+    int h = (int)stdDisplay_g_frontBuffer.rasterInfo.height;
 
-    // If using MSAA, copy from backbuffer to lockable surface first
-    if ( stdDisplay_bMSAAEnabled )
-    {
-        if ( !stdDisplay_CopyBufferToSurface(stdDisplay_g_frontBuffer.surface.pSysSurface, stdDisplay_pFrontLockSurf) )
-        {
-            STDLOG_WARNING("Warning: Failed copying MSAA frontbuffer to surface.\n");
-            // Continue with lock attempt anyway
+    if (!g_frontGDI.hdc || g_frontGDI.w != w || g_frontGDI.h != h) {
+        if (!stdDisplay_InitGDIBackbuffer(&g_frontGDI, w, h)) {
+            STDLOG_ERROR("Failed to create GDI frontbuffer.\n");
+            return NULL;
         }
     }
 
-    HRESULT hr = IDirect3DSurface9_GetDC(pSurf, &stdDisplay_hdcFront);
-    if ( FAILED(hr) )
-    {
-        STDLOG_ERROR("Error %s when getting DC of front buffer.\n", stdDisplay_D3DGetStatus(hr));
-        return NULL;
-
-    }
-
-    stdDisplay_frontLockRef++;
-    return stdDisplay_hdcFront;
+    stdDisplay_frontLockRef = 1;
+    stdDisplay_hdcFront = g_frontGDI.hdc;
+    return g_frontGDI.hdc;
 }
 
 void J3DAPI stdDisplay_ReleaseFrontBufferDC(HDC hdc)
 {
-    if ( stdDisplay_bOpen && stdDisplay_bModeSet && stdDisplay_frontLockRef == 1 )
-    {
-        LPDIRECT3DSURFACE9 pSurf = stdDisplay_bMSAAEnabled ? stdDisplay_pFrontLockSurf : stdDisplay_g_frontBuffer.surface.pSysSurface;
-        HRESULT hr = IDirect3DSurface9_ReleaseDC(pSurf, hdc);
-        if ( FAILED(hr) )
-        {
-            STDLOG_ERROR("Error %s when releasing DC of front buffer.\n", stdDisplay_D3DGetStatus(hr));
-            return;
-        }
+    if (!g_frontGDI.hdc || hdc != g_frontGDI.hdc)
+        return;
 
-        stdDisplay_hdcFront = NULL;
+    if (--g_frontGDI.lockRef > 0)
+        return;
 
-        // If using MSAA and there is no ref holding the lock, copy surface back to back buffer
-        if ( stdDisplay_bMSAAEnabled )
-        {
-            if ( !stdDisplay_CopyBufferToSurface(stdDisplay_pFrontLockSurf, stdDisplay_g_frontBuffer.surface.pSysSurface) )
-            {
-                STDLOG_WARNING("Warning: Failed copying lockable surface back to MSAA frontbuffer.\n");
-            }
-        }
-    }
+    tVBuffer* front = &stdDisplay_g_frontBuffer;
+    if (!front->pPixels) return;
 
-    stdDisplay_frontLockRef--;
+    size_t copyPitch = front->rasterInfo.rowSize;
+    uint8_t* dst = front->pPixels;
+    uint8_t* src = g_frontGDI.bits;
+
+    for (int y = 0; y < g_frontGDI.h; ++y)
+        memcpy(dst + y * copyPitch, src + y * g_frontGDI.pitch, copyPitch);
+
+    stdDisplay_hdcFront = NULL;
 }
 
-HDC stdDisplay_GetBackBufferDC(void)
+HDC stdDisplay_GetBackBufferDC(void) //checked
 {
-    if ( !stdDisplay_bOpen || !stdDisplay_bModeSet )
-    {
-        return NULL;
-    }
+    if (!stdDisplay_bOpen || !stdDisplay_bModeSet) return NULL;
 
-    if ( stdDisplay_backLockRef > 0 )
-    {
+    if (stdDisplay_backLockRef > 0) {
         stdDisplay_backLockRef++;
-        return stdDisplay_hdcBack;
+        return g_gdi.hdc;  // stdDisplay_hdcBack optional gleichsetzen
     }
 
-    // Use separate lockable surface for MSAA, otherwise use backbuffer directly
-    LPDIRECT3DSURFACE9 pSysSurf = stdDisplay_bMSAAEnabled ? stdDisplay_pBackLockSurf : stdDisplay_g_backBuffer.surface.pSysSurface;
-    if ( !pSysSurf )
-    {
-        STDLOG_ERROR("No surface available for locking.\n");
-        return NULL;
-    }
+    const int w = (int)stdDisplay_g_backBuffer.rasterInfo.width;
+    const int h = (int)stdDisplay_g_backBuffer.rasterInfo.height;
 
-    // If using MSAA, copy from backbuffer to lockable surface first
-    if ( stdDisplay_bMSAAEnabled )
-    {
-        if ( !stdDisplay_CopyBufferToSurface(stdDisplay_g_backBuffer.surface.pSysSurface, stdDisplay_pBackLockSurf) )
-        {
-            STDLOG_WARNING("Warning: Failed copying MSAA backbuffer to surface.\n");
-            // Continue with lock attempt anyway
+    if (!g_gdi.hdc || g_gdi.w != w || g_gdi.h != h) {
+        if (!stdDisplay_InitGDIBackbuffer(&g_gdi, w, h)) {
+            STDLOG_ERROR("Failed to create GDI backbuffer.\n");
+            return NULL;
         }
     }
 
-    HRESULT hr = IDirect3DSurface9_GetDC(pSysSurf, &stdDisplay_hdcBack);
-    if ( FAILED(hr) )
-    {
-        STDLOG_ERROR("Error %s when getting DC of back buffer.\n", stdDisplay_D3DGetStatus(hr));
-        return NULL;
-    }
 
-    stdDisplay_backLockRef++;
-    return stdDisplay_hdcBack;
+    // //TODO: add MSAA support
+
+    stdDisplay_backLockRef = 1;
+    stdDisplay_hdcBack = g_gdi.hdc; // falls du das Handle global speicherst
+    return g_gdi.hdc;
 }
 
-void J3DAPI stdDisplay_ReleaseBackBufferDC(HDC hdc)
+void J3DAPI stdDisplay_ReleaseBackBufferDC(HDC hdc) //checked
 {
-    if ( stdDisplay_bOpen && stdDisplay_bModeSet && stdDisplay_backLockRef == 1 )
+    if (!g_gdi.hdc || hdc != g_gdi.hdc)
+        return;
+
+    if (--g_gdi.lockRef > 0)
+        return;
+
+    // TODO: add msaa support
+    // Kopiere GDI-Inhalt in den CPU-Backbuffer
+    if (stdDisplay_g_backBuffer.pPixels)
     {
-        LPDIRECT3DSURFACE9 pSysSurf = stdDisplay_bMSAAEnabled ? stdDisplay_pBackLockSurf : stdDisplay_g_backBuffer.surface.pSysSurface;
-        HRESULT hr = IDirect3DSurface9_ReleaseDC(pSysSurf, hdc);
-        if ( FAILED(hr) )
-        {
-            STDLOG_ERROR("Error %s when releasing DC of back buffer.\n", stdDisplay_D3DGetStatus(hr));
-            return;
-        }
+        size_t copyPitch = stdDisplay_g_backBuffer.rasterInfo.rowSize;
+        uint8_t* dst = stdDisplay_g_backBuffer.pPixels;
+        uint8_t* src = g_gdi.bits;
 
-        stdDisplay_hdcBack = NULL;
-
-        // If using MSAA and there is no ref holding the lock, copy surface back to back buffer
-        if ( stdDisplay_bMSAAEnabled )
+        for (int y = 0; y < g_gdi.h; ++y)
         {
-            if ( !stdDisplay_CopyBufferToSurface(stdDisplay_pBackLockSurf, stdDisplay_g_backBuffer.surface.pSysSurface) )
-            {
-                STDLOG_WARNING("Warning: Failed copying lockable surface back to MSAA backbuffer.\n");
-            }
+            memcpy(dst + y * copyPitch, src + y * g_gdi.pitch, copyPitch);
         }
     }
 
-    stdDisplay_backLockRef--;
+    stdDisplay_hdcBack = NULL;
+
 }
 
 int stdDisplay_FlipToGDISurface(void)
@@ -2224,24 +1881,7 @@ int stdDisplay_FlipToGDISurface(void)
 
 int J3DAPI stdDisplay_CanRenderWindowed(void)
 {
-    if ( !stdDisplay_pD3D9 )
-    {
-        return -1;
-    }
-
-    UINT adapter = stdDisplay_numDevices > 0 ? stdDisplay_curDevice : D3DADAPTER_DEFAULT;
-
-    // Check if device supports windowed mode
-    D3DDISPLAYMODE displayMode;
-    HRESULT hr = IDirect3D9_GetAdapterDisplayMode(stdDisplay_pD3D9, adapter, &displayMode);
-    if ( FAILED(hr) )
-    {
-        return -1;
-    }
-
-    // Check if we can create a device in windowed mode
-    hr = IDirect3D9_CheckDeviceType(stdDisplay_pD3D9, adapter, D3DDEVTYPE_HAL, displayMode.Format, displayMode.Format, TRUE);
-    return SUCCEEDED(hr) ? 1 : 0;
+    return  1;
 }
 
 int J3DAPI stdDisplay_SetBufferClipper(int bFrontBuffer)
@@ -2267,102 +1907,23 @@ int J3DAPI stdDisplay_IsFullscreen(void)
     return stdDisplay_bFullscreen;
 }
 
-int J3DAPI stdDisplay_LockBackBuffer(void** pSurface, uint32_t* pWidth, uint32_t* pHeight, int32_t* pPitch)
+int J3DAPI stdDisplay_LockBackBuffer(void** pSurface, uint32_t* pWidth, uint32_t* pHeight, int32_t* pPitch) //checked
 {
     if ( !stdDisplay_bOpen || !stdDisplay_bModeSet )
     {
         return 1;
     }
 
-    if ( stdDisplay_backLockRef > 0 )
-    {
-        stdDisplay_backLockRef++;
-        *pWidth   = stdDisplay_g_backBuffer.surface.desc.Width;
-        *pHeight  = stdDisplay_g_backBuffer.surface.desc.Height;
-        *pPitch   = stdDisplay_backLockedRect.Pitch;
-        *pSurface = stdDisplay_backLockedRect.pBits;
-        return 0;
-    }
-
-    // Use separate lockable surface for MSAA, otherwise use backbuffer directly
-    LPDIRECT3DSURFACE9 pSysSurf = stdDisplay_bMSAAEnabled ? stdDisplay_pBackLockSurf : stdDisplay_g_backBuffer.surface.pSysSurface;
-    if ( !pSysSurf )
-    {
-        STDLOG_ERROR("No surface available for locking.\n");
-        return 1;
-    }
-
-    // If using MSAA, copy from backbuffer to lockable surface first
-    if ( stdDisplay_bMSAAEnabled )
-    {
-        if ( !stdDisplay_CopyBufferToSurface(stdDisplay_g_backBuffer.surface.pSysSurface, stdDisplay_pBackLockSurf) )
-        {
-            STDLOG_WARNING("Warning: Failed copying MSAA backbuffer to surface.\n");
-            // Continue with lock attempt anyway
-        }
-    }
-
-    HRESULT hr = IDirect3DSurface9_LockRect(pSysSurf, &stdDisplay_backLockedRect, NULL, 0);
-    if ( SUCCEEDED(hr) )
-    {
-        stdDisplay_backLockRef++;
-        *pWidth   = stdDisplay_g_backBuffer.surface.desc.Width;
-        *pHeight  = stdDisplay_g_backBuffer.surface.desc.Height;
-        *pPitch   = stdDisplay_backLockedRect.Pitch;
-        *pSurface = stdDisplay_backLockedRect.pBits;
-        return 0;
-    }
-
-    // Handle device lost
-    if ( hr == D3DERR_DEVICELOST || hr == D3DERR_DEVICENOTRESET ) // Won't probably happen as only expected errors are  D3DERR_INVALIDCALL or D3DERR_WASSTILLDRAWING 
-    {
-        if ( !stdDisplay_ResetDevice() )
-        {
-            STDLOG_ERROR("Error resetting D3D9 device when locking back buffer.\n");
-            return 1;
-        }
-
-        hr = IDirect3DSurface9_LockRect(pSysSurf, &stdDisplay_backLockedRect, NULL, 0);
-        if ( SUCCEEDED(hr) )
-        {
-            stdDisplay_backLockRef++;
-            *pWidth   = stdDisplay_g_backBuffer.surface.desc.Width;
-            *pHeight  = stdDisplay_g_backBuffer.surface.desc.Height;
-            *pPitch   = stdDisplay_backLockedRect.Pitch;
-            *pSurface = stdDisplay_backLockedRect.pBits;
-            return 0;
-        }
-    }
-
-    STDLOG_ERROR("Error %s when locking back buffer.\n", stdDisplay_D3DGetStatus(hr));
-    return 1;
+    stdDisplay_backLockRef++;
+    *pWidth   = stdDisplay_g_backBuffer.rasterInfo.width;
+    *pHeight  = stdDisplay_g_backBuffer.rasterInfo.height;
+    *pPitch   = stdDisplay_g_backBuffer.rasterInfo.rowSize;
+    *pSurface = stdDisplay_g_backBuffer.pPixels;
+    return 0;
 }
 
-void stdDisplay_UnlockBackBuffer(void)
+void stdDisplay_UnlockBackBuffer(void) //checked
 {
-    if ( stdDisplay_bOpen && stdDisplay_bModeSet && stdDisplay_backLockRef == 1 )
-    {
-        LPDIRECT3DSURFACE9 pSurface = stdDisplay_bMSAAEnabled ? stdDisplay_pBackLockSurf : stdDisplay_g_backBuffer.surface.pSysSurface;
-        if ( pSurface )
-        {
-            HRESULT hr = IDirect3DSurface9_UnlockRect(pSurface);
-            if ( FAILED(hr) )
-            {
-                STDLOG_ERROR("Error %s when unlocking back buffer.\n", stdDisplay_D3DGetStatus(hr));
-                return;
-            }
-
-            // If using MSAA and there is no ref holding the lock, copy surface back to back buffer
-            if ( stdDisplay_bMSAAEnabled )
-            {
-                if ( !stdDisplay_CopyBufferToSurface(stdDisplay_pBackLockSurf, stdDisplay_g_backBuffer.surface.pSysSurface) )
-                {
-                    STDLOG_WARNING("Warning: Failed copying lockable surface back to MSAA backbuffer.\n");
-                }
-            }
-        }
-    }
-
     stdDisplay_backLockRef--;
 }
 
