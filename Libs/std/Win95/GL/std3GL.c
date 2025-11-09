@@ -1085,15 +1085,18 @@ void J3DAPI std3D_AddToTextureCache(tSystemTexture* pCacheTexture, StdColorForma
             continue;
         }
 
-        GLenum formatGL = mip->gl.format;
-        GLenum typeGL   = mip->gl.type; // je nach deiner Farbdefinition
-        GLenum internalFormatGL = mip->gl.internalFormat;        // GPU-interner Speicher
+        ColorInfo* colorInfo = &mip->rasterInfo.colorInfo;
+        GLenum formatGL = GL_BGRA;
+        GLenum typeGL   = GL_UNSIGNED_INT_8_8_8_8_REV;
+        GLenum internalFormatGL = GL_RGBA;
 
         GLsizei width = (GLsizei)mip->rasterInfo.width;
         GLsizei height = (GLsizei)mip->rasterInfo.height;
-        for (size_t i = 0; i < width*height; ++i) {
-            mip->pPixels[i*4 + 3] = 255; // A = 1.0
-        }
+        //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, GL_ONE);
+
+        // for (size_t i = 0; i < width*height; ++i) {
+        //     mip->pPixels[i*4 + 3] = 255; // A = 1.0
+        // }
         glTexImage2D(
             GL_TEXTURE_2D,
             (GLint)mm,
@@ -1562,72 +1565,63 @@ static void std3D_InitTextureFormats(void)
     std3D_bHasRGBTextureFormat = false;
 
     // Common DX9 texture formats
-    const GLenum formats[] = {
-        SDL_PIXELFORMAT_RGB24,      // 24-bit RGB
-        SDL_PIXELFORMAT_XRGB8888,    // 32-bit RGB
-        SDL_PIXELFORMAT_ARGB8888,    // 32-bit ARGB
-        SDL_PIXELFORMAT_RGB565,      // 16-bit RGB
-        SDL_PIXELFORMAT_ARGB1555,    // 16-bit ARGB
-        SDL_PIXELFORMAT_ABGR4444,    // 16-bit ARGB
+    const ColorInfo formats[] = {
+        stdColor_cfRGB888, // 24-bit RGB
+        stdColor_cfRGB8888, // 32-bit RGB
+        stdColor_cfARGB8888, // 32-bit ARGB
+        stdColor_cfRGB565, // 16-bit RGB
+        stdColor_cfARGB5551, // 16-bit ARGB
+        stdColor_cfARGB4444, // 16-bit ARGB
     };
 
     size_t numVideoModes = stdDisplay_GetNumVideoModes();
     for (size_t i = 0; i < STD_ARRAYLEN(formats) && std3D_numTextureFormats < STD_ARRAYLEN(std3D_aTextureFormats); ++i)
     {
         GLenum format = formats[i];
-        for (size_t j = 0; j < numVideoModes; ++j)
+
+        StdTextureFormat* pTexFormat = &std3D_aTextureFormats[std3D_numTextureFormats];
+        memset(pTexFormat, 0, sizeof(StdTextureFormat));
+
+        pTexFormat->ddPixelFmt = format;
+
+        switch (format)
         {
-            struct sStdVideoMode videoMode;
-            stdDisplay_GetVideoMode(i, &videoMode);
-            if (videoMode.format != format)
-            {
-                continue;
-            }
+        case SDL_PIXELFORMAT_RGB24:
+            pTexFormat->ci = stdColor_cfRGB888;
+            std3D_bHasRGBTextureFormat = true;
+            continue;
+        case SDL_PIXELFORMAT_XRGB8888:
+            pTexFormat->ci = stdColor_cfRGB8888;
+            std3D_bHasRGBTextureFormat = true;
+            continue;
 
-            StdTextureFormat* pTexFormat = &std3D_aTextureFormats[std3D_numTextureFormats];
-            memset(pTexFormat, 0, sizeof(StdTextureFormat));
+        case SDL_PIXELFORMAT_ARGB8888:
+            pTexFormat->ci = stdColor_cfARGB8888;
+            std3D_bHasRGBTextureFormat = true;
+            continue;
 
-            pTexFormat->ddPixelFmt = videoMode.format;
+        case SDL_PIXELFORMAT_RGB565:
+            pTexFormat->ci = stdColor_cfRGB565;
+            std3D_bHasRGBTextureFormat = true;
+            continue;
 
-            switch ( videoMode.format )
-            {
-            case SDL_PIXELFORMAT_RGB24:
-                pTexFormat->ci = stdColor_cfRGB888;
-                std3D_bHasRGBTextureFormat = true;
-                break;
-            case SDL_PIXELFORMAT_XRGB8888:
-                pTexFormat->ci = stdColor_cfRGB8888;
-                std3D_bHasRGBTextureFormat = true;
-                break;
+        case SDL_PIXELFORMAT_ARGB1555:
+            pTexFormat->ci = stdColor_cfARGB5551;
+            std3D_bHasRGBTextureFormat = true;
+            continue;
 
-            case SDL_PIXELFORMAT_ARGB8888:
-                pTexFormat->ci = stdColor_cfARGB8888;
-                std3D_bHasRGBTextureFormat = true;
-                break;
-
-            case SDL_PIXELFORMAT_RGB565:
-                pTexFormat->ci = stdColor_cfRGB565;
-                std3D_bHasRGBTextureFormat = true;
-                break;
-
-            case SDL_PIXELFORMAT_ARGB1555:
-                pTexFormat->ci = stdColor_cfARGB5551;
-                std3D_bHasRGBTextureFormat = true;
-                break;
-
-            case SDL_PIXELFORMAT_ABGR4444:
-                pTexFormat->ci = stdColor_cfARGB4444;
-                std3D_bHasRGBTextureFormat = true;
-                break;
-            default:
-                STDLOG_STATUS("Found Unknown tex format.\n");
-                continue; // Skip unsupported formats
-            }
-
-            STDLOG_STATUS("Found texture format: %d (%d:%d:%d:%d)\n", formats[i], pTexFormat->ci.redBPP, pTexFormat->ci.greenBPP, pTexFormat->ci.blueBPP, pTexFormat->ci.alphaBPP);
-            ++std3D_numTextureFormats;
-            break;
+        case SDL_PIXELFORMAT_ABGR4444:
+            pTexFormat->ci = stdColor_cfARGB4444;
+            std3D_bHasRGBTextureFormat = true;
+        default:
+            STDLOG_STATUS("Found Unknown tex format.\n");
+            continue; // Skip unsupported formats
         }
+
+        STDLOG_STATUS("Found texture format: %d (%d:%d:%d:%d)\n", formats[i], pTexFormat->ci.redBPP,
+                      pTexFormat->ci.greenBPP, pTexFormat->ci.blueBPP, pTexFormat->ci.alphaBPP);
+        ++std3D_numTextureFormats;
+        break;
     }
 }
 
