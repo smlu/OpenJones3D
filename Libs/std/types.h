@@ -64,7 +64,12 @@ typedef struct sGLTexture
 {
     GLuint id;
 } GLTexture;
-typedef SDL_PixelFormat tSysPixelFormat;
+typedef struct sSysPixelFormat {
+   GLint glInternalFormat;
+   GLenum glFormat;
+   GLenum glType;
+} tSysPixelFormat;
+
 typedef GLTexture tSysTexture;
 #else
 typedef D3DFORMAT tSysPixelFormat;
@@ -396,15 +401,6 @@ typedef struct sVBuffer
     uint8_t* pPixels;
     int unknown1; // could be another surface option
     tVSurface surface;
-#if defined(J3D_OPENGL)
-    struct {
-        GLuint tex;         // GL-Texturhandle (Hardware)
-        GLint internalFormat;// gemappte GL Formate
-        GLenum format;
-        GLenum type;
-    } gl;
-#endif
-
 } tVBuffer;
 //static_assert(sizeof(tVBuffer) == 224, "sizeof(tVBuffer) == 224");
 
