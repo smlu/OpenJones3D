@@ -54,49 +54,49 @@ typedef struct
     int lockRef;
 } GdiBuffer;
 
-static GdiBuffer g_gdi = {0};
+static GdiBuffer g_gdi      = {0};
 static GdiBuffer g_frontGDI = {0};
 
 // Public globals
 tVBuffer stdDisplay_g_frontBuffer = {0};
-tVBuffer stdDisplay_g_backBuffer = {0};
+tVBuffer stdDisplay_g_backBuffer  = {0};
 
 // Private globals
-static bool stdDisplay_bStartup = false;
-static bool stdDisplay_bOpen = false;
-static bool stdDisplay_bModeSet = false;
+static bool stdDisplay_bStartup    = false;
+static bool stdDisplay_bOpen       = false;
+static bool stdDisplay_bModeSet    = false;
 static bool stdDisplay_bFullscreen = false;
-static bool stdDisplay_bNoSync = false;
+static bool stdDisplay_bNoSync     = false;
 static bool stdDisplay_bDeviceLost = false;
 
 static GLCaps stdDisplay_deviceCaps;
 
 // Back buffer local vars
-static int stdDisplay_backbufWidth = 0;
-static int stdDisplay_backbufHeight = 0;
-static size_t stdDisplay_backLockRef = 0;
-static HDC stdDisplay_hdcBack = NULL;
-static D3DLOCKED_RECT stdDisplay_backLockedRect = {0};
+static int stdDisplay_backbufWidth                 = 0;
+static int stdDisplay_backbufHeight                = 0;
+static size_t stdDisplay_backLockRef               = 0;
+static HDC stdDisplay_hdcBack                      = NULL;
+static D3DLOCKED_RECT stdDisplay_backLockedRect    = {0};
 static LPDIRECT3DSURFACE9 stdDisplay_pBackLockSurf = NULL; // temp lockable backbuffer surface when MSAA is enabled
 
 // Front buffer local vars
 static size_t stdDisplay_frontLockRef = 0;
-static HDC stdDisplay_hdcFront = NULL;
+static HDC stdDisplay_hdcFront        = NULL;
 
 // Z buffer local vars
 static tVBuffer* stdDisplay_zBuffer;
 
-static StdVideoMode* stdDisplay_pCurVideoMode = NULL;
+static StdVideoMode* stdDisplay_pCurVideoMode   = NULL;
 static StdVideoMode stdDisplay_primaryVideoMode = {0};
 
-static size_t stdDisplay_numVideoModes = 0;
+static size_t stdDisplay_numVideoModes          = 0;
 static StdVideoMode stdDisplay_aVideoModes[512] = {0};
 
 static SDL_DisplayID stdDisplay_curDevice;
 static SDL_DisplayID* stdDisplay_availableDisplays = NULL;
-static StdDisplayDevice* stdDisplay_pCurDevice = NULL;
+static StdDisplayDevice* stdDisplay_pCurDevice     = NULL;
 
-static size_t stdDisplay_numDevices = 0;
+static size_t stdDisplay_numDevices                    = 0;
 static StdDisplayDevice stdDisplay_aDisplayDevices[16] = {0};
 
 static HFONT stdDisplay_hFont;
@@ -105,14 +105,14 @@ static int stdDisplay_dword_5D73D8;
 static int stdDisplay_dword_5D73DC;
 
 // Callbacks
-static tDisplayDevicePreResetCallback stdDisplay_pfDevicePreResetCallback = NULL;
+static tDisplayDevicePreResetCallback stdDisplay_pfDevicePreResetCallback   = NULL;
 static tDisplayDevicePostResetCallback stdDisplay_pfDevicePostResetCallback = NULL;
-static tDisplayDeviceReleaseCallback stdDisplay_pfDeviceReleaseCallback = NULL;
+static tDisplayDeviceReleaseCallback stdDisplay_pfDeviceReleaseCallback     = NULL;
 
 // MSAA vars
-static bool stdDisplay_bMSAAEnabled = false;
+static bool stdDisplay_bMSAAEnabled       = false;
 static DWORD stdDisplay_msaaSampleQuality = 0;
-static int stdDisplay_msaaSampleCount = 0;
+static int stdDisplay_msaaSampleCount     = 0;
 
 enum GLMultiSample
 {
@@ -174,27 +174,27 @@ static int stdDisplay_ResetDevice(void);
 
 static int stdDisplay_InitGDIBackbuffer(GdiBuffer* buffer, int w, int h)
 {
-    if (g_gdi.hdc) return 1; // schon da
+    if ( g_gdi.hdc ) return 1; // schon da
 
-    BITMAPINFO bi = {0};
-    bi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-    bi.bmiHeader.biWidth = w;
-    bi.bmiHeader.biHeight = -h; // top-down
-    bi.bmiHeader.biPlanes = 1;
-    bi.bmiHeader.biBitCount = 32; // BGRA8
+    BITMAPINFO bi              = {0};
+    bi.bmiHeader.biSize        = sizeof(BITMAPINFOHEADER);
+    bi.bmiHeader.biWidth       = w;
+    bi.bmiHeader.biHeight      = -h; // top-down
+    bi.bmiHeader.biPlanes      = 1;
+    bi.bmiHeader.biBitCount    = 32; // BGRA8
     bi.bmiHeader.biCompression = BI_RGB;
 
-    HDC screen = GetDC(NULL);
+    HDC screen  = GetDC(NULL);
     buffer->hdc = CreateCompatibleDC(screen);
     ReleaseDC(NULL, screen);
 
     g_gdi.hbm = CreateDIBSection(g_gdi.hdc, &bi, DIB_RGB_COLORS, &g_gdi.bits, NULL, 0);
-    if (!g_gdi.hbm || !g_gdi.bits) return 0;
+    if ( !g_gdi.hbm || !g_gdi.bits ) return 0;
 
     SelectObject(g_gdi.hdc, g_gdi.hbm);
-    g_gdi.w = w;
-    g_gdi.h = h;
-    g_gdi.pitch = w * 4;
+    g_gdi.w       = w;
+    g_gdi.h       = h;
+    g_gdi.pitch   = w * 4;
     g_gdi.lockRef = 0;
     return 1;
 }
@@ -202,9 +202,9 @@ static int stdDisplay_InitGDIBackbuffer(GdiBuffer* buffer, int w, int h)
 // Color format conversion helpers
 static void J3DAPI stdDisplay_SetPixels16(uint16_t* pPixels16, uint16_t pixel, size_t size)
 {
-    if ((size & 1) != 0)
+    if ( (size & 1) != 0 )
     {
-        for (size_t i = 0; i < size; ++i)
+        for ( size_t i = 0; i < size; ++i )
         {
             pPixels16[i] = pixel;
         }
@@ -212,8 +212,8 @@ static void J3DAPI stdDisplay_SetPixels16(uint16_t* pPixels16, uint16_t pixel, s
     else
     {
         uint32_t dword_pixel = ((uint32_t)pixel << 16) | pixel;
-        uint32_t* pPixels32 = (uint32_t*)pPixels16;
-        for (size_t i = 0; i < size / 2; ++i)
+        uint32_t* pPixels32  = (uint32_t*)pPixels16;
+        for ( size_t i = 0; i < size / 2; ++i )
         {
             pPixels32[i] = dword_pixel;
         }
@@ -222,7 +222,7 @@ static void J3DAPI stdDisplay_SetPixels16(uint16_t* pPixels16, uint16_t pixel, s
 
 static void J3DAPI stdDisplay_SetPixels32(uint32_t* pPixels32, uint32_t pixel, size_t size)
 {
-    for (size_t i = 0; i < size; ++i)
+    for ( size_t i = 0; i < size; ++i )
     {
         pPixels32[i] = pixel;
     }
@@ -287,7 +287,7 @@ void stdDisplay_ResetGlobals(void)
 
 static bool J3DAPI stdDisplay_CheckMSAASupport(enum GLMultiSample sampleType, DWORD* pQualityLevels) //checked
 {
-    if (!stdWin95_GetGLContext())
+    if ( !stdWin95_GetGLContext() )
     {
         return false;
     }
@@ -297,7 +297,7 @@ static bool J3DAPI stdDisplay_CheckMSAASupport(enum GLMultiSample sampleType, DW
 #define GL_MAX_SAMPLES 0x8D57
 #endif
     glGetIntegerv(GL_MAX_SAMPLES, &maxSamples);
-    if (pQualityLevels) *pQualityLevels = (maxSamples > 0 ? 1 : 0);
+    if ( pQualityLevels ) *pQualityLevels = (maxSamples > 0 ? 1 : 0);
     return (sampleType > 0 && sampleType <= maxSamples);
 
     //alternative in case this doesn't work:
@@ -329,22 +329,22 @@ static bool J3DAPI stdDisplay_CheckMSAASupport(enum GLMultiSample sampleType, DW
 static void stdDisplay_InitMSAASettings(void) //checked
 {
     // Read MSAA settings from registry/config
-    stdDisplay_bMSAAEnabled = stdConfig_GetBool(STD3D_CFG_MSAAENABLED, true);
+    stdDisplay_bMSAAEnabled    = stdConfig_GetBool(STD3D_CFG_MSAAENABLED, true);
     stdDisplay_msaaSampleCount = stdConfig_GetInt(STD3D_CFG_MSAASAMPLES, 16);
 
     // Clamp sample count to valid values
-    if (stdDisplay_msaaSampleCount < 2)
+    if ( stdDisplay_msaaSampleCount < 2 )
     {
         stdDisplay_msaaSampleCount = 2;
     }
-    else if (stdDisplay_msaaSampleCount > 16)
+    else if ( stdDisplay_msaaSampleCount > 16 )
     {
         stdDisplay_msaaSampleCount = 16;
     }
 
     // Convert sample count to GL multisample type
     // Change that later? Enum seems unneccessary, stdDisplay_msaaSampleCount should be enough to store
-    switch (stdDisplay_msaaSampleCount)
+    switch ( stdDisplay_msaaSampleCount )
     {
     case 2: stdDisplay_msaaSampleType = GL_MULTISAMPLE_2_SAMPLES;
         break;
@@ -360,9 +360,9 @@ static void stdDisplay_InitMSAASettings(void) //checked
         break;
     }
 
-    if (!stdDisplay_bMSAAEnabled)
+    if ( !stdDisplay_bMSAAEnabled )
     {
-        stdDisplay_msaaSampleType = GL_MULTISAMPLE_NONE;
+        stdDisplay_msaaSampleType    = GL_MULTISAMPLE_NONE;
         stdDisplay_msaaSampleQuality = 0;
     }
 
@@ -371,9 +371,9 @@ static void stdDisplay_InitMSAASettings(void) //checked
 
 static void stdDisplay_ValidateMSAASettings() //check
 {
-    if (!stdDisplay_bMSAAEnabled)
+    if ( !stdDisplay_bMSAAEnabled )
     {
-        stdDisplay_msaaSampleType = GL_MULTISAMPLE_NONE;
+        stdDisplay_msaaSampleType    = GL_MULTISAMPLE_NONE;
         stdDisplay_msaaSampleQuality = 0;
         return;
     }
@@ -381,7 +381,7 @@ static void stdDisplay_ValidateMSAASettings() //check
     DWORD qualityLevels = 0;
 
     // Check if requested MSAA level is supported
-    if (stdDisplay_CheckMSAASupport(stdDisplay_msaaSampleType, &qualityLevels))
+    if ( stdDisplay_CheckMSAASupport(stdDisplay_msaaSampleType, &qualityLevels) )
     {
         stdDisplay_msaaSampleQuality = qualityLevels > 0 ? qualityLevels - 1 : 0;
         STDLOG_DEBUG("MSAA %dx supported with %d quality levels\n", stdDisplay_msaaSampleCount, qualityLevels);
@@ -397,14 +397,14 @@ static void stdDisplay_ValidateMSAASettings() //check
         int fallbackCounts[] = {8, 4, 2};
 
         bool found = false;
-        for (int i = 0; i < 3; i++)
+        for ( int i = 0; i < 3; i++ )
         {
-            if (stdDisplay_CheckMSAASupport(fallbackTypes[i], &qualityLevels))
+            if ( stdDisplay_CheckMSAASupport(fallbackTypes[i], &qualityLevels) )
             {
-                stdDisplay_msaaSampleType = fallbackTypes[i];
-                stdDisplay_msaaSampleCount = fallbackCounts[i];
+                stdDisplay_msaaSampleType    = fallbackTypes[i];
+                stdDisplay_msaaSampleCount   = fallbackCounts[i];
                 stdDisplay_msaaSampleQuality = qualityLevels > 0 ? qualityLevels - 1 : 0;
-                found = true;
+                found                        = true;
                 STDLOG_STATUS("MSAA fallback: Using %dx with %d quality levels\n", stdDisplay_msaaSampleCount,
                               qualityLevels);
                 stdConfig_SetInt(STD3D_CFG_MSAASAMPLES, stdDisplay_msaaSampleCount);
@@ -412,11 +412,11 @@ static void stdDisplay_ValidateMSAASettings() //check
             }
         }
 
-        if (!found)
+        if ( !found )
         {
             STDLOG_WARNING("MSAA not supported, disabling\n");
-            stdDisplay_bMSAAEnabled = false;
-            stdDisplay_msaaSampleType = GL_MULTISAMPLE_NONE;
+            stdDisplay_bMSAAEnabled      = false;
+            stdDisplay_msaaSampleType    = GL_MULTISAMPLE_NONE;
             stdDisplay_msaaSampleQuality = 0;
         }
     }
@@ -426,7 +426,7 @@ int stdDisplay_Startup(void) //check
 {
     //SDL_Delay(10000);
     STDLOG_STATUS("Starting display system using OpenGL GAPI ...\n");
-    if (stdDisplay_bStartup)
+    if ( stdDisplay_bStartup )
     {
         return 1;
     }
@@ -435,10 +435,10 @@ int stdDisplay_Startup(void) //check
     memset(&stdDisplay_g_backBuffer, 0, sizeof(stdDisplay_g_backBuffer));
     memset(&stdDisplay_zBuffer, 0, sizeof(stdDisplay_zBuffer));
 
-    stdDisplay_bStartup = true;
+    stdDisplay_bStartup   = true;
     stdDisplay_numDevices = 0;
 
-    if (!stdWin95_GetGLContext())
+    if ( !stdWin95_GetGLContext() )
     {
         STDLOG_ERROR("No OpenGL context was created yet.\n");
         return 0;
@@ -448,13 +448,13 @@ int stdDisplay_Startup(void) //check
     stdDisplay_InitMSAASettings();
 
     // Enumerate devices and display modes
-    if (!stdDisplay_EnumerateDevices())
+    if ( !stdDisplay_EnumerateDevices() )
     {
         return 0;
     }
 
     // Set default resolution
-    stdDisplay_primaryVideoMode.rasterInfo.width = 640;
+    stdDisplay_primaryVideoMode.rasterInfo.width  = 640;
     stdDisplay_primaryVideoMode.rasterInfo.height = 480;
 
     STDLOG_STATUS("Found %d Display Devices.\n", stdDisplay_numDevices);
@@ -463,18 +463,18 @@ int stdDisplay_Startup(void) //check
 
 void stdDisplay_Shutdown(void) //checked
 {
-    if (stdDisplay_bOpen)
+    if ( stdDisplay_bOpen )
     {
         stdDisplay_Close();
     }
     SDL_GLContext context = stdWin95_GetGLContext();
-    if (context)
+    if ( context )
     {
         //SDL_GL_DestroyContext(context);
     }
 
     SDL_Window* window = stdWin95_GetSDLWindow();
-    if (window)
+    if ( window )
     {
         //SDL_DestroyWindow(window);
     }
@@ -485,30 +485,30 @@ void stdDisplay_Shutdown(void) //checked
     memset(&stdDisplay_zBuffer, 0, sizeof(stdDisplay_zBuffer));
 
     stdDisplay_pCurVideoMode = NULL;
-    stdDisplay_numDevices = 0;
+    stdDisplay_numDevices    = 0;
     stdDisplay_numVideoModes = 0;
-    stdDisplay_bStartup = false;
+    stdDisplay_bStartup      = false;
 }
 
 int J3DAPI stdDisplay_Open(size_t deviceNum) //checked
 {
     STD_ASSERTREL(stdDisplay_bStartup == true);
-    if (stdDisplay_bOpen)
+    if ( stdDisplay_bOpen )
     {
         STDLOG_ERROR("Warning: System already open!\n");
         stdDisplay_Close();
     }
 
-    if (deviceNum >= stdDisplay_numDevices)
+    if ( deviceNum >= stdDisplay_numDevices )
     {
         STDLOG_ERROR("Error: Invalid device num %d (total: %d)!\n", deviceNum, stdDisplay_numDevices);
         return 0;
     }
 
-    stdDisplay_curDevice = stdDisplay_availableDisplays[deviceNum];
+    stdDisplay_curDevice  = stdDisplay_availableDisplays[deviceNum];
     stdDisplay_pCurDevice = &stdDisplay_aDisplayDevices[deviceNum];
 
-    if (!stdDisplay_GetGLCaps())
+    if ( !stdDisplay_GetGLCaps() )
     {
         return 0;
     }
@@ -534,50 +534,50 @@ bool stdDisplay_IsOpen(void)
 
 void stdDisplay_Close(void)
 {
-    if (!stdDisplay_bStartup)
+    if ( !stdDisplay_bStartup )
     {
         STDLOG_ERROR("stdDisplay_Close when not started.\n");
         return;
     }
 
-    if (!stdDisplay_bOpen)
+    if ( !stdDisplay_bOpen )
     {
         STDLOG_ERROR("Warning: System already closed!\n");
         return;
     }
 
-    if (stdDisplay_bModeSet)
+    if ( stdDisplay_bModeSet )
     {
         stdDisplay_ClearMode();
     }
     stdDisplay_numVideoModes = 0;
 
-    stdDisplay_pfDevicePreResetCallback = NULL;
+    stdDisplay_pfDevicePreResetCallback  = NULL;
     stdDisplay_pfDevicePostResetCallback = NULL;
-    stdDisplay_pfDeviceReleaseCallback = NULL;
+    stdDisplay_pfDeviceReleaseCallback   = NULL;
 
-    stdDisplay_curDevice = 0;
+    stdDisplay_curDevice  = 0;
     stdDisplay_pCurDevice = NULL;
-    stdDisplay_bOpen = false;
+    stdDisplay_bOpen      = false;
 }
 
 int J3DAPI stdDisplay_SetMode(size_t modeNum, int bFullscreen, size_t numBackBuffers)
 {
-    if (bFullscreen && modeNum >= stdDisplay_numVideoModes)
+    if ( bFullscreen && modeNum >= stdDisplay_numVideoModes )
     {
         return 1;
     }
 
-    if (stdDisplay_bModeSet)
+    if ( stdDisplay_bModeSet )
     {
         stdDisplay_ClearMode();
     }
 
-    if (bFullscreen)
+    if ( bFullscreen )
     {
         stdDisplay_pCurVideoMode = &stdDisplay_aVideoModes[modeNum];
-        HWND hwnd = stdWin95_GetWindow();
-        if (!stdDisplay_SetFullscreenMode(hwnd, &stdDisplay_aVideoModes[modeNum], numBackBuffers))
+        HWND hwnd                = stdWin95_GetWindow();
+        if ( !stdDisplay_SetFullscreenMode(hwnd, &stdDisplay_aVideoModes[modeNum], numBackBuffers) )
         {
             return 1;
         }
@@ -585,29 +585,29 @@ int J3DAPI stdDisplay_SetMode(size_t modeNum, int bFullscreen, size_t numBackBuf
     else
     {
         stdDisplay_pCurVideoMode = &stdDisplay_aVideoModes[modeNum];
-        HWND hwnd = stdWin95_GetWindow();
-        if (!stdDisplay_SetWindowMode(hwnd, &stdDisplay_aVideoModes[modeNum]))
+        HWND hwnd                = stdWin95_GetWindow();
+        if ( !stdDisplay_SetWindowMode(hwnd, &stdDisplay_aVideoModes[modeNum]) )
         {
             return 1;
         }
     }
 
-    int fheight = -(stdDisplay_pCurVideoMode->rasterInfo.width < 640);
-    fheight = fheight & 0xF4;
+    int fheight      = -(stdDisplay_pCurVideoMode->rasterInfo.width < 640);
+    fheight          = fheight & 0xF4;
     stdDisplay_hFont = CreateFont(fheight + 24, 0, 0, 0, FW_NORMAL, 0, 0, 0, ANSI_CHARSET, OUT_DEFAULT_PRECIS,
                                   CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, VARIABLE_PITCH, "Arial");
 
-    stdDisplay_dword_5D73D8 = 0;
-    stdDisplay_dword_5D73DC = 0;
-    stdDisplay_backbufWidth = stdDisplay_g_backBuffer.rasterInfo.width;
+    stdDisplay_dword_5D73D8  = 0;
+    stdDisplay_dword_5D73DC  = 0;
+    stdDisplay_backbufWidth  = stdDisplay_g_backBuffer.rasterInfo.width;
     stdDisplay_backbufHeight = stdDisplay_g_backBuffer.rasterInfo.height;
-    stdDisplay_bModeSet = true;
-    stdDisplay_bFullscreen = bFullscreen;
+    stdDisplay_bModeSet      = true;
+    stdDisplay_bFullscreen   = bFullscreen;
 
     stdDisplay_VBufferFill(&stdDisplay_g_backBuffer, 0, NULL);
     stdDisplay_Update();
 
-    if (bFullscreen)
+    if ( bFullscreen )
     {
         stdDisplay_VBufferFill(&stdDisplay_g_backBuffer, 0, NULL);
     }
@@ -617,12 +617,12 @@ int J3DAPI stdDisplay_SetMode(size_t modeNum, int bFullscreen, size_t numBackBuf
 
 void stdDisplay_ClearMode(void)
 {
-    if (stdDisplay_bModeSet)
+    if ( stdDisplay_bModeSet )
     {
         stdDisplay_ReleaseDevice();
     }
 
-    if (stdDisplay_hFont)
+    if ( stdDisplay_hFont )
     {
         DeleteObject(stdDisplay_hFont);
         stdDisplay_hFont = NULL;
@@ -638,7 +638,7 @@ size_t stdDisplay_GetNumDevices(void)
 
 int J3DAPI stdDisplay_GetDevice(size_t deviceNum, StdDisplayDevice* pDest)
 {
-    if (deviceNum >= stdDisplay_numDevices)
+    if ( deviceNum >= stdDisplay_numDevices )
     {
         return 1;
     }
@@ -649,7 +649,7 @@ int J3DAPI stdDisplay_GetDevice(size_t deviceNum, StdDisplayDevice* pDest)
 
 int J3DAPI stdDisplay_GetCurrentDevice(StdDisplayDevice* pDevice)
 {
-    if (stdDisplay_numDevices == 0)
+    if ( stdDisplay_numDevices == 0 )
     {
         return 1;
     }
@@ -665,9 +665,9 @@ const StdDisplayDevice* stdDisplay_GetAllDevices(void)
 
 void J3DAPI stdDisplay_Refresh(int bReload)
 {
-    if (stdDisplay_bOpen && stdDisplay_bModeSet && bReload)
+    if ( stdDisplay_bOpen && stdDisplay_bModeSet && bReload )
     {
-        if (stdDisplay_CheckDeviceState() != 0)
+        if ( stdDisplay_CheckDeviceState() != 0 )
         {
             stdDisplay_ResetDevice();
         }
@@ -703,7 +703,7 @@ static void stdDisplay_ReleaseDevice(void)
 
 static int stdDisplay_ResetDevice(void)
 {
-    if (stdDisplay_pfDevicePreResetCallback)
+    if ( stdDisplay_pfDevicePreResetCallback )
     {
         stdDisplay_pfDevicePreResetCallback(NULL);
     }
@@ -712,7 +712,7 @@ static int stdDisplay_ResetDevice(void)
     stdDisplay_ReleaseBuffers();
 
     // Recreate buffers
-    if (!stdDisplay_InitBuffers(NULL, stdDisplay_pCurVideoMode, 0, 0))
+    if ( !stdDisplay_InitBuffers(NULL, stdDisplay_pCurVideoMode, 0, 0) )
     {
         STDLOG_ERROR("Error initializing buffers after device reset.\n");
         return 0;
@@ -720,7 +720,7 @@ static int stdDisplay_ResetDevice(void)
 
     stdDisplay_bDeviceLost = false;
 
-    if (stdDisplay_pfDevicePostResetCallback)
+    if ( stdDisplay_pfDevicePostResetCallback )
     {
         stdDisplay_pfDevicePostResetCallback(NULL);
     }
@@ -753,26 +753,26 @@ tVBuffer* J3DAPI stdDisplay_VBufferNew(const tRasterInfo* pRasterInfo, int bUseV
     STD_ASSERTREL((pRasterInfo->colorInfo.bpp % 8) == 0);
 
     tVBuffer* vbuffer = STDMALLOC(sizeof(tVBuffer));
-    if (!vbuffer)
+    if ( !vbuffer )
     {
         STDLOG_ERROR("Error allocating vbuffer.\n");
         return NULL;
     }
 
-    vbuffer->pPixels = NULL;
+    vbuffer->pPixels      = NULL;
     vbuffer->lockRefCount = 0;
-    vbuffer->rasterInfo = *pRasterInfo;
-    vbuffer->unknown1 = 0;
+    vbuffer->rasterInfo   = *pRasterInfo;
+    vbuffer->unknown1     = 0;
 
-    uint32_t bpp = (uint32_t)vbuffer->rasterInfo.colorInfo.bpp / 8;
-    vbuffer->rasterInfo.rowSize = vbuffer->rasterInfo.width * bpp;
+    uint32_t bpp                 = (uint32_t)vbuffer->rasterInfo.colorInfo.bpp / 8;
+    vbuffer->rasterInfo.rowSize  = vbuffer->rasterInfo.width * bpp;
     vbuffer->rasterInfo.rowWidth = vbuffer->rasterInfo.width;
-    vbuffer->rasterInfo.size = vbuffer->rasterInfo.rowSize * vbuffer->rasterInfo.height;
+    vbuffer->rasterInfo.size     = vbuffer->rasterInfo.rowSize * vbuffer->rasterInfo.height;
 
-    vbuffer->type = VBUFFER_SOFTWARE;
+    vbuffer->type         = VBUFFER_SOFTWARE;
     vbuffer->bVideoMemory = 0;
-    vbuffer->pPixels = (uint8_t*)STDMALLOC(vbuffer->rasterInfo.size);
-    if (!vbuffer->pPixels)
+    vbuffer->pPixels      = (uint8_t*)STDMALLOC(vbuffer->rasterInfo.size);
+    if ( !vbuffer->pPixels )
     {
         stdMemory_Free(vbuffer);
         return NULL;
@@ -786,7 +786,7 @@ void J3DAPI stdDisplay_VBufferFree(tVBuffer* pVBuffer)
 {
     STD_ASSERTREL(pVBuffer != NULL);
 
-    if (pVBuffer->pPixels)
+    if ( pVBuffer->pPixels )
     {
         stdMemory_Free(pVBuffer->pPixels);
         pVBuffer->pPixels = NULL;
@@ -799,21 +799,21 @@ int J3DAPI stdDisplay_VBufferLock(tVBuffer* pVBuffer) //checked
 {
     STD_ASSERTREL(pVBuffer != NULL);
 
-    if (pVBuffer->type == VBUFFER_SOFTWARE)
+    if ( pVBuffer->type == VBUFFER_SOFTWARE )
     {
         ++pVBuffer->lockRefCount;
     }
-    else if (pVBuffer->type == VBUFFER_HARDWARE)
+    else if ( pVBuffer->type == VBUFFER_HARDWARE )
     {
         // TODO: should lock front buffer same way to copy to copy front buff to lockable surface incase of MSAA
-        if (pVBuffer == &stdDisplay_g_backBuffer)
+        if ( pVBuffer == &stdDisplay_g_backBuffer )
         {
             uint32_t width, height;
             int pitch;
             stdDisplay_LockBackBuffer(pVBuffer->pPixels, &width, &height, &pitch);
         }
 
-        if (!pVBuffer->pPixels)
+        if ( !pVBuffer->pPixels )
         {
             return 0;
         }
@@ -828,9 +828,9 @@ int J3DAPI stdDisplay_VBufferUnlock(tVBuffer* pVBuffer)
 {
     STD_ASSERTREL(pVBuffer != NULL);
 
-    if (pVBuffer->type == VBUFFER_SOFTWARE)
+    if ( pVBuffer->type == VBUFFER_SOFTWARE )
     {
-        if (pVBuffer->lockRefCount)
+        if ( pVBuffer->lockRefCount )
         {
             --pVBuffer->lockRefCount;
             //TODO: Hmm shouldn't it be clamped to 1 as software buffer has always locked surface, i.g.: pPixels member set through out the life of VBuffer
@@ -838,17 +838,17 @@ int J3DAPI stdDisplay_VBufferUnlock(tVBuffer* pVBuffer)
         return 1; // 1 marks still rock
     }
 
-    if (pVBuffer->type != VBUFFER_HARDWARE)
+    if ( pVBuffer->type != VBUFFER_HARDWARE )
     {
         return 1;
     }
 
-    if (pVBuffer->lockRefCount == 0)
+    if ( pVBuffer->lockRefCount == 0 )
     {
         return 0;
     }
 
-    if (pVBuffer == &stdDisplay_g_backBuffer)
+    if ( pVBuffer == &stdDisplay_g_backBuffer )
     {
         stdDisplay_UnlockBackBuffer();
     }
@@ -862,9 +862,9 @@ int J3DAPI stdDisplay_VBufferFill(tVBuffer* pVBuffer, uint32_t color, const StdR
 {
     STD_ASSERTREL(pVBuffer != NULL);
 
-    if (pVBuffer->type)
+    if ( pVBuffer->type )
     {
-        if (pVBuffer->type != VBUFFER_HARDWARE)
+        if ( pVBuffer->type != VBUFFER_HARDWARE )
         {
             return 1;
         }
@@ -872,13 +872,13 @@ int J3DAPI stdDisplay_VBufferFill(tVBuffer* pVBuffer, uint32_t color, const StdR
     }
 
     // Software fill for system memory buffers
-    switch (pVBuffer->rasterInfo.colorInfo.bpp)
+    switch ( pVBuffer->rasterInfo.colorInfo.bpp )
     {
     case 8:
-        if (pRect)
+        if ( pRect )
         {
             uint8_t* pPixels8 = &pVBuffer->pPixels[pVBuffer->rasterInfo.rowSize * pRect->top + pRect->left];
-            for (int32_t height = 0; height < pRect->bottom; ++height)
+            for ( int32_t height = 0; height < pRect->bottom; ++height )
             {
                 memset(pPixels8, (uint8_t)color, pRect->right);
                 pPixels8 += pVBuffer->rasterInfo.rowSize;
@@ -891,11 +891,11 @@ int J3DAPI stdDisplay_VBufferFill(tVBuffer* pVBuffer, uint32_t color, const StdR
         break;
 
     case 16:
-        if (pRect)
+        if ( pRect )
         {
             uint16_t* pPixels16 = (uint16_t*)&pVBuffer->pPixels[pVBuffer->rasterInfo.rowSize * pRect->top + 2 * pRect->
                 left];
-            for (int32_t height = 0; height < pRect->bottom; ++height)
+            for ( int32_t height = 0; height < pRect->bottom; ++height )
             {
                 stdDisplay_SetPixels16(pPixels16, (uint16_t)color, pRect->right);
                 pPixels16 = (uint16_t*)((char*)pPixels16 + pVBuffer->rasterInfo.rowSize);
@@ -912,11 +912,11 @@ int J3DAPI stdDisplay_VBufferFill(tVBuffer* pVBuffer, uint32_t color, const StdR
         break;
 
     case 32:
-        if (pRect)
+        if ( pRect )
         {
             uint32_t* pPixels32 = (uint32_t*)&pVBuffer->pPixels[pVBuffer->rasterInfo.rowSize * pRect->top + 4 * pRect->
                 left];
-            for (int32_t height = 0; height < pRect->bottom; ++height)
+            for ( int32_t height = 0; height < pRect->bottom; ++height )
             {
                 stdDisplay_SetPixels32(pPixels32, color, pRect->right);
                 pPixels32 = (uint32_t*)((char*)pPixels32 + pVBuffer->rasterInfo.rowSize);
@@ -937,14 +937,14 @@ tVBuffer* J3DAPI stdDisplay_VBufferConvertColorFormat(const ColorInfo* pDesiredC
 {
     STD_ASSERTREL(pSrc != NULL);
 
-    if (memcmp(pDesiredColorFormat, &pSrc->rasterInfo.colorInfo, sizeof(ColorInfo)) == 0)
+    if ( memcmp(pDesiredColorFormat, &pSrc->rasterInfo.colorInfo, sizeof(ColorInfo)) == 0 )
     {
         return pSrc;
     }
 
-    if (pSrc->rasterInfo.colorInfo.colorMode == STDCOLOR_PAL)
+    if ( pSrc->rasterInfo.colorInfo.colorMode == STDCOLOR_PAL )
     {
-        if (pDesiredColorFormat->colorMode == STDCOLOR_PAL)
+        if ( pDesiredColorFormat->colorMode == STDCOLOR_PAL )
         {
             return pSrc;
         }
@@ -966,7 +966,7 @@ tVBuffer* J3DAPI stdDisplay_VBufferConvertColorFormat(const ColorInfo* pDesiredC
         bluePosShift != 0);
 
     tVBuffer* pDest;
-    if (pSrc->rasterInfo.colorInfo.bpp == pDesiredColorFormat->bpp)
+    if ( pSrc->rasterInfo.colorInfo.bpp == pDesiredColorFormat->bpp )
     {
         pDest = pSrc;
     }
@@ -977,7 +977,7 @@ tVBuffer* J3DAPI stdDisplay_VBufferConvertColorFormat(const ColorInfo* pDesiredC
         memcpy(&rasterInfo.colorInfo, pDesiredColorFormat, sizeof(rasterInfo.colorInfo));
 
         pDest = stdDisplay_VBufferNew(&rasterInfo, /*bUseVSurface=*/0, /*bUseVideoMemory=*/0);
-        if (!pDest)
+        if ( !pDest )
         {
             STDLOG_ERROR("Unable to allocate memory for new tVBuffer");
             return NULL;
@@ -992,10 +992,10 @@ tVBuffer* J3DAPI stdDisplay_VBufferConvertColorFormat(const ColorInfo* pDesiredC
     stdDisplay_VBufferLock(pDest);
 
     const uint8_t* pSrcRow = NULL;
-    uint8_t* pDestRow = NULL;
-    for (size_t row = 0; row < pDest->rasterInfo.height; ++row)
+    uint8_t* pDestRow      = NULL;
+    for ( size_t row = 0; row < pDest->rasterInfo.height; ++row )
     {
-        pSrcRow = &pSrc->pPixels[pSrc->rasterInfo.rowSize * row];
+        pSrcRow  = &pSrc->pPixels[pSrc->rasterInfo.rowSize * row];
         pDestRow = &pDest->pPixels[pDest->rasterInfo.rowSize * row];
 
         stdColor_ColorConvertOneRow(
@@ -1017,7 +1017,7 @@ tVBuffer* J3DAPI stdDisplay_VBufferConvertColorFormat(const ColorInfo* pDesiredC
     // Copy color format
     memcpy(&pDest->rasterInfo.colorInfo, pDesiredColorFormat, sizeof(pDest->rasterInfo.colorInfo));
 
-    if (pDest != pSrc)
+    if ( pDest != pSrc )
     {
         stdDisplay_VBufferFree(pSrc);
     }
@@ -1029,14 +1029,14 @@ int J3DAPI stdDisplay_VideoModeCompare(const StdVideoMode* pMode1, const StdVide
 {
     unsigned int bpp1 = pMode1->rasterInfo.colorInfo.bpp;
     unsigned int bpp2 = pMode2->rasterInfo.colorInfo.bpp;
-    if (bpp1 != bpp2)
+    if ( bpp1 != bpp2 )
     {
         return bpp1 - bpp2;
     }
 
     unsigned int width1 = pMode1->rasterInfo.width;
     unsigned int width2 = pMode2->rasterInfo.width;
-    if (width1 != width2)
+    if ( width1 != width2 )
     {
         return width1 - width2;
     }
@@ -1050,10 +1050,10 @@ int J3DAPI stdDisplay_GetTextureMemory(size_t* pTotal, size_t* pFree)
 {
     GLint maxTex = 0;
     glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTex);
-    if (maxTex <= 0) maxTex = 4096; // defensiver Fallback
+    if ( maxTex <= 0 ) maxTex = 4096; // defensiver Fallback
 
     *pTotal = (size_t)maxTex * (size_t)maxTex * 4; // RGBA8-Annahme
-    *pFree = *pTotal; // unbekannt
+    *pFree  = *pTotal; // unbekannt
     return 0;
 }
 
@@ -1061,16 +1061,16 @@ int J3DAPI stdDisplay_GetTotalMemory(size_t* pTotal, size_t* pFree)
 {
     // TODO: Enhance / Fix
     UINT adapter = stdDisplay_numDevices > 0 ? stdDisplay_curDevice : D3DADAPTER_DEFAULT;
-    *pTotal = stdDisplay_numVideoModes * 1024 * 1024; // Approximation
-    *pFree = *pTotal / 2; // Rough estimate
+    *pTotal      = stdDisplay_numVideoModes * 1024 * 1024; // Approximation
+    *pFree       = *pTotal / 2; // Rough estimate
     return 0;
 }
 
 const char* J3DAPI stdDisplay_D3DGetStatus(HRESULT status)
 {
-    for (size_t i = 0; i < STD_ARRAYLEN(stdDisplay_aD3DStatusTbl); ++i)
+    for ( size_t i = 0; i < STD_ARRAYLEN(stdDisplay_aD3DStatusTbl); ++i )
     {
-        if (stdDisplay_aD3DStatusTbl[i].code == status)
+        if ( stdDisplay_aD3DStatusTbl[i].code == status )
         {
             return stdDisplay_aD3DStatusTbl[i].text;
         }
@@ -1083,7 +1083,7 @@ int J3DAPI stdDisplay_CreateZBuffer(const tSysPixelFormat* pPixelFormat, int bSy
     J3D_UNUSED(bSystemMemory);
     J3D_UNUSED(pPixelFormat);
 
-    if (!stdDisplay_bOpen)
+    if ( !stdDisplay_bOpen )
     {
         STDLOG_ERROR("Error creating zBuffer, system is closed!\n");
         return 1;
@@ -1101,9 +1101,9 @@ int J3DAPI stdDisplay_CreateZBuffer(const tSysPixelFormat* pPixelFormat, int bSy
 
 static int J3DAPI stdDisplay_GetGLCaps(void) //checked
 {
-    stdDisplay_deviceCaps.vendor = (const char*)glGetString(GL_VENDOR);
-    stdDisplay_deviceCaps.renderer = (const char*)glGetString(GL_RENDERER);
-    stdDisplay_deviceCaps.version = (const char*)glGetString(GL_VERSION);
+    stdDisplay_deviceCaps.vendor      = (const char*)glGetString(GL_VENDOR);
+    stdDisplay_deviceCaps.renderer    = (const char*)glGetString(GL_RENDERER);
+    stdDisplay_deviceCaps.version     = (const char*)glGetString(GL_VERSION);
     stdDisplay_deviceCaps.glslVersion = (const char*)glGetString(GL_SHADING_LANGUAGE_VERSION);
 
     glGetIntegerv(GL_MAX_TEXTURE_SIZE, &stdDisplay_deviceCaps.maxTextureSize);
@@ -1143,7 +1143,7 @@ static int J3DAPI stdDisplay_GetGLCaps(void) //checked
     glGetFloatv(GL_ALIASED_LINE_WIDTH_RANGE, stdDisplay_deviceCaps.lineWidthRange);
 
     GLenum err = glGetError();
-    if (err != GL_NO_ERROR)
+    if ( err != GL_NO_ERROR )
     {
         STDLOG_ERROR("OpenGL error 0x%x when creating viewport.\n", err);
         return 0;
@@ -1154,16 +1154,16 @@ static int J3DAPI stdDisplay_GetGLCaps(void) //checked
 
 static int J3DAPI stdDisplay_EnumerateDevices(void) //check
 {
-    if (stdDisplay_availableDisplays)
+    if ( stdDisplay_availableDisplays )
     {
         SDL_free(stdDisplay_availableDisplays);
     }
 
     int adapterCount;
     stdDisplay_availableDisplays = SDL_GetDisplays(&adapterCount);
-    stdDisplay_numDevices = 0;
+    stdDisplay_numDevices        = 0;
 
-    if (!stdDisplay_availableDisplays || adapterCount <= 0)
+    if ( !stdDisplay_availableDisplays || adapterCount <= 0 )
     {
         STDLOG_ERROR("SDL_GetDisplays failed or found no displays: %s\n", SDL_GetError());
         stdDisplay_numDevices = 0;
@@ -1190,16 +1190,16 @@ static int J3DAPI stdDisplay_EnumerateDevices(void) //check
     GLint total_kb = 0, free_kb = 0;
     glGetIntegerv(GL_GPU_MEMORY_INFO_TOTAL_AVAILABLE_MEMORY_NVX, &total_kb); // NVIDIA
     glGetIntegerv(GL_GPU_MEMORY_INFO_CURRENT_AVAILABLE_VIDMEM_NVX, &free_kb);
-    if (!total_kb)
+    if ( !total_kb )
     {
         GLint ati[4] = {0, 0, 0, 0};
         glGetIntegerv(GL_TEXTURE_FREE_MEMORY_ATI, ati); // AMD/ATI
         // ati[0] = total-ish, ati[1] = largest free block, ati[2]/[3] = aux/tex free
         total_kb = ati[0];
-        free_kb = ati[0]; // grobe Annahme, wenn nix besseres da ist
+        free_kb  = ati[0]; // grobe Annahme, wenn nix besseres da ist
     }
 
-    for (int i = 0; i < adapterCount && i < STD_ARRAYLEN(stdDisplay_aDisplayDevices); i++)
+    for ( int i = 0; i < adapterCount && i < STD_ARRAYLEN(stdDisplay_aDisplayDevices); i++ )
     {
         StdDisplayDevice* pDevice = &stdDisplay_aDisplayDevices[stdDisplay_numDevices];
 
@@ -1213,25 +1213,25 @@ static int J3DAPI stdDisplay_EnumerateDevices(void) //check
         // Try to get monitor friendly name
         DISPLAY_DEVICE displayDevice;
         displayDevice.cb = sizeof(displayDevice);
-        if (EnumDisplayDevices(pDisplayName, 0, &displayDevice, 0))
+        if ( EnumDisplayDevices(pDisplayName, 0, &displayDevice, 0) )
         {
             STD_STRCPY(pDevice->aDriverName, displayDevice.DeviceString);
         }
 
         // Get device capabilities
         ZeroMemory(&pDevice->caps, sizeof(pDevice->caps));
-        pDevice->bHAL = TRUE;
+        pDevice->bHAL                      = TRUE;
         pDevice->bWindowRenderNotSupported = FALSE; // OpenGL always supports windowed rendering
         //pDevice->guid                      = identifier.DeviceIdentifier;
-        if (total_kb > 0)
+        if ( total_kb > 0 )
         {
             pDevice->totalVideoMemory = total_kb * 1024;
-            pDevice->freeVideoMemory = free_kb * 1024;
+            pDevice->freeVideoMemory  = free_kb * 1024;
         }
         else
         {
             pDevice->totalVideoMemory = maxTex * maxTex * 4; // grobe Schätzung (wie dein D3D-Pfad)
-            pDevice->freeVideoMemory = pDevice->totalVideoMemory / 2;
+            pDevice->freeVideoMemory  = pDevice->totalVideoMemory / 2;
         }
 
         STDLOG_STATUS("Found %s OpenGL Device: %s [%s]\n", pDevice->bHAL ? "HAL" : "REF", pDevice->aDeviceName,
@@ -1247,46 +1247,46 @@ static int J3DAPI stdDisplay_EnumerateVideoModes(SDL_DisplayID adapter) //checke
 {
     //Check that the current desktop mode is supported is skipped in GL. Is that needed?
 
-    int modeCount = 0;
+    int modeCount           = 0;
     SDL_DisplayMode** modes = SDL_GetFullscreenDisplayModes(adapter, &modeCount);
 
 
-    if (!modes || modeCount <= 0)
+    if ( !modes || modeCount <= 0 )
     {
         STDLOG_ERROR("  SDL_GetFullscreenDisplayModes failed: %s", SDL_GetError());
     }
 
 
-    for (int i = 0; i < modeCount && stdDisplay_numVideoModes < STD_ARRAYLEN(stdDisplay_aVideoModes); i++)
+    for ( int i = 0; i < modeCount && stdDisplay_numVideoModes < STD_ARRAYLEN(stdDisplay_aVideoModes); i++ )
     {
         SDL_DisplayMode* mode = modes[i];
 
 
         // Filter out modes below 24-bit color and 30 Hz
         const int bpp = stdDisplay_BppFromSDLPixelFormat(mode->format);
-        if (bpp < 24 || mode->refresh_rate < STDDISPLAY_MINFRAMERATE || mode->refresh_rate > STDDISPLAY_MAXFRAMERATE)
+        if ( bpp < 24 || mode->refresh_rate < STDDISPLAY_MINFRAMERATE || mode->refresh_rate > STDDISPLAY_MAXFRAMERATE )
         {
             continue;
         }
 
-        StdVideoMode* pVideoMode = &stdDisplay_aVideoModes[stdDisplay_numVideoModes];
-        pVideoMode->refreshRate = (uint32_t)(mode->refresh_rate + 0.5f);;
-        pVideoMode->rasterInfo.width = mode->w;
+        StdVideoMode* pVideoMode      = &stdDisplay_aVideoModes[stdDisplay_numVideoModes];
+        pVideoMode->refreshRate       = (uint32_t)(mode->refresh_rate + 0.5f);;
+        pVideoMode->rasterInfo.width  = mode->w;
         pVideoMode->rasterInfo.height = mode->h;
-        pVideoMode->format = mode->format;
+        pVideoMode->format            = mode->format;
 
         // Set color bit information based on format
-        if (!stdDisplay_GetVideoColorFormat(mode->format, &pVideoMode->rasterInfo.colorInfo))
+        if ( !stdDisplay_GetVideoColorFormat(mode->format, &pVideoMode->rasterInfo.colorInfo) )
         {
             STDLOG_ERROR("Couldn't get color info for format %d, adapter: %d videomode: %d ", mode->format, adapter, i);
             continue;
         }
 
         // Calculate row information
-        unsigned int bytesPerPixel = bpp / 8;
-        pVideoMode->rasterInfo.rowSize = pVideoMode->rasterInfo.width * bytesPerPixel;
+        unsigned int bytesPerPixel      = bpp / 8;
+        pVideoMode->rasterInfo.rowSize  = pVideoMode->rasterInfo.width * bytesPerPixel;
         pVideoMode->rasterInfo.rowWidth = pVideoMode->rasterInfo.width;
-        pVideoMode->rasterInfo.size = pVideoMode->rasterInfo.rowSize * pVideoMode->rasterInfo.height;
+        pVideoMode->rasterInfo.size     = pVideoMode->rasterInfo.rowSize * pVideoMode->rasterInfo.height;
         stdDisplay_SetAspectRatio(pVideoMode);
 
         // Check memory requirements (copied from DX6)
@@ -1297,7 +1297,7 @@ static int J3DAPI stdDisplay_EnumerateVideoModes(SDL_DisplayID adapter) //checke
         ++stdDisplay_numVideoModes;
     }
 
-    if (modeCount > STD_ARRAYLEN(stdDisplay_aVideoModes) - stdDisplay_numVideoModes)
+    if ( modeCount > STD_ARRAYLEN(stdDisplay_aVideoModes) - stdDisplay_numVideoModes )
     {
         STDLOG_WARNING("Too many video modes for adapter %d, only %zu modes supported.\n", adapter,
                        STD_ARRAYLEN(stdDisplay_aVideoModes) - stdDisplay_numVideoModes);
@@ -1311,7 +1311,7 @@ static int J3DAPI stdDisplay_EnumerateVideoModes(SDL_DisplayID adapter) //checke
 
 SDL_PixelFormat J3DAPI stdDisplay_GetSDLFormat(int bpp)
 {
-    switch (bpp)
+    switch ( bpp )
     {
     case 16: return SDL_PIXELFORMAT_RGB565;;
     case 24: return SDL_PIXELFORMAT_RGB24;
@@ -1324,7 +1324,7 @@ int J3DAPI stdDisplay_BppFromSDLPixelFormat(SDL_PixelFormat format)
 {
     const int bpp = SDL_BITSPERPIXEL(format);
 
-    if (bpp == 0)
+    if ( bpp == 0 )
     {
         //Fallback, if format is unkown
         return 32;
@@ -1335,7 +1335,7 @@ int J3DAPI stdDisplay_BppFromSDLPixelFormat(SDL_PixelFormat format)
 // Get color info for format of video mode and video surface
 bool stdDisplay_GetVideoColorFormat(SDL_PixelFormat format, ColorInfo* pFormat)
 {
-    switch (format)
+    switch ( format )
     {
     case SDL_PIXELFORMAT_RGB24:
         *pFormat = stdColor_cfRGB888;
@@ -1361,15 +1361,15 @@ bool stdDisplay_GetVideoColorFormat(SDL_PixelFormat format, ColorInfo* pFormat)
 
 void J3DAPI stdDisplay_SetAspectRatio(StdVideoMode* pMode)
 {
-    if (pMode->rasterInfo.width == 320 && pMode->rasterInfo.height == 200)
+    if ( pMode->rasterInfo.width == 320 && pMode->rasterInfo.height == 200 )
     {
         pMode->aspectRatio = 0.75f;
     }
-    else if (pMode->rasterInfo.width == 320 && pMode->rasterInfo.height == 400)
+    else if ( pMode->rasterInfo.width == 320 && pMode->rasterInfo.height == 400 )
     {
         pMode->aspectRatio = 0.75f;
     }
-    else if (pMode->rasterInfo.width == 640 && pMode->rasterInfo.height == 400)
+    else if ( pMode->rasterInfo.width == 640 && pMode->rasterInfo.height == 400 )
     {
         pMode->aspectRatio = 0.75f;
     }
@@ -1423,12 +1423,12 @@ int J3DAPI stdDisplay_SetFullscreenMode(HWND hwnd, const StdVideoMode* pDisplayM
 int J3DAPI stdDisplay_InitBuffers(PDIRECT3DDEVICE9 pDevice, StdVideoMode* pDisplayMode, bool bWindowMode,
                                   size_t numBuffers)
 {
-    tVBuffer* back = stdDisplay_VBufferNew(&pDisplayMode->rasterInfo, 0, 0);
+    tVBuffer* back  = stdDisplay_VBufferNew(&pDisplayMode->rasterInfo, 0, 0);
     tVBuffer* front = stdDisplay_VBufferNew(&pDisplayMode->rasterInfo, 0, 0);
-    if (back && front)
+    if ( back && front )
     {
         stdDisplay_g_frontBuffer = *back;
-        stdDisplay_g_backBuffer = *front;
+        stdDisplay_g_backBuffer  = *front;
         STDFREE(back);
         STDFREE(front);
     }
@@ -1445,12 +1445,12 @@ void stdDisplay_ReleaseBuffers(void) // checked
     //     stdDisplay_zBuffer.glTexID = 0;
     // }
 
-    if (stdDisplay_g_backBuffer.pPixels)
+    if ( stdDisplay_g_backBuffer.pPixels )
     {
         stdMemory_Free(stdDisplay_g_backBuffer.pPixels);
         stdDisplay_g_backBuffer.pPixels = NULL;
     }
-    if (stdDisplay_g_frontBuffer.pPixels)
+    if ( stdDisplay_g_frontBuffer.pPixels )
     {
         stdMemory_Free(stdDisplay_g_frontBuffer.pPixels);
         stdDisplay_g_frontBuffer.pPixels = NULL;
@@ -1537,10 +1537,10 @@ int J3DAPI stdDisplay_UnlockSurface(tVSurface* pSurf)
 
 void stdDisplay_DisableVSync(bool bDisable)
 {
-    if (stdDisplay_bNoSync != bDisable)
+    if ( stdDisplay_bNoSync != bDisable )
     {
         // Update presentation parameters
-        if (bDisable)
+        if ( bDisable )
         {
             SDL_GL_SetSwapInterval(0);
         }
@@ -1562,14 +1562,14 @@ void stdDisplay_DisableVSync(bool bDisable)
 int stdDisplay_Update(void) //check
 {
     GLenum err = glGetError();
-    if (err != GL_NO_ERROR)
+    if ( err != GL_NO_ERROR )
     {
         STDLOG_ERROR("OpenGL error 0x%x when creating viewport.\n", err);
         return 0;
     }
 
     SDL_Window* pWindow = stdWin95_GetSDLWindow();
-    if (!pWindow)
+    if ( !pWindow )
     {
         return 1;
     }
@@ -1621,7 +1621,7 @@ int stdDisplay_Update(void) //check
 
 
     err = glGetError();
-    if (err != GL_NO_ERROR)
+    if ( err != GL_NO_ERROR )
     {
         STDLOG_ERROR("OpenGL error 0x%x when creating viewport.\n", err);
         return 0;
@@ -1634,37 +1634,37 @@ int stdDisplay_Update(void) //check
 
     //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    STDLOG_DEBUG("Updated frame\n");
+    //STDLOG_DEBUG("Updated frame\n");
     return 0;
 }
 
 int J3DAPI stdDisplay_ColorFillSurface(tVBuffer* pBuffer, uint32_t dwFillColor, const StdRect* pRect) //checked
 {
-    if (!pBuffer)
+    if ( !pBuffer )
     {
         return 1;
     }
 
 
     // Determine region
-    int left = 0;
-    int top = 0;
-    int right = (int)pBuffer->rasterInfo.width;
+    int left   = 0;
+    int top    = 0;
+    int right  = (int)pBuffer->rasterInfo.width;
     int bottom = (int)pBuffer->rasterInfo.height;
 
-    if (pRect)
+    if ( pRect )
     {
-        if (pRect->right == 0 || pRect->bottom == 0)
+        if ( pRect->right == 0 || pRect->bottom == 0 )
             return 1;
 
-        left = pRect->left;
-        top = pRect->top;
-        right = pRect->left + pRect->right;
+        left   = pRect->left;
+        top    = pRect->top;
+        right  = pRect->left + pRect->right;
         bottom = pRect->top + pRect->bottom;
     }
 
     // Case 1: Software surface (RAM buffer)
-    if (pBuffer->type == VBUFFER_SOFTWARE)
+    if ( pBuffer->type == VBUFFER_SOFTWARE )
     {
         uint8_t* pixels = pBuffer->pPixels;
         const int pitch = (int)pBuffer->rasterInfo.width * 4;
@@ -1673,10 +1673,10 @@ int J3DAPI stdDisplay_ColorFillSurface(tVBuffer* pBuffer, uint32_t dwFillColor, 
         const uint8_t g = (uint8_t)((dwFillColor >> 8) & 0xFF);
         const uint8_t b = (uint8_t)(dwFillColor & 0xFF);
 
-        for (int y = top; y < bottom; ++y)
+        for ( int y = top; y < bottom; ++y )
         {
             uint8_t* row = pixels + y * pitch + left * 4;
-            for (int x = left; x < right; ++x)
+            for ( int x = left; x < right; ++x )
             {
                 row[0] = b;
                 row[1] = g;
@@ -1730,7 +1730,7 @@ int J3DAPI stdDisplay_BackBufferFill(uint32_t color, const StdRect* pRect)
 
 int J3DAPI stdDisplay_SaveScreen(const char* pFilename)
 {
-    if (!stdDisplay_g_backBuffer.surface.pSysSurface)
+    if ( !stdDisplay_g_backBuffer.surface.pSysSurface )
     {
         return 1;
     }
@@ -1740,13 +1740,13 @@ int J3DAPI stdDisplay_SaveScreen(const char* pFilename)
 
 void J3DAPI stdDisplay_SetDefaultResolution(uint32_t width, uint32_t height)
 {
-    stdDisplay_primaryVideoMode.rasterInfo.width = width;
+    stdDisplay_primaryVideoMode.rasterInfo.width  = width;
     stdDisplay_primaryVideoMode.rasterInfo.height = height;
 }
 
 void J3DAPI stdDisplay_GetBackBufferSize(uint32_t* pWidth, uint32_t* pHeight)
 {
-    *pWidth = stdDisplay_g_backBuffer.rasterInfo.width;
+    *pWidth  = stdDisplay_g_backBuffer.rasterInfo.width;
     *pHeight = stdDisplay_g_backBuffer.rasterInfo.height;
 }
 
@@ -1757,7 +1757,7 @@ size_t stdDisplay_GetNumVideoModes(void)
 
 int J3DAPI stdDisplay_GetVideoMode(size_t modeNum, StdVideoMode* pDestMode)
 {
-    if (modeNum >= stdDisplay_numVideoModes)
+    if ( modeNum >= stdDisplay_numVideoModes )
     {
         return 1;
     }
@@ -1768,7 +1768,7 @@ int J3DAPI stdDisplay_GetVideoMode(size_t modeNum, StdVideoMode* pDestMode)
 
 int J3DAPI stdDisplay_GetCurrentVideoMode(StdVideoMode* pDisplayMode)
 {
-    if (!stdDisplay_pCurVideoMode)
+    if ( !stdDisplay_pCurVideoMode )
     {
         return 1;
     }
@@ -1784,10 +1784,10 @@ int stdDisplay_CopyBufferToSurface(LPDIRECT3DSURFACE9 pSrcSurf, LPDIRECT3DSURFAC
 
 HDC stdDisplay_GetFrontBufferDC(void)
 {
-    if (!stdDisplay_bOpen || !stdDisplay_bModeSet)
+    if ( !stdDisplay_bOpen || !stdDisplay_bModeSet )
         return NULL;
 
-    if (stdDisplay_frontLockRef > 0)
+    if ( stdDisplay_frontLockRef > 0 )
     {
         stdDisplay_frontLockRef++;
         return g_frontGDI.hdc;
@@ -1796,9 +1796,9 @@ HDC stdDisplay_GetFrontBufferDC(void)
     int w = (int)stdDisplay_g_frontBuffer.rasterInfo.width;
     int h = (int)stdDisplay_g_frontBuffer.rasterInfo.height;
 
-    if (!g_frontGDI.hdc || g_frontGDI.w != w || g_frontGDI.h != h)
+    if ( !g_frontGDI.hdc || g_frontGDI.w != w || g_frontGDI.h != h )
     {
-        if (!stdDisplay_InitGDIBackbuffer(&g_frontGDI, w, h))
+        if ( !stdDisplay_InitGDIBackbuffer(&g_frontGDI, w, h) )
         {
             STDLOG_ERROR("Failed to create GDI frontbuffer.\n");
             return NULL;
@@ -1806,26 +1806,26 @@ HDC stdDisplay_GetFrontBufferDC(void)
     }
 
     stdDisplay_frontLockRef = 1;
-    stdDisplay_hdcFront = g_frontGDI.hdc;
+    stdDisplay_hdcFront     = g_frontGDI.hdc;
     return g_frontGDI.hdc;
 }
 
 void J3DAPI stdDisplay_ReleaseFrontBufferDC(HDC hdc)
 {
-    if (!g_frontGDI.hdc || hdc != g_frontGDI.hdc)
+    if ( !g_frontGDI.hdc || hdc != g_frontGDI.hdc )
         return;
 
-    if (--g_frontGDI.lockRef > 0)
+    if ( --g_frontGDI.lockRef > 0 )
         return;
 
     tVBuffer* front = &stdDisplay_g_frontBuffer;
-    if (!front->pPixels) return;
+    if ( !front->pPixels ) return;
 
     size_t copyPitch = front->rasterInfo.rowSize;
-    uint8_t* dst = front->pPixels;
-    uint8_t* src = g_frontGDI.bits;
+    uint8_t* dst     = front->pPixels;
+    uint8_t* src     = g_frontGDI.bits;
 
-    for (int y = 0; y < g_frontGDI.h; ++y)
+    for ( int y = 0; y < g_frontGDI.h; ++y )
         memcpy(dst + y * copyPitch, src + y * g_frontGDI.pitch, copyPitch);
 
     stdDisplay_hdcFront = NULL;
@@ -1833,9 +1833,9 @@ void J3DAPI stdDisplay_ReleaseFrontBufferDC(HDC hdc)
 
 HDC stdDisplay_GetBackBufferDC(void) //checked
 {
-    if (!stdDisplay_bOpen || !stdDisplay_bModeSet) return NULL;
+    if ( !stdDisplay_bOpen || !stdDisplay_bModeSet ) return NULL;
 
-    if (stdDisplay_backLockRef > 0)
+    if ( stdDisplay_backLockRef > 0 )
     {
         stdDisplay_backLockRef++;
         return g_gdi.hdc; // stdDisplay_hdcBack optional gleichsetzen
@@ -1844,9 +1844,9 @@ HDC stdDisplay_GetBackBufferDC(void) //checked
     const int w = (int)stdDisplay_g_backBuffer.rasterInfo.width;
     const int h = (int)stdDisplay_g_backBuffer.rasterInfo.height;
 
-    if (!g_gdi.hdc || g_gdi.w != w || g_gdi.h != h)
+    if ( !g_gdi.hdc || g_gdi.w != w || g_gdi.h != h )
     {
-        if (!stdDisplay_InitGDIBackbuffer(&g_gdi, w, h))
+        if ( !stdDisplay_InitGDIBackbuffer(&g_gdi, w, h) )
         {
             STDLOG_ERROR("Failed to create GDI backbuffer.\n");
             return NULL;
@@ -1857,27 +1857,27 @@ HDC stdDisplay_GetBackBufferDC(void) //checked
     // //TODO: add MSAA support
 
     stdDisplay_backLockRef = 1;
-    stdDisplay_hdcBack = g_gdi.hdc; // falls du das Handle global speicherst
+    stdDisplay_hdcBack     = g_gdi.hdc; // falls du das Handle global speicherst
     return g_gdi.hdc;
 }
 
 void J3DAPI stdDisplay_ReleaseBackBufferDC(HDC hdc) //checked
 {
-    if (!g_gdi.hdc || hdc != g_gdi.hdc)
+    if ( !g_gdi.hdc || hdc != g_gdi.hdc )
         return;
 
-    if (--g_gdi.lockRef > 0)
+    if ( --g_gdi.lockRef > 0 )
         return;
 
     // TODO: add msaa support
     // Kopiere GDI-Inhalt in den CPU-Backbuffer
-    if (stdDisplay_g_backBuffer.pPixels)
+    if ( stdDisplay_g_backBuffer.pPixels )
     {
         size_t copyPitch = stdDisplay_g_backBuffer.rasterInfo.rowSize;
-        uint8_t* dst = stdDisplay_g_backBuffer.pPixels;
-        uint8_t* src = g_gdi.bits;
+        uint8_t* dst     = stdDisplay_g_backBuffer.pPixels;
+        uint8_t* src     = g_gdi.bits;
 
-        for (int y = 0; y < g_gdi.h; ++y)
+        for ( int y = 0; y < g_gdi.h; ++y )
         {
             memcpy(dst + y * copyPitch, src + y * g_gdi.pitch, copyPitch);
         }
@@ -1923,15 +1923,15 @@ int J3DAPI stdDisplay_IsFullscreen(void)
 
 int J3DAPI stdDisplay_LockBackBuffer(void** pSurface, uint32_t* pWidth, uint32_t* pHeight, int32_t* pPitch) //checked
 {
-    if (!stdDisplay_bOpen || !stdDisplay_bModeSet)
+    if ( !stdDisplay_bOpen || !stdDisplay_bModeSet )
     {
         return 1;
     }
 
     stdDisplay_backLockRef++;
-    *pWidth = stdDisplay_g_backBuffer.rasterInfo.width;
-    *pHeight = stdDisplay_g_backBuffer.rasterInfo.height;
-    *pPitch = stdDisplay_g_backBuffer.rasterInfo.rowSize;
+    *pWidth   = stdDisplay_g_backBuffer.rasterInfo.width;
+    *pHeight  = stdDisplay_g_backBuffer.rasterInfo.height;
+    *pPitch   = stdDisplay_g_backBuffer.rasterInfo.rowSize;
     *pSurface = stdDisplay_g_backBuffer.pPixels;
     return 0;
 }
@@ -1947,19 +1947,19 @@ uint32_t J3DAPI stdDisplay_EncodeFromRGB565(uint16_t pixel)
     memcpy(&colorInfo, &stdDisplay_pCurVideoMode->rasterInfo.colorInfo, sizeof(colorInfo));
 
     uint8_t red = 8 * (pixel >> 11);
-    if ((red & 8) != 0)
+    if ( (red & 8) != 0 )
     {
         red |= 7;
     }
 
     uint8_t green = 4 * (pixel >> 5);
-    if ((green & 4) != 0)
+    if ( (green & 4) != 0 )
     {
         green |= 3;
     }
 
     uint8_t blue = 8 * pixel;
-    if ((blue & 8) != 0)
+    if ( (blue & 8) != 0 )
     {
         blue = blue | 7;
     }

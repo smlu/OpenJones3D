@@ -14,15 +14,15 @@
 #define IDI_APPICON 108
 DEFINE_GUID(wkernel_guid, 0x82CE4DA0, 0x9CBF, 0x1D1, 0x90, 0x85, 0x00, 0x60, 0x97, 0x76, 0x0EA, 0x02);
 
-static SDL_Window* wkernel_sdl_window = NULL;
+static SDL_Window* wkernel_sdl_window   = NULL;
 static SDL_GLContext wkernel_gl_context = NULL;
 
 static HWND wkernel_hwnd = 0;
 
-static WKERNELPROC wkernel_pfProcess = NULL;
-static WKERNELSTARTUPPROC wkernel_pfOnStartup = NULL;
+static WKERNELPROC wkernel_pfProcess            = NULL;
+static WKERNELSTARTUPPROC wkernel_pfOnStartup   = NULL;
 static WKERNELSHUTDOWNPROC wkernel_pfOnShutdown = NULL;
-static WKERNELWNDPROC wkernel_pfWndProc = NULL;
+static WKERNELWNDPROC wkernel_pfWndProc         = NULL;
 
 static inline int J3DAPI wkernel_CreateWindow(HINSTANCE hInstance, int nShowCmd, LPCSTR lpWindowName);
 static LRESULT CALLBACK wkernel_MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
@@ -49,18 +49,18 @@ int J3DAPI wkernel_Run(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmd
     J3D_UNUSED(hinstance); // old DX6/9 path still passes it, ignore for SDL/OpenGL
     J3D_UNUSED(hPrevInstance);
 
-    SDL_Delay(10000);
+    //SDL_Delay(10000);
 
 
     // Added: Refactored to run main proc via callback
-    if (wkernel_pfProcess == NULL)
+    if ( wkernel_pfProcess == NULL )
     {
         // TODO: [LOG] make log entry
         fprintf(stderr, "ERROR: wkernel_Run: No main process set!\n");
         return -1;
     }
 
-    if (wkernel_CreateWindow(hinstance, nShowCmd, lpWindowName))
+    if ( wkernel_CreateWindow(hinstance, nShowCmd, lpWindowName) )
     {
         return -1;
     }
@@ -75,20 +75,20 @@ int J3DAPI wkernel_Run(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmd
     InitCommonControls();
 
     // Added: Refactored to run main proc via callback
-    if (wkernel_pfOnStartup)
+    if ( wkernel_pfOnStartup )
     {
-        if (wkernel_pfOnStartup(lpCmdLine))
+        if ( wkernel_pfOnStartup(lpCmdLine) )
         {
             return -1;
         }
     }
 
     int result = 0;
-    while (result != -1)
+    while ( result != -1 )
     {
-        if (result)
+        if ( result )
         {
-            if (result == 1) // Finish
+            if ( result == 1 ) // Finish
             {
                 return 0; // Fixed: Changed return code to 0
             }
@@ -98,7 +98,7 @@ int J3DAPI wkernel_Run(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmd
         }
 
         int quit = wkernel_ProcessEvents();
-        if (quit == 1) return 0;
+        if ( quit == 1 ) return 0;
 
         // Fixed: Removed else statement to fix bug when result != 1 || result != -1
         result = wkernel_pfProcess();
@@ -110,33 +110,33 @@ int J3DAPI wkernel_Run(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmd
 WKERNELPROC J3DAPI wkernel_SetProcessProc(WKERNELPROC pfProc)
 {
     WKERNELPROC pfCurProc = wkernel_pfProcess;
-    wkernel_pfProcess = pfProc;
+    wkernel_pfProcess     = pfProc;
     return pfCurProc;
 }
 
 WKERNELSTARTUPPROC J3DAPI wkernel_SetStartupCallback(WKERNELSTARTUPPROC pfOnClose)
 {
     WKERNELSTARTUPPROC pfCurProc = wkernel_pfOnStartup;
-    wkernel_pfOnStartup = pfOnClose;
+    wkernel_pfOnStartup          = pfOnClose;
     return pfCurProc;
 }
 
 WKERNELSHUTDOWNPROC J3DAPI wkernel_SetShutdownCallback(WKERNELSHUTDOWNPROC pfOnClose)
 {
     WKERNELSHUTDOWNPROC pfCurProc = wkernel_pfOnShutdown;
-    wkernel_pfOnShutdown = pfOnClose;
+    wkernel_pfOnShutdown          = pfOnClose;
     return pfCurProc;
 }
 
 int wkernel_PeekProcessEvents(void)
 {
     SDL_Event e;
-    if (!SDL_PeepEvents(&e, 1, SDL_PEEKEVENT, SDL_EVENT_FIRST, SDL_EVENT_LAST))
+    if ( !SDL_PeepEvents(&e, 1, SDL_PEEKEVENT, SDL_EVENT_FIRST, SDL_EVENT_LAST) )
         return 0; // nichts da
     // einmal abarbeiten (nur „einen Schwung“)
-    while (SDL_PollEvent(&e))
+    while ( SDL_PollEvent(&e) )
     {
-        if (e.type == SDL_EVENT_QUIT) return 1;
+        if ( e.type == SDL_EVENT_QUIT ) return 1;
         wkernel_DispatchSdlEvent(&e); // siehe unten
     }
     return 0;
@@ -145,25 +145,25 @@ int wkernel_PeekProcessEvents(void)
 int wkernel_ProcessEvents(void)
 {
     SDL_Event e;
-    while (SDL_PollEvent(&e))
+    while ( SDL_PollEvent(&e) )
     {
-        if (e.type == SDL_EVENT_QUIT) return 1;
+        if ( e.type == SDL_EVENT_QUIT ) return 1;
         wkernel_DispatchSdlEvent(&e);
         int pending = SDL_PeepEvents(NULL, 0, SDL_PEEKEVENT, SDL_EVENT_FIRST, SDL_EVENT_LAST);
-        if (pending == 0) return 0;
+        if ( pending == 0 ) return 0;
     }
     return -1;
 }
 
 static void wkernel_DispatchSdlEvent(const SDL_Event* ev)
 {
-    if (!wkernel_pfWndProc) return;
+    if ( !wkernel_pfWndProc ) return;
     int ret = 0;
 
-    switch (ev->type)
+    switch ( ev->type )
     {
     case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
-        if (wkernel_pfOnShutdown) wkernel_pfOnShutdown();
+        if ( wkernel_pfOnShutdown ) wkernel_pfOnShutdown();
         wkernel_pfWndProc(wkernel_hwnd, WM_CLOSE, 0, 0, &ret);
         SDL_PushEvent(&(SDL_Event){.type = SDL_EVENT_QUIT});
         break;
@@ -199,7 +199,7 @@ static void wkernel_DispatchSdlEvent(const SDL_Event* ev)
 
 void J3DAPI wkernel_SetWindowStyle(LONG dwNewLong)
 {
-    if (!wkernel_sdl_window) return;
+    if ( !wkernel_sdl_window ) return;
 
     bool bordered = (dwNewLong & (WS_BORDER | WS_CAPTION)) != 0;
     SDL_SetWindowBordered(wkernel_sdl_window, bordered);
@@ -223,15 +223,15 @@ int J3DAPI wkernel_CreateWindow(HINSTANCE hInstance, int nShowCmd, LPCSTR lpWind
     J3D_UNUSED(nShowCmd);
     int width, height;
 
-    if (FindWindow("SDL_app", lpWindowName))
+    if ( FindWindow("SDL_app", lpWindowName) )
     {
         STDLOG_STATUS("INFO: wkernel_CreateWindow: An existing instance of window already running!\n");
         return 1;
     }
 
-    if (!SDL_WasInit(SDL_INIT_VIDEO))
+    if ( !SDL_WasInit(SDL_INIT_VIDEO) )
     {
-        if (SDL_InitSubSystem(SDL_INIT_VIDEO) < 0)
+        if ( SDL_InitSubSystem(SDL_INIT_VIDEO) < 0 )
         {
             STDLOG_ERROR("SDL video init failed: %s\n", SDL_GetError());
             return 1;
@@ -249,10 +249,10 @@ int J3DAPI wkernel_CreateWindow(HINSTANCE hInstance, int nShowCmd, LPCSTR lpWind
     Uint32 flags = SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE;
 
     height = GetSystemMetrics(1);
-    width = GetSystemMetrics(0);
+    width  = GetSystemMetrics(0);
 
     wkernel_sdl_window = SDL_CreateWindow(lpWindowName, width, height, flags);
-    if (!wkernel_sdl_window)
+    if ( !wkernel_sdl_window )
     {
         STDLOG_ERROR("SDL_CreateWindow failed: %s\n", SDL_GetError());
         return 1;
@@ -260,22 +260,22 @@ int J3DAPI wkernel_CreateWindow(HINSTANCE hInstance, int nShowCmd, LPCSTR lpWind
 
 
     wkernel_gl_context = SDL_GL_CreateContext(wkernel_sdl_window);
-    if (!wkernel_gl_context)
+    if ( !wkernel_gl_context )
     {
         STDLOG_ERROR("SDL_GL_CreateContext failed: %s\n", SDL_GetError());
         return 1;
     }
 
 
-    if (!gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress))
+    if ( !gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress) )
     {
         STDLOG_ERROR("Failed to initialize GLAD\n");
         return 1;
     }
 
     SDL_PropertiesID props = SDL_GetWindowProperties(wkernel_sdl_window);
-    wkernel_hwnd = (HWND)SDL_GetPointerProperty(props, SDL_PROP_WINDOW_WIN32_HWND_POINTER, NULL);
-    if (!wkernel_hwnd)
+    wkernel_hwnd           = (HWND)SDL_GetPointerProperty(props, SDL_PROP_WINDOW_WIN32_HWND_POINTER, NULL);
+    if ( !wkernel_hwnd )
     {
         return 1;
     }
