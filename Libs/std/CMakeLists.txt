@@ -38,17 +38,8 @@ elseif(J3D_DIRECTX9)
         "${SHADER_DIR}/*.hlsli"
     )
 elseif (J3D_OPENGL)
-
     remove_dx6_files()
     remove_dx9_files()
-    # Collect shader files
-    set(SHADER_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Win95/GL/Shaders")
-    file(GLOB SHADERS
-            "${SHADER_DIR}/*.hlsl"
-    )
-    file(GLOB SHADER_INCLUDES
-            "${SHADER_DIR}/*.hlsli"
-    )
 endif()
 
 # Make project target
@@ -82,19 +73,6 @@ elseif(J3D_DIRECTX9)
         dinput8
         ${EXTRA_LIBS}
     )
-elseif(J3D_OPENGL)
-    find_package(OpenGL REQUIRED)
-    target_link_libraries(${PROJECT_NAME} PUBLIC
-            d3d9
-            dxguid
-            dinput8
-            SDL3::SDL3
-            glad
-            OpenGL::GL
-            ${EXTRA_LIBS}
-    )
-
-
     # Define HLSL shaders to be compiled
     foreach(SHADER ${SHADERS})
         get_filename_component(FILE_NAME ${SHADER} NAME_WE) # name without extension
@@ -112,17 +90,29 @@ elseif(J3D_OPENGL)
 
         # Adjust shader compilation properties
         set_source_files_properties(${SHADER} PROPERTIES
-            VS_SHADER_TYPE ${SHADER_TYPE}
-            VS_SHADER_MODEL ${SHADER_MODEL}
-            VS_SHADER_ENTRYPOINT "main"
-            VS_SHADER_OUTPUT_HEADER_FILE "${HEADER_FILE}"
-            VS_SHADER_OBJECT_FILE_NAME ""
-            VS_SHADER_VARIABLE_NAME "std_${FILE_NAME}"
+                VS_SHADER_TYPE ${SHADER_TYPE}
+                VS_SHADER_MODEL ${SHADER_MODEL}
+                VS_SHADER_ENTRYPOINT "main"
+                VS_SHADER_OUTPUT_HEADER_FILE "${HEADER_FILE}"
+                VS_SHADER_OBJECT_FILE_NAME ""
+                VS_SHADER_VARIABLE_NAME "std_${FILE_NAME}"
         )
 
         # Add dependency so headers are built before your game compiles
         list(APPEND GENERATED_HEADERS ${HEADER_FILE})
     endforeach()
+
+elseif(J3D_OPENGL)
+    find_package(OpenGL REQUIRED)
+    target_link_libraries(${PROJECT_NAME} PUBLIC
+            d3d9
+            dxguid
+            dinput8
+            SDL3::SDL3
+            glad
+            OpenGL::GL
+            ${EXTRA_LIBS}
+    )
 endif()
 
 if (WIN32)
