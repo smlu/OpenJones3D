@@ -312,7 +312,7 @@ static bool std3D_InitSystem(void)
     std3D_pLastTexCache     = NULL;
 
     // Get color formats for RGB, RGBA and RGBA key formats
-    std3D_RGBTextureFormat     = std3D_FindClosestFormat(&stdColor_cfBGR888);
+    std3D_RGBTextureFormat     = std3D_FindClosestFormat(&stdColor_cfRGB888);
     std3D_RGBAKeyTextureFormat = std3D_FindClosestFormat(&stdColor_cfRGBA8888);
     std3D_RGBATextureFormat    = std3D_FindClosestFormat(&stdColor_cfRGBA8888);
 
@@ -451,7 +451,7 @@ void std3D_Close(void)
 }
 
 void J3DAPI std3D_GetTextureFormat(StdColorFormatType type, ColorInfo* pDest, int* pbColorKeySet,
-    LPDDCOLORKEY* ppColorKey)
+                                   LPDDCOLORKEY* ppColorKey)
 {
     if ( type == STDCOLOR_FORMAT_RGBA_1BITALPHA )
     {
@@ -571,7 +571,7 @@ int std3D_DrawIndexedPrimitive(GLenum type, LPD3DTLVERTEX aVerts,
                                size_t numVerts, LPWORD aIndices,
                                size_t numIndices)
 {
-    STDLOG_DEBUG("Draw %d vertices\n", numVerts);
+    // STDLOG_DEBUG("Draw %d vertices\n", numVerts);
     if ( !std3D_CopyVertexDataToBuffer(aVerts, numVerts, aIndices, numIndices) )
         return 0;
 
@@ -833,14 +833,15 @@ void J3DAPI std3D_SetRenderState(Std3DRenderState rdflags)
     if ( std3D_renderState == rdflags )
         return;
 
+    glEnable(GL_DEPTH_TEST);
     // --- ZWRITE ---
     if ( (std3D_renderState & STD3D_RS_ZWRITE_DISABLED) !=
         (rdflags & STD3D_RS_ZWRITE_DISABLED) )
     {
         if ( rdflags & STD3D_RS_ZWRITE_DISABLED )
-            glEnable(GL_DEPTH_TEST);
+            glDepthFunc(GL_LESS);
         else
-            glEnable(GL_DEPTH_TEST);
+            glDepthFunc(GL_LEQUAL);
     }
 
     // --- Texture Address Mode U/V ---
@@ -1137,9 +1138,9 @@ void J3DAPI std3D_AddToTextureCache(tSystemTexture* pCacheTexture,
 
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
-    GLenum formatGL         = pCacheTexture->format.glFormat;
-    GLenum typeGL           = pCacheTexture->format.glType;
-    GLint internalFormatGL  = pCacheTexture->format.glInternalFormat;
+    GLenum formatGL        = pCacheTexture->format.glFormat;
+    GLenum typeGL          = pCacheTexture->format.glType;
+    GLint internalFormatGL = pCacheTexture->format.glInternalFormat;
 
     for ( size_t mm = 0; mm < numMipmaps; ++mm )
     {
