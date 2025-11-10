@@ -312,7 +312,7 @@ static bool std3D_InitSystem(void)
     std3D_pLastTexCache     = NULL;
 
     // Get color formats for RGB, RGBA and RGBA key formats
-    std3D_RGBTextureFormat     = std3D_FindClosestFormat(&stdColor_cfBGR8888);
+    std3D_RGBTextureFormat     = std3D_FindClosestFormat(&stdColor_cfBGR888);
     std3D_RGBAKeyTextureFormat = std3D_FindClosestFormat(&stdColor_cfRGBA8888);
     std3D_RGBATextureFormat    = std3D_FindClosestFormat(&stdColor_cfRGBA8888);
 
@@ -450,9 +450,8 @@ void std3D_Close(void)
     std3D_bOpen                = false;
 }
 
-void J3DAPI std3D_GetTextureFormat(StdColorFormatType type, ColorInfo* pDest,
-                                   int* pbColorKeySet,
-                                   LPDDCOLORKEY* ppColorKey)
+void J3DAPI std3D_GetTextureFormat(StdColorFormatType type, ColorInfo* pDest, int* pbColorKeySet,
+    LPDDCOLORKEY* ppColorKey)
 {
     if ( type == STDCOLOR_FORMAT_RGBA_1BITALPHA )
     {
@@ -660,8 +659,6 @@ void J3DAPI std3D_DrawRenderList(tSysTexture* pTex, Std3DRenderState rdflags,
         std3D_UpdateShaderState(std3D_defaultShader);
     }
 
-    std3D_SetRenderState(rdflags);
-
     // Set texture
     if ( pTex != std3D_pD3DTex )
     {
@@ -680,6 +677,9 @@ void J3DAPI std3D_DrawRenderList(tSysTexture* pTex, Std3DRenderState rdflags,
         //     std3D_pD3DTex = pTex;
         // }
     }
+
+    std3D_SetRenderState(rdflags);
+
 
     // Fog processing
     // if ( std3D_bFogTable )
@@ -838,9 +838,9 @@ void J3DAPI std3D_SetRenderState(Std3DRenderState rdflags)
         (rdflags & STD3D_RS_ZWRITE_DISABLED) )
     {
         if ( rdflags & STD3D_RS_ZWRITE_DISABLED )
-            glDepthMask(GL_FALSE);
+            glEnable(GL_DEPTH_TEST);
         else
-            glDepthMask(GL_TRUE);
+            glEnable(GL_DEPTH_TEST);
     }
 
     // --- Texture Address Mode U/V ---
@@ -924,20 +924,20 @@ void J3DAPI std3D_SetRenderState(Std3DRenderState rdflags)
         }
     }
 
-    // --- Alpha Reference / Alpha Test ---
-    if ( (std3D_renderState & STD3D_RS_ALPHAREF_SET) !=
-        (rdflags & STD3D_RS_ALPHAREF_SET) )
-    {
-        if ( rdflags & STD3D_RS_ALPHAREF_SET )
-        {
-            glEnable(GL_ALPHA_TEST);
-            glAlphaFunc(GL_GREATER, 160.0f / 255.0f);
-        }
-        else
-        {
-            glDisable(GL_ALPHA_TEST);
-        }
-    }
+    // // --- Alpha Reference / Alpha Test ---
+    // if ( (std3D_renderState & STD3D_RS_ALPHAREF_SET) !=
+    //     (rdflags & STD3D_RS_ALPHAREF_SET) )
+    // {
+    //     if ( rdflags & STD3D_RS_ALPHAREF_SET )
+    //     {
+    //         glEnable(GL_ALPHA_TEST);
+    //         glAlphaFunc(GL_GREATER, 160.0f / 255.0f);
+    //     }
+    //     else
+    //     {
+    //         glDisable(GL_ALPHA_TEST);
+    //     }
+    // }
 
     // Update cached flags
     std3D_renderState = rdflags;
@@ -947,8 +947,7 @@ void J3DAPI std3D_SetRenderState(Std3DRenderState rdflags)
         STDLOG_ERROR("OpenGL error 0x%x in std3D_SetRenderState.\n", err);
 }
 
-void J3DAPI std3D_AllocSystemTexture(tSystemTexture* pTexture,
-                                     tVBuffer** apVBuffers, size_t numMipLevels,
+void J3DAPI std3D_AllocSystemTexture(tSystemTexture* pTexture, tVBuffer** apVBuffers, size_t numMipLevels,
                                      StdColorFormatType formatType)
 {
     memset(pTexture, 0, sizeof(tSystemTexture));
@@ -961,16 +960,12 @@ void J3DAPI std3D_AllocSystemTexture(tSystemTexture* pTexture,
     // Get mipmap buffer at LOD 0
     tVBuffer* pVBuffer = *apVBuffers;
     uint32_t texHeight = 0, texWidth = 0;
-    std3D_GetValidDimensions(pVBuffer->rasterInfo.width,
-                             pVBuffer->rasterInfo.height, &texWidth, &texHeight);
-    while ( numMipLevels > 1 && (pVBuffer->rasterInfo.width > texWidth ||
-        pVBuffer->rasterInfo.height > texHeight) )
+    std3D_GetValidDimensions(pVBuffer->rasterInfo.width, pVBuffer->rasterInfo.height, &texWidth, &texHeight);
+    while ( numMipLevels > 1 && (pVBuffer->rasterInfo.width > texWidth || pVBuffer->rasterInfo.height > texHeight) )
     {
         --numMipLevels;
         pVBuffer = *++apVBuffers;
-        std3D_GetValidDimensions(pVBuffer->rasterInfo.width,
-                                 pVBuffer->rasterInfo.height, &texWidth,
-                                 &texHeight);
+        std3D_GetValidDimensions(pVBuffer->rasterInfo.width, pVBuffer->rasterInfo.height, &texWidth, &texHeight);
     }
 
     size_t texSize =
@@ -980,18 +975,18 @@ void J3DAPI std3D_AllocSystemTexture(tSystemTexture* pTexture,
         numMipLevels = 1;
     }
 
-    D3DFORMAT d3dFormat = D3DFMT_UNKNOWN;
+    tSysPixelFormat glFormat;
     if ( formatType == STDCOLOR_FORMAT_RGBA_1BITALPHA )
     {
-        d3dFormat = std3D_aTextureFormats[std3D_RGBAKeyTextureFormat].ddPixelFmt;
+        glFormat = std3D_aTextureFormats[std3D_RGBAKeyTextureFormat].ddPixelFmt;
     }
     else if ( formatType == STDCOLOR_FORMAT_RGBA )
     {
-        d3dFormat = std3D_aTextureFormats[std3D_RGBATextureFormat].ddPixelFmt;
+        glFormat = std3D_aTextureFormats[std3D_RGBATextureFormat].ddPixelFmt;
     }
     else
     {
-        d3dFormat = std3D_aTextureFormats[std3D_RGBTextureFormat].ddPixelFmt;
+        glFormat = std3D_aTextureFormats[std3D_RGBTextureFormat].ddPixelFmt;
     }
 
     // Allocate array for VBuffer pointers - NO DirectX objects created
@@ -1004,7 +999,7 @@ void J3DAPI std3D_AllocSystemTexture(tSystemTexture* pTexture,
     }
 
     pTexture->numMipLevels = numMipLevels;
-    pTexture->format       = d3dFormat;
+    pTexture->format       = glFormat;
     pTexture->textureSize  = texSize;
 
     // Create owned VBuffer copies for each mip level
@@ -1140,10 +1135,11 @@ void J3DAPI std3D_AddToTextureCache(tSystemTexture* pCacheTexture,
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
-    // glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    glPixelStorei(GL_UNPACK_ROW_LENGTH,
-                  pCacheTexture->apMipmaps[0]->rasterInfo.width);
+
+    GLenum formatGL         = pCacheTexture->format.glFormat;
+    GLenum typeGL           = pCacheTexture->format.glType;
+    GLint internalFormatGL  = pCacheTexture->format.glInternalFormat;
 
     for ( size_t mm = 0; mm < numMipmaps; ++mm )
     {
@@ -1153,31 +1149,22 @@ void J3DAPI std3D_AddToTextureCache(tSystemTexture* pCacheTexture,
             STDLOG_ERROR("Missing mipmap %zu.\n", mm);
             continue;
         }
-
-        ColorInfo* colorInfo    = &mip->rasterInfo.colorInfo;
-        GLenum formatGL         = GL_BGRA;
-        GLenum typeGL           = GL_UNSIGNED_INT_8_8_8_8_REV;
-        GLenum internalFormatGL = GL_RGBA;
-
         GLsizei width  = (GLsizei)mip->rasterInfo.width;
         GLsizei height = (GLsizei)mip->rasterInfo.height;
+
         // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, GL_ONE);
 
-        // for (size_t i = 0; i < width*height; ++i) {
-        //     mip->pPixels[i*4 + 3] = 255; // A = 1.0
-        // }
         glTexImage2D(GL_TEXTURE_2D, (GLint)mm, internalFormatGL,
-                     (GLsizei)mip->rasterInfo.width,
-                     (GLsizei)mip->rasterInfo.height, 0, formatGL, typeGL,
+                     (GLsizei)width,
+                     (GLsizei)height, 0, formatGL, typeGL,
                      mip->pPixels);
     }
 
-    if ( autoMipmap )
-    {
-        glGenerateMipmap(GL_TEXTURE_2D);
-    }
+    // if ( autoMipmap )
+    // {
+    //     glGenerateMipmap(GL_TEXTURE_2D);
+    // }
 
-    // Fehler prüfen
     GLenum err = glGetError();
     if ( err != GL_NO_ERROR )
     {
@@ -1188,7 +1175,7 @@ void J3DAPI std3D_AddToTextureCache(tSystemTexture* pCacheTexture,
 
     tSysTexture* texture = STDMALLOC(sizeof(tSysTexture));
     texture->id          = tex;
-    // Erfolg: in Cache eintragen
+
     pCacheTexture->pCachedTexture = texture;
     pCacheTexture->frameNum       = std3D_frameCount;
     std3D_AddTextureToCacheList(pCacheTexture);
@@ -1228,7 +1215,6 @@ void std3D_ResetTextureCache(void)
         pCurTex = pNextTex;
     }
 
-    // 3️⃣ Cacheverwaltung zurücksetzen
     std3D_pFirstTexCache    = NULL;
     std3D_pLastTexCache     = NULL;
     std3D_numCachedTextures = 0;

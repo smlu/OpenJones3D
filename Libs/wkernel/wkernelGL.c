@@ -210,15 +210,6 @@ BOOL J3DAPI wkernel_SetWindowSize(int width, int height)
 {
     SDL_SetWindowPosition(wkernel_sdl_window, 0, 0);
     return SDL_SetWindowSize(wkernel_sdl_window, width, height);
-    // return SetWindowPos(
-    //     wkernel_hwnd,
-    //     NULL,
-    //     0,
-    //     0,
-    //     wkernel_wndBorderWidth + width,
-    //     wkernel_wndMenuBarHeight + height,
-    //     SWP_NOZORDER | SWP_NOMOVE
-    // );
 }
 
 void J3DAPI wkernel_SetWindowProc(WKERNELWNDPROC pfProc)
@@ -232,15 +223,12 @@ int J3DAPI wkernel_CreateWindow(HINSTANCE hInstance, int nShowCmd, LPCSTR lpWind
     J3D_UNUSED(nShowCmd);
     int width, height;
 
-    // --- optional: Single-Instance wie bisher (Windows) ---
-    // SDL-Fenster haben standardmäßig die Klasse "SDL_app"
     if (FindWindow("SDL_app", lpWindowName))
     {
         STDLOG_STATUS("INFO: wkernel_CreateWindow: An existing instance of window already running!\n");
         return 1;
     }
 
-    // --- SDL Video init ---
     if (!SDL_WasInit(SDL_INIT_VIDEO))
     {
         if (SDL_InitSubSystem(SDL_INIT_VIDEO) < 0)
