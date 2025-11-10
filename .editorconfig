@@ -71,6 +71,7 @@ cpp_space_around_binary_operator = insert
 cpp_space_around_assignment_operator = ignore
 cpp_space_pointer_reference_alignment = left
 cpp_space_around_ternary_operator = insert
+cpp_align_consecutive_assignments = true
 
 cpp_use_unreal_engine_macro_formatting = false
 cpp_wrap_preserve_blocks = one_liners
