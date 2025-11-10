@@ -21,7 +21,7 @@ static const tSysPixelFormat stdPixelFormatGL_RGB565 =
 
 static const tSysPixelFormat stdPixelFormatGL_BGR888 =
 {
-    .glInternalFormat = GL_RGB,
+    .glInternalFormat = GL_RGB8,
     .glFormat = GL_RGB,
     .glType = GL_UNSIGNED_BYTE
 };
