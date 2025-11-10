@@ -14,10 +14,6 @@
 
 #include <math.h>
 
-#include "Shaders/std_default_ps.h"
-#include "Shaders/std_default_vs.h"
-#include "Shaders/std_default_wf_ps.h"
-
 #include "SDL3/SDL.h"
 #include "glad/glad.h"
 #include "std/Win95/stdWin95.h"
@@ -845,23 +841,24 @@ void J3DAPI std3D_SetRenderState(Std3DRenderState rdflags)
     }
 
     // --- Texture Address Mode U/V ---
-    if ( (std3D_renderState & STD3D_RS_TEX_CPAMP_U) !=
-        (rdflags & STD3D_RS_TEX_CPAMP_U) )
-    {
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,
-                        (rdflags & STD3D_RS_TEX_CPAMP_U)
-                            ? GL_CLAMP_TO_EDGE
-                            : GL_REPEAT);
-    }
+    // if ( (std3D_renderState & STD3D_RS_TEX_CPAMP_U) !=
+    //     (rdflags & STD3D_RS_TEX_CPAMP_U) )
+    // {
+    //     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,
+    //                     (rdflags & STD3D_RS_TEX_CPAMP_U)
+    //                         ? GL_CLAMP_TO_EDGE
+    //                         : GL_REPEAT);
+    // }
+    //
+    // if ( (std3D_renderState & STD3D_RS_TEX_CPAMP_V) !=
+    //     (rdflags & STD3D_RS_TEX_CPAMP_V) )
+    // {
+    //     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,
+    //                     (rdflags & STD3D_RS_TEX_CPAMP_V)
+    //                         ? GL_CLAMP_TO_EDGE
+    //                         : GL_REPEAT);
+    // }
 
-    if ( (std3D_renderState & STD3D_RS_TEX_CPAMP_V) !=
-        (rdflags & STD3D_RS_TEX_CPAMP_V) )
-    {
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,
-                        (rdflags & STD3D_RS_TEX_CPAMP_V)
-                            ? GL_CLAMP_TO_EDGE
-                            : GL_REPEAT);
-    }
 
     // --- Fog ---
     if ( (std3D_renderState & STD3D_RS_FOG_ENABLED) !=
@@ -910,20 +907,20 @@ void J3DAPI std3D_SetRenderState(Std3DRenderState rdflags)
         //     GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         // }
     }
-    else if ( (std3D_renderState & STD3D_RS_TEXFILTER_BILINEAR) !=
-        (rdflags & STD3D_RS_TEXFILTER_BILINEAR) )
-    {
-        if ( rdflags & STD3D_RS_TEXFILTER_BILINEAR )
-        {
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        }
-        else
-        {
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        }
-    }
+    // else if ( (std3D_renderState & STD3D_RS_TEXFILTER_BILINEAR) !=
+    //     (rdflags & STD3D_RS_TEXFILTER_BILINEAR) )
+    // {
+    //     if ( rdflags & STD3D_RS_TEXFILTER_BILINEAR )
+    //     {
+    //         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    //         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    //     }
+    //     else
+    //     {
+    //         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    //         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    //     }
+    // }
 
     // // --- Alpha Reference / Alpha Test ---
     // if ( (std3D_renderState & STD3D_RS_ALPHAREF_SET) !=
