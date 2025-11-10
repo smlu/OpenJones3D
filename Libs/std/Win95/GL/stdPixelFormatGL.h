@@ -43,7 +43,7 @@ static const tSysPixelFormat stdPixelFormatGL_RGB8888 =
 {
     .glInternalFormat = GL_RGBA8,
     .glFormat = GL_BGRA,
-    .glType = GL_UNSIGNED_INT_8_8_8_8
+    .glType = GL_UNSIGNED_INT_8_8_8_8_REV
 };
 
 static const tSysPixelFormat stdPixelFormalGL_ARGB4444 =
