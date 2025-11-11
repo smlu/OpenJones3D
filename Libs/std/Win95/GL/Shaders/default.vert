@@ -10,8 +10,6 @@ uniform vec4 viewPort;
 
 out vec4 vColor;
 out vec2 vTexCoord;
-out vec4 vPosition;
-flat out vec2 viewPortSize;
 
 vec4 screenToClip(vec3 screenPos, float rhw)
 {
@@ -38,9 +36,6 @@ void main() {
     vTexCoord = inTexCoord;
 
     vec4 clip = screenToClip(inPosition, inRHW);
-    vPosition = clip;
-
-    viewPortSize = vec2(viewPort.z, viewPort.w);
 
     gl_Position = clip;
 }
