@@ -968,10 +968,10 @@ void J3DAPI std3D_AllocSystemTexture(tSystemTexture* pTexture, tVBuffer** apVBuf
 
     size_t texSize =
         (pVBuffer->rasterInfo.colorInfo.bpp * texHeight * texWidth) / 8;
-    if ( std3D_mipmapFilter == STD3D_MIPMAPFILTER_NONE )
-    {
-        numMipLevels = 1;
-    }
+    // if ( std3D_mipmapFilter == STD3D_MIPMAPFILTER_NONE )
+    // {
+    //     numMipLevels = 1;
+    // }
 
     tSysPixelFormat glFormat;
     if ( formatType == STDCOLOR_FORMAT_RGBA_1BITALPHA )
@@ -1124,7 +1124,7 @@ void J3DAPI std3D_AddToTextureCache(tSystemTexture* pCacheTexture,
     glGenTextures(1, &tex);
     glBindTexture(GL_TEXTURE_2D, tex);
 
-    bool autoMipmap         = std3D_bAutoGenMipmap;
+    bool autoMipmap         = true;
     const size_t numMipmaps = autoMipmap ? 1 : pCacheTexture->numMipLevels;
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
@@ -1139,24 +1139,43 @@ void J3DAPI std3D_AddToTextureCache(tSystemTexture* pCacheTexture,
     GLenum typeGL          = pCacheTexture->format.glType;
     GLint internalFormatGL = pCacheTexture->format.glInternalFormat;
 
-    for ( size_t mm = 0; mm < numMipmaps; ++mm )
-    {
-        tVBuffer* mip = pCacheTexture->apMipmaps[mm];
-        if ( !mip || !mip->pPixels )
-        {
-            STDLOG_ERROR("Missing mipmap %zu.\n", mm);
-            continue;
-        }
-        GLsizei width  = (GLsizei)mip->rasterInfo.width;
-        GLsizei height = (GLsizei)mip->rasterInfo.height;
+    tVBuffer* mip  = pCacheTexture->apMipmaps[0];
+    GLsizei width  = (GLsizei)mip->rasterInfo.width;
+    GLsizei height = (GLsizei)mip->rasterInfo.height;
+    glTexImage2D(GL_TEXTURE_2D, 0, internalFormatGL,
+                 width, height, 0, formatGL, typeGL, mip->pPixels);
 
-        // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, GL_ONE);
+    glGenerateMipmap(GL_TEXTURE_2D);
 
-        glTexImage2D(GL_TEXTURE_2D, (GLint)mm, internalFormatGL,
-                     (GLsizei)width,
-                     (GLsizei)height, 0, formatGL, typeGL,
-                     mip->pPixels);
-    }
+    // for ( size_t mm = 0; mm <= numMipmaps; ++mm )
+    // {
+    //     tVBuffer* mip = pCacheTexture->apMipmaps[mm];
+    //     if ( !mip || !mip->pPixels )
+    //     {
+    //         STDLOG_ERROR("Missing mipmap %zu.\n", mm);
+    //         continue;
+    //     }
+    //     GLsizei width  = (GLsizei)mip->rasterInfo.width;
+    //     GLsizei height = (GLsizei)mip->rasterInfo.height;
+    //     glPixelStorei(GL_UNPACK_ROW_LENGTH, width);
+    //
+    //
+    //     // const GLint expected = (GLint)(width * mip->rasterInfo.colorInfo.bpp);
+    //     // const GLint pitch    = (GLint)mip->rasterInfo.rowSize;
+    //     //
+    //     // if ( pitch != expected )
+    //     // {
+    //     //     glPixelStorei(GL_UNPACK_ROW_LENGTH, mip->rasterInfo.rowSize);
+    //     // }
+    //     // else
+    //     // {
+    //     //     glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+    //     // }
+    //     // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, GL_ONE);
+    //
+    //     glTexImage2D(GL_TEXTURE_2D, (GLint)mm, internalFormatGL,
+    //                  width, height, 0, formatGL, typeGL, mip->pPixels);
+    // }
 
     // if ( autoMipmap )
     // {
@@ -1604,8 +1623,8 @@ static int std3D_BuildDeviceList(void)
         pD3DDriver->bStippledShadeSupported        = FALSE; // Not commonly used in DX9
         pD3DDriver->minTexWidth                    = 1;
         pD3DDriver->minTexHeight                   = 1;
-        pD3DDriver->maxTexWidth                    = displayDevice.caps.MaxTextureWidth;
-        pD3DDriver->maxTexHeight                   = displayDevice.caps.MaxTextureHeight;
+        pD3DDriver->maxTexWidth                    = 4096;
+        pD3DDriver->maxTexHeight                   = 4096;
         pD3DDriver->bAnisotropicFilteringSupported =
             (displayDevice.caps.RasterCaps & D3DPRASTERCAPS_ANISOTROPY) != 0;
         pD3DDriver->bMipmapAutoGenSupported =
