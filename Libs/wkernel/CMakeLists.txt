@@ -6,7 +6,7 @@ file(GLOB_RECURSE HEADERS *.h)
 if (J3D_OPENGL)
     list(FILTER SOURCES EXCLUDE REGEX "wkernel.c$")
 else()
-    list(FILTER SOURCES EXCLUDE REGEX "wkernelGL.c$")
+    list(FILTER SOURCES EXCLUDE REGEX "wkernelSDL.c$")
 endif ()
 
 add_library(${PROJECT_NAME} STATIC ${SOURCES} ${HEADERS})
