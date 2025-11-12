@@ -115,7 +115,6 @@ bool J3DAPI stdShader_SetViewport(const StdShaderViewport vp)
         GLShaderProgram* shaderProgram = &stdShader_ShaderPrograms[i];
         if ( shaderProgram->handle > 0 )
         {
-            STDLOG_WARNING("Viewport width and height set to: %.2f, %.2f.\n", vp[2], vp[3]);
             glUseProgram(shaderProgram->handle);
             int loc = glGetUniformLocation(shaderProgram->handle, "viewPort");
             glUniform4f(loc, vp[0], vp[1], vp[2], vp[3]);
@@ -234,7 +233,9 @@ static GLuint stdShader_compileShader(GLenum type, const char* source, const cha
         GLint logLen = 0;
         glGetShaderiv(sh, GL_INFO_LOG_LENGTH, &logLen);
         char* log = STDMALLOC(logLen > 1 ? logLen : 1);
-        if ( logLen > 1 ) glGetShaderInfoLog(sh, logLen, NULL, log); else log[0] = '\0';
+        if ( logLen > 1 )
+            glGetShaderInfoLog(sh, logLen, NULL, log);
+        else log[0] = '\0';
         STDLOG_ERROR("[GLSL] Compile error in %s:\n%s\n", debugName ? debugName : "(shader)", log);
         STDFREE(log);
         glDeleteShader(sh);
@@ -263,7 +264,9 @@ static GLuint stdShader_LinkShaderProgram(GLuint vs, GLuint fs)
         GLint logLen = 0;
         glGetProgramiv(prog, GL_INFO_LOG_LENGTH, &logLen);
         char* log = STDMALLOC(logLen > 1 ? logLen : 1);
-        if ( logLen > 1 ) glGetProgramInfoLog(prog, logLen, NULL, log); else log[0] = '\0';
+        if ( logLen > 1 )
+            glGetProgramInfoLog(prog, logLen, NULL, log);
+        else log[0] = '\0';
         STDLOG_ERROR("[GLSL] Link error:\n%s\n", log);
         STDFREE(log);
         glDeleteProgram(prog);
@@ -279,7 +282,8 @@ static GLuint stdShader_LinkShaderProgram(GLuint vs, GLuint fs)
     return prog;
 }
 
-GLShaderProgram* stdShader_CompileAndCreate(const char* pName, const char* pVertexShaderCode, const char* pPixelShaderCode)
+GLShaderProgram* stdShader_CompileAndCreate(const char* pName, const char* pVertexShaderCode,
+                                            const char* pPixelShaderCode)
 {
     if ( !pName || !pVertexShaderCode || !pPixelShaderCode )
     {
@@ -314,8 +318,10 @@ GLShaderProgram* stdShader_CompileAndCreate(const char* pName, const char* pVert
     char* fsrc = stdShader_readGLSLFile(pPixelShaderCode);
     if ( !vsrc || !fsrc )
     {
-        if ( vsrc ) STDFREE(vsrc);
-        if ( fsrc ) STDFREE(fsrc);
+        if ( vsrc )
+            STDFREE(vsrc);
+        if ( fsrc )
+            STDFREE(fsrc);
         return NULL;
     }
 
@@ -327,20 +333,23 @@ GLShaderProgram* stdShader_CompileAndCreate(const char* pName, const char* pVert
 
     if ( !vs || !fs )
     {
-        if ( vs ) glDeleteShader(vs);
-        if ( fs ) glDeleteShader(fs);
+        if ( vs )
+            glDeleteShader(vs);
+        if ( fs )
+            glDeleteShader(fs);
         return NULL;
     }
 
 
     // Create shader
     pProgram->handle = stdShader_LinkShaderProgram(vs, fs);
-    pProgram->name = pName;
+    pProgram->name   = pName;
     stdHashtbl_Add(stdShader_pTable, pName, pProgram);
     stdShader_shaderCount++;
 
     return pProgram;
 }
+
 void J3DAPI stdShader_Free(GLShaderProgram* sh)
 {
     stdShader_ResetShader(sh);

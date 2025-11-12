@@ -1,6 +1,7 @@
 #include <std/Win95/std3D.h>
 #include <std/Win95/stdDisplay.h>
 #include <std/Win95/stdWin95.h>
+#include <std/Win95/stdShader.h>
 
 #include <j3dcore/j3dhook.h>
 #include <std/General/std.h>
@@ -58,8 +59,8 @@ static GdiBuffer g_gdi      = {0};
 static GdiBuffer g_frontGDI = {0};
 
 // Public globals
-tVBuffer stdDisplay_g_frontBuffer = {0};
-tVBuffer stdDisplay_g_backBuffer  = {0};
+//tVBuffer stdDisplay_g_frontBuffer = {0}; //extra front buffer shouldn't be needed
+tVBuffer stdDisplay_g_backBuffer = {0};
 
 // Private globals
 static bool stdDisplay_bStartup    = false;
@@ -114,6 +115,9 @@ static bool stdDisplay_bMSAAEnabled       = false;
 static DWORD stdDisplay_msaaSampleQuality = 0;
 static int stdDisplay_msaaSampleCount     = 0;
 
+static GLShaderProgram* stdDisplay_fboShader = NULL;
+static GLuint stdDisplay_fullscreenVao       = 0;
+
 enum GLMultiSample
 {
     GL_MULTISAMPLE_NONE = 0,
@@ -160,7 +164,7 @@ static inline void J3DAPI stdDisplay_SetAspectRatio(StdVideoMode* pMode);
 static inline int J3DAPI stdDisplay_SetWindowMode(HWND hWnd, StdVideoMode* pDisplayMode);
 static inline int J3DAPI stdDisplay_SetFullscreenMode(HWND hwnd, const StdVideoMode* pDisplayMode,
                                                       size_t numBackBuffers);
-static int J3DAPI stdDisplay_InitBuffers(PDIRECT3DDEVICE9 pDevice, StdVideoMode* pDisplayMode, bool bWindowMode,
+static int J3DAPI stdDisplay_InitBuffers(PDIRECT3DDEVICE9 pDevice, const StdVideoMode* pDisplayMode, bool bWindowMode,
                                          size_t numBuffers);
 
 static inline void stdDisplay_ReleaseBuffers(void);
@@ -170,6 +174,7 @@ static int J3DAPI stdDisplay_ColorFillSurface(tVBuffer* pBuffer, uint32_t dwFill
 static int stdDisplay_CheckDeviceState(void);
 static void stdDisplay_ReleaseDevice(void);
 static int stdDisplay_ResetDevice(void);
+static int stdDisplay_InitFBOShader(void);
 
 
 static int stdDisplay_InitGDIBackbuffer(GdiBuffer* buffer, int w, int h)
@@ -281,7 +286,6 @@ void stdDisplay_InstallHooks(void)
 
 void stdDisplay_ResetGlobals(void)
 {
-    memset(&stdDisplay_g_frontBuffer, 0, sizeof(stdDisplay_g_frontBuffer));
     memset(&stdDisplay_g_backBuffer, 0, sizeof(stdDisplay_g_backBuffer));
 }
 
@@ -431,7 +435,6 @@ int stdDisplay_Startup(void) //check
         return 1;
     }
 
-    memset(&stdDisplay_g_frontBuffer, 0, sizeof(stdDisplay_g_frontBuffer));
     memset(&stdDisplay_g_backBuffer, 0, sizeof(stdDisplay_g_backBuffer));
     memset(&stdDisplay_zBuffer, 0, sizeof(stdDisplay_zBuffer));
 
@@ -441,6 +444,12 @@ int stdDisplay_Startup(void) //check
     if ( !stdWin95_GetGLContext() )
     {
         STDLOG_ERROR("No OpenGL context was created yet.\n");
+        return 0;
+    }
+
+    if ( !stdShader_Startup() || !stdDisplay_InitFBOShader() )
+    {
+        STDLOG_ERROR("Error initializing shader system.\n");
         return 0;
     }
 
@@ -458,6 +467,20 @@ int stdDisplay_Startup(void) //check
     stdDisplay_primaryVideoMode.rasterInfo.height = 480;
 
     STDLOG_STATUS("Found %d Display Devices.\n", stdDisplay_numDevices);
+    return 1;
+}
+
+static int stdDisplay_InitFBOShader(void)
+{
+    if ( !stdShader_Open() )
+    {
+        STDLOG_ERROR("Error opening shader system.\n");
+        return 0;
+    }
+    stdDisplay_fboShader = stdShader_CompileAndCreate("std_fbo",
+                                                      "C:/Users/morit/Documents/GitHub/OpenJones3D/Libs/std/Win95/GL/Shaders/fbo.vert",
+                                                      "C:/Users/morit/Documents/GitHub/OpenJones3D/Libs/std/Win95/GL/Shaders/fbo.frag");
+    glGenVertexArrays(1, &stdDisplay_fullscreenVao);
     return 1;
 }
 
@@ -480,7 +503,6 @@ void stdDisplay_Shutdown(void) //checked
     }
 
     memset(stdDisplay_aDisplayDevices, 0, sizeof(stdDisplay_aDisplayDevices));
-    memset(&stdDisplay_g_frontBuffer, 0, sizeof(stdDisplay_g_frontBuffer));
     memset(&stdDisplay_g_backBuffer, 0, sizeof(stdDisplay_g_backBuffer));
     memset(&stdDisplay_zBuffer, 0, sizeof(stdDisplay_zBuffer));
 
@@ -810,7 +832,7 @@ int J3DAPI stdDisplay_VBufferLock(tVBuffer* pVBuffer) //checked
         {
             uint32_t width, height;
             int pitch;
-            stdDisplay_LockBackBuffer(pVBuffer->pPixels, &width, &height, &pitch);
+            stdDisplay_LockBackBuffer((void**)&pVBuffer->pPixels, &width, &height, &pitch);
         }
 
         if ( !pVBuffer->pPixels )
@@ -1088,6 +1110,18 @@ int J3DAPI stdDisplay_CreateZBuffer(const tSysPixelFormat* pPixelFormat, int bSy
         STDLOG_ERROR("Error creating zBuffer, system is closed!\n");
         return 1;
     }
+
+    //add depth buffer as rbo attachment to backbuffer fbo
+    tVSurface* surface = &stdDisplay_g_backBuffer.surface;
+    glBindFramebuffer(GL_FRAMEBUFFER, surface->fbo);
+    glGenRenderbuffers(1, &surface->depthRBO);
+    glBindRenderbuffer(GL_RENDERBUFFER, surface->depthRBO);
+
+    uint32_t width  = stdDisplay_g_backBuffer.rasterInfo.width;
+    uint32_t height = stdDisplay_g_backBuffer.rasterInfo.height;
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, surface->depthRBO);
+    glBindRenderbuffer(GL_RENDERBUFFER, 0);
 
     glEnable(GL_DEPTH_TEST);
 
@@ -1402,7 +1436,8 @@ static int J3DAPI stdDisplay_SetWindowMode(HWND hWnd, StdVideoMode* pDisplayMode
 
     SDL_SetWindowFullscreen(window, false);
 
-    return stdDisplay_InitBuffers(NULL, pDisplayMode, /*bWindowMode=*/true, 1);
+    return stdDisplay_InitBuffers(NULL, pDisplayMode, /*bWindowMode=*/
+                                  true, 1);
 }
 
 int J3DAPI stdDisplay_SetFullscreenMode(HWND hwnd, const StdVideoMode* pDisplayMode, size_t numBackBuffers)
@@ -1410,27 +1445,77 @@ int J3DAPI stdDisplay_SetFullscreenMode(HWND hwnd, const StdVideoMode* pDisplayM
     // NOTE: the return value indicating success or failure changed from original code.
     // Now function will return 0 on error and 1 on success.
     J3D_UNUSED(hwnd);
-    J3D_UNUSED(pDisplayMode);
     J3D_UNUSED(numBackBuffers);
 
     SDL_Window* window = stdWin95_GetSDLWindow();
 
     SDL_SetWindowFullscreen(window, true);
 
-    return stdDisplay_InitBuffers(NULL, pDisplayMode, /*bWindowMode=*/true, 1);
+    return stdDisplay_InitBuffers(NULL, pDisplayMode, /*bWindowMode=*/
+                                  true, 1);
 }
 
-int J3DAPI stdDisplay_InitBuffers(PDIRECT3DDEVICE9 pDevice, StdVideoMode* pDisplayMode, bool bWindowMode,
+int J3DAPI stdDisplay_InitBuffers(PDIRECT3DDEVICE9 pDevice, const StdVideoMode* pDisplayMode, bool bWindowMode,
                                   size_t numBuffers)
 {
-    tVBuffer* back  = stdDisplay_VBufferNew(&pDisplayMode->rasterInfo, 0, 0);
-    tVBuffer* front = stdDisplay_VBufferNew(&pDisplayMode->rasterInfo, 0, 0);
-    if ( back && front )
+    tVSurface* surface = &stdDisplay_g_backBuffer.surface;
+    if ( surface->fbo > 0 )
     {
-        stdDisplay_g_frontBuffer = *back;
-        stdDisplay_g_backBuffer  = *front;
-        STDFREE(back);
-        STDFREE(front);
+        STDLOG_WARNING("Backbuffer with a FBO is already initialized, skipping re-initialisation!\n");
+        return 1;
+    }
+    stdDisplay_backLockRef = 0;
+
+
+    stdDisplay_g_backBuffer.lockRefCount = 0;
+    stdDisplay_g_backBuffer.bVideoMemory = 1;
+    stdDisplay_g_backBuffer.type         = VBUFFER_HARDWARE;
+    stdDisplay_g_backBuffer.pPixels      = NULL;
+
+    uint32_t width  = pDisplayMode->rasterInfo.width;
+    uint32_t height = pDisplayMode->rasterInfo.height;
+
+    // Update raster info with actual back buffer dimensions
+    stdDisplay_g_backBuffer.rasterInfo        = pDisplayMode->rasterInfo;
+    stdDisplay_g_backBuffer.rasterInfo.width  = width;
+    stdDisplay_g_backBuffer.rasterInfo.height = height;
+
+    unsigned int bpp                            = pDisplayMode->rasterInfo.colorInfo.bpp / 8;
+    stdDisplay_g_backBuffer.rasterInfo.rowSize  = pDisplayMode->rasterInfo.width * bpp;
+    stdDisplay_g_backBuffer.rasterInfo.rowWidth = width;
+    stdDisplay_g_backBuffer.rasterInfo.size     = stdDisplay_g_backBuffer.rasterInfo.rowSize;
+
+    glActiveTexture(GL_TEXTURE0);
+    // generate fbo
+    glGenFramebuffers(1, &surface->fbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, surface->fbo);
+
+    glGenTextures(1, &surface->colorTex);
+    glBindTexture(GL_TEXTURE_2D, surface->colorTex);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                           GL_TEXTURE_2D, surface->colorTex, 0);
+
+    stdShader_SetActiveShader(stdDisplay_fboShader);
+    GLint loc = glGetUniformLocation(stdDisplay_fboShader->handle, "sSceneTexture");
+    glUniform1i(loc, 0);
+
+    glActiveTexture(GL_TEXTURE1);
+
+
+    //unbind texture
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    if ( glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE )
+    {
+        STDLOG_ERROR("FBO setup for backbuffer failed!\n");
+        return 0;
     }
 
 
@@ -1439,21 +1524,21 @@ int J3DAPI stdDisplay_InitBuffers(PDIRECT3DDEVICE9 pDevice, StdVideoMode* pDispl
 
 void stdDisplay_ReleaseBuffers(void) // checked
 {
-    // if (stdDisplay_zBuffer)
-    // {
-    //     glDeleteTextures(1, &stdDisplay_zBuffer.glTexID);
-    //     stdDisplay_zBuffer.glTexID = 0;
-    // }
+    tVSurface* surface = &stdDisplay_g_backBuffer.surface;
+    if ( !surface )
+        return;
+
+    glDeleteFramebuffers(1, &surface->fbo);
+    glDeleteTextures(1, &surface->colorTex);
+    glDeleteRenderbuffers(1, &surface->depthRBO);
+    surface->fbo      = 0;
+    surface->colorTex = 0;
+    surface->depthRBO = 0;
 
     if ( stdDisplay_g_backBuffer.pPixels )
     {
         stdMemory_Free(stdDisplay_g_backBuffer.pPixels);
         stdDisplay_g_backBuffer.pPixels = NULL;
-    }
-    if ( stdDisplay_g_frontBuffer.pPixels )
-    {
-        stdMemory_Free(stdDisplay_g_frontBuffer.pPixels);
-        stdDisplay_g_frontBuffer.pPixels = NULL;
     }
 }
 
@@ -1561,66 +1646,25 @@ void stdDisplay_DisableVSync(bool bDisable)
 
 int stdDisplay_Update(void) //check
 {
-    GLenum err = glGetError();
-    if ( err != GL_NO_ERROR )
-    {
-        STDLOG_ERROR("OpenGL error 0x%x when creating viewport.\n", err);
-        return 0;
-    }
-
     SDL_Window* pWindow = stdWin95_GetSDLWindow();
     if ( !pWindow )
     {
         return 1;
     }
-    // tVBuffer* back = stdDisplay_g_backBuffer;
-    // if (!back->pPixels)
-    //     return 1; // nothing to render
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glViewport(0, 0, stdDisplay_g_backBuffer.rasterInfo.width, stdDisplay_g_backBuffer.rasterInfo.height);
+    glDisable(GL_DEPTH_TEST);
+    stdShader_SetActiveShader(stdDisplay_fboShader);
+    glBindVertexArray(stdDisplay_fullscreenVao);
+    glClear(GL_COLOR_BUFFER_BIT);
+    // glActiveTexture(GL_TEXTURE0);
+    // glBindTexture(GL_TEXTURE_2D, stdDisplay_g_backBuffer.surface.colorTex);
+    // GLint loc = glGetUniformLocation(stdDisplay_fboShader->handle, "sSceneTexture");
+    // glUniform1i(loc, 0);
 
-    // TODO: implement msaa stuff
-    // Optional: MSAA resolve, falls aktiv
-    // if (stdDisplay_bMSAAEnabled)
-    // {
-    //     glBindFramebuffer(GL_READ_FRAMEBUFFER, stdDisplay_msaaFBO);
-    //     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, stdDisplay_resolveFBO);
-    //     glBlitFramebuffer(
-    //         0, 0, back->rasterInfo.width, back->rasterInfo.height,
-    //         0, 0, back->rasterInfo.width, back->rasterInfo.height,
-    //         GL_COLOR_BUFFER_BIT, GL_NEAREST
-    //     );
-    //     glBindFramebuffer(GL_FRAMEBUFFER, stdDisplay_resolveFBO);
-    // }
-    // else
-    // {
-    //     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    // }
+    glDrawArrays(GL_TRIANGLES, 0, 3);
 
-
-    // const GLsizei w = (GLsizei)back->rasterInfo.width;
-    // const GLsizei h = (GLsizei)back->rasterInfo.height;
-
-
-    // if (back->rasterInfo.colorInfo.bpp == 32 && back->rasterInfo.colorInfo.alphaBPP == 0)
-    // {
-    //     glPixelTransferf(GL_ALPHA_SCALE, 0.0f);
-    //     glPixelTransferf(GL_ALPHA_BIAS,  1.0f);   // A := 1.0
-    // }
-
-    // Vertikal spiegeln
-    // glWindowPos2i(0, back->rasterInfo.height);
-    // glPixelZoom(1.0f, -1.0f);
-
-    // draw back buffer
-    //glDrawPixels(w, h, back->gl.format, back->gl.type, back->pPixels);
-
-    // glPixelZoom(1.0f, 1.0f);
-    // glPixelTransferf(GL_ALPHA_SCALE, 1.0f);
-    // glPixelTransferf(GL_ALPHA_BIAS,  0.0f);
-
-    //glClearColor(1.f, 0.f, 0.f, 1.f);
-
-
-    err = glGetError();
+    GLenum err = glGetError();
     if ( err != GL_NO_ERROR )
     {
         STDLOG_ERROR("OpenGL error 0x%x when creating viewport.\n", err);
@@ -1630,16 +1674,23 @@ int stdDisplay_Update(void) //check
     // Zeige das Bild an
     SDL_GL_SwapWindow(stdWin95_GetSDLWindow());
 
-    glClear(GL_COLOR_BUFFER_BIT);
+    STDLOG_DEBUG(SDL_GetError());
+
+    glBindFramebuffer(GL_FRAMEBUFFER, stdDisplay_g_backBuffer.surface.fbo);
+    glEnable(GL_DEPTH_TEST);
+    // glFrontFace(GL_CW);
+
+    //glClear(GL_COLOR_BUFFER_BIT);
 
     //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    //STDLOG_DEBUG("Updated frame\n");
+    STDLOG_DEBUG("Updated frame\n");
     return 0;
 }
 
 int J3DAPI stdDisplay_ColorFillSurface(tVBuffer* pBuffer, uint32_t dwFillColor, const StdRect* pRect) //checked
 {
+    return 0;
     if ( !pBuffer )
     {
         return 1;
@@ -1730,7 +1781,7 @@ int J3DAPI stdDisplay_BackBufferFill(uint32_t color, const StdRect* pRect)
 
 int J3DAPI stdDisplay_SaveScreen(const char* pFilename)
 {
-    if ( !stdDisplay_g_backBuffer.surface.pSysSurface )
+    if ( stdDisplay_g_backBuffer.surface.fbo == 0 )
     {
         return 1;
     }
@@ -1793,8 +1844,8 @@ HDC stdDisplay_GetFrontBufferDC(void)
         return g_frontGDI.hdc;
     }
 
-    int w = (int)stdDisplay_g_frontBuffer.rasterInfo.width;
-    int h = (int)stdDisplay_g_frontBuffer.rasterInfo.height;
+    int w = (int)stdDisplay_g_backBuffer.rasterInfo.width;
+    int h = (int)stdDisplay_g_backBuffer.rasterInfo.height;
 
     if ( !g_frontGDI.hdc || g_frontGDI.w != w || g_frontGDI.h != h )
     {
@@ -1818,15 +1869,15 @@ void J3DAPI stdDisplay_ReleaseFrontBufferDC(HDC hdc)
     if ( --g_frontGDI.lockRef > 0 )
         return;
 
-    tVBuffer* front = &stdDisplay_g_frontBuffer;
-    if ( !front->pPixels ) return;
-
-    size_t copyPitch = front->rasterInfo.rowSize;
-    uint8_t* dst     = front->pPixels;
-    uint8_t* src     = g_frontGDI.bits;
-
-    for ( int y = 0; y < g_frontGDI.h; ++y )
-        memcpy(dst + y * copyPitch, src + y * g_frontGDI.pitch, copyPitch);
+    // tVBuffer* front = &stdDisplay_g_frontBuffer;
+    // if ( !front->pPixels ) return;
+    //
+    // size_t copyPitch = front->rasterInfo.rowSize;
+    // uint8_t* dst     = front->pPixels;
+    // uint8_t* src     = g_frontGDI.bits;
+    //
+    // for ( int y = 0; y < g_frontGDI.h; ++y )
+    //     memcpy(dst + y * copyPitch, src + y * g_frontGDI.pitch, copyPitch);
 
     stdDisplay_hdcFront = NULL;
 }
@@ -1928,16 +1979,53 @@ int J3DAPI stdDisplay_LockBackBuffer(void** pSurface, uint32_t* pWidth, uint32_t
         return 1;
     }
 
-    stdDisplay_backLockRef++;
-    *pWidth   = stdDisplay_g_backBuffer.rasterInfo.width;
-    *pHeight  = stdDisplay_g_backBuffer.rasterInfo.height;
-    *pPitch   = stdDisplay_g_backBuffer.rasterInfo.rowSize;
+    glBindFramebuffer(GL_FRAMEBUFFER, stdDisplay_g_backBuffer.surface.fbo);
+    glReadBuffer(GL_COLOR_ATTACHMENT0);
+
+    *pWidth  = stdDisplay_g_backBuffer.rasterInfo.width;
+    *pHeight = stdDisplay_g_backBuffer.rasterInfo.height;
+    *pPitch  = stdDisplay_g_backBuffer.rasterInfo.rowSize;
+
+    if ( stdDisplay_backLockRef++ > 0 )
+    {
+        *pSurface = stdDisplay_g_backBuffer.pPixels;
+        return 0;
+    }
+
+    //free already available pixels
+    if ( stdDisplay_g_backBuffer.pPixels )
+    {
+        STDFREE(stdDisplay_g_backBuffer.pPixels);
+    }
+    size_t numPixels  = *pWidth * *pHeight;
+    size_t bufferSize = numPixels * 4; //RGBA8
+
+    stdDisplay_g_backBuffer.pPixels = STDMALLOC(bufferSize);
+    if ( !stdDisplay_g_backBuffer.pPixels )
+    {
+        STDLOG_ERROR("Couldn't allocate back buffer pixels.\n");
+        stdDisplay_g_backBuffer.pPixels = NULL;
+        return 1;
+    }
+
+    glPixelStorei(GL_PACK_ALIGNMENT, 1);
+    glReadPixels(0, 0, *pWidth, *pHeight, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8, stdDisplay_g_backBuffer.pPixels);
+
     *pSurface = stdDisplay_g_backBuffer.pPixels;
     return 0;
 }
 
 void stdDisplay_UnlockBackBuffer(void) //checked
 {
+    //upload written back buffer pixels to back buffer fbo texture
+    tVSurface* surface = &stdDisplay_g_backBuffer.surface;
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, surface->colorTex);
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, stdDisplay_g_backBuffer.rasterInfo.width,
+                    stdDisplay_g_backBuffer.rasterInfo.height,
+                    GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, stdDisplay_g_backBuffer.pPixels);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, GL_ONE);
+    glActiveTexture(GL_TEXTURE1);
     stdDisplay_backLockRef--;
 }
 
