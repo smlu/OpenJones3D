@@ -35,11 +35,14 @@
 #include <std/Win95/stdDisplay.h>
 
 #define SITHSAVEGAME_THUMBCOLORFORMAT stdColor_cfRGB888 // Note, changed encoding format due to little-endian fix in stdColor_ColorConvertOneRow
+
+
+
 #define SITHSAVEGAME_THUMBSIZE       (SITHSAVEGAME_THUMB_WIDTH * SITHSAVEGAME_THUMB_HEIGHT * SITHSAVEGAME_THUMBCOLORFORMAT.bpp) / 8
 //static_assert(SITHSAVEGAME_THUMBSIZE == 0x9000, "SITHSAVEGAME_THUMBSIZE must be  0x9000 bytes");
 
 #define SITHSAVEGAME_FILEVERSION  13
-#define SITHSAVEGAME_ENDFILE      0x1000 
+#define SITHSAVEGAME_ENDFILE      0x1000
 
 static int sithGamesave_state;
 
@@ -100,7 +103,8 @@ void sithGamesave_InstallHooks(void)
 }
 
 void sithGamesave_ResetGlobals(void)
-{}
+{
+}
 
 SithGameStatistics* sithGamesave_GetGameStatistics(void)
 {
@@ -311,7 +315,9 @@ int J3DAPI sithGamesave_SaveCurrentWorld(SithMessageStream outstream)
     // Write sectors state
     for ( size_t i = 0; i < pWorld->numSectors; ++i )
     {
-        if ( (pWorld->aSectors[i].flags & SITH_SECTOR_SYNC) != 0 || (pWorld->aSectors[i].flags & SITH_SECTOR_ADJOINSOFF) != 0 )// Hmm is it ok to sync only marked sectors?? Note, There is limited number of sectors that can be synced in one batch
+        if ( (pWorld->aSectors[i].flags & SITH_SECTOR_SYNC) != 0 || (pWorld->aSectors[i].flags & SITH_SECTOR_ADJOINSOFF)
+            != 0 )
+        // Hmm is it ok to sync only marked sectors?? Note, There is limited number of sectors that can be synced in one batch
         {
             int bError = sithDSS_SectorStatus(&pWorld->aSectors[i], DPID_ALLPLAYERS, outstream);
             if ( bError )
@@ -431,11 +437,22 @@ int sithGamesave_Process(void)
     {
         if ( !sithGamesave_bThumbnail )
         {
+#if defined (J3D_OPENGL)
+
+            //Make sure back buffer fbo is created
+            if ( stdDisplay_g_backBuffer.surface.fbo == 0 )
+            {
+                return 1;
+            }
+
+#else
             // Fixed: Make sure back buffer is inited (DirectX 9 could reset device in between calls)
             if ( !stdDisplay_g_backBuffer.surface.pSysSurface )
             {
                 return 1;
             }
+#endif
+
 
             sithGamesave_SetThumbnailImage(&stdDisplay_g_backBuffer);
             sithGamesave_hBmpThumbnail = sithGamesave_CreateThumbnail();
@@ -454,7 +471,8 @@ int sithGamesave_Process(void)
         const char* pFilename = stdFnames_FindMedName(sithGamesave_aCurFilename);
         if ( strneq(pFilename, pPrefix, strlen(pPrefix)) && sithCog_g_pMasterCog )
         {
-            sithCog_SendMessage(sithCog_g_pMasterCog, SITHCOG_MSG_USER0, SITHCOG_SYM_REF_NONE, 0, SITHCOG_SYM_REF_NONE, 0, 0);
+            sithCog_SendMessage(sithCog_g_pMasterCog, SITHCOG_MSG_USER0, SITHCOG_SYM_REF_NONE, 0, SITHCOG_SYM_REF_NONE,
+                                0, 0);
         }
     }
     else
@@ -471,7 +489,8 @@ int sithGamesave_Process(void)
         bError = sithGamesave_RestoreFile(sithGamesave_aCurFilename, /*bNotify*/0);
         if ( sithCog_g_pMasterCog )
         {
-            sithCog_SendMessage(sithCog_g_pMasterCog, SITHCOG_MSG_USER0, SITHCOG_SYM_REF_NONE, 0, SITHCOG_SYM_REF_NONE, 0, 0);
+            sithCog_SendMessage(sithCog_g_pMasterCog, SITHCOG_MSG_USER0, SITHCOG_SYM_REF_NONE, 0, SITHCOG_SYM_REF_NONE,
+                                0, 0);
         }
     }
 
@@ -520,7 +539,8 @@ int J3DAPI sithGamesave_RestoreFile(const char* pFilename, int bNotify)
     }
 
     // Close current level
-    if ( sithWorld_g_pCurrentWorld && streqi(sithWorld_g_pCurrentWorld->aName, header.aLevelFilename) ) // I guess when loading in game the same level.
+    if ( sithWorld_g_pCurrentWorld && streqi(sithWorld_g_pCurrentWorld->aName, header.aLevelFilename) )
+    // I guess when loading in game the same level.
     {
         // Wonder why this is good when current level is closed anyway.
         // Oh right, sithSound_FreeWorldSounds won't free sounds when we set here to skip restoring sounds.
@@ -533,13 +553,14 @@ int J3DAPI sithGamesave_RestoreFile(const char* pFilename, int bNotify)
     }
 
     // Load level specified in header
-    if ( sithOpenNormal(header.aLevelFilename, L"Indiana Jones") ) // Note, when game is started the name is set to computer name
+    if ( sithOpenNormal(header.aLevelFilename, L"Indiana Jones") )
+    // Note, when game is started the name is set to computer name
     {
         SITHLOG_ERROR("Restore: sithOpenNormal failed!\n");
         goto error;
     }
 
-    // Copy game statistics from header 
+    // Copy game statistics from header
     sithGamesave_gameStatistics = header.gameStatistics;
 
     // Copy the state of COG global symbols from header
@@ -562,7 +583,8 @@ int J3DAPI sithGamesave_RestoreFile(const char* pFilename, int bNotify)
     sithAnimate_Reset();
     sithEvent_Reset();
     sithFX_ClearChalkMarks();
-    sithThing_RemoveWorldThings(sithWorld_g_pCurrentWorld); // TODO: This will remove all things which moveType was changed via thing arg but is not preserved in savegame file; Fix this
+    sithThing_RemoveWorldThings(sithWorld_g_pCurrentWorld);
+    // TODO: This will remove all things which moveType was changed via thing arg but is not preserved in savegame file; Fix this
 
     // Parse & restore gamesave file sections
     int hresult = sithGamesave_ReadBlockTypeLength(&sithMulti_g_message.type, &sithMulti_g_message.length);
@@ -650,7 +672,8 @@ void J3DAPI sithGamesave_NotifyRestored(const char* pFilePath)
     {
         if ( sithCog_g_pMasterCog )
         {
-            sithCog_SendMessage(sithCog_g_pMasterCog, SITHCOG_MSG_USER0, SITHCOG_SYM_REF_NONE, 0, SITHCOG_SYM_REF_NONE, 0, 0);
+            sithCog_SendMessage(sithCog_g_pMasterCog, SITHCOG_MSG_USER0, SITHCOG_SYM_REF_NONE, 0, SITHCOG_SYM_REF_NONE,
+                                0, 0);
         }
     }
 }
@@ -694,11 +717,11 @@ int J3DAPI sithGamesave_SaveFile(const char* pFilename)
 
     // Change output stream to file
     SithMessageStream curStream = sithMessage_g_outputstream;
-    sithMessage_g_outputstream = SITHMESSAGE_STREAM_FILE;
+    sithMessage_g_outputstream  = SITHMESSAGE_STREAM_FILE;
 
     // Init NDS file header
-    NdsHeader header = { 0 };
-    header.version = SITHSAVEGAME_FILEVERSION;
+    NdsHeader header = {0};
+    header.version   = SITHSAVEGAME_FILEVERSION;
     STD_STRCPY(header.aDate, "Oct 28 1999"); // TODO: use current date
     STD_STRCPY(header.aLevelFilename, sithWorld_g_pCurrentWorld->aName);
     STD_STRCPY(header.aPreviousLevelFilename, sithGamesave_aPrevLevelFilename);
@@ -718,7 +741,8 @@ int J3DAPI sithGamesave_SaveFile(const char* pFilename)
         if ( pCogSym )
         {
             header.aCogGlobalValues[i] = pCogSym->value;
-            if ( pCogSym->value.type >= SITHCOG_VALUE_POINTER && (pCogSym->value.type <= SITHCOG_VALUE_SYMBOLID || pCogSym->value.type == SITHCOG_VALUE_STRING) )
+            if ( pCogSym->value.type >= SITHCOG_VALUE_POINTER && (pCogSym->value.type <= SITHCOG_VALUE_SYMBOLID ||
+                pCogSym->value.type == SITHCOG_VALUE_STRING) )
             {
                 // For some reason reset symbol if it is a string, pointer or symbol id
                 memset(&header.aCogGlobalValues[i].val, 0, sizeof(header.aCogGlobalValues[i].val));
@@ -801,11 +825,12 @@ void J3DAPI sithGamesave_SetThumbnailImage(tVBuffer* pVBuffer)
         }
 
         // Clone the thumbnail image to sithGamesave_pThumbnailImage
-        tRasterInfo rasterInfo = pVBuffer->rasterInfo;
+        tRasterInfo rasterInfo       = pVBuffer->rasterInfo;
         sithGamesave_pThumbnailImage = stdDisplay_VBufferNew(&rasterInfo, /*bUseVSurface=*/0, /*bUseVideoMemory=*/0);
         if ( sithGamesave_pThumbnailImage )
         {
-            size_t pixelSize = sithGamesave_pThumbnailImage->rasterInfo.rowSize / (unsigned int)sithGamesave_pThumbnailImage->rasterInfo.rowWidth;
+            size_t pixelSize = sithGamesave_pThumbnailImage->rasterInfo.rowSize / (unsigned int)
+                sithGamesave_pThumbnailImage->rasterInfo.rowWidth;
             stdDisplay_VBufferLock(pVBuffer);
             for ( size_t i = 0; i < rasterInfo.height; ++i )
             {
@@ -835,10 +860,12 @@ HBITMAP sithGamesave_CreateThumbnail(void)
 
     if ( sithGamesave_pThumbnailImage )
     {
-        sithGamesave_pThumbnailImage = stdDisplay_VBufferConvertColorFormat(&SITHSAVEGAME_THUMBCOLORFORMAT, sithGamesave_pThumbnailImage, 0, NULL);
-        const LONG imageSize = (sithGamesave_pThumbnailImage->rasterInfo.width * sithGamesave_pThumbnailImage->rasterInfo.height * sithGamesave_pThumbnailImage->rasterInfo.colorInfo.bpp) / 8;
+        sithGamesave_pThumbnailImage = stdDisplay_VBufferConvertColorFormat(
+            &SITHSAVEGAME_THUMBCOLORFORMAT, sithGamesave_pThumbnailImage, 0, NULL);
+        const LONG imageSize = (sithGamesave_pThumbnailImage->rasterInfo.width * sithGamesave_pThumbnailImage->
+            rasterInfo.height * sithGamesave_pThumbnailImage->rasterInfo.colorInfo.bpp) / 8;
 
-        BITMAPINFO bmpInfo = { 0 };
+        BITMAPINFO bmpInfo              = {0};
         bmpInfo.bmiHeader.biSize        = sizeof(bmpInfo.bmiHeader);
         bmpInfo.bmiHeader.biWidth       = sithGamesave_pThumbnailImage->rasterInfo.width;
         bmpInfo.bmiHeader.biHeight      = -(int32_t)sithGamesave_pThumbnailImage->rasterInfo.height;
@@ -945,13 +972,14 @@ int J3DAPI sithGamesave_WriteThumbnail(tFileHandle fh)
         return 0;
     }
 
-    BITMAP bmp = { 0 }; // Fixed: Initialized to 0
+    BITMAP bmp = {0}; // Fixed: Initialized to 0
     if ( !GetObject(sithGamesave_hBmpThumbnail, sizeof(BITMAP), &bmp) )
     {
         return 1;
     }
 
-    const size_t imgSize = bmp.bmWidthBytes * bmp.bmHeight; // Altered: Changed to use bmp.bmWidthBytes instead of calculating (bmp.bmBitsPixel/8 * bmp.bmWidth)
+    const size_t imgSize = bmp.bmWidthBytes * bmp.bmHeight;
+    // Altered: Changed to use bmp.bmWidthBytes instead of calculating (bmp.bmBitsPixel/8 * bmp.bmWidth)
     if ( imgSize != sith_g_pHS->pFileWrite(fh, bmp.bmBits, imgSize) )
     {
         return 1;
@@ -965,7 +993,7 @@ int J3DAPI sithGamesave_WriteThumbnail(tFileHandle fh)
 int J3DAPI sithGamesave_SeekThumbnail(tFileHandle fh)
 {
     // Skips thumbnail section
-    return sithGamesave_bThumbnail && sith_g_pHS->pFileSeek(fh, SITHSAVEGAME_THUMBSIZE, 1);// 0x9000 - 128 * 96 * 3
+    return sithGamesave_bThumbnail && sith_g_pHS->pFileSeek(fh, SITHSAVEGAME_THUMBSIZE, 1); // 0x9000 - 128 * 96 * 3
 }
 
 HBITMAP J3DAPI sithGamesave_LoadThumbnail(const char* pFilename)
@@ -994,7 +1022,7 @@ HBITMAP J3DAPI sithGamesave_LoadThumbnail(const char* pFilename)
     }
 
     // Create bitmap info & DC
-    BITMAPINFO bmi              = { 0 }; // Fixed: Initialized to 0
+    BITMAPINFO bmi              = {0}; // Fixed: Initialized to 0
     bmi.bmiHeader.biSize        = sizeof(BITMAPINFOHEADER);
     bmi.bmiHeader.biWidth       = SITHSAVEGAME_THUMB_WIDTH;
     bmi.bmiHeader.biHeight      = -SITHSAVEGAME_THUMB_HEIGHT;
@@ -1046,7 +1074,7 @@ void sithGamesave_Shutdown(void)
 void sithGamesave_Open(void)
 {
     sithGamesave_hBmpThumbnail = NULL;
-    sithGamesave_bThumbnail = 0;
+    sithGamesave_bThumbnail    = 0;
 }
 
 void sithGamesave_CloseRestore(void)
@@ -1063,7 +1091,7 @@ void sithGamesave_Close(void)
     {
         DeleteObject((HGDIOBJ)sithGamesave_hBmpThumbnail);
         sithGamesave_hBmpThumbnail = NULL;
-        sithGamesave_bThumbnail = 0;
+        sithGamesave_bThumbnail    = 0;
     }
 
     if ( sithGamesave_pThumbnailImage )
@@ -1091,7 +1119,8 @@ const char* sithGamesave_GetLastFilename(void)
 int J3DAPI sithGamesave_LoadLevelFilename(const char* pNdsFilePath, char* pDestFilename)
 {
     NdsHeader header;
-    if ( !stdConffile_OpenMode(pNdsFilePath, "rb") || !stdConffile_Read(&header, sizeof(NdsHeader)) || (stdConffile_Close(), header.version != SITHSAVEGAME_FILEVERSION) )
+    if ( !stdConffile_OpenMode(pNdsFilePath, "rb") || !stdConffile_Read(&header, sizeof(NdsHeader)) || (
+        stdConffile_Close(), header.version != SITHSAVEGAME_FILEVERSION) )
     {
         stdConffile_Close();
         return 1;
