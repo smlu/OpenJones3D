@@ -1,0 +1,124 @@
+# CMake build workflow for DirectX 6
+name: CMake DirectX 6 Build
+
+on:
+  push:
+    branches: [ "main", "develop" ]
+  pull_request:
+    branches: [ "main", "develop" ]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+
+      matrix:
+        os: [windows-latest]
+        build_type: [Release]
+        c_compiler: [cl]
+        qol_improvements: [ON, OFF]
+        include:
+          - os: windows-latest
+            c_compiler: cl
+            cpp_compiler: cl
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set reusable strings
+      id: strings
+      shell: bash
+      run: |
+        echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
+
+    - name: Download DirectX 6.1 SDK
+      shell: pwsh
+      run: |
+        $url = "https://archive.org/download/dx61sdkimage/dx61sdkimage.exe"
+        $output = "${{ github.workspace }}/dx61sdk.exe"
+        Write-Host "Downloading DirectX 6.1 SDK..."
+        Invoke-WebRequest -Uri $url -OutFile $output
+        Write-Host "Download complete"
+
+    - name: Extract and Setup DirectX 6.1 SDK
+      shell: pwsh
+      run: |
+        $sdkExe = "${{ github.workspace }}/dx61sdk.exe"
+        $extractPath = "${{ github.workspace }}/dx61sdk_temp"
+        $repoIncludePath = "${{ github.workspace }}/Libs/external/DirectX61c/include/DirectX6"
+        $repoLibPath = "${{ github.workspace }}/Libs/external/DirectX61c/libs"
+        
+        # Create extraction directory
+        New-Item -ItemType Directory -Force -Path $extractPath
+        New-Item -ItemType Directory -Force -Path $repoIncludePath
+        New-Item -ItemType Directory -Force -Path $repoLibPath
+        
+        # Extract the SDK (it's a self-extracting archive)
+        Write-Host "Extracting DirectX 6.1 SDK..."
+        Start-Process -FilePath $sdkExe -ArgumentList "/Q", "/C", "/T:$extractPath" -Wait -NoNewWindow
+        
+        # Find and copy include files
+        Write-Host "Copying include files..."
+        $includeSource = Get-ChildItem -Path $extractPath -Recurse -Directory | Where-Object { $_.Name -eq "include" } | Select-Object -First 1
+        if ($includeSource) {
+          Copy-Item -Path "$($includeSource.FullName)\*" -Destination $repoIncludePath -Recurse -Force
+          Write-Host "Include files copied to: $repoIncludePath"
+        } else {
+          Write-Error "Could not find include directory in extracted SDK"
+          exit 1
+        }
+        
+        # Find and copy lib files (x86 libraries)
+        Write-Host "Copying library files..."
+        $libSource = Get-ChildItem -Path $extractPath -Recurse -Directory | Where-Object { $_.Name -like "*lib*" -or $_.Name -eq "x86" } | Select-Object -First 1
+        if ($libSource) {
+          Copy-Item -Path "$($libSource.FullName)\*.lib" -Destination $repoLibPath -Force
+          Write-Host "Library files copied to: $repoLibPath"
+        } else {
+          Write-Error "Could not find lib directory in extracted SDK"
+          exit 1
+        }
+        
+        # List what we copied
+        Write-Host "`nInclude files:"
+        Get-ChildItem -Path $repoIncludePath | Format-Table Name
+        Write-Host "`nLibrary files:"
+        Get-ChildItem -Path $repoLibPath | Format-Table Name
+
+    - name: Setup MSVC
+      uses: ilammy/msvc-dev-cmd@v1
+      with:
+        arch: x86
+    
+    - name: Get DirectX 6 SDK Paths
+      id: dx6_path
+      shell: pwsh
+      run: |
+        $DX_INCLUDE = "${{ github.workspace }}/Libs/external/DirectX61c/include/DirectX6"
+        $DX_LIB = "${{ github.workspace }}/Libs/external/DirectX61c/libs"
+        
+        Write-Host "DirectX 6 Include: $DX_INCLUDE"
+        Write-Host "DirectX 6 Lib: $DX_LIB"
+        
+        echo "DX_INCLUDE=$DX_INCLUDE" >> $env:GITHUB_OUTPUT
+        echo "DX_LIB=$DX_LIB" >> $env:GITHUB_OUTPUT
+
+    - name: Configure CMake (QOL ${{ matrix.qol_improvements }})
+      shell: pwsh
+      run: |
+        cmake -B "${{ steps.strings.outputs.build-output-dir }}" `
+          -A Win32 `
+          -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }} `
+          -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} `
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} `
+          -DCMAKE_CXX_FLAGS="/I `"${{ steps.dx6_path.outputs.DX_INCLUDE }}`"" `
+          -DCMAKE_EXE_LINKER_FLAGS="/LIBPATH:`"${{ steps.dx6_path.outputs.DX_LIB }}`"" `
+          -DJONES3D_USE_DIRECTX9=OFF `
+          -DJONES3D_QOL_IMPROVEMENTS=${{ matrix.qol_improvements }} `
+          -DJONES3D_ENABLE_POST_BUILD_COPY=OFF `
+          -S "${{ github.workspace }}"
+
+    - name: Build
+      run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
