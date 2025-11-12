@@ -105,14 +105,16 @@ static const DXStatus std3D_aD3DStatusTbl[30] = {
 
 static bool std3D_bUseBuffers = true; // Slow for small geometry, so disabled by
 // default. Consider hybrid approach later
-static GLuint std3D_pVertexArrayObject = 0;
-static const size_t std3D_vbSize       = STD3D_VERTBUFFERSIZE;
-static size_t std3D_vbOffset           = 0;
-static GLuint std3D_pVertexBuffer      = 0;
+static GLuint std3D_pVertexArrayObject  = 0;
+static const size_t std3D_vbSize        = STD3D_VERTBUFFERSIZE;
+static size_t std3D_vbOffset            = 0;
+static GLuint std3D_pVertexBufferOpaque = 0;
 
-static const size_t std3D_ibSize = STD3D_VERTBUFFERSIZE * 3;
-static size_t std3D_ibOffset     = 0;
-static GLuint std3D_pIndexBuffer = 0;
+static const size_t std3D_ibSize            = STD3D_VERTBUFFERSIZE * 3;
+static size_t std3D_ibOffset                = 0;
+static GLuint std3D_pIndexBuffer            = 0;
+static size_t std3D_numOpaqueDrawCalls      = 0;
+static size_t std3D_numTransparentDrawCalls = 0;
 
 // Shader system state
 static bool std3D_bShadersActive              = true;
@@ -131,7 +133,7 @@ static void J3DAPI
 std3D_RemoveTextureFromCacheList(tSystemTexture* pCacheTexture);
 static int J3DAPI std3D_PurgeTextureCache(size_t size);
 
-bool std3D_InitVertexBuffers(void);
+bool std3D_InitVertexBuffers(GLuint* vbo, GLuint* vao, GLuint* vio);
 void std3D_ReleaseVertexBuffers(void);
 
 bool std3D_InitShaderSystem(void);
@@ -195,12 +197,6 @@ int std3D_Startup(void)
     memset(std3D_aTextureFormats, 0, sizeof(std3D_aTextureFormats));
     memset(std3D_aDevices, 0, sizeof(std3D_aDevices));
 
-    if ( !stdShader_Startup() )
-    {
-        STDLOG_ERROR("Error initializing shader system.\n");
-        return 0;
-    }
-
     if ( !std3D_BuildDeviceList() )
     {
         STDLOG_ERROR("Error building device list.\n");
@@ -229,7 +225,7 @@ void std3D_Shutdown(void)
         std3D_Close();
     }
 
-    stdShader_Shutdown();
+    //stdShader_Shutdown();
 
     memset(std3D_aTextureFormats, 0, sizeof(std3D_aTextureFormats));
     memset(std3D_aDevices, 0, sizeof(std3D_aDevices));
@@ -312,7 +308,7 @@ static bool std3D_InitSystem(void)
     std3D_RGBAKeyTextureFormat = std3D_FindClosestFormat(&stdColor_cfRGBA8888);
     std3D_RGBATextureFormat    = std3D_FindClosestFormat(&stdColor_cfRGBA8888);
 
-    if ( !std3D_InitVertexBuffers() )
+    if ( !std3D_InitVertexBuffers(&std3D_pVertexBufferOpaque, &std3D_pIndexBuffer, &std3D_pVertexArrayObject) )
     {
         return false;
     }
@@ -521,14 +517,16 @@ int std3D_StartScene(void)
     return 0;
 }
 
-void std3D_EndScene(void) { std3D_pD3DTex = NULL; }
+void std3D_EndScene(void)
+{
+    std3D_numOpaqueDrawCalls = 0;
+    std3D_pD3DTex            = NULL;
+}
 
-static int std3D_CopyVertexDataToBuffer(const LPD3DTLVERTEX aVerts,
-                                        size_t numVerts, LPWORD aIndices,
-                                        size_t numIndices)
+static int std3D_CopyVertexDataToBuffer(const LPD3DTLVERTEX aVerts, size_t numVerts, LPWORD aIndices, size_t numIndices)
 {
     const size_t vbNeeded = std3D_vbOffset + numVerts;
-    glBindBuffer(GL_ARRAY_BUFFER, std3D_pVertexBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, std3D_pVertexBufferOpaque);
 
     if ( vbNeeded > std3D_vbSize )
     {
@@ -639,8 +637,7 @@ void std3D_UpdateShaderState(GLShaderProgram* activeShader)
     }
 }
 
-void J3DAPI std3D_DrawRenderList(tSysTexture* pTex, Std3DRenderState rdflags,
-                                 LPD3DTLVERTEX aVerts, size_t numVerts,
+void J3DAPI std3D_DrawRenderList(tSysTexture* pTex, Std3DRenderState rdflags, LPD3DTLVERTEX aVerts, size_t numVerts,
                                  LPWORD aIndices, size_t numIndices)
 {
     // STDLOG_DEBUG("Draw %d vertices\n", numVerts);
@@ -658,10 +655,10 @@ void J3DAPI std3D_DrawRenderList(tSysTexture* pTex, Std3DRenderState rdflags,
     // Set texture
     if ( pTex != std3D_pD3DTex )
     {
-        glActiveTexture(GL_TEXTURE0);
+        glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, pTex->id);
         GLint loc = glGetUniformLocation(std3D_activeShader->handle, "sTexture");
-        glUniform1i(loc, 0);
+        glUniform1i(loc, 1);
         std3D_pD3DTex = pTex;
         // HRESULT d3dres = IDirect3DDevice9_SetTexture(std3D_pD3Device, 0,
         // (IDirect3DBaseTexture9*)pTex); if ( d3dres != D3D_OK )
@@ -835,9 +832,9 @@ void J3DAPI std3D_SetRenderState(Std3DRenderState rdflags)
         (rdflags & STD3D_RS_ZWRITE_DISABLED) )
     {
         if ( rdflags & STD3D_RS_ZWRITE_DISABLED )
-            glDepthFunc(GL_LESS);
+            glDepthMask(GL_FALSE);
         else
-            glDepthFunc(GL_LEQUAL);
+            glDepthMask(GL_TRUE);
     }
 
     // --- Texture Address Mode U/V ---
@@ -1120,6 +1117,7 @@ void J3DAPI std3D_AddToTextureCache(tSystemTexture* pCacheTexture,
         std3D_PurgeTextureCache(pCacheTexture->textureSize);
     }
 
+    glActiveTexture(GL_TEXTURE1);
     GLuint tex = 0;
     glGenTextures(1, &tex);
     glBindTexture(GL_TEXTURE_2D, tex);
@@ -1211,6 +1209,8 @@ size_t J3DAPI std3D_GetMipMapCount(const tSystemTexture* pTexture)
 void std3D_ResetTextureCache(void)
 {
     STDLOG_DEBUG("Clearing texture cache....\n");
+
+    glActiveTexture(GL_TEXTURE1);
 
     glBindTexture(GL_TEXTURE_2D, 0);
 
@@ -1332,12 +1332,14 @@ int std3D_InitRenderState(void)
     std3D_renderState = 0;
 
     glEnable(GL_DEPTH_TEST);
+    glDepthRange(0.0, 1.0);
     glDepthMask(GL_TRUE);
     glDepthFunc(GL_LEQUAL);
     std3D_renderState |= STD3D_RS_UNKNOWN_1;
 
     std3D_SetMipmapFilter(STD3D_MIPMAPFILTER_TRILINEAR);
 
+    glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, 0); // Default-Basis
 
     // if (std3D_bAnisotropicFilter)
@@ -1368,8 +1370,8 @@ int std3D_InitRenderState(void)
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     // Alpha-Test (falls Fixed-Function-Kompatibilität)
-    glEnable(GL_ALPHA_TEST);
-    glAlphaFunc(GL_GREATER, 0.0f);
+    // glEnable(GL_ALPHA_TEST);
+    // glAlphaFunc(GL_GREATER, 0.0f);
 
     // glShadeModel(GL_SMOOTH); // D3DSHADE_GOURAUD
     // glDisable(GL_LIGHTING);
@@ -1379,15 +1381,15 @@ int std3D_InitRenderState(void)
     std3D_bRenderFog = false;
     glDisable(GL_FOG);
 
-    glPolygonMode(GL_BACK, GL_FILL);
+    //glPolygonMode(GL_BACK, GL_FILL);
 
-    glEnable(GL_DITHER);
+    //glEnable(GL_DITHER);
 
     std3D_renderState |= STD3D_RS_UNKNOWN_2;
 
     // --- 9️⃣ Culling ---
-    // glDisable(GL_CULL_FACE); // D3DCULL_NONE
-    glFrontFace(GL_CCW);
+    //glDisable(GL_CULL_FACE); // D3DCULL_NONE
+    glFrontFace(GL_CW);
 
     GLenum err = glGetError();
     if ( err != GL_NO_ERROR )
@@ -1567,6 +1569,9 @@ void std3D_ClearZBuffer(void)
     // Z- und Stencil-Werte, wie in Direct3D
     glClearDepth(1.0f);
     glClearStencil(0);
+
+    std3D_renderState &= ~STD3D_RS_ZWRITE_DISABLED;
+    glDepthMask(GL_TRUE);
 
     // Jetzt nur Depth- und Stencil-Buffer löschen
     glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
@@ -1983,20 +1988,18 @@ void J3DAPI std3D_SetFindAllDevices(int bFindAll)
     std3D_bFindAllD3Devices = bFindAll;
 }
 
-bool std3D_InitVertexBuffers(void)
+bool std3D_InitVertexBuffers(GLuint* vbo, GLuint* ibo, GLuint* vao)
 {
-    std3D_vbOffset = 0;
-    std3D_ibOffset = 0;
-    glGenVertexArrays(1, &std3D_pVertexArrayObject);
-    glBindVertexArray(std3D_pVertexArrayObject);
+    glGenVertexArrays(1, vao);
+    glBindVertexArray(*vao);
 
-    glGenBuffers(1, &std3D_pVertexBuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, std3D_pVertexBuffer);
+    glGenBuffers(1, vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, *vbo);
     glBufferData(GL_ARRAY_BUFFER, std3D_vbSize * sizeof(D3DTLVERTEX), NULL,
                  GL_DYNAMIC_DRAW);
 
-    glGenBuffers(1, &std3D_pIndexBuffer);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, std3D_pIndexBuffer);
+    glGenBuffers(1, ibo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, *ibo);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, std3D_ibSize * sizeof(GLushort), NULL,
                  GL_DYNAMIC_DRAW);
 
@@ -2035,10 +2038,10 @@ bool std3D_InitVertexBuffers(void)
 
 void std3D_ReleaseVertexBuffers(void)
 {
-    if ( std3D_pVertexBuffer )
+    if ( std3D_pVertexBufferOpaque )
     {
-        glDeleteBuffers(1, &std3D_pVertexBuffer);
-        std3D_pVertexBuffer = 0;
+        glDeleteBuffers(1, &std3D_pVertexBufferOpaque);
+        std3D_pVertexBufferOpaque = 0;
     }
 
     if ( std3D_pIndexBuffer )
@@ -2106,10 +2109,10 @@ void std3D_ShutdownShaderSystem(void)
     if ( std3D_defaultShader )
     {
         stdShader_Free(std3D_defaultShader);
-        std3D_defaultShader = STDSHADER_INVALIDHANDLE;
+        std3D_defaultShader->handle = STDSHADER_INVALIDHANDLE;
     }
 
-    std3D_activeShader = STDSHADER_INVALIDHANDLE;
+    std3D_activeShader->handle = STDSHADER_INVALIDHANDLE;
     // Important, reset active shader to STDSHADER_INVALIDHANDLE to avoid dangling
     // handle on next system init
     stdShader_Close();

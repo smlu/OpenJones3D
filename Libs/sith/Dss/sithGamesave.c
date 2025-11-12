@@ -39,7 +39,7 @@
 //static_assert(SITHSAVEGAME_THUMBSIZE == 0x9000, "SITHSAVEGAME_THUMBSIZE must be  0x9000 bytes");
 
 #define SITHSAVEGAME_FILEVERSION  13
-#define SITHSAVEGAME_ENDFILE      0x1000 
+#define SITHSAVEGAME_ENDFILE      0x1000
 
 static int sithGamesave_state;
 
@@ -431,11 +431,22 @@ int sithGamesave_Process(void)
     {
         if ( !sithGamesave_bThumbnail )
         {
+#if defined (J3D_OPENGL)
+
+            //Make sure back buffer fbo is created
+            if ( stdDisplay_g_backBuffer.surface.fbo == 0 )
+            {
+                return 1;
+            }
+
+#else
             // Fixed: Make sure back buffer is inited (DirectX 9 could reset device in between calls)
             if ( !stdDisplay_g_backBuffer.surface.pSysSurface )
             {
                 return 1;
             }
+#endif
+
 
             sithGamesave_SetThumbnailImage(&stdDisplay_g_backBuffer);
             sithGamesave_hBmpThumbnail = sithGamesave_CreateThumbnail();
@@ -470,8 +481,8 @@ int sithGamesave_Process(void)
         // Note, notifying via restoring file is not done as it won't do notification when restoring file is not auto save file
         bError = sithGamesave_RestoreFile(sithGamesave_aCurFilename, /*bNotify*/0);
 
-        // Fixed: Added check for ineditor flag not being set. 
-        //        This fixes restoring savegame that was saved under ineditor flag to not play intro cutscene 
+        // Fixed: Added check for ineditor flag not being set.
+        //        This fixes restoring savegame that was saved under ineditor flag to not play intro cutscene
         if ( (sithMain_g_sith_mode.debugModeFlags & SITHDEBUG_INEDITOR) == 0 )
         {
             if ( sithCog_g_pMasterCog )
@@ -633,8 +644,8 @@ int J3DAPI sithGamesave_RestoreFile(const char* pFilename, int bNotify)
     sithTime_SetGameTime(header.msecGameTime);
     SITHLOG_STATUS("RESTORE: returning SUCCESS!\n");
 
-    // Fixed: Added check for ineditor flag not being set. 
-    //        This fixes restoring savegame that was saved under ineditor flag to not play intro cutscene 
+    // Fixed: Added check for ineditor flag not being set.
+    //        This fixes restoring savegame that was saved under ineditor flag to not play intro cutscene
     if ( (sithMain_g_sith_mode.debugModeFlags & SITHDEBUG_INEDITOR) == 0 )
     {
         if ( bNotify == 1 )
@@ -705,11 +716,11 @@ int J3DAPI sithGamesave_SaveFile(const char* pFilename)
 
     // Change output stream to file
     SithMessageStream curStream = sithMessage_g_outputstream;
-    sithMessage_g_outputstream = SITHMESSAGE_STREAM_FILE;
+    sithMessage_g_outputstream  = SITHMESSAGE_STREAM_FILE;
 
     // Init NDS file header
-    NdsHeader header = { 0 };
-    header.version = SITHSAVEGAME_FILEVERSION;
+    NdsHeader header = {0};
+    header.version   = SITHSAVEGAME_FILEVERSION;
     STD_STRCPY(header.aDate, "Oct 28 1999"); // TODO: use current date
     STD_STRCPY(header.aLevelFilename, sithWorld_g_pCurrentWorld->aName);
     STD_STRCPY(header.aPreviousLevelFilename, sithGamesave_aPrevLevelFilename);
@@ -1057,7 +1068,7 @@ void sithGamesave_Shutdown(void)
 void sithGamesave_Open(void)
 {
     sithGamesave_hBmpThumbnail = NULL;
-    sithGamesave_bThumbnail = 0;
+    sithGamesave_bThumbnail    = 0;
 }
 
 void sithGamesave_CloseRestore(void)
@@ -1074,7 +1085,7 @@ void sithGamesave_Close(void)
     {
         DeleteObject((HGDIOBJ)sithGamesave_hBmpThumbnail);
         sithGamesave_hBmpThumbnail = NULL;
-        sithGamesave_bThumbnail = 0;
+        sithGamesave_bThumbnail    = 0;
     }
 
     if ( sithGamesave_pThumbnailImage )
