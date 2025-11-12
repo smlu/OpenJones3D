@@ -1657,10 +1657,6 @@ int stdDisplay_Update(void) //check
     stdShader_SetActiveShader(stdDisplay_fboShader);
     glBindVertexArray(stdDisplay_fullscreenVao);
     glClear(GL_COLOR_BUFFER_BIT);
-    // glActiveTexture(GL_TEXTURE0);
-    // glBindTexture(GL_TEXTURE_2D, stdDisplay_g_backBuffer.surface.colorTex);
-    // GLint loc = glGetUniformLocation(stdDisplay_fboShader->handle, "sSceneTexture");
-    // glUniform1i(loc, 0);
 
     glDrawArrays(GL_TRIANGLES, 0, 3);
 
@@ -2021,9 +2017,21 @@ void stdDisplay_UnlockBackBuffer(void) //checked
     tVSurface* surface = &stdDisplay_g_backBuffer.surface;
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, surface->colorTex);
-    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, stdDisplay_g_backBuffer.rasterInfo.width,
-                    stdDisplay_g_backBuffer.rasterInfo.height,
-                    GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, stdDisplay_g_backBuffer.pPixels);
+
+    uint32_t height = stdDisplay_g_backBuffer.rasterInfo.height;
+    uint32_t width  = stdDisplay_g_backBuffer.rasterInfo.width;
+
+    //intro video is mirrored on y axis, needs to be corrected.
+    for ( int y = 0; y < height; ++y )
+    {
+        const GLubyte* row = (const GLubyte*)stdDisplay_g_backBuffer.pPixels + (stdDisplay_g_backBuffer.rasterInfo.
+            height - 1 - y) * width * 4;
+        glTexSubImage2D(GL_TEXTURE_2D, 0,
+                        0, y, // y-Offset = Zielzeile
+                        width, 1,
+                        GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV,
+                        row);
+    }
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, GL_ONE);
     glActiveTexture(GL_TEXTURE1);
     stdDisplay_backLockRef--;
