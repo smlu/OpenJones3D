@@ -23,6 +23,8 @@ static size_t stdShader_maxVsParams = 0;
 static GLShaderProgram stdShader_ShaderPrograms[MAX_SHADER_PROGRAMS];
 static size_t stdShader_shaderCount = 0;
 
+static int stdShader_activeTextureUnit = 0;
+
 void stdShader_ResetShader(GLShaderProgram* shaderProgram)
 {
     if ( shaderProgram->handle > 0 )
@@ -117,8 +119,15 @@ bool J3DAPI stdShader_SetViewport(const StdShaderViewport vp)
         {
             glUseProgram(shaderProgram->handle);
             int loc = glGetUniformLocation(shaderProgram->handle, "viewPort");
+
+            if ( loc == -1 )
+            {
+                continue;
+            }
+
             glUniform4f(loc, vp[0], vp[1], vp[2], vp[3]);
             GLenum err = glGetError();
+
             if ( err != GL_NO_ERROR )
             {
                 STDLOG_ERROR("OpenGL error 0x%x in stdShader_SetViewport.\n", err);
@@ -353,4 +362,20 @@ GLShaderProgram* stdShader_CompileAndCreate(const char* pName, const char* pVert
 void J3DAPI stdShader_Free(GLShaderProgram* sh)
 {
     stdShader_ResetShader(sh);
+}
+
+void stdShader_SetTexture(GLShaderProgram* sh, GLuint tex)
+{
+    if ( stdShader_activeTextureUnit == 0 )
+    {
+        return;
+    }
+    glBindTexture(GL_TEXTURE_2D, tex);
+    glUniform1i(glGetUniformLocation(sh->handle, "sTexture"), stdShader_activeTextureUnit); //unit 0 is reserved for framebuffer texture
+}
+
+void stdShader_SetActiveTextureUnit(int unit)
+{
+    glActiveTexture(GL_TEXTURE0 + unit);
+    stdShader_activeTextureUnit = unit;
 }
