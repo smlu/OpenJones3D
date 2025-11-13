@@ -14,7 +14,7 @@ if (J3D_OPENGL)
 
     # GLAD
     add_library(glad STATIC
-            glad/src/glad.c
+            glad/src/gl.c
     )
     target_include_directories(glad PUBLIC glad/include)
     set_target_properties(glad PROPERTIES FOLDER "Libs/external") 
