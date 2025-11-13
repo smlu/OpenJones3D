@@ -243,13 +243,20 @@ static GLuint stdShader_compileShader(GLenum type, const char* source, const cha
         glGetShaderiv(sh, GL_INFO_LOG_LENGTH, &logLen);
         char* log = STDMALLOC(logLen > 1 ? logLen : 1);
         if ( logLen > 1 )
+        {
             glGetShaderInfoLog(sh, logLen, NULL, log);
-        else log[0] = '\0';
+        }
+        else
+        {
+            log[0] = '\0';
+        }
+
         STDLOG_ERROR("[GLSL] Compile error in %s:\n%s\n", debugName ? debugName : "(shader)", log);
         STDFREE(log);
         glDeleteShader(sh);
         return 0;
     }
+
     return sh;
 }
 
@@ -274,8 +281,14 @@ static GLuint stdShader_LinkShaderProgram(GLuint vs, GLuint fs)
         glGetProgramiv(prog, GL_INFO_LOG_LENGTH, &logLen);
         char* log = STDMALLOC(logLen > 1 ? logLen : 1);
         if ( logLen > 1 )
+        {
             glGetProgramInfoLog(prog, logLen, NULL, log);
-        else log[0] = '\0';
+        }
+        else
+        {
+            log[0] = '\0';
+        }
+
         STDLOG_ERROR("[GLSL] Link error:\n%s\n", log);
         STDFREE(log);
         glDeleteProgram(prog);
@@ -291,8 +304,7 @@ static GLuint stdShader_LinkShaderProgram(GLuint vs, GLuint fs)
     return prog;
 }
 
-GLShaderProgram* stdShader_CompileAndCreate(const char* pName, const char* pVertexShaderCode,
-                                            const char* pPixelShaderCode)
+GLShaderProgram* stdShader_CompileAndCreate(const char* pName, const char* pVertexShaderCode, const char* pPixelShaderCode)
 {
     if ( !pName || !pVertexShaderCode || !pPixelShaderCode )
     {
@@ -328,9 +340,15 @@ GLShaderProgram* stdShader_CompileAndCreate(const char* pName, const char* pVert
     if ( !vsrc || !fsrc )
     {
         if ( vsrc )
+        {
             STDFREE(vsrc);
+        }
+
         if ( fsrc )
+        {
             STDFREE(fsrc);
+        }
+
         return NULL;
     }
 
@@ -343,9 +361,15 @@ GLShaderProgram* stdShader_CompileAndCreate(const char* pName, const char* pVert
     if ( !vs || !fs )
     {
         if ( vs )
+        {
             glDeleteShader(vs);
+        }
+
         if ( fs )
+        {
             glDeleteShader(fs);
+        }
+
         return NULL;
     }
 
@@ -370,6 +394,7 @@ void stdShader_SetTexture(GLShaderProgram* sh, GLuint tex)
     {
         return;
     }
+
     glBindTexture(GL_TEXTURE_2D, tex);
     glUniform1i(glGetUniformLocation(sh->handle, "sTexture"), stdShader_activeTextureUnit); //unit 0 is reserved for framebuffer texture
 }

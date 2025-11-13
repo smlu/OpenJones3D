@@ -159,9 +159,9 @@ static uint8_t* J3DAPI stdDisplay_LockTexture(tVBuffer* pVBuffer);
 static inline void J3DAPI stdDisplay_SetAspectRatio(StdVideoMode* pMode);
 static inline int J3DAPI stdDisplay_SetWindowMode(HWND hWnd, StdVideoMode* pDisplayMode);
 static inline int J3DAPI stdDisplay_SetFullscreenMode(HWND hwnd, const StdVideoMode* pDisplayMode,
-                                                      size_t numBackBuffers);
+    size_t numBackBuffers);
 static int J3DAPI stdDisplay_InitBuffers(PDIRECT3DDEVICE9 pDevice, const StdVideoMode* pDisplayMode, bool bWindowMode,
-                                         size_t numBuffers);
+    size_t numBuffers);
 
 static inline void stdDisplay_ReleaseBuffers(void);
 static inline uint8_t* J3DAPI stdDisplay_LockSurface(tVSurface* pVSurf);
@@ -410,7 +410,7 @@ static void stdDisplay_ValidateMSAASettings() //check
                 stdDisplay_msaaSampleQuality = qualityLevels > 0 ? qualityLevels - 1 : 0;
                 found                        = true;
                 STDLOG_STATUS("MSAA fallback: Using %dx with %d quality levels\n", stdDisplay_msaaSampleCount,
-                              qualityLevels);
+                    qualityLevels);
                 stdConfig_SetInt(STD3D_CFG_MSAASAMPLES, stdDisplay_msaaSampleCount);
                 break;
             }
@@ -477,9 +477,13 @@ static int stdDisplay_InitFBOShader(void)
         STDLOG_ERROR("Error opening shader system.\n");
         return 0;
     }
-    stdDisplay_fboShader = stdShader_CompileAndCreate("std_fbo",
-                                                      "C:/Users/morit/Documents/GitHub/OpenJones3D/Libs/std/Win95/GL/Shaders/fbo.vert",
-                                                      "C:/Users/morit/Documents/GitHub/OpenJones3D/Libs/std/Win95/GL/Shaders/fbo.frag");
+
+    stdDisplay_fboShader = stdShader_CompileAndCreate("std_fbo", "fbo.vert", "fbo.frag");
+    if ( !stdDisplay_fboShader )
+    {
+        STDLOG_ERROR("Failed to creat fbo shader!\n");
+    }
+
     glGenVertexArrays(1, &stdDisplay_fullscreenVao);
     return 1;
 }
@@ -617,7 +621,7 @@ int J3DAPI stdDisplay_SetMode(size_t modeNum, int bFullscreen, size_t numBackBuf
     int fheight      = -(stdDisplay_pCurVideoMode->rasterInfo.width < 640);
     fheight          = fheight & 0xF4;
     stdDisplay_hFont = CreateFont(fheight + 24, 0, 0, 0, FW_NORMAL, 0, 0, 0, ANSI_CHARSET, OUT_DEFAULT_PRECIS,
-                                  CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, VARIABLE_PITCH, "Arial");
+        CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, VARIABLE_PITCH, "Arial");
 
     stdDisplay_dword_5D73D8  = 0;
     stdDisplay_dword_5D73DC  = 0;
@@ -955,7 +959,7 @@ int J3DAPI stdDisplay_VBufferFill(tVBuffer* pVBuffer, uint32_t color, const StdR
 }
 
 tVBuffer* J3DAPI stdDisplay_VBufferConvertColorFormat(const ColorInfo* pDesiredColorFormat, tVBuffer* pSrc,
-                                                      int bColorKey, LPDDCOLORKEY pColorKey)
+    int bColorKey, LPDDCOLORKEY pColorKey)
 {
     STD_ASSERTREL(pSrc != NULL);
 
@@ -1269,7 +1273,7 @@ static int J3DAPI stdDisplay_EnumerateDevices(void) //check
         }
 
         STDLOG_STATUS("Found %s OpenGL Device: %s [%s]\n", pDevice->bHAL ? "HAL" : "REF", pDevice->aDeviceName,
-                      pDevice->aDriverName);
+            pDevice->aDriverName);
         STDLOG_STATUS("Memory: 0x%x out of 0x%x free\n", pDevice->freeVideoMemory, pDevice->totalVideoMemory);
         ++stdDisplay_numDevices;
     }
@@ -1326,7 +1330,7 @@ static int J3DAPI stdDisplay_EnumerateVideoModes(SDL_DisplayID adapter) //checke
         // Check memory requirements (copied from DX6)
         size_t requiredVRam = 3 * pVideoMode->rasterInfo.size;
         STDLOG_STATUS("Video Mode: %ux%u %u bit (%u Hz), Required: %u bytes.\n", pVideoMode->rasterInfo.width,
-                      pVideoMode->rasterInfo.height, bpp, pVideoMode->refreshRate, requiredVRam);
+            pVideoMode->rasterInfo.height, bpp, pVideoMode->refreshRate, requiredVRam);
 
         ++stdDisplay_numVideoModes;
     }
@@ -1334,7 +1338,7 @@ static int J3DAPI stdDisplay_EnumerateVideoModes(SDL_DisplayID adapter) //checke
     if ( modeCount > STD_ARRAYLEN(stdDisplay_aVideoModes) - stdDisplay_numVideoModes )
     {
         STDLOG_WARNING("Too many video modes for adapter %d, only %zu modes supported.\n", adapter,
-                       STD_ARRAYLEN(stdDisplay_aVideoModes) - stdDisplay_numVideoModes);
+            STD_ARRAYLEN(stdDisplay_aVideoModes) - stdDisplay_numVideoModes);
     }
 
     SDL_free(modes);
@@ -1441,7 +1445,7 @@ static int J3DAPI stdDisplay_SetWindowMode(HWND hWnd, StdVideoMode* pDisplayMode
     SDL_SetWindowFullscreen(window, false);
 
     return stdDisplay_InitBuffers(NULL, pDisplayMode, /*bWindowMode=*/
-                                  true, 1);
+        true, 1);
 }
 
 int J3DAPI stdDisplay_SetFullscreenMode(HWND hwnd, const StdVideoMode* pDisplayMode, size_t numBackBuffers)
@@ -1456,11 +1460,11 @@ int J3DAPI stdDisplay_SetFullscreenMode(HWND hwnd, const StdVideoMode* pDisplayM
     SDL_SetWindowFullscreen(window, true);
 
     return stdDisplay_InitBuffers(NULL, pDisplayMode, /*bWindowMode=*/
-                                  true, 1);
+        true, 1);
 }
 
 int J3DAPI stdDisplay_InitBuffers(PDIRECT3DDEVICE9 pDevice, const StdVideoMode* pDisplayMode, bool bWindowMode,
-                                  size_t numBuffers)
+    size_t numBuffers)
 {
     tVSurface* surface = &stdDisplay_g_backBuffer.surface;
     if ( surface->fbo > 0 )
@@ -1504,7 +1508,7 @@ int J3DAPI stdDisplay_InitBuffers(PDIRECT3DDEVICE9 pDevice, const StdVideoMode* 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-                           GL_TEXTURE_2D, surface->colorTex, 0);
+        GL_TEXTURE_2D, surface->colorTex, 0);
 
     stdShader_SetActiveShader(stdDisplay_fboShader);
     GLint loc = glGetUniformLocation(stdDisplay_fboShader->handle, "sSceneTexture");
