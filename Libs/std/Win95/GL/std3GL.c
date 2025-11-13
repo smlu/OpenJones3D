@@ -13,9 +13,6 @@
 #include <std/RTI/symbols.h>
 
 #include <math.h>
-
-#include "SDL3/SDL.h"
-#include "glad/glad.h"
 #include "std/Win95/stdWin95.h"
 
 #define STD3D_DEFAULT_MAX_VERTICES 512
@@ -23,7 +20,7 @@
 static bool bStartup    = false;
 static bool std3D_bOpen = false;
 
-static D3DRECT std3D_activeRect = {0};
+static D3DRECT std3D_activeRect = { 0 };
 static_assert(sizeof(std3D_activeRect) == 4 * sizeof(float),
               "sizeof(std3D_activeRect) == 4 * sizeof(float)");
 // Must be 4 floats to be used in shader
@@ -42,14 +39,14 @@ static bool std3D_bFogTable           = false;
 static float std3D_fogDepthFactor     = 0.0f;
 static float std3D_fogStartDepth      = 0.0f;
 static float std3D_fogEndDepth        = 0.0f;
-static StdShaderVector std3D_fogColor = {0};
+static StdShaderVector std3D_fogColor = { 0 };
 
 static bool std3D_bFindAllD3Devices = false;
 static size_t std3D_curDevice       = 0;
 static Device3D* std3D_pCurDevice   = NULL;
 
 static size_t std3D_numDevices    = 0;
-static Device3D std3D_aDevices[4] = {0};
+static Device3D std3D_aDevices[4] = { 0 };
 
 static size_t std3D_numCachedTextures       = 0;
 static tSystemTexture* std3D_pFirstTexCache = NULL;
@@ -61,41 +58,41 @@ static size_t std3D_RGBAKeyTextureFormat;
 
 static bool std3D_bHasRGBTextureFormat           = false;
 static size_t std3D_numTextureFormats            = 0;
-static StdTextureFormat std3D_aTextureFormats[8] = {0};
+static StdTextureFormat std3D_aTextureFormats[8] = { 0 };
 
 static GLenum std3D_currentMipmapFiler = 0;
 
 static const DXStatus std3D_aD3DStatusTbl[30] = {
-    {D3D_OK, "D3D_OK"},
-    {D3DERR_WRONGTEXTUREFORMAT, "D3DERR_WRONGTEXTUREFORMAT"},
-    {D3DERR_UNSUPPORTEDCOLOROPERATION, "D3DERR_UNSUPPORTEDCOLOROPERATION"},
-    {D3DERR_UNSUPPORTEDCOLORARG, "D3DERR_UNSUPPORTEDCOLORARG"},
-    {D3DERR_UNSUPPORTEDALPHAOPERATION, "D3DERR_UNSUPPORTEDALPHAOPERATION"},
-    {D3DERR_UNSUPPORTEDALPHAARG, "D3DERR_UNSUPPORTEDALPHAARG"},
-    {D3DERR_TOOMANYOPERATIONS, "D3DERR_TOOMANYOPERATIONS"},
-    {D3DERR_CONFLICTINGTEXTUREFILTER, "D3DERR_CONFLICTINGTEXTUREFILTER"},
-    {D3DERR_UNSUPPORTEDFACTORVALUE, "D3DERR_UNSUPPORTEDFACTORVALUE"},
-    {D3DERR_CONFLICTINGRENDERSTATE, "D3DERR_CONFLICTINGRENDERSTATE"},
-    {D3DERR_UNSUPPORTEDTEXTUREFILTER, "D3DERR_UNSUPPORTEDTEXTUREFILTER"},
-    {D3DERR_CONFLICTINGTEXTUREPALETTE, "D3DERR_CONFLICTINGTEXTUREPALETTE"},
-    {D3DERR_DRIVERINTERNALERROR, "D3DERR_DRIVERINTERNALERROR"},
-    {D3DERR_NOTFOUND, "D3DERR_NOTFOUND"},
-    {D3DERR_MOREDATA, "D3DERR_MOREDATA"},
-    {D3DERR_DEVICELOST, "D3DERR_DEVICELOST"},
-    {D3DERR_DEVICENOTRESET, "D3DERR_DEVICENOTRESET"},
-    {D3DERR_NOTAVAILABLE, "D3DERR_NOTAVAILABLE"},
-    {D3DERR_OUTOFVIDEOMEMORY, "D3DERR_OUTOFVIDEOMEMORY"},
-    {D3DERR_INVALIDDEVICE, "D3DERR_INVALIDDEVICE"},
-    {D3DERR_INVALIDCALL, "D3DERR_INVALIDCALL"},
-    {D3DERR_DRIVERINVALIDCALL, "D3DERR_DRIVERINVALIDCALL"},
-    {D3DERR_WASSTILLDRAWING, "D3DERR_WASSTILLDRAWING"},
-    {E_FAIL, "E_FAIL"},
-    {E_INVALIDARG, "E_INVALIDARG"},
-    {E_OUTOFMEMORY, "E_OUTOFMEMORY"},
-    {E_NOTIMPL, "E_NOTIMPL"},
-    {S_FALSE, "S_FALSE"},
-    {E_NOINTERFACE, "E_NOINTERFACE"},
-    {E_POINTER, "E_POINTER"}
+    { D3D_OK, "D3D_OK" },
+    { D3DERR_WRONGTEXTUREFORMAT, "D3DERR_WRONGTEXTUREFORMAT" },
+    { D3DERR_UNSUPPORTEDCOLOROPERATION, "D3DERR_UNSUPPORTEDCOLOROPERATION" },
+    { D3DERR_UNSUPPORTEDCOLORARG, "D3DERR_UNSUPPORTEDCOLORARG" },
+    { D3DERR_UNSUPPORTEDALPHAOPERATION, "D3DERR_UNSUPPORTEDALPHAOPERATION" },
+    { D3DERR_UNSUPPORTEDALPHAARG, "D3DERR_UNSUPPORTEDALPHAARG" },
+    { D3DERR_TOOMANYOPERATIONS, "D3DERR_TOOMANYOPERATIONS" },
+    { D3DERR_CONFLICTINGTEXTUREFILTER, "D3DERR_CONFLICTINGTEXTUREFILTER" },
+    { D3DERR_UNSUPPORTEDFACTORVALUE, "D3DERR_UNSUPPORTEDFACTORVALUE" },
+    { D3DERR_CONFLICTINGRENDERSTATE, "D3DERR_CONFLICTINGRENDERSTATE" },
+    { D3DERR_UNSUPPORTEDTEXTUREFILTER, "D3DERR_UNSUPPORTEDTEXTUREFILTER" },
+    { D3DERR_CONFLICTINGTEXTUREPALETTE, "D3DERR_CONFLICTINGTEXTUREPALETTE" },
+    { D3DERR_DRIVERINTERNALERROR, "D3DERR_DRIVERINTERNALERROR" },
+    { D3DERR_NOTFOUND, "D3DERR_NOTFOUND" },
+    { D3DERR_MOREDATA, "D3DERR_MOREDATA" },
+    { D3DERR_DEVICELOST, "D3DERR_DEVICELOST" },
+    { D3DERR_DEVICENOTRESET, "D3DERR_DEVICENOTRESET" },
+    { D3DERR_NOTAVAILABLE, "D3DERR_NOTAVAILABLE" },
+    { D3DERR_OUTOFVIDEOMEMORY, "D3DERR_OUTOFVIDEOMEMORY" },
+    { D3DERR_INVALIDDEVICE, "D3DERR_INVALIDDEVICE" },
+    { D3DERR_INVALIDCALL, "D3DERR_INVALIDCALL" },
+    { D3DERR_DRIVERINVALIDCALL, "D3DERR_DRIVERINVALIDCALL" },
+    { D3DERR_WASSTILLDRAWING, "D3DERR_WASSTILLDRAWING" },
+    { E_FAIL, "E_FAIL" },
+    { E_INVALIDARG, "E_INVALIDARG" },
+    { E_OUTOFMEMORY, "E_OUTOFMEMORY" },
+    { E_NOTIMPL, "E_NOTIMPL" },
+    { S_FALSE, "S_FALSE" },
+    { E_NOINTERFACE, "E_NOINTERFACE" },
+    { E_POINTER, "E_POINTER" }
 };
 
 // Global state
@@ -245,7 +242,7 @@ const Device3D* std3D_GetAllDevices(void) { return std3D_aDevices; }
 
 static bool std3D_InitSystem(void)
 {
-    GLenum pixelFormat = {0};
+    GLenum pixelFormat = { 0 };
     if ( std3D_GetZBufferFormat(&pixelFormat) )
     {
         if ( stdDisplay_CreateZBuffer(NULL, std3D_pCurDevice->bHAL == 0) )
@@ -662,10 +659,11 @@ void J3DAPI std3D_DrawRenderList(tSysTexture* pTex, Std3DRenderState rdflags, LP
     // Set texture
     if ( pTex != std3D_pD3DTex )
     {
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, pTex->id);
-        GLint loc = glGetUniformLocation(std3D_activeShader->handle, "sTexture");
-        glUniform1i(loc, 1);
+        // glActiveTexture(GL_TEXTURE1);
+        // glBindTexture(GL_TEXTURE_2D, pTex->id);
+        // GLint loc = glGetUniformLocation(std3D_activeShader->handle, "sTexture");
+        // glUniform1i(loc, 1);
+        stdShader_SetTexture(std3D_activeShader, pTex->id);
         std3D_pD3DTex = pTex;
         // HRESULT d3dres = IDirect3DDevice9_SetTexture(std3D_pD3Device, 0,
         // (IDirect3DBaseTexture9*)pTex); if ( d3dres != D3D_OK )
@@ -1175,7 +1173,6 @@ void J3DAPI std3D_AddToTextureCache(tSystemTexture* pCacheTexture,
         std3D_PurgeTextureCache(pCacheTexture->textureSize);
     }
 
-    glActiveTexture(GL_TEXTURE1);
     GLuint tex = 0;
     glGenTextures(1, &tex);
     glBindTexture(GL_TEXTURE_2D, tex);
@@ -1268,7 +1265,6 @@ void std3D_ResetTextureCache(void)
 {
     STDLOG_DEBUG("Clearing texture cache....\n");
 
-    glActiveTexture(GL_TEXTURE1);
 
     glBindTexture(GL_TEXTURE_2D, 0);
 
@@ -1397,7 +1393,6 @@ int std3D_InitRenderState(void)
 
     std3D_SetMipmapFilter(STD3D_MIPMAPFILTER_TRILINEAR);
 
-    glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, 0); // Default-Basis
 
     // if (std3D_bAnisotropicFilter)
@@ -1468,18 +1463,18 @@ int J3DAPI std3D_SetMipmapFilter(Std3DMipmapFilterType filter)
     GLenum minFilter = GL_LINEAR; // default: keine Mipmaps
     switch ( filter )
     {
-    case STD3D_MIPMAPFILTER_BILINEAR:
-        minFilter = GL_LINEAR_MIPMAP_NEAREST;
-        break;
-    case STD3D_MIPMAPFILTER_TRILINEAR:
-        minFilter = GL_LINEAR_MIPMAP_LINEAR;
-        break;
-    case STD3D_MIPMAPFILTER_NONE:
-        minFilter = GL_LINEAR;
-        break;
-    default:
-        minFilter = GL_LINEAR;
-        break;
+        case STD3D_MIPMAPFILTER_BILINEAR:
+            minFilter = GL_LINEAR_MIPMAP_NEAREST;
+            break;
+        case STD3D_MIPMAPFILTER_TRILINEAR:
+            minFilter = GL_LINEAR_MIPMAP_LINEAR;
+            break;
+        case STD3D_MIPMAPFILTER_NONE:
+            minFilter = GL_LINEAR;
+            break;
+        default:
+            minFilter = GL_LINEAR;
+            break;
     }
 
     std3D_currentMipmapFiler = minFilter;
@@ -1657,7 +1652,7 @@ static int std3D_BuildDeviceList(void)
           i < numDisplayDevices && std3D_numDevices < STD_ARRAYLEN(std3D_aDevices);
           ++i )
     {
-        StdDisplayDevice displayDevice = {0};
+        StdDisplayDevice displayDevice = { 0 };
         if ( stdDisplay_GetDevice(i, &displayDevice) )
         {
             continue;

@@ -16,7 +16,7 @@
 #include <d3d9.h>
 #elif defined(J3D_OPENGL)
 #include <d3d9.h>
-#include <glad/glad.h>
+#include <glad/gl.h>
 #include <SDL3/SDL.h>
 #else
 #error "Unsupported GAPI"
