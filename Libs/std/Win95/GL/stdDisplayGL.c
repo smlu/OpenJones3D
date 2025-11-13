@@ -477,9 +477,7 @@ static int stdDisplay_InitFBOShader(void)
         STDLOG_ERROR("Error opening shader system.\n");
         return 0;
     }
-    stdDisplay_fboShader = stdShader_CompileAndCreate("std_fbo",
-                                                      "C:/Users/morit/Documents/GitHub/OpenJones3D/Libs/std/Win95/GL/Shaders/fbo.vert",
-                                                      "C:/Users/morit/Documents/GitHub/OpenJones3D/Libs/std/Win95/GL/Shaders/fbo.frag");
+    stdDisplay_fboShader = stdShader_CompileAndCreate("std_fbo", "fbo.vert", "fbo.frag");
     glGenVertexArrays(1, &stdDisplay_fullscreenVao);
     return 1;
 }
