@@ -19,7 +19,8 @@ typedef size_t StdShaderHandle;
 #define STDSHADER_INVALIDHANDLE ((StdShaderHandle)0)
 
 #if defined(J3D_OPENGL)
-typedef struct GLShaderProgram {
+typedef struct GLShaderProgram
+{
     GLuint handle;
     const char* name; // for debugging
 } GLShaderProgram;
@@ -30,24 +31,25 @@ typedef struct GLShaderProgram {
 typedef enum eStdShaderType
 {
     STDSHADER_TYPE_VERTEX = 1,
-    STDSHADER_TYPE_PIXEL  = 2,
+    STDSHADER_TYPE_PIXEL = 2,
     STDSHADER_MAX_TYPES
 } StdShaderType;
 
 // Shader parameter types
 typedef enum eStdShaderParamType
 {
-    STDSHADER_PARAM_FLOAT   = 1,
+    STDSHADER_PARAM_FLOAT = 1,
     STDSHADER_PARAM_VECTOR2 = 2,
     STDSHADER_PARAM_VECTOR3 = 3,
     STDSHADER_PARAM_VECTOR4 = 4,
-    STDSHADER_PARAM_MATRIX  = 5,
+    STDSHADER_PARAM_MATRIX = 5,
     STDSHADER_PARAM_TEXTURE = 6
 } StdShaderParamType;
 
 typedef struct sStdShaderParamValue
 {
     StdShaderParamType type;
+
     union
     {
         float floatValue;
@@ -98,6 +100,8 @@ StdShaderHandle stdShader_GetShader(const char* pName); // Get shader handle by 
 bool J3DAPI stdShader_SetActiveShader(GLShaderProgram* pSp); // Apply shader to device
 GLShaderProgram* J3DAPI stdShader_CompileAndCreate(const char* pName, const char* pVertexShaderCode, const char* pPixelShaderCode);
 void J3DAPI stdShader_Free(GLShaderProgram* sh);
+void stdShader_SetTexture(GLShaderProgram* sh, GLuint tex);
+void stdShader_SetActiveTextureUnit(int unit);
 #else
 bool J3DAPI stdShader_SetActiveShader(StdShaderHandle sh); // Apply shader to device
 StdShaderHandle J3DAPI stdShader_CompileAndCreate(const char* pName, const char* pVertexShaderCode, const char* pPixelShaderCode); // Compile shader from source code and create new shader
