@@ -55,30 +55,51 @@ jobs:
         New-Item -ItemType Directory -Force -Path $repoIncludePath
         New-Item -ItemType Directory -Force -Path $repoLibPath
         
-        # Extract the SDK (it's a self-extracting archive)
-        Write-Host "Extracting DirectX 6.1 SDK..."
-        Start-Process -FilePath $sdkExe -ArgumentList "/Q", "/C", "/T:$extractPath" -Wait -NoNewWindow
+        # Extract using 7-Zip (pre-installed on GitHub runners)
+        Write-Host "Extracting DirectX 6.1 SDK with 7-Zip..."
+        & "C:\Program Files\7-Zip\7z.exe" x $sdkExe -o"$extractPath" -y
+        
+        Write-Host "`nExtracted directory structure:"
+        Get-ChildItem -Path $extractPath -Recurse -Depth 2 | Format-Table FullName
         
         # Find and copy include files
-        Write-Host "Copying include files..."
-        $includeSource = Get-ChildItem -Path $extractPath -Recurse -Directory | Where-Object { $_.Name -eq "include" } | Select-Object -First 1
+        Write-Host "`nSearching for include files..."
+        $includeSource = Get-ChildItem -Path $extractPath -Recurse -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -eq "include" } | Select-Object -First 1
         if ($includeSource) {
+          Write-Host "Found include directory at: $($includeSource.FullName)"
           Copy-Item -Path "$($includeSource.FullName)\*" -Destination $repoIncludePath -Recurse -Force
           Write-Host "Include files copied to: $repoIncludePath"
         } else {
-          Write-Error "Could not find include directory in extracted SDK"
-          exit 1
+          # Try alternative: look for header files directly
+          Write-Host "Looking for header files directly..."
+          $headerFiles = Get-ChildItem -Path $extractPath -Recurse -Filter "*.h" -ErrorAction SilentlyContinue
+          if ($headerFiles) {
+            $headerFiles | ForEach-Object { Copy-Item $_.FullName -Destination $repoIncludePath -Force }
+            Write-Host "Copied $($headerFiles.Count) header files"
+          } else {
+            Write-Error "Could not find include files in extracted SDK"
+            exit 1
+          }
         }
         
         # Find and copy lib files (x86 libraries)
-        Write-Host "Copying library files..."
-        $libSource = Get-ChildItem -Path $extractPath -Recurse -Directory | Where-Object { $_.Name -like "*lib*" -or $_.Name -eq "x86" } | Select-Object -First 1
+        Write-Host "`nSearching for library files..."
+        $libSource = Get-ChildItem -Path $extractPath -Recurse -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -match "lib" } | Select-Object -First 1
         if ($libSource) {
+          Write-Host "Found lib directory at: $($libSource.FullName)"
           Copy-Item -Path "$($libSource.FullName)\*.lib" -Destination $repoLibPath -Force
           Write-Host "Library files copied to: $repoLibPath"
         } else {
-          Write-Error "Could not find lib directory in extracted SDK"
-          exit 1
+          # Try alternative: look for .lib files directly
+          Write-Host "Looking for .lib files directly..."
+          $libFiles = Get-ChildItem -Path $extractPath -Recurse -Filter "*.lib" -ErrorAction SilentlyContinue
+          if ($libFiles) {
+            $libFiles | ForEach-Object { Copy-Item $_.FullName -Destination $repoLibPath -Force }
+            Write-Host "Copied $($libFiles.Count) library files"
+          } else {
+            Write-Error "Could not find library files in extracted SDK"
+            exit 1
+          }
         }
         
         # List what we copied
