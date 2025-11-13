@@ -5,16 +5,16 @@
 #include <std/Win95/stdWin95.h>
 
 #include <SDL3/SDL.h>
-#include <glad/glad.h>
+#include <glad/gl.h>
 
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
 
 static const SDL_GUID wkernel_guid = {
-    0xA0, 0x4D, 0xCE, 0x82,  // Data1: 0x82CE4DA0
-    0xBF, 0x9C,              // Data2: 0x9CBF
-    0xD1, 0x01,              // Data3: 0x1D1
+    0xA0, 0x4D, 0xCE, 0x82, // Data1: 0x82CE4DA0
+    0xBF, 0x9C, // Data2: 0x9CBF
+    0xD1, 0x01, // Data3: 0x1D1
     0x90, 0x85, 0x00, 0x60, 0x97, 0x76, 0xEA, 0x02
 };
 static const char wkernel_aClassName[] = "wKernelJones3D";
@@ -32,7 +32,7 @@ static WKERNELWNDPROC wkernel_pfWndProc         = NULL;
 static WNDPROC wkernel_sdlWndProc               = NULL; // Store the original SDL WndProc
 
 // Window stats
-static LONG wkernel_currentStyle    = 0;
+static LONG wkernel_currentStyle = 0;
 
 // SDL key scancode to VK translation table
 static const WPARAM wkernel_sdlScancodeToVK[SDL_SCANCODE_COUNT] =
@@ -80,15 +80,15 @@ static const WPARAM wkernel_sdlScancodeToVK[SDL_SCANCODE_COUNT] =
     [SDL_SCANCODE_0] = '0',
 
     // Function keys
-    [SDL_SCANCODE_F1]  = VK_F1,
-    [SDL_SCANCODE_F2]  = VK_F2,
-    [SDL_SCANCODE_F3]  = VK_F3,
-    [SDL_SCANCODE_F4]  = VK_F4,
-    [SDL_SCANCODE_F5]  = VK_F5,
-    [SDL_SCANCODE_F6]  = VK_F6,
-    [SDL_SCANCODE_F7]  = VK_F7,
-    [SDL_SCANCODE_F8]  = VK_F8,
-    [SDL_SCANCODE_F9]  = VK_F9,
+    [SDL_SCANCODE_F1] = VK_F1,
+    [SDL_SCANCODE_F2] = VK_F2,
+    [SDL_SCANCODE_F3] = VK_F3,
+    [SDL_SCANCODE_F4] = VK_F4,
+    [SDL_SCANCODE_F5] = VK_F5,
+    [SDL_SCANCODE_F6] = VK_F6,
+    [SDL_SCANCODE_F7] = VK_F7,
+    [SDL_SCANCODE_F8] = VK_F8,
+    [SDL_SCANCODE_F9] = VK_F9,
     [SDL_SCANCODE_F10] = VK_F10,
     [SDL_SCANCODE_F11] = VK_F11,
     [SDL_SCANCODE_F12] = VK_F12,
@@ -106,104 +106,104 @@ static const WPARAM wkernel_sdlScancodeToVK[SDL_SCANCODE_COUNT] =
     [SDL_SCANCODE_F24] = VK_F24,
 
     // Arrow keys
-    [SDL_SCANCODE_UP]    = VK_UP,
-    [SDL_SCANCODE_DOWN]  = VK_DOWN,
-    [SDL_SCANCODE_LEFT]  = VK_LEFT,
+    [SDL_SCANCODE_UP] = VK_UP,
+    [SDL_SCANCODE_DOWN] = VK_DOWN,
+    [SDL_SCANCODE_LEFT] = VK_LEFT,
     [SDL_SCANCODE_RIGHT] = VK_RIGHT,
 
     // Special keys
-    [SDL_SCANCODE_RETURN]       = VK_RETURN,
-    [SDL_SCANCODE_ESCAPE]       = VK_ESCAPE,
-    [SDL_SCANCODE_BACKSPACE]    = VK_BACK,
-    [SDL_SCANCODE_TAB]          = VK_TAB,
-    [SDL_SCANCODE_SPACE]        = VK_SPACE,
-    [SDL_SCANCODE_MINUS]        = VK_OEM_MINUS,
-    [SDL_SCANCODE_EQUALS]       = VK_OEM_PLUS,
-    [SDL_SCANCODE_LEFTBRACKET]  = VK_OEM_4,
+    [SDL_SCANCODE_RETURN] = VK_RETURN,
+    [SDL_SCANCODE_ESCAPE] = VK_ESCAPE,
+    [SDL_SCANCODE_BACKSPACE] = VK_BACK,
+    [SDL_SCANCODE_TAB] = VK_TAB,
+    [SDL_SCANCODE_SPACE] = VK_SPACE,
+    [SDL_SCANCODE_MINUS] = VK_OEM_MINUS,
+    [SDL_SCANCODE_EQUALS] = VK_OEM_PLUS,
+    [SDL_SCANCODE_LEFTBRACKET] = VK_OEM_4,
     [SDL_SCANCODE_RIGHTBRACKET] = VK_OEM_6,
-    [SDL_SCANCODE_BACKSLASH]    = VK_OEM_5,
-    [SDL_SCANCODE_SEMICOLON]    = VK_OEM_1,
-    [SDL_SCANCODE_APOSTROPHE]   = VK_OEM_7,
-    [SDL_SCANCODE_GRAVE]        = VK_OEM_3,
-    [SDL_SCANCODE_COMMA]        = VK_OEM_COMMA,
-    [SDL_SCANCODE_PERIOD]       = VK_OEM_PERIOD,
-    [SDL_SCANCODE_SLASH]        = VK_OEM_2,
+    [SDL_SCANCODE_BACKSLASH] = VK_OEM_5,
+    [SDL_SCANCODE_SEMICOLON] = VK_OEM_1,
+    [SDL_SCANCODE_APOSTROPHE] = VK_OEM_7,
+    [SDL_SCANCODE_GRAVE] = VK_OEM_3,
+    [SDL_SCANCODE_COMMA] = VK_OEM_COMMA,
+    [SDL_SCANCODE_PERIOD] = VK_OEM_PERIOD,
+    [SDL_SCANCODE_SLASH] = VK_OEM_2,
 
     // Modifier keys
     [SDL_SCANCODE_LSHIFT] = VK_LSHIFT,
     [SDL_SCANCODE_RSHIFT] = VK_RSHIFT,
-    [SDL_SCANCODE_LCTRL]  = VK_LCONTROL,
-    [SDL_SCANCODE_RCTRL]  = VK_RCONTROL,
-    [SDL_SCANCODE_LALT]   = VK_LMENU,
-    [SDL_SCANCODE_RALT]   = VK_RMENU,
-    [SDL_SCANCODE_LGUI]   = VK_LWIN,
-    [SDL_SCANCODE_RGUI]   = VK_RWIN,
+    [SDL_SCANCODE_LCTRL] = VK_LCONTROL,
+    [SDL_SCANCODE_RCTRL] = VK_RCONTROL,
+    [SDL_SCANCODE_LALT] = VK_LMENU,
+    [SDL_SCANCODE_RALT] = VK_RMENU,
+    [SDL_SCANCODE_LGUI] = VK_LWIN,
+    [SDL_SCANCODE_RGUI] = VK_RWIN,
 
     // Editing keys
-    [SDL_SCANCODE_INSERT]   = VK_INSERT,
-    [SDL_SCANCODE_DELETE]   = VK_DELETE,
-    [SDL_SCANCODE_HOME]     = VK_HOME,
-    [SDL_SCANCODE_END]      = VK_END,
-    [SDL_SCANCODE_PAGEUP]   = VK_PRIOR,
+    [SDL_SCANCODE_INSERT] = VK_INSERT,
+    [SDL_SCANCODE_DELETE] = VK_DELETE,
+    [SDL_SCANCODE_HOME] = VK_HOME,
+    [SDL_SCANCODE_END] = VK_END,
+    [SDL_SCANCODE_PAGEUP] = VK_PRIOR,
     [SDL_SCANCODE_PAGEDOWN] = VK_NEXT,
 
     // Lock keys
-    [SDL_SCANCODE_CAPSLOCK]     = VK_CAPITAL,
+    [SDL_SCANCODE_CAPSLOCK] = VK_CAPITAL,
     [SDL_SCANCODE_NUMLOCKCLEAR] = VK_NUMLOCK,
-    [SDL_SCANCODE_SCROLLLOCK]   = VK_SCROLL,
+    [SDL_SCANCODE_SCROLLLOCK] = VK_SCROLL,
 
     // Numpad
-    [SDL_SCANCODE_KP_0]        = VK_NUMPAD0,
-    [SDL_SCANCODE_KP_1]        = VK_NUMPAD1,
-    [SDL_SCANCODE_KP_2]        = VK_NUMPAD2,
-    [SDL_SCANCODE_KP_3]        = VK_NUMPAD3,
-    [SDL_SCANCODE_KP_4]        = VK_NUMPAD4,
-    [SDL_SCANCODE_KP_5]        = VK_NUMPAD5,
-    [SDL_SCANCODE_KP_6]        = VK_NUMPAD6,
-    [SDL_SCANCODE_KP_7]        = VK_NUMPAD7,
-    [SDL_SCANCODE_KP_8]        = VK_NUMPAD8,
-    [SDL_SCANCODE_KP_9]        = VK_NUMPAD9,
-    [SDL_SCANCODE_KP_DIVIDE]   = VK_DIVIDE,
+    [SDL_SCANCODE_KP_0] = VK_NUMPAD0,
+    [SDL_SCANCODE_KP_1] = VK_NUMPAD1,
+    [SDL_SCANCODE_KP_2] = VK_NUMPAD2,
+    [SDL_SCANCODE_KP_3] = VK_NUMPAD3,
+    [SDL_SCANCODE_KP_4] = VK_NUMPAD4,
+    [SDL_SCANCODE_KP_5] = VK_NUMPAD5,
+    [SDL_SCANCODE_KP_6] = VK_NUMPAD6,
+    [SDL_SCANCODE_KP_7] = VK_NUMPAD7,
+    [SDL_SCANCODE_KP_8] = VK_NUMPAD8,
+    [SDL_SCANCODE_KP_9] = VK_NUMPAD9,
+    [SDL_SCANCODE_KP_DIVIDE] = VK_DIVIDE,
     [SDL_SCANCODE_KP_MULTIPLY] = VK_MULTIPLY,
-    [SDL_SCANCODE_KP_MINUS]    = VK_SUBTRACT,
-    [SDL_SCANCODE_KP_PLUS]     = VK_ADD,
-    [SDL_SCANCODE_KP_ENTER]    = VK_RETURN,
-    [SDL_SCANCODE_KP_PERIOD]   = VK_DECIMAL,
+    [SDL_SCANCODE_KP_MINUS] = VK_SUBTRACT,
+    [SDL_SCANCODE_KP_PLUS] = VK_ADD,
+    [SDL_SCANCODE_KP_ENTER] = VK_RETURN,
+    [SDL_SCANCODE_KP_PERIOD] = VK_DECIMAL,
 
     // System keys
     [SDL_SCANCODE_PRINTSCREEN] = VK_SNAPSHOT,
-    [SDL_SCANCODE_PAUSE]       = VK_PAUSE,
+    [SDL_SCANCODE_PAUSE] = VK_PAUSE,
     [SDL_SCANCODE_APPLICATION] = VK_APPS,
-    [SDL_SCANCODE_MENU]        = VK_MENU,
-    [SDL_SCANCODE_SELECT]      = VK_SELECT,
-    [SDL_SCANCODE_EXECUTE]     = VK_EXECUTE,
-    [SDL_SCANCODE_HELP]        = VK_HELP,
+    [SDL_SCANCODE_MENU] = VK_MENU,
+    [SDL_SCANCODE_SELECT] = VK_SELECT,
+    [SDL_SCANCODE_EXECUTE] = VK_EXECUTE,
+    [SDL_SCANCODE_HELP] = VK_HELP,
 
     // Media keys
-    [SDL_SCANCODE_MUTE]       = VK_VOLUME_MUTE,
-    [SDL_SCANCODE_VOLUMEUP]   = VK_VOLUME_UP,
+    [SDL_SCANCODE_MUTE] = VK_VOLUME_MUTE,
+    [SDL_SCANCODE_VOLUMEUP] = VK_VOLUME_UP,
     [SDL_SCANCODE_VOLUMEDOWN] = VK_VOLUME_DOWN,
 
     // Browser keys
-    [SDL_SCANCODE_AC_BACK]      = VK_BROWSER_BACK,
-    [SDL_SCANCODE_AC_FORWARD]   = VK_BROWSER_FORWARD,
-    [SDL_SCANCODE_AC_REFRESH]   = VK_BROWSER_REFRESH,
-    [SDL_SCANCODE_AC_STOP]      = VK_BROWSER_STOP,
-    [SDL_SCANCODE_AC_SEARCH]    = VK_BROWSER_SEARCH,
+    [SDL_SCANCODE_AC_BACK] = VK_BROWSER_BACK,
+    [SDL_SCANCODE_AC_FORWARD] = VK_BROWSER_FORWARD,
+    [SDL_SCANCODE_AC_REFRESH] = VK_BROWSER_REFRESH,
+    [SDL_SCANCODE_AC_STOP] = VK_BROWSER_STOP,
+    [SDL_SCANCODE_AC_SEARCH] = VK_BROWSER_SEARCH,
     [SDL_SCANCODE_AC_BOOKMARKS] = VK_BROWSER_FAVORITES,
-    [SDL_SCANCODE_AC_HOME]      = VK_BROWSER_HOME,
+    [SDL_SCANCODE_AC_HOME] = VK_BROWSER_HOME,
 
-    [SDL_SCANCODE_MINUS]          = VK_OEM_MINUS,   // -_
-    [SDL_SCANCODE_EQUALS]         = VK_OEM_PLUS,    // =+
-    [SDL_SCANCODE_LEFTBRACKET]    = VK_OEM_4,       // [{
-    [SDL_SCANCODE_RIGHTBRACKET]   = VK_OEM_6,       // ]}
-    [SDL_SCANCODE_BACKSLASH]      = VK_OEM_5,       // \|
-    [SDL_SCANCODE_SEMICOLON]      = VK_OEM_1,       // ;:
-    [SDL_SCANCODE_APOSTROPHE]     = VK_OEM_7,       // '"
-    [SDL_SCANCODE_GRAVE]          = VK_OEM_3,       // `~
-    [SDL_SCANCODE_COMMA]          = VK_OEM_COMMA,   // ,
-    [SDL_SCANCODE_PERIOD]         = VK_OEM_PERIOD,  // .>
-    [SDL_SCANCODE_SLASH]          = VK_OEM_2,       // /?
+    [SDL_SCANCODE_MINUS] = VK_OEM_MINUS, // -_
+    [SDL_SCANCODE_EQUALS] = VK_OEM_PLUS, // =+
+    [SDL_SCANCODE_LEFTBRACKET] = VK_OEM_4, // [{
+    [SDL_SCANCODE_RIGHTBRACKET] = VK_OEM_6, // ]}
+    [SDL_SCANCODE_BACKSLASH] = VK_OEM_5, // \|
+    [SDL_SCANCODE_SEMICOLON] = VK_OEM_1, // ;:
+    [SDL_SCANCODE_APOSTROPHE] = VK_OEM_7, // '"
+    [SDL_SCANCODE_GRAVE] = VK_OEM_3, // `~
+    [SDL_SCANCODE_COMMA] = VK_OEM_COMMA, // ,
+    [SDL_SCANCODE_PERIOD] = VK_OEM_PERIOD, // .>
+    [SDL_SCANCODE_SLASH] = VK_OEM_2, // /?
     [SDL_SCANCODE_NONUSBACKSLASH] = VK_OEM_102,
 };
 
@@ -264,18 +264,18 @@ LPARAM wkernel_GetVKeyLParam(const SDL_KeyboardEvent* e, int vk)
 
 
     // Previous key state if repeat, assume was down
-    unsigned int prevState  = (e->repeat) ? 1 : 0;
+    unsigned int prevState = (e->repeat) ? 1 : 0;
 
     // Transition state  0 for WM_KEYDOWN, 1 for WM_KEYUP
     unsigned int transition = (e->down) ? 0 : 1;
 
     LPARAM lParam = 0;
-    lParam |= (repeatCount & 0xFFFF);           // Bits 0-15
-    lParam |= ((scanCode & 0xFF) << 16);         // Bits 16-23
-    lParam |= (extended << 24);                 // Bit 24 (KF_EXTENDED in HIWORD)
+    lParam |= (repeatCount & 0xFFFF); // Bits 0-15
+    lParam |= ((scanCode & 0xFF) << 16); // Bits 16-23
+    lParam |= (extended << 24); // Bit 24 (KF_EXTENDED in HIWORD)
     // Bits 25-28 reserved (KF_DLGMODE, KF_MENUMODE would go here but we don't track dialog/menu state)
-    lParam |= (prevState << 30);                // Bit 30 (KF_REPEAT)
-    lParam |= (transition << 31);               // Bit 31 (KF_UP)
+    lParam |= (prevState << 30); // Bit 30 (KF_REPEAT)
+    lParam |= (transition << 31); // Bit 31 (KF_UP)
 
     return lParam;
 }
@@ -298,7 +298,8 @@ void wkernel_InstallHooks(void)
 }
 
 void wkernel_ResetGlobals(void)
-{}
+{
+}
 
 int J3DAPI wkernel_Run(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd, LPCSTR lpWindowName)
 {
@@ -368,21 +369,21 @@ int J3DAPI wkernel_Run(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmd
 WKERNELPROC J3DAPI wkernel_SetProcessProc(WKERNELPROC pfProc)
 {
     WKERNELPROC pfCurProc = wkernel_pfProcess;
-    wkernel_pfProcess = pfProc;
+    wkernel_pfProcess     = pfProc;
     return pfCurProc;
 }
 
 WKERNELSTARTUPPROC J3DAPI wkernel_SetStartupCallback(WKERNELSTARTUPPROC pfOnClose)
 {
     WKERNELSTARTUPPROC pfCurProc = wkernel_pfOnStartup;
-    wkernel_pfOnStartup = pfOnClose;
+    wkernel_pfOnStartup          = pfOnClose;
     return pfCurProc;
 }
 
 WKERNELSHUTDOWNPROC J3DAPI wkernel_SetShutdownCallback(WKERNELSHUTDOWNPROC pfOnClose)
 {
     WKERNELSHUTDOWNPROC pfCurProc = wkernel_pfOnShutdown;
-    wkernel_pfOnShutdown = pfOnClose;
+    wkernel_pfOnShutdown          = pfOnClose;
     return pfCurProc;
 }
 
@@ -400,9 +401,9 @@ int wkernel_PeekProcessEvents(void)
     while ( SDL_WaitEvent(&event) )
     {
         // TODO: Reserved for future multi-platform handling
-    #ifndef _WIN32
+#ifndef _WIN32
         wkernel_ProcessEvent(&event);
-    #endif
+#endif
 
         // Check for quit (GetMessage returns 0 for WM_QUIT)
         if ( wkernel_quit_requested )
@@ -430,9 +431,9 @@ int wkernel_ProcessEvents(void)
     while ( SDL_WaitEvent(&event) )
     {
         // TODO: Reserved for future multi-platform handling
-    #ifndef _WIN32
+#ifndef _WIN32
         wkernel_ProcessEvent(&event);
-    #endif
+#endif
 
         // Exit if quit message received
         if ( wkernel_quit_requested )
@@ -540,7 +541,8 @@ static LRESULT wkernel_ProcessEvent(SDL_Event* pEvent)
                 if ( SDL_GetModState() & SDL_KMOD_SHIFT ) wParam |= MK_SHIFT;
                 return wkernel_MainWndProc(wkernel_hwnd, uMsg, wParam, lParam);
             }
-        } break;
+        }
+        break;
         case SDL_EVENT_MOUSE_BUTTON_UP:
         {
             UINT uMsg = 0;
@@ -566,7 +568,8 @@ static LRESULT wkernel_ProcessEvent(SDL_Event* pEvent)
 
                 return wkernel_MainWndProc(wkernel_hwnd, uMsg, wParam, lParam);
             }
-        } break;
+        }
+        break;
         case SDL_EVENT_MOUSE_MOTION:
         {
             LPARAM lParam = MAKELPARAM((int)pEvent->motion.x, (int)pEvent->motion.y);
@@ -600,14 +603,14 @@ static LRESULT wkernel_ProcessEvent(SDL_Event* pEvent)
         case SDL_EVENT_WINDOW_FOCUS_GAINED:
         {
             int bHandled = wkernel_MainWndProc(wkernel_hwnd, WM_ACTIVATEAPP, TRUE, 0);
-            bHandled = bHandled || wkernel_MainWndProc(wkernel_hwnd, WM_ACTIVATE, WA_ACTIVE, 0);
+            bHandled     = bHandled || wkernel_MainWndProc(wkernel_hwnd, WM_ACTIVATE, WA_ACTIVE, 0);
             return bHandled || wkernel_MainWndProc(wkernel_hwnd, WM_SETFOCUS, 0, 0);
         }
 
         case SDL_EVENT_WINDOW_FOCUS_LOST:
         {
             int bHandled = wkernel_MainWndProc(wkernel_hwnd, WM_ACTIVATEAPP, FALSE, 0);
-            bHandled = bHandled || wkernel_MainWndProc(wkernel_hwnd, WM_ACTIVATE, WA_INACTIVE, 0);
+            bHandled     = bHandled || wkernel_MainWndProc(wkernel_hwnd, WM_ACTIVATE, WA_INACTIVE, 0);
             return bHandled || wkernel_MainWndProc(wkernel_hwnd, WM_KILLFOCUS, 0, 0);
         }
         case SDL_EVENT_WINDOW_SHOWN:
@@ -651,7 +654,6 @@ void J3DAPI wkernel_SetWindowStyle(LONG dwNewLong)
 
         if ( dwNewLong & WS_CAPTION )
         {
-
         }
 
         if ( dwNewLong & WS_THICKFRAME )
@@ -707,7 +709,7 @@ int J3DAPI wkernel_CreateWindow(HINSTANCE hInstance, int nShowCmd, LPCSTR lpWind
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG);
 
     // Get display mode for initial size
-    SDL_DisplayID displayID = SDL_GetPrimaryDisplay();
+    SDL_DisplayID displayID      = SDL_GetPrimaryDisplay();
     const SDL_DisplayMode* pMode = SDL_GetCurrentDisplayMode(displayID);
     if ( !pMode )
     {
@@ -754,7 +756,7 @@ int J3DAPI wkernel_CreateWindow(HINSTANCE hInstance, int nShowCmd, LPCSTR lpWind
     }
 
     // Initialize GLAD
-    if ( !gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress) )
+    if ( !gladLoadGL((GLADloadfunc)SDL_GL_GetProcAddress) )
     {
         fprintf(stderr, "ERROR: wkernel_CreateWindow: Failed to initialize GLAD\n");
         SDL_GL_DestroyContext(wkernel_glContext);
@@ -764,9 +766,9 @@ int J3DAPI wkernel_CreateWindow(HINSTANCE hInstance, int nShowCmd, LPCSTR lpWind
 
     SDL_GL_MakeCurrent(wkernel_sdlWindow, wkernel_glContext);
 
-   // Get HWND
+    // Get HWND
     SDL_PropertiesID props = SDL_GetWindowProperties(wkernel_sdlWindow);
-    wkernel_hwnd = (HWND)SDL_GetPointerProperty(props, SDL_PROP_WINDOW_WIN32_HWND_POINTER, NULL);
+    wkernel_hwnd           = (HWND)SDL_GetPointerProperty(props, SDL_PROP_WINDOW_WIN32_HWND_POINTER, NULL);
     if ( !wkernel_hwnd )
     {
         fprintf(stderr, "ERROR: wkernel_CreateWindow: Failed to retrieve SDL window HWND\n");
@@ -816,14 +818,14 @@ LRESULT CALLBACK wkernel_MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM
         if ( (wParam & 0xFFF0) == SC_CLOSE ) // Added
         {
             wkernel_quit_requested = true;
-            bProcess = false;
+            bProcess               = false;
         }
     }
 
     if ( uMsg == WM_DESTROY )
     {
         wkernel_quit_requested = true;
-        bProcess = false;
+        bProcess               = false;
     }
 
     if ( uMsg == WM_CLOSE )
@@ -832,7 +834,7 @@ LRESULT CALLBACK wkernel_MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM
         {
             wkernel_pfOnShutdown();
         }
-        bProcess = false;
+        bProcess               = false;
         wkernel_quit_requested = true;
     }
 

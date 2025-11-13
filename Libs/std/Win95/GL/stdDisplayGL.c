@@ -11,10 +11,6 @@
 #include <std/General/stdMemory.h>
 #include <std/General/stdUtil.h>
 #include <std/RTI/symbols.h>
-#include <glad/glad.h>
-#include <SDL3/SDL.h>
-
-#include "SDL3/SDL_opengl_glext.h"
 
 
 #define STDDISPLAY_MINFRAMERATE 30
@@ -55,12 +51,12 @@ typedef struct
     int lockRef;
 } GdiBuffer;
 
-static GdiBuffer g_gdi      = {0};
-static GdiBuffer g_frontGDI = {0};
+static GdiBuffer g_gdi      = { 0 };
+static GdiBuffer g_frontGDI = { 0 };
 
 // Public globals
 //tVBuffer stdDisplay_g_frontBuffer = {0}; //extra front buffer shouldn't be needed
-tVBuffer stdDisplay_g_backBuffer = {0};
+tVBuffer stdDisplay_g_backBuffer = { 0 };
 
 // Private globals
 static bool stdDisplay_bStartup    = false;
@@ -77,7 +73,7 @@ static int stdDisplay_backbufWidth                 = 0;
 static int stdDisplay_backbufHeight                = 0;
 static size_t stdDisplay_backLockRef               = 0;
 static HDC stdDisplay_hdcBack                      = NULL;
-static D3DLOCKED_RECT stdDisplay_backLockedRect    = {0};
+static D3DLOCKED_RECT stdDisplay_backLockedRect    = { 0 };
 static LPDIRECT3DSURFACE9 stdDisplay_pBackLockSurf = NULL; // temp lockable backbuffer surface when MSAA is enabled
 
 // Front buffer local vars
@@ -88,17 +84,17 @@ static HDC stdDisplay_hdcFront        = NULL;
 static tVBuffer* stdDisplay_zBuffer;
 
 static StdVideoMode* stdDisplay_pCurVideoMode   = NULL;
-static StdVideoMode stdDisplay_primaryVideoMode = {0};
+static StdVideoMode stdDisplay_primaryVideoMode = { 0 };
 
 static size_t stdDisplay_numVideoModes          = 0;
-static StdVideoMode stdDisplay_aVideoModes[512] = {0};
+static StdVideoMode stdDisplay_aVideoModes[512] = { 0 };
 
 static SDL_DisplayID stdDisplay_curDevice;
 static SDL_DisplayID* stdDisplay_availableDisplays = NULL;
 static StdDisplayDevice* stdDisplay_pCurDevice     = NULL;
 
 static size_t stdDisplay_numDevices                    = 0;
-static StdDisplayDevice stdDisplay_aDisplayDevices[16] = {0};
+static StdDisplayDevice stdDisplay_aDisplayDevices[16] = { 0 };
 
 static HFONT stdDisplay_hFont;
 
@@ -133,18 +129,18 @@ static enum GLMultiSample stdDisplay_msaaSampleType = GL_MULTISAMPLE_NONE;
 // DirectX 9 status table - simplified version of common errors
 static const DXStatus stdDisplay_aD3DStatusTbl[] =
 {
-    {D3D_OK, "D3D_OK"},
-    {D3DERR_DEVICELOST, "D3DERR_DEVICELOST"},
-    {D3DERR_DEVICENOTRESET, "D3DERR_DEVICENOTRESET"},
-    {D3DERR_NOTAVAILABLE, "D3DERR_NOTAVAILABLE"},
-    {D3DERR_OUTOFVIDEOMEMORY, "D3DERR_OUTOFVIDEOMEMORY"},
-    {D3DERR_INVALIDDEVICE, "D3DERR_INVALIDDEVICE"},
-    {D3DERR_INVALIDCALL, "D3DERR_INVALIDCALL"},
-    {D3DERR_DRIVERINVALIDCALL, "D3DERR_DRIVERINVALIDCALL"},
-    {D3DERR_WASSTILLDRAWING, "D3DERR_WASSTILLDRAWING"},
-    {E_OUTOFMEMORY, "E_OUTOFMEMORY"},
-    {E_INVALIDARG, "E_INVALIDARG"},
-    {E_FAIL, "E_FAIL"}
+    { D3D_OK, "D3D_OK" },
+    { D3DERR_DEVICELOST, "D3DERR_DEVICELOST" },
+    { D3DERR_DEVICENOTRESET, "D3DERR_DEVICENOTRESET" },
+    { D3DERR_NOTAVAILABLE, "D3DERR_NOTAVAILABLE" },
+    { D3DERR_OUTOFVIDEOMEMORY, "D3DERR_OUTOFVIDEOMEMORY" },
+    { D3DERR_INVALIDDEVICE, "D3DERR_INVALIDDEVICE" },
+    { D3DERR_INVALIDCALL, "D3DERR_INVALIDCALL" },
+    { D3DERR_DRIVERINVALIDCALL, "D3DERR_DRIVERINVALIDCALL" },
+    { D3DERR_WASSTILLDRAWING, "D3DERR_WASSTILLDRAWING" },
+    { E_OUTOFMEMORY, "E_OUTOFMEMORY" },
+    { E_INVALIDARG, "E_INVALIDARG" },
+    { E_FAIL, "E_FAIL" }
 };
 
 // Helper functions
@@ -181,7 +177,7 @@ static int stdDisplay_InitGDIBackbuffer(GdiBuffer* buffer, int w, int h)
 {
     if ( g_gdi.hdc ) return 1; // schon da
 
-    BITMAPINFO bi              = {0};
+    BITMAPINFO bi              = { 0 };
     bi.bmiHeader.biSize        = sizeof(BITMAPINFOHEADER);
     bi.bmiHeader.biWidth       = w;
     bi.bmiHeader.biHeight      = -h; // top-down
@@ -350,18 +346,22 @@ static void stdDisplay_InitMSAASettings(void) //checked
     // Change that later? Enum seems unneccessary, stdDisplay_msaaSampleCount should be enough to store
     switch ( stdDisplay_msaaSampleCount )
     {
-    case 2: stdDisplay_msaaSampleType = GL_MULTISAMPLE_2_SAMPLES;
-        break;
-    case 4: stdDisplay_msaaSampleType = GL_MULTISAMPLE_4_SAMPLES;
-        break;
-    case 8: stdDisplay_msaaSampleType = GL_MULTISAMPLE_8_SAMPLES;
-        break;
-    case 16: stdDisplay_msaaSampleType = GL_MULTISAMPLE_16_SAMPLES;
-        break;
-    default:
-        stdDisplay_msaaSampleType = GL_MULTISAMPLE_4_SAMPLES;
-        stdDisplay_msaaSampleCount = 4;
-        break;
+        case 2:
+            stdDisplay_msaaSampleType = GL_MULTISAMPLE_2_SAMPLES;
+            break;
+        case 4:
+            stdDisplay_msaaSampleType = GL_MULTISAMPLE_4_SAMPLES;
+            break;
+        case 8:
+            stdDisplay_msaaSampleType = GL_MULTISAMPLE_8_SAMPLES;
+            break;
+        case 16:
+            stdDisplay_msaaSampleType = GL_MULTISAMPLE_16_SAMPLES;
+            break;
+        default:
+            stdDisplay_msaaSampleType = GL_MULTISAMPLE_4_SAMPLES;
+            stdDisplay_msaaSampleCount = 4;
+            break;
     }
 
     if ( !stdDisplay_bMSAAEnabled )
@@ -398,7 +398,7 @@ static void stdDisplay_ValidateMSAASettings() //check
             GL_MULTISAMPLE_4_SAMPLES,
             GL_MULTISAMPLE_4_SAMPLES
         };
-        int fallbackCounts[] = {8, 4, 2};
+        int fallbackCounts[] = { 8, 4, 2 };
 
         bool found = false;
         for ( int i = 0; i < 3; i++ )
@@ -896,59 +896,59 @@ int J3DAPI stdDisplay_VBufferFill(tVBuffer* pVBuffer, uint32_t color, const StdR
     // Software fill for system memory buffers
     switch ( pVBuffer->rasterInfo.colorInfo.bpp )
     {
-    case 8:
-        if ( pRect )
-        {
-            uint8_t* pPixels8 = &pVBuffer->pPixels[pVBuffer->rasterInfo.rowSize * pRect->top + pRect->left];
-            for ( int32_t height = 0; height < pRect->bottom; ++height )
+        case 8:
+            if ( pRect )
             {
-                memset(pPixels8, (uint8_t)color, pRect->right);
-                pPixels8 += pVBuffer->rasterInfo.rowSize;
+                uint8_t* pPixels8 = &pVBuffer->pPixels[pVBuffer->rasterInfo.rowSize * pRect->top + pRect->left];
+                for ( int32_t height = 0; height < pRect->bottom; ++height )
+                {
+                    memset(pPixels8, (uint8_t)color, pRect->right);
+                    pPixels8 += pVBuffer->rasterInfo.rowSize;
+                }
             }
-        }
-        else
-        {
-            memset(pVBuffer->pPixels, (uint8_t)color, pVBuffer->rasterInfo.size);
-        }
-        break;
-
-    case 16:
-        if ( pRect )
-        {
-            uint16_t* pPixels16 = (uint16_t*)&pVBuffer->pPixels[pVBuffer->rasterInfo.rowSize * pRect->top + 2 * pRect->
-                left];
-            for ( int32_t height = 0; height < pRect->bottom; ++height )
+            else
             {
-                stdDisplay_SetPixels16(pPixels16, (uint16_t)color, pRect->right);
-                pPixels16 = (uint16_t*)((char*)pPixels16 + pVBuffer->rasterInfo.rowSize);
+                memset(pVBuffer->pPixels, (uint8_t)color, pVBuffer->rasterInfo.size);
             }
-        }
-        else
-        {
-            stdDisplay_SetPixels16((uint16_t*)pVBuffer->pPixels, (uint16_t)color, pVBuffer->rasterInfo.size / 2);
-        }
-        break;
+            break;
 
-    case 24:
-        STDLOG_FATAL("24-bit fill not implemented");
-        break;
-
-    case 32:
-        if ( pRect )
-        {
-            uint32_t* pPixels32 = (uint32_t*)&pVBuffer->pPixels[pVBuffer->rasterInfo.rowSize * pRect->top + 4 * pRect->
-                left];
-            for ( int32_t height = 0; height < pRect->bottom; ++height )
+        case 16:
+            if ( pRect )
             {
-                stdDisplay_SetPixels32(pPixels32, color, pRect->right);
-                pPixels32 = (uint32_t*)((char*)pPixels32 + pVBuffer->rasterInfo.rowSize);
+                uint16_t* pPixels16 = (uint16_t*)&pVBuffer->pPixels[pVBuffer->rasterInfo.rowSize * pRect->top + 2 * pRect->
+                    left];
+                for ( int32_t height = 0; height < pRect->bottom; ++height )
+                {
+                    stdDisplay_SetPixels16(pPixels16, (uint16_t)color, pRect->right);
+                    pPixels16 = (uint16_t*)((char*)pPixels16 + pVBuffer->rasterInfo.rowSize);
+                }
             }
-        }
-        else
-        {
-            stdDisplay_SetPixels32((uint32_t*)pVBuffer->pPixels, color, pVBuffer->rasterInfo.size / 4);
-        }
-        break;
+            else
+            {
+                stdDisplay_SetPixels16((uint16_t*)pVBuffer->pPixels, (uint16_t)color, pVBuffer->rasterInfo.size / 2);
+            }
+            break;
+
+        case 24:
+            STDLOG_FATAL("24-bit fill not implemented");
+            break;
+
+        case 32:
+            if ( pRect )
+            {
+                uint32_t* pPixels32 = (uint32_t*)&pVBuffer->pPixels[pVBuffer->rasterInfo.rowSize * pRect->top + 4 * pRect->
+                    left];
+                for ( int32_t height = 0; height < pRect->bottom; ++height )
+                {
+                    stdDisplay_SetPixels32(pPixels32, color, pRect->right);
+                    pPixels32 = (uint32_t*)((char*)pPixels32 + pVBuffer->rasterInfo.rowSize);
+                }
+            }
+            else
+            {
+                stdDisplay_SetPixels32((uint32_t*)pVBuffer->pPixels, color, pVBuffer->rasterInfo.size / 4);
+            }
+            break;
     }
 
     return 1;
@@ -1226,7 +1226,7 @@ static int J3DAPI stdDisplay_EnumerateDevices(void) //check
     glGetIntegerv(GL_GPU_MEMORY_INFO_CURRENT_AVAILABLE_VIDMEM_NVX, &free_kb);
     if ( !total_kb )
     {
-        GLint ati[4] = {0, 0, 0, 0};
+        GLint ati[4] = { 0, 0, 0, 0 };
         glGetIntegerv(GL_TEXTURE_FREE_MEMORY_ATI, ati); // AMD/ATI
         // ati[0] = total-ish, ati[1] = largest free block, ati[2]/[3] = aux/tex free
         total_kb = ati[0];
@@ -1347,10 +1347,14 @@ SDL_PixelFormat J3DAPI stdDisplay_GetSDLFormat(int bpp)
 {
     switch ( bpp )
     {
-    case 16: return SDL_PIXELFORMAT_RGB565;;
-    case 24: return SDL_PIXELFORMAT_RGB24;
-    case 32: return SDL_PIXELFORMAT_XRGB8888;
-    default: return SDL_PIXELFORMAT_XRGB8888;
+        case 16:
+            return SDL_PIXELFORMAT_RGB565;;
+        case 24:
+            return SDL_PIXELFORMAT_RGB24;
+        case 32:
+            return SDL_PIXELFORMAT_XRGB8888;
+        default:
+            return SDL_PIXELFORMAT_XRGB8888;
     }
 }
 
@@ -1371,25 +1375,25 @@ bool stdDisplay_GetVideoColorFormat(SDL_PixelFormat format, ColorInfo* pFormat)
 {
     switch ( format )
     {
-    case SDL_PIXELFORMAT_RGB24:
-        *pFormat = stdColor_cfRGB888;
-        return true;
-    case SDL_PIXELFORMAT_XRGB8888:
-    case SDL_PIXELFORMAT_ARGB8888:
-        *pFormat = stdColor_cfRGB8888;
-        // Note, no alpha for video mode color format
-        return true;
+        case SDL_PIXELFORMAT_RGB24:
+            *pFormat = stdColor_cfRGB888;
+            return true;
+        case SDL_PIXELFORMAT_XRGB8888:
+        case SDL_PIXELFORMAT_ARGB8888:
+            *pFormat = stdColor_cfRGB8888;
+            // Note, no alpha for video mode color format
+            return true;
 
-    case SDL_PIXELFORMAT_RGB565:
-        *pFormat = stdColor_cfRGB565;
-        return true;
+        case SDL_PIXELFORMAT_RGB565:
+            *pFormat = stdColor_cfRGB565;
+            return true;
 
-    case SDL_PIXELFORMAT_XRGB1555:
-        *pFormat = stdColor_cfRGB555;
-        return true;
+        case SDL_PIXELFORMAT_XRGB1555:
+            *pFormat = stdColor_cfRGB555;
+            return true;
 
-    default:
-        return false;
+        default:
+            return false;
     }
 }
 
@@ -1485,7 +1489,7 @@ int J3DAPI stdDisplay_InitBuffers(PDIRECT3DDEVICE9 pDevice, const StdVideoMode* 
     stdDisplay_g_backBuffer.rasterInfo.rowWidth = width;
     stdDisplay_g_backBuffer.rasterInfo.size     = stdDisplay_g_backBuffer.rasterInfo.rowSize;
 
-    glActiveTexture(GL_TEXTURE0);
+    stdShader_SetActiveTextureUnit(0);
     // generate fbo
     glGenFramebuffers(1, &surface->fbo);
     glBindFramebuffer(GL_FRAMEBUFFER, surface->fbo);
@@ -1506,11 +1510,8 @@ int J3DAPI stdDisplay_InitBuffers(PDIRECT3DDEVICE9 pDevice, const StdVideoMode* 
     GLint loc = glGetUniformLocation(stdDisplay_fboShader->handle, "sSceneTexture");
     glUniform1i(loc, 0);
 
-    glActiveTexture(GL_TEXTURE1);
+    stdShader_SetActiveTextureUnit(1);
 
-
-    //unbind texture
-    glBindTexture(GL_TEXTURE_2D, 0);
 
     if ( glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE )
     {
@@ -1528,10 +1529,11 @@ void stdDisplay_ReleaseBuffers(void) // checked
     if ( !surface )
         return;
 
-    glActiveTexture(GL_TEXTURE0);
+    stdShader_SetActiveTextureUnit(0);
     glDeleteFramebuffers(1, &surface->fbo);
     glDeleteTextures(1, &surface->colorTex);
     glDeleteRenderbuffers(1, &surface->depthRBO);
+    stdShader_SetActiveTextureUnit(1);
     surface->fbo      = 0;
     surface->colorTex = 0;
     surface->depthRBO = 0;
@@ -2013,19 +2015,13 @@ void stdDisplay_UnlockBackBuffer(void) //checked
 {
     //upload written back buffer pixels to back buffer fbo texture
     tVSurface* surface = &stdDisplay_g_backBuffer.surface;
-    glActiveTexture(GL_TEXTURE0);
+    stdShader_SetActiveTextureUnit(0);
     glBindTexture(GL_TEXTURE_2D, surface->colorTex);
-
     uint32_t height = stdDisplay_g_backBuffer.rasterInfo.height;
     uint32_t width  = stdDisplay_g_backBuffer.rasterInfo.width;
-
-    glPixelZoom(1, -1);
-    //intro video is mirrored on y axis, needs to be corrected.
-    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV,
-                    stdDisplay_g_backBuffer.pPixels);
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, stdDisplay_g_backBuffer.pPixels);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, GL_ONE);
-    glActiveTexture(GL_TEXTURE1);
-    glPixelZoom(1, 1);
+    stdShader_SetActiveTextureUnit(1);
     stdDisplay_backLockRef--;
 }
 
