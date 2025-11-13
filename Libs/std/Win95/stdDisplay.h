@@ -89,5 +89,9 @@ uint32_t J3DAPI stdDisplay_EncodeFromRGB565(uint16_t pixel);
 void stdDisplay_InstallHooks(void);
 void stdDisplay_ResetGlobals(void);
 
+#ifdef J3D_OPENGL
+void stdDisplay_MirrorYAxis(bool bMirror);
+#endif
+
 J3D_EXTERN_C_END
 #endif // STD_STDDISPLAY_H

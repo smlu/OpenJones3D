@@ -1528,6 +1528,7 @@ void stdDisplay_ReleaseBuffers(void) // checked
     if ( !surface )
         return;
 
+    glActiveTexture(GL_TEXTURE0);
     glDeleteFramebuffers(1, &surface->fbo);
     glDeleteTextures(1, &surface->colorTex);
     glDeleteRenderbuffers(1, &surface->depthRBO);
@@ -1657,6 +1658,7 @@ int stdDisplay_Update(void) //check
     stdShader_SetActiveShader(stdDisplay_fboShader);
     glBindVertexArray(stdDisplay_fullscreenVao);
     glClear(GL_COLOR_BUFFER_BIT);
+    glDisable(GL_BLEND);
 
     glDrawArrays(GL_TRIANGLES, 0, 3);
 
@@ -1674,11 +1676,7 @@ int stdDisplay_Update(void) //check
 
     glBindFramebuffer(GL_FRAMEBUFFER, stdDisplay_g_backBuffer.surface.fbo);
     glEnable(GL_DEPTH_TEST);
-    // glFrontFace(GL_CW);
-
-    //glClear(GL_COLOR_BUFFER_BIT);
-
-    //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glEnable(GL_BLEND);
 
     STDLOG_DEBUG("Updated frame\n");
     return 0;
@@ -2021,20 +2019,20 @@ void stdDisplay_UnlockBackBuffer(void) //checked
     uint32_t height = stdDisplay_g_backBuffer.rasterInfo.height;
     uint32_t width  = stdDisplay_g_backBuffer.rasterInfo.width;
 
+    glPixelZoom(1, -1);
     //intro video is mirrored on y axis, needs to be corrected.
-    for ( int y = 0; y < height; ++y )
-    {
-        const GLubyte* row = (const GLubyte*)stdDisplay_g_backBuffer.pPixels + (stdDisplay_g_backBuffer.rasterInfo.
-            height - 1 - y) * width * 4;
-        glTexSubImage2D(GL_TEXTURE_2D, 0,
-                        0, y, // y-Offset = Zielzeile
-                        width, 1,
-                        GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV,
-                        row);
-    }
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV,
+                    stdDisplay_g_backBuffer.pPixels);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, GL_ONE);
     glActiveTexture(GL_TEXTURE1);
+    glPixelZoom(1, 1);
     stdDisplay_backLockRef--;
+}
+
+void stdDisplay_MirrorYAxis(const bool bMirror)
+{
+    stdShader_SetActiveShader(stdDisplay_fboShader);
+    glUniform1i(glGetUniformLocation(stdDisplay_fboShader->handle, "bMirrorY"), bMirror);
 }
 
 uint32_t J3DAPI stdDisplay_EncodeFromRGB565(uint16_t pixel)
