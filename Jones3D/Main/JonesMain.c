@@ -63,7 +63,7 @@
 #include <windowsx.h> // helper macros for win32 controls (combo-box, list-view ...)
 
 #define JONES_QUICKSAVE_TEXTSHOWTIME    1000u // 1 sec
-#define JONES_QUICKSAVE_TEXTSHOWTIMERID 1u 
+#define JONES_QUICKSAVE_TEXTSHOWTIMERID 1u
 
 #define JONES_FPSPRINT_INTERVAL  2000u // 2 sec
 
@@ -88,7 +88,7 @@ static StdDisplayEnvironment* JonesMain_pDisplayEnv        = NULL; // Added: Ini
 static StdDisplayEnvironment* JonesMain_pStartupDisplayEnv = NULL; // Added: Init. to NULL
 
 static tCircularBuffer JonesMain_circBuf;
-static FILE* JonesMain_pLogFile   = NULL; // Added: Init. to NULL
+static FILE* JonesMain_pLogFile = NULL; // Added: Init. to NULL
 
 static bool JonesMain_bGamePaused      = false; // Added: Init to false
 static bool JonesMain_bAssertTriggered = false; // Added: Init to false
@@ -108,7 +108,7 @@ static bool JonesMain_bPrintQuickSave;
 static int JonesMain_curGamesaveState = 0; // Added: Init to 0
 static char JonesMain_aNdsFilename[JONESCONFIG_GAMESAVE_FILEPATHSIZE];
 
-static bool JonesMain_bMenuToggled = false; // Added: Init to false
+static bool JonesMain_bMenuToggled                                      = false; // Added: Init to false
 static size_t JonesMain_aToggleMenuKeyIds[JONESCONTROL_ACTION_MAXBINDS] = { 0 }; // Added: Init to 0
 
 static bool JonesMain_bEndCredits = false; // Added: Init to false
@@ -346,7 +346,7 @@ int J3DAPI JonesMain_Startup(const char* lpCmdLine)
         }
     }
 
-    float defaultVol = Sound_GetMaxVolume();
+    float defaultVol                             = Sound_GetMaxVolume();
     JonesMain_state.soundSettings.maxSoundVolume = stdConfig_GetFloat(JONESCONFIG_CFG_SOUND_VOLUME, defaultVol);
     stdConfig_SetFloat(JONESCONFIG_CFG_SOUND_VOLUME, JonesMain_state.soundSettings.maxSoundVolume);
 
@@ -368,8 +368,8 @@ int J3DAPI JonesMain_Startup(const char* lpCmdLine)
 
             STD_STRCPY(JonesMain_state.aCurLevelFilename, JonesMain_aCndLevelLoadInfos[JonesMain_curLevelNum].pFilename);
             bSuccess = 1;
-
-        } break; // start game
+        }
+        break; // start game
 
         case JONES_STARTMODE_LOADGAME:
         {
@@ -380,8 +380,8 @@ int J3DAPI JonesMain_Startup(const char* lpCmdLine)
 
             // Skip intro video
             bPlayIntro = false;
-
-        } break; // Start game
+        }
+        break; // Start game
 
         case JONES_STARTMODE_SOUNDSETTINGS:
         {
@@ -401,7 +401,8 @@ int J3DAPI JonesMain_Startup(const char* lpCmdLine)
             {
                 return 1; // exit
             }
-        } break;
+        }
+        break;
     };
 
     // Start game
@@ -421,15 +422,15 @@ int J3DAPI JonesMain_Startup(const char* lpCmdLine)
                     JonesMain_hs.pErrorPrint = JonesMain_LogError;
                     break;
                 case JONES_LOGLEVEL_NORMAL:
-                    JonesMain_hs.pErrorPrint   = JonesMain_LogError;
+                    JonesMain_hs.pErrorPrint = JonesMain_LogError;
                     JonesMain_hs.pWarningPrint = JonesMain_LogWarning; // Added
-                    JonesMain_hs.pStatusPrint  = JonesMain_LogStatus;  // Changed: OG stdConsolePrintf
+                    JonesMain_hs.pStatusPrint  = JonesMain_LogStatus; // Changed: OG stdConsolePrintf
                     break;
                 case JONES_LOGLEVEL_VERBOSE:
-                    JonesMain_hs.pErrorPrint   = JonesMain_LogError;
+                    JonesMain_hs.pErrorPrint = JonesMain_LogError;
                     JonesMain_hs.pWarningPrint = JonesMain_LogWarning; // Added
-                    JonesMain_hs.pStatusPrint  = JonesMain_LogStatus;  // Changed: OG stdConsolePrintf
-                    JonesMain_hs.pDebugPrint   = JonesMain_LogDebug;   // Changed: OG stdConsolePrintf
+                    JonesMain_hs.pStatusPrint  = JonesMain_LogStatus; // Changed: OG stdConsolePrintf
+                    JonesMain_hs.pDebugPrint   = JonesMain_LogDebug; // Changed: OG stdConsolePrintf
                     break;
                 default:
                     break; // No logging
@@ -437,8 +438,8 @@ int J3DAPI JonesMain_Startup(const char* lpCmdLine)
 
             // Startup console
             stdConsole_Startup("Debug", FOREGROUND_RED | FOREGROUND_BLUE | FOREGROUND_GREEN, /*bShowMinimized=*/0); // White text
-
-        } break;
+        }
+        break;
 
         case JONES_OUTPUTMODE_LOGFILE:
         {
@@ -446,23 +447,24 @@ int J3DAPI JonesMain_Startup(const char* lpCmdLine)
             switch ( JonesMain_state.logLevel )
             {
                 case JONES_LOGLEVEL_ERROR:
-                    JonesMain_hs.pErrorPrint  = JonesMain_LogError;
+                    JonesMain_hs.pErrorPrint = JonesMain_LogError;
                     break;
                 case JONES_LOGLEVEL_NORMAL:
-                    JonesMain_hs.pErrorPrint  = JonesMain_LogError;
+                    JonesMain_hs.pErrorPrint = JonesMain_LogError;
                     JonesMain_hs.pWarningPrint = JonesMain_LogWarning; // Added
-                    JonesMain_hs.pStatusPrint = JonesMain_LogStatus;   // Changed: OG JonesMain_FilePrintf
+                    JonesMain_hs.pStatusPrint  = JonesMain_LogStatus; // Changed: OG JonesMain_FilePrintf
                     break;
                 case JONES_LOGLEVEL_VERBOSE:
-                    JonesMain_hs.pErrorPrint  = JonesMain_LogError;
+                    JonesMain_hs.pErrorPrint = JonesMain_LogError;
                     JonesMain_hs.pWarningPrint = JonesMain_LogWarning; // Added
-                    JonesMain_hs.pStatusPrint = JonesMain_LogStatus;   // Changed: OG JonesMain_FilePrintf
-                    JonesMain_hs.pDebugPrint  = JonesMain_LogDebug;    // Changed: OG JonesMain_FilePrintf
+                    JonesMain_hs.pStatusPrint  = JonesMain_LogStatus; // Changed: OG JonesMain_FilePrintf
+                    JonesMain_hs.pDebugPrint   = JonesMain_LogDebug; // Changed: OG JonesMain_FilePrintf
                     break;
                 default:
                     break; // No logging
             };
-        } break;
+        }
+        break;
 
         default: // JONES_OUTPUTMODE_NONE
         {
@@ -472,7 +474,7 @@ int J3DAPI JonesMain_Startup(const char* lpCmdLine)
                 //       Note in this case the default log is used that was set in stdPlatform_InitServices
                 case JONES_LOGLEVEL_VERBOSE:
                     JonesMain_hs.pDebugPrint = JonesMain_hs.pStatusPrint; // ???
-                    // Fallthrough
+                // Fallthrough
                 case JONES_LOGLEVEL_ERROR:
                     JonesMain_hs.pMessagePrint = JonesMain_NoLog;
                     JonesMain_hs.pStatusPrint  = JonesMain_NoLog;
@@ -483,7 +485,8 @@ int J3DAPI JonesMain_Startup(const char* lpCmdLine)
                 default:
                     break; // No logging
             };
-        } break;
+        }
+        break;
     };
 
     // Set assert handler
@@ -556,7 +559,7 @@ int J3DAPI JonesMain_Startup(const char* lpCmdLine)
         if ( JonesMain_state.displaySettings.displayDeviceNum == -1 )
         {
             // Error setting default video mode
-            char aErrorText[128] = { 0 };
+            char aErrorText[128]   = { 0 };
             const char* pErrorText = jonesString_GetString("JONES_STR_NO3DCARD");
             STD_FORMAT(aErrorText, "%s", pErrorText);
 
@@ -616,12 +619,30 @@ int J3DAPI JonesMain_Startup(const char* lpCmdLine)
         return 1;
     }
 
+
+#ifdef J3D_OPENGL
+
+    stdDisplay_MirrorYAxis(true);
+    // Play intro video
+    if ( bPlayIntro && JonesMain_PlayIntroMovie() )
+    {
+        stdDisplay_MirrorYAxis(false);
+        // Error playing intro movie
+        return 1;
+    }
+    stdDisplay_MirrorYAxis(false);
+
+#else
+
     // Play intro video
     if ( bPlayIntro && JonesMain_PlayIntroMovie() )
     {
         // Error playing intro movie
         return 1;
     }
+
+#endif
+
 
     // Finish playing intro video, now load static resource level
 
@@ -738,7 +759,7 @@ int J3DAPI JonesMain_GameWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPa
             JonesMain_HandleWMGetMinMaxInfo(hWnd, (LPMINMAXINFO)lParam);
             return 0; // TODO: should break instead of return and let the JonesMain_bWndMsgProcessed scope do it's thing
         }
-        case  WM_ACTIVATEAPP:
+        case WM_ACTIVATEAPP:
         {
             JonesMain_HandleWMActivateApp(hWnd, wParam, lParam);
             return 0;
@@ -748,7 +769,7 @@ int J3DAPI JonesMain_GameWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPa
             JonesMain_HandleWMPaint(hWnd);
             return 0;
         }
-        case  WM_ACTIVATE:
+        case WM_ACTIVATE:
         {
             JonesMain_HandleWMActivate(hWnd, LOWORD(wParam), lParam, HIWORD(wParam));
             return 0;
@@ -807,7 +828,7 @@ void J3DAPI JonesMain_HandleWMPaint(HWND hWnd)
         HDC hdc = BeginPaint(hWnd, (LPPAINTSTRUCT)&ps);
         if ( hdc )
         {
-            POINT pt = { .x=0, .y=0 };
+            POINT pt = { .x = 0, .y = 0 };
             ClientToScreen(hWnd, &pt);
             JonesDialog_RestoreBackground(hdc, hWnd, &pt, &ps.rcPaint);
             EndPaint(hWnd, &ps);
@@ -831,7 +852,7 @@ void J3DAPI JonesMain_HandleWMKeydown(HWND hWnd, WPARAM vk, int a3, uint16_t rep
 
     switch ( vk )
     {
-        case VK_F5:// Quick save
+        case VK_F5: // Quick save
         {
             if ( repreatCount <= 1 && (exkeyflags & KF_REPEAT) == 0 )
             {
@@ -856,7 +877,7 @@ void J3DAPI JonesMain_HandleWMKeydown(HWND hWnd, WPARAM vk, int a3, uint16_t rep
                     // Success
 
                     //tSoundHandle hSnd = Sound_GetSoundHandle(0x804F);
-                    tSoundHandle hSnd = Sound_GetSoundHandle(SITHWORLD_STATICINDEX(79));  // 79 - inv_quicksave.wav
+                    tSoundHandle hSnd = Sound_GetSoundHandle(SITHWORLD_STATICINDEX(79)); // 79 - inv_quicksave.wav
                     sithSoundMixer_PlaySound(hSnd, 1.0f, 0.0f, (SoundPlayFlag)0);
 
                     // Print quicksave text to screen and set text hide timer
@@ -865,7 +886,8 @@ void J3DAPI JonesMain_HandleWMKeydown(HWND hWnd, WPARAM vk, int a3, uint16_t rep
                     SetTimer(hWnd, JONES_QUICKSAVE_TEXTSHOWTIMERID, JONES_QUICKSAVE_TEXTSHOWTIME, NULL); // 1 sec
                 }
             }
-        } break;
+        }
+        break;
         case VK_F8: // Quick load
         {
             if ( repreatCount <= 1 && (exkeyflags & KF_REPEAT) == 0 )
@@ -932,7 +954,8 @@ void J3DAPI JonesMain_HandleWMKeydown(HWND hWnd, WPARAM vk, int a3, uint16_t rep
                     JonesHud_RestoreGameStatistics();
                 }
             }
-        } break;
+        }
+        break;
         case VK_F12: // screenshot
         {
             if ( repreatCount <= 1 && (exkeyflags & KF_REPEAT) == 0 )
@@ -940,7 +963,8 @@ void J3DAPI JonesMain_HandleWMKeydown(HWND hWnd, WPARAM vk, int a3, uint16_t rep
                 sithMakeDirs();
                 sithRender_MakeScreenShot();
             }
-        } break;
+        }
+        break;
     }
 }
 
@@ -1013,7 +1037,7 @@ void J3DAPI JonesMain_OnAppActivate(HWND hWnd, int bActivated)
 
         if ( JonesMain_pfCurProcess )
         {
-            JonesMain_pfProcess = JonesMain_pfCurProcess;
+            JonesMain_pfProcess    = JonesMain_pfCurProcess;
             JonesMain_pfCurProcess = false;
         }
 
@@ -1072,7 +1096,7 @@ void J3DAPI JonesMain_HandleWMPowerBroadcast(HWND hWnd, WPARAM wParam)
 
         case PBT_APMSUSPEND:
             JonesMain_bSystemSuspended = true;
-            JonesMain_bSkipIntro       = true;
+            JonesMain_bSkipIntro = true;
             JonesMain_OnAppActivate(hWnd, 0);
             STDLOG_DEBUG("WM_POWERBROADCAST Suspend.\n");
             break;
@@ -1080,7 +1104,7 @@ void J3DAPI JonesMain_HandleWMPowerBroadcast(HWND hWnd, WPARAM wParam)
         case PBT_APMRESUMECRITICAL:
         case PBT_APMRESUMESUSPEND:
             JonesMain_bSystemSuspended = false;
-            JonesMain_bSkipIntro       = true;
+            JonesMain_bSkipIntro = true;
             JonesMain_OnAppActivate(hWnd, 1);
             Sleep(100u);
 
@@ -1137,7 +1161,8 @@ void JonesMain_Shutdown(void)
     else if ( JonesMain_state.outputMode == JONES_OUTPUTMODE_LOGFILE )
     {
         if ( JonesMain_pLogFile )
-        { // Fixed: Add null check
+        {
+            // Fixed: Add null check
             fclose(JonesMain_pLogFile);
         }
     }
@@ -1278,14 +1303,14 @@ int JonesMain_ProcessGame(void)
         // was set to default video mode (640 x 480)
 
         char aNoDisplyError[512] = { 0 };
-        const char* pErrorStr = jonesString_GetString("JONES_STR_NODISPLAY");
+        const char* pErrorStr    = jonesString_GetString("JONES_STR_NODISPLAY");
         if ( pErrorStr )
         {
             STD_STRCPY(aNoDisplyError, pErrorStr);
         }
 
         char aNoDisply2Error[512] = { 0 };
-        pErrorStr = jonesString_GetString("JONES_STR_NODISPLAY2");
+        pErrorStr                 = jonesString_GetString("JONES_STR_NODISPLAY2");
         if ( pErrorStr )
         {
             STD_STRCPY(aNoDisply2Error, pErrorStr);
@@ -1395,7 +1420,7 @@ void JonesMain_TogglePrintFramerate(void)
 
 int JonesMain_Open(void)
 {
-    // Changed: Look for both versions of level formats (cnd and ndy). This make sure that level progress can find ndy level file 
+    // Changed: Look for both versions of level formats (cnd and ndy). This make sure that level progress can find ndy level file
     if ( JonesMain_EnsureLevelFileEx(JonesMain_state.aCurLevelFilename, /*bFindAll=*/true, JonesMain_state.aCurLevelFilename, STD_ARRAYLEN(JonesMain_state.aCurLevelFilename)) )
     {
         return 1;
@@ -1432,7 +1457,7 @@ int JonesMain_Open(void)
         if ( sithGamesave_Restore(JonesMain_aNdsFilename, 0) )
         {
             // Error
-            const  char* pFormat = jonesString_GetString("JONES_STR_LOADERROR");
+            const char* pFormat = jonesString_GetString("JONES_STR_LOADERROR");
             if ( pFormat )
             {
                 char aErrorText[128] = { 0 };
@@ -1466,7 +1491,7 @@ int JonesMain_Open(void)
         if ( sithOpenNormal(JonesMain_state.aCurLevelFilename, JonesMain_state.waPlayerName) )
         {
             // Error opening level
-            const  char* pFormat = jonesString_GetString("JONES_STR_OPENERROR");
+            const char* pFormat = jonesString_GetString("JONES_STR_OPENERROR");
             if ( pFormat )
             {
                 char aErrorText[128] = { 0 };
@@ -1499,7 +1524,7 @@ int J3DAPI JonesMain_EnsureLevelFile(const char* pFilename)
 int J3DAPI JonesMain_EnsureLevelFileEx(const char* pFilename, bool bFindAll, char* pFoundFilename, size_t filenameSize)
 {
     // Added overload function which searches for both cnd and ndy file in case one is not found.
-    // 
+    //
     // TODO: there is an issue when loading level from different CD*.gob file than current
     //       the insert CD dialog can be shown even if file exists on disk
 
@@ -1645,7 +1670,7 @@ int JonesMain_ProcessGamesaveState(void)
                 // Changed: Moved retrieving error string down here.
                 //          Originally was at the start of the functions scope and was executed on every function call
                 char aLoadLerrorStr[512] = { 0 };
-                const char* pLoadErrStr = jonesString_GetString("JONES_STR_LOADERROR");
+                const char* pLoadErrStr  = jonesString_GetString("JONES_STR_LOADERROR");
                 if ( pLoadErrStr )
                 {
                     STD_STRCPY(aLoadLerrorStr, pLoadErrStr);
@@ -1790,7 +1815,8 @@ void JonesMain_RestartLevel(void)
 
 void JonesMain_ShowEndCredits(void)
 {
-    Sound_StopAllSounds(); // Added: Stop all sounds before showing end credits. Note, don't call sithSoundMixer_StopAll(), as it clears cur camera sec, which is re-assigned when sithSoundMixer_Update() is called
+    Sound_StopAllSounds();
+    // Added: Stop all sounds before showing end credits. Note, don't call sithSoundMixer_StopAll(), as it clears cur camera sec, which is re-assigned when sithSoundMixer_Update() is called
     JonesMain_pfProcess = JonesMain_ProcessCredits;
 }
 
@@ -1999,7 +2025,7 @@ int JonesMain_PlayIntroMovie(void)
     }
 
     tDirectSound* pDSound = SoundDriver_GetDSound();
-    HWND hwnd = stdWin95_GetWindow();
+    HWND hwnd             = stdWin95_GetWindow();
     SmushPlay_SysStartup(hwnd, pDSound);
     SmushPlay_SetGlobalVolume((size_t)(JonesMain_state.soundSettings.maxSoundVolume * 127.0f));
 
@@ -2071,7 +2097,7 @@ int JonesMain_PlayIntroMovie(void)
 
     if ( memcmp(&stdColor_cfRGB555, &videoMode.rasterInfo.colorInfo, 44) == 0 )
     {
-        JonesMain_introVideoMode = 2;
+        JonesMain_introVideoMode        = 2;
         JonesMain_aIntroMovieColorTable = (uint8_t*)STDMALLOC(((int)UINT16_MAX + 1) * sizeof(int16_t));
         if ( JonesMain_aIntroMovieColorTable )
         {
@@ -2104,7 +2130,7 @@ int JonesMain_PlayIntroMovie(void)
     }
     else if ( memcmp(&stdColor_cfBGR8888, &videoMode.rasterInfo.colorInfo, 44) == 0 || memcmp(&stdColor_cfRGB8888, &videoMode.rasterInfo.colorInfo, 44) == 0 )
     {
-        JonesMain_introVideoMode = 4;
+        JonesMain_introVideoMode        = 4;
         JonesMain_aIntroMovieColorTable = (uint8_t*)STDMALLOC(((int)UINT16_MAX + 1) * sizeof(uint32_t));
         if ( JonesMain_aIntroMovieColorTable )
         {
@@ -2160,7 +2186,7 @@ int J3DAPI JonesMain_IntroWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lP
             JonesMain_IntroHandleWMKeydown(hWnd, wParam, 1, LOWORD(lParam), HIWORD(lParam));
             return 0;
         }
-        case  WM_LBUTTONUP:
+        case WM_LBUTTONUP:
         {
             JonesMain_IntroHandleWMLButtonUp(hWnd, LOWORD(lParam), HIWORD(lParam), wParam);
             return 0;
@@ -2170,12 +2196,12 @@ int J3DAPI JonesMain_IntroWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lP
             JonesMain_HandleWMGetMinMaxInfo(hWnd, (LPMINMAXINFO)lParam);
             return 0;
         }
-        case  WM_ACTIVATEAPP:
+        case WM_ACTIVATEAPP:
         {
             JonesMain_HandleWMActivateApp(hWnd, wParam, lParam);
             return 0;
         }
-        case  WM_ACTIVATE:
+        case WM_ACTIVATE:
         {
             JonesMain_HandleWMActivate(hWnd, LOWORD(wParam), lParam, HIWORD(wParam));
             return 0;
@@ -2252,14 +2278,14 @@ int J3DAPI JonesMain_IntroMovieBlt565(const SmushBitmap* pBitmap, int a2)
 
     stdDisplay_LockBackBuffer(&pSurface, &width, &height, &pitch);
 
-    pRow = (uint8_t*)pSurface;
-    pPixels = (uint8_t*)pBitmap->pPixels;
+    pRow      = (uint8_t*)pSurface;
+    pPixels   = (uint8_t*)pBitmap->pPixels;
     curHeight = 0;
 
     for ( i = 0; i < height; ++i )
     {
-        curWidth = 0;
-        pCurPixelIn = pPixels;
+        curWidth     = 0;
+        pCurPixelIn  = pPixels;
         pCurPixelOut = (uint16_t*)pRow;
 
         for ( j = 0; j < width; ++j )
@@ -2326,14 +2352,14 @@ int J3DAPI JonesMain_IntroMovieBlt555(const SmushBitmap* pBitmap, int a2)
 
     stdDisplay_LockBackBuffer(&pSurface, &width, &height, &pitch);
 
-    pRow = (uint8_t*)pSurface;
-    pPixels = (uint8_t*)pBitmap->pPixels;
+    pRow      = (uint8_t*)pSurface;
+    pPixels   = (uint8_t*)pBitmap->pPixels;
     curHeight = 0;
 
     for ( i = 0; i < height; ++i )
     {
-        curWidth = 0;
-        pCurPixelIn = pPixels;
+        curWidth     = 0;
+        pCurPixelIn  = pPixels;
         pCurPixelOut = (uint16_t*)pRow;
 
         for ( j = 0; j < width; ++j )
@@ -2400,14 +2426,14 @@ int J3DAPI JonesMain_IntroMovieBlt32(const SmushBitmap* pBitmap, int a2)
 
     stdDisplay_LockBackBuffer(&pSurface, &width, &height, &pitch);
 
-    pRow = (uint8_t*)pSurface;
-    pPixels = (uint8_t*)pBitmap->pPixels;
+    pRow      = (uint8_t*)pSurface;
+    pPixels   = (uint8_t*)pBitmap->pPixels;
     curHeight = 0;
 
     for ( i = 0; i < height; ++i )
     {
-        curWidth = 0;
-        pCurPixelIn = pPixels;
+        curWidth     = 0;
+        pCurPixelIn  = pPixels;
         pCurPixelOut = (uint32_t*)pRow;
 
         for ( j = 0; j < width; ++j )
@@ -2464,7 +2490,7 @@ J3DNORETURN void J3DAPI JonesMain_Assert(const char* pErrorText, const char* pSr
     }
     JonesMain_bAssertTriggered = true;
 
-    size_t filenamePos   = 0;
+    size_t filenamePos  = 0;
     bool bFoundFilename = false;
     for ( size_t i = 0; pSrcFile[i]; ++i )
     {
@@ -2564,15 +2590,15 @@ void J3DAPI JonesMain_LogErrorToFile(const char* pErrorText)
         pErrorText = pErrorStr;
     }
 
-    char aFilePath[128] = { 0 };
+    char aFilePath[128]   = { 0 };
     const char* pFilename = jonesString_GetString("JONES_STR_ERRORFILE");
     if ( pFilename )
     {
         // Changed: Use cwd path instead of install path from registry.
-        //          This subsequently fixes also fatal error where there was registry startup error 
+        //          This subsequently fixes also fatal error where there was registry startup error
         //          and accidentally trying to access shutdown registry system here to retrieve install path, which would result in assert.
         const char* pCwdPath = JonesFile_GetWorkingDirPath();
-        size_t pathLen = strlen(pCwdPath);
+        size_t pathLen       = strlen(pCwdPath);
         if ( pathLen )
         {
             if ( pCwdPath[pathLen - 1] == '\\' ) // Fixed: before: aFilePath[pathLen + 127] == '\\'
@@ -2620,7 +2646,7 @@ void J3DAPI JonesMain_LoadSettings(StdDisplayEnvironment* pDisplayEnv, JonesStat
         STD_TOWSTR(pConfig->waPlayerName, "NoName");
     }
 
-    // Removed: rdModel3K module not supported 
+    // Removed: rdModel3K module not supported
     //if ( stdConfig_GetIntEx("graphics.katmai", 1) && rdModel3K_sub_4E2ED0() )
     //{
     //    rdModel3K_sub_4E2F00(1);
@@ -2648,8 +2674,8 @@ void J3DAPI JonesMain_LoadSettings(StdDisplayEnvironment* pDisplayEnv, JonesStat
     pConfig->startMode = stdConfig_GetInt(JONESCONFIG_CFG_STARTMODE, JONES_STARTMODE_DEVELOPERDIALOG);
     pConfig->startMode = STDMATH_CLAMP(pConfig->startMode, JONES_STARTMODE_STARTGAME, JONES_STARTMODE_DISPLAYSETTINGS);
 
-    pConfig->outputMode = stdConfig_GetInt(JONESCONFIG_CFG_LOG_MODE, JONES_OUTPUTMODE_NONE);
-    pConfig->logLevel   = stdConfig_GetInt(JONESCONFIG_CFG_LOG_LEVEL, JONES_LOGLEVEL_NORMAL);
+    pConfig->outputMode       = stdConfig_GetInt(JONESCONFIG_CFG_LOG_MODE, JONES_OUTPUTMODE_NONE);
+    pConfig->logLevel         = stdConfig_GetInt(JONESCONFIG_CFG_LOG_LEVEL, JONES_LOGLEVEL_NORMAL);
     pConfig->performanceLevel = stdConfig_GetInt(JONESDISPLAY_CFG_GRAPHICS_PERFORMANCELEVEL, 4);
 
     pConfig->displaySettings.geoMode   = stdConfig_GetInt(JONESDISPLAY_CFG_GRAPHICS_GEOMETRYMODE, RD_GEOMETRY_FULL);
@@ -2663,7 +2689,7 @@ void J3DAPI JonesMain_LoadSettings(StdDisplayEnvironment* pDisplayEnv, JonesStat
     stdConfig_GetString(JONESDISPLAY_CFG_GRAPHICS_DISPLAY, aText, STD_ARRAYLEN(aText), "");
 
     // Altered: Changed to use first found HAL display if no display is found
-    int halDisplayIdx = -1;
+    int halDisplayIdx  = -1;
     bool bFoundDisplay = false;
     for ( size_t i = 0; i < JonesMain_pStartupDisplayEnv->numInfos; ++i )
     {
@@ -2675,7 +2701,7 @@ void J3DAPI JonesMain_LoadSettings(StdDisplayEnvironment* pDisplayEnv, JonesStat
         if ( streq(JonesMain_pStartupDisplayEnv->aDisplayInfos[i].displayDevice.aDriverName, aText) )
         {
             pConfig->displaySettings.displayDeviceNum = i;
-            bFoundDisplay = true;
+            bFoundDisplay                             = true;
             break;
         }
     }
@@ -2708,15 +2734,15 @@ void J3DAPI JonesMain_LoadSettings(StdDisplayEnvironment* pDisplayEnv, JonesStat
     JonesMain_curVideoMode.aspectRatio                    = 1.0f;
     JonesMain_curVideoMode.rasterInfo.width               = stdConfig_GetInt(JONESDISPLAY_CFG_GRAPHICS_WIDTH, 640);
     JonesMain_curVideoMode.rasterInfo.height              = stdConfig_GetInt(JONESDISPLAY_CFG_GRAPHICS_HEIGHT, 480);
-    JonesMain_curVideoMode.rasterInfo.colorInfo.bpp       = stdConfig_GetInt(JONESDISPLAY_CFG_GRAPHICS_BPP, 32);          // Altered: Changed 16 bpp to 32
+    JonesMain_curVideoMode.rasterInfo.colorInfo.bpp       = stdConfig_GetInt(JONESDISPLAY_CFG_GRAPHICS_BPP, 32); // Altered: Changed 16 bpp to 32
     JonesMain_curVideoMode.refreshRate                    = stdConfig_GetInt(JONESDISPLAY_CFG_GRAPHICS_REFRESHRATE, 60); // Added
     JonesMain_curVideoMode.rasterInfo.colorInfo.colorMode = STDCOLOR_RGB;
 
     pConfig->displaySettings.videoModeNum = JonesMain_FindClosestVideoMode(JonesMain_pStartupDisplayEnv, &JonesMain_curVideoMode, pConfig->displaySettings.displayDeviceNum);
-    JonesMain_curVideoMode = pDisplay->aModes[pConfig->displaySettings.videoModeNum];
+    JonesMain_curVideoMode                = pDisplay->aModes[pConfig->displaySettings.videoModeNum];
 
-    pConfig->displaySettings.width  = JonesMain_curVideoMode.rasterInfo.width;
-    pConfig->displaySettings.height = JonesMain_curVideoMode.rasterInfo.height;
+    pConfig->displaySettings.width            = JonesMain_curVideoMode.rasterInfo.width;
+    pConfig->displaySettings.height           = JonesMain_curVideoMode.rasterInfo.height;
     pConfig->displaySettings.bClearBackBuffer = 0;
 
     pConfig->soundSettings.b3DHWSupport  = stdConfig_GetBool(JONESCONFIG_CFG_SOUND_HW, false);
@@ -2776,12 +2802,12 @@ int J3DAPI JonesMain_InitDevDialog(HWND hDlg, WPARAM wParam, JonesState* pConfig
     }
 
     // Init CB GeometryMOde
-    hDlgItem = GetDlgItem(hDlg, 1008);
+    hDlgItem    = GetDlgItem(hDlg, 1008);
     int itemIdx = ComboBox_AddString(hDlgItem, "Vertex Only");
     ComboBox_SetItemData(hDlgItem, itemIdx, 1);
 
     int selectedItemIdx = itemIdx;
-    itemIdx = ComboBox_AddString(hDlgItem, "Wire Frame");
+    itemIdx             = ComboBox_AddString(hDlgItem, "Wire Frame");
     ComboBox_SetItemData(hDlgItem, itemIdx, 2);
     if ( pConfig->displaySettings.geoMode == RD_GEOMETRY_WIREFRAME )
     {
@@ -2806,11 +2832,11 @@ int J3DAPI JonesMain_InitDevDialog(HWND hDlg, WPARAM wParam, JonesState* pConfig
 
     // Init CB Lighting Mode
     hDlgItem = GetDlgItem(hDlg, 1009);
-    itemIdx = ComboBox_AddString(hDlgItem, "None");
+    itemIdx  = ComboBox_AddString(hDlgItem, "None");
     ComboBox_SetItemData(hDlgItem, itemIdx, 1);
 
     selectedItemIdx = itemIdx;
-    itemIdx = ComboBox_AddString(hDlgItem, "Lit");
+    itemIdx         = ComboBox_AddString(hDlgItem, "Lit");
     ComboBox_SetItemData(hDlgItem, itemIdx, 0);
     if ( pConfig->displaySettings.lightMode == RD_LIGHTING_NONE )
     {
@@ -2835,7 +2861,7 @@ int J3DAPI JonesMain_InitDevDialog(HWND hDlg, WPARAM wParam, JonesState* pConfig
 
     // Init CB MimpMap Filter
     hDlgItem = GetDlgItem(hDlg, 1012);
-    itemIdx = ComboBox_AddString(hDlgItem, "None");
+    itemIdx  = ComboBox_AddString(hDlgItem, "None");
     ComboBox_SetItemData(hDlgItem, itemIdx, 0);
     if ( pConfig->displaySettings.filter == STD3D_MIPMAPFILTER_NONE )
     {
@@ -2859,8 +2885,8 @@ int J3DAPI JonesMain_InitDevDialog(HWND hDlg, WPARAM wParam, JonesState* pConfig
     // Altered: Select filter mode from config. Original bilinear mode was always selected
     ComboBox_SetCurSel(hDlgItem, selectedItemIdx);
 
-   // Added
-   // Enable and init  HiPoly check button
+    // Added
+    // Enable and init  HiPoly check button
     hDlgItem = GetDlgItem(hDlg, 1051);
     EnableWindow(hDlgItem, 1);
     ShowWindow(hDlgItem, 1);
@@ -2920,7 +2946,7 @@ int J3DAPI JonesMain_InitDevDialog(HWND hDlg, WPARAM wParam, JonesState* pConfig
 
     SetWindowLongPtr(hDlg, DWL_USER, (LONG_PTR)pConfig); // Set config to dialog handle
 
-    CheckDlgButton(hDlg, 1007, pConfig->bDevMode);// Dev mode
+    CheckDlgButton(hDlg, 1007, pConfig->bDevMode); // Dev mode
 
     JonesMain_DevDialogUpdateRadioButtons(hDlg, pConfig);
     return 1;
@@ -2968,8 +2994,8 @@ void J3DAPI JonesMain_DevDialogHandleCommand(HWND hWnd, int controlId, LPARAM lP
             case 1029: // display mode
                 if ( notifyCode == CBN_SELCHANGE )
                 {
-                    HWND hCBDisplayMode = GetDlgItem(hWnd, 1029);
-                    int curSelIdx = ComboBox_GetCurSel(hCBDisplayMode);
+                    HWND hCBDisplayMode                  = GetDlgItem(hWnd, 1029);
+                    int curSelIdx                        = ComboBox_GetCurSel(hCBDisplayMode);
                     pState->displaySettings.videoModeNum = ComboBox_GetItemData(hCBDisplayMode, curSelIdx);
                 }
                 break;
@@ -2977,8 +3003,8 @@ void J3DAPI JonesMain_DevDialogHandleCommand(HWND hWnd, int controlId, LPARAM lP
             case 1030: // Display settings
                 if ( notifyCode == CBN_SELCHANGE )
                 {
-                    HWND CBDisplayDriver = GetDlgItem(hWnd, 1030);
-                    int curSelIdx = ComboBox_GetCurSel(CBDisplayDriver);
+                    HWND CBDisplayDriver                     = GetDlgItem(hWnd, 1030);
+                    int curSelIdx                            = ComboBox_GetCurSel(CBDisplayDriver);
                     pState->displaySettings.displayDeviceNum = ComboBox_GetItemData(CBDisplayDriver, curSelIdx);
                     JonesMain_DevDialogInitDisplayDevices(hWnd, pState);
                 }
@@ -2987,8 +3013,8 @@ void J3DAPI JonesMain_DevDialogHandleCommand(HWND hWnd, int controlId, LPARAM lP
             case 1031: // 3D Driver
                 if ( notifyCode == CBN_SELCHANGE )
                 {
-                    HWND hCB3DDriver = GetDlgItem(hWnd, 1031);
-                    int curSelIdx = ComboBox_GetCurSel(hCB3DDriver);
+                    HWND hCB3DDriver                    = GetDlgItem(hWnd, 1031);
+                    int curSelIdx                       = ComboBox_GetCurSel(hCB3DDriver);
                     pState->displaySettings.device3DNum = ComboBox_GetItemData(hCB3DDriver, curSelIdx);
                     JonesMain_DevDialogInitDisplayDevices(hWnd, pState);
                 }
@@ -3050,18 +3076,18 @@ void J3DAPI JonesMain_DevDialogHandleCommand(HWND hWnd, int controlId, LPARAM lP
         // Start game logic
 
         // Get 3D driver
-        HWND hCB3DDriver = GetDlgItem(hWnd, 1031);
-        int curSelIdx = ComboBox_GetCurSel(hCB3DDriver);
+        HWND hCB3DDriver                    = GetDlgItem(hWnd, 1031);
+        int curSelIdx                       = ComboBox_GetCurSel(hCB3DDriver);
         pState->displaySettings.device3DNum = ComboBox_GetItemData(hCB3DDriver, curSelIdx);
 
         // Get Display mode
-        HWND hCBDisplayMode = GetDlgItem(hWnd, 1029);
-        curSelIdx = ComboBox_GetCurSel(hCBDisplayMode);
+        HWND hCBDisplayMode                  = GetDlgItem(hWnd, 1029);
+        curSelIdx                            = ComboBox_GetCurSel(hCBDisplayMode);
         pState->displaySettings.videoModeNum = ComboBox_GetItemData(hCBDisplayMode, curSelIdx);
 
         // Geometry mode
-        HWND hCBGeometryMode = GetDlgItem(hWnd, 1008);
-        curSelIdx = ComboBox_GetCurSel(hCBGeometryMode);
+        HWND hCBGeometryMode            = GetDlgItem(hWnd, 1008);
+        curSelIdx                       = ComboBox_GetCurSel(hCBGeometryMode);
         pState->displaySettings.geoMode = ComboBox_GetItemData(hCBGeometryMode, curSelIdx);
 
         if ( pState->displaySettings.geoMode == RD_GEOMETRY_WIREFRAME || pState->displaySettings.geoMode == RD_GEOMETRY_VERTEX )
@@ -3070,35 +3096,40 @@ void J3DAPI JonesMain_DevDialogHandleCommand(HWND hWnd, int controlId, LPARAM lP
         }
 
         // Light mode
-        HWND hCBLightMode = GetDlgItem(hWnd, 1009);
-        curSelIdx = ComboBox_GetCurSel(hCBLightMode);
+        HWND hCBLightMode                 = GetDlgItem(hWnd, 1009);
+        curSelIdx                         = ComboBox_GetCurSel(hCBLightMode);
         pState->displaySettings.lightMode = ComboBox_GetItemData(hCBLightMode, curSelIdx);
 
         // Filter mode
-        HWND hCBFilterMode = GetDlgItem(hWnd, 1012);
-        curSelIdx = ComboBox_GetCurSel(hCBFilterMode);
+        HWND hCBFilterMode             = GetDlgItem(hWnd, 1012);
+        curSelIdx                      = ComboBox_GetCurSel(hCBFilterMode);
         pState->displaySettings.filter = ComboBox_GetItemData(hCBFilterMode, curSelIdx);
 
         // Added: Enable/Disable HiPoly
         sithModel_EnableHiPoly(IsDlgButtonChecked(hWnd, 1051) == 1);
 
         pState->displaySettings.bWindowMode = IsDlgButtonChecked(hWnd, 1002) == 1; // window mode
-        pState->bDevMode = IsDlgButtonChecked(hWnd, 1007) == 1;// devmode
+        pState->bDevMode                    = IsDlgButtonChecked(hWnd, 1007) == 1; // devmode
 
         pState->displaySettings.width  = JonesMain_pStartupDisplayEnv->aDisplayInfos[pState->displaySettings.displayDeviceNum].aModes[pState->displaySettings.videoModeNum].rasterInfo.width;
         pState->displaySettings.height = JonesMain_pStartupDisplayEnv->aDisplayInfos[pState->displaySettings.displayDeviceNum].aModes[pState->displaySettings.videoModeNum].rasterInfo.height;
 
         // Get selected level & Save settings
         HWND hCBLevelList = GetDlgItem(hWnd, 1001);
-        curSelIdx = ListBox_GetCurSel(hCBLevelList);
+        curSelIdx         = ListBox_GetCurSel(hCBLevelList);
         if ( ListBox_GetText(hCBLevelList, curSelIdx, pState->aCurLevelFilename) != -1 )
         {
             stdConfig_SetString(JONESDISPLAY_CFG_GRAPHICS_DISPLAY, JonesMain_pStartupDisplayEnv->aDisplayInfos[pState->displaySettings.displayDeviceNum].displayDevice.aDriverName);
-            stdConfig_SetString(JONESDISPLAY_CFG_GRAPHICS_DEVICE, JonesMain_pStartupDisplayEnv->aDisplayInfos[pState->displaySettings.displayDeviceNum].aDevices[pState->displaySettings.device3DNum].deviceDescription);
+            stdConfig_SetString(
+                JONESDISPLAY_CFG_GRAPHICS_DEVICE,
+                JonesMain_pStartupDisplayEnv->aDisplayInfos[pState->displaySettings.displayDeviceNum].aDevices[pState->displaySettings.device3DNum].deviceDescription);
             stdConfig_SetInt(JONESDISPLAY_CFG_GRAPHICS_WIDTH, pState->displaySettings.width);
             stdConfig_SetInt(JONESDISPLAY_CFG_GRAPHICS_HEIGHT, pState->displaySettings.height);
-            stdConfig_SetInt(JONESDISPLAY_CFG_GRAPHICS_BPP, JonesMain_pStartupDisplayEnv->aDisplayInfos[pState->displaySettings.displayDeviceNum].aModes[pState->displaySettings.videoModeNum].rasterInfo.colorInfo.bpp);
-            stdConfig_SetInt(JONESDISPLAY_CFG_GRAPHICS_REFRESHRATE, JonesMain_pStartupDisplayEnv->aDisplayInfos[pState->displaySettings.displayDeviceNum].aModes[pState->displaySettings.videoModeNum].refreshRate);
+            stdConfig_SetInt(
+                JONESDISPLAY_CFG_GRAPHICS_BPP,
+                JonesMain_pStartupDisplayEnv->aDisplayInfos[pState->displaySettings.displayDeviceNum].aModes[pState->displaySettings.videoModeNum].rasterInfo.colorInfo.bpp);
+            stdConfig_SetInt(
+                JONESDISPLAY_CFG_GRAPHICS_REFRESHRATE, JonesMain_pStartupDisplayEnv->aDisplayInfos[pState->displaySettings.displayDeviceNum].aModes[pState->displaySettings.videoModeNum].refreshRate);
             stdConfig_SetInt(JONESDISPLAY_CFG_GRAPHICS_MIPMAPFILTER, pState->displaySettings.filter);
             stdConfig_SetBool(JONESDISPLAY_CFG_GRAPHICS_HIPOLY, sithModel_IsHiPolyEnabled()); // Added
 
@@ -3127,9 +3158,9 @@ void J3DAPI JonesMain_DevDialogHandleCommand(HWND hWnd, int controlId, LPARAM lP
 
 void J3DAPI JonesMain_DevDialogInitDisplayDevices(HWND hDlg, JonesState* pConfig)
 {
-    HWND hBTNStart      = GetDlgItem(hDlg, 1);
-    HWND hCBWindowMode  = GetDlgItem(hDlg, 1002);
-    HWND hCB3DDriver    = GetDlgItem(hDlg, 1031);
+    HWND hBTNStart     = GetDlgItem(hDlg, 1);
+    HWND hCBWindowMode = GetDlgItem(hDlg, 1002);
+    HWND hCB3DDriver   = GetDlgItem(hDlg, 1031);
 
     HWND hCBDisplayMode = GetDlgItem(hDlg, 1029);
     ComboBox_ResetContent(hCBDisplayMode);
@@ -3154,7 +3185,7 @@ void J3DAPI JonesMain_DevDialogInitDisplayDevices(HWND hDlg, JonesState* pConfig
 
     EnableWindow(hCBDisplayMode, 1);
     EnableWindow(hCB3DDriver, 1);
-    CheckDlgButton(hDlg, 1002, pConfig->displaySettings.bWindowMode);// CB window mode
+    CheckDlgButton(hDlg, 1002, pConfig->displaySettings.bWindowMode); // CB window mode
 
     // Init 3D driver combo box list
     bool bDriverSet = false;
@@ -3175,7 +3206,7 @@ void J3DAPI JonesMain_DevDialogInitDisplayDevices(HWND hDlg, JonesState* pConfig
         {
             ComboBox_SetCurSel(hCB3DDriver, itemIdx);
             pConfig->displaySettings.device3DNum = deviceNum;
-            bDriverSet = true;
+            bDriverSet                           = true;
         }
     }
 
@@ -3186,7 +3217,7 @@ void J3DAPI JonesMain_DevDialogInitDisplayDevices(HWND hDlg, JonesState* pConfig
         ComboBox_SetCurSel(hCB3DDriver, 0);
     }
 
-    // Populate display mode combo box list (resolutions) and select 
+    // Populate display mode combo box list (resolutions) and select
 
     // JonesMain_curVideoMode.rasterInfo.colorInfo.bpp = 16; // Removed: This prevents getting stored 32 BPP resolution from config
 
@@ -3199,14 +3230,16 @@ void J3DAPI JonesMain_DevDialogInitDisplayDevices(HWND hDlg, JonesState* pConfig
         {
             if ( JonesMain_CurDisplaySupportsBPP(&pConfig->displaySettings, pDisplay->aModes[modeNum].rasterInfo.colorInfo.bpp) )
             {
-                 // Changed: Moved in this scope
+                // Changed: Moved in this scope
                 if ( pDisplay->aModes[modeNum].refreshRate )
                 {
-                    STD_FORMAT(std_g_genBuffer, "%dx%d %dbpp (%d Hz)", pDisplay->aModes[modeNum].rasterInfo.width, pDisplay->aModes[modeNum].rasterInfo.height, pDisplay->aModes[modeNum].rasterInfo.colorInfo.bpp, pDisplay->aModes[modeNum].refreshRate);  // Added: refresh rate fromat
+                    STD_FORMAT(std_g_genBuffer, "%dx%d %dbpp (%d Hz)", pDisplay->aModes[modeNum].rasterInfo.width, pDisplay->aModes[modeNum].rasterInfo.height,
+                               pDisplay->aModes[modeNum].rasterInfo.colorInfo.bpp, pDisplay->aModes[modeNum].refreshRate); // Added: refresh rate fromat
                 }
                 else
                 {
-                    STD_FORMAT(std_g_genBuffer, "%dx%d %dbpp", pDisplay->aModes[modeNum].rasterInfo.width, pDisplay->aModes[modeNum].rasterInfo.height, pDisplay->aModes[modeNum].rasterInfo.colorInfo.bpp);
+                    STD_FORMAT(std_g_genBuffer, "%dx%d %dbpp", pDisplay->aModes[modeNum].rasterInfo.width, pDisplay->aModes[modeNum].rasterInfo.height,
+                               pDisplay->aModes[modeNum].rasterInfo.colorInfo.bpp);
                 }
 
                 int itemIdx = ComboBox_AddString(hCBDisplayMode, std_g_genBuffer);
@@ -3287,7 +3320,7 @@ void J3DAPI JonesMain_DevDialogUpdateRadioButtons(HWND hDlg, const JonesState* p
 
 size_t J3DAPI JonesMain_FindClosestVideoMode(const StdDisplayEnvironment* pList, const StdVideoMode* pVideoMode, size_t deviceNum)
 {
-    size_t videoMode = 0;
+    size_t videoMode         = 0;
     StdDisplayInfo* pDisplay = &pList->aDisplayInfos[deviceNum];
     for ( size_t i = 0; i < pList->aDisplayInfos[deviceNum].numModes; ++i )
     {
@@ -3313,7 +3346,7 @@ bool J3DAPI JonesMain_CurDisplaySupportsBPP(const JonesDisplaySettings* pSetting
     switch ( bpp )
     {
         case 8:
-            return(pDisplay->aDevices[pSettings->device3DNum].d3dDesc.dwDeviceRenderBitDepth & DDBD_8) != 0;
+            return (pDisplay->aDevices[pSettings->device3DNum].d3dDesc.dwDeviceRenderBitDepth & DDBD_8) != 0;
         case 16:
             return (pDisplay->aDevices[pSettings->device3DNum].d3dDesc.dwDeviceRenderBitDepth & DDBD_16) != 0;
         case 24:
@@ -3324,7 +3357,7 @@ bool J3DAPI JonesMain_CurDisplaySupportsBPP(const JonesDisplaySettings* pSetting
 #elif defined(J3D_DIRECTX9) || defined(J3D_OPENGL)
     J3D_UNUSED(pSettings);
     if ( bpp == 24 || bpp == 32 ) return 1;
-#else 
+#else
 #error "Unsupported 3D API"
 #endif
 
