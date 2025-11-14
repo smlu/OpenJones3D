@@ -1,5 +1,5 @@
 # CMake build workflow for DirectX 6
-name: CMake DirectX 6 Build
+name: DirectX 6 Build
 
 on:
   push:
