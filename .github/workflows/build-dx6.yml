@@ -126,11 +126,15 @@ jobs:
         echo "DX_INCLUDE=$DX_INCLUDE" >> $env:GITHUB_OUTPUT
         echo "DX_LIB=$DX_LIB" >> $env:GITHUB_OUTPUT
 
+    - name: Install Ninja
+      run: choco install ninja -y
+
     - name: Configure CMake (QOL ${{ matrix.qol_improvements }})
       shell: pwsh
       run: |
         cmake -B "${{ steps.strings.outputs.build-output-dir }}" `
-          -G "NMake Makefiles" `
+          -G "Ninja" `
+          -A Win32 `
           -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }} `
           -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} `
           -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} `
@@ -146,4 +150,4 @@ jobs:
       shell: pwsh
       run: |
         cd "${{ steps.strings.outputs.build-output-dir }}"
-        nmake
+        ninja
