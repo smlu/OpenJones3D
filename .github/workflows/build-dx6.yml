@@ -134,8 +134,6 @@ jobs:
           -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }} `
           -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} `
           -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} `
-          -DCMAKE_CXX_FLAGS="/I `"${{ steps.dx6_path.outputs.DX_INCLUDE }}`"" `
-          -DCMAKE_EXE_LINKER_FLAGS="/LIBPATH:`"${{ steps.dx6_path.outputs.DX_LIB }}`"" `
           -DJONES3D_USE_DIRECTX9=OFF `
           -DJONES3D_QOL_IMPROVEMENTS=${{ matrix.qol_improvements }} `
           -DJONES3D_ENABLE_POST_BUILD_COPY=OFF `
