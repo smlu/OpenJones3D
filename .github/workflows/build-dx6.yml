@@ -48,7 +48,7 @@ jobs:
         $sdkExe = "${{ github.workspace }}/dx61sdk.exe"
         $extractPath = "${{ github.workspace }}/dx61sdk_temp"
         $repoIncludePath = "${{ github.workspace }}/Libs/external/DirectX61c/include/DirectX6"
-        $repoLibPath = "${{ github.workspace }}/Libs/external/DirectX61c/libs"
+        $repoLibPath = "${{ github.workspace }}/Libs/external/DirectX61c/lib"
         
         # Create extraction directory
         New-Item -ItemType Directory -Force -Path $extractPath
@@ -118,7 +118,7 @@ jobs:
       shell: pwsh
       run: |
         $DX_INCLUDE = "${{ github.workspace }}/Libs/external/DirectX61c/include/DirectX6"
-        $DX_LIB = "${{ github.workspace }}/Libs/external/DirectX61c/libs"
+        $DX_LIB = "${{ github.workspace }}/Libs/external/DirectX61c/lib"
         
         Write-Host "DirectX 6 Include: $DX_INCLUDE"
         Write-Host "DirectX 6 Lib: $DX_LIB"
