@@ -95,12 +95,43 @@ static const DXStatus std3D_aD3DStatusTbl[30] = {
     { E_POINTER, "E_POINTER" }
 };
 
+const size_t std3D_maxVerticesPerDrawCall = 65536; // max vertices which can be drawn in one draw call
+const size_t std3D_maxIndicesPerDrawCall  = 131072; // max indices which can be drawn in one draw call
+const size_t std3D_maxDrawCallGroupSize   = 16384; // max amount of draw calls which can be summarized in a group
+
+// structure for caching a draw call
+typedef struct sGLDrawCall
+{
+    size_t firstIndex;
+    GLsizei indexCount;
+    GLint baseVertex;
+    tSysTexture* tex;
+    Std3DRenderState rdflags;
+} GLDrawCall;
+
+typedef struct sFrameBatch
+{
+    D3DTLVERTEX* verts;
+    size_t vertCapacity;
+    size_t vertCount;
+
+    GLushort* indices;
+    size_t indexCapacity;
+    size_t indexCount;
+
+    GLDrawCall* draws;
+    size_t drawCapacity;
+    size_t drawCount;
+} FrameBatch;
+
+static FrameBatch std3D_frameBatch = { 0 };
+
 // Global state
 
 // VBO & IBO
 #define STD3D_VERTBUFFERSIZE STD3D_MAXVERTICES *STD3D_MAXFACEVERTICES
 
-static bool std3D_bUseBuffers = false; // Slow for small geometry, so disabled by
+static bool std3D_bUseBuffers = true; // Slow for small geometry, so disabled by
 // default. Consider hybrid approach later
 static GLuint std3D_pVertexArrayObject  = 0;
 static const size_t std3D_vbSize        = STD3D_VERTBUFFERSIZE;
@@ -138,6 +169,9 @@ void std3D_ShutdownShaderSystem(void);
 
 static int std3D_DrawIndexedPrimitiveUP(GLenum primType, const D3DTLVERTEX* aVerts, size_t numVerts,
                                         LPWORD aIndices, size_t numIndices);
+
+static void std3D_DrawFrameBatch(void);
+static bool std3D_EnsureDrawCapacity(size_t extraVerts, size_t extraIndices);
 
 void std3D_InstallHooks(void)
 {
@@ -522,6 +556,10 @@ int std3D_StartScene(void)
 
 void std3D_EndScene(void)
 {
+    if ( std3D_bShadersActive && std3D_frameBatch.drawCount > 0 )
+    {
+        std3D_DrawFrameBatch();
+    }
     std3D_numOpaqueDrawCalls = 0;
     std3D_pD3DTex            = NULL;
 }
@@ -564,30 +602,79 @@ static int std3D_CopyVertexDataToBuffer(const LPD3DTLVERTEX aVerts, size_t numVe
     return 1;
 }
 
-int std3D_DrawIndexedPrimitive(GLenum type, LPD3DTLVERTEX aVerts,
-                               size_t numVerts, LPWORD aIndices,
-                               size_t numIndices)
+int std3D_CacheDrawCall(tSysTexture* pTex, Std3DRenderState rdflags, LPD3DTLVERTEX aVerts, size_t numVerts, LPWORD aIndices, size_t numIndices)
 {
-    // STDLOG_DEBUG("Draw %d vertices\n", numVerts);
-    if ( !std3D_CopyVertexDataToBuffer(aVerts, numVerts, aIndices, numIndices) )
-        return 0;
+    if ( !std3D_EnsureDrawCapacity(numVerts, numIndices) )
+    {
+        std3D_DrawFrameBatch();
+    }
+
+    size_t baseVertex = std3D_frameBatch.vertCount;
+    size_t firstIndex = std3D_frameBatch.indexCount;
+
+    // paste new vertices
+    memcpy(&std3D_frameBatch.verts[baseVertex], aVerts, numVerts * sizeof(D3DTLVERTEX));
+    std3D_frameBatch.vertCount += numVerts;
+
+    // paste new indices
+    memcpy(&std3D_frameBatch.indices[firstIndex], aIndices, numIndices * sizeof(WORD));
+    std3D_frameBatch.indexCount += numIndices;
+
+    // cache draw call
+    GLDrawCall* dc = &std3D_frameBatch.draws[std3D_frameBatch.drawCount++];
+    dc->firstIndex = firstIndex;
+    dc->indexCount = (GLsizei)numIndices;
+    dc->baseVertex = (GLint)baseVertex;
+    dc->tex        = pTex;
+    dc->rdflags    = rdflags;
+
+    return 1;
+}
+
+static void std3D_DrawFrameBatch(void)
+{
+    if ( !std3D_frameBatch.vertCount || !std3D_frameBatch.indexCount )
+    {
+        return;
+    }
 
     glBindVertexArray(std3D_pVertexArrayObject);
 
-    const GLvoid* indexPtr = (const GLvoid*)(std3D_ibOffset * sizeof(WORD));
-    GLsizei indexCount     = (GLsizei)numIndices;
-    const GLint baseVertex = (GLint)std3D_vbOffset;
+    // Upload vertex data
+    glBindBuffer(GL_ARRAY_BUFFER, std3D_pVertexBufferOpaque);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, std3D_frameBatch.vertCount * sizeof(D3DTLVERTEX), std3D_frameBatch.verts);
 
-    glDrawElementsBaseVertex(type, indexCount, GL_UNSIGNED_SHORT, indexPtr,
-                             baseVertex);
-    // glDrawElements(type, indexCount, GL_UNSIGNED_SHORT, indexPtr);
+    // Upload index data;
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, std3D_pIndexBuffer);
+    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, std3D_frameBatch.indexCount * sizeof(GLushort), std3D_frameBatch.indices);
+
+    // fire draw calls
+    for ( size_t i = 0; i < std3D_frameBatch.drawCount; i++ )
+    {
+        GLDrawCall* dc = &std3D_frameBatch.draws[i];
+
+        std3D_SetRenderState(dc->rdflags);
+        if ( dc->tex != std3D_pD3DTex )
+        {
+            stdShader_SetTexture(std3D_defaultShader, dc->tex->id);
+            std3D_pD3DTex = dc->tex;
+        }
+        const void* indexPtr = (const void*)(dc->firstIndex * sizeof(GLushort));
+        glDrawElementsBaseVertex(GL_TRIANGLES, dc->indexCount, GL_UNSIGNED_SHORT, indexPtr, dc->baseVertex);
+    }
+
+    std3D_frameBatch.vertCount  = 0;
+    std3D_frameBatch.indexCount = 0;
+    std3D_frameBatch.drawCount  = 0;
 
     glBindVertexArray(0);
-    // Offsets fortschreiben (wie in D3D)
-    std3D_vbOffset += numVerts;
-    std3D_ibOffset += numIndices;
+}
 
-    return 1;
+static bool std3D_EnsureDrawCapacity(size_t extraVerts, size_t extraIndices)
+{
+    return std3D_frameBatch.vertCount + extraVerts < std3D_maxVerticesPerDrawCall &&
+        std3D_frameBatch.indexCount + extraIndices < std3D_maxIndicesPerDrawCall &&
+        std3D_frameBatch.drawCount + 1 < std3D_maxDrawCallGroupSize;
 }
 
 int std3D_DrawPrimitive(D3DPRIMITIVETYPE type, LPD3DTLVERTEX aVerts,
@@ -627,6 +714,16 @@ void J3DAPI std3D_DrawRenderList(tSysTexture* pTex, Std3DRenderState rdflags, LP
         STDLOG_ERROR("Error %d > %d maxVertices.\n", numVerts, std3D_g_maxVertices);
         return;
     }
+
+    if ( std3D_bUseBuffers )
+    {
+        if ( !std3D_CacheDrawCall(pTex, rdflags, aVerts, numVerts, aIndices, numIndices) )
+        {
+            // draw failed
+        }
+        return;
+    }
+
 
     // Set texture
     if ( pTex != std3D_pD3DTex )
@@ -675,19 +772,8 @@ void J3DAPI std3D_DrawRenderList(tSysTexture* pTex, Std3DRenderState rdflags, LP
     //     }
     // }
 
-    if ( std3D_bUseBuffers )
-    {
-        if ( !std3D_DrawIndexedPrimitive(GL_TRIANGLES, aVerts, numVerts, aIndices,
-                                         numIndices) )
-        {
-            // draw failed
-        }
-        // SDL_GL_SwapWindow(stdWin95_GetSDLWindow());
-    }
-    else
-    {
-        std3D_DrawIndexedPrimitiveUP(GL_TRIANGLES, aVerts, numVerts, aIndices, numIndices);
-    }
+    std3D_DrawIndexedPrimitiveUP(GL_TRIANGLES, aVerts, numVerts, aIndices, numIndices);
+
     // else
     // {
     //     HRESULT d3dres = IDirect3DDevice9_DrawIndexedPrimitiveUP(
@@ -860,9 +946,15 @@ void J3DAPI std3D_SetRenderState(Std3DRenderState rdflags)
         (rdflags & STD3D_RS_ZWRITE_DISABLED) )
     {
         if ( rdflags & STD3D_RS_ZWRITE_DISABLED )
+        {
             glDepthMask(GL_FALSE);
+            glEnable(GL_BLEND);
+        }
         else
+        {
             glDepthMask(GL_TRUE);
+            glDisable(GL_BLEND);
+        }
     }
 
     // --- Texture Address Mode U/V ---
@@ -2016,17 +2108,22 @@ void J3DAPI std3D_SetFindAllDevices(int bFindAll)
 
 bool std3D_InitVertexBuffers(GLuint* vbo, GLuint* ibo, GLuint* vao)
 {
+    memset(&std3D_frameBatch, 0, sizeof(std3D_frameBatch));
+    std3D_frameBatch.verts   = STDMALLOC(std3D_maxVerticesPerDrawCall * sizeof(D3DTLVERTEX));
+    std3D_frameBatch.indices = STDMALLOC(std3D_maxIndicesPerDrawCall * sizeof(GL_SHORT));
+    std3D_frameBatch.draws   = STDMALLOC(std3D_maxDrawCallGroupSize * sizeof(GLDrawCall));
+
     glGenVertexArrays(1, vao);
     glBindVertexArray(*vao);
 
     glGenBuffers(1, vbo);
     glBindBuffer(GL_ARRAY_BUFFER, *vbo);
-    glBufferData(GL_ARRAY_BUFFER, std3D_vbSize * sizeof(D3DTLVERTEX), NULL,
+    glBufferData(GL_ARRAY_BUFFER, std3D_maxVerticesPerDrawCall * sizeof(D3DTLVERTEX), NULL,
                  GL_STREAM_DRAW);
 
     glGenBuffers(1, ibo);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, *ibo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, std3D_ibSize * sizeof(GLushort), NULL,
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, std3D_maxIndicesPerDrawCall * sizeof(GLushort), NULL,
                  GL_STREAM_DRAW);
 
     const GLsizei stride = sizeof(D3DTLVERTEX);
