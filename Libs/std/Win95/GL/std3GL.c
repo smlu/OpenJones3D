@@ -948,12 +948,10 @@ void J3DAPI std3D_SetRenderState(Std3DRenderState rdflags)
         if ( rdflags & STD3D_RS_ZWRITE_DISABLED )
         {
             glDepthMask(GL_FALSE);
-            glEnable(GL_BLEND);
         }
         else
         {
             glDepthMask(GL_TRUE);
-            glDisable(GL_BLEND);
         }
     }
 
