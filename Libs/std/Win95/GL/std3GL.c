@@ -22,7 +22,7 @@ static bool std3D_bOpen = false;
 
 static D3DRECT std3D_activeRect = { 0 };
 static_assert(sizeof(std3D_activeRect) == 4 * sizeof(float),
-    "sizeof(std3D_activeRect) == 4 * sizeof(float)");
+              "sizeof(std3D_activeRect) == 4 * sizeof(float)");
 // Must be 4 floats to be used in shader
 
 static size_t std3D_frameCount            = 1;
@@ -117,7 +117,6 @@ static size_t std3D_numTransparentDrawCalls = 0;
 static bool std3D_bShadersActive              = true;
 static GLShaderProgram* std3D_defaultShader   = NULL;
 static GLShaderProgram* std3D_defaultShaderWf = NULL;
-static GLShaderProgram* std3D_activeShader    = NULL;
 
 static int std3D_InitRenderState(void);
 static int std3D_BuildDeviceList(void);
@@ -136,10 +135,9 @@ void std3D_ReleaseVertexBuffers(void);
 bool std3D_InitShaderSystem(void);
 void std3D_ShutdownShaderSystem(void);
 
-static void std3D_UpdateShaderState(GLShaderProgram* activeShader);
 
 static int std3D_DrawIndexedPrimitiveUP(GLenum primType, const D3DTLVERTEX* aVerts, size_t numVerts,
-    LPWORD aIndices, size_t numIndices);
+                                        LPWORD aIndices, size_t numIndices);
 
 void std3D_InstallHooks(void)
 {
@@ -187,7 +185,7 @@ void std3D_ResetGlobals(void)
 {
     float std3D_g_fogDensity_tmp = 1.0f;
     memcpy(&std3D_g_fogDensity, &std3D_g_fogDensity_tmp,
-        sizeof(std3D_g_fogDensity));
+           sizeof(std3D_g_fogDensity));
     memset(&std3D_g_maxVertices, 0, sizeof(std3D_g_maxVertices));
 }
 
@@ -309,7 +307,7 @@ static bool std3D_InitSystem(void)
     std3D_RGBATextureFormat    = std3D_FindClosestFormat(&stdColor_cfRGBA8888);
 
     if ( std3D_bUseBuffers && !std3D_InitVertexBuffers(&std3D_pVertexBufferOpaque, &std3D_pIndexBuffer,
-        &std3D_pVertexArrayObject) )
+                                                       &std3D_pVertexArrayObject) )
     {
         return false;
     }
@@ -328,7 +326,7 @@ static bool std3D_InitSystem(void)
     }
 
     if ( stdDisplay_GetTextureMemory(&std3D_pCurDevice->totalMemory,
-        &std3D_pCurDevice->availableMemory) )
+                                     &std3D_pCurDevice->availableMemory) )
     {
         // Since we failed to get texture memory info indicate that opening failed
         return false;
@@ -412,10 +410,10 @@ int J3DAPI std3D_Open(size_t deviceNum)
     stdDisplay_GetTotalMemory(&memTotal, &memFree);
 
     STDLOG_STATUS("Texture Ram  Total: %u bytes  Free: %u bytes.\n",
-        std3D_pCurDevice->totalMemory,
-        std3D_pCurDevice->availableMemory);
+                  std3D_pCurDevice->totalMemory,
+                  std3D_pCurDevice->availableMemory);
     STDLOG_STATUS("Video Ram Total: %u bytes  Free: %u bytes.\n", memTotal,
-        memFree);
+                  memFree);
 
     std3D_bOpen = true;
     return 1;
@@ -444,7 +442,7 @@ void std3D_Close(void)
 }
 
 void J3DAPI std3D_GetTextureFormat(StdColorFormatType type, ColorInfo* pDest, int* pbColorKeySet,
-    LPDDCOLORKEY* ppColorKey)
+                                   LPDDCOLORKEY* ppColorKey)
 {
     if ( type == STDCOLOR_FORMAT_RGBA_1BITALPHA )
     {
@@ -501,6 +499,7 @@ int std3D_StartScene(void)
         {
             // error
         }
+        stdShader_SetActiveShader(std3D_defaultShader);
     }
 
     // glEnable(GL_SCISSOR_TEST);
@@ -559,21 +558,19 @@ static int std3D_CopyVertexDataToBuffer(const LPD3DTLVERTEX aVerts, size_t numVe
         const GLsizeiptr ibByteSize   = (GLsizeiptr)(numIndices * sizeof(WORD));
 
         glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, ibByteOffset, ibByteSize,
-            aIndices);
+                        aIndices);
     }
 
     return 1;
 }
 
 int std3D_DrawIndexedPrimitive(GLenum type, LPD3DTLVERTEX aVerts,
-    size_t numVerts, LPWORD aIndices,
-    size_t numIndices)
+                               size_t numVerts, LPWORD aIndices,
+                               size_t numIndices)
 {
     // STDLOG_DEBUG("Draw %d vertices\n", numVerts);
     if ( !std3D_CopyVertexDataToBuffer(aVerts, numVerts, aIndices, numIndices) )
         return 0;
-
-    glUseProgram(std3D_activeShader->handle);
 
     glBindVertexArray(std3D_pVertexArrayObject);
 
@@ -582,8 +579,8 @@ int std3D_DrawIndexedPrimitive(GLenum type, LPD3DTLVERTEX aVerts,
     const GLint baseVertex = (GLint)std3D_vbOffset;
 
     glDrawElementsBaseVertex(type, indexCount, GL_UNSIGNED_SHORT, indexPtr,
-        baseVertex);
-// glDrawElements(type, indexCount, GL_UNSIGNED_SHORT, indexPtr);
+                             baseVertex);
+    // glDrawElements(type, indexCount, GL_UNSIGNED_SHORT, indexPtr);
 
     glBindVertexArray(0);
     // Offsets fortschreiben (wie in D3D)
@@ -594,7 +591,7 @@ int std3D_DrawIndexedPrimitive(GLenum type, LPD3DTLVERTEX aVerts,
 }
 
 int std3D_DrawPrimitive(D3DPRIMITIVETYPE type, LPD3DTLVERTEX aVerts,
-    size_t numVerts)
+                        size_t numVerts)
 {
     //  // Copy vertices to buffers
     // if ( !std3D_CopyVertexDataToBuffer(aVerts, numVerts, NULL, 0) )
@@ -621,39 +618,14 @@ int std3D_DrawPrimitive(D3DPRIMITIVETYPE type, LPD3DTLVERTEX aVerts,
     return 1;
 }
 
-void std3D_UpdateShaderState(GLShaderProgram* activeShader)
-{
-    if ( activeShader->handle == STDSHADER_INVALIDHANDLE )
-        return;
-
-    // Set shader
-    if ( activeShader != std3D_activeShader )
-    {
-        if ( !stdShader_SetActiveShader(activeShader) )
-        {
-            // Failed to set active shader
-            return;
-        }
-
-        // Apply shader parameters
-        // stdShader_ApplyShaderParams(activeShader);
-        std3D_activeShader = activeShader;
-    }
-}
-
 void J3DAPI std3D_DrawRenderList(tSysTexture* pTex, Std3DRenderState rdflags, LPD3DTLVERTEX aVerts, size_t numVerts,
-    LPWORD aIndices, size_t numIndices)
+                                 LPWORD aIndices, size_t numIndices)
 {
     // STDLOG_DEBUG("Draw %d vertices\n", numVerts);
     if ( numVerts > (unsigned int)std3D_g_maxVertices )
     {
         STDLOG_ERROR("Error %d > %d maxVertices.\n", numVerts, std3D_g_maxVertices);
         return;
-    }
-
-    if ( std3D_bShadersActive )
-    {
-        std3D_UpdateShaderState(std3D_defaultShader);
     }
 
     // Set texture
@@ -663,7 +635,7 @@ void J3DAPI std3D_DrawRenderList(tSysTexture* pTex, Std3DRenderState rdflags, LP
         // glBindTexture(GL_TEXTURE_2D, pTex->id);
         // GLint loc = glGetUniformLocation(std3D_activeShader->handle, "sTexture");
         // glUniform1i(loc, 1);
-        stdShader_SetTexture(std3D_activeShader, pTex->id);
+        stdShader_SetTexture(std3D_defaultShader, pTex->id);
         std3D_pD3DTex = pTex;
         // HRESULT d3dres = IDirect3DDevice9_SetTexture(std3D_pD3Device, 0,
         // (IDirect3DBaseTexture9*)pTex); if ( d3dres != D3D_OK )
@@ -706,7 +678,7 @@ void J3DAPI std3D_DrawRenderList(tSysTexture* pTex, Std3DRenderState rdflags, LP
     if ( std3D_bUseBuffers )
     {
         if ( !std3D_DrawIndexedPrimitive(GL_TRIANGLES, aVerts, numVerts, aIndices,
-            numIndices) )
+                                         numIndices) )
         {
             // draw failed
         }
@@ -739,7 +711,7 @@ void J3DAPI std3D_DrawRenderList(tSysTexture* pTex, Std3DRenderState rdflags, LP
 }
 
 static int std3D_DrawIndexedPrimitiveUP(GLenum primType, const D3DTLVERTEX* aVerts, size_t numVerts,
-    LPWORD aIndices, size_t numIndices)
+                                        LPWORD aIndices, size_t numIndices)
 {
     if ( !aVerts || !aIndices || numIndices == 0 )
     {
@@ -756,28 +728,28 @@ static int std3D_DrawIndexedPrimitiveUP(GLenum primType, const D3DTLVERTEX* aVer
 
     glEnableVertexAttribArray(0); // position
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE,
-        stride,
-        &aVerts[0].sx);
+                          stride,
+                          &aVerts[0].sx);
 
     glEnableVertexAttribArray(1); // rhw
     glVertexAttribPointer(1, 1, GL_FLOAT, GL_FALSE,
-        stride,
-        &aVerts[0].rhw);
+                          stride,
+                          &aVerts[0].rhw);
 
     glEnableVertexAttribArray(2); // diffuse color
     glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, GL_TRUE,
-        stride,
-        &aVerts[0].color);
+                          stride,
+                          &aVerts[0].color);
 
     glEnableVertexAttribArray(3); // specular
     glVertexAttribPointer(3, 4, GL_UNSIGNED_BYTE, GL_TRUE,
-        stride,
-        &aVerts[0].specular);
+                          stride,
+                          &aVerts[0].specular);
 
     glEnableVertexAttribArray(4); // texcoords
     glVertexAttribPointer(4, 2, GL_FLOAT, GL_FALSE,
-        stride,
-        &aVerts[0].tu);
+                          stride,
+                          &aVerts[0].tu);
 
     GLsizei indexCount = (GLsizei)numIndices;
     glDrawElements(primType, indexCount, GL_UNSIGNED_SHORT, aIndices);
@@ -922,8 +894,8 @@ void J3DAPI std3D_SetRenderState(Std3DRenderState rdflags)
             if ( std3D_bShadersActive )
             {
                 stdShader_SetFog(std3D_bRenderFog, std3D_fogStartDepth,
-                    std3D_fogEndDepth, std3D_fogDepthFactor,
-                    std3D_fogColor);
+                                 std3D_fogEndDepth, std3D_fogDepthFactor,
+                                 std3D_fogColor);
             }
             else
             {
@@ -999,7 +971,7 @@ void J3DAPI std3D_SetRenderState(Std3DRenderState rdflags)
 }
 
 void J3DAPI std3D_AllocSystemTexture(tSystemTexture* pTexture, tVBuffer** apVBuffers, size_t numMipLevels,
-    StdColorFormatType formatType)
+                                     StdColorFormatType formatType)
 {
     memset(pTexture, 0, sizeof(tSystemTexture));
 
@@ -1081,7 +1053,7 @@ void J3DAPI std3D_AllocSystemTexture(tSystemTexture* pTexture, tVBuffer** apVBuf
                 size_t pixelDataSize = apVBuffers[mmNum]->rasterInfo.height *
                     apVBuffers[mmNum]->rasterInfo.rowSize;
                 memcpy(pTexture->apMipmaps[mmNum]->pPixels, apVBuffers[mmNum]->pPixels,
-                    pixelDataSize);
+                       pixelDataSize);
 
                 stdDisplay_VBufferUnlock(pTexture->apMipmaps[mmNum]);
                 stdDisplay_VBufferUnlock(apVBuffers[mmNum]);
@@ -1108,13 +1080,13 @@ error:
 }
 
 void J3DAPI std3D_GetValidDimensions(uint32_t width, uint32_t height,
-    uint32_t* pOutWidth,
-    uint32_t* pOutHeight)
+                                     uint32_t* pOutWidth,
+                                     uint32_t* pOutHeight)
 {
     uint32_t texWidth = STDMATH_CLAMP(width, std3D_pCurDevice->minTexWidth,
-        std3D_pCurDevice->maxTexWidth);
+                                      std3D_pCurDevice->maxTexWidth);
     uint32_t texHeight = STDMATH_CLAMP(height, std3D_pCurDevice->minTexHeight,
-        std3D_pCurDevice->maxTexHeight);
+                                       std3D_pCurDevice->maxTexHeight);
 
     if ( !std3D_pCurDevice->bSqareOnlyTexture || texWidth == texHeight )
     {
@@ -1156,7 +1128,7 @@ void J3DAPI std3D_ClearSystemTexture(tSystemTexture* pTex)
 }
 
 void J3DAPI std3D_AddToTextureCache(tSystemTexture* pCacheTexture,
-    StdColorFormatType format)
+                                    StdColorFormatType format)
 {
     J3D_UNUSED(format);
 
@@ -1181,7 +1153,7 @@ void J3DAPI std3D_AddToTextureCache(tSystemTexture* pCacheTexture,
     const size_t numMipmaps = autoMipmap ? 1 : pCacheTexture->numMipLevels;
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
-        autoMipmap ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR);
+                    autoMipmap ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
@@ -1196,7 +1168,7 @@ void J3DAPI std3D_AddToTextureCache(tSystemTexture* pCacheTexture,
     GLsizei width  = (GLsizei)mip->rasterInfo.width;
     GLsizei height = (GLsizei)mip->rasterInfo.height;
     glTexImage2D(GL_TEXTURE_2D, 0, internalFormatGL,
-        width, height, 0, formatGL, typeGL, mip->pPixels);
+                 width, height, 0, formatGL, typeGL, mip->pPixels);
 
     glGenerateMipmap(GL_TEXTURE_2D);
 
@@ -1543,7 +1515,7 @@ void J3DAPI std3D_EnableFog(int bEnabled, float density)
 }
 
 void J3DAPI std3D_SetFog(float red, float green, float blue, float startDepth,
-    float endDepth)
+                         float endDepth)
 {
     // // Update table stare
     // std3D_EnableFog(std3D_bRenderFog, std3D_g_fogDensity);
@@ -1649,8 +1621,8 @@ static int std3D_BuildDeviceList(void)
     }
 
     for ( size_t i = 0;
-        i < numDisplayDevices && std3D_numDevices < STD_ARRAYLEN(std3D_aDevices);
-        ++i )
+          i < numDisplayDevices && std3D_numDevices < STD_ARRAYLEN(std3D_aDevices);
+          ++i )
     {
         StdDisplayDevice displayDevice = { 0 };
         if ( stdDisplay_GetDevice(i, &displayDevice) )
@@ -1705,14 +1677,14 @@ static int std3D_BuildDeviceList(void)
         // TODO: proly no point to make log here since same info can be logged in
         // stdDisplay
         STDLOG_STATUS("Found |%s|%s|%s|%s| D3D Device\n",
-            pD3DDriver->hasZBuffer ? "Z" : "Non-Z",
-            pD3DDriver->bAlphaTextureSupported ? "Alpha" : "No Alpha",
-            pD3DDriver->bStippledShadeSupported ? "Stippled" : "Blend",
-            pD3DDriver->bColorkeyTextureSupported ? "Colorkey"
-            : "No Colorkey");
+                      pD3DDriver->hasZBuffer ? "Z" : "Non-Z",
+                      pD3DDriver->bAlphaTextureSupported ? "Alpha" : "No Alpha",
+                      pD3DDriver->bStippledShadeSupported ? "Stippled" : "Blend",
+                      pD3DDriver->bColorkeyTextureSupported ? "Colorkey"
+                      : "No Colorkey");
 
         STDLOG_STATUS("Description: %s [%s]\n", pD3DDriver->deviceName,
-            pD3DDriver->deviceDescription);
+                      pD3DDriver->deviceDescription);
 
         ++std3D_numDevices;
     }
@@ -1744,9 +1716,9 @@ static void std3D_InitTextureFormats(void)
 
     // assume all texture formats are compatible in OpenGL
     for ( size_t i = 0;
-        i < STD_ARRAYLEN(formats) &&
-        std3D_numTextureFormats < STD_ARRAYLEN(std3D_aTextureFormats);
-        ++i )
+          i < STD_ARRAYLEN(formats) &&
+          std3D_numTextureFormats < STD_ARRAYLEN(std3D_aTextureFormats);
+          ++i )
     {
         StdTextureFormat* pTexFormat =
             &std3D_aTextureFormats[std3D_numTextureFormats];
@@ -1871,8 +1843,8 @@ int J3DAPI std3D_PurgeTextureCache(size_t size)
 {
     size_t purgedBytes = 0;
     for ( tSystemTexture* pCacheTexture = std3D_pFirstTexCache;
-        pCacheTexture && pCacheTexture->frameNum != std3D_frameCount;
-        pCacheTexture = pCacheTexture->pNextCachedTexture )
+          pCacheTexture && pCacheTexture->frameNum != std3D_frameCount;
+          pCacheTexture = pCacheTexture->pNextCachedTexture )
     {
         if ( pCacheTexture->textureSize == size )
         {
@@ -1885,8 +1857,8 @@ int J3DAPI std3D_PurgeTextureCache(size_t size)
 
     tSystemTexture* pNextCachedTexture = NULL;
     for ( tSystemTexture* pCacheTexture = std3D_pFirstTexCache;
-        pCacheTexture && purgedBytes < size;
-        pCacheTexture = pNextCachedTexture )
+          pCacheTexture && purgedBytes < size;
+          pCacheTexture = pNextCachedTexture )
     {
         pNextCachedTexture = pCacheTexture->pNextCachedTexture;
         if ( pCacheTexture->frameNum != std3D_frameCount )
@@ -2050,33 +2022,33 @@ bool std3D_InitVertexBuffers(GLuint* vbo, GLuint* ibo, GLuint* vao)
     glGenBuffers(1, vbo);
     glBindBuffer(GL_ARRAY_BUFFER, *vbo);
     glBufferData(GL_ARRAY_BUFFER, std3D_vbSize * sizeof(D3DTLVERTEX), NULL,
-        GL_STREAM_DRAW);
+                 GL_STREAM_DRAW);
 
     glGenBuffers(1, ibo);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, *ibo);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, std3D_ibSize * sizeof(GLushort), NULL,
-        GL_STREAM_DRAW);
+                 GL_STREAM_DRAW);
 
     const GLsizei stride = sizeof(D3DTLVERTEX);
 
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride,
-        (void*)offsetof(D3DTLVERTEX, sx));
+                          (void*)offsetof(D3DTLVERTEX, sx));
     glEnableVertexAttribArray(0);
 
     glVertexAttribPointer(1, 1, GL_FLOAT, GL_FALSE, stride,
-        (void*)offsetof(D3DTLVERTEX, rhw));
+                          (void*)offsetof(D3DTLVERTEX, rhw));
     glEnableVertexAttribArray(1);
 
     glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, GL_TRUE, stride,
-        (void*)offsetof(D3DTLVERTEX, color));
+                          (void*)offsetof(D3DTLVERTEX, color));
     glEnableVertexAttribArray(2);
 
     glVertexAttribPointer(3, 4, GL_UNSIGNED_BYTE, GL_TRUE, stride,
-        (void*)offsetof(D3DTLVERTEX, specular));
+                          (void*)offsetof(D3DTLVERTEX, specular));
     glEnableVertexAttribArray(3);
 
     glVertexAttribPointer(4, 2, GL_FLOAT, GL_FALSE, stride,
-        (void*)offsetof(D3DTLVERTEX, tu));
+                          (void*)offsetof(D3DTLVERTEX, tu));
     glEnableVertexAttribArray(4);
 
     glBindVertexArray(0);
@@ -2158,13 +2130,8 @@ bool std3D_InitShaderSystem(void)
 
 void std3D_ShutdownShaderSystem(void)
 {
-    if ( std3D_defaultShader )
-    {
-        stdShader_Free(std3D_defaultShader);
-        std3D_defaultShader->handle = STDSHADER_INVALIDHANDLE;
-    }
-
-    std3D_activeShader->handle = STDSHADER_INVALIDHANDLE;
+    std3D_defaultShader   = NULL;
+    std3D_defaultShaderWf = NULL;
     // Important, reset active shader to STDSHADER_INVALIDHANDLE to avoid dangling
     // handle on next system init
     stdShader_Close();

@@ -25,10 +25,17 @@ static size_t stdShader_shaderCount = 0;
 
 static int stdShader_activeTextureUnit = 0;
 
+static GLShaderProgram* stdShader_activeShader = NULL;
+
 void stdShader_ResetShader(GLShaderProgram* shaderProgram)
 {
     if ( shaderProgram->handle > 0 )
     {
+        if ( stdShader_activeShader == shaderProgram )
+        {
+            glUseProgram(0);
+            stdShader_activeShader = NULL;
+        }
         glDeleteProgram(shaderProgram->handle);
         shaderProgram->handle = 0;
         stdShader_shaderCount--;
@@ -198,6 +205,12 @@ bool J3DAPI stdShader_SetActiveShader(GLShaderProgram* pSp)
         return false;
     }
 
+    if ( stdShader_activeShader == pSp )
+    {
+        return true;
+    }
+
+    stdShader_activeShader = pSp;
     glUseProgram(pSp->handle);
 
     return true;
@@ -390,13 +403,18 @@ void J3DAPI stdShader_Free(GLShaderProgram* sh)
 
 void stdShader_SetTexture(GLShaderProgram* sh, GLuint tex)
 {
-    if ( stdShader_activeTextureUnit == 0 )
+    if ( stdShader_activeTextureUnit == 0 ) //unit 0 is reserved for framebuffer texture, so it's not allowed to change it.
     {
         return;
     }
-
+    GLShaderProgram* currentProgram = stdShader_activeShader;
+    if ( currentProgram != sh )
+    {
+        stdShader_SetActiveShader(sh);
+    }
     glBindTexture(GL_TEXTURE_2D, tex);
-    glUniform1i(glGetUniformLocation(sh->handle, "sTexture"), stdShader_activeTextureUnit); //unit 0 is reserved for framebuffer texture
+    glUniform1i(glGetUniformLocation(sh->handle, "sTexture"), stdShader_activeTextureUnit);
+    stdShader_SetActiveShader(currentProgram);
 }
 
 void stdShader_SetActiveTextureUnit(int unit)
