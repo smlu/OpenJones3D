@@ -681,53 +681,7 @@ void J3DAPI std3D_DrawRenderList(tSysTexture* pTex, Std3DRenderState rdflags, LP
 
     std3D_SetRenderState(rdflags);
 
-
-    // Fog processing
-    // if ( std3D_bFogTable )
-    // {
-    //     for ( size_t i = 0; i < numVerts; ++i )
-    //     {
-    //         D3DTLVERTEX* pCurVert = &aVerts[i];
-    //         pCurVert->specular = 0xFF000000;
-    //         if ( pCurVert->rhw > 0.0 )
-    //         {
-    //             pCurVert->specular = 0;
-    //             float depth = (std3D_fogEndDepth - pCurVert->rhw *
-    //             std3D_zDepth) * std3D_fogDepthFactor; if ( depth < 1.0 )
-    //             {
-    //                 pCurVert->specular = 0xFF000000;
-    //                 if ( depth >= 0.0 )
-    //                 {
-    //                     pCurVert->specular = (int)((1.0 - depth) * 255.0) <<
-    //                     24;
-    //                 }
-    //             }
-    //         }
-    //     }
-    // }
-
     std3D_DrawIndexedPrimitiveUP(GL_TRIANGLES, aVerts, numVerts, aIndices, numIndices);
-
-    // else
-    // {
-    //     HRESULT d3dres = IDirect3DDevice9_DrawIndexedPrimitiveUP(
-    //         std3D_pD3Device,
-    //         D3DPT_TRIANGLELIST,
-    //         0,
-    //         numVerts,
-    //         numIndices / 3,
-    //         aIndices,
-    //         D3DFMT_INDEX16,
-    //         aVerts,
-    //         sizeof(D3DTLVERTEX)
-    //     );
-    //
-    //     if ( d3dres != D3D_OK )
-    //     {
-    //         STDLOG_ERROR("Error %s DrawIndexedPrimitiveUP.\n",
-    //         std3D_D3DGetStatus(d3dres));
-    //     }
-    // }
 }
 
 static int std3D_DrawIndexedPrimitiveUP(GLenum primType, const D3DTLVERTEX* aVerts, size_t numVerts,
@@ -908,7 +862,17 @@ void J3DAPI std3D_SetRenderState(Std3DRenderState rdflags)
                             : GL_REPEAT);
     }
 
-
+    if ( (std3D_renderState & STD3D_RS_FOG_ENABLED) != (rdflags & STD3D_RS_FOG_ENABLED) )
+    {
+        if ( (rdflags & STD3D_RS_FOG_ENABLED) && std3D_bRenderFog )
+        {
+            stdShader_SetFog(std3D_bRenderFog, std3D_fogStartDepth, std3D_fogEndDepth, std3D_fogDepthFactor, std3D_fogColor);
+        }
+        else
+        {
+            stdShader_DisableFog();
+        }
+    }
     // --- Texture Filter ---
     // TODO: add anistropic filtering later
     if ( (std3D_renderState & STD3D_RS_TEXFILTER_ANISOTROPIC) !=
@@ -1402,8 +1366,7 @@ int std3D_InitRenderState(void)
     // glDisable(GL_COLOR_MATERIAL);
     // glDisable(GL_SEPARATE_SPECULAR_COLOR);
 
-    std3D_bRenderFog = false;
-    glDisable(GL_FOG);
+    //std3D_bRenderFog = false;
 
     //glPolygonMode(GL_BACK, GL_FILL);
 
@@ -1476,116 +1439,24 @@ int J3DAPI std3D_SetProjection(float fov, float nearPlane, float farPlane)
 
 void J3DAPI std3D_EnableFog(int bEnabled, float density)
 {
-    // std3D_bRenderFog = bEnabled;
-    // if ( !std3D_pCurDevice || !std3D_pD3Device )
-    // {
-    //     std3D_bFogTable  = false;
-    //     return;
-    // }
-    //
-    // std3D_g_fogDensity = density;
-    //
-    // if ( std3D_bShadersActive )
-    // {
-    //     return;
-    // }
-    //
-    //  // Get device capabilities
-    // D3DCAPS9 caps;
-    // if ( FAILED(IDirect3DDevice9_GetDeviceCaps(std3D_pD3Device, &caps)) )
-    // {
-    //     std3D_bRenderFog = false;
-    //     return;
-    // }
-    //
-    // // Check fog support
-    // bool bTableFogSupported = (caps.RasterCaps & D3DPRASTERCAPS_FOGTABLE) != 0;
-    // bool bVertexFogSupported = (caps.RasterCaps & D3DPRASTERCAPS_FOGVERTEX) !=
-    // 0;
-    //
-    // if ( !bTableFogSupported && !bVertexFogSupported && !std3D_bShadersActive )
-    // {
-    //     std3D_bRenderFog = false;
-    // }
-    //
-    // std3D_bFogTable = bTableFogSupported && std3D_bRenderFog &&
-    // !std3D_bShadersActive;
+    std3D_bRenderFog   = bEnabled;
+    std3D_g_fogDensity = density;
 }
 
 void J3DAPI std3D_SetFog(float red, float green, float blue, float startDepth,
                          float endDepth)
 {
-    // // Update table stare
-    // std3D_EnableFog(std3D_bRenderFog, std3D_g_fogDensity);
-    //
-    // if ( std3D_bShadersActive )
-    // {
-    //     // Store fog parameters for shader use
-    //     std3D_fogStartDepth  = startDepth;
-    //     std3D_fogEndDepth    = (2.0f - std3D_g_fogDensity) * endDepth;
-    //     std3D_fogDepthFactor = 1.0f / (std3D_fogEndDepth -
-    //     std3D_fogStartDepth);
-    //
-    //     std3D_fogColor[0] = red;
-    //     std3D_fogColor[1] = green;
-    //     std3D_fogColor[2] = blue;
-    //     std3D_fogColor[3] = 1.0f;
-    // }
-    // else
-    // {
-    //     if ( IDirect3DDevice9_SetRenderState(std3D_pD3Device, D3DRS_FOGCOLOR,
-    //     D3DRGB(red, green, blue)) == D3D_OK )
-    //     {
-    //         if ( std3D_g_fogDensity == 0.0f )
-    //         {
-    //             IDirect3DDevice9_SetRenderState(std3D_pD3Device,
-    //             D3DRS_FOGTABLEMODE, D3DFOG_NONE);
-    //             IDirect3DDevice9_SetRenderState(std3D_pD3Device,
-    //             D3DRS_FOGVERTEXMODE, D3DFOG_NONE);
-    //         }
-    //         else
-    //         {
-    //             endDepth = (2.0f - std3D_g_fogDensity) * endDepth;
-    //
-    //             bool bSuccess = false;
-    //             if ( std3D_bFogTable )
-    //             {
-    //                 // Use table fog for pre-transformed vertices
-    //                 if (
-    //                 SUCCEEDED(IDirect3DDevice9_SetRenderState(std3D_pD3Device,
-    //                 D3DRS_FOGTABLEMODE, D3DFOG_LINEAR)) )
-    //                 {
-    //                     bSuccess =
-    //                     IDirect3DDevice9_SetRenderState(std3D_pD3Device,
-    //                     D3DRS_FOGSTART, *(DWORD*)(&startDepth)) == D3D_OK
-    //                         && IDirect3DDevice9_SetRenderState(std3D_pD3Device,
-    //                         D3DRS_FOGEND, *(DWORD*)(&endDepth)) == D3D_OK;
-    //                 }
-    //             }
-    //             else
-    //             {
-    //                 // Use vertex fog (for non-pre-transformed vertices)
-    //                 if (
-    //                 SUCCEEDED(IDirect3DDevice9_SetRenderState(std3D_pD3Device,
-    //                 D3DRS_FOGVERTEXMODE, D3DFOG_LINEAR)) )
-    //                 {
-    //                     bSuccess =
-    //                     IDirect3DDevice9_SetRenderState(std3D_pD3Device,
-    //                     D3DRS_FOGSTART, *(DWORD*)(&startDepth)) == D3D_OK
-    //                         && IDirect3DDevice9_SetRenderState(std3D_pD3Device,
-    //                         D3DRS_FOGEND, *(DWORD*)(&endDepth)) == D3D_OK;
-    //                 }
-    //             }
-    //
-    //             if ( bSuccess )
-    //             {
-    //                 std3D_fogStartDepth  = startDepth;
-    //                 std3D_fogEndDepth    = endDepth;
-    //                 std3D_fogDepthFactor = 1.0f / (endDepth - startDepth);
-    //             }
-    //         }
-    //     }
-    // }
+    // Store fog parameters for shader use
+    std3D_EnableFog(std3D_bRenderFog, std3D_g_fogDensity);
+    std3D_fogStartDepth  = startDepth;
+    std3D_fogEndDepth    = (2.0f - std3D_g_fogDensity) * endDepth;
+    std3D_fogDepthFactor = 1.0f / (std3D_fogEndDepth -
+        std3D_fogStartDepth);
+
+    std3D_fogColor[0] = red;
+    std3D_fogColor[1] = green;
+    std3D_fogColor[2] = blue;
+    std3D_fogColor[3] = 1.0f;
 }
 
 void std3D_ClearZBuffer(void)
