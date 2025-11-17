@@ -104,7 +104,6 @@ typedef struct sGLDrawCall
 {
     size_t firstIndex;
     GLsizei indexCount;
-    GLint baseVertex;
     tSysTexture* tex;
     Std3DRenderState rdflags;
 } GLDrawCall;
@@ -556,7 +555,7 @@ int std3D_StartScene(void)
 
 void std3D_EndScene(void)
 {
-    if ( std3D_bShadersActive && std3D_frameBatch.drawCount > 0 )
+    if ( std3D_bUseBuffers && std3D_frameBatch.drawCount > 0 )
     {
         std3D_DrawFrameBatch();
     }
@@ -618,13 +617,16 @@ int std3D_CacheDrawCall(tSysTexture* pTex, Std3DRenderState rdflags, LPD3DTLVERT
 
     // paste new indices
     memcpy(&std3D_frameBatch.indices[firstIndex], aIndices, numIndices * sizeof(WORD));
+    for ( size_t i = 0; i < numIndices; i++ )
+    {
+        std3D_frameBatch.indices[firstIndex + i] = aIndices[i] + baseVertex;
+    }
     std3D_frameBatch.indexCount += numIndices;
 
     // cache draw call
     GLDrawCall* dc = &std3D_frameBatch.draws[std3D_frameBatch.drawCount++];
     dc->firstIndex = firstIndex;
     dc->indexCount = (GLsizei)numIndices;
-    dc->baseVertex = (GLint)baseVertex;
     dc->tex        = pTex;
     dc->rdflags    = rdflags;
 
@@ -642,16 +644,26 @@ static void std3D_DrawFrameBatch(void)
 
     // Upload vertex data
     glBindBuffer(GL_ARRAY_BUFFER, std3D_pVertexBufferOpaque);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, std3D_frameBatch.vertCount * sizeof(D3DTLVERTEX), std3D_frameBatch.verts);
+    glBufferData(GL_ARRAY_BUFFER, std3D_frameBatch.vertCount * sizeof(D3DTLVERTEX), std3D_frameBatch.verts, GL_STREAM_DRAW);
 
     // Upload index data;
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, std3D_pIndexBuffer);
-    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, std3D_frameBatch.indexCount * sizeof(GLushort), std3D_frameBatch.indices);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, std3D_frameBatch.indexCount * sizeof(GLushort), std3D_frameBatch.indices, GL_STREAM_DRAW);
 
     // fire draw calls
     for ( size_t i = 0; i < std3D_frameBatch.drawCount; i++ )
     {
         GLDrawCall* dc = &std3D_frameBatch.draws[i];
+
+        GLsizei indexCount = dc->indexCount;
+        size_t j           = i + 1;
+
+        //batch draw calls with same textue together. Note: this assumes they have the same rendering flags
+        while ( j < std3D_frameBatch.drawCount && dc->tex->id == std3D_frameBatch.draws[j].tex->id )
+        {
+            indexCount += std3D_frameBatch.draws[j].indexCount;
+            i = j++;
+        }
 
         std3D_SetRenderState(dc->rdflags);
         if ( dc->tex != std3D_pD3DTex )
@@ -660,9 +672,10 @@ static void std3D_DrawFrameBatch(void)
             std3D_pD3DTex = dc->tex;
         }
         const void* indexPtr = (const void*)(dc->firstIndex * sizeof(GLushort));
-        glDrawElementsBaseVertex(GL_TRIANGLES, dc->indexCount, GL_UNSIGNED_SHORT, indexPtr, dc->baseVertex);
+        glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_SHORT, indexPtr);
     }
 
+    //clear
     std3D_frameBatch.vertCount  = 0;
     std3D_frameBatch.indexCount = 0;
     std3D_frameBatch.drawCount  = 0;
@@ -677,8 +690,7 @@ static bool std3D_EnsureDrawCapacity(size_t extraVerts, size_t extraIndices)
         std3D_frameBatch.drawCount + 1 < std3D_maxDrawCallGroupSize;
 }
 
-int std3D_DrawPrimitive(D3DPRIMITIVETYPE type, LPD3DTLVERTEX aVerts,
-                        size_t numVerts)
+int std3D_DrawPrimitive(D3DPRIMITIVETYPE type, LPD3DTLVERTEX aVerts, size_t numVerts)
 {
     //  // Copy vertices to buffers
     // if ( !std3D_CopyVertexDataToBuffer(aVerts, numVerts, NULL, 0) )
@@ -2116,12 +2128,12 @@ bool std3D_InitVertexBuffers(GLuint* vbo, GLuint* ibo, GLuint* vao)
 
     glGenBuffers(1, vbo);
     glBindBuffer(GL_ARRAY_BUFFER, *vbo);
-    glBufferData(GL_ARRAY_BUFFER, std3D_maxVerticesPerDrawCall * sizeof(D3DTLVERTEX), NULL,
+    glBufferData(GL_ARRAY_BUFFER, sizeof(D3DTLVERTEX), NULL,
                  GL_STREAM_DRAW);
 
     glGenBuffers(1, ibo);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, *ibo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, std3D_maxIndicesPerDrawCall * sizeof(GLushort), NULL,
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLushort), NULL,
                  GL_STREAM_DRAW);
 
     const GLsizei stride = sizeof(D3DTLVERTEX);
