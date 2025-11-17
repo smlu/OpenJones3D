@@ -563,44 +563,6 @@ void std3D_EndScene(void)
     std3D_pD3DTex            = NULL;
 }
 
-static int std3D_CopyVertexDataToBuffer(const LPD3DTLVERTEX aVerts, size_t numVerts, LPWORD aIndices, size_t numIndices)
-{
-    const size_t vbNeeded = std3D_vbOffset + numVerts;
-    glBindBuffer(GL_ARRAY_BUFFER, std3D_pVertexBufferOpaque);
-
-    if ( vbNeeded > std3D_vbSize )
-    {
-        glBufferData(GL_ARRAY_BUFFER, std3D_vbSize * sizeof(D3DTLVERTEX), NULL, GL_STREAM_DRAW);
-        std3D_vbOffset = 0;
-    }
-
-    const GLsizeiptr vbByteOffset =
-        (GLsizeiptr)(std3D_vbOffset * sizeof(D3DTLVERTEX));
-    const GLsizeiptr vbByteSize = (GLsizeiptr)(numVerts * sizeof(D3DTLVERTEX));
-
-    glBufferSubData(GL_ARRAY_BUFFER, vbByteOffset, vbByteSize, aVerts);
-
-    if ( aIndices && numIndices )
-    {
-        const size_t ibNeeded = std3D_ibOffset + numIndices;
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, std3D_pIndexBuffer);
-
-        if ( ibNeeded > std3D_ibSize )
-        {
-            glBufferData(GL_ELEMENT_ARRAY_BUFFER, std3D_ibSize * sizeof(WORD), NULL, GL_STREAM_DRAW);
-            std3D_ibOffset = 0;
-        }
-
-        const GLsizeiptr ibByteOffset = (GLsizeiptr)(std3D_ibOffset * sizeof(WORD));
-        const GLsizeiptr ibByteSize   = (GLsizeiptr)(numIndices * sizeof(WORD));
-
-        glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, ibByteOffset, ibByteSize,
-                        aIndices);
-    }
-
-    return 1;
-}
-
 int std3D_CacheDrawCall(tSysTexture* pTex, Std3DRenderState rdflags, LPD3DTLVERTEX aVerts, size_t numVerts, LPWORD aIndices, size_t numIndices)
 {
     if ( !std3D_EnsureDrawCapacity(numVerts, numIndices) )
@@ -665,12 +627,13 @@ static void std3D_DrawFrameBatch(void)
             i = j++;
         }
 
-        std3D_SetRenderState(dc->rdflags);
         if ( dc->tex != std3D_pD3DTex )
         {
             stdShader_SetTexture(std3D_defaultShader, dc->tex->id);
             std3D_pD3DTex = dc->tex;
         }
+        std3D_SetRenderState(dc->rdflags);
+
         const void* indexPtr = (const void*)(dc->firstIndex * sizeof(GLushort));
         glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_SHORT, indexPtr);
     }
@@ -690,35 +653,7 @@ static bool std3D_EnsureDrawCapacity(size_t extraVerts, size_t extraIndices)
         std3D_frameBatch.drawCount + 1 < std3D_maxDrawCallGroupSize;
 }
 
-int std3D_DrawPrimitive(D3DPRIMITIVETYPE type, LPD3DTLVERTEX aVerts, size_t numVerts)
-{
-    //  // Copy vertices to buffers
-    // if ( !std3D_CopyVertexDataToBuffer(aVerts, numVerts, NULL, 0) )
-    // {
-    //     return 0;
-    // }
-    //
-    // // Draw
-    // HRESULT hr = IDirect3DDevice9_DrawPrimitive(
-    //     std3D_pD3Device,
-    //     type,
-    //     (UINT)std3D_vbOffset,
-    //     numVerts - 1
-    // );
-    //
-    // if ( FAILED(hr) )
-    // {
-    //     STDLOG_ERROR("DrawPrimitive failed: %s\n", std3D_D3DGetStatus(hr));
-    //     return 0;
-    // }
-    //
-    // // Drawing succeeded, advance offsets
-    // std3D_vbOffset += numVerts;
-    return 1;
-}
-
-void J3DAPI std3D_DrawRenderList(tSysTexture* pTex, Std3DRenderState rdflags, LPD3DTLVERTEX aVerts, size_t numVerts,
-                                 LPWORD aIndices, size_t numIndices)
+void J3DAPI std3D_DrawRenderList(tSysTexture* pTex, Std3DRenderState rdflags, LPD3DTLVERTEX aVerts, size_t numVerts, LPWORD aIndices, size_t numIndices)
 {
     // STDLOG_DEBUG("Draw %d vertices\n", numVerts);
     if ( numVerts > (unsigned int)std3D_g_maxVertices )
@@ -740,21 +675,8 @@ void J3DAPI std3D_DrawRenderList(tSysTexture* pTex, Std3DRenderState rdflags, LP
     // Set texture
     if ( pTex != std3D_pD3DTex )
     {
-        // glActiveTexture(GL_TEXTURE1);
-        // glBindTexture(GL_TEXTURE_2D, pTex->id);
-        // GLint loc = glGetUniformLocation(std3D_activeShader->handle, "sTexture");
-        // glUniform1i(loc, 1);
         stdShader_SetTexture(std3D_defaultShader, pTex->id);
         std3D_pD3DTex = pTex;
-        // HRESULT d3dres = IDirect3DDevice9_SetTexture(std3D_pD3Device, 0,
-        // (IDirect3DBaseTexture9*)pTex); if ( d3dres != D3D_OK )
-        // {
-        //     STDLOG_ERROR("Error %s SetTexture.\n", std3D_D3DGetStatus(d3dres));
-        // }
-        // else
-        // {
-        //     std3D_pD3DTex = pTex;
-        // }
     }
 
     std3D_SetRenderState(rdflags);
@@ -967,51 +889,25 @@ void J3DAPI std3D_SetRenderState(Std3DRenderState rdflags)
         }
     }
 
-    // --- Texture Address Mode U/V ---
-    // if ( (std3D_renderState & STD3D_RS_TEX_CPAMP_U) !=
-    //     (rdflags & STD3D_RS_TEX_CPAMP_U) )
-    // {
-    //     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,
-    //                     (rdflags & STD3D_RS_TEX_CPAMP_U)
-    //                         ? GL_CLAMP_TO_EDGE
-    //                         : GL_REPEAT);
-    // }
-    //
-    // if ( (std3D_renderState & STD3D_RS_TEX_CPAMP_V) !=
-    //     (rdflags & STD3D_RS_TEX_CPAMP_V) )
-    // {
-    //     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,
-    //                     (rdflags & STD3D_RS_TEX_CPAMP_V)
-    //                         ? GL_CLAMP_TO_EDGE
-    //                         : GL_REPEAT);
-    // }
-
-
-    // --- Fog ---
-    if ( (std3D_renderState & STD3D_RS_FOG_ENABLED) !=
-        (rdflags & STD3D_RS_FOG_ENABLED) )
+    //--- Texture Address Mode U/V ---
+    if ( (std3D_renderState & STD3D_RS_TEX_CPAMP_U) !=
+        (rdflags & STD3D_RS_TEX_CPAMP_U) )
     {
-        if ( (rdflags & STD3D_RS_FOG_ENABLED) && std3D_bRenderFog )
-        {
-            if ( std3D_bShadersActive )
-            {
-                stdShader_SetFog(std3D_bRenderFog, std3D_fogStartDepth,
-                                 std3D_fogEndDepth, std3D_fogDepthFactor,
-                                 std3D_fogColor);
-            }
-            else
-            {
-                glEnable(GL_FOG); // nur Compatibility Profile
-            }
-        }
-        else
-        {
-            if ( std3D_bShadersActive )
-                stdShader_DisableFog();
-            else
-                glDisable(GL_FOG);
-        }
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,
+                        (rdflags & STD3D_RS_TEX_CPAMP_U)
+                            ? GL_CLAMP_TO_EDGE
+                            : GL_REPEAT);
     }
+
+    if ( (std3D_renderState & STD3D_RS_TEX_CPAMP_V) !=
+        (rdflags & STD3D_RS_TEX_CPAMP_V) )
+    {
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,
+                        (rdflags & STD3D_RS_TEX_CPAMP_V)
+                            ? GL_CLAMP_TO_EDGE
+                            : GL_REPEAT);
+    }
+
 
     // --- Texture Filter ---
     // TODO: add anistropic filtering later
@@ -1462,7 +1358,7 @@ int std3D_InitRenderState(void)
     glEnable(GL_DEPTH_TEST);
     //glDepthRange(0.0, 1.0);
     glDepthMask(GL_TRUE);
-    glDepthFunc(GL_LESS);
+    glDepthFunc(GL_LEQUAL);
     std3D_renderState |= STD3D_RS_UNKNOWN_1;
 
     std3D_SetMipmapFilter(STD3D_MIPMAPFILTER_TRILINEAR);
@@ -1703,6 +1599,8 @@ void std3D_ClearZBuffer(void)
 
     // Jetzt nur Depth- und Stencil-Buffer löschen
     glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 
     GLenum err = glGetError();
     if ( err != GL_NO_ERROR )
