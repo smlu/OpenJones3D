@@ -143,6 +143,8 @@ static GLuint std3D_pIndexBuffer            = 0;
 static size_t std3D_numOpaqueDrawCalls      = 0;
 static size_t std3D_numTransparentDrawCalls = 0;
 
+static GLuint std3D_activeSampler = 0;
+
 // Shader system state
 static bool std3D_bShadersActive              = true;
 static GLShaderProgram* std3D_defaultShader   = NULL;
@@ -339,8 +341,10 @@ static bool std3D_InitSystem(void)
     std3D_RGBAKeyTextureFormat = std3D_FindClosestFormat(&stdColor_cfRGBA8888);
     std3D_RGBATextureFormat    = std3D_FindClosestFormat(&stdColor_cfRGBA8888);
 
-    if ( std3D_bUseBuffers && !std3D_InitVertexBuffers(&std3D_pVertexBufferOpaque, &std3D_pIndexBuffer,
-                                                       &std3D_pVertexArrayObject) )
+    glGenSamplers(1, &std3D_activeSampler);
+    glBindSampler(GL_TEXTURE1, std3D_activeSampler);
+
+    if ( std3D_bUseBuffers && !std3D_InitVertexBuffers(&std3D_pVertexBufferOpaque, &std3D_pIndexBuffer, &std3D_pVertexArrayObject) )
     {
         return false;
     }
@@ -358,8 +362,7 @@ static bool std3D_InitSystem(void)
         return false;
     }
 
-    if ( stdDisplay_GetTextureMemory(&std3D_pCurDevice->totalMemory,
-                                     &std3D_pCurDevice->availableMemory) )
+    if ( stdDisplay_GetTextureMemory(&std3D_pCurDevice->totalMemory, &std3D_pCurDevice->availableMemory) )
     {
         // Since we failed to get texture memory info indicate that opening failed
         return false;
@@ -519,7 +522,6 @@ size_t std3D_GetNumTextureFormats(void)
 int std3D_StartScene(void)
 {
     ++std3D_frameCount;
-
     if ( std3D_bShadersActive )
     {
         const float vp[4] = {
@@ -559,6 +561,7 @@ void std3D_EndScene(void)
     {
         std3D_DrawFrameBatch();
     }
+    std3D_renderState        = 0;
     std3D_numOpaqueDrawCalls = 0;
     std3D_pD3DTex            = NULL;
 }
@@ -847,19 +850,19 @@ void J3DAPI std3D_SetRenderState(Std3DRenderState rdflags)
     if ( (std3D_renderState & STD3D_RS_TEX_CPAMP_U) !=
         (rdflags & STD3D_RS_TEX_CPAMP_U) )
     {
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,
-                        (rdflags & STD3D_RS_TEX_CPAMP_U)
-                            ? GL_CLAMP_TO_EDGE
-                            : GL_REPEAT);
+        glSamplerParameteri(std3D_activeSampler, GL_TEXTURE_WRAP_S,
+                            (rdflags & STD3D_RS_TEX_CPAMP_U)
+                                ? GL_CLAMP_TO_EDGE
+                                : GL_REPEAT);
     }
 
     if ( (std3D_renderState & STD3D_RS_TEX_CPAMP_V) !=
         (rdflags & STD3D_RS_TEX_CPAMP_V) )
     {
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,
-                        (rdflags & STD3D_RS_TEX_CPAMP_V)
-                            ? GL_CLAMP_TO_EDGE
-                            : GL_REPEAT);
+        glSamplerParameteri(std3D_activeSampler, GL_TEXTURE_WRAP_T,
+                            (rdflags & STD3D_RS_TEX_CPAMP_V)
+                                ? GL_CLAMP_TO_EDGE
+                                : GL_REPEAT);
     }
 
     if ( (std3D_renderState & STD3D_RS_FOG_ENABLED) != (rdflags & STD3D_RS_FOG_ENABLED) )
@@ -1461,17 +1464,9 @@ void J3DAPI std3D_SetFog(float red, float green, float blue, float startDepth,
 
 void std3D_ClearZBuffer(void)
 {
-    // Z- und Stencil-Werte, wie in Direct3D
-    //glClearDepth(1.0f);
     glClearStencil(0);
-
-    std3D_renderState &= ~STD3D_RS_ZWRITE_DISABLED;
     glDepthMask(GL_TRUE);
-
-    // Jetzt nur Depth- und Stencil-Buffer löschen
     glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 
     GLenum err = glGetError();
     if ( err != GL_NO_ERROR )
