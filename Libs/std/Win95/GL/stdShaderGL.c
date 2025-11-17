@@ -148,33 +148,16 @@ bool J3DAPI stdShader_SetViewport(const StdShaderViewport vp)
 bool J3DAPI stdShader_SetFog(bool enable, float start, float end, float depthDactor, const StdShaderVector color)
 {
     // TODO: implement fog rendering later
-    // float fogParams[4] = { start, end, depthDactor, (float)enable ? 1.0f : 0.0f, };
-    // HRESULT hr = IDirect3DDevice9_SetPixelShaderConstantF(stdShader_pDevice, /*StartRegister=*/STDSHADERDX9_PS_FOGPARAM_REGISTER, fogParams, 1);
-    // if ( FAILED(hr) )
-    // {
-    //     STDLOG_ERROR("Error %s setting shader global fog parameters!\n", std3D_D3DGetStatus(hr));
-    //     return false;
-    // }
-    //
-    // hr = IDirect3DDevice9_SetPixelShaderConstantF(stdShader_pDevice, /*StartRegister=*/STDSHADERDX9_PS_FOGCOLOR_REGISTER, color, 1);
-    // if ( FAILED(hr) )
-    // {
-    //     STDLOG_ERROR("Error %s setting shader global fog color!\n", std3D_D3DGetStatus(hr));
-    //     return false;
-    // }
+    glUniform4f(glGetUniformLocation(stdShader_activeShader->handle, "vFogParams"), start, end, depthDactor, enable ? 1.0f : 0.0f);
+    glUniform3f(glGetUniformLocation(stdShader_activeShader->handle, "vFogColor"), color[0], color[1], color[2]);
 
     return true;
 }
 
 bool stdShader_DisableFog(void)
 {
-    // float fogParams[4] = { 0 }; // Disable fog
-    // HRESULT hr = IDirect3DDevice9_SetPixelShaderConstantF(stdShader_pDevice, /*StartRegister=*/STDSHADERDX9_PS_FOGPARAM_REGISTER, fogParams, 1);
-    // if ( FAILED(hr) )
-    // {
-    //     STDLOG_ERROR("Error %s disabling shader global fog!\n", std3D_D3DGetStatus(hr));
-    //     return false;
-    // }
+    float fogParams[4] = { 0 }; // Disable fog
+    glUniform4fv(glGetUniformLocation(stdShader_activeShader->handle, "vFogParams"), 1, fogParams);
 
     return true;
 }
