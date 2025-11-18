@@ -342,7 +342,6 @@ static bool std3D_InitSystem(void)
     std3D_RGBATextureFormat    = std3D_FindClosestFormat(&stdColor_cfRGBA8888);
 
     glGenSamplers(1, &std3D_activeSampler);
-    glBindSampler(GL_TEXTURE1, std3D_activeSampler);
 
     if ( std3D_bUseBuffers && !std3D_InitVertexBuffers(&std3D_pVertexBufferOpaque, &std3D_pIndexBuffer, &std3D_pVertexArrayObject) )
     {
@@ -521,6 +520,7 @@ size_t std3D_GetNumTextureFormats(void)
 
 int std3D_StartScene(void)
 {
+    glBindSampler(1, std3D_activeSampler);
     ++std3D_frameCount;
     if ( std3D_bShadersActive )
     {
@@ -564,6 +564,9 @@ void std3D_EndScene(void)
     std3D_renderState        = 0;
     std3D_numOpaqueDrawCalls = 0;
     std3D_pD3DTex            = NULL;
+    glSamplerParameteri(std3D_activeSampler, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glSamplerParameteri(std3D_activeSampler, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glBindSampler(1, 0);
 }
 
 int std3D_CacheDrawCall(tSysTexture* pTex, Std3DRenderState rdflags, LPD3DTLVERTEX aVerts, size_t numVerts, LPWORD aIndices, size_t numIndices)
@@ -624,7 +627,7 @@ static void std3D_DrawFrameBatch(void)
         size_t j           = i + 1;
 
         //batch draw calls with same textue together. Note: this assumes they have the same rendering flags
-        while ( j < std3D_frameBatch.drawCount && dc->tex->id == std3D_frameBatch.draws[j].tex->id )
+        while ( j < std3D_frameBatch.drawCount && dc->tex->id == std3D_frameBatch.draws[j].tex->id && dc->rdflags == std3D_frameBatch.draws[j].rdflags )
         {
             indexCount += std3D_frameBatch.draws[j].indexCount;
             i = j++;
@@ -881,6 +884,8 @@ void J3DAPI std3D_SetRenderState(Std3DRenderState rdflags)
     if ( (std3D_renderState & STD3D_RS_TEXFILTER_ANISOTROPIC) !=
         (rdflags & STD3D_RS_TEXFILTER_ANISOTROPIC) )
     {
+        glSamplerParameteri(std3D_activeSampler, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
+        glSamplerParameteri(std3D_activeSampler, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         // if ((rdflags & STD3D_RS_TEXFILTER_ANISOTROPIC) &&
         // std3D_bAnisotropicFilter) {
         //     GLfloat maxAniso = 0.0f;
@@ -897,20 +902,24 @@ void J3DAPI std3D_SetRenderState(Std3DRenderState rdflags)
         //     GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         // }
     }
-    // else if ( (std3D_renderState & STD3D_RS_TEXFILTER_BILINEAR) !=
-    //     (rdflags & STD3D_RS_TEXFILTER_BILINEAR) )
-    // {
-    //     if ( rdflags & STD3D_RS_TEXFILTER_BILINEAR )
-    //     {
-    //         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    //         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    //     }
-    //     else
-    //     {
-    //         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    //         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    //     }
-    // }
+    if ( (std3D_renderState & STD3D_RS_TEXFILTER_BILINEAR) !=
+        (rdflags & STD3D_RS_TEXFILTER_BILINEAR) )
+    {
+        if ( rdflags & STD3D_RS_TEXFILTER_BILINEAR )
+        {
+            glSamplerParameteri(std3D_activeSampler, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
+            glSamplerParameteri(std3D_activeSampler, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        }
+        else
+        {
+            glSamplerParameteri(std3D_activeSampler, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            glSamplerParameteri(std3D_activeSampler, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        }
+    }
+
+
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
     // // --- Alpha Reference / Alpha Test ---
     // if ( (std3D_renderState & STD3D_RS_ALPHAREF_SET) !=
@@ -1116,12 +1125,6 @@ void J3DAPI std3D_AddToTextureCache(tSystemTexture* pCacheTexture,
 
     bool autoMipmap         = true;
     const size_t numMipmaps = autoMipmap ? 1 : pCacheTexture->numMipLevels;
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
-                    autoMipmap ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
