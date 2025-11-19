@@ -491,6 +491,7 @@ typedef struct sStdVideoMode
     uint32_t refreshRate;
 #if defined(J3D_OPENGL)
     SDL_PixelFormat format;
+    SDL_DisplayMode pDisplayMode;
 #endif
 } StdVideoMode;
 

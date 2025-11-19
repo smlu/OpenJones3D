@@ -44,7 +44,7 @@ static int JonesDisplay_bUpdateLoadScreen;
 static int JonesDisplay_loadScreenState;
 static bool JonesDisplay_bPrimaryLoadMusic = false;
 
-rdVector4 JonesDisplay_wallLineColor = { 1.0f , 0.0f , 0.0f , 1.0f };
+rdVector4 JonesDisplay_wallLineColor = { 1.0f, 0.0f, 0.0f, 1.0f };
 
 // Not used vars
 static int JonesDisplay_dword_553328;
@@ -52,7 +52,6 @@ static int JonesDisplay_dword_55332C;
 
 void JonesDisplay_InstallHooks(void)
 {
-
     J3D_HOOKFUNC(JonesDisplay_Startup);
     J3D_HOOKFUNC(JonesDisplay_Shutdown);
     J3D_HOOKFUNC(JonesDisplay_Restart);
@@ -67,7 +66,8 @@ void JonesDisplay_InstallHooks(void)
 }
 
 void JonesDisplay_ResetGlobals(void)
-{}
+{
+}
 
 int J3DAPI JonesDisplay_Startup(JonesDisplaySettings* pSettings)
 {
@@ -111,10 +111,13 @@ int J3DAPI JonesDisplay_Startup(JonesDisplaySettings* pSettings)
 
     stdDisplay_GetBackBufferSize(&JonesDisplay_backBufferWidth, &JonesDisplay_backBufferHeight);
 
+    // For OpenGL/SDL, setting correct window size needs to be handled in stdDisplay
+#ifndef J3D_OPENGL
     if ( !JonesDisplay_UpdateDualScreenWindowSize(pSettings) )
     {
         wkernel_SetWindowSize(JonesDisplay_backBufferWidth, JonesDisplay_backBufferHeight);
     }
+#endif
 
     if ( stdDisplay_BackBufferFill(/*color=*/0u, /*pRect=*/NULL) || stdDisplay_Update() )
     {
@@ -207,7 +210,7 @@ void J3DAPI JonesDisplay_SetDefaultVideoMode(const StdDisplayEnvironment* pEnv, 
         if ( pEnv->aDisplayInfos[i].displayDevice.bHAL )
         {
             pDisplaySettings->displayDeviceNum = i;
-            break; // Fixed: Added break 
+            break; // Fixed: Added break
         }
     }
 
@@ -441,7 +444,7 @@ void J3DAPI JonesDisplay_UpdateLoadProgress(float progress)
 
     // Loading completed
 
-    size_t msecCurTime = stdPlatform_GetTimeMsec();
+    size_t msecCurTime   = stdPlatform_GetTimeMsec();
     size_t msecEndUpdate = msecCurTime + 250;
 
     JonesDisplay_bUpdateLoadScreen = 0;
@@ -456,7 +459,7 @@ void J3DAPI JonesDisplay_UpdateLoadProgress(float progress)
             }
 
             JonesDisplay_hSndChannelLoadMusic = 0;
-            JonesDisplay_hSndLoadMusic = 0;
+            JonesDisplay_hSndLoadMusic        = 0;
         }
 
         // Play load finish sound fx
@@ -486,13 +489,13 @@ void J3DAPI JonesDisplay_UpdateLoadProgress(float progress)
 
     if ( JonesDisplay_loadScreenState >= 3 )
     {
-        JonesDisplay_loadScreenState = 0;
+        JonesDisplay_loadScreenState   = 0;
         JonesDisplay_bPrimaryLoadMusic = 0;
-        JonesDisplay_dword_553328 = 0;          // ???
+        JonesDisplay_dword_553328      = 0; // ???
         sithSoundMixer_StopAll();
-        JonesDisplay_hSndLoadMusic = 0;
+        JonesDisplay_hSndLoadMusic        = 0;
         JonesDisplay_hSndChannelLoadMusic = 0;
-        JonesDisplay_dword_55332C = 0;          // ???
+        JonesDisplay_dword_55332C         = 0; // ???
 
         rdCache_Flush();
         rdCache_FlushAlpha();

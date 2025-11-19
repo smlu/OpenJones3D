@@ -12,6 +12,8 @@
 #include <std/General/stdUtil.h>
 #include <std/RTI/symbols.h>
 
+#include "wkernel/wkernel.h"
+
 
 #define STDDISPLAY_MINFRAMERATE 30
 #define STDDISPLAY_MAXFRAMERATE 256
@@ -67,6 +69,9 @@ static bool stdDisplay_bNoSync     = false;
 static bool stdDisplay_bDeviceLost = false;
 
 static GLCaps stdDisplay_deviceCaps;
+static int stdDisplay_windowWidth         = 0;
+static int stdDisplay_windowHeight        = 0;
+static float stdDisplay_windowViewport[4] = { 0 };
 
 // Back buffer local vars
 static int stdDisplay_backbufWidth                 = 0;
@@ -159,9 +164,9 @@ static uint8_t* J3DAPI stdDisplay_LockTexture(tVBuffer* pVBuffer);
 static inline void J3DAPI stdDisplay_SetAspectRatio(StdVideoMode* pMode);
 static inline int J3DAPI stdDisplay_SetWindowMode(HWND hWnd, StdVideoMode* pDisplayMode);
 static inline int J3DAPI stdDisplay_SetFullscreenMode(HWND hwnd, const StdVideoMode* pDisplayMode,
-    size_t numBackBuffers);
+                                                      size_t numBackBuffers);
 static int J3DAPI stdDisplay_InitBuffers(PDIRECT3DDEVICE9 pDevice, const StdVideoMode* pDisplayMode, bool bWindowMode,
-    size_t numBuffers);
+                                         size_t numBuffers);
 
 static inline void stdDisplay_ReleaseBuffers(void);
 static inline uint8_t* J3DAPI stdDisplay_LockSurface(tVSurface* pVSurf);
@@ -410,7 +415,7 @@ static void stdDisplay_ValidateMSAASettings() //check
                 stdDisplay_msaaSampleQuality = qualityLevels > 0 ? qualityLevels - 1 : 0;
                 found                        = true;
                 STDLOG_STATUS("MSAA fallback: Using %dx with %d quality levels\n", stdDisplay_msaaSampleCount,
-                    qualityLevels);
+                              qualityLevels);
                 stdConfig_SetInt(STD3D_CFG_MSAASAMPLES, stdDisplay_msaaSampleCount);
                 break;
             }
@@ -621,7 +626,7 @@ int J3DAPI stdDisplay_SetMode(size_t modeNum, int bFullscreen, size_t numBackBuf
     int fheight      = -(stdDisplay_pCurVideoMode->rasterInfo.width < 640);
     fheight          = fheight & 0xF4;
     stdDisplay_hFont = CreateFont(fheight + 24, 0, 0, 0, FW_NORMAL, 0, 0, 0, ANSI_CHARSET, OUT_DEFAULT_PRECIS,
-        CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, VARIABLE_PITCH, "Arial");
+                                  CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, VARIABLE_PITCH, "Arial");
 
     stdDisplay_dword_5D73D8  = 0;
     stdDisplay_dword_5D73DC  = 0;
@@ -959,7 +964,7 @@ int J3DAPI stdDisplay_VBufferFill(tVBuffer* pVBuffer, uint32_t color, const StdR
 }
 
 tVBuffer* J3DAPI stdDisplay_VBufferConvertColorFormat(const ColorInfo* pDesiredColorFormat, tVBuffer* pSrc,
-    int bColorKey, LPDDCOLORKEY pColorKey)
+                                                      int bColorKey, LPDDCOLORKEY pColorKey)
 {
     STD_ASSERTREL(pSrc != NULL);
 
@@ -1273,7 +1278,7 @@ static int J3DAPI stdDisplay_EnumerateDevices(void) //check
         }
 
         STDLOG_STATUS("Found %s OpenGL Device: %s [%s]\n", pDevice->bHAL ? "HAL" : "REF", pDevice->aDeviceName,
-            pDevice->aDriverName);
+                      pDevice->aDriverName);
         STDLOG_STATUS("Memory: 0x%x out of 0x%x free\n", pDevice->freeVideoMemory, pDevice->totalVideoMemory);
         ++stdDisplay_numDevices;
     }
@@ -1312,6 +1317,7 @@ static int J3DAPI stdDisplay_EnumerateVideoModes(SDL_DisplayID adapter) //checke
         pVideoMode->rasterInfo.width  = mode->w;
         pVideoMode->rasterInfo.height = mode->h;
         pVideoMode->format            = mode->format;
+        pVideoMode->pDisplayMode      = *mode;
 
         // Set color bit information based on format
         if ( !stdDisplay_GetVideoColorFormat(mode->format, &pVideoMode->rasterInfo.colorInfo) )
@@ -1330,7 +1336,7 @@ static int J3DAPI stdDisplay_EnumerateVideoModes(SDL_DisplayID adapter) //checke
         // Check memory requirements (copied from DX6)
         size_t requiredVRam = 3 * pVideoMode->rasterInfo.size;
         STDLOG_STATUS("Video Mode: %ux%u %u bit (%u Hz), Required: %u bytes.\n", pVideoMode->rasterInfo.width,
-            pVideoMode->rasterInfo.height, bpp, pVideoMode->refreshRate, requiredVRam);
+                      pVideoMode->rasterInfo.height, bpp, pVideoMode->refreshRate, requiredVRam);
 
         ++stdDisplay_numVideoModes;
     }
@@ -1338,7 +1344,7 @@ static int J3DAPI stdDisplay_EnumerateVideoModes(SDL_DisplayID adapter) //checke
     if ( modeCount > STD_ARRAYLEN(stdDisplay_aVideoModes) - stdDisplay_numVideoModes )
     {
         STDLOG_WARNING("Too many video modes for adapter %d, only %zu modes supported.\n", adapter,
-            STD_ARRAYLEN(stdDisplay_aVideoModes) - stdDisplay_numVideoModes);
+                       STD_ARRAYLEN(stdDisplay_aVideoModes) - stdDisplay_numVideoModes);
     }
 
     SDL_free(modes);
@@ -1438,14 +1444,17 @@ static int J3DAPI stdDisplay_SetWindowMode(HWND hWnd, StdVideoMode* pDisplayMode
     //     return 0;
     // }
     J3D_UNUSED(hWnd);
-    J3D_UNUSED(pDisplayMode);
 
-    SDL_Window* window = stdWin95_GetSDLWindow();
-
-    SDL_SetWindowFullscreen(window, false);
+    //in window mode, just make window as big as framebuffer
+    SDL_Window* window           = stdWin95_GetSDLWindow();
+    stdDisplay_windowViewport[0] = 0;
+    stdDisplay_windowViewport[1] = 0;
+    stdDisplay_windowViewport[2] = pDisplayMode->rasterInfo.width;
+    stdDisplay_windowViewport[3] = pDisplayMode->rasterInfo.height;
+    wkernel_SetWindowSize(pDisplayMode->rasterInfo.width, pDisplayMode->rasterInfo.height);
 
     return stdDisplay_InitBuffers(NULL, pDisplayMode, /*bWindowMode=*/
-        true, 1);
+                                  true, 1);
 }
 
 int J3DAPI stdDisplay_SetFullscreenMode(HWND hwnd, const StdVideoMode* pDisplayMode, size_t numBackBuffers)
@@ -1455,16 +1464,52 @@ int J3DAPI stdDisplay_SetFullscreenMode(HWND hwnd, const StdVideoMode* pDisplayM
     J3D_UNUSED(hwnd);
     J3D_UNUSED(numBackBuffers);
 
-    SDL_Window* window = stdWin95_GetSDLWindow();
 
-    SDL_SetWindowFullscreen(window, true);
+    // Use borderless fullscreen so dialogboxes are visible.
+
+    const SDL_DisplayMode* desktopMode = SDL_GetDesktopDisplayMode(stdDisplay_curDevice);
+    int winW                           = desktopMode->w;
+    int winH                           = desktopMode->h;
+
+    // calculate window aspect ratio and target aspect ratio of the frame buffer
+    float targetAspect = (float)pDisplayMode->rasterInfo.width / (float)pDisplayMode->rasterInfo.height;
+    float windowAspect = (float)winW / (float)winH;
+
+    int vpW, vpH, vpX, vpY;
+
+    //correct aspect ratio and stretch framebuffer size to window size
+    if ( windowAspect > targetAspect )
+    {
+        vpH = winH;
+        vpW = (int)(winH * targetAspect);
+        vpX = (winW - vpW) / 2;
+        vpY = 0;
+    }
+    else
+    {
+        vpW = winW;
+        vpH = (int)(winW / targetAspect);
+        vpX = 0;
+        vpY = (winH - vpH) / 2;
+    }
+
+    stdDisplay_windowViewport[0] = vpX;
+    stdDisplay_windowViewport[1] = vpY;
+    stdDisplay_windowViewport[2] = vpW;
+    stdDisplay_windowViewport[3] = vpH;
+
+
+    wkernel_SetWindowSize(winW, winH);
+
+    //SDL_SetWindowFullscreenMode(window, pDisplayMode->pDisplayMode);
+    //SDL_SetWindowFullscreen(window, true);
 
     return stdDisplay_InitBuffers(NULL, pDisplayMode, /*bWindowMode=*/
-        true, 1);
+                                  true, 1);
 }
 
 int J3DAPI stdDisplay_InitBuffers(PDIRECT3DDEVICE9 pDevice, const StdVideoMode* pDisplayMode, bool bWindowMode,
-    size_t numBuffers)
+                                  size_t numBuffers)
 {
     tVSurface* surface = &stdDisplay_g_backBuffer.surface;
     if ( surface->fbo > 0 )
@@ -1502,13 +1547,13 @@ int J3DAPI stdDisplay_InitBuffers(PDIRECT3DDEVICE9 pDevice, const StdVideoMode* 
     glBindTexture(GL_TEXTURE_2D, surface->colorTex);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-        GL_TEXTURE_2D, surface->colorTex, 0);
+                           GL_TEXTURE_2D, surface->colorTex, 0);
 
     stdShader_SetActiveShader(stdDisplay_fboShader);
     GLint loc = glGetUniformLocation(stdDisplay_fboShader->handle, "sSceneTexture");
@@ -1658,8 +1703,10 @@ int stdDisplay_Update(void) //check
     {
         return 1;
     }
+
+    const float* vp = stdDisplay_windowViewport;
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glViewport(0, 0, stdDisplay_g_backBuffer.rasterInfo.width, stdDisplay_g_backBuffer.rasterInfo.height);
+    glViewport(vp[0], vp[1], vp[2], vp[3]);
     glDisable(GL_DEPTH_TEST);
     stdShader_SetActiveShader(stdDisplay_fboShader);
     glBindVertexArray(stdDisplay_fullscreenVao);
@@ -1678,13 +1725,12 @@ int stdDisplay_Update(void) //check
     // Zeige das Bild an
     SDL_GL_SwapWindow(stdWin95_GetSDLWindow());
 
-    STDLOG_DEBUG(SDL_GetError());
-
     glBindFramebuffer(GL_FRAMEBUFFER, stdDisplay_g_backBuffer.surface.fbo);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
+    glViewport(0, 0, stdDisplay_g_backBuffer.rasterInfo.width, stdDisplay_g_backBuffer.rasterInfo.height);
 
-    STDLOG_DEBUG("Updated frame\n");
+    //STDLOG_DEBUG("Updated frame\n");
     return 0;
 }
 
