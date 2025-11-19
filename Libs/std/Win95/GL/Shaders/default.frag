@@ -25,7 +25,7 @@ vec3 ApplyFog(vec3 color, float depth)
 void main()
 {
     vec4 texColor = texture(sTexture, vTexCoord);
-    if (texColor.a < 0.1f) {
+    if (texColor.a < 0.05f || vColor.a < 0.05f) {
         discard;
     }
     FragColor = vec4(vColor * texColor);
