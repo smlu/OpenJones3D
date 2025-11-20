@@ -1489,29 +1489,24 @@ static int std3D_BuildDeviceList(void)
         STD_STRCPY(pD3DDriver->deviceName, displayDevice.aDriverName);
 
         pD3DDriver->bHAL                         = displayDevice.bHAL;
-        pD3DDriver->d3dDesc                      = displayDevice.caps;
-        pD3DDriver->bTexturePerspectiveSupported = TRUE; // Always supported in DX9
-        pD3DDriver->hasZBuffer                   = TRUE; // Always supported in DX9
-        pD3DDriver->bSqareOnlyTexture            =
-            (displayDevice.caps.TextureCaps & D3DPTEXTURECAPS_SQUAREONLY) != 0;
-        pD3DDriver->bAlphaTextureSupported =
-            (displayDevice.caps.TextureCaps & D3DPTEXTURECAPS_ALPHA) != 0;
-        pD3DDriver->bColorkeyTextureSupported      = TRUE; // Always supported in DX9
-        pD3DDriver->bStippledShadeSupported        = FALSE; // Not commonly used in DX9
-        pD3DDriver->minTexWidth                    = 1;
-        pD3DDriver->minTexHeight                   = 1;
-        pD3DDriver->maxTexWidth                    = 4096;
-        pD3DDriver->maxTexHeight                   = 4096;
-        pD3DDriver->bAnisotropicFilteringSupported =
-            (displayDevice.caps.RasterCaps & D3DPRASTERCAPS_ANISOTROPY) != 0;
-        pD3DDriver->bMipmapAutoGenSupported =
-            (displayDevice.caps.Caps2 & D3DCAPS2_CANAUTOGENMIPMAP) != 0;
+        pD3DDriver->bTexturePerspectiveSupported = TRUE; // Always supported in GL
+        pD3DDriver->hasZBuffer                   = TRUE; // Always supported in GL
+        pD3DDriver->bSqareOnlyTexture            = TRUE; // Always supported in GL
+        pD3DDriver->bAlphaTextureSupported       = TRUE; // Always supported in GL
+        pD3DDriver->bColorkeyTextureSupported    = TRUE; // // Always supported in GL
+        pD3DDriver->bStippledShadeSupported      = FALSE; // ?
+        pD3DDriver->minTexWidth                  = 1;
+        pD3DDriver->minTexHeight                 = 1;
+        GLint maxTextureSize;
+        glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTextureSize);
+        pD3DDriver->maxTexWidth                    = maxTextureSize;
+        pD3DDriver->maxTexHeight                   = maxTextureSize;
+        pD3DDriver->bAnisotropicFilteringSupported = FALSE; // TODO: change once anistropic filtering is implemented
+        pD3DDriver->bMipmapAutoGenSupported        = TRUE;
 
-        pD3DDriver->bAlphaBlendSupported =
-            (displayDevice.caps.SrcBlendCaps & D3DPBLENDCAPS_SRCALPHA) != 0 &&
-            (displayDevice.caps.DestBlendCaps & D3DPBLENDCAPS_INVSRCALPHA) != 0;
+        pD3DDriver->bAlphaBlendSupported = TRUE;
 
-        pD3DDriver->maxVertexCount = displayDevice.caps.MaxVertexIndex;
+        pD3DDriver->maxVertexCount = std3D_maxVerticesPerDrawCall;
         if ( pD3DDriver->maxVertexCount == 0 )
         {
             pD3DDriver->maxVertexCount = 65535; // Reasonable default
