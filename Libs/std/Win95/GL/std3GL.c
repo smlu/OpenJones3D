@@ -1,4 +1,3 @@
-#include <std/Win95/GL/stdPixelFormatGL.h>
 #include <std/Win95/std3D.h>
 #include <std/Win95/stdDisplay.h>
 #include <std/Win95/stdShader.h>
@@ -52,13 +51,22 @@ static size_t std3D_numCachedTextures       = 0;
 static tSystemTexture* std3D_pFirstTexCache = NULL;
 static tSystemTexture* std3D_pLastTexCache  = NULL;
 
-static size_t std3D_RGBATextureFormat;
-static size_t std3D_RGBTextureFormat;
-static size_t std3D_RGBAKeyTextureFormat;
+static const tSysPixelFormat std3D_RGBATextureFormat =
+{
+    .glInternalFormat = GL_RGBA8,
+    .glFormat = GL_BGRA,
+    .glType = GL_UNSIGNED_INT_8_8_8_8_REV
+};
 
-static bool std3D_bHasRGBTextureFormat           = false;
-static size_t std3D_numTextureFormats            = 0;
-static StdTextureFormat std3D_aTextureFormats[8] = { 0 };
+static tSysPixelFormat std3D_RGBTextureFormat =
+{
+    .glInternalFormat = GL_RGB8,
+    .glFormat = GL_BGR,
+    .glType = GL_UNSIGNED_BYTE
+};
+
+static bool std3D_bHasRGBTextureFormat = true;
+static size_t std3D_numTextureFormats  = 2;
 
 static GLenum std3D_currentMipmapFiler = 0;
 
@@ -152,7 +160,6 @@ static GLShaderProgram* std3D_defaultShaderWf = NULL;
 
 static int std3D_InitRenderState(void);
 static int std3D_BuildDeviceList(void);
-static void std3D_InitTextureFormats(void);
 
 static int std3D_CreateViewport(void);
 static void J3DAPI std3D_AddTextureToCacheList(tSystemTexture* pTexture);
@@ -198,7 +205,7 @@ void std3D_InstallHooks(void)
     J3D_HOOKFUNC(std3D_GetMipMapCount);
     J3D_HOOKFUNC(std3D_ResetTextureCache);
     J3D_HOOKFUNC(std3D_UpdateFrameCount);
-    J3D_HOOKFUNC(std3D_FindClosestFormat);
+    //J3D_HOOKFUNC(std3D_FindClosestFormat);
     J3D_HOOKFUNC(std3D_InitRenderState);
     J3D_HOOKFUNC(std3D_SetMipmapFilter);
     J3D_HOOKFUNC(std3D_SetProjection);
@@ -226,7 +233,6 @@ void std3D_ResetGlobals(void)
 int std3D_Startup(void)
 {
     STD_ASSERTREL(bStartup == false);
-    memset(std3D_aTextureFormats, 0, sizeof(std3D_aTextureFormats));
     memset(std3D_aDevices, 0, sizeof(std3D_aDevices));
 
     if ( !std3D_BuildDeviceList() )
@@ -259,7 +265,6 @@ void std3D_Shutdown(void)
 
     //stdShader_Shutdown();
 
-    memset(std3D_aTextureFormats, 0, sizeof(std3D_aTextureFormats));
     memset(std3D_aDevices, 0, sizeof(std3D_aDevices));
 
     std3D_numDevices = 0;
@@ -298,9 +303,6 @@ static bool std3D_InitSystem(void)
         std3D_bAutoGenMipmap = false;
     }
 
-    // Initialize texture formats
-    std3D_InitTextureFormats();
-
     if ( !std3D_numTextureFormats || !std3D_bHasRGBTextureFormat )
     {
         STDLOG_ERROR("Error no texture formats found.\n");
@@ -326,9 +328,9 @@ static bool std3D_InitSystem(void)
     std3D_pLastTexCache     = NULL;
 
     // Get color formats for RGB, RGBA and RGBA key formats
-    std3D_RGBTextureFormat     = std3D_FindClosestFormat(&stdColor_cfRGB888);
-    std3D_RGBAKeyTextureFormat = std3D_FindClosestFormat(&stdColor_cfRGBA8888);
-    std3D_RGBATextureFormat    = std3D_FindClosestFormat(&stdColor_cfRGBA8888);
+    // std3D_RGBTextureFormat     = std3D_FindClosestFormat(&stdColor_cfRGB888);
+    // std3D_RGBAKeyTextureFormat = std3D_FindClosestFormat(&stdColor_cfRGBA8888);
+    // std3D_RGBATextureFormat    = std3D_FindClosestFormat(&stdColor_cfRGBA8888);
 
     glGenSamplers(1, &std3D_activeSampler);
 
@@ -466,25 +468,18 @@ void std3D_Close(void)
     std3D_bOpen                = false;
 }
 
-void J3DAPI std3D_GetTextureFormat(StdColorFormatType type, ColorInfo* pDest, int* pbColorKeySet,
-                                   LPDDCOLORKEY* ppColorKey)
+void J3DAPI std3D_GetTextureFormat(StdColorFormatType type, ColorInfo* pDest, int* pbColorKeySet, LPDDCOLORKEY* ppColorKey)
 {
-    if ( type == STDCOLOR_FORMAT_RGBA_1BITALPHA )
+    if ( type == STDCOLOR_FORMAT_RGBA )
     {
-        *pbColorKeySet = std3D_aTextureFormats[std3D_RGBAKeyTextureFormat].bColorKey;
-        *ppColorKey    = std3D_aTextureFormats[std3D_RGBAKeyTextureFormat].pColorKey;
-        *pDest         = std3D_aTextureFormats[std3D_RGBAKeyTextureFormat].ci;
-    }
-    else if ( type == STDCOLOR_FORMAT_RGBA )
-    {
-        *pbColorKeySet = std3D_aTextureFormats[std3D_RGBATextureFormat].bColorKey;
-        *ppColorKey    = std3D_aTextureFormats[std3D_RGBATextureFormat].pColorKey;
-        *pDest         = std3D_aTextureFormats[std3D_RGBATextureFormat].ci;
+        *pbColorKeySet = 0;
+        *ppColorKey    = 0;
+        *pDest         = stdColor_cfARGB8888;
     }
     else
     {
         *pbColorKeySet = 0;
-        *pDest         = std3D_aTextureFormats[std3D_RGBTextureFormat].ci;
+        *pDest         = stdColor_cfRGB888;
     }
 }
 
@@ -953,17 +948,13 @@ void J3DAPI std3D_AllocSystemTexture(tSystemTexture* pTexture, tVBuffer** apVBuf
     // }
 
     tSysPixelFormat glFormat;
-    if ( formatType == STDCOLOR_FORMAT_RGBA_1BITALPHA )
+    if ( formatType == STDCOLOR_FORMAT_RGBA )
     {
-        glFormat = std3D_aTextureFormats[std3D_RGBAKeyTextureFormat].ddPixelFmt;
-    }
-    else if ( formatType == STDCOLOR_FORMAT_RGBA )
-    {
-        glFormat = std3D_aTextureFormats[std3D_RGBATextureFormat].ddPixelFmt;
+        glFormat = std3D_RGBATextureFormat;
     }
     else
     {
-        glFormat = std3D_aTextureFormats[std3D_RGBTextureFormat].ddPixelFmt;
+        glFormat = std3D_RGBTextureFormat;
     }
 
     // Allocate array for VBuffer pointers - NO DirectX objects created
@@ -1033,9 +1024,7 @@ error:
     return;
 }
 
-void J3DAPI std3D_GetValidDimensions(uint32_t width, uint32_t height,
-                                     uint32_t* pOutWidth,
-                                     uint32_t* pOutHeight)
+void J3DAPI std3D_GetValidDimensions(uint32_t width, uint32_t height, uint32_t* pOutWidth, uint32_t* pOutHeight)
 {
     uint32_t texWidth  = STDMATH_CLAMP(width, std3D_pCurDevice->minTexWidth, std3D_pCurDevice->maxTexWidth);
     uint32_t texHeight = STDMATH_CLAMP(height, std3D_pCurDevice->minTexHeight, std3D_pCurDevice->maxTexHeight);
@@ -1232,71 +1221,6 @@ void J3DAPI std3D_UpdateFrameCount(tSystemTexture* pTexture)
     //        Originally it was updated at the beginning of the function,
     //        and the frameNum was immediately invalidated by call to
     //        std3D_RemoveTextureFromCacheList.
-}
-
-size_t J3DAPI std3D_FindClosestFormat(const ColorInfo* pMatch)
-{
-    if ( !std3D_numTextureFormats )
-    {
-        return 0;
-    }
-
-    size_t bestMatchLevel = 0;
-    size_t closestMatch   = 0;
-    for ( size_t i = 0; i < std3D_numTextureFormats; ++i )
-    {
-        StdTextureFormat* pFormat = &std3D_aTextureFormats[i];
-        size_t matchLevel         = 0;
-
-        if ( pFormat->ci.colorMode == pMatch->colorMode )
-        {
-            matchLevel = 1;
-            if ( pFormat->ci.bpp == pMatch->bpp )
-            {
-                matchLevel = 2;
-                if ( pMatch->colorMode == STDCOLOR_RGB )
-                {
-                    if ( pFormat->ci.redBPP == pMatch->redBPP &&
-                        pFormat->ci.greenBPP == pMatch->greenBPP &&
-                        pFormat->ci.blueBPP == pMatch->blueBPP )
-                    {
-                        return i;
-                    }
-                }
-                else
-                {
-                    if ( pMatch->colorMode != STDCOLOR_RGBA )
-                    {
-                        // Index color mode
-                        STDLOG_STATUS("Found a perfect mode matchLevel #%d!\n", i);
-                        return i;
-                    }
-
-                    if ( pFormat->ci.colorMode == STDCOLOR_RGBA )
-                    {
-                        matchLevel = 3;
-                    }
-
-                    if ( pFormat->ci.redBPP == pMatch->redBPP &&
-                        pFormat->ci.greenBPP == pMatch->greenBPP &&
-                        pFormat->ci.blueBPP == pMatch->blueBPP &&
-                        pFormat->ci.alphaBPP == pMatch->alphaBPP )
-                    {
-                        return i;
-                    }
-                }
-            }
-        }
-
-        if ( matchLevel > bestMatchLevel )
-        {
-            closestMatch   = i;
-            bestMatchLevel = matchLevel;
-        }
-    }
-
-    STDLOG_STATUS("Settling for a closest matchLevel #%d..\n", closestMatch);
-    return closestMatch;
 }
 
 int std3D_InitRenderState(void)
@@ -1533,45 +1457,6 @@ static int std3D_BuildDeviceList(void)
     return std3D_numDevices > 0;
 }
 
-static void std3D_InitTextureFormats(void)
-{
-    std3D_numTextureFormats    = 0;
-    std3D_bHasRGBTextureFormat = true;
-
-    // available color formats
-    const ColorInfo formats[] = {
-        stdColor_cfRGB888, // 24-bit RGB
-        stdColor_cfRGB8888, // 32-bit RGB
-        stdColor_cfARGB8888, // 32-bit ARGB
-        stdColor_cfRGB565, // 16-bit RGB
-        stdColor_cfARGB5551, // 16-bit ARGB
-        stdColor_cfARGB4444, // 16-bit ARGB
-    };
-
-    // corresponding gl formats
-    const tSysPixelFormat glPixelFormats[] = {
-        stdPixelFormatGL_RGB888, stdPixelFormatGL_RGB8888,
-        stdPixelFormatGL_ARGB8888, stdPixelFormatGL_RGB565,
-        stdPixelFormalGL_ARGB5551, stdPixelFormalGL_ARGB4444
-    };
-
-    // assume all texture formats are compatible in OpenGL
-    for ( size_t i = 0;
-          i < STD_ARRAYLEN(formats) &&
-          std3D_numTextureFormats < STD_ARRAYLEN(std3D_aTextureFormats);
-          ++i )
-    {
-        StdTextureFormat* pTexFormat =
-            &std3D_aTextureFormats[std3D_numTextureFormats];
-        memset(pTexFormat, 0, sizeof(StdTextureFormat));
-
-        pTexFormat->ddPixelFmt = glPixelFormats[i];
-        pTexFormat->ci         = formats[i];
-
-        ++std3D_numTextureFormats;
-    }
-}
-
 int std3D_CreateViewport(void)
 {
     GLenum err = glGetError();
@@ -1591,9 +1476,8 @@ int std3D_CreateViewport(void)
     std3D_activeRect.x2 = width;
     std3D_activeRect.y2 = height;
 
-    // Farbe, Depth und Stencil löschen
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-    glClearStencil(0); // Stencil auf 0
+    glClearStencil(0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
     return 1;
