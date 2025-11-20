@@ -1815,7 +1815,7 @@ int J3DAPI stdDisplay_ColorFillSurface(tVBuffer* pBuffer, uint32_t dwFillColor, 
 
 int J3DAPI stdDisplay_BackBufferFill(uint32_t color, const StdRect* pRect)
 {
-    return stdDisplay_ColorFillSurface(&stdDisplay_g_backBuffer, color, pRect);
+    glClear(GL_COLOR_BUFFER_BIT);
 }
 
 int J3DAPI stdDisplay_SaveScreen(const char* pFilename)

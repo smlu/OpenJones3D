@@ -50,6 +50,7 @@ static Device3D std3D_aDevices[4] = { 0 };
 static size_t std3D_numCachedTextures       = 0;
 static tSystemTexture* std3D_pFirstTexCache = NULL;
 static tSystemTexture* std3D_pLastTexCache  = NULL;
+static tSysTexture* std3D_pCWhiteTexture    = NULL;
 
 static const tSysPixelFormat std3D_RGBATextureFormat =
 {
@@ -283,6 +284,14 @@ static bool std3D_InitSystem(void)
         STDLOG_ERROR("Error creating Z buffer.\n");
         return false;
     }
+    std3D_pCWhiteTexture = STDMALLOC(sizeof(tSysTexture));
+    glGenTextures(1, &std3D_pCWhiteTexture->id);
+    glBindTexture(GL_TEXTURE_2D, std3D_pCWhiteTexture->id);
+
+    unsigned char whitePixel[] = { 255, 255, 255, 255 };
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, whitePixel);
+    glBindTexture(GL_TEXTURE_2D, 0);
 
     // Get autogen support
     std3D_bAutoGenMipmap = stdConfig_GetBool(STD3D_CFG_MIPMAPAUTOGEN, true);
@@ -572,7 +581,7 @@ int std3D_CacheDrawCall(tSysTexture* pTex, Std3DRenderState rdflags, LPD3DTLVERT
     GLDrawCall* dc = &std3D_frameBatch.draws[std3D_frameBatch.drawCount++];
     dc->firstIndex = firstIndex;
     dc->indexCount = (GLsizei)numIndices;
-    dc->tex        = pTex;
+    dc->tex        = pTex != NULL ? pTex : std3D_pCWhiteTexture;
     dc->rdflags    = rdflags;
 
     return 1;
@@ -706,10 +715,11 @@ static int std3D_DrawIndexedPrimitiveUP(GLenum primType, const D3DTLVERTEX* aVer
 
 void std3D_SetWireframeRenderState(void)
 {
-    // Std3DRenderState rdstate = std3D_renderState & ~(STD3D_RS_FOG_ENABLED |
-    // STD3D_RS_UNKNOWN_400 | STD3D_RS_UNKNOWN_200);
-    // std3D_SetRenderState(rdstate);
-    //
+    Std3DRenderState rdstate = std3D_renderState & ~(STD3D_RS_FOG_ENABLED |
+        STD3D_RS_UNKNOWN_400 | STD3D_RS_UNKNOWN_200);
+    std3D_SetRenderState(rdstate);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
     // HRESULT d3dres = IDirect3DDevice9_SetTexture(std3D_pD3Device, 0, NULL);
     // if ( d3dres != D3D_OK )
     // {
@@ -717,83 +727,56 @@ void std3D_SetWireframeRenderState(void)
     //     return;
     // }
     //
-    // std3D_pD3DTex = NULL;
+    std3D_pD3DTex = NULL;
 }
 
 void J3DAPI std3D_DrawLineStrip(LPD3DTLVERTEX aVerts, size_t numVerts)
 {
-    // if ( numVerts > std3D_g_maxVertices )
-    // {
-    //     STDLOG_ERROR("Error %d > %d maxVertices.\n", numVerts,
-    //     std3D_g_maxVertices); return;
-    // }
-    //
-    // if ( std3D_bShadersActive )
-    // {
-    //     std3D_UpdateShaderState(std3D_defaultShaderWf);
-    // }
-    //
-    // if ( std3D_bUseBuffers )
-    // {
-    //     if ( !std3D_DrawPrimitive(D3DPT_LINESTRIP, aVerts, numVerts) )
-    //     {
-    //          // draw failed
-    //     }
-    // }
-    // else
-    // {
-    //     HRESULT d3dres = IDirect3DDevice9_DrawPrimitiveUP(
-    //         std3D_pD3Device,
-    //         D3DPT_LINESTRIP,
-    //         numVerts - 1,
-    //         aVerts,
-    //         sizeof(D3DTLVERTEX)
-    //     );
-    //
-    //     if ( d3dres != D3D_OK )
-    //     {
-    //         STDLOG_ERROR("Error %s DrawPrimitiveUP.\n",
-    //         std3D_D3DGetStatus(d3dres));
-    //     }
-    // }
+    if ( numVerts > std3D_g_maxVertices )
+    {
+        STDLOG_ERROR("Error %d > %d maxVertices.\n", numVerts,
+                     std3D_g_maxVertices);
+        return;
+    }
+
+    if ( std3D_bShadersActive )
+    {
+        stdShader_SetActiveShader(std3D_defaultShaderWf);
+    }
+
+    glBindVertexArray(std3D_pVertexArrayObject);
+
+    // Upload vertex data
+    glBindBuffer(GL_ARRAY_BUFFER, std3D_pVertexBufferOpaque);
+    glBufferData(GL_ARRAY_BUFFER, numVerts * sizeof(D3DTLVERTEX), aVerts, GL_STREAM_DRAW);
+
+    glDrawArrays(GL_LINE_STRIP, 0, numVerts);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
 }
 
 void J3DAPI std3D_DrawPointList(LPD3DTLVERTEX aVerts, size_t numVerts)
 {
-    // if ( numVerts > std3D_g_maxVertices )
-    // {
-    //     STDLOG_ERROR("Error %d > %d maxVertices.\n", numVerts,
-    //     std3D_g_maxVertices); return;
-    // }
-    //
-    // if ( std3D_bShadersActive )
-    // {
-    //     std3D_UpdateShaderState(std3D_defaultShaderWf);
-    // }
-    //
-    // if ( std3D_bUseBuffers )
-    // {
-    //     if ( !std3D_DrawPrimitive(D3DPT_LINESTRIP, aVerts, numVerts) )
-    //     {
-    //          // draw failed
-    //     }
-    // }
-    // else
-    // {
-    //     HRESULT d3dres = IDirect3DDevice9_DrawPrimitiveUP(
-    //         std3D_pD3Device,
-    //         D3DPT_POINTLIST,
-    //         numVerts,
-    //         aVerts,
-    //         sizeof(D3DTLVERTEX)
-    //     );
-    //
-    //     if ( d3dres != D3D_OK )
-    //     {
-    //         STDLOG_ERROR("Error %s DrawPrimitiveUP.\n",
-    //         std3D_D3DGetStatus(d3dres));
-    //     }
-    // }
+    if ( numVerts > std3D_g_maxVertices )
+    {
+        STDLOG_ERROR("Error %d > %d maxVertices.\n", numVerts,
+                     std3D_g_maxVertices);
+        return;
+    }
+
+    if ( std3D_bShadersActive )
+    {
+        stdShader_SetActiveShader(std3D_defaultShaderWf);
+    }
+
+    glBindVertexArray(std3D_pVertexArrayObject);
+    // Upload vertex data
+    glBindBuffer(GL_ARRAY_BUFFER, std3D_pVertexBufferOpaque);
+    glBufferData(GL_ARRAY_BUFFER, numVerts * sizeof(D3DTLVERTEX), aVerts, GL_STREAM_DRAW);
+
+    glDrawArrays(GL_POINTS, 0, numVerts);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
 }
 
 void J3DAPI std3D_SetRenderState(Std3DRenderState rdflags)
@@ -1049,7 +1032,7 @@ void J3DAPI std3D_ClearSystemTexture(tSystemTexture* pTex)
     if ( pTex->pCachedTexture )
     {
         std3D_RemoveTextureFromCacheList(pTex);
-        // IDirect3DTexture9_Release(pTex->pCachedTexture);
+        glDeleteTextures(1, &pTex->pCachedTexture->id);
     }
 
     memset(pTex, 0, sizeof(tSystemTexture));
@@ -1369,8 +1352,10 @@ static int std3D_BuildDeviceList(void)
         pD3DDriver->bStippledShadeSupported      = FALSE; // ?
         pD3DDriver->minTexWidth                  = 1;
         pD3DDriver->minTexHeight                 = 1;
+
         GLint maxTextureSize;
         glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTextureSize);
+
         pD3DDriver->maxTexWidth                    = maxTextureSize;
         pD3DDriver->maxTexHeight                   = maxTextureSize;
         pD3DDriver->bAnisotropicFilteringSupported = FALSE; // TODO: change once anistropic filtering is implemented
@@ -1477,10 +1462,8 @@ void J3DAPI std3D_RemoveTextureFromCacheList(tSystemTexture* pCacheTexture)
     }
     else
     {
-        pCacheTexture->pPrevCachedTexture->pNextCachedTexture =
-            pCacheTexture->pNextCachedTexture;
-        pCacheTexture->pNextCachedTexture->pPrevCachedTexture =
-            pCacheTexture->pPrevCachedTexture;
+        pCacheTexture->pPrevCachedTexture->pNextCachedTexture = pCacheTexture->pNextCachedTexture;
+        pCacheTexture->pNextCachedTexture->pPrevCachedTexture = pCacheTexture->pPrevCachedTexture;
     }
 
     pCacheTexture->pNextCachedTexture = NULL;
@@ -1508,9 +1491,7 @@ int J3DAPI std3D_PurgeTextureCache(size_t size)
     }
 
     tSystemTexture* pNextCachedTexture = NULL;
-    for ( tSystemTexture* pCacheTexture = std3D_pFirstTexCache;
-          pCacheTexture && purgedBytes < size;
-          pCacheTexture = pNextCachedTexture )
+    for ( tSystemTexture* pCacheTexture = std3D_pFirstTexCache; pCacheTexture && purgedBytes < size; pCacheTexture = pNextCachedTexture )
     {
         pNextCachedTexture = pCacheTexture->pNextCachedTexture;
         if ( pCacheTexture->frameNum != std3D_frameCount )
@@ -1543,8 +1524,7 @@ const char* J3DAPI std3D_D3DGetStatus(HRESULT res)
 
 StdDisplayEnvironment* J3DAPI std3D_BuildDisplayEnvironment()
 {
-    StdDisplayEnvironment* pDeviceList =
-        (StdDisplayEnvironment*)STDMALLOC(sizeof(StdDisplayEnvironment));
+    StdDisplayEnvironment* pDeviceList = (StdDisplayEnvironment*)STDMALLOC(sizeof(StdDisplayEnvironment));
     memset(pDeviceList, 0, sizeof(StdDisplayEnvironment));
 
     if ( !stdDisplay_Startup() )
@@ -1559,8 +1539,7 @@ StdDisplayEnvironment* J3DAPI std3D_BuildDisplayEnvironment()
 
     if ( pDeviceList->numInfos )
     {
-        pDeviceList->aDisplayInfos = (StdDisplayInfo*)STDMALLOC(
-            sizeof(StdDisplayInfo) * pDeviceList->numInfos);
+        pDeviceList->aDisplayInfos = (StdDisplayInfo*)STDMALLOC(sizeof(StdDisplayInfo) * pDeviceList->numInfos);
 
         StdDisplayInfo* pCurInfo = pDeviceList->aDisplayInfos;
         for ( size_t deviceNum = 0; deviceNum < pDeviceList->numInfos; ++deviceNum )
@@ -1746,33 +1725,22 @@ bool std3D_InitShaderSystem(void)
         return false;
     }
 
-    // std3D_defaultShaderWf = stdShader_CompileAndCreate("std_defaultWf",
-    // "C:\\Users\\morit\\Documents\\GitHub\\OpenJones3D\\Libs\\std\\Win95\\GL\\Shaders\\default.vert",
-    //     "C:\\Users\\morit\\Documents\\GitHub\\OpenJones3D\\Libs\\std\\Win95\\GL\\Shaders\\default.frag");
-    // if ( !std3D_defaultShader )
-    // {
-    //     STDLOG_ERROR("Failed to create default wf shader\n");
-    //     return false;
-    // }
+    std3D_defaultShaderWf = stdShader_CompileAndCreate("std_default_wf", "default.vert", "default_wf.frag");
+    if ( !std3D_defaultShaderWf )
+    {
+        STDLOG_ERROR("Failed to create default wf shader\n");
+        return false;
+    }
 
-    // if ( !stdShader_RegisterShaderParam(std3D_defaultShaderWf,
-    // "g_wireframeColor", STDSHADER_TYPE_PIXEL, STDSHADER_PARAM_VECTOR4,
-    // /*registerIndex=*/0) )
-    // {
-    //     return false;
-    // }
-    //
-    // StdShaderParamValue val;
-    // val.type = STDSHADER_PARAM_VECTOR4;
-    // val.value.vector[0] = 1.0f; // Red
-    // val.value.vector[1] = 1.0f; // Green
-    // val.value.vector[2] = 1.0f; // Blue
-    // val.value.vector[3] = 1.0f; // Alpha
-    // if ( !stdShader_SetShaderParam(std3D_defaultShaderWf, "g_wireframeColor",
-    // STDSHADER_TYPE_PIXEL, &val) )
-    // {
-    //     return false;
-    // }
+    stdShader_SetActiveShader(std3D_defaultShaderWf);
+    const GLint wfColorLoc = glGetUniformLocation(std3D_defaultShaderWf->handle, "vWireFrameColor");
+    if ( wfColorLoc == -1 )
+    {
+        STDLOG_ERROR("Failed to get wireframe color location in shader \n");
+        return false;
+    }
+    glUniform4f(wfColorLoc, 1.0f, 1.0f, 1.0f, 1.0f); //set wireframe color to white.
+
 
     std3D_bShadersActive = true;
     return true;

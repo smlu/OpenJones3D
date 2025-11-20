@@ -187,7 +187,12 @@ bool J3DAPI stdShader_SetActiveShader(GLShaderProgram* pSp)
         STDLOG_ERROR("Shader system not open.\n");
         return false;
     }
-
+    if ( pSp == NULL )
+    {
+        stdShader_activeShader = NULL;
+        glUseProgram(0);
+        return true;
+    }
     if ( stdShader_activeShader == pSp )
     {
         return true;
