@@ -155,7 +155,6 @@ static int std3D_BuildDeviceList(void);
 static void std3D_InitTextureFormats(void);
 
 static int std3D_CreateViewport(void);
-static bool J3DAPI std3D_GetZBufferFormat(GLenum* pPixelFormat);
 static void J3DAPI std3D_AddTextureToCacheList(tSystemTexture* pTexture);
 static void J3DAPI
 std3D_RemoveTextureFromCacheList(tSystemTexture* pCacheTexture);
@@ -275,19 +274,10 @@ const Device3D* std3D_GetAllDevices(void) { return std3D_aDevices; }
 
 static bool std3D_InitSystem(void)
 {
-    GLenum pixelFormat = { 0 };
-    if ( std3D_GetZBufferFormat(&pixelFormat) )
+    if ( stdDisplay_CreateZBuffer(NULL, false) )
     {
-        if ( stdDisplay_CreateZBuffer(NULL, std3D_pCurDevice->bHAL == 0) )
-        {
-            STDLOG_ERROR("Error creating Z buffer.\n");
-            return false;
-        }
-    }
-    else
-    {
-        STDLOG_WARNING("Warning: No stencil Z buffer format found, using default "
-            "without stencil.\n");
+        STDLOG_ERROR("Error creating Z buffer.\n");
+        return false;
     }
 
     // Get autogen support
@@ -299,8 +289,7 @@ static bool std3D_InitSystem(void)
         std3D_bAutoGenMipmap = false;
     }
 
-    std3D_bAnisotropicFilter =
-        stdConfig_GetBool(STD3D_CFG_ANISOTROPICFILTER, true);
+    std3D_bAnisotropicFilter = stdConfig_GetBool(STD3D_CFG_ANISOTROPICFILTER, true);
     if ( std3D_bAnisotropicFilter &&
         !std3D_pCurDevice->bAnisotropicFilteringSupported )
     {
@@ -388,6 +377,7 @@ static void std3D_OnDisplayDeviceReset(tSysDevice3D* pDevice)
 
 static void std3D_OnDisplayDevicePostReset(tSysDevice3D* pDevice)
 {
+    J3D_UNUSED(pDevice);
     STDLOG_DEBUG(
         "Received display device reset signal. Re-initializing the system...\n");
 
@@ -690,8 +680,7 @@ void J3DAPI std3D_DrawRenderList(tSysTexture* pTex, Std3DRenderState rdflags, LP
     std3D_DrawIndexedPrimitiveUP(GL_TRIANGLES, aVerts, numVerts, aIndices, numIndices);
 }
 
-static int std3D_DrawIndexedPrimitiveUP(GLenum primType, const D3DTLVERTEX* aVerts, size_t numVerts,
-                                        LPWORD aIndices, size_t numIndices)
+static int std3D_DrawIndexedPrimitiveUP(GLenum primType, const D3DTLVERTEX* aVerts, size_t numVerts, LPWORD aIndices, size_t numIndices)
 {
     if ( !aVerts || !aIndices || numIndices == 0 )
     {
@@ -707,29 +696,20 @@ static int std3D_DrawIndexedPrimitiveUP(GLenum primType, const D3DTLVERTEX* aVer
     const GLsizei stride = sizeof(D3DTLVERTEX);
 
     glEnableVertexAttribArray(0); // position
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE,
-                          stride,
-                          &aVerts[0].sx);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, &aVerts[0].sx);
 
     glEnableVertexAttribArray(1); // rhw
-    glVertexAttribPointer(1, 1, GL_FLOAT, GL_FALSE,
-                          stride,
-                          &aVerts[0].rhw);
+    glVertexAttribPointer(1, 1, GL_FLOAT, GL_FALSE, stride, &aVerts[0].rhw);
 
     glEnableVertexAttribArray(2); // diffuse color
-    glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, GL_TRUE,
-                          stride,
+    glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, GL_TRUE, stride,
                           &aVerts[0].color);
 
     glEnableVertexAttribArray(3); // specular
-    glVertexAttribPointer(3, 4, GL_UNSIGNED_BYTE, GL_TRUE,
-                          stride,
-                          &aVerts[0].specular);
+    glVertexAttribPointer(3, 4, GL_UNSIGNED_BYTE, GL_TRUE, stride, &aVerts[0].specular);
 
     glEnableVertexAttribArray(4); // texcoords
-    glVertexAttribPointer(4, 2, GL_FLOAT, GL_FALSE,
-                          stride,
-                          &aVerts[0].tu);
+    glVertexAttribPointer(4, 2, GL_FLOAT, GL_FALSE, stride, &aVerts[0].tu);
 
     GLsizei indexCount = (GLsizei)numIndices;
     glDrawElements(primType, indexCount, GL_UNSIGNED_SHORT, aIndices);
@@ -1057,10 +1037,8 @@ void J3DAPI std3D_GetValidDimensions(uint32_t width, uint32_t height,
                                      uint32_t* pOutWidth,
                                      uint32_t* pOutHeight)
 {
-    uint32_t texWidth = STDMATH_CLAMP(width, std3D_pCurDevice->minTexWidth,
-                                      std3D_pCurDevice->maxTexWidth);
-    uint32_t texHeight = STDMATH_CLAMP(height, std3D_pCurDevice->minTexHeight,
-                                       std3D_pCurDevice->maxTexHeight);
+    uint32_t texWidth  = STDMATH_CLAMP(width, std3D_pCurDevice->minTexWidth, std3D_pCurDevice->maxTexWidth);
+    uint32_t texHeight = STDMATH_CLAMP(height, std3D_pCurDevice->minTexHeight, std3D_pCurDevice->maxTexHeight);
 
     if ( !std3D_pCurDevice->bSqareOnlyTexture || texWidth == texHeight )
     {
@@ -1213,7 +1191,7 @@ void std3D_ResetTextureCache(void)
     {
         if ( pCurTex->pCachedTexture )
         {
-            GLuint tex = (GLuint)(uintptr_t)pCurTex->pCachedTexture;
+            GLuint tex = pCurTex->pCachedTexture->id;
             glDeleteTextures(1, &tex);
             pCurTex->pCachedTexture = NULL;
         }
@@ -1427,8 +1405,8 @@ int J3DAPI std3D_SetProjection(float fov, float nearPlane, float farPlane)
     if ( fabsf(farPlane - nearPlane) < 1e-4f )
         return 0;
 
-    // is this actually needed? Since we don't need extra projection matrix in
-    // shader. float f = 1.0f / tanf(fov * 0.5f * 0.01745329252);
+    // This is currently not needed since projection is not done in shader
+    // float f = 1.0f / tanf(fov * 0.5f * 0.01745329252);
     //
     // float proj[16] = {
     //     f,    0,    0,                              0,
@@ -1449,8 +1427,7 @@ void J3DAPI std3D_EnableFog(int bEnabled, float density)
     std3D_g_fogDensity = density;
 }
 
-void J3DAPI std3D_SetFog(float red, float green, float blue, float startDepth,
-                         float endDepth)
+void J3DAPI std3D_SetFog(float red, float green, float blue, float startDepth, float endDepth)
 {
     // Store fog parameters for shader use
     std3D_EnableFog(std3D_bRenderFog, std3D_g_fogDensity);
@@ -1609,43 +1586,22 @@ int std3D_CreateViewport(void)
         return 0;
     }
 
-    // Viewport-Größe aus Backbuffer übernehmen
     GLint width  = (GLint)stdDisplay_g_backBuffer.rasterInfo.width;
     GLint height = (GLint)stdDisplay_g_backBuffer.rasterInfo.height;
 
-    // Viewport setzen
     glViewport(0, 0, width, height);
 
-    // Aktive Region merken (wie in Original)
     std3D_activeRect.x1 = 0;
     std3D_activeRect.y1 = 0;
     std3D_activeRect.x2 = width;
     std3D_activeRect.y2 = height;
 
     // Farbe, Depth und Stencil löschen
-    glClearColor(0.0f, 0.0f, 0.0f, 0.0f); // Schwarz
-    glClearDepth(1.0f); // Depth auf 1.0 (wie D3D)
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glClearStencil(0); // Stencil auf 0
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
     return 1;
-}
-
-static bool J3DAPI std3D_GetZBufferFormat(GLenum* pPixelFormat)
-{
-    if ( !pPixelFormat )
-    {
-        return false;
-    }
-
-    // Check supported Z-buffer formats
-    GLenum aFormats[] = {
-        GL_DEPTH24_STENCIL8, // 24-bit depth, 8-bit stencil
-    };
-
-    *pPixelFormat = aFormats[0];
-
-    return true;
 }
 
 void J3DAPI std3D_AddTextureToCacheList(tSystemTexture* pTexture)
@@ -1895,34 +1851,27 @@ bool std3D_InitVertexBuffers(GLuint* vbo, GLuint* ibo, GLuint* vao)
 
     glGenBuffers(1, vbo);
     glBindBuffer(GL_ARRAY_BUFFER, *vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(D3DTLVERTEX), NULL,
-                 GL_STREAM_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(D3DTLVERTEX), NULL, GL_STREAM_DRAW);
 
     glGenBuffers(1, ibo);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, *ibo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLushort), NULL,
-                 GL_STREAM_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLushort), NULL, GL_STREAM_DRAW);
 
     const GLsizei stride = sizeof(D3DTLVERTEX);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride,
-                          (void*)offsetof(D3DTLVERTEX, sx));
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(D3DTLVERTEX, sx));
     glEnableVertexAttribArray(0);
 
-    glVertexAttribPointer(1, 1, GL_FLOAT, GL_FALSE, stride,
-                          (void*)offsetof(D3DTLVERTEX, rhw));
+    glVertexAttribPointer(1, 1, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(D3DTLVERTEX, rhw));
     glEnableVertexAttribArray(1);
 
-    glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, GL_TRUE, stride,
-                          (void*)offsetof(D3DTLVERTEX, color));
+    glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, GL_TRUE, stride, (void*)offsetof(D3DTLVERTEX, color));
     glEnableVertexAttribArray(2);
 
-    glVertexAttribPointer(3, 4, GL_UNSIGNED_BYTE, GL_TRUE, stride,
-                          (void*)offsetof(D3DTLVERTEX, specular));
+    glVertexAttribPointer(3, 4, GL_UNSIGNED_BYTE, GL_TRUE, stride, (void*)offsetof(D3DTLVERTEX, specular));
     glEnableVertexAttribArray(3);
 
-    glVertexAttribPointer(4, 2, GL_FLOAT, GL_FALSE, stride,
-                          (void*)offsetof(D3DTLVERTEX, tu));
+    glVertexAttribPointer(4, 2, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(D3DTLVERTEX, tu));
     glEnableVertexAttribArray(4);
 
     glBindVertexArray(0);
@@ -2006,12 +1955,10 @@ void std3D_ShutdownShaderSystem(void)
 {
     std3D_defaultShader   = NULL;
     std3D_defaultShaderWf = NULL;
-    // Important, reset active shader to STDSHADER_INVALIDHANDLE to avoid dangling
-    // handle on next system init
     stdShader_Close();
 }
 
-bool J3DAPI std3D_IsShaderSystemActive(void) { return std3D_bShadersActive; }
+bool J3DAPI std3D_IsShaderSystemActive(void) { return true; }
 
 bool std3D_IsAnisotropicFilteringSupported(void) { return true; }
 
