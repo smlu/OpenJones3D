@@ -66,7 +66,6 @@ static tSysPixelFormat std3D_RGBTextureFormat =
 };
 
 static bool std3D_bHasRGBTextureFormat = true;
-static size_t std3D_numTextureFormats  = 2;
 
 static GLenum std3D_currentMipmapFiler = 0;
 
@@ -303,12 +302,6 @@ static bool std3D_InitSystem(void)
         std3D_bAutoGenMipmap = false;
     }
 
-    if ( !std3D_numTextureFormats || !std3D_bHasRGBTextureFormat )
-    {
-        STDLOG_ERROR("Error no texture formats found.\n");
-        return false;
-    }
-
     if ( !std3D_CreateViewport() )
     {
         STDLOG_ERROR("Error creating viewport.\n");
@@ -461,7 +454,6 @@ void std3D_Close(void)
     std3D_ReleaseSystemResources();
 
     std3D_mipmapFilter         = -1;
-    std3D_numTextureFormats    = 0;
     std3D_curDevice            = 0;
     std3D_pCurDevice           = NULL;
     std3D_bHasRGBTextureFormat = false;
@@ -500,7 +492,7 @@ StdColorFormatType J3DAPI std3D_GetColorFormat(const ColorInfo* pCi)
 
 size_t std3D_GetNumTextureFormats(void)
 {
-    return std3D_numTextureFormats;
+    return 2;
 }
 
 int std3D_StartScene(void)
@@ -859,7 +851,7 @@ void J3DAPI std3D_SetRenderState(Std3DRenderState rdflags)
     if ( (std3D_renderState & STD3D_RS_TEXFILTER_ANISOTROPIC) !=
         (rdflags & STD3D_RS_TEXFILTER_ANISOTROPIC) )
     {
-        glSamplerParameteri(std3D_activeSampler, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
+        glSamplerParameteri(std3D_activeSampler, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
         glSamplerParameteri(std3D_activeSampler, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         // if ((rdflags & STD3D_RS_TEXFILTER_ANISOTROPIC) &&
         // std3D_bAnisotropicFilter) {
@@ -923,11 +915,6 @@ void J3DAPI std3D_AllocSystemTexture(tSystemTexture* pTexture, tVBuffer** apVBuf
                                      StdColorFormatType formatType)
 {
     memset(pTexture, 0, sizeof(tSystemTexture));
-
-    if ( !std3D_numTextureFormats )
-    {
-        return;
-    }
 
     // Get mipmap buffer at LOD 0
     tVBuffer* pVBuffer = *apVBuffers;
@@ -1090,9 +1077,6 @@ void J3DAPI std3D_AddToTextureCache(tSystemTexture* pCacheTexture,
     glGenTextures(1, &tex);
     glBindTexture(GL_TEXTURE_2D, tex);
 
-    bool autoMipmap         = true;
-    const size_t numMipmaps = autoMipmap ? 1 : pCacheTexture->numMipLevels;
-
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
     GLenum formatGL        = pCacheTexture->format.glFormat;
@@ -1102,45 +1086,9 @@ void J3DAPI std3D_AddToTextureCache(tSystemTexture* pCacheTexture,
     tVBuffer* mip  = pCacheTexture->apMipmaps[0];
     GLsizei width  = (GLsizei)mip->rasterInfo.width;
     GLsizei height = (GLsizei)mip->rasterInfo.height;
-    glTexImage2D(GL_TEXTURE_2D, 0, internalFormatGL,
-                 width, height, 0, formatGL, typeGL, mip->pPixels);
+    glTexImage2D(GL_TEXTURE_2D, 0, internalFormatGL, width, height, 0, formatGL, typeGL, mip->pPixels);
 
     glGenerateMipmap(GL_TEXTURE_2D);
-
-    // for ( size_t mm = 0; mm <= numMipmaps; ++mm )
-    // {
-    //     tVBuffer* mip = pCacheTexture->apMipmaps[mm];
-    //     if ( !mip || !mip->pPixels )
-    //     {
-    //         STDLOG_ERROR("Missing mipmap %zu.\n", mm);
-    //         continue;
-    //     }
-    //     GLsizei width  = (GLsizei)mip->rasterInfo.width;
-    //     GLsizei height = (GLsizei)mip->rasterInfo.height;
-    //     glPixelStorei(GL_UNPACK_ROW_LENGTH, width);
-    //
-    //
-    //     // const GLint expected = (GLint)(width * mip->rasterInfo.colorInfo.bpp);
-    //     // const GLint pitch    = (GLint)mip->rasterInfo.rowSize;
-    //     //
-    //     // if ( pitch != expected )
-    //     // {
-    //     //     glPixelStorei(GL_UNPACK_ROW_LENGTH, mip->rasterInfo.rowSize);
-    //     // }
-    //     // else
-    //     // {
-    //     //     glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-    //     // }
-    //     // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, GL_ONE);
-    //
-    //     glTexImage2D(GL_TEXTURE_2D, (GLint)mm, internalFormatGL,
-    //                  width, height, 0, formatGL, typeGL, mip->pPixels);
-    // }
-
-    // if ( autoMipmap )
-    // {
-    //     glGenerateMipmap(GL_TEXTURE_2D);
-    // }
 
     GLenum err = glGetError();
     if ( err != GL_NO_ERROR )
