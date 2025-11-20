@@ -1132,13 +1132,6 @@ int J3DAPI stdDisplay_CreateZBuffer(const tSysPixelFormat* pPixelFormat, int bSy
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, surface->depthRBO);
     glBindRenderbuffer(GL_RENDERBUFFER, 0);
 
-    glEnable(GL_DEPTH_TEST);
-
-    // stdDisplay_zBuffer = stdDisplay_VBufferNew(&stdDisplay_g_backBuffer->rasterInfo, 0, 0);
-    // stdDisplay_zBuffer->gl.internalFormat = GL_DEPTH24_STENCIL8;
-    // stdDisplay_zBuffer->gl.format = GL_DEPTH_STENCIL;
-    // stdDisplay_zBuffer->gl.type = GL_UNSIGNED_INT_24_8;
-
     return 0;
 }
 
