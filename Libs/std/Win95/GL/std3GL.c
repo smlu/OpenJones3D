@@ -562,6 +562,7 @@ void std3D_EndScene(void)
     glSamplerParameteri(std3D_activeSampler, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glSamplerParameteri(std3D_activeSampler, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glBindSampler(1, 0);
+    stdShader_DisableFog();
 }
 
 int std3D_CacheDrawCall(tSysTexture* pTex, Std3DRenderState rdflags, LPD3DTLVERTEX aVerts, size_t numVerts, LPWORD aIndices, size_t numIndices)
@@ -590,7 +591,7 @@ int std3D_CacheDrawCall(tSysTexture* pTex, Std3DRenderState rdflags, LPD3DTLVERT
     GLDrawCall* dc = &std3D_frameBatch.draws[std3D_frameBatch.drawCount++];
     dc->firstIndex = firstIndex;
     dc->indexCount = (GLsizei)numIndices;
-    dc->tex        = pTex;
+    dc->tex        = pTex ? pTex : std3D_pWhiteTexture;
     dc->rdflags    = rdflags;
 
     return 1;
