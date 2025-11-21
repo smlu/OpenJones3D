@@ -35,9 +35,9 @@ typedef struct GLCaps
     GLint maxFragmentUniformComponents;
     GLint maxVaryingComponents;
 
-    GLint maxDrawBuffers; // MRT
+    GLint maxDrawBuffers;      // MRT
     GLint maxColorAttachments; // FBO color attachments
-    GLint maxSamples; // MSAA (grob)
+    GLint maxSamples;          // MSAA (grob)
 
     GLfloat maxAnisotropy; // 1.0 wenn nicht vorhanden
     GLfloat pointSizeRange[2];
@@ -121,10 +121,10 @@ static GLuint stdDisplay_fullscreenVao       = 0;
 
 enum GLMultiSample
 {
-    GL_MULTISAMPLE_NONE = 0,
-    GL_MULTISAMPLE_2_SAMPLES = 2,
-    GL_MULTISAMPLE_4_SAMPLES = 4,
-    GL_MULTISAMPLE_8_SAMPLES = 8,
+    GL_MULTISAMPLE_NONE       = 0,
+    GL_MULTISAMPLE_2_SAMPLES  = 2,
+    GL_MULTISAMPLE_4_SAMPLES  = 4,
+    GL_MULTISAMPLE_8_SAMPLES  = 8,
     GL_MULTISAMPLE_16_SAMPLES = 16,
 };
 
@@ -510,6 +510,8 @@ void stdDisplay_Shutdown(void) //checked
     {
         //SDL_DestroyWindow(window);
     }
+
+    stdShader_Shutdown();
 
     memset(stdDisplay_aDisplayDevices, 0, sizeof(stdDisplay_aDisplayDevices));
     memset(&stdDisplay_g_backBuffer, 0, sizeof(stdDisplay_g_backBuffer));
@@ -1088,7 +1090,7 @@ int J3DAPI stdDisplay_GetTextureMemory(size_t* pTotal, size_t* pFree)
     if ( maxTex <= 0 ) maxTex = 4096; // defensiver Fallback
 
     *pTotal = (size_t)maxTex * (size_t)maxTex * 4; // RGBA8-Annahme
-    *pFree  = *pTotal; // unbekannt
+    *pFree  = *pTotal;                             // unbekannt
     return 0;
 }
 
@@ -1097,7 +1099,7 @@ int J3DAPI stdDisplay_GetTotalMemory(size_t* pTotal, size_t* pFree)
     // TODO: Enhance / Fix
     UINT adapter = stdDisplay_numDevices > 0 ? stdDisplay_curDevice : D3DADAPTER_DEFAULT;
     *pTotal      = stdDisplay_numVideoModes * 1024 * 1024; // Approximation
-    *pFree       = *pTotal / 2; // Rough estimate
+    *pFree       = *pTotal / 2;                            // Rough estimate
     return 0;
 }
 
@@ -1258,7 +1260,7 @@ static int J3DAPI stdDisplay_EnumerateDevices(void) //check
         // Fill device information
         const char* pDisplayName = SDL_GetDisplayName(stdDisplay_availableDisplays[i]);;
         // Left strip name to the last '\' (.e.g. "\\.\DISPLAY1" -> "\DISPLAY1")
-        STD_STRCPY(pDevice->aDriverName, pDisplayName); //aDriver should be actually aDisplayDevice
+        STD_STRCPY(pDevice->aDriverName, pDisplayName);                          //aDriver should be actually aDisplayDevice
         STD_STRCPY(pDevice->aDeviceName, renderer ? renderer : "OpenGL Device"); // aDeviceName should be a3DDevice
 
 
