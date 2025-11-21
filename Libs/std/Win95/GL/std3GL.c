@@ -50,7 +50,7 @@ static Device3D std3D_aDevices[4] = { 0 };
 static size_t std3D_numCachedTextures       = 0;
 static tSystemTexture* std3D_pFirstTexCache = NULL;
 static tSystemTexture* std3D_pLastTexCache  = NULL;
-static tSysTexture* std3D_pCWhiteTexture    = NULL;
+static tSysTexture* std3D_pWhiteTexture     = NULL;
 
 static const tSysPixelFormat std3D_RGBATextureFormat =
 {
@@ -284,9 +284,9 @@ static bool std3D_InitSystem(void)
         STDLOG_ERROR("Error creating Z buffer.\n");
         return false;
     }
-    std3D_pCWhiteTexture = STDMALLOC(sizeof(tSysTexture));
-    glGenTextures(1, &std3D_pCWhiteTexture->id);
-    glBindTexture(GL_TEXTURE_2D, std3D_pCWhiteTexture->id);
+    std3D_pWhiteTexture = STDMALLOC(sizeof(tSysTexture));
+    glGenTextures(1, &std3D_pWhiteTexture->id);
+    glBindTexture(GL_TEXTURE_2D, std3D_pWhiteTexture->id);
 
     unsigned char whitePixel[] = { 255, 255, 255, 255 };
 
@@ -471,7 +471,13 @@ void std3D_Close(void)
 
 void J3DAPI std3D_GetTextureFormat(StdColorFormatType type, ColorInfo* pDest, int* pbColorKeySet, LPDDCOLORKEY* ppColorKey)
 {
-    if ( type == STDCOLOR_FORMAT_RGBA )
+    if ( type == STDCOLOR_FORMAT_RGBA_1BITALPHA )
+    {
+        *pbColorKeySet = 0;
+        *ppColorKey    = 0;
+        *pDest         = stdColor_cfARGB8888;
+    }
+    else if ( type == STDCOLOR_FORMAT_RGBA )
     {
         *pbColorKeySet = 0;
         *ppColorKey    = 0;
@@ -581,7 +587,7 @@ int std3D_CacheDrawCall(tSysTexture* pTex, Std3DRenderState rdflags, LPD3DTLVERT
     GLDrawCall* dc = &std3D_frameBatch.draws[std3D_frameBatch.drawCount++];
     dc->firstIndex = firstIndex;
     dc->indexCount = (GLsizei)numIndices;
-    dc->tex        = pTex != NULL ? pTex : std3D_pCWhiteTexture;
+    dc->tex        = pTex;
     dc->rdflags    = rdflags;
 
     return 1;
