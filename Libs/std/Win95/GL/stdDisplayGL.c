@@ -535,10 +535,14 @@ int J3DAPI stdDisplay_Open(size_t deviceNum) //checked
         STDLOG_ERROR("Error: Invalid device num %d (total: %d)!\n", deviceNum, stdDisplay_numDevices);
         return 0;
     }
+    //SDL_RaiseWindow(SDL_GL_GetCurrentWindow());
+    SDL_SetWindowAlwaysOnTop(SDL_GL_GetCurrentWindow(), false);
 
     stdDisplay_curDevice  = stdDisplay_availableDisplays[deviceNum];
     stdDisplay_pCurDevice = &stdDisplay_aDisplayDevices[deviceNum];
-
+    SDL_Rect displayRect;
+    SDL_GetDisplayBounds(stdDisplay_curDevice, &displayRect);
+    SDL_SetWindowPosition(SDL_GL_GetCurrentWindow(), displayRect.x, displayRect.y);
     if ( !stdDisplay_GetGLCaps() )
     {
         return 0;
@@ -1195,9 +1199,21 @@ static int J3DAPI stdDisplay_EnumerateDevices(void) //check
         SDL_free(stdDisplay_availableDisplays);
     }
 
+    SDL_DisplayID primaryDisplay = SDL_GetPrimaryDisplay();
     int adapterCount;
     stdDisplay_availableDisplays = SDL_GetDisplays(&adapterCount);
     stdDisplay_numDevices        = 0;
+
+    for ( int i = 0; i < adapterCount - 1; i++ )
+    {
+        if ( stdDisplay_availableDisplays[i] == primaryDisplay )
+        {
+            SDL_DisplayID tmp                              = stdDisplay_availableDisplays[adapterCount - 1];
+            stdDisplay_availableDisplays[adapterCount - 1] = stdDisplay_availableDisplays[i];
+            stdDisplay_availableDisplays[i]                = tmp;
+            break;
+        }
+    }
 
     if ( !stdDisplay_availableDisplays || adapterCount <= 0 )
     {
@@ -1445,6 +1461,7 @@ static int J3DAPI stdDisplay_SetWindowMode(HWND hWnd, StdVideoMode* pDisplayMode
     stdDisplay_windowViewport[2] = pDisplayMode->rasterInfo.width;
     stdDisplay_windowViewport[3] = pDisplayMode->rasterInfo.height;
     wkernel_SetWindowSize(pDisplayMode->rasterInfo.width, pDisplayMode->rasterInfo.height);
+    //SDL_SetWindowAlwaysOnTop(SDL_GL_GetCurrentWindow(), false);
 
     return stdDisplay_InitBuffers(NULL, pDisplayMode, /*bWindowMode=*/
                                   true, 1);
@@ -1494,8 +1511,11 @@ int J3DAPI stdDisplay_SetFullscreenMode(HWND hwnd, const StdVideoMode* pDisplayM
 
     wkernel_SetWindowSize(winW, winH);
 
-    //SDL_SetWindowFullscreenMode(window, pDisplayMode->pDisplayMode);
-    //SDL_SetWindowFullscreen(window, true);
+
+    //SDL_SetWindowFullscreenMode(SDL_GL_GetCurrentWindow(), &pDisplayMode->pDisplayMode);
+    //SDL_SetWindowFullscreen(SDL_GL_GetCurrentWindow(), true);
+    //SDL_SetWindowAlwaysOnTop(SDL_GL_GetCurrentWindow(), false);
+    //SDL_RaiseWindow(SDL_GL_GetCurrentWindow());
 
     return stdDisplay_InitBuffers(NULL, pDisplayMode, /*bWindowMode=*/
                                   true, 1);

@@ -12,9 +12,9 @@
 #include <string.h>
 
 static const SDL_GUID wkernel_guid = {
-    0xA0, 0x4D, 0xCE, 0x82,  // Data1: 0x82CE4DA0
-    0xBF, 0x9C,              // Data2: 0x9CBF
-    0xD1, 0x01,              // Data3: 0x1D1
+    0xA0, 0x4D, 0xCE, 0x82, // Data1: 0x82CE4DA0
+    0xBF, 0x9C,             // Data2: 0x9CBF
+    0xD1, 0x01,             // Data3: 0x1D1
     0x90, 0x85, 0x00, 0x60, 0x97, 0x76, 0xEA, 0x02
 };
 static const char wkernel_aClassName[] = "wKernelJones3D";
@@ -264,18 +264,18 @@ LPARAM wkernel_GetVKeyLParam(const SDL_KeyboardEvent* e, int vk)
 
 
     // Previous key state if repeat, assume was down
-    unsigned int prevState  = (e->repeat) ? 1 : 0;
+    unsigned int prevState = (e->repeat) ? 1 : 0;
 
     // Transition state  0 for WM_KEYDOWN, 1 for WM_KEYUP
     unsigned int transition = (e->down) ? 0 : 1;
 
     LPARAM lParam = 0;
-    lParam |= (repeatCount & 0xFFFF);           // Bits 0-15
-    lParam |= ((scanCode & 0xFF) << 16);         // Bits 16-23
-    lParam |= (extended << 24);                 // Bit 24 (KF_EXTENDED in HIWORD)
+    lParam |= (repeatCount & 0xFFFF);    // Bits 0-15
+    lParam |= ((scanCode & 0xFF) << 16); // Bits 16-23
+    lParam |= (extended << 24);          // Bit 24 (KF_EXTENDED in HIWORD)
     // Bits 25-28 reserved (KF_DLGMODE, KF_MENUMODE would go here but we don't track dialog/menu state)
-    lParam |= (prevState << 30);                // Bit 30 (KF_REPEAT)
-    lParam |= (transition << 31);               // Bit 31 (KF_UP)
+    lParam |= (prevState << 30);  // Bit 30 (KF_REPEAT)
+    lParam |= (transition << 31); // Bit 31 (KF_UP)
 
     return lParam;
 }
@@ -729,7 +729,7 @@ int J3DAPI wkernel_CreateWindow(HINSTANCE hInstance, int nShowCmd, LPCSTR lpWind
         lpWindowName,
         pMode->w,
         pMode->h,
-        SDL_WINDOW_OPENGL | SDL_WINDOW_HIGH_PIXEL_DENSITY
+        SDL_WINDOW_OPENGL | SDL_WINDOW_HIGH_PIXEL_DENSITY | SDL_WINDOW_ALWAYS_ON_TOP
     );
 
     if ( !wkernel_sdlWindow )
