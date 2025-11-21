@@ -526,7 +526,6 @@ int std3D_StartScene(void)
         {
             // error
         }
-        stdShader_SetActiveShader(std3D_defaultShader);
     }
 
     // glEnable(GL_SCISSOR_TEST);
@@ -599,6 +598,7 @@ static void std3D_DrawFrameBatch(void)
     {
         return;
     }
+    stdShader_SetActiveShader(std3D_defaultShader);
 
     glBindVertexArray(std3D_pVertexArrayObject);
 
@@ -725,14 +725,6 @@ void std3D_SetWireframeRenderState(void)
         STD3D_RS_UNKNOWN_400 | STD3D_RS_UNKNOWN_200);
     std3D_SetRenderState(rdstate);
     glBindTexture(GL_TEXTURE_2D, 0);
-
-    // HRESULT d3dres = IDirect3DDevice9_SetTexture(std3D_pD3Device, 0, NULL);
-    // if ( d3dres != D3D_OK )
-    // {
-    //     STDLOG_ERROR("Error %s SetTexture.\n", std3D_D3DGetStatus(d3dres));
-    //     return;
-    // }
-    //
     std3D_pD3DTex = NULL;
 }
 
