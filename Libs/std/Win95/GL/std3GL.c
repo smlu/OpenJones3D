@@ -30,7 +30,7 @@ static Std3DRenderState std3D_renderState = 0;
 static tSysTexture* std3D_pD3DTex         = NULL;
 
 static bool std3D_bAnisotropicFilter; // Added
-static bool std3D_bAutoGenMipmap; // Added
+static bool std3D_bAutoGenMipmap;     // Added
 static Std3DMipmapFilterType std3D_mipmapFilter = -1;
 
 static bool std3D_bRenderFog          = true;
@@ -103,9 +103,9 @@ static const DXStatus std3D_aD3DStatusTbl[30] = {
     { E_POINTER, "E_POINTER" }
 };
 
-const size_t std3D_maxVerticesPerDrawCall = 65536; // max vertices which can be drawn in one draw call
+const size_t std3D_maxVerticesPerDrawCall = 65536;  // max vertices which can be drawn in one draw call
 const size_t std3D_maxIndicesPerDrawCall  = 131072; // max indices which can be drawn in one draw call
-const size_t std3D_maxDrawCallGroupSize   = 16384; // max amount of draw calls which can be summarized in a group
+const size_t std3D_maxDrawCallGroupSize   = 16384;  // max amount of draw calls which can be summarized in a group
 
 // structure for caching a draw call
 typedef struct sGLDrawCall
@@ -365,6 +365,10 @@ static bool std3D_InitSystem(void)
 
 static void std3D_ReleaseSystemResources(void)
 {
+    glDeleteTextures(1, &std3D_pWhiteTexture->id);
+    STDFREE(std3D_pWhiteTexture);
+    std3D_pWhiteTexture = NULL;
+
     std3D_ResetTextureCache();
     std3D_ShutdownShaderSystem();
     std3D_ReleaseVertexBuffers();
@@ -520,7 +524,7 @@ int std3D_StartScene(void)
             (float)std3D_activeRect.x1, // x
             (float)std3D_activeRect.y1, // y
             (float)std3D_activeRect.x2, // width
-            (float)std3D_activeRect.y2 // height
+            (float)std3D_activeRect.y2  // height
         };
         if ( !stdShader_SetViewport(vp) )
         {
@@ -1031,6 +1035,8 @@ void J3DAPI std3D_ClearSystemTexture(tSystemTexture* pTex)
     {
         std3D_RemoveTextureFromCacheList(pTex);
         glDeleteTextures(1, &pTex->pCachedTexture->id);
+        STDFREE(pTex->pCachedTexture);
+        pTex->pCachedTexture = NULL;
     }
 
     memset(pTex, 0, sizeof(tSystemTexture));
@@ -1111,6 +1117,7 @@ void std3D_ResetTextureCache(void)
         {
             GLuint tex = pCurTex->pCachedTexture->id;
             glDeleteTextures(1, &tex);
+            STDFREE(pCurTex->pCachedTexture);
             pCurTex->pCachedTexture = NULL;
         }
 
@@ -1342,11 +1349,11 @@ static int std3D_BuildDeviceList(void)
         STD_STRCPY(pD3DDriver->deviceName, displayDevice.aDriverName);
 
         pD3DDriver->bHAL                         = displayDevice.bHAL;
-        pD3DDriver->bTexturePerspectiveSupported = TRUE; // Always supported in GL
-        pD3DDriver->hasZBuffer                   = TRUE; // Always supported in GL
-        pD3DDriver->bSqareOnlyTexture            = TRUE; // Always supported in GL
-        pD3DDriver->bAlphaTextureSupported       = TRUE; // Always supported in GL
-        pD3DDriver->bColorkeyTextureSupported    = TRUE; // // Always supported in GL
+        pD3DDriver->bTexturePerspectiveSupported = TRUE;  // Always supported in GL
+        pD3DDriver->hasZBuffer                   = TRUE;  // Always supported in GL
+        pD3DDriver->bSqareOnlyTexture            = TRUE;  // Always supported in GL
+        pD3DDriver->bAlphaTextureSupported       = TRUE;  // Always supported in GL
+        pD3DDriver->bColorkeyTextureSupported    = TRUE;  // // Always supported in GL
         pD3DDriver->bStippledShadeSupported      = FALSE; // ?
         pD3DDriver->minTexWidth                  = 1;
         pD3DDriver->minTexHeight                 = 1;
@@ -1481,7 +1488,8 @@ int J3DAPI std3D_PurgeTextureCache(size_t size)
     {
         if ( pCacheTexture->textureSize == size )
         {
-            // IDirect3DTexture9_Release(pCacheTexture->pCachedTexture);
+            glDeleteTextures(1, &pCacheTexture->pCachedTexture->id);
+            STDFREE(pCacheTexture->pCachedTexture);
             pCacheTexture->pCachedTexture = NULL;
             std3D_RemoveTextureFromCacheList(pCacheTexture);
             return 1;
@@ -1496,7 +1504,8 @@ int J3DAPI std3D_PurgeTextureCache(size_t size)
         {
             if ( pCacheTexture->pCachedTexture )
             {
-                // IDirect3DTexture9_Release(pCacheTexture->pCachedTexture);
+                glDeleteTextures(1, &pCacheTexture->pCachedTexture->id);
+                STDFREE(pCacheTexture->pCachedTexture);
             }
             pCacheTexture->pCachedTexture = NULL;
             purgedBytes += pCacheTexture->textureSize;
@@ -1691,6 +1700,9 @@ bool std3D_InitVertexBuffers(GLuint* vbo, GLuint* ibo, GLuint* vao)
 
 void std3D_ReleaseVertexBuffers(void)
 {
+    STDFREE(std3D_frameBatch.verts);
+    STDFREE(std3D_frameBatch.indices);
+    STDFREE(std3D_frameBatch.draws);
     if ( std3D_pVertexBufferOpaque )
     {
         glDeleteBuffers(1, &std3D_pVertexBufferOpaque);
