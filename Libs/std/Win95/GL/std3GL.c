@@ -31,7 +31,9 @@ static tSysTexture* std3D_pD3DTex         = NULL;
 
 static bool std3D_bAnisotropicFilter; // Added
 static bool std3D_bAutoGenMipmap;     // Added
+
 static Std3DMipmapFilterType std3D_mipmapFilter = -1;
+static GLfloat std3D_maxAnisoLevel              = 0.0f;
 
 static bool std3D_bRenderFog          = true;
 static bool std3D_bFogTable           = false;
@@ -299,12 +301,15 @@ static bool std3D_InitSystem(void)
     }
 
     std3D_bAnisotropicFilter = stdConfig_GetBool(STD3D_CFG_ANISOTROPICFILTER, true);
-    if ( std3D_bAnisotropicFilter &&
-        !std3D_pCurDevice->bAnisotropicFilteringSupported )
+    if ( std3D_bAnisotropicFilter && !std3D_pCurDevice->bAnisotropicFilteringSupported )
     {
         STDLOG_WARNING(
             "Warning: Anisotropic filtering disabled, no device support!\n");
         std3D_bAutoGenMipmap = false;
+    }
+    else
+    {
+        glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &std3D_maxAnisoLevel);
     }
 
     if ( !std3D_CreateViewport() )
@@ -818,21 +823,14 @@ void J3DAPI std3D_SetRenderState(Std3DRenderState rdflags)
     {
         glSamplerParameteri(std3D_activeSampler, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
         glSamplerParameteri(std3D_activeSampler, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        // if ((rdflags & STD3D_RS_TEXFILTER_ANISOTROPIC) &&
-        // std3D_bAnisotropicFilter) {
-        //     GLfloat maxAniso = 0.0f;
-        //     glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY, &maxAniso);
-        //     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY, maxAniso);
-        //     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
-        //     GL_LINEAR_MIPMAP_LINEAR); glTexParameteri(GL_TEXTURE_2D,
-        //     GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        // } else {
-        //     // zurück zu bilinear
-        //     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY, 1.0f);
-        //     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
-        //     GL_LINEAR_MIPMAP_LINEAR); glTexParameteri(GL_TEXTURE_2D,
-        //     GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        // }
+        if ( (rdflags & STD3D_RS_TEXFILTER_ANISOTROPIC) != 0 && std3D_bAnisotropicFilter )
+        {
+            glSamplerParameterf(std3D_activeSampler, GL_TEXTURE_MAX_ANISOTROPY_EXT, std3D_maxAnisoLevel);
+        }
+        else
+        {
+            glSamplerParameterf(std3D_activeSampler, GL_TEXTURE_MAX_ANISOTROPY_EXT, 1.0f);
+        }
     }
     if ( (std3D_renderState & STD3D_RS_TEXFILTER_BILINEAR) !=
         (rdflags & STD3D_RS_TEXFILTER_BILINEAR) )
@@ -1306,9 +1304,7 @@ static int std3D_BuildDeviceList(void)
         return 0;
     }
 
-    for ( size_t i = 0;
-          i < numDisplayDevices && std3D_numDevices < STD_ARRAYLEN(std3D_aDevices);
-          ++i )
+    for ( size_t i = 0; i < numDisplayDevices && std3D_numDevices < STD_ARRAYLEN(std3D_aDevices); ++i )
     {
         StdDisplayDevice displayDevice = { 0 };
         if ( stdDisplay_GetDevice(i, &displayDevice) )
@@ -1343,7 +1339,7 @@ static int std3D_BuildDeviceList(void)
 
         pD3DDriver->maxTexWidth                    = maxTextureSize;
         pD3DDriver->maxTexHeight                   = maxTextureSize;
-        pD3DDriver->bAnisotropicFilteringSupported = FALSE; // TODO: change once anistropic filtering is implemented
+        pD3DDriver->bAnisotropicFilteringSupported = GLAD_GL_EXT_texture_filter_anisotropic;
         pD3DDriver->bMipmapAutoGenSupported        = TRUE;
 
         pD3DDriver->bAlphaBlendSupported = TRUE;
