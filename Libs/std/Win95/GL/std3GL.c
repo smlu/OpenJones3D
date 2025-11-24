@@ -173,10 +173,6 @@ void std3D_ReleaseVertexBuffers(void);
 bool std3D_InitShaderSystem(void);
 void std3D_ShutdownShaderSystem(void);
 
-
-static int std3D_DrawIndexedPrimitiveUP(GLenum primType, const D3DTLVERTEX* aVerts, size_t numVerts,
-                                        LPWORD aIndices, size_t numIndices);
-
 static void std3D_DrawFrameBatch(void);
 static bool std3D_EnsureDrawCapacity(size_t extraVerts, size_t extraIndices);
 
@@ -336,7 +332,7 @@ static bool std3D_InitSystem(void)
 
     glGenSamplers(1, &std3D_activeSampler);
 
-    if ( std3D_bUseBuffers && !std3D_InitVertexBuffers(&std3D_pVertexBufferOpaque, &std3D_pIndexBuffer, &std3D_pVertexArrayObject) )
+    if ( !std3D_InitVertexBuffers(&std3D_pVertexBufferOpaque, &std3D_pIndexBuffer, &std3D_pVertexArrayObject) )
     {
         return false;
     }
@@ -552,7 +548,7 @@ int std3D_StartScene(void)
 
 void std3D_EndScene(void)
 {
-    if ( std3D_bUseBuffers && std3D_frameBatch.drawCount > 0 )
+    if ( std3D_frameBatch.drawCount > 0 )
     {
         std3D_DrawFrameBatch();
     }
@@ -605,15 +601,44 @@ static void std3D_DrawFrameBatch(void)
     }
     stdShader_SetActiveShader(std3D_defaultShader);
 
-    glBindVertexArray(std3D_pVertexArrayObject);
+    if ( std3D_bUseBuffers )
+    {
+        glBindVertexArray(std3D_pVertexArrayObject);
 
-    // Upload vertex data
-    glBindBuffer(GL_ARRAY_BUFFER, std3D_pVertexBufferOpaque);
-    glBufferData(GL_ARRAY_BUFFER, std3D_frameBatch.vertCount * sizeof(D3DTLVERTEX), std3D_frameBatch.verts, GL_STREAM_DRAW);
+        // Upload vertex data
+        glBindBuffer(GL_ARRAY_BUFFER, std3D_pVertexBufferOpaque);
+        glBufferData(GL_ARRAY_BUFFER, std3D_frameBatch.vertCount * sizeof(D3DTLVERTEX), std3D_frameBatch.verts, GL_STREAM_DRAW);
 
-    // Upload index data;
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, std3D_pIndexBuffer);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, std3D_frameBatch.indexCount * sizeof(GLushort), std3D_frameBatch.indices, GL_STREAM_DRAW);
+        // Upload index data;
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, std3D_pIndexBuffer);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, std3D_frameBatch.indexCount * sizeof(GLushort), std3D_frameBatch.indices, GL_STREAM_DRAW);
+    }
+    else
+    {
+        glBindVertexArray(0);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+        const GLsizei stride = sizeof(D3DTLVERTEX);
+        D3DTLVERTEX* aVerts  = std3D_frameBatch.verts;
+
+        glEnableVertexAttribArray(0); // position
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, &aVerts[0].sx);
+
+        glEnableVertexAttribArray(1); // rhw
+        glVertexAttribPointer(1, 1, GL_FLOAT, GL_FALSE, stride, &aVerts[0].rhw);
+
+        glEnableVertexAttribArray(2); // diffuse color
+        glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, GL_TRUE, stride,
+                              &aVerts[0].color);
+
+        glEnableVertexAttribArray(3); // specular
+        glVertexAttribPointer(3, 4, GL_UNSIGNED_BYTE, GL_TRUE, stride, &aVerts[0].specular);
+
+        glEnableVertexAttribArray(4); // texcoords
+        glVertexAttribPointer(4, 2, GL_FLOAT, GL_FALSE, stride, &aVerts[0].tu);
+    }
+
 
     // fire draw calls
     for ( size_t i = 0; i < std3D_frameBatch.drawCount; i++ )
@@ -637,8 +662,15 @@ static void std3D_DrawFrameBatch(void)
         }
         std3D_SetRenderState(dc->rdflags);
 
-        const void* indexPtr = (const void*)(dc->firstIndex * sizeof(GLushort));
-        glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_SHORT, indexPtr);
+        if ( std3D_bUseBuffers )
+        {
+            const void* indexPtr = (const void*)(dc->firstIndex * sizeof(GLushort));
+            glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_SHORT, indexPtr);
+        }
+        else
+        {
+            glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_SHORT, &std3D_frameBatch.indices[dc->firstIndex]);
+        }
     }
 
     //clear
@@ -665,63 +697,10 @@ void J3DAPI std3D_DrawRenderList(tSysTexture* pTex, Std3DRenderState rdflags, LP
         return;
     }
 
-    if ( std3D_bUseBuffers )
+    if ( !std3D_CacheDrawCall(pTex, rdflags, aVerts, numVerts, aIndices, numIndices) )
     {
-        if ( !std3D_CacheDrawCall(pTex, rdflags, aVerts, numVerts, aIndices, numIndices) )
-        {
-            // draw failed
-        }
-        return;
+        // draw failed
     }
-
-
-    // Set texture
-    if ( pTex != std3D_pD3DTex )
-    {
-        stdShader_SetTexture(std3D_defaultShader, pTex->id);
-        std3D_pD3DTex = pTex;
-    }
-
-    std3D_SetRenderState(rdflags);
-
-    std3D_DrawIndexedPrimitiveUP(GL_TRIANGLES, aVerts, numVerts, aIndices, numIndices);
-}
-
-static int std3D_DrawIndexedPrimitiveUP(GLenum primType, const D3DTLVERTEX* aVerts, size_t numVerts, LPWORD aIndices, size_t numIndices)
-{
-    if ( !aVerts || !aIndices || numIndices == 0 )
-    {
-        STDLOG_ERROR("DrawUP: invalid vertex/index pointers or counts\n");
-        return 0;
-    }
-
-    // binding empty buffers is required to make the rendering work
-    glBindVertexArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-    const GLsizei stride = sizeof(D3DTLVERTEX);
-
-    glEnableVertexAttribArray(0); // position
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, &aVerts[0].sx);
-
-    glEnableVertexAttribArray(1); // rhw
-    glVertexAttribPointer(1, 1, GL_FLOAT, GL_FALSE, stride, &aVerts[0].rhw);
-
-    glEnableVertexAttribArray(2); // diffuse color
-    glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, GL_TRUE, stride,
-                          &aVerts[0].color);
-
-    glEnableVertexAttribArray(3); // specular
-    glVertexAttribPointer(3, 4, GL_UNSIGNED_BYTE, GL_TRUE, stride, &aVerts[0].specular);
-
-    glEnableVertexAttribArray(4); // texcoords
-    glVertexAttribPointer(4, 2, GL_FLOAT, GL_FALSE, stride, &aVerts[0].tu);
-
-    GLsizei indexCount = (GLsizei)numIndices;
-    glDrawElements(primType, indexCount, GL_UNSIGNED_SHORT, aIndices);
-
-    return 1;
 }
 
 void std3D_SetWireframeRenderState(void)
