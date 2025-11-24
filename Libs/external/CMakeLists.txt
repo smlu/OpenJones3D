@@ -40,6 +40,8 @@ if (J3D_OPENGL)
     endif()
 
     set(GLAD_API "gl:compatibility=3.3")
+    # comma seperated list for extensions
+    set(GLAD_EXTENSIONS "GL_EXT_texture_filter_anisotropic")
     set(GLAD_DIR "${CMAKE_SOURCE_DIR}/Libs/external/glad")
     set(GLAD_GENERATED_DIR "${CMAKE_SOURCE_DIR}/Libs/external/glad/build")
 
@@ -55,12 +57,25 @@ if (J3D_OPENGL)
 
     execute_process(
             COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${GLAD_DIR}
-            ${Python3_EXECUTABLE} -m glad --api=${GLAD_API} --out-path ${GLAD_GENERATED_DIR}
+            ${Python3_EXECUTABLE} -m glad -h
             RESULT_VARIABLE _glad_result
             OUTPUT_VARIABLE _glad_out
             ERROR_VARIABLE _glad_err
     )
 
+    if(NOT _glad_result EQUAL 0)
+        message(FATAL_ERROR "GLAD generation failed:\n${_glad_err}")
+    else()
+        message(STATUS "GLAD help:\n${_glad_out}")
+    endif()
+
+    execute_process(
+            COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${GLAD_DIR}
+            ${Python3_EXECUTABLE} -m glad --api=${GLAD_API} --extensions ${GLAD_EXTENSIONS} --out-path ${GLAD_GENERATED_DIR}
+            RESULT_VARIABLE _glad_result
+            OUTPUT_VARIABLE _glad_out
+            ERROR_VARIABLE _glad_err
+    )
 
     if(NOT _glad_result EQUAL 0)
         message(FATAL_ERROR "GLAD generation failed:\n${_glad_err}")
