@@ -146,12 +146,14 @@ static GLuint std3D_pVertexArrayObject  = 0;
 static const size_t std3D_vbSize        = STD3D_VERTBUFFERSIZE;
 static size_t std3D_vbOffset            = 0;
 static GLuint std3D_pVertexBufferOpaque = 0;
+static D3DTLVERTEX* std3D_pVertexData   = NULL;
 
 static const size_t std3D_ibSize            = STD3D_VERTBUFFERSIZE * 3;
 static size_t std3D_ibOffset                = 0;
 static GLuint std3D_pIndexBuffer            = 0;
 static size_t std3D_numOpaqueDrawCalls      = 0;
 static size_t std3D_numTransparentDrawCalls = 0;
+static GLushort* std3D_pIndexData           = NULL;
 
 static GLuint std3D_activeSampler = 0;
 
@@ -177,6 +179,7 @@ void std3D_ShutdownShaderSystem(void);
 
 static void std3D_DrawFrameBatch(void);
 static bool std3D_EnsureDrawCapacity(size_t extraVerts, size_t extraIndices);
+static void std3D_MapVertexBuffers(void);
 
 void std3D_InstallHooks(void)
 {
@@ -517,6 +520,10 @@ size_t std3D_GetNumTextureFormats(void)
 
 int std3D_StartScene(void)
 {
+    if ( std3D_bUseBuffers )
+    {
+        std3D_MapVertexBuffers();
+    }
     glBindSampler(1, std3D_activeSampler);
     ++std3D_frameCount;
     if ( std3D_bShadersActive )
@@ -571,6 +578,7 @@ int std3D_CacheDrawCall(tSysTexture* pTex, Std3DRenderState rdflags, LPD3DTLVERT
     if ( !std3D_EnsureDrawCapacity(numVerts, numIndices) )
     {
         std3D_DrawFrameBatch();
+        std3D_MapVertexBuffers();
     }
 
     size_t baseVertex = std3D_frameBatch.vertCount;
@@ -612,13 +620,17 @@ static void std3D_DrawFrameBatch(void)
 
         // Upload vertex data
         glBindBuffer(GL_ARRAY_BUFFER, std3D_pVertexBufferOpaque);
-        glBufferData(GL_ARRAY_BUFFER, std3D_maxVerticesPerDrawCall * sizeof(D3DTLVERTEX), NULL, GL_DYNAMIC_DRAW);
-        glBufferSubData(GL_ARRAY_BUFFER, 0, std3D_frameBatch.vertCount * sizeof(D3DTLVERTEX), std3D_frameBatch.verts);
+        glUnmapBuffer(GL_ARRAY_BUFFER);
+        // glBufferData(GL_ARRAY_BUFFER, std3D_maxVerticesPerDrawCall * sizeof(D3DTLVERTEX), NULL, GL_DYNAMIC_DRAW);
+        // glBufferSubData(GL_ARRAY_BUFFER, 0, std3D_frameBatch.vertCount * sizeof(D3DTLVERTEX), std3D_frameBatch.verts);
+
 
         // Upload index data;
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, std3D_pIndexBuffer);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, std3D_maxIndicesPerDrawCall * sizeof(GLushort), NULL, GL_DYNAMIC_DRAW);
-        glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, std3D_frameBatch.indexCount * sizeof(GLushort), std3D_frameBatch.indices);
+        glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
+
+        // glBufferData(GL_ELEMENT_ARRAY_BUFFER, std3D_maxIndicesPerDrawCall * sizeof(GLushort), NULL, GL_DYNAMIC_DRAW);
+        // glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, std3D_frameBatch.indexCount * sizeof(GLushort), std3D_frameBatch.indices);
     }
     else
     {
@@ -1631,9 +1643,9 @@ void J3DAPI std3D_SetFindAllDevices(int bFindAll)
 bool std3D_InitVertexBuffers(GLuint* vbo, GLuint* ibo, GLuint* vao)
 {
     memset(&std3D_frameBatch, 0, sizeof(std3D_frameBatch));
-    std3D_frameBatch.verts   = STDMALLOC(std3D_maxVerticesPerDrawCall * sizeof(D3DTLVERTEX));
-    std3D_frameBatch.indices = STDMALLOC(std3D_maxIndicesPerDrawCall * sizeof(GL_SHORT));
-    std3D_frameBatch.draws   = STDMALLOC(std3D_maxDrawCallGroupSize * sizeof(GLDrawCall));
+    // std3D_frameBatch.verts   = STDMALLOC(std3D_maxVerticesPerDrawCall * sizeof(D3DTLVERTEX));
+    // std3D_frameBatch.indices = STDMALLOC(std3D_maxIndicesPerDrawCall * sizeof(GL_SHORT));
+    std3D_frameBatch.draws = STDMALLOC(std3D_maxDrawCallGroupSize * sizeof(GLDrawCall));
 
     glGenVertexArrays(1, vao);
     glBindVertexArray(*vao);
@@ -1671,10 +1683,19 @@ bool std3D_InitVertexBuffers(GLuint* vbo, GLuint* ibo, GLuint* vao)
     return true;
 }
 
+void std3D_MapVertexBuffers(void)
+{
+    glBindBuffer(GL_ARRAY_BUFFER, std3D_pVertexBufferOpaque);
+    std3D_frameBatch.verts = glMapBufferRange(GL_ARRAY_BUFFER, 0, std3D_maxVerticesPerDrawCall * sizeof(D3DTLVERTEX), GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, std3D_pIndexBuffer);
+    std3D_frameBatch.indices = glMapBufferRange(GL_ELEMENT_ARRAY_BUFFER, 0, std3D_maxIndicesPerDrawCall * sizeof(GL_SHORT), GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
+}
+
 void std3D_ReleaseVertexBuffers(void)
 {
-    STDFREE(std3D_frameBatch.verts);
-    STDFREE(std3D_frameBatch.indices);
+    // STDFREE(std3D_frameBatch.verts);
+    // STDFREE(std3D_frameBatch.indices);
     STDFREE(std3D_frameBatch.draws);
     if ( std3D_pVertexBufferOpaque )
     {
