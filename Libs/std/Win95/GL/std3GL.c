@@ -581,7 +581,7 @@ int std3D_CacheDrawCall(tSysTexture* pTex, Std3DRenderState rdflags, LPD3DTLVERT
     std3D_frameBatch.vertCount += numVerts;
 
     // paste new indices
-    memcpy(&std3D_frameBatch.indices[firstIndex], aIndices, numIndices * sizeof(WORD));
+    // memcpy(&std3D_frameBatch.indices[firstIndex], aIndices, numIndices * sizeof(WORD));
     for ( size_t i = 0; i < numIndices; i++ )
     {
         std3D_frameBatch.indices[firstIndex + i] = aIndices[i] + baseVertex;
@@ -612,11 +612,13 @@ static void std3D_DrawFrameBatch(void)
 
         // Upload vertex data
         glBindBuffer(GL_ARRAY_BUFFER, std3D_pVertexBufferOpaque);
-        glBufferData(GL_ARRAY_BUFFER, std3D_frameBatch.vertCount * sizeof(D3DTLVERTEX), std3D_frameBatch.verts, GL_STREAM_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, std3D_maxVerticesPerDrawCall * sizeof(D3DTLVERTEX), NULL, GL_DYNAMIC_DRAW);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, std3D_frameBatch.vertCount * sizeof(D3DTLVERTEX), std3D_frameBatch.verts);
 
         // Upload index data;
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, std3D_pIndexBuffer);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, std3D_frameBatch.indexCount * sizeof(GLushort), std3D_frameBatch.indices, GL_STREAM_DRAW);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, std3D_maxIndicesPerDrawCall * sizeof(GLushort), NULL, GL_DYNAMIC_DRAW);
+        glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, std3D_frameBatch.indexCount * sizeof(GLushort), std3D_frameBatch.indices);
     }
     else
     {
@@ -628,20 +630,17 @@ static void std3D_DrawFrameBatch(void)
         D3DTLVERTEX* aVerts  = std3D_frameBatch.verts;
 
         glEnableVertexAttribArray(0); // position
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, &aVerts[0].sx);
+        glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, stride, &aVerts[0].sx);
 
-        glEnableVertexAttribArray(1); // rhw
-        glVertexAttribPointer(1, 1, GL_FLOAT, GL_FALSE, stride, &aVerts[0].rhw);
-
-        glEnableVertexAttribArray(2); // diffuse color
-        glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, GL_TRUE, stride,
+        glEnableVertexAttribArray(1); // diffuse color
+        glVertexAttribPointer(1, 4, GL_UNSIGNED_BYTE, GL_TRUE, stride,
                               &aVerts[0].color);
 
-        glEnableVertexAttribArray(3); // specular
-        glVertexAttribPointer(3, 4, GL_UNSIGNED_BYTE, GL_TRUE, stride, &aVerts[0].specular);
+        glEnableVertexAttribArray(2); // specular
+        glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, GL_TRUE, stride, &aVerts[0].specular);
 
-        glEnableVertexAttribArray(4); // texcoords
-        glVertexAttribPointer(4, 2, GL_FLOAT, GL_FALSE, stride, &aVerts[0].tu);
+        glEnableVertexAttribArray(3); // texcoords
+        glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, stride, &aVerts[0].tu);
     }
 
 
@@ -684,6 +683,7 @@ static void std3D_DrawFrameBatch(void)
     std3D_frameBatch.drawCount  = 0;
 
     glBindVertexArray(0);
+    glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 static bool std3D_EnsureDrawCapacity(size_t extraVerts, size_t extraIndices)
@@ -1640,28 +1640,25 @@ bool std3D_InitVertexBuffers(GLuint* vbo, GLuint* ibo, GLuint* vao)
 
     glGenBuffers(1, vbo);
     glBindBuffer(GL_ARRAY_BUFFER, *vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(D3DTLVERTEX), NULL, GL_STREAM_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, std3D_maxVerticesPerDrawCall * sizeof(D3DTLVERTEX), NULL, GL_DYNAMIC_DRAW);
 
     glGenBuffers(1, ibo);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, *ibo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLushort), NULL, GL_STREAM_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, std3D_maxIndicesPerDrawCall * sizeof(GL_SHORT), NULL, GL_DYNAMIC_DRAW);
 
     const GLsizei stride = sizeof(D3DTLVERTEX);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(D3DTLVERTEX, sx));
+    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(D3DTLVERTEX, sx));
     glEnableVertexAttribArray(0);
 
-    glVertexAttribPointer(1, 1, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(D3DTLVERTEX, rhw));
+    glVertexAttribPointer(1, 4, GL_UNSIGNED_BYTE, GL_TRUE, stride, (void*)offsetof(D3DTLVERTEX, color));
     glEnableVertexAttribArray(1);
 
-    glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, GL_TRUE, stride, (void*)offsetof(D3DTLVERTEX, color));
+    glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, GL_TRUE, stride, (void*)offsetof(D3DTLVERTEX, specular));
     glEnableVertexAttribArray(2);
 
-    glVertexAttribPointer(3, 4, GL_UNSIGNED_BYTE, GL_TRUE, stride, (void*)offsetof(D3DTLVERTEX, specular));
+    glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(D3DTLVERTEX, tu));
     glEnableVertexAttribArray(3);
-
-    glVertexAttribPointer(4, 2, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(D3DTLVERTEX, tu));
-    glEnableVertexAttribArray(4);
 
     glBindVertexArray(0);
     GLenum err = glGetError();
