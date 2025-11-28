@@ -117,23 +117,11 @@ static tDisplayDevicePostResetCallback stdDisplay_pfDevicePostResetCallback = NU
 static tDisplayDeviceReleaseCallback stdDisplay_pfDeviceReleaseCallback     = NULL;
 
 // MSAA vars
-static bool stdDisplay_bMSAAEnabled       = false;
-static DWORD stdDisplay_msaaSampleQuality = 0;
-static int stdDisplay_msaaSampleCount     = 0;
+static bool stdDisplay_bMSAAEnabled   = false;
+static int stdDisplay_msaaSampleCount = 0;
 
 static GLShaderProgram* stdDisplay_fboShader = NULL;
 static GLuint stdDisplay_fullscreenVao       = 0;
-
-enum GLMultiSample
-{
-    GL_MULTISAMPLE_NONE       = 0,
-    GL_MULTISAMPLE_2_SAMPLES  = 2,
-    GL_MULTISAMPLE_4_SAMPLES  = 4,
-    GL_MULTISAMPLE_8_SAMPLES  = 8,
-    GL_MULTISAMPLE_16_SAMPLES = 16,
-};
-
-static enum GLMultiSample stdDisplay_msaaSampleType = GL_MULTISAMPLE_NONE;
 
 
 // DirectX 9 status table - simplified version of common errors
@@ -295,145 +283,25 @@ void stdDisplay_ResetGlobals(void)
     memset(&stdDisplay_g_backBuffer, 0, sizeof(stdDisplay_g_backBuffer));
 }
 
-static bool J3DAPI stdDisplay_CheckMSAASupport(enum GLMultiSample sampleType, DWORD* pQualityLevels) //checked
-{
-    if ( !stdWin95_GetGLContext() )
-    {
-        return false;
-    }
-
-    GLint maxSamples = 0;
-#ifndef GL_MAX_SAMPLES
-#define GL_MAX_SAMPLES 0x8D57
-#endif
-    glGetIntegerv(GL_MAX_SAMPLES, &maxSamples);
-    if ( pQualityLevels ) *pQualityLevels = (maxSamples > 0 ? 1 : 0);
-    return (sampleType > 0 && sampleType <= maxSamples);
-
-    //alternative in case this doesn't work:
-    //
-    //     static bool J3DAPI stdDisplay_CheckMSAA_GL_DefaultFB(int requestedSamples)
-    //     {
-    //         // Set Attributes
-    //         SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, requestedSamples > 0 ? 1 : 0);
-    //         SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, requestedSamples);
-    //
-    //         // create hidden window
-    //         SDL_Window* w = SDL_CreateWindow("msaa-probe", 320, 200, SDL_WINDOW_OPENGL | SDL_WINDOW_HIDDEN);
-    //         if (!w) return false;
-    //         SDL_GLContext c = SDL_GL_CreateContext(w);
-    //         if (!c) { SDL_DestroyWindow(w); return false; }
-    //
-    //         // test is msaa samples are supported
-    //         int buffers = 0, samples = 0;
-    //         SDL_GL_GetAttribute(SDL_GL_MULTISAMPLEBUFFERS, &buffers);
-    //         SDL_GL_GetAttribute(SDL_GL_MULTISAMPLESAMPLES, &samples);
-    //
-    //         SDL_GL_DestroyContext(c);
-    //         SDL_DestroyWindow(w);
-    //
-    //         return (buffers >= 1 && samples >= requestedSamples);
-    //     }
-}
-
 static void stdDisplay_InitMSAASettings(void) //checked
 {
     // Read MSAA settings from registry/config
     stdDisplay_bMSAAEnabled    = stdConfig_GetBool(STD3D_CFG_MSAAENABLED, true);
     stdDisplay_msaaSampleCount = stdConfig_GetInt(STD3D_CFG_MSAASAMPLES, 16);
 
-    // Clamp sample count to valid values
-    if ( stdDisplay_msaaSampleCount < 2 )
-    {
-        stdDisplay_msaaSampleCount = 2;
-    }
-    else if ( stdDisplay_msaaSampleCount > 16 )
-    {
-        stdDisplay_msaaSampleCount = 16;
-    }
+    GLint maxSamples = 0;
+    glGetIntegerv(GL_MAX_SAMPLES, &maxSamples);
 
-    // Convert sample count to GL multisample type
-    // Change that later? Enum seems unneccessary, stdDisplay_msaaSampleCount should be enough to store
-    switch ( stdDisplay_msaaSampleCount )
+    if ( maxSamples <= 0 )
     {
-        case 2:
-            stdDisplay_msaaSampleType = GL_MULTISAMPLE_2_SAMPLES;
-            break;
-        case 4:
-            stdDisplay_msaaSampleType = GL_MULTISAMPLE_4_SAMPLES;
-            break;
-        case 8:
-            stdDisplay_msaaSampleType = GL_MULTISAMPLE_8_SAMPLES;
-            break;
-        case 16:
-            stdDisplay_msaaSampleType = GL_MULTISAMPLE_16_SAMPLES;
-            break;
-        default:
-            stdDisplay_msaaSampleType = GL_MULTISAMPLE_4_SAMPLES;
-            stdDisplay_msaaSampleCount = 4;
-            break;
+        stdDisplay_bMSAAEnabled = false;
     }
-
-    if ( !stdDisplay_bMSAAEnabled )
+    else if ( stdDisplay_msaaSampleCount > maxSamples )
     {
-        stdDisplay_msaaSampleType    = GL_MULTISAMPLE_NONE;
-        stdDisplay_msaaSampleQuality = 0;
+        stdDisplay_msaaSampleCount = maxSamples;
     }
 
     STDLOG_DEBUG("MSAA Settings: Enabled=%d, Samples=%d\n", stdDisplay_bMSAAEnabled, stdDisplay_msaaSampleCount);
-}
-
-static void stdDisplay_ValidateMSAASettings() //check
-{
-    if ( !stdDisplay_bMSAAEnabled )
-    {
-        stdDisplay_msaaSampleType    = GL_MULTISAMPLE_NONE;
-        stdDisplay_msaaSampleQuality = 0;
-        return;
-    }
-
-    DWORD qualityLevels = 0;
-
-    // Check if requested MSAA level is supported
-    if ( stdDisplay_CheckMSAASupport(stdDisplay_msaaSampleType, &qualityLevels) )
-    {
-        stdDisplay_msaaSampleQuality = qualityLevels > 0 ? qualityLevels - 1 : 0;
-        STDLOG_DEBUG("MSAA %dx supported with %d quality levels\n", stdDisplay_msaaSampleCount, qualityLevels);
-    }
-    else
-    {
-        // Fall back to lower MSAA levels
-        enum GLMultiSample fallbackTypes[] = {
-            GL_MULTISAMPLE_8_SAMPLES,
-            GL_MULTISAMPLE_4_SAMPLES,
-            GL_MULTISAMPLE_4_SAMPLES
-        };
-        int fallbackCounts[] = { 8, 4, 2 };
-
-        bool found = false;
-        for ( int i = 0; i < 3; i++ )
-        {
-            if ( stdDisplay_CheckMSAASupport(fallbackTypes[i], &qualityLevels) )
-            {
-                stdDisplay_msaaSampleType    = fallbackTypes[i];
-                stdDisplay_msaaSampleCount   = fallbackCounts[i];
-                stdDisplay_msaaSampleQuality = qualityLevels > 0 ? qualityLevels - 1 : 0;
-                found                        = true;
-                STDLOG_STATUS("MSAA fallback: Using %dx with %d quality levels\n", stdDisplay_msaaSampleCount,
-                              qualityLevels);
-                stdConfig_SetInt(STD3D_CFG_MSAASAMPLES, stdDisplay_msaaSampleCount);
-                break;
-            }
-        }
-
-        if ( !found )
-        {
-            STDLOG_WARNING("MSAA not supported, disabling\n");
-            stdDisplay_bMSAAEnabled      = false;
-            stdDisplay_msaaSampleType    = GL_MULTISAMPLE_NONE;
-            stdDisplay_msaaSampleQuality = 0;
-        }
-    }
 }
 
 int stdDisplay_Startup(void) //check
@@ -1131,7 +999,7 @@ int J3DAPI stdDisplay_CreateZBuffer(const tSysPixelFormat* pPixelFormat, int bSy
         return 1;
     }
 
-    //add depth buffer as rbo attachment to backbuffer fbo
+    //add depth buffer as texture attachment to backbuffer fbo
     stdShader_SetActiveTextureUnit(TU_DEPTH);
     tVSurface* surface = &stdDisplay_g_backBuffer.surface;
     glBindFramebuffer(GL_FRAMEBUFFER, surface->fbo);
@@ -1140,13 +1008,24 @@ int J3DAPI stdDisplay_CreateZBuffer(const tSysPixelFormat* pPixelFormat, int bSy
 
     uint32_t width  = stdDisplay_g_backBuffer.rasterInfo.width;
     uint32_t height = stdDisplay_g_backBuffer.rasterInfo.height;
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, width, height, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, NULL);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, surface->depthTex, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, surface->depthTex, 0);
+
+    if ( stdDisplay_bMSAAEnabled )
+    {
+        glBindFramebuffer(GL_FRAMEBUFFER, surface->msaaFbo);
+        glGenRenderbuffers(1, &surface->msaaDepthTex);
+        glBindRenderbuffer(GL_RENDERBUFFER, surface->msaaDepthTex);
+        glRenderbufferStorageMultisample(GL_RENDERBUFFER, stdDisplay_msaaSampleCount, GL_DEPTH24_STENCIL8, width, height);
+        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, surface->msaaDepthTex);
+    }
+
+
     stdShader_SetActiveTextureUnit(TU_DEFAULT);
 
 
@@ -1575,9 +1454,19 @@ int J3DAPI stdDisplay_InitBuffers(PDIRECT3DDEVICE9 pDevice, const StdVideoMode* 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, surface->colorTex, 0);
 
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-                           GL_TEXTURE_2D, surface->colorTex, 0);
+    if ( stdDisplay_bMSAAEnabled )
+    {
+        glGenFramebuffers(1, &surface->msaaFbo);
+        glBindFramebuffer(GL_FRAMEBUFFER, surface->msaaFbo);
+
+        glGenRenderbuffers(1, &surface->msaaColorTex);
+        glBindRenderbuffer(GL_RENDERBUFFER, surface->msaaColorTex);
+        glRenderbufferStorageMultisample(GL_RENDERBUFFER, stdDisplay_msaaSampleCount, GL_RGBA8, width, height);
+        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, surface->msaaColorTex);
+    }
+
 
     stdShader_SetActiveShader(stdDisplay_fboShader);
     GLint loc = glGetUniformLocation(stdDisplay_fboShader->handle, "sSceneTexture");
@@ -1702,7 +1591,7 @@ void stdDisplay_DisableVSync(bool bDisable)
         }
         else
         {
-            SDL_GL_SetSwapInterval(0);
+            SDL_GL_SetSwapInterval(1);
         }
 
         // if ( !stdDisplay_ResetDevice() )
@@ -1725,6 +1614,20 @@ int stdDisplay_Update(void) //check
     glBindVertexArray(stdDisplay_fullscreenVao);
     glDisable(GL_DEPTH_TEST);
 
+    tVSurface* backBufferSurface = &stdDisplay_g_backBuffer.surface;
+    uint32_t width               = stdDisplay_g_backBuffer.rasterInfo.width;
+    uint32_t height              = stdDisplay_g_backBuffer.rasterInfo.height;
+
+    if ( stdDisplay_bMSAAEnabled && !backBufferSurface->skipMSAA )
+    {
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, backBufferSurface->msaaFbo);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, backBufferSurface->fbo);
+        glBlitFramebuffer(0, 0, width, height, 0, 0, width, height, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+    }
+
+    backBufferSurface->skipMSAA = false;
+    //glBlitFramebuffer(0, 0, width, height, 0, 0, width, height, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+
     if ( stdDisplay_bUseSMAA )
     {
         stdSmaa_ApplySmaa();
@@ -1742,8 +1645,8 @@ int stdDisplay_Update(void) //check
 
     SDL_GL_SwapWindow(stdWin95_GetSDLWindow());
 
-    glBindFramebuffer(GL_FRAMEBUFFER, stdDisplay_g_backBuffer.surface.fbo);
-    glClear(GL_COLOR_BUFFER_BIT);
+    glBindFramebuffer(GL_FRAMEBUFFER, stdDisplay_g_backBuffer.surface.msaaFbo);
+    //glClear(GL_COLOR_BUFFER_BIT);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
     glViewport(0, 0, stdDisplay_g_backBuffer.rasterInfo.width, stdDisplay_g_backBuffer.rasterInfo.height);
@@ -2091,6 +1994,11 @@ void stdDisplay_UnlockBackBuffer(void) //checked
 {
     //upload written back buffer pixels to back buffer fbo texture
     tVSurface* surface = &stdDisplay_g_backBuffer.surface;
+    if ( stdDisplay_bMSAAEnabled )
+    {
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, surface->fbo);
+        surface->skipMSAA = true;
+    }
     stdShader_SetActiveTextureUnit(TU_SCENE);
     glBindTexture(GL_TEXTURE_2D, surface->colorTex);
     uint32_t height = stdDisplay_g_backBuffer.rasterInfo.height;
