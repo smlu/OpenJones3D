@@ -325,7 +325,7 @@ int stdDisplay_Startup(void) //check
         return 0;
     }
 
-    if ( !stdShader_Startup() || !stdDisplay_InitFBOShader() || !stdSmaa_InitShaders() )
+    if ( !stdShader_Startup() || !stdDisplay_InitFBOShader() )
     {
         STDLOG_ERROR("Error initializing shader system.\n");
         return 0;
@@ -1481,7 +1481,10 @@ int J3DAPI stdDisplay_InitBuffers(PDIRECT3DDEVICE9 pDevice, const StdVideoMode* 
         return 0;
     }
 
-    stdSmaa_InitFBOs(width, height);
+    if ( stdDisplay_bUseSMAA )
+    {
+        stdSmaa_InitFBOs(width, height);
+    }
 
     return 1;
 }
@@ -1489,11 +1492,30 @@ int J3DAPI stdDisplay_InitBuffers(PDIRECT3DDEVICE9 pDevice, const StdVideoMode* 
 
 void stdDisplay_ReleaseBuffers(void) // checked
 {
+    if ( stdDisplay_bUseSMAA )
+    {
+        stdSmaa_Reset();
+    }
+
     tVSurface* surface = &stdDisplay_g_backBuffer.surface;
     if ( !surface )
         return;
 
-    stdSmaa_Reset();
+    stdShader_SetActiveTextureUnit(0);
+    glDeleteFramebuffers(1, &surface->fbo);
+    glDeleteTextures(1, &surface->colorTex);
+    glDeleteTextures(1, &surface->depthTex);
+    stdShader_SetActiveTextureUnit(1);
+    surface->fbo      = 0;
+    surface->colorTex = 0;
+    surface->depthTex = 0;
+
+    if ( stdDisplay_bMSAAEnabled )
+    {
+        glDeleteFramebuffers(1, &surface->msaaFbo);
+        glDeleteRenderbuffers(1, &surface->msaaColorTex);
+        glDeleteRenderbuffers(1, &surface->msaaDepthTex);
+    }
 
     if ( stdDisplay_g_backBuffer.pPixels )
     {

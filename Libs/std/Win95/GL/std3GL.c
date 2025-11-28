@@ -1098,8 +1098,12 @@ void std3D_ResetTextureCache(void)
 {
     STDLOG_DEBUG("Clearing texture cache....\n");
 
-
-    glBindTexture(GL_TEXTURE_2D, 0);
+    if ( std3D_pWhiteTexture )
+    {
+        stdShader_SetTexture(std3D_defaultShader, std3D_pWhiteTexture->id);
+        glBindTexture(GL_TEXTURE_2D, std3D_pWhiteTexture->id);
+    }
+    //glBindTexture(GL_TEXTURE_2D, 0);
 
     tSystemTexture* pCurTex = std3D_pFirstTexCache;
     while ( pCurTex )

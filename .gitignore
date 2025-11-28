@@ -56,6 +56,7 @@ Build/*
 
 # Generated code
 Libs/j3dcore/j3d.h
+/Libs/std/Win95/GL/Shaders/stdGLSLShaders.c
 
 # External code
 Libs/external/DirectX61c/include/*
