@@ -427,6 +427,12 @@ typedef struct sVSurface
     GLuint fbo;
     GLuint colorTex;
     GLuint depthTex;
+
+    GLuint msaaFbo;
+    GLuint msaaColorTex;
+    GLuint msaaDepthTex;
+
+    bool skipMSAA;
 } tVSurface;
 #else
 typedef struct sVSurface
