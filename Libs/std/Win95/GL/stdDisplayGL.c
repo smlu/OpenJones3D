@@ -11,7 +11,11 @@
 #include <std/General/stdMemory.h>
 #include <std/General/stdUtil.h>
 #include <std/RTI/symbols.h>
+#include <std/Win95/GL/Shaders/SMAA/AreaTex.h>
+#include <std/Win95/GL/Shaders/SMAA/SearchTex.h>
+#include <rdroid/Engine/rdCamera.h>
 
+#include "Shaders/SMAA/stdSmaa.h"
 #include "wkernel/wkernel.h"
 
 
@@ -67,6 +71,7 @@ static bool stdDisplay_bModeSet    = false;
 static bool stdDisplay_bFullscreen = false;
 static bool stdDisplay_bNoSync     = false;
 static bool stdDisplay_bDeviceLost = false;
+static bool stdDisplay_bUseSMAA    = false; //currently not working correctly
 
 static GLCaps stdDisplay_deviceCaps;
 static int stdDisplay_windowWidth         = 0;
@@ -180,14 +185,14 @@ static int stdDisplay_InitFBOShader(void);
 
 static int stdDisplay_InitGDIBackbuffer(GdiBuffer* buffer, int w, int h)
 {
-    if ( g_gdi.hdc ) return 1; // schon da
+    if ( g_gdi.hdc ) return 1;
 
     BITMAPINFO bi              = { 0 };
     bi.bmiHeader.biSize        = sizeof(BITMAPINFOHEADER);
     bi.bmiHeader.biWidth       = w;
-    bi.bmiHeader.biHeight      = -h; // top-down
+    bi.bmiHeader.biHeight      = -h;
     bi.bmiHeader.biPlanes      = 1;
-    bi.bmiHeader.biBitCount    = 32; // BGRA8
+    bi.bmiHeader.biBitCount    = 32;
     bi.bmiHeader.biCompression = BI_RGB;
 
     HDC screen  = GetDC(NULL);
@@ -452,7 +457,7 @@ int stdDisplay_Startup(void) //check
         return 0;
     }
 
-    if ( !stdShader_Startup() || !stdDisplay_InitFBOShader() )
+    if ( !stdShader_Startup() || !stdDisplay_InitFBOShader() || !stdSmaa_InitShaders() )
     {
         STDLOG_ERROR("Error initializing shader system.\n");
         return 0;
@@ -1127,16 +1132,23 @@ int J3DAPI stdDisplay_CreateZBuffer(const tSysPixelFormat* pPixelFormat, int bSy
     }
 
     //add depth buffer as rbo attachment to backbuffer fbo
+    stdShader_SetActiveTextureUnit(TU_DEPTH);
     tVSurface* surface = &stdDisplay_g_backBuffer.surface;
     glBindFramebuffer(GL_FRAMEBUFFER, surface->fbo);
-    glGenRenderbuffers(1, &surface->depthRBO);
-    glBindRenderbuffer(GL_RENDERBUFFER, surface->depthRBO);
+    glGenTextures(1, &surface->depthTex);
+    glBindTexture(GL_TEXTURE_2D, surface->depthTex);
 
     uint32_t width  = stdDisplay_g_backBuffer.rasterInfo.width;
     uint32_t height = stdDisplay_g_backBuffer.rasterInfo.height;
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, surface->depthRBO);
-    glBindRenderbuffer(GL_RENDERBUFFER, 0);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, surface->depthTex, 0);
+    stdShader_SetActiveTextureUnit(TU_DEFAULT);
+
 
     return 0;
 }
@@ -1465,8 +1477,7 @@ static int J3DAPI stdDisplay_SetWindowMode(HWND hWnd, StdVideoMode* pDisplayMode
     wkernel_SetWindowSize(pDisplayMode->rasterInfo.width, pDisplayMode->rasterInfo.height);
     //SDL_SetWindowAlwaysOnTop(SDL_GL_GetCurrentWindow(), false);
 
-    return stdDisplay_InitBuffers(NULL, pDisplayMode, /*bWindowMode=*/
-                                  true, 1);
+    return stdDisplay_InitBuffers(NULL, pDisplayMode, /*bWindowMode=*/true, 1);
 }
 
 int J3DAPI stdDisplay_SetFullscreenMode(HWND hwnd, const StdVideoMode* pDisplayMode, size_t numBackBuffers)
@@ -1519,12 +1530,10 @@ int J3DAPI stdDisplay_SetFullscreenMode(HWND hwnd, const StdVideoMode* pDisplayM
     //SDL_SetWindowAlwaysOnTop(SDL_GL_GetCurrentWindow(), false);
     //SDL_RaiseWindow(SDL_GL_GetCurrentWindow());
 
-    return stdDisplay_InitBuffers(NULL, pDisplayMode, /*bWindowMode=*/
-                                  true, 1);
+    return stdDisplay_InitBuffers(NULL, pDisplayMode, /*bWindowMode=*/true, 1);
 }
 
-int J3DAPI stdDisplay_InitBuffers(PDIRECT3DDEVICE9 pDevice, const StdVideoMode* pDisplayMode, bool bWindowMode,
-                                  size_t numBuffers)
+int J3DAPI stdDisplay_InitBuffers(PDIRECT3DDEVICE9 pDevice, const StdVideoMode* pDisplayMode, bool bWindowMode, size_t numBuffers)
 {
     tVSurface* surface = &stdDisplay_g_backBuffer.surface;
     if ( surface->fbo > 0 )
@@ -1553,7 +1562,7 @@ int J3DAPI stdDisplay_InitBuffers(PDIRECT3DDEVICE9 pDevice, const StdVideoMode* 
     stdDisplay_g_backBuffer.rasterInfo.rowWidth = width;
     stdDisplay_g_backBuffer.rasterInfo.size     = stdDisplay_g_backBuffer.rasterInfo.rowSize;
 
-    stdShader_SetActiveTextureUnit(0);
+    stdShader_SetActiveTextureUnit(TU_SCENE);
     // generate fbo
     glGenFramebuffers(1, &surface->fbo);
     glBindFramebuffer(GL_FRAMEBUFFER, surface->fbo);
@@ -1562,8 +1571,8 @@ int J3DAPI stdDisplay_InitBuffers(PDIRECT3DDEVICE9 pDevice, const StdVideoMode* 
     glBindTexture(GL_TEXTURE_2D, surface->colorTex);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
@@ -1572,9 +1581,9 @@ int J3DAPI stdDisplay_InitBuffers(PDIRECT3DDEVICE9 pDevice, const StdVideoMode* 
 
     stdShader_SetActiveShader(stdDisplay_fboShader);
     GLint loc = glGetUniformLocation(stdDisplay_fboShader->handle, "sSceneTexture");
-    glUniform1i(loc, 0);
+    glUniform1i(loc, stdDisplay_bUseSMAA ? TU_SMAA_BLEND : TU_SCENE);
 
-    stdShader_SetActiveTextureUnit(1);
+    stdShader_SetActiveTextureUnit(TU_DEFAULT);
 
 
     if ( glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE )
@@ -1583,9 +1592,11 @@ int J3DAPI stdDisplay_InitBuffers(PDIRECT3DDEVICE9 pDevice, const StdVideoMode* 
         return 0;
     }
 
+    stdSmaa_InitFBOs(width, height);
 
     return 1;
 }
+
 
 void stdDisplay_ReleaseBuffers(void) // checked
 {
@@ -1593,14 +1604,7 @@ void stdDisplay_ReleaseBuffers(void) // checked
     if ( !surface )
         return;
 
-    stdShader_SetActiveTextureUnit(0);
-    glDeleteFramebuffers(1, &surface->fbo);
-    glDeleteTextures(1, &surface->colorTex);
-    glDeleteRenderbuffers(1, &surface->depthRBO);
-    stdShader_SetActiveTextureUnit(1);
-    surface->fbo      = 0;
-    surface->colorTex = 0;
-    surface->depthRBO = 0;
+    stdSmaa_Reset();
 
     if ( stdDisplay_g_backBuffer.pPixels )
     {
@@ -1698,7 +1702,7 @@ void stdDisplay_DisableVSync(bool bDisable)
         }
         else
         {
-            SDL_GL_SetSwapInterval(1);
+            SDL_GL_SetSwapInterval(0);
         }
 
         // if ( !stdDisplay_ResetDevice() )
@@ -1718,17 +1722,31 @@ int stdDisplay_Update(void) //check
     {
         return 1;
     }
+    glBindVertexArray(stdDisplay_fullscreenVao);
+    glDisable(GL_DEPTH_TEST);
+
+    if ( stdDisplay_bUseSMAA )
+    {
+        stdSmaa_ApplySmaa();
+    }
 
     const float* vp = stdDisplay_windowViewport;
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glViewport(vp[0], vp[1], vp[2], vp[3]);
-    glDisable(GL_DEPTH_TEST);
     stdShader_SetActiveShader(stdDisplay_fboShader);
-    glBindVertexArray(stdDisplay_fullscreenVao);
     glClear(GL_COLOR_BUFFER_BIT);
     glDisable(GL_BLEND);
 
     glDrawArrays(GL_TRIANGLES, 0, 3);
+
+
+    SDL_GL_SwapWindow(stdWin95_GetSDLWindow());
+
+    glBindFramebuffer(GL_FRAMEBUFFER, stdDisplay_g_backBuffer.surface.fbo);
+    glClear(GL_COLOR_BUFFER_BIT);
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_BLEND);
+    glViewport(0, 0, stdDisplay_g_backBuffer.rasterInfo.width, stdDisplay_g_backBuffer.rasterInfo.height);
 
     GLenum err = glGetError();
     if ( err != GL_NO_ERROR )
@@ -1736,14 +1754,6 @@ int stdDisplay_Update(void) //check
         STDLOG_ERROR("OpenGL error 0x%x when creating viewport.\n", err);
         return 0;
     }
-
-    // Zeige das Bild an
-    SDL_GL_SwapWindow(stdWin95_GetSDLWindow());
-
-    glBindFramebuffer(GL_FRAMEBUFFER, stdDisplay_g_backBuffer.surface.fbo);
-    glEnable(GL_DEPTH_TEST);
-    glEnable(GL_BLEND);
-    glViewport(0, 0, stdDisplay_g_backBuffer.rasterInfo.width, stdDisplay_g_backBuffer.rasterInfo.height);
 
     //STDLOG_DEBUG("Updated frame\n");
     return 0;
@@ -1838,6 +1848,7 @@ int J3DAPI stdDisplay_ColorFillSurface(tVBuffer* pBuffer, uint32_t dwFillColor, 
 int J3DAPI stdDisplay_BackBufferFill(uint32_t color, const StdRect* pRect)
 {
     glClear(GL_COLOR_BUFFER_BIT);
+    return 0;
 }
 
 int J3DAPI stdDisplay_SaveScreen(const char* pFilename)
@@ -2080,13 +2091,13 @@ void stdDisplay_UnlockBackBuffer(void) //checked
 {
     //upload written back buffer pixels to back buffer fbo texture
     tVSurface* surface = &stdDisplay_g_backBuffer.surface;
-    stdShader_SetActiveTextureUnit(0);
+    stdShader_SetActiveTextureUnit(TU_SCENE);
     glBindTexture(GL_TEXTURE_2D, surface->colorTex);
     uint32_t height = stdDisplay_g_backBuffer.rasterInfo.height;
     uint32_t width  = stdDisplay_g_backBuffer.rasterInfo.width;
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, stdDisplay_g_backBuffer.pPixels);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, GL_ONE);
-    stdShader_SetActiveTextureUnit(1);
+    stdShader_SetActiveTextureUnit(TU_DEFAULT);
     stdDisplay_backLockRef--;
 }
 

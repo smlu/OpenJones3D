@@ -1,10 +1,9 @@
 #version 330 compatibility
 
-layout(location = 0) in vec3 inPosition;
-layout(location = 1) in float inRHW;
-layout(location = 2) in vec4 inColor;      // actually BGRA
-layout(location = 3) in vec4 inSpecular;   // optional
-layout(location = 4) in vec2 inTexCoord;
+layout(location = 0) in vec4 inPosition;
+layout(location = 1) in vec4 inColor;      // actually BGRA
+layout(location = 2) in vec4 inSpecular;   // optional
+layout(location = 3) in vec2 inTexCoord;
 
 uniform vec4 viewPort;
 
@@ -35,7 +34,6 @@ void main() {
     vColor = inColor.bgra; // DX->GL Farbreihenfolge
     vTexCoord = inTexCoord;
 
-    vec4 clip = screenToClip(inPosition, inRHW);
-
+    vec4 clip = screenToClip(inPosition.xyz, inPosition.w);
     gl_Position = clip;
 }
