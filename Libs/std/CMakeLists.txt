@@ -38,6 +38,13 @@ elseif(J3D_DIRECTX9)
         "${SHADER_DIR}/*.hlsli"
     )
 elseif (J3D_OPENGL)
+    set(SHADER_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Win95/GL/Shaders")
+    include(Win95/Gl/Shaders/EmbedShaders.cmake)
+    embed_shaders("${SHADER_DIR}"
+            "${SHADER_DIR}/stdGLSLShaders")
+    #target_include_directories(std PRIVATE "${CMAKE_BINARY_DIR}/generated")
+    list(APPEND HEADERS "${SHADER_DIR}/stdGLSLShaders.h")
+    list(APPEND SOURCES "${SHADER_DIR}/stdGLSLShaders.c")
     remove_dx6_files()
     remove_dx9_files()
 endif()

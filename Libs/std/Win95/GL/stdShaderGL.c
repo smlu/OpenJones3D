@@ -7,6 +7,7 @@
 #include <std/General/stdHashtbl.h>
 #include <std/General/stdMemory.h>
 #include <std/Win95/stdShader.h>
+#include <std/Win95/GL/Shaders/stdGLSLShaders.h>
 
 #define MAX_SHADER_PROGRAMS 64
 
@@ -333,9 +334,11 @@ GLShaderProgram* stdShader_CompileAndCreate(const char* pName, const char* pVert
         return NULL;
     }
 
+    const char* vsrc = stdGLSLShaders_GetShader(pVertexShaderCode);
+    const char* fsrc = stdGLSLShaders_GetShader(pPixelShaderCode);
 
-    char* vsrc = stdShader_readGLSLFile(pVertexShaderCode);
-    char* fsrc = stdShader_readGLSLFile(pPixelShaderCode);
+    // char* vsrc = stdShader_readGLSLFile(pVertexShaderCode);
+    // char* fsrc = stdShader_readGLSLFile(pPixelShaderCode);
     if ( !vsrc || !fsrc )
     {
         if ( vsrc )
@@ -354,8 +357,8 @@ GLShaderProgram* stdShader_CompileAndCreate(const char* pName, const char* pVert
     GLuint vs = stdShader_compileShader(GL_VERTEX_SHADER, vsrc, pPixelShaderCode);
     GLuint fs = stdShader_compileShader(GL_FRAGMENT_SHADER, fsrc, pPixelShaderCode);
 
-    STDFREE(vsrc);
-    STDFREE(fsrc);
+    // STDFREE(vsrc);
+    // STDFREE(fsrc);
 
     if ( !vs || !fs )
     {

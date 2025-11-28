@@ -23,15 +23,15 @@ static GLuint stdSmaa_searchTex = 0;
 
 int stdSmaa_InitShaders(void)
 {
-    stdSmaa_pEdgeDetectionShader = stdShader_CompileAndCreate("smaa_edge", "C:\\Users\\morit\\Documents\\GitHub\\OpenJones3D\\Libs\\std\\Win95\\GL\\Shaders\\SMAA\\smaa-edges.vert",
-                                                              "C:\\Users\\morit\\Documents\\GitHub\\OpenJones3D\\Libs\\std\\Win95\\GL\\Shaders\\SMAA\\smaa-edges.frag");
+    stdSmaa_pEdgeDetectionShader = stdShader_CompileAndCreate("smaa_edge", "SMAA\\smaa-edges.vert",
+                                                              "SMAA\\smaa-edges.frag");
 
-    stdSmaa_pBlendingWeightShader = stdShader_CompileAndCreate("smaa_weight", "C:\\Users\\morit\\Documents\\GitHub\\OpenJones3D\\Libs\\std\\Win95\\GL\\Shaders\\SMAA\\smaa-weights.vert",
-                                                               "C:\\Users\\morit\\Documents\\GitHub\\OpenJones3D\\Libs\\std\\Win95\\GL\\Shaders\\SMAA\\smaa-weights.frag");
+    stdSmaa_pBlendingWeightShader = stdShader_CompileAndCreate("smaa_weight", "SMAA\\smaa-weights.vert",
+                                                               "SMAA\\smaa-weights.frag");
 
 
-    stdSmaa_pNeighborhoodBlendShader = stdShader_CompileAndCreate("smaa_blend", "C:\\Users\\morit\\Documents\\GitHub\\OpenJones3D\\Libs\\std\\Win95\\GL\\Shaders\\SMAA\\smaa-blend.vert",
-                                                                  "C:\\Users\\morit\\Documents\\GitHub\\OpenJones3D\\Libs\\std\\Win95\\GL\\Shaders\\SMAA\\smaa-blend.frag");
+    stdSmaa_pNeighborhoodBlendShader = stdShader_CompileAndCreate("smaa_blend", "SMAA\\smaa-blend.vert",
+                                                                  "SMAA\\smaa-blend.frag");
 
     if ( !stdSmaa_pEdgeDetectionShader || !stdSmaa_pBlendingWeightShader || !stdSmaa_pNeighborhoodBlendShader )
     {
