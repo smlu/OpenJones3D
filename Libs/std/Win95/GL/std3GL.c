@@ -524,7 +524,7 @@ int std3D_StartScene(void)
     {
         std3D_MapVertexBuffers();
     }
-    glBindSampler(1, std3D_activeSampler);
+    glBindSampler(TU_3D_DRAW, std3D_activeSampler);
     ++std3D_frameCount;
     if ( std3D_bShadersActive )
     {
@@ -569,7 +569,7 @@ void std3D_EndScene(void)
     std3D_pD3DTex            = NULL;
     glSamplerParameteri(std3D_activeSampler, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glSamplerParameteri(std3D_activeSampler, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glBindSampler(1, 0);
+    glBindSampler(TU_3D_DRAW, 0);
     stdShader_DisableFog();
 }
 
@@ -612,6 +612,7 @@ static void std3D_DrawFrameBatch(void)
     {
         return;
     }
+    stdShader_SetActiveTextureUnit(TU_3D_DRAW);
     stdShader_SetActiveShader(std3D_defaultShader);
 
     if ( std3D_bUseBuffers )

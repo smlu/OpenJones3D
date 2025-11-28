@@ -9,8 +9,6 @@
 #include <std/Win95/stdShader.h>
 
 #define MAX_SHADER_PROGRAMS 64
-#define STDSHADER_HANDLE_TO_INDEX(handle) ((handle) - 1)
-#define STDSHADER_INDEX_TO_HANDLE(index) ((index) + 1)
 
 static bool stdShader_bStartup = false;
 static bool stdShader_bOpen    = false;
@@ -23,7 +21,7 @@ static size_t stdShader_maxVsParams = 0;
 static GLShaderProgram stdShader_ShaderPrograms[MAX_SHADER_PROGRAMS];
 static size_t stdShader_shaderCount = 0;
 
-static int stdShader_activeTextureUnit = 0;
+static GLTextureUnit stdShader_activeTextureUnit = 0;
 
 static GLShaderProgram* stdShader_activeShader = NULL;
 
@@ -391,8 +389,9 @@ void J3DAPI stdShader_Free(GLShaderProgram* sh)
 
 void stdShader_SetTexture(GLShaderProgram* sh, GLuint tex)
 {
-    if ( stdShader_activeTextureUnit == 0 ) //unit 0 is reserved for framebuffer texture, so it's not allowed to change it.
+    if ( stdShader_activeTextureUnit != TU_3D_DRAW ) //unit 0 is reserved for framebuffer texture, so it's not allowed to change it.
     {
+        STDLOG_ERROR("Assigning texture is not allowed on this unit");
         return;
     }
     GLShaderProgram* currentProgram = stdShader_activeShader;
@@ -401,11 +400,11 @@ void stdShader_SetTexture(GLShaderProgram* sh, GLuint tex)
         stdShader_SetActiveShader(sh);
     }
     glBindTexture(GL_TEXTURE_2D, tex);
-    glUniform1i(glGetUniformLocation(sh->handle, "sTexture"), stdShader_activeTextureUnit);
+    glUniform1i(0, stdShader_activeTextureUnit);
     stdShader_SetActiveShader(currentProgram);
 }
 
-void stdShader_SetActiveTextureUnit(int unit)
+void stdShader_SetActiveTextureUnit(const GLTextureUnit unit)
 {
     glActiveTexture(GL_TEXTURE0 + unit);
     stdShader_activeTextureUnit = unit;

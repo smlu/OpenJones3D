@@ -73,6 +73,20 @@ typedef struct sSysPixelFormat
 } tSysPixelFormat;
 
 typedef GLTexture tSysTexture;
+
+typedef enum sTextureUnits
+{
+    TU_DEFAULT     = 0,
+    TU_SCENE       = 1,
+    TU_DEPTH       = 2,
+    TU_SMAA_EDGE   = 3,
+    TU_SMAA_WEIGHT = 4,
+    TU_SMAA_BLEND  = 5,
+    TU_SMAA_AREA   = 6,
+    TU_SMAA_SEARCH = 7,
+    TU_3D_DRAW     = 8
+} GLTextureUnit;
+
 #else
 typedef D3DFORMAT tSysPixelFormat;
 typedef IDirect3DTexture9 tSysTexture;
@@ -109,50 +123,50 @@ typedef struct sD3DTLVERTEX
 
 typedef enum eStdColorFormatType
 {
-    STDCOLOR_FORMAT_RGB = 0,
+    STDCOLOR_FORMAT_RGB            = 0,
     STDCOLOR_FORMAT_RGBA_1BITALPHA = 1, // e.g.: RGBA5551
-    STDCOLOR_FORMAT_RGBA = 2,
+    STDCOLOR_FORMAT_RGBA           = 2,
 } StdColorFormatType;
 
 typedef enum eColorMode J3D_ENUM_TYPE(int32_t)
 {
-    STDCOLOR_PAL = 0,
-    STDCOLOR_RGB = 1,
+    STDCOLOR_PAL  = 0,
+    STDCOLOR_RGB  = 1,
     STDCOLOR_RGBA = 2,
 } tColorMode;
 
 typedef enum eStd3DMipmapFilterType
 {
-    STD3D_MIPMAPFILTER_NONE = 0,
-    STD3D_MIPMAPFILTER_BILINEAR = 1,
+    STD3D_MIPMAPFILTER_NONE      = 0,
+    STD3D_MIPMAPFILTER_BILINEAR  = 1,
     STD3D_MIPMAPFILTER_TRILINEAR = 2,
 } Std3DMipmapFilterType;
 
 typedef enum eStdControlAxisFlag
 {
-    STDCONTROL_AXIS_REGISTERED = 0x1,
-    STDCONTROL_AXIS_ENABLED = 0x2,
+    STDCONTROL_AXIS_REGISTERED  = 0x1,
+    STDCONTROL_AXIS_ENABLED     = 0x2,
     STDCONTROL_AXIS_HASDEADZONE = 0x8,
-    STDCONTROL_AXIS_POSITIVE = 0x10,
-    STDCONTROL_AXIS_NEGATIVE = 0x20,
-    STDCONTROL_AXIS_GAMEPAD = 0x80,
+    STDCONTROL_AXIS_POSITIVE    = 0x10,
+    STDCONTROL_AXIS_NEGATIVE    = 0x20,
+    STDCONTROL_AXIS_GAMEPAD     = 0x80,
 } StdControlAxisFlag;
 
 typedef enum eStd3DRenderState
 {
-    STD3D_RS_UNKNOWN_1 = 0x1,
-    STD3D_RS_UNKNOWN_2 = 0x2,
-    STD3D_RS_ALPHAREF_SET = 0x4,
-    STD3D_RS_UNKNOWN_8 = 0x8,
-    STD3D_RS_SUBPIXEL_CORRECTION = 0x10,
-    STD3D_RS_TEXFILTER_BILINEAR = 0x80,
-    STD3D_RS_UNKNOWN_100 = 0x100,
-    STD3D_RS_UNKNOWN_200 = 0x200,
-    STD3D_RS_UNKNOWN_400 = 0x400,
-    STD3D_RS_TEX_CPAMP_U = 0x800,
-    STD3D_RS_TEX_CPAMP_V = 0x1000,
-    STD3D_RS_ZWRITE_DISABLED = 0x2000,
-    STD3D_RS_FOG_ENABLED = 0x8000,
+    STD3D_RS_UNKNOWN_1             = 0x1,
+    STD3D_RS_UNKNOWN_2             = 0x2,
+    STD3D_RS_ALPHAREF_SET          = 0x4,
+    STD3D_RS_UNKNOWN_8             = 0x8,
+    STD3D_RS_SUBPIXEL_CORRECTION   = 0x10,
+    STD3D_RS_TEXFILTER_BILINEAR    = 0x80,
+    STD3D_RS_UNKNOWN_100           = 0x100,
+    STD3D_RS_UNKNOWN_200           = 0x200,
+    STD3D_RS_UNKNOWN_400           = 0x400,
+    STD3D_RS_TEX_CPAMP_U           = 0x800,
+    STD3D_RS_TEX_CPAMP_V           = 0x1000,
+    STD3D_RS_ZWRITE_DISABLED       = 0x2000,
+    STD3D_RS_FOG_ENABLED           = 0x8000,
     STD3D_RS_TEXFILTER_ANISOTROPIC = 0x10000 // Added
 } Std3DRenderState;
 
@@ -412,7 +426,7 @@ typedef struct sVSurface
 {
     GLuint fbo;
     GLuint colorTex;
-    GLuint depthRBO;
+    GLuint depthTex;
 } tVSurface;
 #else
 typedef struct sVSurface
@@ -445,8 +459,8 @@ struct sSystemTexture
     tSysTexture* pTexture;
 #else
     // VBuffer storage - completely device independent
-    tVBuffer** apMipmaps; // Array of VBuffer pointers (one per mip level)
-    size_t numMipLevels; // Number of mip levels
+    tVBuffer** apMipmaps;   // Array of VBuffer pointers (one per mip level)
+    size_t numMipLevels;    // Number of mip levels
     tSysPixelFormat format; // DirectX format for video memory texture
 #endif
     tSysTexture* pCachedTexture;
@@ -591,7 +605,7 @@ typedef struct sDevice3D
     int unknown216;
     int unknown217;
     bool bAnisotropicFilteringSupported; // Added
-    bool bMipmapAutoGenSupported; // Added
+    bool bMipmapAutoGenSupported;        // Added
 } Device3D;
 
 //static_assert(sizeof(Device3D) == 872, "sizeof(Device3D) == 872");
@@ -681,7 +695,7 @@ static_assert(sizeof(tMemoryBlockHeader) == 8, "sizeof(tMemoryBlockHeader) == 8"
 
 struct sMemoryBlock
 {
-    tMemoryBlockHeader* pFirst; // Start of the block sequence
+    tMemoryBlockHeader* pFirst;       // Start of the block sequence
     tMemoryBlockHeader* pLargestFree; // Cache of the largest free block
     size_t availableMem;
     int bAllocated;
