@@ -696,7 +696,6 @@ static void std3D_DrawFrameBatch(void)
     std3D_frameBatch.drawCount  = 0;
 
     glBindVertexArray(0);
-    glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 static bool std3D_EnsureDrawCapacity(size_t extraVerts, size_t extraIndices)
@@ -791,7 +790,7 @@ void J3DAPI std3D_SetRenderState(Std3DRenderState rdflags)
     {
         if ( rdflags & STD3D_RS_ZWRITE_DISABLED )
         {
-            glDepthMask(GL_FALSE);
+            //glDepthMask(GL_FALSE);
         }
         else
         {
