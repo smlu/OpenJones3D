@@ -130,15 +130,7 @@ bool J3DAPI stdShader_SetViewport(const StdShaderViewport vp)
             {
                 continue;
             }
-
             glUniform4f(loc, vp[0], vp[1], vp[2], vp[3]);
-            GLenum err = glGetError();
-
-            if ( err != GL_NO_ERROR )
-            {
-                STDLOG_ERROR("OpenGL error 0x%x in stdShader_SetViewport.\n", err);
-                return false;
-            }
         }
     }
     return true;
@@ -146,7 +138,6 @@ bool J3DAPI stdShader_SetViewport(const StdShaderViewport vp)
 
 bool J3DAPI stdShader_SetFog(bool enable, float start, float end, float depthDactor, const StdShaderVector color)
 {
-    // TODO: implement fog rendering later
     glUniform4f(glGetUniformLocation(stdShader_activeShader->handle, "vFogParams"), start, end, depthDactor, enable ? 1.0f : 0.0f);
     glUniform3f(glGetUniformLocation(stdShader_activeShader->handle, "vFogColor"), color[0], color[1], color[2]);
 
@@ -265,12 +256,6 @@ static GLuint stdShader_LinkShaderProgram(GLuint vs, GLuint fs)
     GLuint prog = glCreateProgram();
     glAttachShader(prog, vs);
     glAttachShader(prog, fs);
-
-    // Optional: Attribut-Standorte vor dem Linken binden
-    // glBindAttribLocation(prog, 0, "aPos");
-    // glBindAttribLocation(prog, 1, "aColor");
-    // glBindAttribLocation(prog, 2, "aTexCoord");
-
     glLinkProgram(prog);
 
     GLint ok = GL_FALSE;
@@ -375,7 +360,6 @@ GLShaderProgram* stdShader_CompileAndCreate(const char* pName, const char* pVert
         return NULL;
     }
 
-
     // Create shader
     pProgram->handle = stdShader_LinkShaderProgram(vs, fs);
     pProgram->name   = pName;
@@ -392,7 +376,7 @@ void J3DAPI stdShader_Free(GLShaderProgram* sh)
 
 void stdShader_SetTexture(GLShaderProgram* sh, GLuint tex)
 {
-    if ( stdShader_activeTextureUnit != TU_3D_DRAW ) //unit 0 is reserved for framebuffer texture, so it's not allowed to change it.
+    if ( stdShader_activeTextureUnit != TU_3D_DRAW ) //other units are reserved for framebuffer textures and must not be changed
     {
         STDLOG_ERROR("Assigning texture is not allowed on this unit");
         return;
@@ -403,7 +387,7 @@ void stdShader_SetTexture(GLShaderProgram* sh, GLuint tex)
         stdShader_SetActiveShader(sh);
     }
     glBindTexture(GL_TEXTURE_2D, tex);
-    glUniform1i(0, stdShader_activeTextureUnit);
+    glUniform1i(glGetUniformLocation(stdShader_activeShader->handle, "sTexture"), stdShader_activeTextureUnit);
     stdShader_SetActiveShader(currentProgram);
 }
 
