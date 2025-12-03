@@ -135,7 +135,6 @@ static FrameBatch std3D_frameBatch = { 0 };
 // Global state
 
 // VBO & IBO
-static bool std3D_bUseBuffers           = true;
 static GLuint std3D_pVertexArrayObject  = 0;
 static GLuint std3D_pVertexBufferOpaque = 0;
 
@@ -145,7 +144,6 @@ static size_t std3D_numDrawCalls = 0;
 static GLuint std3D_activeSampler = 0;
 
 // Shader system state
-static bool std3D_bShadersActive              = true;
 static GLShaderProgram* std3D_defaultShader   = NULL;
 static GLShaderProgram* std3D_defaultShaderWf = NULL;
 
@@ -500,24 +498,19 @@ size_t std3D_GetNumTextureFormats(void)
 
 int std3D_StartScene(void)
 {
-    if ( std3D_bUseBuffers )
-    {
-        std3D_MapVertexBuffers();
-    }
+    std3D_MapVertexBuffers();
     glBindSampler(TU_3D_DRAW, std3D_activeSampler);
     ++std3D_frameCount;
-    if ( std3D_bShadersActive )
+    const float vp[4] = {
+        (float)std3D_activeRect.x1, // x
+        (float)std3D_activeRect.y1, // y
+        (float)std3D_activeRect.x2, // width
+        (float)std3D_activeRect.y2  // height
+    };
+
+    if ( !stdShader_SetViewport(vp) )
     {
-        const float vp[4] = {
-            (float)std3D_activeRect.x1, // x
-            (float)std3D_activeRect.y1, // y
-            (float)std3D_activeRect.x2, // width
-            (float)std3D_activeRect.y2  // height
-        };
-        if ( !stdShader_SetViewport(vp) )
-        {
-            // error
-        }
+        // error
     }
 
     GLenum err = glGetError();
@@ -620,40 +613,15 @@ static void std3D_DrawFrameBatch(void)
     }
     stdShader_SetActiveTextureUnit(TU_3D_DRAW);
 
-    if ( std3D_bUseBuffers )
-    {
-        glBindVertexArray(std3D_pVertexArrayObject);
+    glBindVertexArray(std3D_pVertexArrayObject);
 
-        // Upload vertex data
-        glBindBuffer(GL_ARRAY_BUFFER, std3D_pVertexBufferOpaque);
-        glUnmapBuffer(GL_ARRAY_BUFFER);
+    // Upload vertex data
+    glBindBuffer(GL_ARRAY_BUFFER, std3D_pVertexBufferOpaque);
+    glUnmapBuffer(GL_ARRAY_BUFFER);
 
-        // Upload index data;
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, std3D_pIndexBuffer);
-        glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
-    }
-    else
-    {
-        glBindVertexArray(0);
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-        const GLsizei stride = sizeof(D3DTLVERTEX);
-        D3DTLVERTEX* aVerts  = std3D_frameBatch.verts;
-
-        glEnableVertexAttribArray(0); // position
-        glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, stride, &aVerts[0].sx);
-
-        glEnableVertexAttribArray(1); // diffuse color
-        glVertexAttribPointer(1, 4, GL_UNSIGNED_BYTE, GL_TRUE, stride,
-                              &aVerts[0].color);
-
-        glEnableVertexAttribArray(2); // specular
-        glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, GL_TRUE, stride, &aVerts[0].specular);
-
-        glEnableVertexAttribArray(3); // texcoords
-        glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, stride, &aVerts[0].tu);
-    }
+    // Upload index data;
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, std3D_pIndexBuffer);
+    glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
 
 
     // fire draw calls
@@ -687,15 +655,8 @@ static void std3D_DrawFrameBatch(void)
         }
         std3D_SetRenderState(dc->rdflags);
 
-        if ( std3D_bUseBuffers )
-        {
-            const void* indexPtr = (const void*)(dc->firstIndex * sizeof(GLushort));
-            glDrawElements(dc->type, indexCount, GL_UNSIGNED_SHORT, indexPtr);
-        }
-        else
-        {
-            glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_SHORT, &std3D_frameBatch.indices[dc->firstIndex]);
-        }
+        const void* indexPtr = (const void*)(dc->firstIndex * sizeof(GLushort));
+        glDrawElements(dc->type, indexCount, GL_UNSIGNED_SHORT, indexPtr);
     }
 
     //clear
@@ -1594,8 +1555,6 @@ void std3D_ReleaseVertexBuffers(void)
 
 bool std3D_InitShaderSystem(void)
 {
-    std3D_bShadersActive = false;
-
     if ( !stdShader_Open() )
     {
         return false;
@@ -1627,8 +1586,6 @@ bool std3D_InitShaderSystem(void)
     }
     glUniform4f(wfColorLoc, 1.0f, 1.0f, 1.0f, 1.0f); //set wireframe color to white.
 
-
-    std3D_bShadersActive = true;
     return true;
 }
 
