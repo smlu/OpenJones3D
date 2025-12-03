@@ -9,7 +9,6 @@
 #include <std/General/stdMath.h>
 #include <std/General/stdMemory.h>
 #include <std/General/stdUtil.h>
-#include <std/RTI/symbols.h>
 
 #include <math.h>
 #include "std/Win95/stdWin95.h"
@@ -20,12 +19,10 @@ static bool bStartup    = false;
 static bool std3D_bOpen = false;
 
 static D3DRECT std3D_activeRect = { 0 };
-static_assert(sizeof(std3D_activeRect) == 4 * sizeof(float),
-              "sizeof(std3D_activeRect) == 4 * sizeof(float)");
+static_assert(sizeof(std3D_activeRect) == 4 * sizeof(float), "sizeof(std3D_activeRect) == 4 * sizeof(float)");
 // Must be 4 floats to be used in shader
 
 static size_t std3D_frameCount            = 1;
-static float std3D_zDepth                 = 0.0f;
 static Std3DRenderState std3D_renderState = 0;
 static tSysTexture* std3D_pD3DTex         = NULL;
 
@@ -36,7 +33,6 @@ static Std3DMipmapFilterType std3D_mipmapFilter = -1;
 static GLfloat std3D_maxAnisoLevel              = 0.0f;
 
 static bool std3D_bRenderFog          = true;
-static bool std3D_bFogTable           = false;
 static float std3D_fogDepthFactor     = 0.0f;
 static float std3D_fogStartDepth      = 0.0f;
 static float std3D_fogEndDepth        = 0.0f;
@@ -139,22 +135,12 @@ static FrameBatch std3D_frameBatch = { 0 };
 // Global state
 
 // VBO & IBO
-#define STD3D_VERTBUFFERSIZE STD3D_MAXVERTICES *STD3D_MAXFACEVERTICES
-
-static bool std3D_bUseBuffers = true; // Slow for small geometry, so disabled by
-// default. Consider hybrid approach later
+static bool std3D_bUseBuffers           = true;
 static GLuint std3D_pVertexArrayObject  = 0;
-static const size_t std3D_vbSize        = STD3D_VERTBUFFERSIZE;
-static size_t std3D_vbOffset            = 0;
 static GLuint std3D_pVertexBufferOpaque = 0;
-static D3DTLVERTEX* std3D_pVertexData   = NULL;
 
-static const size_t std3D_ibSize            = STD3D_VERTBUFFERSIZE * 3;
-static size_t std3D_ibOffset                = 0;
-static GLuint std3D_pIndexBuffer            = 0;
-static size_t std3D_numOpaqueDrawCalls      = 0;
-static size_t std3D_numTransparentDrawCalls = 0;
-static GLushort* std3D_pIndexData           = NULL;
+static GLuint std3D_pIndexBuffer = 0;
+static size_t std3D_numDrawCalls = 0;
 
 static GLuint std3D_activeSampler = 0;
 
@@ -333,12 +319,6 @@ static bool std3D_InitSystem(void)
     std3D_numCachedTextures = 0;
     std3D_pFirstTexCache    = NULL;
     std3D_pLastTexCache     = NULL;
-
-    // Get color formats for RGB, RGBA and RGBA key formats
-    // std3D_RGBTextureFormat     = std3D_FindClosestFormat(&stdColor_cfRGB888);
-    // std3D_RGBAKeyTextureFormat = std3D_FindClosestFormat(&stdColor_cfRGBA8888);
-    // std3D_RGBATextureFormat    = std3D_FindClosestFormat(&stdColor_cfRGBA8888);
-
     glGenSamplers(1, &std3D_activeSampler);
 
     if ( !std3D_InitVertexBuffers(&std3D_pVertexBufferOpaque, &std3D_pIndexBuffer, &std3D_pVertexArrayObject) )
@@ -450,8 +430,7 @@ int J3DAPI std3D_Open(size_t deviceNum)
     STDLOG_STATUS("Texture Ram  Total: %u bytes  Free: %u bytes.\n",
                   std3D_pCurDevice->totalMemory,
                   std3D_pCurDevice->availableMemory);
-    STDLOG_STATUS("Video Ram Total: %u bytes  Free: %u bytes.\n", memTotal,
-                  memFree);
+    STDLOG_STATUS("Video Ram Total: %u bytes  Free: %u bytes.\n", memTotal, memFree);
 
     std3D_bOpen = true;
     return 1;
@@ -541,14 +520,6 @@ int std3D_StartScene(void)
         }
     }
 
-    // glEnable(GL_SCISSOR_TEST);
-    // glScissor(
-    //     (GLint)std3D_activeRect.x1,
-    //     (GLint)std3D_activeRect.y1,
-    //     (GLint)std3D_activeRect.x2,
-    //     (GLint)std3D_activeRect.y2
-    // );
-
     GLenum err = glGetError();
     if ( err != GL_NO_ERROR )
     {
@@ -565,9 +536,9 @@ void std3D_EndScene(void)
     {
         std3D_DrawFrameBatch();
     }
-    std3D_renderState        = 0;
-    std3D_numOpaqueDrawCalls = 0;
-    std3D_pD3DTex            = NULL;
+    std3D_renderState  = 0;
+    std3D_numDrawCalls = 0;
+    std3D_pD3DTex      = NULL;
     glSamplerParameteri(std3D_activeSampler, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glSamplerParameteri(std3D_activeSampler, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glBindSampler(TU_3D_DRAW, 0);
@@ -625,6 +596,7 @@ int std3D_CacheDrawCall(GLenum type, tSysTexture* pTex, Std3DRenderState rdflags
     else
     {
         STDLOG_ERROR("Unknown draw type %d.\n", type);
+        return 0;
     }
 
     std3D_frameBatch.indexCount += numIndices;
@@ -655,16 +627,10 @@ static void std3D_DrawFrameBatch(void)
         // Upload vertex data
         glBindBuffer(GL_ARRAY_BUFFER, std3D_pVertexBufferOpaque);
         glUnmapBuffer(GL_ARRAY_BUFFER);
-        // glBufferData(GL_ARRAY_BUFFER, std3D_maxVerticesPerDrawCall * sizeof(D3DTLVERTEX), NULL, GL_DYNAMIC_DRAW);
-        // glBufferSubData(GL_ARRAY_BUFFER, 0, std3D_frameBatch.vertCount * sizeof(D3DTLVERTEX), std3D_frameBatch.verts);
-
 
         // Upload index data;
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, std3D_pIndexBuffer);
         glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
-
-        // glBufferData(GL_ELEMENT_ARRAY_BUFFER, std3D_maxIndicesPerDrawCall * sizeof(GLushort), NULL, GL_DYNAMIC_DRAW);
-        // glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, std3D_frameBatch.indexCount * sizeof(GLushort), std3D_frameBatch.indices);
     }
     else
     {
@@ -698,7 +664,7 @@ static void std3D_DrawFrameBatch(void)
         GLsizei indexCount = dc->indexCount;
         size_t j           = i + 1;
 
-        //batch draw calls with same textue together. Note: this assumes they have the same rendering flags
+        //batch draw calls with same textures and same rdFlags together.
         while ( j < std3D_frameBatch.drawCount && dc->tex->id == std3D_frameBatch.draws[j].tex->id && dc->rdflags == std3D_frameBatch.draws[j].rdflags )
         {
             indexCount += std3D_frameBatch.draws[j].indexCount;
@@ -798,8 +764,6 @@ void J3DAPI std3D_SetRenderState(Std3DRenderState rdflags)
     if ( std3D_renderState == rdflags )
         return;
 
-    glEnable(GL_DEPTH_TEST);
-    // --- ZWRITE ---
     if ( (std3D_renderState & STD3D_RS_ZWRITE_DISABLED) !=
         (rdflags & STD3D_RS_ZWRITE_DISABLED) )
     {
@@ -813,9 +777,7 @@ void J3DAPI std3D_SetRenderState(Std3DRenderState rdflags)
         }
     }
 
-    //--- Texture Address Mode U/V ---
-    if ( (std3D_renderState & STD3D_RS_TEX_CPAMP_U) !=
-        (rdflags & STD3D_RS_TEX_CPAMP_U) )
+    if ( (std3D_renderState & STD3D_RS_TEX_CPAMP_U) != (rdflags & STD3D_RS_TEX_CPAMP_U) )
     {
         glSamplerParameteri(std3D_activeSampler, GL_TEXTURE_WRAP_S,
                             (rdflags & STD3D_RS_TEX_CPAMP_U)
@@ -823,8 +785,7 @@ void J3DAPI std3D_SetRenderState(Std3DRenderState rdflags)
                                 : GL_REPEAT);
     }
 
-    if ( (std3D_renderState & STD3D_RS_TEX_CPAMP_V) !=
-        (rdflags & STD3D_RS_TEX_CPAMP_V) )
+    if ( (std3D_renderState & STD3D_RS_TEX_CPAMP_V) != (rdflags & STD3D_RS_TEX_CPAMP_V) )
     {
         glSamplerParameteri(std3D_activeSampler, GL_TEXTURE_WRAP_T,
                             (rdflags & STD3D_RS_TEX_CPAMP_V)
@@ -843,10 +804,9 @@ void J3DAPI std3D_SetRenderState(Std3DRenderState rdflags)
             stdShader_DisableFog();
         }
     }
-    // --- Texture Filter ---
-    // TODO: add anistropic filtering later
-    if ( (std3D_renderState & STD3D_RS_TEXFILTER_ANISOTROPIC) !=
-        (rdflags & STD3D_RS_TEXFILTER_ANISOTROPIC) )
+
+
+    if ( (std3D_renderState & STD3D_RS_TEXFILTER_ANISOTROPIC) != (rdflags & STD3D_RS_TEXFILTER_ANISOTROPIC) )
     {
         glSamplerParameteri(std3D_activeSampler, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
         glSamplerParameteri(std3D_activeSampler, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -859,8 +819,7 @@ void J3DAPI std3D_SetRenderState(Std3DRenderState rdflags)
             glSamplerParameterf(std3D_activeSampler, GL_TEXTURE_MAX_ANISOTROPY_EXT, 1.0f);
         }
     }
-    if ( (std3D_renderState & STD3D_RS_TEXFILTER_BILINEAR) !=
-        (rdflags & STD3D_RS_TEXFILTER_BILINEAR) )
+    if ( (std3D_renderState & STD3D_RS_TEXFILTER_BILINEAR) != (rdflags & STD3D_RS_TEXFILTER_BILINEAR) )
     {
         if ( rdflags & STD3D_RS_TEXFILTER_BILINEAR )
         {
@@ -873,32 +832,7 @@ void J3DAPI std3D_SetRenderState(Std3DRenderState rdflags)
             glSamplerParameteri(std3D_activeSampler, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         }
     }
-
-
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-    // // --- Alpha Reference / Alpha Test ---
-    // if ( (std3D_renderState & STD3D_RS_ALPHAREF_SET) !=
-    //     (rdflags & STD3D_RS_ALPHAREF_SET) )
-    // {
-    //     if ( rdflags & STD3D_RS_ALPHAREF_SET )
-    //     {
-    //         glEnable(GL_ALPHA_TEST);
-    //         glAlphaFunc(GL_GREATER, 160.0f / 255.0f);
-    //     }
-    //     else
-    //     {
-    //         glDisable(GL_ALPHA_TEST);
-    //     }
-    // }
-
-    // Update cached flags
     std3D_renderState = rdflags;
-
-    GLenum err = glGetError();
-    if ( err != GL_NO_ERROR )
-        STDLOG_ERROR("OpenGL error 0x%x in std3D_SetRenderState.\n", err);
 }
 
 void J3DAPI std3D_AllocSystemTexture(tSystemTexture* pTexture, tVBuffer** apVBuffers, size_t numMipLevels,
@@ -1116,9 +1050,7 @@ void std3D_ResetTextureCache(void)
     {
         stdShader_SetActiveTextureUnit(TU_3D_DRAW);
         stdShader_SetTexture(std3D_defaultShader, std3D_pWhiteTexture->id);
-        glBindTexture(GL_TEXTURE_2D, std3D_pWhiteTexture->id);
     }
-    //glBindTexture(GL_TEXTURE_2D, 0);
 
     tSystemTexture* pCurTex = std3D_pFirstTexCache;
     while ( pCurTex )
@@ -1174,63 +1106,14 @@ int std3D_InitRenderState(void)
     std3D_renderState = 0;
 
     glEnable(GL_DEPTH_TEST);
-    //glDepthRange(0.0, 1.0);
     glDepthMask(GL_TRUE);
     glDepthFunc(GL_LEQUAL);
-    std3D_renderState |= STD3D_RS_UNKNOWN_1;
-
-    std3D_SetMipmapFilter(STD3D_MIPMAPFILTER_TRILINEAR);
-
-    glBindTexture(GL_TEXTURE_2D, 0); // Default-Basis
-
-    // if (std3D_bAnisotropicFilter)
-    // {
-    //     GLfloat maxAniso = 0.0f;
-    //     glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY, &maxAniso);
-    //     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY, maxAniso);
-    //     std3D_renderState |= STD3D_RS_TEXFILTER_ANISOTROPIC;
-    // }
-    // else
-    // {
-    //     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
-    //     GL_LINEAR_MIPMAP_LINEAR); glTexParameteri(GL_TEXTURE_2D,
-    //     GL_TEXTURE_MAG_FILTER, GL_LINEAR); std3D_renderState |=
-    //     STD3D_RS_TEXFILTER_BILINEAR;
-    // }
-
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
-    // GL_LINEAR_MIPMAP_LINEAR); glTexParameteri(GL_TEXTURE_2D,
-    // GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    std3D_renderState |= STD3D_RS_TEXFILTER_BILINEAR;
-
-    // // --- 3️⃣ Texture Wrapping ---
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-    // --- 4️⃣ Alpha Blending ---
     glEnable(GL_BLEND);
-    //glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    // Alpha-Test (falls Fixed-Function-Kompatibilität)
-    // glEnable(GL_ALPHA_TEST);
-    // glAlphaFunc(GL_GREATER, 0.0f);
-
-    // glShadeModel(GL_SMOOTH); // D3DSHADE_GOURAUD
-    // glDisable(GL_LIGHTING);
-    // glDisable(GL_COLOR_MATERIAL);
-    // glDisable(GL_SEPARATE_SPECULAR_COLOR);
-
-    //std3D_bRenderFog = false;
-
-    //glPolygonMode(GL_BACK, GL_FILL);
-
-    //glEnable(GL_DITHER);
-
-    std3D_renderState |= STD3D_RS_UNKNOWN_2;
-
-    // --- 9️⃣ Culling ---
-    //glDisable(GL_CULL_FACE); // D3DCULL_NONE
     glFrontFace(GL_CW);
+
+    std3D_renderState |= STD3D_RS_UNKNOWN_1 | STD3D_RS_UNKNOWN_2 | STD3D_RS_TEXFILTER_BILINEAR;
+    std3D_SetMipmapFilter(STD3D_MIPMAPFILTER_TRILINEAR);
 
     GLenum err = glGetError();
     if ( err != GL_NO_ERROR )
@@ -1317,12 +1200,6 @@ void std3D_ClearZBuffer(void)
     glClearStencil(0);
     glDepthMask(GL_TRUE);
     glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-
-    GLenum err = glGetError();
-    if ( err != GL_NO_ERROR )
-    {
-        STDLOG_ERROR("OpenGL error 0x%x when clearing Z.\n", err);
-    }
 }
 
 static int std3D_BuildDeviceList(void)
@@ -1405,13 +1282,6 @@ static int std3D_BuildDeviceList(void)
 
 int std3D_CreateViewport(void)
 {
-    GLenum err = glGetError();
-    if ( err != GL_NO_ERROR )
-    {
-        STDLOG_ERROR("OpenGL error 0x%x when creating viewport.\n", err);
-        return 0;
-    }
-
     GLint width  = (GLint)stdDisplay_g_backBuffer.rasterInfo.width;
     GLint height = (GLint)stdDisplay_g_backBuffer.rasterInfo.height;
 
@@ -1421,10 +1291,6 @@ int std3D_CreateViewport(void)
     std3D_activeRect.y1 = 0;
     std3D_activeRect.x2 = width;
     std3D_activeRect.y2 = height;
-
-    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-    glClearStencil(0);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
     return 1;
 }
@@ -1663,8 +1529,6 @@ void J3DAPI std3D_SetFindAllDevices(int bFindAll)
 bool std3D_InitVertexBuffers(GLuint* vbo, GLuint* ibo, GLuint* vao)
 {
     memset(&std3D_frameBatch, 0, sizeof(std3D_frameBatch));
-    // std3D_frameBatch.verts   = STDMALLOC(std3D_maxVerticesPerDrawCall * sizeof(D3DTLVERTEX));
-    // std3D_frameBatch.indices = STDMALLOC(std3D_maxIndicesPerDrawCall * sizeof(GL_SHORT));
     std3D_frameBatch.draws = STDMALLOC(std3D_maxDrawCallGroupSize * sizeof(GLDrawCall));
 
     glGenVertexArrays(1, vao);
@@ -1714,8 +1578,6 @@ void std3D_MapVertexBuffers(void)
 
 void std3D_ReleaseVertexBuffers(void)
 {
-    // STDFREE(std3D_frameBatch.verts);
-    // STDFREE(std3D_frameBatch.indices);
     STDFREE(std3D_frameBatch.draws);
     if ( std3D_pVertexBufferOpaque )
     {
