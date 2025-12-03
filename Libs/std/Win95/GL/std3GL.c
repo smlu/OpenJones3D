@@ -710,7 +710,6 @@ static void std3D_DrawFrameBatch(void)
             stdShader_SetTexture(std3D_defaultShader, dc->tex->id);
             std3D_pD3DTex = dc->tex;
         }
-        std3D_SetRenderState(dc->rdflags);
 
         if ( dc->type == GL_TRIANGLES )
         {
@@ -720,6 +719,7 @@ static void std3D_DrawFrameBatch(void)
         {
             stdShader_SetActiveShader(std3D_defaultShaderWf);
         }
+        std3D_SetRenderState(dc->rdflags);
 
         if ( std3D_bUseBuffers )
         {
