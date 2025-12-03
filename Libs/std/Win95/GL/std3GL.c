@@ -116,6 +116,7 @@ typedef struct sGLDrawCall
     GLsizei indexCount;
     tSysTexture* tex;
     Std3DRenderState rdflags;
+    GLenum type; // GL_TRIANGLES / GL_LINES / GL_POINTS
 } GLDrawCall;
 
 typedef struct sFrameBatch
@@ -573,8 +574,17 @@ void std3D_EndScene(void)
     stdShader_DisableFog();
 }
 
-int std3D_CacheDrawCall(tSysTexture* pTex, Std3DRenderState rdflags, LPD3DTLVERTEX aVerts, size_t numVerts, LPWORD aIndices, size_t numIndices)
+int std3D_CacheDrawCall(GLenum type, tSysTexture* pTex, Std3DRenderState rdflags, LPD3DTLVERTEX aVerts, size_t numVerts, LPWORD aIndices, size_t numIndices)
 {
+    if ( type == GL_LINES )
+    {
+        numIndices = (numVerts - 1) * 2;
+    }
+    else if ( type == GL_POINTS )
+    {
+        numIndices = numVerts;
+    }
+
     if ( !std3D_EnsureDrawCapacity(numVerts, numIndices) )
     {
         std3D_DrawFrameBatch();
@@ -590,10 +600,33 @@ int std3D_CacheDrawCall(tSysTexture* pTex, Std3DRenderState rdflags, LPD3DTLVERT
 
     // paste new indices
     // memcpy(&std3D_frameBatch.indices[firstIndex], aIndices, numIndices * sizeof(WORD));
-    for ( size_t i = 0; i < numIndices; i++ )
+    if ( type == GL_TRIANGLES )
     {
-        std3D_frameBatch.indices[firstIndex + i] = aIndices[i] + baseVertex;
+        for ( size_t i = 0; i < numIndices; i++ )
+        {
+            std3D_frameBatch.indices[firstIndex + i] = aIndices[i] + baseVertex;
+        }
     }
+    else if ( type == GL_LINES )
+    {
+        for ( size_t i = 0; i < numVerts - 1; i++ )
+        {
+            std3D_frameBatch.indices[firstIndex + i * 2]     = baseVertex + i;
+            std3D_frameBatch.indices[firstIndex + i * 2 + 1] = baseVertex + i + 1;
+        }
+    }
+    else if ( type == GL_POINTS )
+    {
+        for ( size_t i = 0; i < numVerts - 1; i++ )
+        {
+            std3D_frameBatch.indices[firstIndex + i] = baseVertex + i;
+        }
+    }
+    else
+    {
+        STDLOG_ERROR("Unknown draw type %d.\n", type);
+    }
+
     std3D_frameBatch.indexCount += numIndices;
 
     // cache draw call
@@ -602,6 +635,7 @@ int std3D_CacheDrawCall(tSysTexture* pTex, Std3DRenderState rdflags, LPD3DTLVERT
     dc->indexCount = (GLsizei)numIndices;
     dc->tex        = pTex ? pTex : std3D_pWhiteTexture;
     dc->rdflags    = rdflags;
+    dc->type       = type;
 
     return 1;
 }
@@ -613,7 +647,6 @@ static void std3D_DrawFrameBatch(void)
         return;
     }
     stdShader_SetActiveTextureUnit(TU_3D_DRAW);
-    stdShader_SetActiveShader(std3D_defaultShader);
 
     if ( std3D_bUseBuffers )
     {
@@ -672,17 +705,26 @@ static void std3D_DrawFrameBatch(void)
             i = j++;
         }
 
-        if ( dc->tex != std3D_pD3DTex )
+        if ( dc->tex != std3D_pD3DTex && dc->type == GL_TRIANGLES )
         {
             stdShader_SetTexture(std3D_defaultShader, dc->tex->id);
             std3D_pD3DTex = dc->tex;
         }
         std3D_SetRenderState(dc->rdflags);
 
+        if ( dc->type == GL_TRIANGLES )
+        {
+            stdShader_SetActiveShader(std3D_defaultShader);
+        }
+        else
+        {
+            stdShader_SetActiveShader(std3D_defaultShaderWf);
+        }
+
         if ( std3D_bUseBuffers )
         {
             const void* indexPtr = (const void*)(dc->firstIndex * sizeof(GLushort));
-            glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_SHORT, indexPtr);
+            glDrawElements(dc->type, indexCount, GL_UNSIGNED_SHORT, indexPtr);
         }
         else
         {
@@ -714,7 +756,7 @@ void J3DAPI std3D_DrawRenderList(tSysTexture* pTex, Std3DRenderState rdflags, LP
         return;
     }
 
-    if ( !std3D_CacheDrawCall(pTex, rdflags, aVerts, numVerts, aIndices, numIndices) )
+    if ( !std3D_CacheDrawCall(GL_TRIANGLES, pTex, rdflags, aVerts, numVerts, aIndices, numIndices) )
     {
         // draw failed
     }
@@ -722,11 +764,6 @@ void J3DAPI std3D_DrawRenderList(tSysTexture* pTex, Std3DRenderState rdflags, LP
 
 void std3D_SetWireframeRenderState(void)
 {
-    Std3DRenderState rdstate = std3D_renderState & ~(STD3D_RS_FOG_ENABLED |
-        STD3D_RS_UNKNOWN_400 | STD3D_RS_UNKNOWN_200);
-    std3D_SetRenderState(rdstate);
-    glBindTexture(GL_TEXTURE_2D, 0);
-    std3D_pD3DTex = NULL;
 }
 
 void J3DAPI std3D_DrawLineStrip(LPD3DTLVERTEX aVerts, size_t numVerts)
@@ -738,20 +775,10 @@ void J3DAPI std3D_DrawLineStrip(LPD3DTLVERTEX aVerts, size_t numVerts)
         return;
     }
 
-    if ( std3D_bShadersActive )
-    {
-        stdShader_SetActiveShader(std3D_defaultShaderWf);
-    }
+    Std3DRenderState rdstate = std3D_renderState & ~(STD3D_RS_FOG_ENABLED |
+        STD3D_RS_UNKNOWN_400 | STD3D_RS_UNKNOWN_200);
 
-    glBindVertexArray(std3D_pVertexArrayObject);
-
-    // Upload vertex data
-    glBindBuffer(GL_ARRAY_BUFFER, std3D_pVertexBufferOpaque);
-    glBufferData(GL_ARRAY_BUFFER, numVerts * sizeof(D3DTLVERTEX), aVerts, GL_STREAM_DRAW);
-
-    glDrawArrays(GL_LINE_STRIP, 0, numVerts);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
+    std3D_CacheDrawCall(GL_LINES, NULL, rdstate, aVerts, numVerts, NULL, 0);
 }
 
 void J3DAPI std3D_DrawPointList(LPD3DTLVERTEX aVerts, size_t numVerts)
@@ -763,19 +790,7 @@ void J3DAPI std3D_DrawPointList(LPD3DTLVERTEX aVerts, size_t numVerts)
         return;
     }
 
-    if ( std3D_bShadersActive )
-    {
-        stdShader_SetActiveShader(std3D_defaultShaderWf);
-    }
-
-    glBindVertexArray(std3D_pVertexArrayObject);
-    // Upload vertex data
-    glBindBuffer(GL_ARRAY_BUFFER, std3D_pVertexBufferOpaque);
-    glBufferData(GL_ARRAY_BUFFER, numVerts * sizeof(D3DTLVERTEX), aVerts, GL_STREAM_DRAW);
-
-    glDrawArrays(GL_POINTS, 0, numVerts);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
+    std3D_CacheDrawCall(GL_POINTS, NULL, 0, aVerts, numVerts, NULL, 0);
 }
 
 void J3DAPI std3D_SetRenderState(Std3DRenderState rdflags)
@@ -790,7 +805,7 @@ void J3DAPI std3D_SetRenderState(Std3DRenderState rdflags)
     {
         if ( rdflags & STD3D_RS_ZWRITE_DISABLED )
         {
-            //glDepthMask(GL_FALSE);
+            glDepthMask(GL_FALSE);
         }
         else
         {
@@ -1099,6 +1114,7 @@ void std3D_ResetTextureCache(void)
 
     if ( std3D_pWhiteTexture )
     {
+        stdShader_SetActiveTextureUnit(TU_3D_DRAW);
         stdShader_SetTexture(std3D_defaultShader, std3D_pWhiteTexture->id);
         glBindTexture(GL_TEXTURE_2D, std3D_pWhiteTexture->id);
     }
@@ -1193,8 +1209,8 @@ int std3D_InitRenderState(void)
 
     // --- 4️⃣ Alpha Blending ---
     glEnable(GL_BLEND);
-    glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
-    //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    //glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     // Alpha-Test (falls Fixed-Function-Kompatibilität)
     // glEnable(GL_ALPHA_TEST);
     // glAlphaFunc(GL_GREATER, 0.0f);
