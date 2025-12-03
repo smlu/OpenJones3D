@@ -1000,12 +1000,15 @@ size_t J3DAPI std3D_GetMipMapCount(const tSystemTexture* pTexture)
 void std3D_ResetTextureCache(void)
 {
     STDLOG_DEBUG("Clearing texture cache....\n");
-
-    if ( std3D_pWhiteTexture )
-    {
-        stdShader_SetActiveTextureUnit(TU_3D_DRAW);
-        stdShader_SetTexture(std3D_defaultShader, std3D_pWhiteTexture->id);
-    }
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    stdShader_SetActiveTextureUnit(TU_3D_DRAW);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    std3D_pD3DTex = NULL;
+    // if ( std3D_pWhiteTexture )
+    // {
+    //     stdShader_SetActiveTextureUnit(TU_3D_DRAW);
+    //     stdShader_SetTexture(std3D_defaultShader, std3D_pWhiteTexture->id);
+    // }
 
     tSystemTexture* pCurTex = std3D_pFirstTexCache;
     while ( pCurTex )
@@ -1141,8 +1144,7 @@ void J3DAPI std3D_SetFog(float red, float green, float blue, float startDepth, f
     std3D_EnableFog(std3D_bRenderFog, std3D_g_fogDensity);
     std3D_fogStartDepth  = startDepth;
     std3D_fogEndDepth    = (2.0f - std3D_g_fogDensity) * endDepth;
-    std3D_fogDepthFactor = 1.0f / (std3D_fogEndDepth -
-        std3D_fogStartDepth);
+    std3D_fogDepthFactor = 1.0f / (std3D_fogEndDepth - std3D_fogStartDepth);
 
     std3D_fogColor[0] = red;
     std3D_fogColor[1] = green;
@@ -1217,8 +1219,7 @@ static int std3D_BuildDeviceList(void)
         pD3DDriver->totalMemory     = displayDevice.totalVideoMemory;
         pD3DDriver->availableMemory = displayDevice.freeVideoMemory;
 
-        // TODO: proly no point to make log here since same info can be logged in
-        // stdDisplay
+        // TODO: proly no point to make log here since same info can be logged in stdDisplay
         STDLOG_STATUS("Found |%s|%s|%s|%s| D3D Device\n",
                       pD3DDriver->hasZBuffer ? "Z" : "Non-Z",
                       pD3DDriver->bAlphaTextureSupported ? "Alpha" : "No Alpha",
