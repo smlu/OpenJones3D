@@ -510,15 +510,9 @@ int std3D_StartScene(void)
 
     if ( !stdShader_SetViewport(vp) )
     {
-        // error
-    }
-
-    GLenum err = glGetError();
-    if ( err != GL_NO_ERROR )
-    {
-        STDLOG_ERROR("OpenGL error 0x%x in std3D_StartScene.\n", err);
         return 1;
     }
+
 
     return 0;
 }

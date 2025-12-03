@@ -1124,7 +1124,6 @@ static int J3DAPI stdDisplay_EnumerateDevices(void) //check
     GLint maxSamples = 0;
     glGetIntegerv(0x8D57 /*GL_MAX_SAMPLES*/, &maxSamples);
 
-    // Optionaler VRAM-Query (vendor extensions)
 #ifndef GL_GPU_MEMORY_INFO_TOTAL_AVAILABLE_MEMORY_NVX
 #define GL_GPU_MEMORY_INFO_TOTAL_AVAILABLE_MEMORY_NVX    0x9048
 #define GL_GPU_MEMORY_INFO_CURRENT_AVAILABLE_VIDMEM_NVX  0x9049
@@ -1192,8 +1191,9 @@ static int J3DAPI stdDisplay_EnumerateVideoModes(SDL_DisplayID adapter) //checke
 {
     //Check that the current desktop mode is supported is skipped in GL. Is that needed?
 
-    int modeCount           = 0;
-    SDL_DisplayMode** modes = SDL_GetFullscreenDisplayModes(adapter, &modeCount);
+    int modeCount                      = 0;
+    SDL_DisplayMode** modes            = SDL_GetFullscreenDisplayModes(adapter, &modeCount);
+    const SDL_DisplayMode* desktopMode = SDL_GetDesktopDisplayMode(adapter);
 
 
     if ( !modes || modeCount <= 0 )
@@ -1205,6 +1205,11 @@ static int J3DAPI stdDisplay_EnumerateVideoModes(SDL_DisplayID adapter) //checke
     for ( int i = 0; i < modeCount && stdDisplay_numVideoModes < STD_ARRAYLEN(stdDisplay_aVideoModes); i++ )
     {
         SDL_DisplayMode* mode = modes[i];
+        if ( mode->refresh_rate != desktopMode->refresh_rate )
+            if ( mode->refresh_rate != desktopMode->refresh_rate )
+            {
+                continue; //due to borderless window mode, refresh rate will be always equal to desktop refresh rat.
+            }
 
 
         // Filter out modes below 24-bit color and 30 Hz
@@ -1450,8 +1455,8 @@ int J3DAPI stdDisplay_InitBuffers(PDIRECT3DDEVICE9 pDevice, const StdVideoMode* 
     glBindTexture(GL_TEXTURE_2D, surface->colorTex);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, surface->colorTex, 0);
@@ -1613,7 +1618,7 @@ void stdDisplay_DisableVSync(bool bDisable)
         }
         else
         {
-            SDL_GL_SetSwapInterval(1);
+            SDL_GL_SetSwapInterval(0);
         }
 
         // if ( !stdDisplay_ResetDevice() )
@@ -1667,18 +1672,27 @@ int stdDisplay_Update(void) //check
 
     SDL_GL_SwapWindow(stdWin95_GetSDLWindow());
 
-    glBindFramebuffer(GL_FRAMEBUFFER, stdDisplay_g_backBuffer.surface.msaaFbo);
-    //glClear(GL_COLOR_BUFFER_BIT);
+    if ( stdDisplay_bMSAAEnabled )
+    {
+        glBindFramebuffer(GL_FRAMEBUFFER, stdDisplay_g_backBuffer.surface.msaaFbo);
+    }
+    else
+    {
+        glBindFramebuffer(GL_FRAMEBUFFER, stdDisplay_g_backBuffer.surface.fbo);
+    }
+    glClear(GL_COLOR_BUFFER_BIT);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
     glViewport(0, 0, stdDisplay_g_backBuffer.rasterInfo.width, stdDisplay_g_backBuffer.rasterInfo.height);
 
+#ifdef J3D_DEBUG
     GLenum err = glGetError();
     if ( err != GL_NO_ERROR )
     {
         STDLOG_ERROR("OpenGL error 0x%x when creating viewport.\n", err);
         return 0;
     }
+#endif
 
     //STDLOG_DEBUG("Updated frame\n");
     return 0;
