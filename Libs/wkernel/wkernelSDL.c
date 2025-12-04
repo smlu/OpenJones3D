@@ -4,12 +4,14 @@
 #include <j3dcore/j3dhook.h>
 #include <std/Win95/stdWin95.h>
 
+#include <glad/gl.h>
 #include <SDL3/SDL.h>
-#include <glad/glad.h>
 
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
+
+#include "std/General/std.h"
 
 static const SDL_GUID wkernel_guid = {
     0xA0, 0x4D, 0xCE, 0x82, // Data1: 0x82CE4DA0
@@ -233,6 +235,107 @@ static inline bool wkernel_IsExtendedKey(SDL_Scancode scancode)
             return false;
     }
 }
+
+#if defined(J3D_OPENGL) && defined(J3D_DEBUG)
+
+static const char* wKernel_GLDebugGetStringForSource(GLenum src)
+{
+    switch ( src )
+    {
+        case GL_DEBUG_SOURCE_API:
+            return "API";
+        case GL_DEBUG_SOURCE_WINDOW_SYSTEM:
+            return "Window System";
+        case GL_DEBUG_SOURCE_SHADER_COMPILER:
+            return "Shader Compiler";
+        case GL_DEBUG_SOURCE_THIRD_PARTY:
+            return "Third Party";
+        case GL_DEBUG_SOURCE_APPLICATION:
+            return "Application";
+        case GL_DEBUG_SOURCE_OTHER:
+            return "Other";
+        default:
+            return "Unknown";
+    }
+}
+
+static const char* wKernel_GLDebugGetStringForType(GLenum type)
+{
+    switch ( type )
+    {
+        case GL_DEBUG_TYPE_ERROR:
+            return "Error";
+        case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
+            return "Deprecated Behavior";
+        case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:
+            return "Undefined Behavior";
+        case GL_DEBUG_TYPE_PORTABILITY:
+            return "Portability";
+        case GL_DEBUG_TYPE_PERFORMANCE:
+            return "Performance";
+        case GL_DEBUG_TYPE_MARKER:
+            return "Marker";
+        case GL_DEBUG_TYPE_PUSH_GROUP:
+            return "Push Group";
+        case GL_DEBUG_TYPE_POP_GROUP:
+            return "Pop Group";
+        case GL_DEBUG_TYPE_OTHER:
+            return "Other";
+        default:
+            return "Unknown";
+    }
+}
+
+static const char* wKernel_GLDebugGetStringForSeverity(GLenum sev)
+{
+    switch ( sev )
+    {
+        case GL_DEBUG_SEVERITY_HIGH:
+            return "High";
+        case GL_DEBUG_SEVERITY_MEDIUM:
+            return "Medium";
+        case GL_DEBUG_SEVERITY_LOW:
+            return "Low";
+        case GL_DEBUG_SEVERITY_NOTIFICATION:
+            return "Notification";
+        default:
+            return "Unknown";
+    }
+}
+
+
+// The actual callback (GLAPIENTRY / APIENTRY macro for platform calling conv)
+void APIENTRY wKernel_GLDebugMessageCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam)
+{
+    // Optionally ignore some non-significant messages:
+    if ( severity == GL_DEBUG_SEVERITY_NOTIFICATION )
+    {
+        return; // uncomment to ignore verbose notifications
+    }
+
+
+    if ( severity == GL_DEBUG_SEVERITY_HIGH && type == GL_DEBUG_TYPE_ERROR )
+    {
+        STDLOG_ERROR(
+            "GL FATAL ERROR: id=0x%X, source=%s, type=%s, severity=%s\n    message: %s\n",
+            id,
+            wKernel_GLDebugGetStringForSource(source),
+            wKernel_GLDebugGetStringForType(type),
+            wKernel_GLDebugGetStringForSeverity(severity),
+            message);
+    }
+    else
+    {
+        STDLOG_DEBUG(
+            "GL DEBUG: id=0x%X, source=%s, type=%s, severity=%s\n    message: %s\n",
+            id,
+            wKernel_GLDebugGetStringForSource(source),
+            wKernel_GLDebugGetStringForType(type),
+            wKernel_GLDebugGetStringForSeverity(severity),
+            message);
+    }
+}
+#endif
 
 static inline WPARAM wkernel_TranslateToVK(SDL_Scancode scancode)
 {
@@ -705,7 +808,7 @@ int J3DAPI wkernel_CreateWindow(HINSTANCE hInstance, int nShowCmd, LPCSTR lpWind
     SDL_GL_SetAttribute(SDL_GL_SHARE_WITH_CURRENT_CONTEXT, 1);
 
     // TODO: following only for windows and linux only
-    // SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG);
+    //SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG);
 
     // Get display mode for initial size
     SDL_DisplayID displayID      = SDL_GetPrimaryDisplay();
@@ -762,6 +865,17 @@ int J3DAPI wkernel_CreateWindow(HINSTANCE hInstance, int nShowCmd, LPCSTR lpWind
         SDL_DestroyWindow(wkernel_sdlWindow);
         return 1;
     }
+
+#ifdef J3D_DEBUG
+    glEnable(GL_DEBUG_OUTPUT);
+
+    //glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS); // synchronous callback (very useful for debugging)
+
+    glDebugMessageCallback(wKernel_GLDebugMessageCallback, NULL);
+    // filter out noisy messages or categories you don't care about
+    // For example: disable notifications
+    glDebugMessageControl(GL_DEBUG_SOURCE_THIRD_PARTY, GL_DONT_CARE, GL_DEBUG_SEVERITY_NOTIFICATION, 0, NULL, GL_FALSE);
+#endif
 
     SDL_GL_MakeCurrent(wkernel_sdlWindow, wkernel_glContext);
 
