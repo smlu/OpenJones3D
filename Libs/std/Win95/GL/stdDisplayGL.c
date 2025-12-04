@@ -319,7 +319,7 @@ int stdDisplay_Startup(void) //check
     stdDisplay_bStartup   = true;
     stdDisplay_numDevices = 0;
 
-    if ( !stdWin95_GetGLContext() )
+    if ( !SDL_GL_GetCurrentContext() )
     {
         STDLOG_ERROR("No OpenGL context was created yet.\n");
         return 0;
@@ -371,17 +371,6 @@ void stdDisplay_Shutdown(void) //checked
     if ( stdDisplay_bOpen )
     {
         stdDisplay_Close();
-    }
-    SDL_GLContext context = stdWin95_GetGLContext();
-    if ( context )
-    {
-        //SDL_GL_DestroyContext(context);
-    }
-
-    SDL_Window* window = stdWin95_GetSDLWindow();
-    if ( window )
-    {
-        //SDL_DestroyWindow(window);
     }
 
     stdShader_Shutdown();
@@ -1637,7 +1626,7 @@ void stdDisplay_DisableVSync(bool bDisable)
 
 int stdDisplay_Update(void) //check
 {
-    SDL_Window* pWindow = stdWin95_GetSDLWindow();
+    SDL_Window* pWindow = SDL_GL_GetCurrentWindow();
     if ( !pWindow )
     {
         return 1;
@@ -1674,7 +1663,7 @@ int stdDisplay_Update(void) //check
     glDrawArrays(GL_TRIANGLES, 0, 3);
 
 
-    SDL_GL_SwapWindow(stdWin95_GetSDLWindow());
+    SDL_GL_SwapWindow(pWindow);
 
     if ( stdDisplay_bMSAAEnabled )
     {
