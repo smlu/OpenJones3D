@@ -642,7 +642,7 @@ void J3DAPI wkernel_SetWindowStyle(LONG dwNewLong)
     else if ( (dwNewLong & WS_OVERLAPPEDWINDOW) == WS_OVERLAPPEDWINDOW )
     {
         SDL_SetWindowBordered(wkernel_sdlWindow, true);
-        SDL_SetWindowResizable(wkernel_sdlWindow, true);
+        SDL_SetWindowResizable(wkernel_sdlWindow, false);
     }
     else
     {
@@ -654,6 +654,7 @@ void J3DAPI wkernel_SetWindowStyle(LONG dwNewLong)
 
         if ( dwNewLong & WS_CAPTION )
         {
+            SDL_SetWindowBordered(wkernel_sdlWindow, true);
         }
 
         if ( dwNewLong & WS_THICKFRAME )
