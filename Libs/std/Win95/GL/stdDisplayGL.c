@@ -415,9 +415,6 @@ int J3DAPI stdDisplay_Open(size_t deviceNum) //checked
 
     stdDisplay_curDevice  = stdDisplay_availableDisplays[deviceNum];
     stdDisplay_pCurDevice = &stdDisplay_aDisplayDevices[deviceNum];
-    SDL_Rect displayRect;
-    SDL_GetDisplayBounds(stdDisplay_curDevice, &displayRect);
-    SDL_SetWindowPosition(SDL_GL_GetCurrentWindow(), displayRect.x, displayRect.y);
     if ( !stdDisplay_GetGLCaps() )
     {
         return 0;
@@ -1353,11 +1350,18 @@ static int J3DAPI stdDisplay_SetWindowMode(HWND hWnd, StdVideoMode* pDisplayMode
     J3D_UNUSED(hWnd);
 
     //in window mode, just make window as big as framebuffer
-    SDL_Window* window           = stdWin95_GetSDLWindow();
+    SDL_Window* window           = SDL_GL_GetCurrentWindow();
     stdDisplay_windowViewport[0] = 0;
     stdDisplay_windowViewport[1] = 0;
     stdDisplay_windowViewport[2] = pDisplayMode->rasterInfo.width;
     stdDisplay_windowViewport[3] = pDisplayMode->rasterInfo.height;
+    stdDisplay_curDevice         = SDL_GetDisplayForWindow(window);
+    SDL_Rect displayRect;
+    SDL_GetDisplayBounds(stdDisplay_curDevice, &displayRect);
+    int Top, Left, Bottom, Right;
+    SDL_GetWindowBordersSize(window, &Top, &Left, &Bottom, &Right);
+    SDL_SetWindowPosition(window, displayRect.x + Left, displayRect.y + Top);
+
     wkernel_SetWindowSize(pDisplayMode->rasterInfo.width, pDisplayMode->rasterInfo.height);
     //SDL_SetWindowAlwaysOnTop(SDL_GL_GetCurrentWindow(), false);
 
@@ -1618,7 +1622,7 @@ void stdDisplay_DisableVSync(bool bDisable)
         }
         else
         {
-            SDL_GL_SetSwapInterval(0);
+            SDL_GL_SetSwapInterval(1);
         }
 
         // if ( !stdDisplay_ResetDevice() )
@@ -1680,7 +1684,7 @@ int stdDisplay_Update(void) //check
     {
         glBindFramebuffer(GL_FRAMEBUFFER, stdDisplay_g_backBuffer.surface.fbo);
     }
-    glClear(GL_COLOR_BUFFER_BIT);
+    //glClear(GL_COLOR_BUFFER_BIT);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
     glViewport(0, 0, stdDisplay_g_backBuffer.rasterInfo.width, stdDisplay_g_backBuffer.rasterInfo.height);
