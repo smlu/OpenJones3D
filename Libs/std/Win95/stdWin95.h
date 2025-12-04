@@ -21,17 +21,5 @@ const GUID* J3DAPI stdWin95_GetGuid(void); // Added
 void stdWin95_InstallHooks(void);
 void stdWin95_ResetGlobals(void);
 
-#if defined (J3D_OPENGL)
-
-void J3DAPI stdWin95_SetGLContext(SDL_GLContext context);
-
-SDL_GLContext J3DAPI stdWin95_GetGLContext(void);
-
-void J3DAPI stdWin95_SetSDLWindow(SDL_Window *sdlWindow);
-
-SDL_Window* J3DAPI stdWin95_GetSDLWindow(void);
-
-#endif
-
 J3D_EXTERN_C_END
 #endif // STD_STDWIN95_H

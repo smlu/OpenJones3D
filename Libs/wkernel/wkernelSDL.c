@@ -322,8 +322,6 @@ int J3DAPI wkernel_Run(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmd
     stdWin95_SetWindow(wkernel_hwnd);
     stdWin95_SetInstance(hinstance);
     stdWin95_SetGuid((const GUID*)&wkernel_guid);
-    stdWin95_SetGLContext(wkernel_glContext);
-    stdWin95_SetSDLWindow(wkernel_sdlWindow);
 
     // Added: Refactored to run main proc via callback
     if ( wkernel_pfOnStartup )
