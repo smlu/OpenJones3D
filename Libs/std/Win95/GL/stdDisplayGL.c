@@ -10,10 +10,6 @@
 #include <std/General/stdColor.h>
 #include <std/General/stdMemory.h>
 #include <std/General/stdUtil.h>
-#include <std/RTI/symbols.h>
-#include <std/Win95/GL/Shaders/SMAA/AreaTex.h>
-#include <std/Win95/GL/Shaders/SMAA/SearchTex.h>
-#include <rdroid/Engine/rdCamera.h>
 
 #include "Shaders/SMAA/stdSmaa.h"
 #include "wkernel/wkernel.h"
@@ -22,37 +18,11 @@
 #define STDDISPLAY_MINFRAMERATE 30
 #define STDDISPLAY_MAXFRAMERATE 256
 
-typedef struct GLCaps
-{
-    const char* vendor;
-    const char* renderer;
-    const char* version;
-    const char* glslVersion;
-
-    GLint maxTextureSize;
-    GLint maxCombinedTexUnits;
-    GLint maxTexUnitsFS;
-    GLint maxTexUnitsVS;
-    GLint maxVertexAttribs;
-
-    GLint maxVertexUniformComponents;
-    GLint maxFragmentUniformComponents;
-    GLint maxVaryingComponents;
-
-    GLint maxDrawBuffers;      // MRT
-    GLint maxColorAttachments; // FBO color attachments
-    GLint maxSamples;          // MSAA (grob)
-
-    GLfloat maxAnisotropy; // 1.0 wenn nicht vorhanden
-    GLfloat pointSizeRange[2];
-    GLfloat lineWidthRange[2];
-} GLCaps;
-
 typedef struct
 {
     HDC hdc;
     HBITMAP hbm;
-    void* bits; // Zeiger auf Pixel (z. B. BGRA8)
+    void* bits;
     int w, h, pitch;
     int lockRef;
 } GdiBuffer;
@@ -61,7 +31,6 @@ static GdiBuffer g_gdi      = { 0 };
 static GdiBuffer g_frontGDI = { 0 };
 
 // Public globals
-//tVBuffer stdDisplay_g_frontBuffer = {0}; //extra front buffer shouldn't be needed
 tVBuffer stdDisplay_g_backBuffer = { 0 };
 
 // Private globals
@@ -73,25 +42,17 @@ static bool stdDisplay_bNoSync     = false;
 static bool stdDisplay_bDeviceLost = false;
 static bool stdDisplay_bUseSMAA    = false; //currently not working correctly
 
-static GLCaps stdDisplay_deviceCaps;
-static int stdDisplay_windowWidth         = 0;
-static int stdDisplay_windowHeight        = 0;
 static float stdDisplay_windowViewport[4] = { 0 };
 
 // Back buffer local vars
-static int stdDisplay_backbufWidth                 = 0;
-static int stdDisplay_backbufHeight                = 0;
-static size_t stdDisplay_backLockRef               = 0;
-static HDC stdDisplay_hdcBack                      = NULL;
-static D3DLOCKED_RECT stdDisplay_backLockedRect    = { 0 };
-static LPDIRECT3DSURFACE9 stdDisplay_pBackLockSurf = NULL; // temp lockable backbuffer surface when MSAA is enabled
+static int stdDisplay_backbufWidth   = 0;
+static int stdDisplay_backbufHeight  = 0;
+static size_t stdDisplay_backLockRef = 0;
+static HDC stdDisplay_hdcBack        = NULL;
 
 // Front buffer local vars
 static size_t stdDisplay_frontLockRef = 0;
 static HDC stdDisplay_hdcFront        = NULL;
-
-// Z buffer local vars
-static tVBuffer* stdDisplay_zBuffer;
 
 static StdVideoMode* stdDisplay_pCurVideoMode   = NULL;
 static StdVideoMode stdDisplay_primaryVideoMode = { 0 };
@@ -122,49 +83,19 @@ static int stdDisplay_msaaSampleCount = 0;
 
 static GLShaderProgram* stdDisplay_fboShader = NULL;
 static GLuint stdDisplay_fullscreenVao       = 0;
-
-
-// DirectX 9 status table - simplified version of common errors
-static const DXStatus stdDisplay_aD3DStatusTbl[] =
-{
-    { D3D_OK, "D3D_OK" },
-    { D3DERR_DEVICELOST, "D3DERR_DEVICELOST" },
-    { D3DERR_DEVICENOTRESET, "D3DERR_DEVICENOTRESET" },
-    { D3DERR_NOTAVAILABLE, "D3DERR_NOTAVAILABLE" },
-    { D3DERR_OUTOFVIDEOMEMORY, "D3DERR_OUTOFVIDEOMEMORY" },
-    { D3DERR_INVALIDDEVICE, "D3DERR_INVALIDDEVICE" },
-    { D3DERR_INVALIDCALL, "D3DERR_INVALIDCALL" },
-    { D3DERR_DRIVERINVALIDCALL, "D3DERR_DRIVERINVALIDCALL" },
-    { D3DERR_WASSTILLDRAWING, "D3DERR_WASSTILLDRAWING" },
-    { E_OUTOFMEMORY, "E_OUTOFMEMORY" },
-    { E_INVALIDARG, "E_INVALIDARG" },
-    { E_FAIL, "E_FAIL" }
-};
-
 // Helper functions
 static int J3DAPI stdDisplay_VideoModeCompare(const StdVideoMode* pMode1, const StdVideoMode* pMode2);
-static const char* J3DAPI stdDisplay_D3DGetStatus(HRESULT status);
 
-static int J3DAPI stdDisplay_GetGLCaps(void);
 static int stdDisplay_EnumerateDevices(void);
 static int J3DAPI stdDisplay_EnumerateVideoModes(SDL_DisplayID adapter);
-static SDL_PixelFormat J3DAPI stdDisplay_GetSDLFormat(int bpp);
-static int J3DAPI stdDisplay_BppFromSDLPixelFormat(SDL_PixelFormat format);
 static bool stdDisplay_GetVideoColorFormat(SDL_PixelFormat format, ColorInfo* pFormat);
-static int stdDisplay_UnlockTexture(tVBuffer* pBuffer);
-static uint8_t* J3DAPI stdDisplay_LockTexture(tVBuffer* pVBuffer);
 
 static inline void J3DAPI stdDisplay_SetAspectRatio(StdVideoMode* pMode);
 static inline int J3DAPI stdDisplay_SetWindowMode(HWND hWnd, StdVideoMode* pDisplayMode);
-static inline int J3DAPI stdDisplay_SetFullscreenMode(HWND hwnd, const StdVideoMode* pDisplayMode,
-                                                      size_t numBackBuffers);
-static int J3DAPI stdDisplay_InitBuffers(PDIRECT3DDEVICE9 pDevice, const StdVideoMode* pDisplayMode, bool bWindowMode,
-                                         size_t numBuffers);
+static inline int J3DAPI stdDisplay_SetFullscreenMode(HWND hwnd, const StdVideoMode* pDisplayMode, size_t numBackBuffers);
+static int J3DAPI stdDisplay_InitBuffers(PDIRECT3DDEVICE9 pDevice, const StdVideoMode* pDisplayMode, bool bWindowMode, size_t numBuffers);
 
 static inline void stdDisplay_ReleaseBuffers(void);
-static inline uint8_t* J3DAPI stdDisplay_LockSurface(tVSurface* pVSurf);
-static inline int J3DAPI stdDisplay_UnlockSurface(tVSurface* pSurf);
-static int J3DAPI stdDisplay_ColorFillSurface(tVBuffer* pBuffer, uint32_t dwFillColor, const StdRect* lpRect);
 static int stdDisplay_CheckDeviceState(void);
 static void stdDisplay_ReleaseDevice(void);
 static int stdDisplay_ResetDevice(void);
@@ -198,35 +129,6 @@ static int stdDisplay_InitGDIBackbuffer(GdiBuffer* buffer, int w, int h)
     return 1;
 }
 
-// Color format conversion helpers
-static void J3DAPI stdDisplay_SetPixels16(uint16_t* pPixels16, uint16_t pixel, size_t size)
-{
-    if ( (size & 1) != 0 )
-    {
-        for ( size_t i = 0; i < size; ++i )
-        {
-            pPixels16[i] = pixel;
-        }
-    }
-    else
-    {
-        uint32_t dword_pixel = ((uint32_t)pixel << 16) | pixel;
-        uint32_t* pPixels32  = (uint32_t*)pPixels16;
-        for ( size_t i = 0; i < size / 2; ++i )
-        {
-            pPixels32[i] = dword_pixel;
-        }
-    }
-}
-
-static void J3DAPI stdDisplay_SetPixels32(uint32_t* pPixels32, uint32_t pixel, size_t size)
-{
-    for ( size_t i = 0; i < size; ++i )
-    {
-        pPixels32[i] = pixel;
-    }
-}
-
 void stdDisplay_InstallHooks(void)
 {
     J3D_HOOKFUNC(stdDisplay_Startup);
@@ -243,7 +145,7 @@ void stdDisplay_InstallHooks(void)
     J3D_HOOKFUNC(stdDisplay_VBufferFree);
     J3D_HOOKFUNC(stdDisplay_VBufferLock);
     J3D_HOOKFUNC(stdDisplay_VBufferUnlock);
-    J3D_HOOKFUNC(stdDisplay_VBufferFill);
+    //J3D_HOOKFUNC(stdDisplay_VBufferFill);
     J3D_HOOKFUNC(stdDisplay_VBufferConvertColorFormat);
     J3D_HOOKFUNC(stdDisplay_VideoModeCompare);
     J3D_HOOKFUNC(stdDisplay_GetTextureMemory);
@@ -253,8 +155,8 @@ void stdDisplay_InstallHooks(void)
     J3D_HOOKFUNC(stdDisplay_SetWindowMode);
     J3D_HOOKFUNC(stdDisplay_SetFullscreenMode);
     J3D_HOOKFUNC(stdDisplay_ReleaseBuffers);
-    J3D_HOOKFUNC(stdDisplay_LockSurface);
-    J3D_HOOKFUNC(stdDisplay_UnlockSurface);
+    //J3D_HOOKFUNC(stdDisplay_LockSurface);
+    //J3D_HOOKFUNC(stdDisplay_UnlockSurface);
     J3D_HOOKFUNC(stdDisplay_Update);
     //J3D_HOOKFUNC(stdDisplay_ColorFillSurface);
     J3D_HOOKFUNC(stdDisplay_BackBufferFill);
@@ -283,12 +185,13 @@ void stdDisplay_ResetGlobals(void)
     memset(&stdDisplay_g_backBuffer, 0, sizeof(stdDisplay_g_backBuffer));
 }
 
-static void stdDisplay_InitMSAASettings(void) //checked
+static void stdDisplay_InitMSAASettings(void)
 {
     // Read MSAA settings from registry/config
     stdDisplay_bMSAAEnabled    = stdConfig_GetBool(STD3D_CFG_MSAAENABLED, true);
     stdDisplay_msaaSampleCount = stdConfig_GetInt(STD3D_CFG_MSAASAMPLES, 16);
 
+    // Get max supported sample count from OpenGL
     GLint maxSamples = 0;
     glGetIntegerv(GL_MAX_SAMPLES, &maxSamples);
 
@@ -304,9 +207,8 @@ static void stdDisplay_InitMSAASettings(void) //checked
     STDLOG_DEBUG("MSAA Settings: Enabled=%d, Samples=%d\n", stdDisplay_bMSAAEnabled, stdDisplay_msaaSampleCount);
 }
 
-int stdDisplay_Startup(void) //check
+int stdDisplay_Startup(void)
 {
-    //SDL_Delay(10000);
     STDLOG_STATUS("Starting display system using OpenGL GAPI ...\n");
     if ( stdDisplay_bStartup )
     {
@@ -314,7 +216,6 @@ int stdDisplay_Startup(void) //check
     }
 
     memset(&stdDisplay_g_backBuffer, 0, sizeof(stdDisplay_g_backBuffer));
-    memset(&stdDisplay_zBuffer, 0, sizeof(stdDisplay_zBuffer));
 
     stdDisplay_bStartup   = true;
     stdDisplay_numDevices = 0;
@@ -366,7 +267,7 @@ static int stdDisplay_InitFBOShader(void)
     return 1;
 }
 
-void stdDisplay_Shutdown(void) //checked
+void stdDisplay_Shutdown(void)
 {
     if ( stdDisplay_bOpen )
     {
@@ -377,7 +278,6 @@ void stdDisplay_Shutdown(void) //checked
 
     memset(stdDisplay_aDisplayDevices, 0, sizeof(stdDisplay_aDisplayDevices));
     memset(&stdDisplay_g_backBuffer, 0, sizeof(stdDisplay_g_backBuffer));
-    memset(&stdDisplay_zBuffer, 0, sizeof(stdDisplay_zBuffer));
 
     stdDisplay_pCurVideoMode = NULL;
     stdDisplay_numDevices    = 0;
@@ -385,7 +285,7 @@ void stdDisplay_Shutdown(void) //checked
     stdDisplay_bStartup      = false;
 }
 
-int J3DAPI stdDisplay_Open(size_t deviceNum) //checked
+int J3DAPI stdDisplay_Open(size_t deviceNum)
 {
     STD_ASSERTREL(stdDisplay_bStartup == true);
     if ( stdDisplay_bOpen )
@@ -399,15 +299,10 @@ int J3DAPI stdDisplay_Open(size_t deviceNum) //checked
         STDLOG_ERROR("Error: Invalid device num %d (total: %d)!\n", deviceNum, stdDisplay_numDevices);
         return 0;
     }
-    //SDL_RaiseWindow(SDL_GL_GetCurrentWindow());
     SDL_SetWindowAlwaysOnTop(SDL_GL_GetCurrentWindow(), false);
 
     stdDisplay_curDevice  = stdDisplay_availableDisplays[deviceNum];
     stdDisplay_pCurDevice = &stdDisplay_aDisplayDevices[deviceNum];
-    if ( !stdDisplay_GetGLCaps() )
-    {
-        return 0;
-    }
 
     // Enumerate display modes for this adapter
     stdDisplay_numVideoModes = 0;
@@ -500,12 +395,13 @@ int J3DAPI stdDisplay_SetMode(size_t modeNum, int bFullscreen, size_t numBackBuf
     stdDisplay_bModeSet      = true;
     stdDisplay_bFullscreen   = bFullscreen;
 
-    stdDisplay_VBufferFill(&stdDisplay_g_backBuffer, 0, NULL);
+    glClear(GL_COLOR_BUFFER_BIT);
+
     stdDisplay_Update();
 
     if ( bFullscreen )
     {
-        stdDisplay_VBufferFill(&stdDisplay_g_backBuffer, 0, NULL);
+        glClear(GL_COLOR_BUFFER_BIT);
     }
 
     return 0;
@@ -624,26 +520,6 @@ static int stdDisplay_ResetDevice(void)
     return 1;
 }
 
-static bool stdDisplay_CompareColorInfos(const ColorInfo* c1, const ColorInfo* c2)
-{
-    return
-        c1->colorMode == c2->colorMode &&
-        c1->bpp == c2->bpp &&
-        c1->redBPP == c2->redBPP &&
-        c1->greenBPP == c2->greenBPP &&
-        c1->blueBPP == c2->blueBPP &&
-        c1->redPosShift == c2->redPosShift &&
-        c1->greenPosShift == c2->greenPosShift &&
-        c1->bluePosShift == c2->bluePosShift &&
-        c1->redPosShiftRight == c2->redPosShiftRight &&
-        c1->greenPosShiftRight == c2->greenPosShiftRight &&
-        c1->bluePosShiftRight == c2->bluePosShiftRight &&
-        c1->alphaBPP == c2->alphaBPP &&
-        c1->alphaPosShift == c2->alphaPosShift &&
-        c1->alphaPosShiftRight == c2->alphaPosShiftRight;
-}
-
-
 tVBuffer* J3DAPI stdDisplay_VBufferNew(const tRasterInfo* pRasterInfo, int bUseVSurface, int bUseVideoMemory) //check
 {
     STD_ASSERTREL((pRasterInfo->colorInfo.bpp % 8) == 0);
@@ -691,7 +567,7 @@ void J3DAPI stdDisplay_VBufferFree(tVBuffer* pVBuffer)
     stdMemory_Free(pVBuffer);
 }
 
-int J3DAPI stdDisplay_VBufferLock(tVBuffer* pVBuffer) //checked
+int J3DAPI stdDisplay_VBufferLock(tVBuffer* pVBuffer)
 {
     STD_ASSERTREL(pVBuffer != NULL);
 
@@ -752,80 +628,6 @@ int J3DAPI stdDisplay_VBufferUnlock(tVBuffer* pVBuffer)
     --pVBuffer->lockRefCount;
 
     return 0; // 1 locked - 0 unlocked
-}
-
-int J3DAPI stdDisplay_VBufferFill(tVBuffer* pVBuffer, uint32_t color, const StdRect* pRect)
-{
-    STD_ASSERTREL(pVBuffer != NULL);
-
-    if ( pVBuffer->type )
-    {
-        if ( pVBuffer->type != VBUFFER_HARDWARE )
-        {
-            return 1;
-        }
-        return stdDisplay_ColorFillSurface(pVBuffer, color, pRect) == 0;
-    }
-
-    // Software fill for system memory buffers
-    switch ( pVBuffer->rasterInfo.colorInfo.bpp )
-    {
-        case 8:
-            if ( pRect )
-            {
-                uint8_t* pPixels8 = &pVBuffer->pPixels[pVBuffer->rasterInfo.rowSize * pRect->top + pRect->left];
-                for ( int32_t height = 0; height < pRect->bottom; ++height )
-                {
-                    memset(pPixels8, (uint8_t)color, pRect->right);
-                    pPixels8 += pVBuffer->rasterInfo.rowSize;
-                }
-            }
-            else
-            {
-                memset(pVBuffer->pPixels, (uint8_t)color, pVBuffer->rasterInfo.size);
-            }
-            break;
-
-        case 16:
-            if ( pRect )
-            {
-                uint16_t* pPixels16 = (uint16_t*)&pVBuffer->pPixels[pVBuffer->rasterInfo.rowSize * pRect->top + 2 * pRect->
-                    left];
-                for ( int32_t height = 0; height < pRect->bottom; ++height )
-                {
-                    stdDisplay_SetPixels16(pPixels16, (uint16_t)color, pRect->right);
-                    pPixels16 = (uint16_t*)((char*)pPixels16 + pVBuffer->rasterInfo.rowSize);
-                }
-            }
-            else
-            {
-                stdDisplay_SetPixels16((uint16_t*)pVBuffer->pPixels, (uint16_t)color, pVBuffer->rasterInfo.size / 2);
-            }
-            break;
-
-        case 24:
-            STDLOG_FATAL("24-bit fill not implemented");
-            break;
-
-        case 32:
-            if ( pRect )
-            {
-                uint32_t* pPixels32 = (uint32_t*)&pVBuffer->pPixels[pVBuffer->rasterInfo.rowSize * pRect->top + 4 * pRect->
-                    left];
-                for ( int32_t height = 0; height < pRect->bottom; ++height )
-                {
-                    stdDisplay_SetPixels32(pPixels32, color, pRect->right);
-                    pPixels32 = (uint32_t*)((char*)pPixels32 + pVBuffer->rasterInfo.rowSize);
-                }
-            }
-            else
-            {
-                stdDisplay_SetPixels32((uint32_t*)pVBuffer->pPixels, color, pVBuffer->rasterInfo.size / 4);
-            }
-            break;
-    }
-
-    return 1;
 }
 
 tVBuffer* J3DAPI stdDisplay_VBufferConvertColorFormat(const ColorInfo* pDesiredColorFormat, tVBuffer* pSrc,
@@ -956,22 +758,9 @@ int J3DAPI stdDisplay_GetTextureMemory(size_t* pTotal, size_t* pFree)
 int J3DAPI stdDisplay_GetTotalMemory(size_t* pTotal, size_t* pFree)
 {
     // TODO: Enhance / Fix
-    UINT adapter = stdDisplay_numDevices > 0 ? stdDisplay_curDevice : D3DADAPTER_DEFAULT;
-    *pTotal      = stdDisplay_numVideoModes * 1024 * 1024; // Approximation
-    *pFree       = *pTotal / 2;                            // Rough estimate
+    *pTotal = stdDisplay_numVideoModes * 1024 * 1024; // Approximation
+    *pFree  = *pTotal / 2;                            // Rough estimate
     return 0;
-}
-
-const char* J3DAPI stdDisplay_D3DGetStatus(HRESULT status)
-{
-    for ( size_t i = 0; i < STD_ARRAYLEN(stdDisplay_aD3DStatusTbl); ++i )
-    {
-        if ( stdDisplay_aD3DStatusTbl[i].code == status )
-        {
-            return stdDisplay_aD3DStatusTbl[i].text;
-        }
-    }
-    return "Unknown D3D Error";
 }
 
 int J3DAPI stdDisplay_CreateZBuffer(const tSysPixelFormat* pPixelFormat, int bSystemMemory)
@@ -1018,59 +807,6 @@ int J3DAPI stdDisplay_CreateZBuffer(const tSysPixelFormat* pPixelFormat, int bSy
     return 0;
 }
 
-static int J3DAPI stdDisplay_GetGLCaps(void) //checked
-{
-    stdDisplay_deviceCaps.vendor      = (const char*)glGetString(GL_VENDOR);
-    stdDisplay_deviceCaps.renderer    = (const char*)glGetString(GL_RENDERER);
-    stdDisplay_deviceCaps.version     = (const char*)glGetString(GL_VERSION);
-    stdDisplay_deviceCaps.glslVersion = (const char*)glGetString(GL_SHADING_LANGUAGE_VERSION);
-
-    glGetIntegerv(GL_MAX_TEXTURE_SIZE, &stdDisplay_deviceCaps.maxTextureSize);
-    glGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &stdDisplay_deviceCaps.maxCombinedTexUnits);
-    glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &stdDisplay_deviceCaps.maxTexUnitsFS);
-    glGetIntegerv(GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS, &stdDisplay_deviceCaps.maxTexUnitsVS);
-    glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &stdDisplay_deviceCaps.maxVertexAttribs);
-
-    glGetIntegerv(GL_MAX_VERTEX_UNIFORM_COMPONENTS, &stdDisplay_deviceCaps.maxVertexUniformComponents);
-    glGetIntegerv(GL_MAX_FRAGMENT_UNIFORM_COMPONENTS, &stdDisplay_deviceCaps.maxFragmentUniformComponents);
-#ifdef GL_MAX_VARYING_COMPONENTS
-    glGetIntegerv(GL_MAX_VARYING_COMPONENTS, &stdDisplay_deviceCaps.maxVaryingComponents);
-#else
-    glGetIntegerv(GL_MAX_VARYING_FLOATS, &stdDisplay_deviceCaps->maxVaryingComponents);
-#endif
-
-#ifdef GL_MAX_DRAW_BUFFERS
-    glGetIntegerv(GL_MAX_DRAW_BUFFERS, &stdDisplay_deviceCaps.maxDrawBuffers);
-#else
-    stdDisplay_deviceCaps->maxDrawBuffers = 1;
-#endif
-#ifdef GL_MAX_COLOR_ATTACHMENTS
-    glGetIntegerv(GL_MAX_COLOR_ATTACHMENTS, &stdDisplay_deviceCaps.maxColorAttachments);
-#else
-    stdDisplay_deviceCaps->maxColorAttachments = 1;
-#endif
-#ifdef GL_MAX_SAMPLES
-    glGetIntegerv(GL_MAX_SAMPLES, &stdDisplay_deviceCaps.maxSamples);
-#else
-    stdDisplay_deviceCaps->maxSamples = 0;
-#endif
-
-    // anisotropy
-    stdDisplay_deviceCaps.maxAnisotropy = 1.0f;
-    // Ranges
-    glGetFloatv(GL_POINT_SIZE_RANGE, stdDisplay_deviceCaps.pointSizeRange);
-    glGetFloatv(GL_ALIASED_LINE_WIDTH_RANGE, stdDisplay_deviceCaps.lineWidthRange);
-
-    GLenum err = glGetError();
-    if ( err != GL_NO_ERROR )
-    {
-        STDLOG_ERROR("OpenGL error 0x%x when creating viewport.\n", err);
-        return 0;
-    }
-
-    return 1;
-}
-
 static int J3DAPI stdDisplay_EnumerateDevices(void) //check
 {
     if ( stdDisplay_availableDisplays )
@@ -1101,9 +837,7 @@ static int J3DAPI stdDisplay_EnumerateDevices(void) //check
         return 0;
     }
 
-    //const char* vendor = (const char*)glGetString(GL_VENDOR);
     const char* renderer = (const char*)glGetString(GL_RENDERER);
-    //const char* version = (const char*)glGetString(GL_VERSION);
 
     GLint maxTex = 0;
     glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTex);
@@ -1126,7 +860,7 @@ static int J3DAPI stdDisplay_EnumerateDevices(void) //check
         glGetIntegerv(GL_TEXTURE_FREE_MEMORY_ATI, ati); // AMD/ATI
         // ati[0] = total-ish, ati[1] = largest free block, ati[2]/[3] = aux/tex free
         total_kb = ati[0];
-        free_kb  = ati[0]; // grobe Annahme, wenn nix besseres da ist
+        free_kb  = ati[0];
     }
 
     for ( int i = 0; i < adapterCount && i < STD_ARRAYLEN(stdDisplay_aDisplayDevices); i++ )
@@ -1151,7 +885,7 @@ static int J3DAPI stdDisplay_EnumerateDevices(void) //check
         // Get device capabilities
         ZeroMemory(&pDevice->caps, sizeof(pDevice->caps));
         pDevice->bHAL                      = TRUE;
-        pDevice->bWindowRenderNotSupported = FALSE; // OpenGL always supports windowed rendering
+        pDevice->bWindowRenderNotSupported = FALSE; // OpenGL/SDL always support windowed rendering
         //pDevice->guid                      = identifier.DeviceIdentifier;
         if ( total_kb > 0 )
         {
@@ -1160,7 +894,7 @@ static int J3DAPI stdDisplay_EnumerateDevices(void) //check
         }
         else
         {
-            pDevice->totalVideoMemory = maxTex * maxTex * 4; // grobe Schätzung (wie dein D3D-Pfad)
+            pDevice->totalVideoMemory = maxTex * maxTex * 4; // guessing
             pDevice->freeVideoMemory  = pDevice->totalVideoMemory / 2;
         }
 
@@ -1173,7 +907,7 @@ static int J3DAPI stdDisplay_EnumerateDevices(void) //check
     return stdDisplay_numDevices > 0;
 }
 
-static int J3DAPI stdDisplay_EnumerateVideoModes(SDL_DisplayID adapter) //checked
+static int J3DAPI stdDisplay_EnumerateVideoModes(SDL_DisplayID adapter)
 {
     //Check that the current desktop mode is supported is skipped in GL. Is that needed?
 
@@ -1199,7 +933,7 @@ static int J3DAPI stdDisplay_EnumerateVideoModes(SDL_DisplayID adapter) //checke
 
 
         // Filter out modes below 24-bit color and 30 Hz
-        const int bpp = stdDisplay_BppFromSDLPixelFormat(mode->format);
+        const int bpp = SDL_BITSPERPIXEL(mode->format);
         if ( bpp < 24 || mode->refresh_rate < STDDISPLAY_MINFRAMERATE || mode->refresh_rate > STDDISPLAY_MAXFRAMERATE )
         {
             continue;
@@ -1244,33 +978,6 @@ static int J3DAPI stdDisplay_EnumerateVideoModes(SDL_DisplayID adapter) //checke
 
 
     return stdDisplay_numVideoModes;
-}
-
-SDL_PixelFormat J3DAPI stdDisplay_GetSDLFormat(int bpp)
-{
-    switch ( bpp )
-    {
-        case 16:
-            return SDL_PIXELFORMAT_RGB565;;
-        case 24:
-            return SDL_PIXELFORMAT_RGB24;
-        case 32:
-            return SDL_PIXELFORMAT_XRGB8888;
-        default:
-            return SDL_PIXELFORMAT_XRGB8888;
-    }
-}
-
-int J3DAPI stdDisplay_BppFromSDLPixelFormat(SDL_PixelFormat format)
-{
-    const int bpp = SDL_BITSPERPIXEL(format);
-
-    if ( bpp == 0 )
-    {
-        //Fallback, if format is unkown
-        return 32;
-    }
-    return bpp;
 }
 
 // Get color info for format of video mode and video surface
@@ -1332,10 +1039,6 @@ tSysDisplayDevice* stdDisplay_GetSystemDevice(void)
 
 static int J3DAPI stdDisplay_SetWindowMode(HWND hWnd, StdVideoMode* pDisplayMode)
 {
-    // if ( !SetWindowPos(hWnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE) )
-    // {
-    //     return 0;
-    // }
     J3D_UNUSED(hWnd);
 
     //in window mode, just make window as big as framebuffer
@@ -1352,15 +1055,12 @@ static int J3DAPI stdDisplay_SetWindowMode(HWND hWnd, StdVideoMode* pDisplayMode
     SDL_SetWindowPosition(window, displayRect.x + Left, displayRect.y + Top);
 
     wkernel_SetWindowSize(pDisplayMode->rasterInfo.width, pDisplayMode->rasterInfo.height);
-    //SDL_SetWindowAlwaysOnTop(SDL_GL_GetCurrentWindow(), false);
 
     return stdDisplay_InitBuffers(NULL, pDisplayMode, /*bWindowMode=*/true, 1);
 }
 
 int J3DAPI stdDisplay_SetFullscreenMode(HWND hwnd, const StdVideoMode* pDisplayMode, size_t numBackBuffers)
 {
-    // NOTE: the return value indicating success or failure changed from original code.
-    // Now function will return 0 on error and 1 on success.
     J3D_UNUSED(hwnd);
     J3D_UNUSED(numBackBuffers);
 
@@ -1522,84 +1222,6 @@ void stdDisplay_ReleaseBuffers(void) // checked
     }
 }
 
-static uint8_t* J3DAPI stdDisplay_LockTexture(tVBuffer* pVBuffer) //checked
-{
-    // if (!pVBuffer) return NULL;
-    //
-    // // Verschachtelte Locks erlauben (D3D-ähnlich)
-    // if (pVBuffer->lockRefCount > 0) {
-    //     return pVBuffer->pPixels; // schon gelockt -> selben Pointer zurückgeben
-    // }
-    //
-    // const int bytesPerPixel = (pVBuffer->rasterInfo.colorInfo.bpp / 8);
-    // const int pitch         = pVBuffer->rasterInfo.width * bytesPerPixel;
-    // const size_t size       = (size_t)pitch * pVBuffer->rasterInfo.height;
-    //
-    // // CPU-Staging-Buffer anlegen
-    // pVBuffer->pPixels = (uint8_t*)STDMALLOC(size);
-    // if (!pVBuffer->pPixels) {
-    //     pVBuffer->lockRefCount = 0;
-    //     return NULL;
-    // }
-    //
-    // // Optional: aktuellen Inhalt der Textur in den Staging-Buffer lesen
-    // // (nur wenn du beim Lock Lesezugriff brauchst; für reines Schreiben kannst du das weglassen)
-    // if (pVBuffer->gl.tex) {
-    //     glPixelStorei(GL_PACK_ALIGNMENT, 1);
-    //     // GLES hat kein glGetTexImage -> fallback via FBO + glReadPixels:
-    //     GLuint fbo = 0;
-    //     glGenFramebuffers(1, &fbo);
-    //     glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-    //     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, pVBuffer->gl.tex, 0);
-    //     // (Prüfung auf COMPLETE ggf. einbauen)
-    //     glReadPixels(0, 0, pVBuffer->rasterInfo.width, pVBuffer->rasterInfo.height, pVBuffer->gl.internalFormat, pVBuffer->gl.type, pVBuffer->pPixels);
-    //     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    //     glDeleteFramebuffers(1, &fbo);
-    // }
-
-    return pVBuffer->pPixels;
-}
-
-uint8_t* J3DAPI stdDisplay_LockSurface(tVSurface* pVSurf)
-{
-    return 0;
-}
-
-static int stdDisplay_UnlockTexture(tVBuffer* pBuffer)
-{
-    // if (!pBuffer) return 1;
-    // if (pBuffer->lockRefCount <= 0) return 1;
-    //
-    // // Verschachtelte Locks: nur beim letzten freigeben/hochladen
-    // if (pBuffer->lockRefCount > 1) {
-    //     return 0;
-    // }
-    //
-    // // Wenn wir eine GL-Textur haben und einen Staging-Puffer, lade ihn hoch
-    // if (pBuffer->gl.tex && pBuffer->pPixels) {
-    //     glBindTexture(GL_TEXTURE_2D, pBuffer->gl.tex);
-    //     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);  // Pitch = width * bpp/8
-    //     glTexSubImage2D(
-    //         GL_TEXTURE_2D, 0, 0, 0,
-    //         pBuffer->rasterInfo.width, pBuffer->rasterInfo.height,
-    //         pBuffer->gl.internalFormat,   // z.B. GL_RGBA / GL_BGRA / GL_RGB
-    //         pBuffer->gl.type,     // z.B. GL_UNSIGNED_BYTE / GL_UNSIGNED_SHORT_5_6_5
-    //         pBuffer->pPixels
-    //     );
-    //     glBindTexture(GL_TEXTURE_2D, 0);
-    //
-    //     // Optional: Fehler checken
-    //     // GLenum err = glGetError(); if (err != GL_NO_ERROR) { /* log */ return 1; }
-    // }
-
-    return 0;
-}
-
-int J3DAPI stdDisplay_UnlockSurface(tVSurface* pSurf)
-{
-    return 0;
-}
-
 void stdDisplay_DisableVSync(bool bDisable)
 {
     if ( stdDisplay_bNoSync != bDisable )
@@ -1614,17 +1236,11 @@ void stdDisplay_DisableVSync(bool bDisable)
             SDL_GL_SetSwapInterval(1);
         }
 
-        // if ( !stdDisplay_ResetDevice() )
-        // {
-        //     STDLOG_ERROR("stdDisplay_DisableVSync: Error resetting D3D device.\n");
-        //     return;
-        // }
-
         stdDisplay_bNoSync = bDisable;
     }
 }
 
-int stdDisplay_Update(void) //check
+int stdDisplay_Update(void)
 {
     SDL_Window* pWindow = SDL_GL_GetCurrentWindow();
     if ( !pWindow )
@@ -1646,7 +1262,6 @@ int stdDisplay_Update(void) //check
     }
 
     backBufferSurface->skipMSAA = false;
-    //glBlitFramebuffer(0, 0, width, height, 0, 0, width, height, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
 
     if ( stdDisplay_bUseSMAA )
     {
@@ -1678,107 +1293,13 @@ int stdDisplay_Update(void) //check
     glEnable(GL_BLEND);
     glViewport(0, 0, stdDisplay_g_backBuffer.rasterInfo.width, stdDisplay_g_backBuffer.rasterInfo.height);
 
-#ifdef J3D_DEBUG
-    GLenum err = glGetError();
-    if ( err != GL_NO_ERROR )
-    {
-        STDLOG_ERROR("OpenGL error 0x%x when creating viewport.\n", err);
-        return 0;
-    }
-#endif
-
-    //STDLOG_DEBUG("Updated frame\n");
     return 0;
-}
-
-int J3DAPI stdDisplay_ColorFillSurface(tVBuffer* pBuffer, uint32_t dwFillColor, const StdRect* pRect) //checked
-{
-    return 0;
-    if ( !pBuffer )
-    {
-        return 1;
-    }
-
-
-    // Determine region
-    int left   = 0;
-    int top    = 0;
-    int right  = (int)pBuffer->rasterInfo.width;
-    int bottom = (int)pBuffer->rasterInfo.height;
-
-    if ( pRect )
-    {
-        if ( pRect->right == 0 || pRect->bottom == 0 )
-            return 1;
-
-        left   = pRect->left;
-        top    = pRect->top;
-        right  = pRect->left + pRect->right;
-        bottom = pRect->top + pRect->bottom;
-    }
-
-    // Case 1: Software surface (RAM buffer)
-    if ( pBuffer->type == VBUFFER_SOFTWARE )
-    {
-        uint8_t* pixels = pBuffer->pPixels;
-        const int pitch = (int)pBuffer->rasterInfo.width * 4;
-        const uint8_t a = (uint8_t)((dwFillColor >> 24) & 0xFF);
-        const uint8_t r = (uint8_t)((dwFillColor >> 16) & 0xFF);
-        const uint8_t g = (uint8_t)((dwFillColor >> 8) & 0xFF);
-        const uint8_t b = (uint8_t)(dwFillColor & 0xFF);
-
-        for ( int y = top; y < bottom; ++y )
-        {
-            uint8_t* row = pixels + y * pitch + left * 4;
-            for ( int x = left; x < right; ++x )
-            {
-                row[0] = b;
-                row[1] = g;
-                row[2] = r;
-                row[3] = a;
-                row += 4;
-            }
-        }
-
-        return 0;
-    }
-
-    // // Case 2: GPU texture surface
-    // if (pBuffer->gl.tex)
-    // {
-    //     // Convert color to normalized floats
-    //     float r = (float)((dwFillColor >> 16) & 0xFF) / 255.0f;
-    //     float g = (float)((dwFillColor >> 8)  & 0xFF) / 255.0f;
-    //     float b = (float)((dwFillColor)       & 0xFF) / 255.0f;
-    //     float a = (float)((dwFillColor >> 24) & 0xFF) / 255.0f;
-    //
-    //     glBindTexture(GL_TEXTURE_2D, pBuffer->gl.tex);
-    //
-    //     // Fallback: create a temporary color buffer and upload it
-    //     int width = right - left;
-    //     int height = bottom - top;
-    //     size_t size = width * height * 4;
-    //     uint8_t* temp = SDL_malloc(size);
-    //     for (int i = 0; i < size; i += 4)
-    //     {
-    //         temp[i + 0] = (uint8_t)(b * 255);
-    //         temp[i + 1] = (uint8_t)(g * 255);
-    //         temp[i + 2] = (uint8_t)(r * 255);
-    //         temp[i + 3] = (uint8_t)(a * 255);
-    //     }
-    //
-    //     glTexSubImage2D(GL_TEXTURE_2D, 0, left, top, width, height, pBuffer->gl.internalFormat, GL_UNSIGNED_BYTE, temp);
-    //     SDL_free(temp);
-    //
-    //     return 0;
-    // }
-
-    STDLOG_ERROR("Error %s when color filling the surface.\n");
-    return 1;
 }
 
 int J3DAPI stdDisplay_BackBufferFill(uint32_t color, const StdRect* pRect)
 {
+    J3D_UNUSED(color);
+    J3D_UNUSED(pRect);
     glClear(GL_COLOR_BUFFER_BIT);
     return 0;
 }
@@ -1832,11 +1353,6 @@ int J3DAPI stdDisplay_GetCurrentVideoMode(StdVideoMode* pDisplayMode)
     return 0;
 }
 
-int stdDisplay_CopyBufferToSurface(LPDIRECT3DSURFACE9 pSrcSurf, LPDIRECT3DSURFACE9 pDestSurf)
-{
-    return 1;
-}
-
 HDC stdDisplay_GetFrontBufferDC(void)
 {
     if ( !stdDisplay_bOpen || !stdDisplay_bModeSet )
@@ -1873,27 +1389,17 @@ void J3DAPI stdDisplay_ReleaseFrontBufferDC(HDC hdc)
     if ( --g_frontGDI.lockRef > 0 )
         return;
 
-    // tVBuffer* front = &stdDisplay_g_frontBuffer;
-    // if ( !front->pPixels ) return;
-    //
-    // size_t copyPitch = front->rasterInfo.rowSize;
-    // uint8_t* dst     = front->pPixels;
-    // uint8_t* src     = g_frontGDI.bits;
-    //
-    // for ( int y = 0; y < g_frontGDI.h; ++y )
-    //     memcpy(dst + y * copyPitch, src + y * g_frontGDI.pitch, copyPitch);
-
     stdDisplay_hdcFront = NULL;
 }
 
-HDC stdDisplay_GetBackBufferDC(void) //checked
+HDC stdDisplay_GetBackBufferDC(void)
 {
     if ( !stdDisplay_bOpen || !stdDisplay_bModeSet ) return NULL;
 
     if ( stdDisplay_backLockRef > 0 )
     {
         stdDisplay_backLockRef++;
-        return g_gdi.hdc; // stdDisplay_hdcBack optional gleichsetzen
+        return g_gdi.hdc;
     }
 
     const int w = (int)stdDisplay_g_backBuffer.rasterInfo.width;
@@ -1908,15 +1414,12 @@ HDC stdDisplay_GetBackBufferDC(void) //checked
         }
     }
 
-
-    // //TODO: add MSAA support
-
     stdDisplay_backLockRef = 1;
-    stdDisplay_hdcBack     = g_gdi.hdc; // falls du das Handle global speicherst
+    stdDisplay_hdcBack     = g_gdi.hdc;
     return g_gdi.hdc;
 }
 
-void J3DAPI stdDisplay_ReleaseBackBufferDC(HDC hdc) //checked
+void J3DAPI stdDisplay_ReleaseBackBufferDC(HDC hdc)
 {
     if ( !g_gdi.hdc || hdc != g_gdi.hdc )
         return;
@@ -1924,8 +1427,6 @@ void J3DAPI stdDisplay_ReleaseBackBufferDC(HDC hdc) //checked
     if ( --g_gdi.lockRef > 0 )
         return;
 
-    // TODO: add msaa support
-    // Kopiere GDI-Inhalt in den CPU-Backbuffer
     if ( stdDisplay_g_backBuffer.pPixels )
     {
         size_t copyPitch = stdDisplay_g_backBuffer.rasterInfo.rowSize;
@@ -1950,7 +1451,7 @@ int stdDisplay_FlipToGDISurface(void)
 
 int J3DAPI stdDisplay_CanRenderWindowed(void)
 {
-    return 1;
+    return 1; //always true in OpenGL/SDL
 }
 
 int J3DAPI stdDisplay_SetBufferClipper(int bFrontBuffer)
@@ -1976,7 +1477,7 @@ int J3DAPI stdDisplay_IsFullscreen(void)
     return stdDisplay_bFullscreen;
 }
 
-int J3DAPI stdDisplay_LockBackBuffer(void** pSurface, uint32_t* pWidth, uint32_t* pHeight, int32_t* pPitch) //checked
+int J3DAPI stdDisplay_LockBackBuffer(void** pSurface, uint32_t* pWidth, uint32_t* pHeight, int32_t* pPitch)
 {
     if ( !stdDisplay_bOpen || !stdDisplay_bModeSet )
     {
@@ -2019,11 +1520,11 @@ int J3DAPI stdDisplay_LockBackBuffer(void** pSurface, uint32_t* pWidth, uint32_t
     return 0;
 }
 
-void stdDisplay_UnlockBackBuffer(void) //checked
+void stdDisplay_UnlockBackBuffer(void)
 {
     //upload written back buffer pixels to back buffer fbo texture
     tVSurface* surface = &stdDisplay_g_backBuffer.surface;
-    if ( stdDisplay_bMSAAEnabled )
+    if ( stdDisplay_bMSAAEnabled ) //drawing directly on multisampled framebuffer is not possible
     {
         glBindFramebuffer(GL_READ_FRAMEBUFFER, surface->fbo);
         surface->skipMSAA = true;
