@@ -1,4 +1,4 @@
-#version 330 compatibility
+#version 330 core
 #define mad(a, b, c) (a * b + c)
 
 #if defined(SMAA_PRESET_LOW)

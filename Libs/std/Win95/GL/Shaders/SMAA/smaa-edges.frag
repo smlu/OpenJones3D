@@ -1,4 +1,4 @@
-#version 330 compatibility
+#version 330 core
 
 #define SMAA_EDGES_LUMA
 
