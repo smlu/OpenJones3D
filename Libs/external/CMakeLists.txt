@@ -41,7 +41,7 @@ if (J3D_OPENGL)
 
     set(GLAD_API "gl:core=3.3")
     # comma seperated list for extensions
-    set(GLAD_EXTENSIONS "GL_EXT_texture_filter_anisotropic")
+    set(GLAD_EXTENSIONS "GL_EXT_texture_filter_anisotropic, GL_KHR_debug")
     set(GLAD_DIR "${CMAKE_SOURCE_DIR}/Libs/external/glad")
     set(GLAD_GENERATED_DIR "${CMAKE_SOURCE_DIR}/Libs/external/glad/build")
 
