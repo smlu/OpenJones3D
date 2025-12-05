@@ -630,8 +630,7 @@ int J3DAPI stdDisplay_VBufferUnlock(tVBuffer* pVBuffer)
     return 0; // 1 locked - 0 unlocked
 }
 
-tVBuffer* J3DAPI stdDisplay_VBufferConvertColorFormat(const ColorInfo* pDesiredColorFormat, tVBuffer* pSrc,
-                                                      int bColorKey, LPDDCOLORKEY pColorKey)
+tVBuffer* J3DAPI stdDisplay_VBufferConvertColorFormat(const ColorInfo* pDesiredColorFormat, tVBuffer* pSrc, int bColorKey, LPDDCOLORKEY pColorKey)
 {
     STD_ASSERTREL(pSrc != NULL);
 
@@ -1477,6 +1476,24 @@ int J3DAPI stdDisplay_IsFullscreen(void)
     return stdDisplay_bFullscreen;
 }
 
+static void stdDisplay_FlipBackBufferPixels(void)
+{
+    uint8_t* pPixelData    = stdDisplay_g_backBuffer.pPixels;
+    int rowSize            = stdDisplay_g_backBuffer.rasterInfo.rowSize;
+    unsigned char* tempRow = STDMALLOC(rowSize);
+    int height             = (int)stdDisplay_g_backBuffer.rasterInfo.height;
+    for ( int i = 0; i < height / 2; i++ )
+    {
+        int topRow    = i;
+        int bottomRow = height - 1 - i;
+
+        memcpy(tempRow, &pPixelData[topRow * rowSize], rowSize);
+        memcpy(&pPixelData[topRow * rowSize], &pPixelData[bottomRow * rowSize], rowSize);
+        memcpy(&pPixelData[bottomRow * rowSize], tempRow, rowSize);
+    }
+    STDFREE(tempRow);
+}
+
 int J3DAPI stdDisplay_LockBackBuffer(void** pSurface, uint32_t* pWidth, uint32_t* pHeight, int32_t* pPitch)
 {
     if ( !stdDisplay_bOpen || !stdDisplay_bModeSet )
@@ -1514,7 +1531,9 @@ int J3DAPI stdDisplay_LockBackBuffer(void** pSurface, uint32_t* pWidth, uint32_t
     }
 
     glPixelStorei(GL_PACK_ALIGNMENT, 1);
-    glReadPixels(0, 0, *pWidth, *pHeight, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8, stdDisplay_g_backBuffer.pPixels);
+    glReadPixels(0, 0, *pWidth, *pHeight, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, stdDisplay_g_backBuffer.pPixels);
+
+    stdDisplay_FlipBackBufferPixels();
 
     *pSurface = stdDisplay_g_backBuffer.pPixels;
     return 0;
@@ -1529,6 +1548,7 @@ void stdDisplay_UnlockBackBuffer(void)
         glBindFramebuffer(GL_READ_FRAMEBUFFER, surface->fbo);
         surface->skipMSAA = true;
     }
+    stdDisplay_FlipBackBufferPixels();
     stdShader_SetActiveTextureUnit(TU_SCENE);
     glBindTexture(GL_TEXTURE_2D, surface->colorTex);
     uint32_t height = stdDisplay_g_backBuffer.rasterInfo.height;
@@ -1537,12 +1557,6 @@ void stdDisplay_UnlockBackBuffer(void)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, GL_ONE);
     stdShader_SetActiveTextureUnit(TU_DEFAULT);
     stdDisplay_backLockRef--;
-}
-
-void stdDisplay_MirrorYAxis(const bool bMirror)
-{
-    stdShader_SetActiveShader(stdDisplay_fboShader);
-    glUniform1i(glGetUniformLocation(stdDisplay_fboShader->handle, "bMirrorY"), bMirror);
 }
 
 uint32_t J3DAPI stdDisplay_EncodeFromRGB565(uint16_t pixel)
