@@ -11,7 +11,6 @@
 #include <std/General/stdUtil.h>
 
 #include <math.h>
-#include "std/Win95/stdWin95.h"
 
 #define STD3D_DEFAULT_MAX_VERTICES 512
 
@@ -39,7 +38,6 @@ static float std3D_fogEndDepth        = 0.0f;
 static StdShaderVector std3D_fogColor = { 0 };
 
 static bool std3D_bFindAllD3Devices = false;
-static size_t std3D_curDevice       = 0;
 static Device3D* std3D_pCurDevice   = NULL;
 
 static size_t std3D_numDevices    = 0;
@@ -65,8 +63,6 @@ static tSysPixelFormat std3D_RGBTextureFormat =
 };
 
 static bool std3D_bHasRGBTextureFormat = true;
-
-static GLenum std3D_currentMipmapFiler = 0;
 
 const size_t std3D_maxVerticesPerDrawCall = 65536;  // max vertices which can be drawn in one draw call
 const size_t std3D_maxIndicesPerDrawCall  = 131072; // max indices which can be drawn in one draw call
@@ -129,9 +125,9 @@ void std3D_ReleaseVertexBuffers(void);
 bool std3D_InitShaderSystem(void);
 void std3D_ShutdownShaderSystem(void);
 
-static void std3D_DrawFrameBatch(void);
-static bool std3D_EnsureDrawCapacity(size_t extraVerts, size_t extraIndices);
-static void std3D_MapVertexBuffers(void);
+static void std3D_DrawFrameBatch(void);                                       //new
+static bool std3D_EnsureDrawCapacity(size_t extraVerts, size_t extraIndices); //new
+static void std3D_MapVertexBuffers(void);                                     //new
 
 void std3D_InstallHooks(void)
 {
@@ -237,6 +233,8 @@ static bool std3D_InitSystem(void)
         STDLOG_ERROR("Error creating Z buffer.\n");
         return false;
     }
+
+    // create 1x1 white texture for solid mode
     std3D_pWhiteTexture = STDMALLOC(sizeof(tSysTexture));
     glGenTextures(1, &std3D_pWhiteTexture->id);
     glBindTexture(GL_TEXTURE_2D, std3D_pWhiteTexture->id);
@@ -279,6 +277,7 @@ static bool std3D_InitSystem(void)
     std3D_numCachedTextures = 0;
     std3D_pFirstTexCache    = NULL;
     std3D_pLastTexCache     = NULL;
+
     glGenSamplers(1, &std3D_activeSampler);
 
     std3D_InitVertexBuffers(&std3D_pVertexBufferOpaque, &std3D_pIndexBuffer, &std3D_pVertexArrayObject);
@@ -318,16 +317,14 @@ static void std3D_OnDisplayDeviceReset(tSysDevice3D* pDevice)
 {
     J3D_UNUSED(pDevice);
     // Release any cached texture before device is changed
-    STDLOG_DEBUG("Received display device to be reset signal. Releasing system "
-        "resources...\n");
+    STDLOG_DEBUG("Received display device to be reset signal. Releasing system resources...\n");
     std3D_ReleaseSystemResources();
 }
 
 static void std3D_OnDisplayDevicePostReset(tSysDevice3D* pDevice)
 {
     J3D_UNUSED(pDevice);
-    STDLOG_DEBUG(
-        "Received display device reset signal. Re-initializing the system...\n");
+    STDLOG_DEBUG("Received display device reset signal. Re-initializing the system...\n");
 
     std3D_InitSystem();
 }
@@ -335,8 +332,7 @@ static void std3D_OnDisplayDevicePostReset(tSysDevice3D* pDevice)
 static void std3D_OnDisplayDeviceRelease(tSysDevice3D* pDevice)
 {
     J3D_UNUSED(pDevice);
-    STDLOG_DEBUG("Received signal that display device is about to be released. "
-        "Releasing system resources...\n");
+    STDLOG_DEBUG("Received signal that display device is about to be released. Releasing system resources...\n");
     std3D_ReleaseSystemResources();
 }
 
@@ -361,7 +357,6 @@ int J3DAPI std3D_Open(size_t deviceNum)
         return 0;
     }
 
-    std3D_curDevice  = deviceNum;
     std3D_pCurDevice = &std3D_aDevices[deviceNum];
 
     // Register device changed callback
@@ -382,9 +377,7 @@ int J3DAPI std3D_Open(size_t deviceNum)
     size_t memTotal = 0;
     stdDisplay_GetTotalMemory(&memTotal, &memFree);
 
-    STDLOG_STATUS("Texture Ram  Total: %u bytes  Free: %u bytes.\n",
-                  std3D_pCurDevice->totalMemory,
-                  std3D_pCurDevice->availableMemory);
+    STDLOG_STATUS("Texture Ram  Total: %u bytes  Free: %u bytes.\n", std3D_pCurDevice->totalMemory, std3D_pCurDevice->availableMemory);
     STDLOG_STATUS("Video Ram Total: %u bytes  Free: %u bytes.\n", memTotal, memFree);
 
     std3D_bOpen = true;
@@ -406,7 +399,6 @@ void std3D_Close(void)
     std3D_ReleaseSystemResources();
 
     std3D_mipmapFilter         = -1;
-    std3D_curDevice            = 0;
     std3D_pCurDevice           = NULL;
     std3D_bHasRGBTextureFormat = false;
     std3D_bOpen                = false;
@@ -450,7 +442,7 @@ StdColorFormatType J3DAPI std3D_GetColorFormat(const ColorInfo* pCi)
 
 size_t std3D_GetNumTextureFormats(void)
 {
-    return 2;
+    return 2; // always two, since we only use RGB and RGBA as texture format
 }
 
 int std3D_StartScene(void)
@@ -465,13 +457,7 @@ int std3D_StartScene(void)
         (float)std3D_activeRect.y2  // height
     };
 
-    if ( !stdShader_SetViewport(vp) )
-    {
-        return 1;
-    }
-
-
-    return 0;
+    return !stdShader_SetViewport(vp);
 }
 
 void std3D_EndScene(void)
@@ -521,7 +507,7 @@ int std3D_CacheDrawCall(GLenum type, tSysTexture* pTex, Std3DRenderState rdflags
             std3D_frameBatch.indices[firstIndex + i] = aIndices[i] + baseVertex;
         }
     }
-    else if ( type == GL_LINES )
+    else if ( type == GL_LINES ) //for line strip, just create a pair of indices for each line
     {
         for ( size_t i = 0; i < numVerts - 1; i++ )
         {
@@ -529,7 +515,7 @@ int std3D_CacheDrawCall(GLenum type, tSysTexture* pTex, Std3DRenderState rdflags
             std3D_frameBatch.indices[firstIndex + i * 2 + 1] = baseVertex + i + 1;
         }
     }
-    else if ( type == GL_POINTS )
+    else if ( type == GL_POINTS ) // for points, just give each vertex an index.
     {
         for ( size_t i = 0; i < numVerts - 1; i++ )
         {
@@ -633,15 +619,12 @@ void J3DAPI std3D_DrawRenderList(tSysTexture* pTex, Std3DRenderState rdflags, LP
         return;
     }
 
-    if ( !std3D_CacheDrawCall(GL_TRIANGLES, pTex, rdflags, aVerts, numVerts, aIndices, numIndices) )
-    {
-        // draw failed
-    }
+    std3D_CacheDrawCall(GL_TRIANGLES, pTex, rdflags, aVerts, numVerts, aIndices, numIndices);
 }
 
 void std3D_SetWireframeRenderState(void)
 {
-}
+} //not needed anymore, as this is done when wireframe draw call is cached
 
 void J3DAPI std3D_DrawLineStrip(LPD3DTLVERTEX aVerts, size_t numVerts)
 {
@@ -652,8 +635,7 @@ void J3DAPI std3D_DrawLineStrip(LPD3DTLVERTEX aVerts, size_t numVerts)
         return;
     }
 
-    Std3DRenderState rdstate = std3D_renderState & ~(STD3D_RS_FOG_ENABLED |
-        STD3D_RS_UNKNOWN_400 | STD3D_RS_UNKNOWN_200);
+    Std3DRenderState rdstate = std3D_renderState & ~(STD3D_RS_FOG_ENABLED | STD3D_RS_UNKNOWN_400 | STD3D_RS_UNKNOWN_200);
 
     std3D_CacheDrawCall(GL_LINES, NULL, rdstate, aVerts, numVerts, NULL, 0);
 }
@@ -675,8 +657,7 @@ void J3DAPI std3D_SetRenderState(Std3DRenderState rdflags)
     if ( std3D_renderState == rdflags )
         return;
 
-    if ( (std3D_renderState & STD3D_RS_ZWRITE_DISABLED) !=
-        (rdflags & STD3D_RS_ZWRITE_DISABLED) )
+    if ( (std3D_renderState & STD3D_RS_ZWRITE_DISABLED) != (rdflags & STD3D_RS_ZWRITE_DISABLED) )
     {
         if ( rdflags & STD3D_RS_ZWRITE_DISABLED )
         {
@@ -690,18 +671,12 @@ void J3DAPI std3D_SetRenderState(Std3DRenderState rdflags)
 
     if ( (std3D_renderState & STD3D_RS_TEX_CPAMP_U) != (rdflags & STD3D_RS_TEX_CPAMP_U) )
     {
-        glSamplerParameteri(std3D_activeSampler, GL_TEXTURE_WRAP_S,
-                            (rdflags & STD3D_RS_TEX_CPAMP_U)
-                                ? GL_CLAMP_TO_EDGE
-                                : GL_REPEAT);
+        glSamplerParameteri(std3D_activeSampler, GL_TEXTURE_WRAP_S, (rdflags & STD3D_RS_TEX_CPAMP_U) ? GL_CLAMP_TO_EDGE : GL_REPEAT);
     }
 
     if ( (std3D_renderState & STD3D_RS_TEX_CPAMP_V) != (rdflags & STD3D_RS_TEX_CPAMP_V) )
     {
-        glSamplerParameteri(std3D_activeSampler, GL_TEXTURE_WRAP_T,
-                            (rdflags & STD3D_RS_TEX_CPAMP_V)
-                                ? GL_CLAMP_TO_EDGE
-                                : GL_REPEAT);
+        glSamplerParameteri(std3D_activeSampler, GL_TEXTURE_WRAP_T, (rdflags & STD3D_RS_TEX_CPAMP_V) ? GL_CLAMP_TO_EDGE : GL_REPEAT);
     }
 
     if ( (std3D_renderState & STD3D_RS_FOG_ENABLED) != (rdflags & STD3D_RS_FOG_ENABLED) )
@@ -748,8 +723,7 @@ void J3DAPI std3D_SetRenderState(Std3DRenderState rdflags)
     std3D_renderState = rdflags;
 }
 
-void J3DAPI std3D_AllocSystemTexture(tSystemTexture* pTexture, tVBuffer** apVBuffers, size_t numMipLevels,
-                                     StdColorFormatType formatType)
+void J3DAPI std3D_AllocSystemTexture(tSystemTexture* pTexture, tVBuffer** apVBuffers, size_t numMipLevels, StdColorFormatType formatType)
 {
     memset(pTexture, 0, sizeof(tSystemTexture));
 
@@ -885,8 +859,7 @@ void J3DAPI std3D_ClearSystemTexture(tSystemTexture* pTex)
     memset(pTex, 0, sizeof(tSystemTexture));
 }
 
-void J3DAPI std3D_AddToTextureCache(tSystemTexture* pCacheTexture,
-                                    StdColorFormatType format)
+void J3DAPI std3D_AddToTextureCache(tSystemTexture* pCacheTexture, StdColorFormatType format)
 {
     J3D_UNUSED(format);
     STD_ASSERTREL(pCacheTexture);
@@ -1019,38 +992,17 @@ int std3D_InitRenderState(void)
 
 int J3DAPI std3D_SetMipmapFilter(Std3DMipmapFilterType filter)
 {
-    if ( filter == std3D_mipmapFilter )
-        return 0;
-
-    GLenum minFilter = GL_LINEAR;
-    switch ( filter )
-    {
-        case STD3D_MIPMAPFILTER_BILINEAR:
-            minFilter = GL_LINEAR_MIPMAP_NEAREST;
-            break;
-        case STD3D_MIPMAPFILTER_TRILINEAR:
-            minFilter = GL_LINEAR_MIPMAP_LINEAR;
-            break;
-        case STD3D_MIPMAPFILTER_NONE:
-            minFilter = GL_LINEAR;
-            break;
-        default:
-            minFilter = GL_LINEAR;
-            break;
-    }
-
-    std3D_currentMipmapFiler = minFilter;
-
     std3D_mipmapFilter = filter;
     return 0;
 }
 
-int J3DAPI std3D_SetProjection(float fov, float nearPlane, float farPlane)
+int J3DAPI std3D_SetProjection(float fov, float nearPlane, float farPlane) // This is currently not needed since projection is not done in shader
 {
+    J3D_UNUSED(fov);
     if ( fabsf(farPlane - nearPlane) < 1e-4f )
         return 0;
 
-    // This is currently not needed since projection is not done in shader
+
     // float f = 1.0f / tanf(fov * 0.5f * 0.01745329252);
     //
     // float proj[16] = {
@@ -1410,16 +1362,19 @@ bool std3D_InitVertexBuffers(GLuint* vbo, GLuint* ibo, GLuint* vao)
     glGenVertexArrays(1, vao);
     glBindVertexArray(*vao);
 
+    // create vbo
     glGenBuffers(1, vbo);
     glBindBuffer(GL_ARRAY_BUFFER, *vbo);
     glBufferData(GL_ARRAY_BUFFER, std3D_maxVerticesPerDrawCall * sizeof(D3DTLVERTEX), NULL, GL_DYNAMIC_DRAW);
 
+    // create ibo
     glGenBuffers(1, ibo);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, *ibo);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, std3D_maxIndicesPerDrawCall * sizeof(GL_SHORT), NULL, GL_DYNAMIC_DRAW);
 
     const GLsizei stride = sizeof(D3DTLVERTEX);
 
+    // set attributes
     glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(D3DTLVERTEX, sx));
     glEnableVertexAttribArray(0);
 
@@ -1478,6 +1433,7 @@ bool std3D_InitShaderSystem(void)
         return false;
     }
 
+    //create wireframe shader
     std3D_defaultShaderWf = stdShader_CompileAndCreate("std_default_wf", "default.vert", "default_wf.frag");
     if ( !std3D_defaultShaderWf )
     {
