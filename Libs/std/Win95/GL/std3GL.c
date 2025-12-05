@@ -254,11 +254,12 @@ static bool std3D_InitSystem(void)
         std3D_bAutoGenMipmap = false;
     }
 
-    std3D_bAnisotropicFilter = stdConfig_GetBool(STD3D_CFG_ANISOTROPICFILTER, true);
+    std3D_bAnisotropicFilter = std3D_bAutoGenMipmap && stdConfig_GetBool(STD3D_CFG_ANISOTROPICFILTER, true);
     if ( std3D_bAnisotropicFilter && !std3D_pCurDevice->bAnisotropicFilteringSupported )
     {
         STDLOG_WARNING("Warning: Anisotropic filtering disabled, no device support!\n");
-        std3D_bAutoGenMipmap = false;
+        std3D_bAutoGenMipmap     = false;
+        std3D_bAnisotropicFilter = false;
     }
     else
     {
@@ -718,14 +719,16 @@ void J3DAPI std3D_SetRenderState(Std3DRenderState rdflags)
 
     if ( (std3D_renderState & STD3D_RS_TEXFILTER_ANISOTROPIC) != (rdflags & STD3D_RS_TEXFILTER_ANISOTROPIC) )
     {
-        glSamplerParameteri(std3D_activeSampler, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-        glSamplerParameteri(std3D_activeSampler, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         if ( (rdflags & STD3D_RS_TEXFILTER_ANISOTROPIC) != 0 && std3D_bAnisotropicFilter )
         {
+            glSamplerParameteri(std3D_activeSampler, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+            glSamplerParameteri(std3D_activeSampler, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
             glSamplerParameterf(std3D_activeSampler, GL_TEXTURE_MAX_ANISOTROPY_EXT, std3D_maxAnisoLevel);
         }
         else
         {
+            glSamplerParameteri(std3D_activeSampler, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glSamplerParameteri(std3D_activeSampler, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
             glSamplerParameterf(std3D_activeSampler, GL_TEXTURE_MAX_ANISOTROPY_EXT, 1.0f);
         }
     }
@@ -733,7 +736,7 @@ void J3DAPI std3D_SetRenderState(Std3DRenderState rdflags)
     {
         if ( rdflags & STD3D_RS_TEXFILTER_BILINEAR )
         {
-            glSamplerParameteri(std3D_activeSampler, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
+            glSamplerParameteri(std3D_activeSampler, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
             glSamplerParameteri(std3D_activeSampler, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         }
         else
@@ -761,12 +764,11 @@ void J3DAPI std3D_AllocSystemTexture(tSystemTexture* pTexture, tVBuffer** apVBuf
         std3D_GetValidDimensions(pVBuffer->rasterInfo.width, pVBuffer->rasterInfo.height, &texWidth, &texHeight);
     }
 
-    size_t texSize =
-        (pVBuffer->rasterInfo.colorInfo.bpp * texHeight * texWidth) / 8;
-    // if ( std3D_mipmapFilter == STD3D_MIPMAPFILTER_NONE )
-    // {
-    //     numMipLevels = 1;
-    // }
+    size_t texSize = (pVBuffer->rasterInfo.colorInfo.bpp * texHeight * texWidth) / 8;
+    if ( std3D_mipmapFilter == STD3D_MIPMAPFILTER_NONE )
+    {
+        numMipLevels = 1;
+    }
 
     tSysPixelFormat glFormat;
     if ( formatType == STDCOLOR_FORMAT_RGBA )
@@ -779,8 +781,7 @@ void J3DAPI std3D_AllocSystemTexture(tSystemTexture* pTexture, tVBuffer** apVBuf
     }
 
     // Allocate array for VBuffer pointers - NO DirectX objects created
-    pTexture->apMipmaps =
-        (tVBuffer**)STDMALLOC(numMipLevels * sizeof(tVBuffer*));
+    pTexture->apMipmaps = (tVBuffer**)STDMALLOC(numMipLevels * sizeof(tVBuffer*));
     if ( !pTexture->apMipmaps )
     {
         STDLOG_ERROR("Failed to allocate memory for VBuffer array.\n");
@@ -795,12 +796,7 @@ void J3DAPI std3D_AllocSystemTexture(tSystemTexture* pTexture, tVBuffer** apVBuf
     for ( size_t mmNum = 0; mmNum < numMipLevels; ++mmNum )
     {
         // Create new VBuffer copy using stdDisplay_VBufferNew
-        pTexture->apMipmaps[mmNum] = stdDisplay_VBufferNew(
-            &apVBuffers[mmNum]->rasterInfo, /*bUseVSurface*/ 0,
-            /*bUseVideoMemory*/
-            0);
-        // Important: must not use video surface (D3D) as texture can live longer
-        // than display device
+        pTexture->apMipmaps[mmNum] = stdDisplay_VBufferNew(&apVBuffers[mmNum]->rasterInfo, /*bUseVSurface*/ 0, /*bUseVideoMemory*/0);
         if ( !pTexture->apMipmaps[mmNum] )
         {
             STDLOG_ERROR("Failed to create VBuffer for mip level %d.\n", mmNum);
@@ -816,10 +812,8 @@ void J3DAPI std3D_AllocSystemTexture(tSystemTexture* pTexture, tVBuffer** apVBuf
                 stdDisplay_VBufferLock(apVBuffers[mmNum]);
                 stdDisplay_VBufferLock(pTexture->apMipmaps[mmNum]);
 
-                size_t pixelDataSize = apVBuffers[mmNum]->rasterInfo.height *
-                    apVBuffers[mmNum]->rasterInfo.rowSize;
-                memcpy(pTexture->apMipmaps[mmNum]->pPixels, apVBuffers[mmNum]->pPixels,
-                       pixelDataSize);
+                size_t pixelDataSize = apVBuffers[mmNum]->rasterInfo.height * apVBuffers[mmNum]->rasterInfo.rowSize;
+                memcpy(pTexture->apMipmaps[mmNum]->pPixels, apVBuffers[mmNum]->pPixels, pixelDataSize);
 
                 stdDisplay_VBufferUnlock(pTexture->apMipmaps[mmNum]);
                 stdDisplay_VBufferUnlock(apVBuffers[mmNum]);
@@ -895,7 +889,6 @@ void J3DAPI std3D_AddToTextureCache(tSystemTexture* pCacheTexture,
                                     StdColorFormatType format)
 {
     J3D_UNUSED(format);
-
     STD_ASSERTREL(pCacheTexture);
 
     if ( pCacheTexture->numMipLevels == 0 || !pCacheTexture->apMipmaps )
@@ -919,12 +912,24 @@ void J3DAPI std3D_AddToTextureCache(tSystemTexture* pCacheTexture,
     GLenum typeGL          = pCacheTexture->format.glType;
     GLint internalFormatGL = pCacheTexture->format.glInternalFormat;
 
-    tVBuffer* mip  = pCacheTexture->apMipmaps[0];
-    GLsizei width  = (GLsizei)mip->rasterInfo.width;
-    GLsizei height = (GLsizei)mip->rasterInfo.height;
-    glTexImage2D(GL_TEXTURE_2D, 0, internalFormatGL, width, height, 0, formatGL, typeGL, mip->pPixels);
-
-    glGenerateMipmap(GL_TEXTURE_2D);
+    tVBuffer* mainTex = pCacheTexture->apMipmaps[0];
+    GLsizei width     = (GLsizei)mainTex->rasterInfo.width;
+    GLsizei height    = (GLsizei)mainTex->rasterInfo.height;
+    glTexImage2D(GL_TEXTURE_2D, 0, internalFormatGL, width, height, 0, formatGL, typeGL, mainTex->pPixels);
+    if ( std3D_bAutoGenMipmap )
+    {
+        glGenerateMipmap(GL_TEXTURE_2D);
+    }
+    else
+    {
+        for ( size_t i = 1; i < pCacheTexture->numMipLevels; i++ )
+        {
+            tVBuffer* mipMap  = pCacheTexture->apMipmaps[i];
+            GLsizei mipWidth  = (GLsizei)mipMap->rasterInfo.width;
+            GLsizei mipHeight = (GLsizei)mipMap->rasterInfo.height;
+            glTexImage2D(GL_TEXTURE_2D, (GLint)i, internalFormatGL, mipWidth, mipHeight, 0, formatGL, typeGL, mipMap->pPixels);
+        }
+    }
 
     tSysTexture* texture = STDMALLOC(sizeof(tSysTexture));
     texture->id          = tex;
@@ -1017,7 +1022,7 @@ int J3DAPI std3D_SetMipmapFilter(Std3DMipmapFilterType filter)
     if ( filter == std3D_mipmapFilter )
         return 0;
 
-    GLenum minFilter = GL_LINEAR; // default: keine Mipmaps
+    GLenum minFilter = GL_LINEAR;
     switch ( filter )
     {
         case STD3D_MIPMAPFILTER_BILINEAR:
@@ -1156,8 +1161,7 @@ static int std3D_BuildDeviceList(void)
                       pD3DDriver->bColorkeyTextureSupported ? "Colorkey"
                       : "No Colorkey");
 
-        STDLOG_STATUS("Description: %s [%s]\n", pD3DDriver->deviceName,
-                      pD3DDriver->deviceDescription);
+        STDLOG_STATUS("Description: %s [%s]\n", pD3DDriver->deviceName, pD3DDriver->deviceDescription);
 
         ++std3D_numDevices;
     }
