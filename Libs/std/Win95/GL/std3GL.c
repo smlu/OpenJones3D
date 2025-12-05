@@ -68,39 +68,6 @@ static bool std3D_bHasRGBTextureFormat = true;
 
 static GLenum std3D_currentMipmapFiler = 0;
 
-static const DXStatus std3D_aD3DStatusTbl[30] = {
-    { D3D_OK, "D3D_OK" },
-    { D3DERR_WRONGTEXTUREFORMAT, "D3DERR_WRONGTEXTUREFORMAT" },
-    { D3DERR_UNSUPPORTEDCOLOROPERATION, "D3DERR_UNSUPPORTEDCOLOROPERATION" },
-    { D3DERR_UNSUPPORTEDCOLORARG, "D3DERR_UNSUPPORTEDCOLORARG" },
-    { D3DERR_UNSUPPORTEDALPHAOPERATION, "D3DERR_UNSUPPORTEDALPHAOPERATION" },
-    { D3DERR_UNSUPPORTEDALPHAARG, "D3DERR_UNSUPPORTEDALPHAARG" },
-    { D3DERR_TOOMANYOPERATIONS, "D3DERR_TOOMANYOPERATIONS" },
-    { D3DERR_CONFLICTINGTEXTUREFILTER, "D3DERR_CONFLICTINGTEXTUREFILTER" },
-    { D3DERR_UNSUPPORTEDFACTORVALUE, "D3DERR_UNSUPPORTEDFACTORVALUE" },
-    { D3DERR_CONFLICTINGRENDERSTATE, "D3DERR_CONFLICTINGRENDERSTATE" },
-    { D3DERR_UNSUPPORTEDTEXTUREFILTER, "D3DERR_UNSUPPORTEDTEXTUREFILTER" },
-    { D3DERR_CONFLICTINGTEXTUREPALETTE, "D3DERR_CONFLICTINGTEXTUREPALETTE" },
-    { D3DERR_DRIVERINTERNALERROR, "D3DERR_DRIVERINTERNALERROR" },
-    { D3DERR_NOTFOUND, "D3DERR_NOTFOUND" },
-    { D3DERR_MOREDATA, "D3DERR_MOREDATA" },
-    { D3DERR_DEVICELOST, "D3DERR_DEVICELOST" },
-    { D3DERR_DEVICENOTRESET, "D3DERR_DEVICENOTRESET" },
-    { D3DERR_NOTAVAILABLE, "D3DERR_NOTAVAILABLE" },
-    { D3DERR_OUTOFVIDEOMEMORY, "D3DERR_OUTOFVIDEOMEMORY" },
-    { D3DERR_INVALIDDEVICE, "D3DERR_INVALIDDEVICE" },
-    { D3DERR_INVALIDCALL, "D3DERR_INVALIDCALL" },
-    { D3DERR_DRIVERINVALIDCALL, "D3DERR_DRIVERINVALIDCALL" },
-    { D3DERR_WASSTILLDRAWING, "D3DERR_WASSTILLDRAWING" },
-    { E_FAIL, "E_FAIL" },
-    { E_INVALIDARG, "E_INVALIDARG" },
-    { E_OUTOFMEMORY, "E_OUTOFMEMORY" },
-    { E_NOTIMPL, "E_NOTIMPL" },
-    { S_FALSE, "S_FALSE" },
-    { E_NOINTERFACE, "E_NOINTERFACE" },
-    { E_POINTER, "E_POINTER" }
-};
-
 const size_t std3D_maxVerticesPerDrawCall = 65536;  // max vertices which can be drawn in one draw call
 const size_t std3D_maxIndicesPerDrawCall  = 131072; // max indices which can be drawn in one draw call
 const size_t std3D_maxDrawCallGroupSize   = 16384;  // max amount of draw calls which can be summarized in a group
@@ -202,7 +169,7 @@ void std3D_InstallHooks(void)
     J3D_HOOKFUNC(std3D_AddTextureToCacheList);
     J3D_HOOKFUNC(std3D_RemoveTextureFromCacheList);
     J3D_HOOKFUNC(std3D_PurgeTextureCache);
-    J3D_HOOKFUNC(std3D_D3DGetStatus);
+    //J3D_HOOKFUNC(std3D_D3DGetStatus);
     J3D_HOOKFUNC(std3D_BuildDisplayEnvironment);
     J3D_HOOKFUNC(std3D_FreeDisplayEnvironment);
     J3D_HOOKFUNC(std3D_SetFindAllDevices);
@@ -283,16 +250,14 @@ static bool std3D_InitSystem(void)
     std3D_bAutoGenMipmap = stdConfig_GetBool(STD3D_CFG_MIPMAPAUTOGEN, true);
     if ( std3D_bAutoGenMipmap && !std3D_pCurDevice->bMipmapAutoGenSupported )
     {
-        STDLOG_WARNING(
-            "Warning: Automatic mipmap generation disabled, no device support!\n");
+        STDLOG_WARNING("Warning: Automatic mipmap generation disabled, no device support!\n");
         std3D_bAutoGenMipmap = false;
     }
 
     std3D_bAnisotropicFilter = stdConfig_GetBool(STD3D_CFG_ANISOTROPICFILTER, true);
     if ( std3D_bAnisotropicFilter && !std3D_pCurDevice->bAnisotropicFilteringSupported )
     {
-        STDLOG_WARNING(
-            "Warning: Anisotropic filtering disabled, no device support!\n");
+        STDLOG_WARNING("Warning: Anisotropic filtering disabled, no device support!\n");
         std3D_bAutoGenMipmap = false;
     }
     else
@@ -300,11 +265,7 @@ static bool std3D_InitSystem(void)
         glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &std3D_maxAnisoLevel);
     }
 
-    if ( !std3D_CreateViewport() )
-    {
-        STDLOG_ERROR("Error creating viewport.\n");
-        return false;
-    }
+    std3D_CreateViewport();
 
     std3D_g_maxVertices = std3D_pCurDevice->maxVertexCount;
     if ( std3D_g_maxVertices == 0 )
@@ -319,10 +280,8 @@ static bool std3D_InitSystem(void)
     std3D_pLastTexCache     = NULL;
     glGenSamplers(1, &std3D_activeSampler);
 
-    if ( !std3D_InitVertexBuffers(&std3D_pVertexBufferOpaque, &std3D_pIndexBuffer, &std3D_pVertexArrayObject) )
-    {
-        return false;
-    }
+    std3D_InitVertexBuffers(&std3D_pVertexBufferOpaque, &std3D_pIndexBuffer, &std3D_pVertexArrayObject);
+
 
     if ( !std3D_InitShaderSystem() )
     {
@@ -331,11 +290,8 @@ static bool std3D_InitSystem(void)
     }
 
     std3D_mipmapFilter = -1; // Must be reset
-    if ( !std3D_InitRenderState() )
-    {
-        STDLOG_ERROR("Error initializing render state.\n");
-        return false;
-    }
+    std3D_InitRenderState();
+
 
     if ( stdDisplay_GetTextureMemory(&std3D_pCurDevice->totalMemory, &std3D_pCurDevice->availableMemory) )
     {
@@ -557,7 +513,6 @@ int std3D_CacheDrawCall(GLenum type, tSysTexture* pTex, Std3DRenderState rdflags
     std3D_frameBatch.vertCount += numVerts;
 
     // paste new indices
-    // memcpy(&std3D_frameBatch.indices[firstIndex], aIndices, numIndices * sizeof(WORD));
     if ( type == GL_TRIANGLES )
     {
         for ( size_t i = 0; i < numIndices; i++ )
@@ -971,14 +926,6 @@ void J3DAPI std3D_AddToTextureCache(tSystemTexture* pCacheTexture,
 
     glGenerateMipmap(GL_TEXTURE_2D);
 
-    GLenum err = glGetError();
-    if ( err != GL_NO_ERROR )
-    {
-        STDLOG_ERROR("OpenGL error 0x%x while uploading texture.\n", err);
-        glDeleteTextures(1, &tex);
-        return;
-    }
-
     tSysTexture* texture = STDMALLOC(sizeof(tSysTexture));
     texture->id          = tex;
 
@@ -1000,15 +947,10 @@ size_t J3DAPI std3D_GetMipMapCount(const tSystemTexture* pTexture)
 void std3D_ResetTextureCache(void)
 {
     STDLOG_DEBUG("Clearing texture cache....\n");
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0); //draw in empty framebuffer for one time to avoid texture flickering
     stdShader_SetActiveTextureUnit(TU_3D_DRAW);
     glBindTexture(GL_TEXTURE_2D, 0);
     std3D_pD3DTex = NULL;
-    // if ( std3D_pWhiteTexture )
-    // {
-    //     stdShader_SetActiveTextureUnit(TU_3D_DRAW);
-    //     stdShader_SetTexture(std3D_defaultShader, std3D_pWhiteTexture->id);
-    // }
 
     tSystemTexture* pCurTex = std3D_pFirstTexCache;
     while ( pCurTex )
@@ -1040,12 +982,6 @@ void std3D_ResetTextureCache(void)
 
     std3D_frameCount = 1;
     std3D_pD3DTex    = NULL;
-
-    GLenum err = glGetError();
-    if ( err != GL_NO_ERROR )
-    {
-        STDLOG_ERROR("OpenGL error 0x%x while resetting texture cache.\n", err);
-    }
 }
 
 void J3DAPI std3D_UpdateFrameCount(tSystemTexture* pTexture)
@@ -1072,13 +1008,6 @@ int std3D_InitRenderState(void)
 
     std3D_renderState |= STD3D_RS_UNKNOWN_1 | STD3D_RS_UNKNOWN_2 | STD3D_RS_TEXFILTER_BILINEAR;
     std3D_SetMipmapFilter(STD3D_MIPMAPFILTER_TRILINEAR);
-
-    GLenum err = glGetError();
-    if ( err != GL_NO_ERROR )
-    {
-        STDLOG_ERROR("OpenGL error 0x%x during render state init.\n", err);
-        return false;
-    }
 
     return true;
 }
@@ -1200,7 +1129,7 @@ static int std3D_BuildDeviceList(void)
         pD3DDriver->minTexWidth                  = 1;
         pD3DDriver->minTexHeight                 = 1;
 
-        GLint maxTextureSize;
+        GLint maxTextureSize = 0;
         glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTextureSize);
 
         pD3DDriver->maxTexWidth                    = maxTextureSize;
@@ -1344,19 +1273,6 @@ int J3DAPI std3D_PurgeTextureCache(size_t size)
     }
 
     return purgedBytes != 0;
-}
-
-const char* J3DAPI std3D_D3DGetStatus(HRESULT res)
-{
-    for ( size_t i = 0; i < STD_ARRAYLEN(std3D_aD3DStatusTbl); ++i )
-    {
-        if ( std3D_aD3DStatusTbl[i].code == res )
-        {
-            return std3D_aD3DStatusTbl[i].text;
-        }
-    }
-
-    return "Unknown Error";
 }
 
 StdDisplayEnvironment* J3DAPI std3D_BuildDisplayEnvironment()
@@ -1513,12 +1429,6 @@ bool std3D_InitVertexBuffers(GLuint* vbo, GLuint* ibo, GLuint* vao)
     glEnableVertexAttribArray(3);
 
     glBindVertexArray(0);
-    GLenum err = glGetError();
-    if ( err != GL_NO_ERROR )
-    {
-        STDLOG_ERROR("Error 0x%x during VBO/attribute init\n", err);
-        return false;
-    }
 
     return true;
 }
@@ -1557,8 +1467,7 @@ bool std3D_InitShaderSystem(void)
 
     // Create default shader
     std3D_defaultShader = stdShader_CompileAndCreate("std_default", "default.vert", "default.frag");
-    // std3D_defaultShader =
-    //     stdShader_CompileAndCreate("std_default", "default.vert", "default.frag");
+
     if ( !std3D_defaultShader )
     {
         STDLOG_ERROR("Failed to create default shader\n");
