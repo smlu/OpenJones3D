@@ -2,10 +2,6 @@
 #define STD_STDWIN95_H
 #include <j3dcore/j3d.h>
 #include <std/types.h>
-#include <std/RTI/addresses.h>
-#if defined(J3D_OPENGL)
-#include <SDL3/SDL.h>
-#endif
 
 
 J3D_EXTERN_C_START
