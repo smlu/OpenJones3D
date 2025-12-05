@@ -618,31 +618,12 @@ int J3DAPI JonesMain_Startup(const char* lpCmdLine)
         JonesMain_CloseWindow();
         return 1;
     }
-
-
-#ifdef J3D_OPENGL
-
-    stdDisplay_MirrorYAxis(true);
-    // Play intro video
-    if ( bPlayIntro && JonesMain_PlayIntroMovie() )
-    {
-        stdDisplay_MirrorYAxis(false);
-        // Error playing intro movie
-        return 1;
-    }
-    stdDisplay_MirrorYAxis(false);
-
-#else
-
     // Play intro video
     if ( bPlayIntro && JonesMain_PlayIntroMovie() )
     {
         // Error playing intro movie
         return 1;
     }
-
-#endif
-
 
     // Finish playing intro video, now load static resource level
 

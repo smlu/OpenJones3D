@@ -40,15 +40,15 @@ void stdDisplay_RegisterDeviceReleaseCallback(tDisplayDeviceReleaseCallback pCal
 
 size_t stdDisplay_GetNumDevices(void);
 int J3DAPI stdDisplay_GetDevice(size_t deviceNum, StdDisplayDevice* pDest); // Copies display  device at deviceNum to pDest
-int J3DAPI stdDisplay_GetCurrentDevice(StdDisplayDevice* pDevice); // Copies current display device to pDest
-const StdDisplayDevice* stdDisplay_GetAllDevices(void); // Added
+int J3DAPI stdDisplay_GetCurrentDevice(StdDisplayDevice* pDevice);          // Copies current display device to pDest
+const StdDisplayDevice* stdDisplay_GetAllDevices(void);                     // Added
 
 int J3DAPI stdDisplay_SetMode(size_t modeNum, int bFullscreen, size_t numBackBuffers); // Sets current video mode
-void stdDisplay_ClearMode(void); // Clears current video mode
+void stdDisplay_ClearMode(void);                                                       // Clears current video mode
 
 size_t stdDisplay_GetNumVideoModes(void);
 int J3DAPI stdDisplay_GetVideoMode(size_t modeNum, StdVideoMode* pDestMode); // Copies video mode at modeNum to pDestMode
-int J3DAPI stdDisplay_GetCurrentVideoMode(StdVideoMode* pDisplayMode);  // Copies current video mode to pDestMode
+int J3DAPI stdDisplay_GetCurrentVideoMode(StdVideoMode* pDisplayMode);       // Copies current video mode to pDestMode
 
 tVBuffer* J3DAPI stdDisplay_VBufferNew(const tRasterInfo* pRasterInfo, int bUseVSurface, int bUseVideoMemory); //bUseVSurface - creates surface in system surface, otherwise in app memory is allocated
 void J3DAPI stdDisplay_VBufferFree(tVBuffer* pVBuffer);
@@ -88,10 +88,6 @@ uint32_t J3DAPI stdDisplay_EncodeFromRGB565(uint16_t pixel);
 // Helper hooking functions
 void stdDisplay_InstallHooks(void);
 void stdDisplay_ResetGlobals(void);
-
-#ifdef J3D_OPENGL
-void stdDisplay_MirrorYAxis(bool bMirror);
-#endif
 
 J3D_EXTERN_C_END
 #endif // STD_STDDISPLAY_H
