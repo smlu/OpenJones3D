@@ -4,6 +4,9 @@
 #include <j3dcore/j3dhook.h>
 #include <std/General/std.h>
 #include <std/RTI/symbols.h>
+#if defined (J3D_OPENGL)
+#include <SDL3/SDL.h>
+#endif
 
 
 static GUID stdWin95_guid;
