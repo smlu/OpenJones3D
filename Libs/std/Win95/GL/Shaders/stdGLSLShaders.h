@@ -1,6 +1,6 @@
 #ifndef SHADERS_H
 #define SHADERS_H
 
-const char* stdGLSLShaders_GetShader(const char* shaderName);
+const char* stdGLSLShaders_GetShader(const char* shaderName, size_t* outSize);
 
 #endif

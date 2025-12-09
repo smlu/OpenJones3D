@@ -38,19 +38,18 @@ elseif(J3D_DIRECTX9)
         "${SHADER_DIR}/*.hlsli"
     )
 elseif (J3D_OPENGL)
-    set(SHADER_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Win95/GL/Shaders")
-    include(Win95/Gl/Shaders/EmbedShaders.cmake)
-    embed_shaders("${SHADER_DIR}"
-            "${SHADER_DIR}/stdGLSLShaders")
-    #target_include_directories(std PRIVATE "${CMAKE_BINARY_DIR}/generated")
-    list(APPEND HEADERS "${SHADER_DIR}/stdGLSLShaders.h")
-    list(APPEND SOURCES "${SHADER_DIR}/stdGLSLShaders.c")
     remove_dx6_files()
     remove_dx9_files()
 endif()
 
 # Make project target
 add_library(${PROJECT_NAME} STATIC ${SOURCES} ${HEADERS} ${SHADERS} ${SHADER_INCLUDES})
+
+#if (J3D_OPENGL)
+#    set(SHADER_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Win95/GL/Shaders")
+#    include(Win95/Gl/Shaders/EmbedShaders.cmake)
+#    embed_shaders("${SHADER_DIR}" "${CMAKE_BINARY_DIR}/stdGLSLShaders.c")
+#endif()
 
 # Add global includes
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)
@@ -110,6 +109,9 @@ elseif(J3D_DIRECTX9)
     endforeach()
 
 elseif(J3D_OPENGL)
+    set(SHADER_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Win95/GL/Shaders")
+    include(Win95/Gl/Shaders/EmbedShaders.cmake)
+    embed_shaders("${SHADER_DIR}" "${CMAKE_BINARY_DIR}/stdGLSLShaders.c")
     find_package(OpenGL REQUIRED)
     target_link_libraries(${PROJECT_NAME} PUBLIC
             d3d9

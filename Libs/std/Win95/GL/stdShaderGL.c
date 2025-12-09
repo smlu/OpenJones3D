@@ -220,10 +220,10 @@ static char* stdShader_readGLSLFile(const char* path)
     return buf;
 }
 
-static GLuint stdShader_compileShader(GLenum type, const char* source, const char* debugName)
+static GLuint stdShader_compileShader(GLenum type, const char* source, size_t shaderSize, const char* debugName)
 {
     GLuint sh = glCreateShader(type);
-    glShaderSource(sh, 1, &source, NULL);
+    glShaderSource(sh, 1, &source, (const GLint*)&shaderSize);
     glCompileShader(sh);
 
     GLint ok = GL_FALSE;
@@ -319,8 +319,10 @@ GLShaderProgram* stdShader_CompileAndCreate(const char* pName, const char* pVert
         return NULL;
     }
 
-    const char* vsrc = stdGLSLShaders_GetShader(pVertexShaderCode);
-    const char* fsrc = stdGLSLShaders_GetShader(pPixelShaderCode);
+    size_t vsSize;
+    const char* vsrc = stdGLSLShaders_GetShader(pVertexShaderCode, &vsSize);
+    size_t fsSize;
+    const char* fsrc = stdGLSLShaders_GetShader(pPixelShaderCode, &fsSize);
 
     // char* vsrc = stdShader_readGLSLFile(pVertexShaderCode);
     // char* fsrc = stdShader_readGLSLFile(pPixelShaderCode);
@@ -339,8 +341,8 @@ GLShaderProgram* stdShader_CompileAndCreate(const char* pName, const char* pVert
         return NULL;
     }
 
-    GLuint vs = stdShader_compileShader(GL_VERTEX_SHADER, vsrc, pPixelShaderCode);
-    GLuint fs = stdShader_compileShader(GL_FRAGMENT_SHADER, fsrc, pPixelShaderCode);
+    GLuint vs = stdShader_compileShader(GL_VERTEX_SHADER, vsrc, vsSize, pPixelShaderCode);
+    GLuint fs = stdShader_compileShader(GL_FRAGMENT_SHADER, fsrc, fsSize, pPixelShaderCode);
 
     // STDFREE(vsrc);
     // STDFREE(fsrc);
