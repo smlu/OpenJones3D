@@ -858,7 +858,7 @@ int J3DAPI wkernel_CreateWindow(HINSTANCE hInstance, int nShowCmd, LPCSTR lpWind
     }
 
     // Initialize GLAD
-    if ( !gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress) )
+    if ( !gladLoadGL(SDL_GL_GetProcAddress) )
     {
         fprintf(stderr, "ERROR: wkernel_CreateWindow: Failed to initialize GLAD\n");
         SDL_GL_DestroyContext(wkernel_glContext);
