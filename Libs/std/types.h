@@ -77,11 +77,11 @@ typedef void* LPDDCOLORKEY;
 #define D3DRGBA D3DCOLOR_COLORVALUE
 #define RGBA_MAKE D3DCOLOR_ARGB
 #define D3DRGB(r, g , b) \
-D3DCOLOR_XRGB((DWORD)((r)*255.f),(DWORD)((g)*255.f),(DWORD)((b)*255.f))
+D3DCOLOR_XRGB((DWORD)((b)*255.f),(DWORD)((g)*255.f),(DWORD)((r)*255.f))
 
 // maps floating point channels (0.f to 1.f range) to D3DCOLOR
 #define D3DCOLOR_COLORVALUE(r,g,b,a) \
-D3DCOLOR_RGBA((DWORD)((r)*255.f),(DWORD)((g)*255.f),(DWORD)((b)*255.f),(DWORD)((a)*255.f))
+D3DCOLOR_RGBA((DWORD)((b)*255.f),(DWORD)((g)*255.f),(DWORD)((r)*255.f),(DWORD)((a)*255.f))
 
 // maps unsigned 8 bits/channel to D3DCOLOR
 #define D3DCOLOR_XRGB(r,g,b)   D3DCOLOR_ARGB(0xff,r,g,b)
