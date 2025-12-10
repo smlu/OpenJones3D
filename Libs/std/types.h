@@ -76,15 +76,10 @@ typedef GLTexture tSysTexture;
 
 typedef enum sTextureUnits
 {
-    TU_DEFAULT     = 0,
-    TU_SCENE       = 1,
-    TU_DEPTH       = 2,
-    TU_SMAA_EDGE   = 3,
-    TU_SMAA_WEIGHT = 4,
-    TU_SMAA_BLEND  = 5,
-    TU_SMAA_AREA   = 6,
-    TU_SMAA_SEARCH = 7,
-    TU_3D_DRAW     = 8
+    TU_DEFAULT = 0,
+    TU_SCENE   = 1,
+    TU_DEPTH   = 2,
+    TU_3D_DRAW = 3
 } GLTextureUnit;
 
 #else
