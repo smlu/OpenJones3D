@@ -940,8 +940,6 @@ static int J3DAPI stdDisplay_EnumerateVideoModes(SDL_DisplayID adapter)
         pVideoMode->refreshRate       = (uint32_t)(mode->refresh_rate + 0.5f);;
         pVideoMode->rasterInfo.width  = mode->w;
         pVideoMode->rasterInfo.height = mode->h;
-        pVideoMode->format            = mode->format;
-        pVideoMode->pDisplayMode      = *mode;
 
         // Set color bit information based on format
         if ( !stdDisplay_GetVideoColorFormat(mode->format, &pVideoMode->rasterInfo.colorInfo) )
