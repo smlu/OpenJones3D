@@ -5,7 +5,7 @@
 
 
 // Added following macros from rdCache to use for VBO & IBO sizes
-#define STD3D_MAXFACEVERTICES 64 
+#define STD3D_MAXFACEVERTICES 64
 #define STD3D_MAXVERTICES     32768
 
 #define STD3D_CFG_MIPMAPAUTOGEN     "graphics.mipmapAutoGen"
@@ -68,7 +68,7 @@ void std3D_ClearZBuffer(void);
 StdDisplayEnvironment* J3DAPI std3D_BuildDisplayEnvironment();
 void J3DAPI std3D_FreeDisplayEnvironment(StdDisplayEnvironment* pEnv);
 
-#if defined(J3D_DIRECTX9) || defined(J3D_DIRECTX6) || defined(J3D_OPENGL)
+#if defined(J3D_DIRECTX9) || defined(J3D_DIRECTX6)
 const char* J3DAPI std3D_D3DGetStatus(HRESULT res);
 tSysDevice3D* std3D_GetD3DDevice(void); // Added
 #endif // J3D_DIRECTX9 || J3D_DIRECTX6

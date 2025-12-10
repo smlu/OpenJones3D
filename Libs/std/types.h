@@ -15,7 +15,7 @@
 #endif
 #include <d3d9.h>
 #elif defined(J3D_OPENGL)
-#include <d3d9.h>
+#include <float.h>
 #include <glad/gl.h>
 #include <SDL3/SDL.h>
 #else
@@ -40,7 +40,7 @@ typedef DDSURFACEDESC2 tSysSurfaceDesc;
 typedef IDirectDrawSurface4 tSysSurface;
 typedef IDirect3DTexture2 tSysTexture;
 
-#elif defined(J3D_DIRECTX9) || defined(J3D_OPENGL)
+#elif defined(J3D_DIRECTX9)
 // DirectPlay
 #define DPID_ALLPLAYERS   0
 #define DPSEND_GUARANTEED 0x00000001
@@ -51,7 +51,7 @@ typedef DWORD DPID;
 #define D3DRGBA D3DCOLOR_COLORVALUE
 #define RGBA_MAKE D3DCOLOR_ARGB
 #define D3DRGB(r, g , b) \
-     D3DCOLOR_XRGB((DWORD)((r)*255.f),(DWORD)((g)*255.f),(DWORD)((b)*255.f))
+D3DCOLOR_XRGB((DWORD)((r)*255.f),(DWORD)((g)*255.f),(DWORD)((b)*255.f))
 
 typedef D3DCAPS9 tSysDisplayDeviceCaps;
 typedef IDirect3DDevice9 tSysDisplayDevice;
@@ -59,7 +59,52 @@ typedef IDirect3DDevice9 tSysDisplayDevice;
 typedef D3DCAPS9 tSysDevice3DDesc;
 typedef IDirect3DDevice9 tSysDevice3D;
 
-#if defined(J3D_OPENGL)
+typedef D3DFORMAT tSysPixelFormat;
+typedef D3DSURFACE_DESC tSysSurfaceDesc;
+typedef IDirect3DSurface9 tSysSurface;
+typedef IDirect3DTexture9 tSysTexture;
+typedef void* LPDDCOLORKEY;
+
+// The FVF format for D3DTLVERTEX
+#define D3DTLVERTEX_FVF (D3DFVF_XYZRHW | D3DFVF_DIFFUSE | D3DFVF_SPECULAR | D3DFVF_TEX1)
+
+#elif defined(J3D_OPENGL)
+
+#define DPID_ALLPLAYERS   0
+#define DPSEND_GUARANTEED 0x00000001
+#define DPERR_GENERIC     E_FAIL
+// Direct3D stuff
+#define D3DRGBA D3DCOLOR_COLORVALUE
+#define RGBA_MAKE D3DCOLOR_ARGB
+#define D3DRGB(r, g , b) \
+D3DCOLOR_XRGB((DWORD)((r)*255.f),(DWORD)((g)*255.f),(DWORD)((b)*255.f))
+
+// maps floating point channels (0.f to 1.f range) to D3DCOLOR
+#define D3DCOLOR_COLORVALUE(r,g,b,a) \
+D3DCOLOR_RGBA((DWORD)((r)*255.f),(DWORD)((g)*255.f),(DWORD)((b)*255.f),(DWORD)((a)*255.f))
+
+// maps unsigned 8 bits/channel to D3DCOLOR
+#define D3DCOLOR_XRGB(r,g,b)   D3DCOLOR_ARGB(0xff,r,g,b)
+#define D3DCOLOR_ARGB(a,r,g,b) \
+((D3DCOLOR)((((a)&0xff)<<24)|(((r)&0xff)<<16)|(((g)&0xff)<<8)|((b)&0xff)))
+#define D3DCOLOR_RGBA(r,g,b,a) D3DCOLOR_ARGB(a,r,g,b)
+
+typedef DWORD D3DCOLOR;
+typedef DWORD DPID;
+typedef void* LPDDCOLORKEY;
+typedef void* tSysDisplayDeviceCaps;
+typedef void* tSysDevice3D;
+typedef void* tSysDevice3DDesc;
+
+typedef struct _GLRECT
+{
+    LONG x1;
+    LONG y1;
+    LONG x2;
+    LONG y2;
+} GLRECT;
+
+
 typedef struct sGLTexture
 {
     GLuint id;
@@ -82,13 +127,9 @@ typedef enum sTextureUnits
     TU_3D_DRAW = 3
 } GLTextureUnit;
 
-#else
-typedef D3DFORMAT tSysPixelFormat;
-typedef IDirect3DTexture9 tSysTexture;
-#endif
-typedef D3DSURFACE_DESC tSysSurfaceDesc;
-typedef IDirect3DSurface9 tSysSurface;
-typedef void* LPDDCOLORKEY;
+#endif // J3D_DIRECTX6
+
+#if defined(J3D_DIRECTX9) || defined(J3D_OPENGL)
 
 typedef struct sD3DTLVERTEX
 {
@@ -101,20 +142,17 @@ typedef struct sD3DTLVERTEX
     float rhw;
 
     /* Vertex color */
-    uint32_t color;
+    D3DCOLOR color;
 
     /* Specular component of vertex */
-    uint32_t specular;
+    D3DCOLOR specular;
 
     /* Texture coordinates */
     float tu;
     float tv;
 } D3DTLVERTEX, *LPD3DTLVERTEX;
 
-// The FVF format for D3DTLVERTEX
-#define D3DTLVERTEX_FVF (D3DFVF_XYZRHW | D3DFVF_DIFFUSE | D3DFVF_SPECULAR | D3DFVF_TEX1)
-
-#endif // J3D_DIRECTX6
+#endif
 
 typedef enum eStdColorFormatType
 {

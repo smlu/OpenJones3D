@@ -24,7 +24,9 @@ void stdDisplay_Close(void);
 LPDIRECT3D9 stdDisplay_GetDirect3D(void);
 #endif
 
+#ifndef J3D_OPENGL
 tSysDisplayDevice* stdDisplay_GetSystemDevice(void); // Can be retrieved after display system is opened
+#endif
 
 int J3DAPI stdDisplay_CreateZBuffer(const tSysPixelFormat* pPixelFormat, int bSystemMemory);
 
