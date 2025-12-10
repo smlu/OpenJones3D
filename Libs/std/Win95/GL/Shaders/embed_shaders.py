@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Shader Embedding Script - Embeds GLSL files as Byte-Arrays
+Shader Embedding Script - Embeds GLSL files as Byte-Arrays with #include support
 Usage: python embed_shaders.py <shader_dir> <output_file>
 """
 
@@ -30,10 +30,67 @@ def find_shaders(shader_dir):
     return sorted(shaders)
 
 
-def read_shader_as_bytes(shader_path):
-    """Read shader file as bytes"""
-    with open(shader_path, 'rb') as f:
-        return f.read()
+def resolve_includes(shader_path, shader_dir, processed_files=None):
+    """
+    Resolves #include directives recursively
+    Returns the processed shader source as string
+    """
+    if processed_files is None:
+        processed_files = set()
+
+    # Verhindere zirkuläre Includes
+    abs_path = shader_path.resolve()
+    if abs_path in processed_files:
+        print(f"  WARNING: Circular include detected: {shader_path}")
+        return ""
+
+    processed_files.add(abs_path)
+
+    try:
+        with open(shader_path, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+    except UnicodeDecodeError:
+        # Fallback zu Latin-1 wenn UTF-8 fehlschlägt
+        with open(shader_path, 'r', encoding='latin-1') as f:
+            lines = f.readlines()
+
+    result = []
+    include_pattern = re.compile(r'^\s*#\s*include\s+[<"]([^>"]+)[>"]')
+
+    for line_num, line in enumerate(lines, 1):
+        match = include_pattern.match(line)
+        if match:
+            include_file = match.group(1)
+
+            # Suche Include-Datei relativ zum aktuellen Shader
+            include_path = shader_path.parent / include_file
+
+            # Falls nicht gefunden, suche relativ zum Shader-Root
+            if not include_path.exists():
+                include_path = shader_dir / include_file
+
+            if include_path.exists():
+                print(f"    Including: {include_file}")
+                # Rekursiv includes auflösen
+                included_content = resolve_includes(include_path, shader_dir, processed_files.copy())
+                result.append(f"// BEGIN INCLUDE: {include_file}\n")
+                result.append(included_content)
+                result.append(f"// END INCLUDE: {include_file}\n")
+            else:
+                print(f"  WARNING: Include not found: {include_file} (referenced in {shader_path}:{line_num})")
+                result.append(f"// ERROR: Include not found: {include_file}\n")
+        else:
+            result.append(line)
+
+    return ''.join(result)
+
+
+def process_shader(shader_path, shader_dir):
+    """
+    Processes a shader file, resolves includes, and returns bytes
+    """
+    processed_source = resolve_includes(shader_path, shader_dir)
+    return processed_source.encode('utf-8')
 
 
 def generate_c_code(shader_dir, output_file):
@@ -44,7 +101,7 @@ def generate_c_code(shader_dir, output_file):
     shaders = find_shaders(shader_dir)
 
     if not shaders:
-        print(f"No shaders fount in {shader_dir}")
+        print(f"No shaders found in {shader_dir}")
         return
 
     print(f"Found Shaders: {len(shaders)}")
@@ -57,14 +114,16 @@ def generate_c_code(shader_dir, output_file):
         rel_path = shader_path.relative_to(shader_dir)
         # convert path slashes
         rel_path_str = str(rel_path).replace('\\', '/')
-        print(f"Load: {rel_path_str}...")
+        print(f"Processing: {rel_path_str}...")
 
         try:
-            shader_bytes = read_shader_as_bytes(shader_path)
+            shader_bytes = process_shader(shader_path, shader_dir)
             ident = make_c_identifier(rel_path_str)
             shader_data.append((rel_path_str, ident, shader_bytes))
         except Exception as e:
-            print(f"Error while loading {rel_path}: {e}")
+            print(f"Error while processing {rel_path}: {e}")
+            import traceback
+            traceback.print_exc()
             continue
 
     if not shader_data:
@@ -93,7 +152,7 @@ def generate_c_code(shader_dir, output_file):
                 else:
                     f.write(f"    {hex_bytes},\n")
 
-            f.write("};\n")
+            f.write("};\n\n")
 
         # Lookup-Table
         f.write("typedef struct { const char* name; const char* src; size_t size; } tShaderEntry;\n\n")
@@ -118,7 +177,7 @@ def generate_c_code(shader_dir, output_file):
         f.write("    return NULL;\n")
         f.write("}\n")
 
-    print(f"\nsuccessfully generated: {output_file}")
+    print(f"\nSuccessfully generated: {output_file}")
 
 
 if __name__ == "__main__":

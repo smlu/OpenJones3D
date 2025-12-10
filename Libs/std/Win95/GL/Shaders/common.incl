@@ -1,0 +1,36 @@
+uniform vec4 viewPort;
+uniform vec4 vFogParams;
+uniform vec3 vFogColor;
+
+vec4 screenToClip(vec3 screenPos, float rhw)
+{
+    float width  = viewPort.z - viewPort.x;
+    float height = viewPort.w - viewPort.y;
+
+    float w_clip = 1.0 / rhw;
+
+
+    float ndc_x = ((screenPos.x - viewPort.x) / width)  * 2.0 - 1.0;
+    float ndc_y = (1.0 - (screenPos.y - viewPort.y) / height) * 2.0 - 1.0;
+
+    vec4 clip;
+    clip.x = ndc_x * w_clip;
+    clip.y = ndc_y * w_clip;
+    clip.z = (screenPos.z * 2.0 - 1.0) * w_clip;
+    clip.w = w_clip;
+
+    return clip;
+}
+
+vec3 ApplyFog(vec3 color, float depth)
+{
+    if (vFogParams.w == 0.0f)
+    {
+        return color;
+    }
+
+    float fogFactor = (depth - vFogParams.x) * vFogParams.z;
+    fogFactor = clamp(fogFactor, 0.0f, 1.0f);
+
+    return mix(color, vFogColor, fogFactor);
+}
