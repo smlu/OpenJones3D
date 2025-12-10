@@ -17,7 +17,7 @@
 static bool bStartup    = false;
 static bool std3D_bOpen = false;
 
-static D3DRECT std3D_activeRect = { 0 };
+static GLRECT std3D_activeRect = { 0 };
 static_assert(sizeof(std3D_activeRect) == 4 * sizeof(float), "sizeof(std3D_activeRect) == 4 * sizeof(float)");
 // Must be 4 floats to be used in shader
 

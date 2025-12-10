@@ -91,7 +91,7 @@ static bool stdDisplay_GetVideoColorFormat(SDL_PixelFormat format, ColorInfo* pF
 static inline void J3DAPI stdDisplay_SetAspectRatio(StdVideoMode* pMode);
 static inline int J3DAPI stdDisplay_SetWindowMode(HWND hWnd, StdVideoMode* pDisplayMode);
 static inline int J3DAPI stdDisplay_SetFullscreenMode(HWND hwnd, const StdVideoMode* pDisplayMode, size_t numBackBuffers);
-static int J3DAPI stdDisplay_InitBuffers(PDIRECT3DDEVICE9 pDevice, const StdVideoMode* pDisplayMode, bool bWindowMode, size_t numBuffers);
+static int J3DAPI stdDisplay_InitBuffers(const StdVideoMode* pDisplayMode, bool bWindowMode, size_t numBuffers);
 
 static inline void stdDisplay_ReleaseBuffers(void);
 static int stdDisplay_CheckDeviceState(void);
@@ -502,7 +502,7 @@ static int stdDisplay_ResetDevice(void)
     stdDisplay_ReleaseBuffers();
 
     // Recreate buffers
-    if ( !stdDisplay_InitBuffers(NULL, stdDisplay_pCurVideoMode, 0, 0) )
+    if ( !stdDisplay_InitBuffers(stdDisplay_pCurVideoMode, 0, 0) )
     {
         STDLOG_ERROR("Error initializing buffers after device reset.\n");
         return 0;
@@ -880,7 +880,7 @@ static int J3DAPI stdDisplay_EnumerateDevices(void) //check
         }
 
         // Get device capabilities
-        ZeroMemory(&pDevice->caps, sizeof(pDevice->caps));
+        //ZeroMemory(&pDevice->caps, sizeof(pDevice->caps));
         pDevice->bHAL                      = TRUE;
         pDevice->bWindowRenderNotSupported = FALSE; // OpenGL/SDL always support windowed rendering
         //pDevice->guid                      = identifier.DeviceIdentifier;
@@ -1024,15 +1024,6 @@ void J3DAPI stdDisplay_SetAspectRatio(StdVideoMode* pMode)
     }
 }
 
-LPDIRECT3D9 stdDisplay_GetDirect3D(void)
-{
-    return NULL;
-}
-
-tSysDisplayDevice* stdDisplay_GetSystemDevice(void)
-{
-    return NULL;
-}
 
 static int J3DAPI stdDisplay_SetWindowMode(HWND hWnd, StdVideoMode* pDisplayMode)
 {
@@ -1053,7 +1044,7 @@ static int J3DAPI stdDisplay_SetWindowMode(HWND hWnd, StdVideoMode* pDisplayMode
 
     wkernel_SetWindowSize(pDisplayMode->rasterInfo.width, pDisplayMode->rasterInfo.height);
 
-    return stdDisplay_InitBuffers(NULL, pDisplayMode, /*bWindowMode=*/true, 1);
+    return stdDisplay_InitBuffers(pDisplayMode, /*bWindowMode=*/true, 1);
 }
 
 int J3DAPI stdDisplay_SetFullscreenMode(HWND hwnd, const StdVideoMode* pDisplayMode, size_t numBackBuffers)
@@ -1104,10 +1095,10 @@ int J3DAPI stdDisplay_SetFullscreenMode(HWND hwnd, const StdVideoMode* pDisplayM
     //SDL_SetWindowAlwaysOnTop(SDL_GL_GetCurrentWindow(), false);
     //SDL_RaiseWindow(SDL_GL_GetCurrentWindow());
 
-    return stdDisplay_InitBuffers(NULL, pDisplayMode, /*bWindowMode=*/true, 1);
+    return stdDisplay_InitBuffers(pDisplayMode, /*bWindowMode=*/true, 1);
 }
 
-int J3DAPI stdDisplay_InitBuffers(PDIRECT3DDEVICE9 pDevice, const StdVideoMode* pDisplayMode, bool bWindowMode, size_t numBuffers)
+int J3DAPI stdDisplay_InitBuffers(const StdVideoMode* pDisplayMode, bool bWindowMode, size_t numBuffers)
 {
     tVSurface* surface = &stdDisplay_g_backBuffer.surface;
     if ( surface->fbo > 0 )

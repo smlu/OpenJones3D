@@ -6,7 +6,6 @@ file(GLOB_RECURSE HEADERS *.h)
 macro(remove_dx9_files)
     # Remove DX9 files.
     list(FILTER SOURCES EXCLUDE REGEX ".*DX9\\.c$")
-    list(FILTER SOURCES EXCLUDE REGEX "stdComm.c$")
 
     set(SHADERS "")
     set(SHADER_INCLUDES "")
@@ -20,12 +19,15 @@ endmacro()
 macro(remove_gl_files)
     # Remove DX6 files.
     list(FILTER SOURCES EXCLUDE REGEX ".*GL\\.c$")
+    list(FILTER HEADERS EXCLUDE REGEX "stdGLSLShaders.h")
 endmacro()
 
 # Remove DirectX 6/9 and OpenGL specific files based on the build option
 if(J3D_DIRECTX6)
     remove_dx9_files()
     remove_gl_files()
+    list(FILTER SOURCES EXCLUDE REGEX "stdComm.c$")
+    list(FILTER SOURCES EXCLUDE REGEX "stdControl.c$")
 elseif(J3D_DIRECTX9)
     remove_dx6_files()
     remove_gl_files()
