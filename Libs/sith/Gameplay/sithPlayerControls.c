@@ -44,8 +44,10 @@
 #define SITHPLAYERCONTROLS_THINGNAME_JEEP2       "jeep_pyr"
 #define SITHPLAYERCONTROLS_THINGNAME_JEEPPLAYER2 "jeepplayerpyr"
 
+#define SITHPLAYERCONTROLS_JEWELFLY_FPS 30.0f
+
 // General move vars
-static tStdTime sithPlayerControls_msecUnknownTimer = 0; // Fixed: Init to 0
+static tStdTime sithPlayerControls_msecUnknownTimer = 0;    // Fixed: Init to 0
 static float sithPlayerControls_secCommentWaitTimer = 0.0f; // Fixed: Init to 0.0f
 
 static bool sithPlayerControls_bJumpKeyActive = false; // Fixed: Init to false
@@ -61,8 +63,8 @@ static SithThingMoveStatus sithPlayerControls_curMoveStatus;
 static SithThing* sithPlayerControls_pCurActivatedItemThing = NULL; // Fixed: Init to NULL
 static SithThing* sithPlayerControls_pMovableThing          = NULL; // Fixed: Init to NULL
 
-static float sithPlayerControls_moveFactorNormal  = 0.89999998f;
-static float sithPlayerControls_moveFactorSlow    = 0.5f;
+static float sithPlayerControls_moveFactorNormal = 0.89999998f;
+static float sithPlayerControls_moveFactorSlow   = 0.5f;
 
 // Climb controls vars
 static int sithPlayerControls_climbPupTrackNum;
@@ -88,11 +90,11 @@ static SithThing* sithPlayerControls_pTargetThing = NULL; // Fixed: Init to NULL
 
 static float sithPlayerControls_closeRangeAimDistance = 0.30000001f;
 
-static float sithPlayerControls_aimMaxHorizontalAngleAcquire  = 20.5f; // Max horizontal angle for aim acquisition
-static float sithPlayerControls_aimMaxHorizontalAngleTrack    = 22.5f; // Max horizontal angle for locked aim tracking
-static float sithPlayerControls_aimMaxVerticalAngleAcquire    = 87.0f; // Max vertical angle for aim acquisition
-static float sithPlayerControls_aimMaxVerticalAngleTrack      = 89.0f; // Max vertical angle for locked aim tracking
-static float sithPlayerControls_aimMaxHorizontalAngleNear     = 50.0f; // Max horizontal angle at close range aiming
+static float sithPlayerControls_aimMaxHorizontalAngleAcquire = 20.5f; // Max horizontal angle for aim acquisition
+static float sithPlayerControls_aimMaxHorizontalAngleTrack   = 22.5f; // Max horizontal angle for locked aim tracking
+static float sithPlayerControls_aimMaxVerticalAngleAcquire   = 87.0f; // Max vertical angle for aim acquisition
+static float sithPlayerControls_aimMaxVerticalAngleTrack     = 89.0f; // Max vertical angle for locked aim tracking
+static float sithPlayerControls_aimMaxHorizontalAngleNear    = 50.0f; // Max horizontal angle at close range aiming
 
 static float sithPlayerControls_mirrorAimMaxHorizontalAngleAcquire = 3.0f;
 static float sithPlayerControls_mirrorAimMaxHorizontalAngleTrack   = 5.0f;
@@ -101,9 +103,9 @@ static float sithPlayerControls_mirrorAimMaxVerticalAngleTrack     = 16.0f;
 static float sithPlayerControls_mirrorAimMaxHorizontalAngleNear    = 5.0f;
 
 // Devmode vars
-static rdVector3 sithPlayerControls_curOrbCamDir  = { 0.0f , -1.0f , 0.0f };
-static float sithPlayerControls_curOrbCamDist     = 0.2f;
-static float sithPlayerControls_maxOrbCamDist     = 10.0f; // Altered: Changed to 10.0f from 3.0f
+static rdVector3 sithPlayerControls_curOrbCamDir = { 0.0f, -1.0f, 0.0f };
+static float sithPlayerControls_curOrbCamDist    = 0.2f;
+static float sithPlayerControls_maxOrbCamDist    = 10.0f; // Altered: Changed to 10.0f from 3.0f
 
 static int J3DAPI sithPlayerControls_ProcessPlayerDebugControls(SithThing* pThing, float secDeltaTime);
 static void J3DAPI sithPlayerControls_ProcessLookControls(SithThing* pThing, float secDeltaTime);
@@ -119,7 +121,8 @@ static void J3DAPI sithPlayerControls_ProcessSwimMove(SithThing* pThing, float s
 static void J3DAPI sithPlayerControls_ProcessHangMove(SithThing* pThing, float secDeltaTime);
 static void J3DAPI sithPlayerControls_ProcessWeaponAim(SithThing* pThing, float secDeltaTime);
 
-static int J3DAPI sithPlayerControls_CheckAimRange(SithThing* pThing, const rdVector3* pStartPos, const rdVector3* pTargetPos, float cosFarAimCone, float cosCloseAimCone, float cosVerticalLimit, float maxAimDist);
+static int J3DAPI sithPlayerControls_CheckAimRange(SithThing* pThing, const rdVector3* pStartPos, const rdVector3* pTargetPos, float cosFarAimCone, float cosCloseAimCone, float cosVerticalLimit,
+                                                   float maxAimDist);
 static int J3DAPI sithPlayerControls_GetPushPullMoveNorm(rdVector3* moveNorm, const rdVector3* pLVect, float angle);
 
 // Helper function signatures for ProcessGeneralMove (new functions)
@@ -139,7 +142,8 @@ static void J3DAPI sithPlayerControls_ProcessSlideDownMove(SithThing* pThing, fl
  *  2 - adjoin water ledge found
  */
 static int J3DAPI sithPlayerControls_CheckWaterLedge(SithThing* pThing);
-static int J3DAPI sithPlayerControls_FindLedgeInDirection(SithThing* pThing, const rdVector3* moveNorm, SithSurface** ppHitSurf, SithThing** ppHitThing, rdModel3** ppHitModel, rdFace** ppHitFace, rdModel3Mesh** ppHitMesh, int someType);
+static int J3DAPI sithPlayerControls_FindLedgeInDirection(SithThing* pThing, const rdVector3* moveNorm, SithSurface** ppHitSurf, SithThing** ppHitThing, rdModel3** ppHitModel, rdFace** ppHitFace,
+                                                          rdModel3Mesh** ppHitMesh, int someType);
 static SithSurface* J3DAPI sithPlayerControls_FindClimbSurface(SithThing* pThing, const rdVector3* moveNorm, int climbDir, int* pbHitNonClimbSurface);
 static bool J3DAPI sithPlayerControls_CanStrafeMove(SithThing* pThing, int bMoveRight);
 
@@ -184,28 +188,28 @@ void sithPlayerControls_Reset(void)
 {
     sithPlayerControls_g_bCutsceneMode = 0;
 
-    sithPlayerControls_msecUnknownTimer       = 0;
-    sithPlayerControls_secCommentWaitTimer    = 0.0f;
+    sithPlayerControls_msecUnknownTimer    = 0;
+    sithPlayerControls_secCommentWaitTimer = 0.0f;
 
-    sithPlayerControls_bJumpKeyActive         = false;
-    sithPlayerControls_curJumpDirection       = 0;
-    sithPlayerControls_bActionKeyActive       = false;
-    sithPlayerControls_bLookKeyActive         = false;
-    sithPlayerControls_bHealthKeyActive       = false;
-    sithPlayerControls_bTurnRightKeyActive    = false;
-    sithPlayerControls_bTurnLeftKeyActive     = false;
+    sithPlayerControls_bJumpKeyActive      = false;
+    sithPlayerControls_curJumpDirection    = 0;
+    sithPlayerControls_bActionKeyActive    = false;
+    sithPlayerControls_bLookKeyActive      = false;
+    sithPlayerControls_bHealthKeyActive    = false;
+    sithPlayerControls_bTurnRightKeyActive = false;
+    sithPlayerControls_bTurnLeftKeyActive  = false;
 
     sithPlayerControls_curMoveStatus          = 0;
     sithPlayerControls_pCurActivatedItemThing = NULL;
     sithPlayerControls_pMovableThing          = NULL;
 
-    sithPlayerControls_climbPupTrackNum       = -1;
+    sithPlayerControls_climbPupTrackNum = -1;
 
-    sithPlayerControls_pBoardedVehicleThing   = NULL;
-    sithPlayerControls_pTargetThing           = NULL;
+    sithPlayerControls_pBoardedVehicleThing = NULL;
+    sithPlayerControls_pTargetThing         = NULL;
 
-    sithPlayerControls_curOrbCamDir           = (rdVector3){ 0.0f, -1.0f, 0.0f };
-    sithPlayerControls_curOrbCamDist          = 0.2f;
+    sithPlayerControls_curOrbCamDir  = (rdVector3){ 0.0f, -1.0f, 0.0f };
+    sithPlayerControls_curOrbCamDist = 0.2f;
 }
 
 void J3DAPI sithPlayerControls_PuppetCallback(SithThing* pThing, int track, rdKeyMarkerType markerType)
@@ -223,7 +227,7 @@ void J3DAPI sithPlayerControls_PuppetCallback(SithThing* pThing, int track, rdKe
 
     if ( pThing->moveStatus == SITHPLAYERMOVE_WALK2STAND && !markerType )
     {
-        pThing->moveStatus = SITHPLAYERMOVE_STILL;
+        pThing->moveStatus                            = SITHPLAYERMOVE_STILL;
         pThing->thingInfo.actorInfo.bControlsDisabled = 0;
         sithPuppet_PlayMode(pThing, SITHPUPPETSUBMODE_STAND, 0);
         return;
@@ -231,14 +235,14 @@ void J3DAPI sithPlayerControls_PuppetCallback(SithThing* pThing, int track, rdKe
 
     if ( pThing->moveStatus == SITHPLAYERMOVE_STAND2WALK && !markerType )
     {
-        pThing->moveStatus = SITHPLAYERMOVE_WALKING;
+        pThing->moveStatus                            = SITHPLAYERMOVE_WALKING;
         pThing->thingInfo.actorInfo.bControlsDisabled = 0;
         return;
     }
 
     if ( pThing->moveStatus == SITHPLAYERMOVE_STAND2RUN && !markerType )
     {
-        pThing->moveStatus = SITHPLAYERMOVE_RUNNING;
+        pThing->moveStatus                            = SITHPLAYERMOVE_RUNNING;
         pThing->thingInfo.actorInfo.bControlsDisabled = 0;
         return;
     }
@@ -397,14 +401,15 @@ void J3DAPI sithPlayerControls_PuppetCallback(SithThing* pThing, int track, rdKe
                     {
                         sithSoundMixer_PlaySound(hSnd, 1.0f, 0.0f, (SoundPlayFlag)0);
                     }
-                } break;
+                }
+                break;
 
                 case RDKEYMARKER_ACTIVATERIGHTARMREST:
                 {
                     tSoundHandle hSnd = Sound_GetSoundHandle(SITHWORLD_STATICINDEX(24u)); // 0x8018 - fol_in_lrunhard.wav
                     sithCamera_RestoreExtCamera();
 
-                #ifdef J3D_QOL_IMPROVEMENTS
+#ifdef J3D_QOL_IMPROVEMENTS
                     // Added
                     // Player has landed after whip swing, check if height distance to solid floor is more than 0.2m.
                     // And in this case stop animation and make player fall
@@ -422,13 +427,14 @@ void J3DAPI sithPlayerControls_PuppetCallback(SithThing* pThing, int track, rdKe
 
                         hSnd = 0; // don't play land sound
                     }
-                #endif
+#endif
                     // Altered: Moved following if scope here form start of the case sope
                     if ( hSnd )
                     {
                         sithSoundMixer_PlaySound(hSnd, 1.0f, 0.0f, (SoundPlayFlag)0);
                     }
-                }  break;
+                }
+                break;
 
                 case 0:
                     pThing->thingInfo.actorInfo.bControlsDisabled = 0;
@@ -559,8 +565,8 @@ int J3DAPI sithPlayerControls_Process(SithThing* pPlayerThing, float secDeltaTim
                     rdVector_Zero3(&pActor->headPYR);
                     sithActor_SetHeadPYR(pPlayerThing, &pActor->headPYR);
 
-                    sithPlayerControls_bLookKeyActive    = true;
-                    sithCamera_g_bExtCameraLookMode = 1;
+                    sithPlayerControls_bLookKeyActive = true;
+                    sithCamera_g_bExtCameraLookMode   = 1;
 
                     if ( pPlayerThing->moveStatus == SITHPLAYERMOVE_CRAWLIDLE )
                     {
@@ -617,7 +623,7 @@ int J3DAPI sithPlayerControls_Process(SithThing* pPlayerThing, float secDeltaTim
         return 0;
     }
 
-    // 
+    //
     // Process movement based on physics flags and move status
     //
 
@@ -687,7 +693,7 @@ int J3DAPI sithPlayerControls_Process(SithThing* pPlayerThing, float secDeltaTim
         case SITHPLAYERMOVE_SLIDEDOWNBACK:
             if ( (pPlayerThing->pInSector->flags & (SITH_SECTOR_UNDERWATER | SITH_SECTOR_AETHERIUM)) != 0 )
             {
-                pPlayerThing->moveStatus = SITHPLAYERMOVE_SWIMIDLE;
+                pPlayerThing->moveStatus           = SITHPLAYERMOVE_SWIMIDLE;
                 sithPlayerControls_secSwimIdleTime = 0.0f;
                 sithPlayerControls_ProcessSwimMove(pPlayerThing, secDeltaTime);
             }
@@ -721,7 +727,7 @@ int J3DAPI sithPlayerControls_Process(SithThing* pPlayerThing, float secDeltaTim
         case SITHPLAYERMOVE_LEAPFWD:
             if ( (pPlayerThing->pInSector->flags & (SITH_SECTOR_UNDERWATER | SITH_SECTOR_AETHERIUM)) != 0 )
             {
-                pPlayerThing->moveStatus = SITHPLAYERMOVE_SWIMIDLE;
+                pPlayerThing->moveStatus           = SITHPLAYERMOVE_SWIMIDLE;
                 sithPlayerControls_secSwimIdleTime = 0.0f;
                 sithPlayerControls_ProcessSwimMove(pPlayerThing, secDeltaTime);
             }
@@ -816,14 +822,14 @@ void J3DAPI sithPlayerControls_ProcessLookControls(SithThing* pThing, float secD
     {
         if ( !pThing->thingInfo.actorInfo.bForceMovePlay )
         {
-            yawDelta = -0.001f;
+            yawDelta       = -0.001f;
             bInputReceived = true;
         }
     }
     else if ( sithControl_GetKey(SITHCONTROL_TURNLEFT, NULL)
         && !pThing->thingInfo.actorInfo.bForceMovePlay )
     {
-        yawDelta = 0.001f;
+        yawDelta       = 0.001f;
         bInputReceived = true;
     }
 
@@ -850,7 +856,7 @@ void J3DAPI sithPlayerControls_ProcessLookControls(SithThing* pThing, float secD
     if ( bInputReceived )
     {
         rdVector3 newOffset = sithCamera_g_pCurCamera->offset;
-        newOffset.z = STDMATH_CLAMP(newOffset.z + pitchDelta, -0.07f, 0.15000001f);
+        newOffset.z         = STDMATH_CLAMP(newOffset.z + pitchDelta, -0.07f, 0.15000001f);
 
         if ( yawDelta != 0.0f )
         {
@@ -1088,7 +1094,6 @@ void J3DAPI sithPlayerControls_ProcessClimbMove(SithThing* pThing, float secDelt
 
 void J3DAPI sithPlayerControls_ProcessJewelFlyMove(SithThing* pThing, float secDeltaTime)
 {
-    J3D_UNUSED(secDeltaTime);
     SithPhysicsInfo* pPhysics = &pThing->moveInfo.physics;
     SithActorInfo* pActor     = &pThing->thingInfo.actorInfo;
 
@@ -1158,11 +1163,12 @@ void J3DAPI sithPlayerControls_ProcessJewelFlyMove(SithThing* pThing, float secD
     // Process Up/Down movement keys
     const float thrustIncrement = 0.00019999999f;
     int bPressed;
+    float fpsScale = secDeltaTime * SITHPLAYERCONTROLS_JEWELFLY_FPS * SITHPLAYERCONTROLS_JEWELFLY_FPS;
     if ( sithControl_GetKey(SITHCONTROL_FORWARD, &bPressed) )
     {
         if ( bCanMoveUp )
         {
-            pPhysics->thrust.z = STDMATH_CLAMP(pPhysics->thrust.z + thrustIncrement * sithTime_g_fps, -1.0f, 1.0f);
+            pPhysics->thrust.z = STDMATH_CLAMP(pPhysics->thrust.z + thrustIncrement * fpsScale, -1.0f, 1.0f);
         }
         else
         {
@@ -1174,7 +1180,7 @@ void J3DAPI sithPlayerControls_ProcessJewelFlyMove(SithThing* pThing, float secD
     {
         if ( bCanMoveDown )
         {
-            pPhysics->thrust.z = STDMATH_CLAMP(pPhysics->thrust.z - thrustIncrement * sithTime_g_fps, -1.0f, 1.0f);
+            pPhysics->thrust.z = STDMATH_CLAMP(pPhysics->thrust.z - thrustIncrement * fpsScale, -1.0f, 1.0f);
         }
         else
         {
@@ -1196,7 +1202,6 @@ void J3DAPI sithPlayerControls_ProcessJewelFlyMove(SithThing* pThing, float secD
     if ( sithControl_GetKey(SITHCONTROL_TURNRIGHT, &bPressed) )
     {
         pPhysics->angularVelocity.yaw = sithPlayerControls_CalculateAngularVelocity(pActor, -1.0f, -1.0f, 1.0f);
-
     }
     else if ( sithControl_GetKey(SITHCONTROL_TURNLEFT, &bPressed) )
     {
@@ -1273,7 +1278,7 @@ void J3DAPI sithPlayerControls_ProcessFlyMove(SithThing* pThing, float secDeltaT
                 {
                     sithPhysics_ResetThingMovement(pThing);
 
-                    pThing->moveStatus        = SITHPLAYERMOVE_PULLINGUP;
+                    pThing->moveStatus = SITHPLAYERMOVE_PULLINGUP;
                     pThing->collide.movesize /= 4.0f;
                     pThing->forceMoveStartPos = pThing->pos;
                     sithPuppet_PlayForceMoveMode(pThing, SITHPUPPETSUBMODE_MOUNTFROMWATER, NULL);
@@ -1457,7 +1462,7 @@ void J3DAPI sithPlayerControls_ProcessHUDControls(SithThing* pThing, float secDe
 
     //
     // Handle health pack use control
-    // 
+    //
     if ( !sithPlayerControls_bHealthKeyActive
         && sithControl_GetKey(SITHCONTROL_HEALTH, &bPressed) )
     {
@@ -1501,6 +1506,7 @@ void J3DAPI sithPlayerControls_ProcessHUDControls(SithThing* pThing, float secDe
         sithPlayerControls_bHealthKeyActive = true;
     }
 }
+
 int J3DAPI sithPlayerControls_ProcessEditorDebugControls(SithThing* pThing, float secDeltaTime)
 {
     if ( (sithMain_g_sith_mode.debugModeFlags & SITHDEBUG_INEDITOR) != 0
@@ -1593,7 +1599,7 @@ int J3DAPI sithPlayerControls_ProcessEditorDebugControls(SithThing* pThing, floa
 
         pyr.pitch = sithControl_GetKeyAsAxis(SITHCONTROL_PITCH) * 0.45f; // Altered: multiply by 0.45
 
-        float angleDelta = secDeltaTime * 25.0f; // Altered: OG 90.0f
+        float angleDelta = secDeltaTime * 25.0f;               // Altered: OG 90.0f
         if ( sithControl_GetKey(SITHCONTROL_ACT1, &bPressed) ) // Added: speedup
         {
             angleDelta *= 4.5f;
@@ -1608,7 +1614,7 @@ int J3DAPI sithPlayerControls_ProcessEditorDebugControls(SithThing* pThing, floa
             rdVector_Normalize3Acc(&sithPlayerControls_curOrbCamDir);
         }
 
-        float distDelta = secDeltaTime * 0.1f;
+        float distDelta     = secDeltaTime * 0.1f;
         float camDistChange = 0.0f;
 
         if ( sithControl_GetKey(SITHCONTROL_FORWARD, &bPressed) )
@@ -1728,12 +1734,12 @@ void J3DAPI sithPlayerControls_ProcessFallingMove(SithThing* pThing, float secDe
 
         if ( sithControl_GetKey(SITHCONTROL_FORWARD, NULL) )
         {
-            moveDir = 1.0f;
+            moveDir            = 1.0f;
             pPhysics->thrust.y = sithPlayerControls_CalculateThrust(pActor, 1.0f, sithPlayerControls_moveFactorNormal);
         }
         else if ( sithControl_GetKey(SITHCONTROL_BACK, NULL) )
         {
-            moveDir = -1.0f;
+            moveDir            = -1.0f;
             pPhysics->thrust.y = sithPlayerControls_CalculateThrust(pActor, -1.0f, sithPlayerControls_moveFactorSlow);
         }
         else
@@ -1852,7 +1858,7 @@ void J3DAPI sithPlayerControls_ProcessSwimMove(SithThing* pThing, float secDelta
             sithPhysics_ResetThingMovement(pThing);
 
             sithPlayerControls_curMoveStatus = pThing->moveStatus;
-            pThing->moveStatus = SITHPLAYERMOVE_ACTIVATING;
+            pThing->moveStatus               = SITHPLAYERMOVE_ACTIVATING;
 
             pThing->thingInfo.actorInfo.bControlsDisabled = 1;
             sithPuppet_PlayMode(pThing, SITHPUPPETSUBMODE_PICKUP, sithPlayerControls_PuppetCallback);
@@ -1898,10 +1904,10 @@ void J3DAPI sithPlayerControls_ProcessSwimMove(SithThing* pThing, float secDelta
                 sithFX_CreateWaterRipple(pThing);
                 sithPhysics_ResetThingMovement(pThing);
 
-                pThing->moveStatus        = SITHPLAYERMOVE_PULLINGUP;
+                pThing->moveStatus = SITHPLAYERMOVE_PULLINGUP;
                 pThing->collide.movesize /= 4.0f;
 
-                pThing->pos.z            -= 0.0049999999f; // adjust z pos
+                pThing->pos.z -= 0.0049999999f; // adjust z pos
                 pThing->forceMoveStartPos = pThing->pos;
 
                 sithPuppet_PlayForceMoveMode(pThing, SITHPUPPETSUBMODE_MOUNT1MSTEP, NULL);
@@ -2080,11 +2086,11 @@ void J3DAPI sithPlayerControls_ProcessHangMove(SithThing* pThing, float secDelta
         if ( sithPlayerActions_CanPullUp(pThing) )
         {
             // Remove collision temporarily
-            pThing->collide.movesize  = 0.001f;
-            pThing->collide.type      = SITH_COLLIDE_NONE;
+            pThing->collide.movesize = 0.001f;
+            pThing->collide.type     = SITH_COLLIDE_NONE;
 
             pThing->forceMoveStartPos = pThing->pos;
-            pThing->moveStatus = SITHPLAYERMOVE_PULLINGUP;
+            pThing->moveStatus        = SITHPLAYERMOVE_PULLINGUP;
 
             pThing->moveInfo.physics.flags &= ~SITH_PF_ALIGNED;
             pThing->moveInfo.physics.flags |= SITH_PF_FLOORSTICK;
@@ -2157,7 +2163,7 @@ void J3DAPI sithPlayerControls_ProcessHangMove(SithThing* pThing, float secDelta
             sithPuppet_RemoveAllTracks(pThing);
 
             pThing->forceMoveStartPos = pThing->pos;
-            pThing->collide.movesize = 0.0f;
+            pThing->collide.movesize  = 0.0f;
             sithPuppet_PlayForceMoveMode(pThing, SITHPUPPETSUBMODE_HANGSHIMLEFT, NULL);
             sithSoundClass_PlayModeFirst(pThing, SITHSOUNDCLASS_CLIMBHANDLEFT);
 
@@ -2238,7 +2244,7 @@ void J3DAPI sithPlayerControls_ProcessWeaponAim(SithThing* pThing, float secDelt
                     return;
 
                 default:
-                    pWeaponType  = sithInventory_GetInventoryType(pThing, weaponId);
+                    pWeaponType = sithInventory_GetInventoryType(pThing, weaponId);
                     pTargetThing = sithPlayerControls_pTargetThing;
                     break;
             }
@@ -2302,7 +2308,7 @@ void J3DAPI sithPlayerControls_ProcessWeaponAim(SithThing* pThing, float secDelt
         }
 
         rdVector3 headPyr = pActor->headPYR;
-        bool bPitchAxis = false;
+        bool bPitchAxis   = false;
 
         if ( (sithMain_g_sith_mode.debugModeFlags & SITHDEBUG_INEDITOR) != 0 )
         {
@@ -2331,7 +2337,7 @@ void J3DAPI sithPlayerControls_ProcessWeaponAim(SithThing* pThing, float secDelt
                 pActor->flags |= SITH_AF_VIEWCENTRING;
 
                 float targetPitch = -pActor->headPYR.pitch;
-                float dpitch = 180.0f * secDeltaTime;
+                float dpitch      = 180.0f * secDeltaTime;
 
                 if ( targetPitch < -dpitch )
                 {
@@ -2364,7 +2370,7 @@ void J3DAPI sithPlayerControls_ProcessWeaponAim(SithThing* pThing, float secDelt
     //
 
     float weaponMaxAimDist = sithWeapon_GetWeaponMaxAimDistance((SithWeaponId)weaponId);
-    float maxDist = weaponMaxAimDist + 0.1f;
+    float maxDist          = weaponMaxAimDist + 0.1f;
 
     //
     // Validate current target
@@ -2494,7 +2500,8 @@ void J3DAPI sithPlayerControls_ProcessWeaponAim(SithThing* pThing, float secDelt
     sithWeapon_SendMessageAim(pThing, 0);
 }
 
-int J3DAPI sithPlayerControls_CheckAimRange(SithThing* pThing, const rdVector3* pStartPos, const rdVector3* pTargetPos, float minCosHorizontal, float minCosHorizontalNear, float minCosVertical, float maxAimDist)
+int J3DAPI sithPlayerControls_CheckAimRange(SithThing* pThing, const rdVector3* pStartPos, const rdVector3* pTargetPos, float minCosHorizontal, float minCosHorizontalNear, float minCosVertical,
+                                            float maxAimDist)
 {
     rdVector3 aimDir;
     rdVector_Sub3(&aimDir, pTargetPos, pStartPos);
@@ -2506,8 +2513,8 @@ int J3DAPI sithPlayerControls_CheckAimRange(SithThing* pThing, const rdVector3* 
     }
 
     float cosThreshold = (dist <= sithPlayerControls_closeRangeAimDistance)
-        ? (minCosHorizontal - minCosHorizontalNear) / sithPlayerControls_closeRangeAimDistance * dist + minCosHorizontalNear
-        : minCosHorizontal;
+                             ? (minCosHorizontal - minCosHorizontalNear) / sithPlayerControls_closeRangeAimDistance * dist + minCosHorizontalNear
+                             : minCosHorizontal;
 
     // Vector rejection - project aimDir onto plane perpendicular to uvec
     rdVector3 aimDirXY;
@@ -2533,11 +2540,11 @@ int J3DAPI sithPlayerControls_GetPushPullMoveNorm(rdVector3* moveNorm, const rdV
         return 0;
     }
 
-    rdVector3 dir =  rdroid_g_xVector3;
+    rdVector3 dir = rdroid_g_xVector3;
     if ( fabsf(pLVect->y) >= fabsf(pLVect->x) )
     {
         // Prefer Y direction
-        dir =  rdroid_g_yVector3;
+        dir = rdroid_g_yVector3;
     }
 
     float dotResult = rdVector_Dot3(pLVect, &dir);
@@ -2602,7 +2609,7 @@ int J3DAPI sithPlayerControls_CheckWaterLedge(SithThing* pThing)
             if ( ledgeDot > 0.87f )
             {
                 rdFace* pLedgeFace = &pCollision->pSurfaceCollided->face;
-                float topZ = sithWorld_g_pCurrentWorld->aVertices[*pLedgeFace->aVertices].z;
+                float topZ         = sithWorld_g_pCurrentWorld->aVertices[*pLedgeFace->aVertices].z;
 
                 for ( size_t i = 0; i < pLedgeFace->numVertices; ++i )
                 {
@@ -2615,7 +2622,7 @@ int J3DAPI sithPlayerControls_CheckWaterLedge(SithThing* pThing)
 
                 // Get ledge grab pos & sec
                 rdVector3 grabPos = pThing->pos;
-                grabPos.z = topZ - 0.094999999f;
+                grabPos.z         = topZ - 0.094999999f;
 
                 SithSector* pGrabSec = sithCollision_FindSectorInRadius(pThing->pInSector, &pThing->pos, &grabPos, 0.0f);
                 if ( !pGrabSec )
@@ -2680,7 +2687,8 @@ int J3DAPI sithPlayerControls_CheckWaterLedge(SithThing* pThing)
     return ledgeType;
 }
 
-int J3DAPI sithPlayerControls_FindLedgeInDirection(SithThing* pThing, const rdVector3* moveNorm, SithSurface** ppLedgeSurf, SithThing** ppLedgeThing, rdModel3** ppLedgeModel, rdFace** ppLedgeFace, rdModel3Mesh** ppLedgeMesh, int direction)
+int J3DAPI sithPlayerControls_FindLedgeInDirection(SithThing* pThing, const rdVector3* moveNorm, SithSurface** ppLedgeSurf, SithThing** ppLedgeThing, rdModel3** ppLedgeModel, rdFace** ppLedgeFace,
+                                                   rdModel3Mesh** ppLedgeMesh, int direction)
 {
     SithSurface* pLedgeSurf = NULL;
 
@@ -2801,7 +2809,7 @@ int J3DAPI sithPlayerControls_FindLedgeInDirection(SithThing* pThing, const rdVe
 SithSurface* J3DAPI sithPlayerControls_FindClimbSurface(SithThing* pThing, const rdVector3* moveNorm, int climbDir, int* pbHitNoneClimbSurf)
 {
     SithSurface* pClimbSurf = NULL;
-    *pbHitNoneClimbSurf = 0;
+    *pbHitNoneClimbSurf     = 0;
 
     float len = (climbDir == 1 || climbDir == 2) ? 0.2f : 0.1f; // up/down : left/right
 
@@ -2829,9 +2837,9 @@ SithSurface* J3DAPI sithPlayerControls_FindClimbSurface(SithThing* pThing, const
                 && (pCollision->pSurfaceCollided->flags & SITH_SURFACE_CLIMBABLE) != 0 )
             {
                 rdVector3 faceNormal = pCollision->pSurfaceCollided->face.normal;
-                float surfDot = rdVector_Dot3(&pThing->attach.attachedToStructure.pSurfaceAttached->face.normal, &faceNormal);
+                float surfDot        = rdVector_Dot3(&pThing->attach.attachedToStructure.pSurfaceAttached->face.normal, &faceNormal);
 
-                pClimbSurf = pCollision->pSurfaceCollided;
+                pClimbSurf          = pCollision->pSurfaceCollided;
                 *pbHitNoneClimbSurf = 0;
                 break;
             }
@@ -2844,9 +2852,9 @@ SithSurface* J3DAPI sithPlayerControls_FindClimbSurface(SithThing* pThing, const
                 && (pCollision->pSurfaceCollided->flags & SITH_SURFACE_CLIMBABLE) != 0 )
             {
                 rdVector3 faceNormal = pCollision->pSurfaceCollided->face.normal;
-                float surfDot = rdVector_Dot3(&pThing->attach.attachedToStructure.pSurfaceAttached->face.normal, &faceNormal);
+                float surfDot        = rdVector_Dot3(&pThing->attach.attachedToStructure.pSurfaceAttached->face.normal, &faceNormal);
 
-                pClimbSurf = pCollision->pSurfaceCollided;
+                pClimbSurf          = pCollision->pSurfaceCollided;
                 *pbHitNoneClimbSurf = 0;
                 break;
             }
@@ -2890,7 +2898,7 @@ SithSurface* J3DAPI sithPlayerControls_FindClimbSurface(SithThing* pThing, const
 
             if ( pCollision->pSurfaceCollided != pClimbSurf )
             {
-                bBlocked = true;
+                bBlocked            = true;
                 *pbHitNoneClimbSurf = 1;
                 break;
             }
@@ -2901,13 +2909,13 @@ SithSurface* J3DAPI sithPlayerControls_FindClimbSurface(SithThing* pThing, const
             if ( (pCollision->pSurfaceCollided->flags & (SITH_SURFACE_LAVA | SITH_SURFACE_WATER)) != 0 )
             {
                 *pbHitNoneClimbSurf = 1;
-                bBlocked = true;
+                bBlocked            = true;
                 break;
             }
         }
         else if ( (pCollision->type & SITHCOLLISION_THING) != 0 )
         {
-            bBlocked = true;
+            bBlocked            = true;
             *pbHitNoneClimbSurf = 1;
             break;
         }
@@ -2988,7 +2996,7 @@ int J3DAPI sithPlayerControls_BoardVehicle(SithThing* pThing, int bNoBoardAnim)
 
     // Altered: Moved check here.
     //          OG this check was within minecar or jeep if scope,
-    //          right after the code that checks player to vehicle enter position dot 
+    //          right after the code that checks player to vehicle enter position dot
     if ( !bHaveVehiclePlayer )
     {
         return 0;
@@ -3027,7 +3035,7 @@ int J3DAPI sithPlayerControls_BoardVehicle(SithThing* pThing, int bNoBoardAnim)
             return 0;
         }
 
-        // 
+        //
         // All checks passed, now board jeep
         //
         sithPlayerControls_pBoardedVehicleThing = pVehicleThing;
@@ -3106,7 +3114,7 @@ int J3DAPI sithPlayerControls_BoardVehicle(SithThing* pThing, int bNoBoardAnim)
             int meshIndex      = sithModel_GetMeshIndex(pModel, "jeep_body");
             int thingMeshIndex = sithThing_GetThingMeshIndex(pVehiclePlayerThing, "jeep_body");
 
-            int swapEntry = sithThing_AddSwapEntry(pVehiclePlayerThing, thingMeshIndex, pModel, meshIndex);
+            int swapEntry                = sithThing_AddSwapEntry(pVehiclePlayerThing, thingMeshIndex, pModel, meshIndex);
             pVehiclePlayerThing->userval = (float)swapEntry;
         }
 
@@ -3325,7 +3333,7 @@ void J3DAPI sithPlayerControls_ExitVehicle(SithThing* pVehiclePlayerThing)
         while ( pVehiclePlayerThing->pAttachedThing )
         {
             SithThing* pAttachedThing = pVehiclePlayerThing->pAttachedThing;
-            SithAttachFlag flags     = pAttachedThing->attach.flags;
+            SithAttachFlag flags      = pAttachedThing->attach.flags;
 
             sithThing_DetachThing(pAttachedThing);
             sithThing_AttachThingToThing(pAttachedThing, sithPlayerControls_pBoardedVehicleThing);
@@ -3344,7 +3352,7 @@ void J3DAPI sithPlayerControls_ExitVehicle(SithThing* pVehiclePlayerThing)
         SITHLOG_ERROR("This is really bad, trying to exit vehicle to non-existent sector..\n");
     }
 
-    // Exit vehicle sector and 
+    // Exit vehicle sector and
     bool bDiffSec           = pVehicleExitSec != pVehiclePlayerThing->pInSector;
     size_t vehiclePlayerNum = sithPlayer_g_playerNum;
     SithSector* pVehicleSec = pVehiclePlayerThing->pInSector;
@@ -3481,14 +3489,15 @@ void J3DAPI sithPlayerControls_RotateAimJointsEx(SithThing* pThing, float pitch,
             if ( jointIdx >= 0 )
             {
                 yaw = STDMATH_CLAMP(yaw, -45.0f, 45.0f);
-              /*pThing->renderData.apTweakedAngles[jointIdx].yaw   = yaw;
-                pThing->renderData.apTweakedAngles[jointIdx].pitch = 0.0;*/
+                /*pThing->renderData.apTweakedAngles[jointIdx].yaw   = yaw;
+                  pThing->renderData.apTweakedAngles[jointIdx].pitch = 0.0;*/
 
                 // Altered: Rotate joints with smooth interpolation
                 sithPlayerControls_BendAimJointYaw(pThing, jointIdx, yaw, secDeltaTime);
                 sithPlayerControls_BendAimJointPitch(pThing, jointIdx, 0.0f, secDeltaTime);
             }
-        } break;
+        }
+        break;
 
         case SITHWEAPON_SUBMACHINE:
         case SITHWEAPON_SHOTGUN:
@@ -3496,7 +3505,7 @@ void J3DAPI sithPlayerControls_RotateAimJointsEx(SithThing* pThing, float pitch,
         case SITHWEAPON_COMSUBMACHINE:
         case SITHWEAPON_COMSHOTGUN:
             yaw += sithPlayerControls_rifleYawOffset;
-            // Fall through
+        // Fall through
         case SITHWEAPON_SIMONOV:
         case SITHWEAPON_COMSIMONOV:
         {
@@ -3515,7 +3524,8 @@ void J3DAPI sithPlayerControls_RotateAimJointsEx(SithThing* pThing, float pitch,
                 sithPlayerControls_BendAimJointYaw(pThing, jointIdx, yaw, secDeltaTime);
                 sithPlayerControls_BendAimJointRoll(pThing, jointIdx, 0.0f, secDeltaTime);
             }
-        } break;
+        }
+        break;
 
         case SITHWEAPON_MIRROR:
         {
@@ -3529,12 +3539,13 @@ void J3DAPI sithPlayerControls_RotateAimJointsEx(SithThing* pThing, float pitch,
                 pThing->renderData.apTweakedAngles[jointIdx].yaw   = yaw;
                 pThing->renderData.apTweakedAngles[jointIdx].roll  = 0.0f;*/
 
-                 // Altered: Rotate joints with smooth interpolation
+                // Altered: Rotate joints with smooth interpolation
                 sithPlayerControls_BendAimJointPitch(pThing, jointIdx, pitch, secDeltaTime);
                 sithPlayerControls_BendAimJointYaw(pThing, jointIdx, yaw, secDeltaTime);
                 sithPlayerControls_BendAimJointRoll(pThing, jointIdx, 0.0f, secDeltaTime);
             }
-        } break;
+        }
+        break;
 
         default:
             // Altered: Add smooth interpolation
@@ -3580,7 +3591,6 @@ void J3DAPI sithPlayerControls_ResetAimJointsEx(SithThing* pThing, float secDelt
         // Altered: Added smooth interpolation
         //pThing->renderData.apTweakedAngles[jointIdx] = zeroPYR;
         sithPlayerControls_BendAimJoint(pThing, jointIdx, &rdroid_g_zeroVector3, secDeltaTime);
-
     }
 
     jointIdx = sithThing_GetThingJointIndex(pThing, "intorso");
@@ -3617,8 +3627,8 @@ bool J3DAPI sithPlayerControls_CanStrafeMove(SithThing* pThing, int bMoveRight)
 
     // Determine strafe direction
     rdVector3 moveNorm = bMoveRight
-        ? pThing->orient.rvec
-        : RDVECTOR_NEG3(pThing->orient.rvec);
+                             ? pThing->orient.rvec
+                             : RDVECTOR_NEG3(pThing->orient.rvec);
 
     bool bCanMove = true;
     sithCollision_SearchForCollisions(pThing->pInSector, pThing, &pThing->pos, &moveNorm, 0.1f, pThing->collide.movesize, 0xA00); // Altered: Change radius to movesize from 0.089000002f
@@ -3716,7 +3726,7 @@ bool J3DAPI sithPlayerControls_CanStrafeMove(SithThing* pThing, int bMoveRight)
 
             // Transform face vertex to world space
             rdModel3Mesh* pMeshCollided = pCollision->pMeshCollided;
-            rdVector3* apVertices = pMeshCollided->apVertices;
+            rdVector3* apVertices       = pMeshCollided->apVertices;
 
             rdVector3 worldVert;
             rdMatrix_TransformPoint34(&worldVert, &apVertices[*pFaceCollided->aVertices], &pCollision->pThingCollided->orient);
@@ -3742,7 +3752,7 @@ void J3DAPI sithPlayerControls_ProcessStillMove(SithThing* pThing, float secDelt
 {
     J3D_UNUSED(secDeltaTime);
 
-    bool bMoving = false;
+    bool bMoving              = false;
     SithPhysicsInfo* pPhysics = &pThing->moveInfo.physics;
     SithActorInfo* pActor     = &pThing->thingInfo.actorInfo;
 
@@ -3803,21 +3813,21 @@ void J3DAPI sithPlayerControls_ProcessStillMove(SithThing* pThing, float secDelt
                 while ( (pCollision = sithCollision_PopStack()) != NULL )
                 {
                     if ( ((pCollision->type & SITHCOLLISION_WORLD) != 0
-                        || (pCollision->type & SITHCOLLISION_ADJOINCROSS) != 0)
+                            || (pCollision->type & SITHCOLLISION_ADJOINCROSS) != 0)
                         && pCollision->pSurfaceCollided
                         && (pCollision->pSurfaceCollided->flags & SITH_SURFACE_CLIMBABLE) != 0 )
                     {
                         rdVector3 surfNormal = RDVECTOR_NEG3(pCollision->pSurfaceCollided->face.normal);
-                        surfNormal.z = 0.0f;
+                        surfNormal.z         = 0.0f;
                         rdVector_Normalize3Acc(&surfNormal);
 
                         rdVector3 dir = pThing->orient.lvec;
-                        dir.z = 0.0f;
+                        dir.z         = 0.0f;
                         rdVector_Normalize3Acc(&dir);
 
                         if ( rdVector_Dot3(&dir, &surfNormal) > 0.80000001f )
                         {
-                            pThing->moveStatus = SITHPLAYERMOVE_MOUNTING_WALL;
+                            pThing->moveStatus                            = SITHPLAYERMOVE_MOUNTING_WALL;
                             pThing->thingInfo.actorInfo.bControlsDisabled = 1;
 
                             sithPhysics_ResetThingMovement(pThing);
@@ -3856,7 +3866,7 @@ void J3DAPI sithPlayerControls_ProcessStillMove(SithThing* pThing, float secDelt
                     float floorDot = rdVector_Dot3(&pThing->attach.pFace->normal, &rdroid_g_zVector3);
                     if ( floorDot > 0.69999999f && floorDot < 0.75f ) // TODO: shouldn't this be a slope check, i.e. sithPhysics_CheckSlopeAngle, tho the cos angles are different
                     {
-                        pThing->moveStatus = SITHPLAYERMOVE_STILL;
+                        pThing->moveStatus                         = SITHPLAYERMOVE_STILL;
                         pThing->thingInfo.actorInfo.bForceMovePlay = 0;
                     }
                     else
@@ -3889,7 +3899,7 @@ void J3DAPI sithPlayerControls_ProcessStillMove(SithThing* pThing, float secDelt
                     // Check if attached thing is stationary
                     if ( pThing->attach.attachedToStructure.pThingAttached )
                     {
-                        SithThing* pThingAttached = pThing->attach.attachedToStructure.pThingAttached;
+                        SithThing* pThingAttached  = pThing->attach.attachedToStructure.pThingAttached;
                         SithThingMoveType moveType = pThingAttached->moveType;
 
                         switch ( moveType )
@@ -3986,7 +3996,7 @@ void J3DAPI sithPlayerControls_ProcessStillMove(SithThing* pThing, float secDelt
                         // Disable controls during transition animation and
                         // set move status to stand2walk/run
                         pThing->thingInfo.actorInfo.bControlsDisabled = 1;
-                        pThing->moveStatus = bRun ? SITHPLAYERMOVE_STAND2RUN : SITHPLAYERMOVE_STAND2WALK;
+                        pThing->moveStatus                            = bRun ? SITHPLAYERMOVE_STAND2RUN : SITHPLAYERMOVE_STAND2WALK;
 
                         sithPuppet_PlayKey(pThing->renderData.pPuppet, pKframe, 1, 2, RDKEYFRAME_FADEOUT_NOLOOP | RDKEYFRAME_NOLOOP, sithPlayerControls_PuppetCallback);
                         sithPuppet_ClearMode(pThing, SITHPUPPETSUBMODE_STAND);
@@ -4042,7 +4052,7 @@ void J3DAPI sithPlayerControls_ProcessStillMove(SithThing* pThing, float secDelt
                         // Start moving backward
                         pThing->moveStatus = SITHPLAYERMOVE_WALKING;
                         pPhysics->thrust.y = sithPlayerControls_CalculateThrust(pActor, -1.0f, sithPlayerControls_moveFactorSlow);
-                        bMoving = true;
+                        bMoving            = true;
                     }
                     break;
             }
@@ -4080,7 +4090,7 @@ void J3DAPI sithPlayerControls_ProcessStillMove(SithThing* pThing, float secDelt
             return;
         }
 
-        pPhysics->thrust.x = 0.0f;
+        pPhysics->thrust.x            = 0.0f;
         pPhysics->angularVelocity.yaw = 0.0f;
     } // (pThing->thingInfo.actorInfo.flags & SITH_AF_IMMOBILE) == 0
 
@@ -4218,18 +4228,21 @@ void J3DAPI sithPlayerControls_ProcessStillMove(SithThing* pThing, float secDelt
             if ( bFoundGroundItem )
             {
                 // in_pickup_low.key
-                pKframe = sithPuppet_GetKeyframeByIndex(SITHWORLD_STATICINDEX(138)); static_assert(SITHWORLD_STATICINDEX(138) == 0x808A, "");
+                pKframe = sithPuppet_GetKeyframeByIndex(SITHWORLD_STATICINDEX(138));
+                static_assert(SITHWORLD_STATICINDEX(138) == 0x808A, "");
             }
             else if ( sithInventory_GetCurrentWeapon(pThing) == SITHWEAPON_ZIPPO )
             {
-                 // in_pickup_dark.key
-                pKframe = sithPuppet_GetKeyframeByIndex(SITHWORLD_STATICINDEX(145)); static_assert(SITHWORLD_STATICINDEX(145) == 0x8091, "");
+                // in_pickup_dark.key
+                pKframe = sithPuppet_GetKeyframeByIndex(SITHWORLD_STATICINDEX(145));
+                static_assert(SITHWORLD_STATICINDEX(145) == 0x8091, "");
                 kfflags = RDKEYFRAME_FADEOUT_NOLOOP;
             }
             else
             {
                 // in_pickup_med.key
-                pKframe = sithPuppet_GetKeyframeByIndex(SITHWORLD_STATICINDEX(139)); static_assert(SITHWORLD_STATICINDEX(139) == 0x808B, "");
+                pKframe = sithPuppet_GetKeyframeByIndex(SITHWORLD_STATICINDEX(139));
+                static_assert(SITHWORLD_STATICINDEX(139) == 0x808B, "");
             }
 
             if ( pKframe )
@@ -4278,7 +4291,7 @@ void J3DAPI sithPlayerControls_ProcessStillMove(SithThing* pThing, float secDelt
             {
                 // Check player facing movable object
                 rdVector3 dirXY = pThing->orient.lvec;
-                dirXY.z = 0.0f;
+                dirXY.z         = 0.0f;
                 rdVector_Normalize3Acc(&dirXY);
 
                 rdVector3 playerToItem;
@@ -4299,7 +4312,7 @@ void J3DAPI sithPlayerControls_ProcessStillMove(SithThing* pThing, float secDelt
                     pThing->thingInfo.actorInfo.bControlsDisabled = 1;
                     sithPuppet_PlayMode(pThing, SITHPUPPETSUBMODE_PUSHPULLREADY, sithPlayerControls_PuppetCallback);
 
-                    pThing->moveStatus = SITHPLAYERMOVE_PUSHPULL_READY;
+                    pThing->moveStatus                  = SITHPLAYERMOVE_PUSHPULL_READY;
                     sithPlayerControls_bActionKeyActive = true;
                     return;
                 }
@@ -4330,7 +4343,7 @@ void J3DAPI sithPlayerControls_ProcessWalkMove(SithThing* pThing, float secDelta
 {
     J3D_UNUSED(secDeltaTime);
 
-    bool bMoving = false;
+    bool bMoving              = false;
     SithPhysicsInfo* pPhysics = &pThing->moveInfo.physics;
     SithActorInfo* pActor     = &pThing->thingInfo.actorInfo;
 
@@ -4377,7 +4390,7 @@ void J3DAPI sithPlayerControls_ProcessWalkMove(SithThing* pThing, float secDelta
             float floorDot = rdVector_Dot3(&pThing->attach.pFace->normal, &rdroid_g_zVector3);
             if ( floorDot > 0.69999999f && floorDot < 0.75f ) // TODO: shouldn't this be a slope check, i.e. sithPhysics_CheckSlopeAngle, tho the cos angles are different
             {
-                pThing->moveStatus = SITHPLAYERMOVE_STILL;
+                pThing->moveStatus                         = SITHPLAYERMOVE_STILL;
                 pThing->thingInfo.actorInfo.bForceMovePlay = 0;
             }
             else
@@ -4456,7 +4469,7 @@ void J3DAPI sithPlayerControls_ProcessWalkMove(SithThing* pThing, float secDelta
             }
 
             pPhysics->thrust.y = sithPlayerControls_CalculateThrust(pActor, -1.0f, sithPlayerControls_moveFactorSlow);
-            bMoving = true;
+            bMoving            = true;
         }
     }
     else
@@ -4473,10 +4486,10 @@ void J3DAPI sithPlayerControls_ProcessWalkMove(SithThing* pThing, float secDelta
         if ( !pThing->thingInfo.actorInfo.bForceMovePlay )
         {
             pPhysics->angularVelocity.yaw = sithPlayerControls_CalculateAngularVelocity(pActor, -1.0f, -1.0f, moveFactor);
-            bMoving = true;
+            bMoving                       = true;
         }
     }
-     //
+    //
     // Handle turn left key
     //
     else if ( sithControl_GetKey(SITHCONTROL_TURNLEFT, NULL) )
@@ -4484,7 +4497,7 @@ void J3DAPI sithPlayerControls_ProcessWalkMove(SithThing* pThing, float secDelta
         if ( !pThing->thingInfo.actorInfo.bForceMovePlay )
         {
             pPhysics->angularVelocity.yaw = sithPlayerControls_CalculateAngularVelocity(pActor, 1.0f, 1.0f, moveFactor);
-            bMoving = true;
+            bMoving                       = true;
         }
     }
     else
@@ -4516,7 +4529,7 @@ void J3DAPI sithPlayerControls_ProcessWalkMove(SithThing* pThing, float secDelta
         rdKeyframe* pKfTrack = sithPuppet_GetKeyframe("in_walk_bd_stand.key");
         if ( pKfTrack )
         {
-            pThing->moveStatus = SITHPLAYERMOVE_WALK2STAND;
+            pThing->moveStatus                            = SITHPLAYERMOVE_WALK2STAND;
             pThing->thingInfo.actorInfo.bControlsDisabled = 1;
 
             if ( sithPuppet_GetModeTrack(pThing, SITHPUPPETSUBMODE_WALK) )
@@ -4529,7 +4542,7 @@ void J3DAPI sithPlayerControls_ProcessWalkMove(SithThing* pThing, float secDelta
             }
 
             sithPuppet_PlayKey(pThing->renderData.pPuppet, pKfTrack, /*lowPriority=*/1, /*heighPriority=*/2,
-                RDKEYFRAME_FADEOUT_NOLOOP | RDKEYFRAME_DISABLE_FADEIN | RDKEYFRAME_NOLOOP, sithPlayerControls_PuppetCallback);
+                               RDKEYFRAME_FADEOUT_NOLOOP | RDKEYFRAME_DISABLE_FADEIN | RDKEYFRAME_NOLOOP, sithPlayerControls_PuppetCallback);
 
             sithPuppet_PlayMode(pThing, SITHPUPPETSUBMODE_STAND, NULL);
             sithPhysics_ResetThingMovement(pThing);
@@ -4546,7 +4559,7 @@ void J3DAPI sithPlayerControls_ProcessRunMove(SithThing* pThing, float secDeltaT
         return;
     }
 
-    bool bMoving = false;
+    bool bMoving              = false;
     SithPhysicsInfo* pPhysics = &pThing->moveInfo.physics;
     SithActorInfo* pActor     = &pThing->thingInfo.actorInfo;
 
@@ -4631,7 +4644,7 @@ void J3DAPI sithPlayerControls_ProcessRunMove(SithThing* pThing, float secDeltaT
     {
         pThing->moveStatus = SITHPLAYERMOVE_WALKING;
         pPhysics->thrust.y = sithPlayerControls_CalculateThrust(pActor, -1.0f, sithPlayerControls_moveFactorSlow);
-        bMoving = true;
+        bMoving            = true;
     }
     else
     {
@@ -4645,12 +4658,12 @@ void J3DAPI sithPlayerControls_ProcessRunMove(SithThing* pThing, float secDeltaT
     if ( sithControl_GetKey(SITHCONTROL_TURNRIGHT, NULL) )
     {
         pPhysics->angularVelocity.yaw = sithPlayerControls_CalculateAngularVelocity(pActor, -1.0f, -1.0f, moveFactor);
-        bMoving = true;
+        bMoving                       = true;
     }
     else if ( sithControl_GetKey(SITHCONTROL_TURNLEFT, NULL) )
     {
         pPhysics->angularVelocity.yaw = sithPlayerControls_CalculateAngularVelocity(pActor, 1.0f, 1.0f, moveFactor);
-        bMoving = true;
+        bMoving                       = true;
     }
     else
     {
@@ -4680,12 +4693,12 @@ void J3DAPI sithPlayerControls_ProcessRunMove(SithThing* pThing, float secDeltaT
         rdKeyframe* pKfTrack = sithPuppet_GetKeyframe("in_walk_bd_stand.key");
         if ( pKfTrack )
         {
-            pThing->moveStatus = SITHPLAYERMOVE_WALK2STAND;
+            pThing->moveStatus                            = SITHPLAYERMOVE_WALK2STAND;
             pThing->thingInfo.actorInfo.bControlsDisabled = 1;
             sithPuppet_ClearMode(pThing, SITHPUPPETSUBMODE_RUN);
 
             sithPuppet_PlayKey(pThing->renderData.pPuppet, pKfTrack, /*lowPriority=*/1, /*heighPriority*/2,
-                RDKEYFRAME_FADEOUT_NOLOOP | RDKEYFRAME_DISABLE_FADEIN | RDKEYFRAME_NOLOOP, sithPlayerControls_PuppetCallback);
+                               RDKEYFRAME_FADEOUT_NOLOOP | RDKEYFRAME_DISABLE_FADEIN | RDKEYFRAME_NOLOOP, sithPlayerControls_PuppetCallback);
 
             sithPuppet_PlayMode(pThing, SITHPUPPETSUBMODE_STAND, NULL);
             sithPhysics_ResetThingMovement(pThing);
@@ -4790,8 +4803,8 @@ void J3DAPI sithPlayerControls_ProcessCrawlMove(SithThing* pThing, float secDelt
             sithCog_ThingSendMessage(pItemThing, pThing, SITHCOG_MSG_ACTIVATE);
             sithPhysics_ResetThingMovement(pThing);
 
-            sithPlayerControls_curMoveStatus = pThing->moveStatus;
-            pThing->moveStatus = SITHPLAYERMOVE_ACTIVATING;
+            sithPlayerControls_curMoveStatus              = pThing->moveStatus;
+            pThing->moveStatus                            = SITHPLAYERMOVE_ACTIVATING;
             pThing->thingInfo.actorInfo.bControlsDisabled = 1;
 
             sithPuppet_PlayMode(pThing, SITHPUPPETSUBMODE_ACTIVATE, sithPlayerControls_PuppetCallback);
@@ -4829,8 +4842,8 @@ void J3DAPI sithPlayerControls_ProcessPushPullMove(SithThing* pThing, float secD
     if ( !sithControl_GetKey(SITHCONTROL_ACT2, NULL) )
     {
         sithPuppet_ClearMode(pThing, SITHPUPPETSUBMODE_PUSHPULLREADY);
-        pThing->moveStatus = SITHPLAYERMOVE_STILL;
-        sithPlayerControls_pMovableThing = NULL;
+        pThing->moveStatus                            = SITHPLAYERMOVE_STILL;
+        sithPlayerControls_pMovableThing              = NULL;
         pThing->thingInfo.actorInfo.bControlsDisabled = 0;
         return;
     }
@@ -4854,9 +4867,9 @@ void J3DAPI sithPlayerControls_ProcessPushPullMove(SithThing* pThing, float secD
     }
 
     bool bCanMoveObject = true;
-    float searchRadius = (sithPlayerControls_pMovableThing->collide.movesize < 0.1f)
-        ? 0.050000001f
-        : 0.094999999f;
+    float searchRadius  = (sithPlayerControls_pMovableThing->collide.movesize < 0.1f)
+                              ? 0.050000001f
+                              : 0.094999999f;
 
     //
     // Handle pull object move
@@ -4880,8 +4893,8 @@ void J3DAPI sithPlayerControls_ProcessPushPullMove(SithThing* pThing, float secD
                     }
 
                     sithPuppet_ClearMode(pThing, SITHPUPPETSUBMODE_PUSHPULLREADY);
-                    pThing->moveStatus = SITHPLAYERMOVE_STILL;
-                    sithPlayerControls_pMovableThing = NULL;
+                    pThing->moveStatus                            = SITHPLAYERMOVE_STILL;
+                    sithPlayerControls_pMovableThing              = NULL;
                     pThing->thingInfo.actorInfo.bControlsDisabled = 0;
                     return;
                 }
@@ -4891,7 +4904,7 @@ void J3DAPI sithPlayerControls_ProcessPushPullMove(SithThing* pThing, float secD
         //
         // Check if movable thing can move in pull direction
         //
-        rdVector3 pullDir = RDVECTOR_NEG3(pushPullMoveNorm);
+        rdVector3 pullDir  = RDVECTOR_NEG3(pushPullMoveNorm);
         float pullMoveDist = pThing->collide.movesize + 0.19f;
         sithCollision_SearchForCollisions(
             sithPlayerControls_pMovableThing->pInSector,
@@ -4930,8 +4943,8 @@ void J3DAPI sithPlayerControls_ProcessPushPullMove(SithThing* pThing, float secD
             }
 
             sithPuppet_ClearMode(pThing, SITHPUPPETSUBMODE_PUSHPULLREADY);
-            pThing->moveStatus = SITHPLAYERMOVE_STILL;
-            sithPlayerControls_pMovableThing = NULL;
+            pThing->moveStatus                            = SITHPLAYERMOVE_STILL;
+            sithPlayerControls_pMovableThing              = NULL;
             pThing->thingInfo.actorInfo.bControlsDisabled = 0;
             return;
         }
@@ -4975,8 +4988,8 @@ void J3DAPI sithPlayerControls_ProcessPushPullMove(SithThing* pThing, float secD
             }
 
             sithPuppet_ClearMode(pThing, SITHPUPPETSUBMODE_PUSHPULLREADY);
-            pThing->moveStatus = SITHPLAYERMOVE_STILL;
-            sithPlayerControls_pMovableThing = NULL;
+            pThing->moveStatus                            = SITHPLAYERMOVE_STILL;
+            sithPlayerControls_pMovableThing              = NULL;
             pThing->thingInfo.actorInfo.bControlsDisabled = 0;
             return;
         }
@@ -4988,7 +5001,7 @@ void J3DAPI sithPlayerControls_ProcessPushPullMove(SithThing* pThing, float secD
         rdVector3 pullEndPos;
         rdVector_ScaleAdd3(&pullEndPos, &negMoveNorm, 0.2f, &sithPlayerControls_pMovableThing->pos);
 
-        rdVector3 downDir = RDVECTOR_NEG3(rdroid_g_zVector3);
+        rdVector3 downDir             = RDVECTOR_NEG3(rdroid_g_zVector3);
         SithSector* pPullEndPosSector = sithCollision_FindSectorInRadius(sithPlayerControls_pMovableThing->pInSector, &sithPlayerControls_pMovableThing->pos, &pullEndPos, 0.0f);
         if ( !pPullEndPosSector )
         {
@@ -4999,8 +5012,8 @@ void J3DAPI sithPlayerControls_ProcessPushPullMove(SithThing* pThing, float secD
             }
 
             sithPuppet_ClearMode(pThing, SITHPUPPETSUBMODE_PUSHPULLREADY);
-            pThing->moveStatus = SITHPLAYERMOVE_STILL;
-            sithPlayerControls_pMovableThing = NULL;
+            pThing->moveStatus                            = SITHPLAYERMOVE_STILL;
+            sithPlayerControls_pMovableThing              = NULL;
             pThing->thingInfo.actorInfo.bControlsDisabled = 0;
             return;
         }
@@ -5038,8 +5051,8 @@ void J3DAPI sithPlayerControls_ProcessPushPullMove(SithThing* pThing, float secD
             }
 
             sithPuppet_ClearMode(pThing, SITHPUPPETSUBMODE_PUSHPULLREADY);
-            pThing->moveStatus = SITHPLAYERMOVE_STILL;
-            sithPlayerControls_pMovableThing = NULL;
+            pThing->moveStatus                            = SITHPLAYERMOVE_STILL;
+            sithPlayerControls_pMovableThing              = NULL;
             pThing->thingInfo.actorInfo.bControlsDisabled = 0;
             return;
         }
@@ -5058,8 +5071,8 @@ void J3DAPI sithPlayerControls_ProcessPushPullMove(SithThing* pThing, float secD
             }
 
             sithPuppet_ClearMode(pThing, SITHPUPPETSUBMODE_PUSHPULLREADY);
-            pThing->moveStatus = SITHPLAYERMOVE_STILL;
-            sithPlayerControls_pMovableThing = NULL;
+            pThing->moveStatus                            = SITHPLAYERMOVE_STILL;
+            sithPlayerControls_pMovableThing              = NULL;
             pThing->thingInfo.actorInfo.bControlsDisabled = 0;
             return;
         }
@@ -5117,8 +5130,8 @@ void J3DAPI sithPlayerControls_ProcessPushPullMove(SithThing* pThing, float secD
             }
 
             sithPuppet_ClearMode(pThing, SITHPUPPETSUBMODE_PUSHPULLREADY);
-            pThing->moveStatus = SITHPLAYERMOVE_STILL;
-            sithPlayerControls_pMovableThing = NULL;
+            pThing->moveStatus                            = SITHPLAYERMOVE_STILL;
+            sithPlayerControls_pMovableThing              = NULL;
             pThing->thingInfo.actorInfo.bControlsDisabled = 0;
             return;
         }
@@ -5197,8 +5210,8 @@ void J3DAPI sithPlayerControls_ProcessPushPullMove(SithThing* pThing, float secD
             }
 
             sithPuppet_ClearMode(pThing, SITHPUPPETSUBMODE_PUSHPULLREADY);
-            pThing->moveStatus = SITHPLAYERMOVE_STILL;
-            sithPlayerControls_pMovableThing = NULL;
+            pThing->moveStatus                            = SITHPLAYERMOVE_STILL;
+            sithPlayerControls_pMovableThing              = NULL;
             pThing->thingInfo.actorInfo.bControlsDisabled = 0;
             return;
         }
@@ -5209,7 +5222,7 @@ void J3DAPI sithPlayerControls_ProcessPushPullMove(SithThing* pThing, float secD
         rdVector3 pushEndPos;
         rdVector_ScaleAdd3(&pushEndPos, &pushPullMoveNorm, 0.2f, &sithPlayerControls_pMovableThing->pos);
 
-        rdVector3 downDir = RDVECTOR_NEG3(rdroid_g_zVector3);
+        rdVector3 downDir             = RDVECTOR_NEG3(rdroid_g_zVector3);
         SithSector* pPushEndPosSector = sithCollision_FindSectorInRadius(
             sithPlayerControls_pMovableThing->pInSector,
             &sithPlayerControls_pMovableThing->pos,
@@ -5266,8 +5279,8 @@ void J3DAPI sithPlayerControls_ProcessPushPullMove(SithThing* pThing, float secD
             }
 
             sithPuppet_ClearMode(pThing, SITHPUPPETSUBMODE_PUSHPULLREADY);
-            pThing->moveStatus = SITHPLAYERMOVE_STILL;
-            sithPlayerControls_pMovableThing = NULL;
+            pThing->moveStatus                            = SITHPLAYERMOVE_STILL;
+            sithPlayerControls_pMovableThing              = NULL;
             pThing->thingInfo.actorInfo.bControlsDisabled = 0;
             return;
         }

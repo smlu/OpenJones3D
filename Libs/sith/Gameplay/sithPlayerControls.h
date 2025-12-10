@@ -12,7 +12,7 @@ J3D_EXTERN_C_START
 
 #define sithPlayerControls_g_bCutsceneMode J3D_DECL_FAR_VAR(sithPlayerControls_g_bCutsceneMode, int)
 
-#define sithPlayerControls_g_angularVel_fps  30.0f
+#define SITHPLAYERCONTROLS_ANGULARVEL_FPS  30.0f
 // extern int sithPlayerControls_g_bCutsceneMode;
 
 extern bool sithPlayerControls_bActionKeyActive;
@@ -76,7 +76,7 @@ inline float sithPlayerControls_CalculateAngularVelocity(SithActorInfo* pActor, 
 {
     speedFactor = J3DMIN(speedFactor, 1.0f);
 
-    return (axisDirection * sithPlayerControls_g_angularVel_fps) + (pActor->maxRotVelocity * keyDirection * speedFactor);
+    return (axisDirection * SITHPLAYERCONTROLS_ANGULARVEL_FPS) + (pActor->maxRotVelocity * keyDirection * speedFactor);
 }
 
 // Helper hooking functions
