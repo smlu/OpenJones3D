@@ -11,7 +11,7 @@ out vec4 vColor;
 out vec2 vTexCoord;
 
 void main() {
-    vColor = inColor.bgra; // DX->GL Farbreihenfolge
+    vColor = inColor; // DX->GL Farbreihenfolge
     vTexCoord = inTexCoord;
 
     vec4 clip = screenToClip(inPosition.xyz, inPosition.w);
