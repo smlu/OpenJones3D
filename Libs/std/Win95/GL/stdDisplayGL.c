@@ -11,7 +11,6 @@
 #include <std/General/stdMemory.h>
 #include <std/General/stdUtil.h>
 
-#include "Shaders/SMAA/stdSmaa.h"
 #include "wkernel/wkernel.h"
 
 
@@ -40,7 +39,6 @@ static bool stdDisplay_bModeSet    = false;
 static bool stdDisplay_bFullscreen = false;
 static bool stdDisplay_bNoSync     = false;
 static bool stdDisplay_bDeviceLost = false;
-static bool stdDisplay_bUseSMAA    = false; //currently not working correctly
 
 static float stdDisplay_windowViewport[4] = { 0 };
 
@@ -1167,7 +1165,7 @@ int J3DAPI stdDisplay_InitBuffers(PDIRECT3DDEVICE9 pDevice, const StdVideoMode* 
 
     stdShader_SetActiveShader(stdDisplay_fboShader);
     GLint loc = glGetUniformLocation(stdDisplay_fboShader->handle, "sSceneTexture");
-    glUniform1i(loc, stdDisplay_bUseSMAA ? TU_SMAA_BLEND : TU_SCENE);
+    glUniform1i(loc, TU_SCENE);
 
     stdShader_SetActiveTextureUnit(TU_DEFAULT);
 
@@ -1178,22 +1176,12 @@ int J3DAPI stdDisplay_InitBuffers(PDIRECT3DDEVICE9 pDevice, const StdVideoMode* 
         return 0;
     }
 
-    if ( stdDisplay_bUseSMAA )
-    {
-        stdSmaa_InitFBOs(width, height);
-    }
-
     return 1;
 }
 
 
 void stdDisplay_ReleaseBuffers(void) // checked
 {
-    if ( stdDisplay_bUseSMAA )
-    {
-        stdSmaa_Reset();
-    }
-
     tVSurface* surface = &stdDisplay_g_backBuffer.surface;
     if ( !surface )
         return;
@@ -1261,11 +1249,6 @@ int stdDisplay_Update(void)
     }
 
     backBufferSurface->skipMSAA = false;
-
-    if ( stdDisplay_bUseSMAA )
-    {
-        stdSmaa_ApplySmaa();
-    }
 
     const float* vp = stdDisplay_windowViewport;
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
