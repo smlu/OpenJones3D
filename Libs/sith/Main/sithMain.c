@@ -76,8 +76,9 @@ rdVector3 sith_unknownPos2;
 float sith_unknownRadius;
 float sith_unknownRadius2;
 
-size_t sithMain_g_intendedFrameNumber = 0;    //new
-static float sith_frameAccumulator    = 0.0f; // new
+size_t sithMain_g_currentIntendedFrameNumber = 0; //new
+size_t sithMain_g_lastIntendedFrameNumber    = 0;
+static float sith_frameAccumulator           = 0.0f; // new
 
 static const SithMainStartLevelNdsInfo sithMain_aLevelNdsInfos[17] =
 {
@@ -141,7 +142,8 @@ void sithMain_ResetGlobals(void)
 {
     memset(&sith_g_pHS, 0, sizeof(sith_g_pHS));
     memset(&sithMain_g_frameNumber, 0, sizeof(sithMain_g_frameNumber));
-    memset(&sithMain_g_intendedFrameNumber, 0, sizeof(sithMain_g_intendedFrameNumber));
+    memset(&sithMain_g_currentIntendedFrameNumber, 0, sizeof(sithMain_g_currentIntendedFrameNumber));
+    memset(&sithMain_g_lastIntendedFrameNumber, 0, sizeof(sithMain_g_lastIntendedFrameNumber));
     memset(&sithMain_g_sith_mode, 0, sizeof(sithMain_g_sith_mode));
     memset(&sithMain_g_curRenderTick, 0, sizeof(sithMain_g_curRenderTick));
 }
@@ -451,10 +453,11 @@ int J3DAPI sithOpen(const wchar_t* pwPlayerName)
         sith_pfOpenCallback();
     }
 
-    sithMain_g_frameNumber         = 0;
-    sithMain_g_intendedFrameNumber = 0;
-    sith_frameAccumulator          = 0.0f;
-    sithMain_g_curRenderTick       = 1;
+    sithMain_g_frameNumber                = 0;
+    sithMain_g_currentIntendedFrameNumber = 0;
+    sithMain_g_lastIntendedFrameNumber    = 0;
+    sith_frameAccumulator                 = 0.0f;
+    sithMain_g_curRenderTick              = 1;
     sithWorld_ResetRenderState(sithWorld_g_pCurrentWorld);
 
     sithEvent_Open();
@@ -578,14 +581,15 @@ void sithUpdate(void)
             sith_frameAccumulator += sithTime_g_frameTimeFlex;
             const float targetFrameTime = 1.0f / SITH_INTENDED_FPS;
 
-            const size_t steps = (size_t)floorf(sith_frameAccumulator / targetFrameTime);
+            const size_t steps                 = (size_t)floorf(sith_frameAccumulator / targetFrameTime);
+            sithMain_g_lastIntendedFrameNumber = sithMain_g_currentIntendedFrameNumber;
 
             if ( steps > 0 )
             {
                 // subtract the consumed time
                 sith_frameAccumulator -= (float)steps * targetFrameTime;
                 // increment the virtual frame counter
-                sithMain_g_intendedFrameNumber += steps;
+                sithMain_g_currentIntendedFrameNumber += steps;
             }
 
             sithEvent_Process();

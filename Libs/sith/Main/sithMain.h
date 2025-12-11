@@ -40,8 +40,6 @@ J3D_EXTERN_C_START
 #define SITH_ASSERTREL(condition) \
     J3D_ASSERTREL(condition, sith_g_pHS )
 
-extern size_t sithMain_g_intendedFrameNumber;
-
 /**
  * Checks if current game frame number + offset is N-th frame (like every 4th, 8th, or 16th frame).
  * Uses the global frame counter sithMain_g_frameNumber with an optional offset.
@@ -50,7 +48,7 @@ extern size_t sithMain_g_intendedFrameNumber;
  * @param n      N-th frame, i.e.: on every n-th frame (e.g.: every 2nd, 4th, 8th, 16th frame, etc.)
  * @return       True on every N-th frame
  */
-#define SITH_ISFRAMECYCLE(offset, n) (((size_t)sithMain_g_intendedFrameNumber + (size_t)(offset)) & ((n)-1)) == 0
+#define SITH_ISFRAMECYCLE(offset, n) sithIsFrameCycleRange(offset, n)
 
 #define SITH_INTENDED_FPS 30.0f
 
@@ -71,6 +69,9 @@ extern size_t sithMain_g_intendedFrameNumber;
 
 #define sithMain_g_curRenderTick J3D_DECL_FAR_VAR(sithMain_g_curRenderTick, size_t)
 // extern unsigned int sithMain_g_curRenderTick;
+
+extern size_t sithMain_g_currentIntendedFrameNumber;
+extern size_t sithMain_g_lastIntendedFrameNumber;
 
 void J3DAPI sithSetServices(tHostServices* pHS);
 void sithClearServices(void);
@@ -117,6 +118,28 @@ const char* J3DAPI sithGetLevelSaveFilename(size_t levelNum);
 // Helper hooking functions
 void sithMain_InstallHooks(void);
 void sithMain_ResetGlobals(void);
+
+static inline int sithIsFrameCycleRange(size_t offset, size_t n)
+{
+    // no advance -> nothing new
+    if ( sithMain_g_currentIntendedFrameNumber <= sithMain_g_lastIntendedFrameNumber ) return 0;
+
+    // range start and length
+    size_t start = sithMain_g_lastIntendedFrameNumber + 1;
+    size_t end   = sithMain_g_currentIntendedFrameNumber;
+
+    // quick path: if range length >= n, there must be a hit
+    if ( (end - start + 1) >= n ) return 1;
+
+    // compute offset-adjusted residue of start
+    size_t startAdj = (start + offset) % n;
+
+    // distance from start to the next k with (k+offset) % n == 0
+    size_t distToNext = (n - startAdj) % n; // in [0, n-1]
+
+    // if distToNext steps from start fits into the range [start..end], there is a hit
+    return distToNext <= (end - start) ? 1 : 0;
+}
 
 J3D_EXTERN_C_END
 #endif // SITH_SITHMAIN_H
