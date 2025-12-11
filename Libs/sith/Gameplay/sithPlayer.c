@@ -23,6 +23,10 @@
 #include <std/General/stdUtil.h>
 #include <std/Win95/stdComm.h>
 
+#ifndef J3D_SPEEDRUN_BUILD
+static float sithPlayer_imp235Damage;
+#endif
+
 static wchar_t sithPlayer_awLocalPlayerName[64] = { 0 }; // Added: Init to 0
 
 void sithPlayer_InstallHooks(void)
@@ -124,7 +128,7 @@ void J3DAPI sithPlayer_PlacePlayers(SithWorld* pWorld)
                 else
                 {
                     SithPlayer* pPlayer = &sithPlayer_g_aPlayers[numPlayers];
-                    pPlayer->flags    |= SITH_PLAYER_PLACED;
+                    pPlayer->flags |= SITH_PLAYER_PLACED;
                     pPlayer->pThing    = pThing;
                     pPlayer->pInSector = pThing->pInSector;
 
@@ -172,7 +176,7 @@ int J3DAPI sithPlayer_ShowPlayer(size_t playerNum, DPID id)
     SITH_ASSERTREL(playerNum < sithPlayer_g_numPlayers);
 
     SithPlayer* pPlayer = &sithPlayer_g_aPlayers[playerNum];
-    SithThing* pThing = pPlayer->pThing;
+    SithThing* pThing   = pPlayer->pThing;
     if ( !pThing )
     {
         return 0;
@@ -192,9 +196,9 @@ void J3DAPI sithPlayer_SetLocalPlayer(size_t playerNum)
     SithPlayer* pPlayer = &sithPlayer_g_aPlayers[playerNum];
     SITH_ASSERTREL(pPlayer->pThing);
 
-    sithWorld_g_pCurrentWorld->pLocalPlayer = pPlayer->pThing;
+    sithWorld_g_pCurrentWorld->pLocalPlayer      = pPlayer->pThing;
     sithWorld_g_pCurrentWorld->pCameraFocusThing = sithWorld_g_pCurrentWorld->pLocalPlayer;
-    sithPlayer_g_pLocalPlayer = &sithPlayer_g_aPlayers[playerNum];
+    sithPlayer_g_pLocalPlayer                    = &sithPlayer_g_aPlayers[playerNum];
 
     sithPlayer_g_pLocalPlayerThing = pPlayer->pThing;
     sithPlayer_g_pLocalPlayerThing->flags &= ~SITH_TF_REMOTE;
@@ -223,7 +227,7 @@ void J3DAPI sithPlayer_Reset(size_t playerNum)
         return;
     }
 
-    SithPlayer* pPlayer = &sithPlayer_g_aPlayers[playerNum]; // Fixed: assign pointer after bounds check
+    SithPlayer* pPlayer  = &sithPlayer_g_aPlayers[playerNum]; // Fixed: assign pointer after bounds check
     pPlayer->respawnMask = 0;
     pPlayer->playerNetId = 0;
     pPlayer->awName[0]   = 0;
@@ -281,37 +285,44 @@ void J3DAPI sithPlayer_Update(SithPlayer* pPlayer, float secDetaTime)
             case SITHWEAPON_IMP4:
             {
                 sithPlayer_g_impState = sithGetIMPDamageScalar() * 160.0f + sithPlayer_g_impState;
-                bImpStateUpdated = true;
+                bImpStateUpdated      = true;
 
                 sithPlayer_g_impFireType = SITHPLAYER_IMPFIRE_OFF; // Note: fire type has to be reset for Urgon's part and Azerim's part as it's single shot
                 if ( sithPlayer_g_impState > 180.0f )
                 {
-                    float damage = sithGetIMPDamageScalar() * ((sithPlayer_g_impState - 180.0f) * 2.0f); // Don't move
+                    float damage          = sithGetIMPDamageScalar() * ((sithPlayer_g_impState - 180.0f) * 2.0f); // Don't move
                     sithPlayer_g_impState = 180.0f;
                     sithThing_DamageThing(pThing, pThing, damage, SITH_DAMAGE_IMP_BLAST);
                 }
-
-            } break;
+            }
+            break;
 
             case SITHWEAPON_IMP2:
             case SITHWEAPON_IMP3:
             case SITHWEAPON_IMP5:
             {
                 sithPlayer_g_impState = sithGetIMPDamageScalar() * 10.0f * secDetaTime + sithPlayer_g_impState;
-                bImpStateUpdated = true;
+                bImpStateUpdated      = true;
 
                 if ( sithPlayer_g_impState > 180.0f )
                 {
                     sithPlayer_g_impState = 180.0f;
-                    float damage = sithGetIMPDamageScalar() * secDetaTime * 40.0f;
+                    float damage          = sithGetIMPDamageScalar() * secDetaTime * 40.0f;
                     // Fixed: Set min damage to 1.0f as sithThing_DamageThing cuts off damages lower than 1.0f. ( >40 fps)
-                #ifndef J3D_SPEEDRUN_BUILD
-                    damage = J3DMAX(damage, 1.0f);
-                #endif
+#ifndef J3D_SPEEDRUN_BUILD
+                    //damage = J3DMAX(damage, 1.0f);
+                    sithPlayer_imp235Damage += damage;
+                    if ( sithPlayer_imp235Damage >= 1.0f )
+                    {
+                        sithThing_DamageThing(pThing, pThing, sithPlayer_imp235Damage, SITH_DAMAGE_IMP_BLAST);
+                        sithPlayer_imp235Damage = 0.0f;
+                    }
+#else
                     sithThing_DamageThing(pThing, pThing, damage, SITH_DAMAGE_IMP_BLAST);
+#endif
                 }
-
-            } break;
+            }
+            break;
 
             default:
                 break;
@@ -325,7 +336,7 @@ void J3DAPI sithPlayer_Update(SithPlayer* pPlayer, float secDetaTime)
         if ( sithPlayer_g_impState >= 180.0f )
         {
             sithPlayer_g_impState = 180.0f;
-            float damage = sithGetIMPDamageScalar() * secDetaTime * 180.0f;;
+            float damage          = sithGetIMPDamageScalar() * secDetaTime * 180.0f;;
             sithThing_DamageThing(pThing, pThing, damage, SITH_DAMAGE_IMP_BLAST);
         }
     }
@@ -364,7 +375,7 @@ void J3DAPI sithPlayer_NewPlayer(SithThing* pPlayer)
 
         if ( (pPlayer->pTemplate->moveInfo.physics.flags & SITH_PF_ALIGNUP) != 0 ) // TODO: This must be a bug, probably should be check for not set SITH_PF_ALIGNUP flag
         {
-            pPlayer->moveInfo.physics.flags|= SITH_PF_ALIGNUP;
+            pPlayer->moveInfo.physics.flags |= SITH_PF_ALIGNUP;
             pPlayer->moveInfo.physics.flags &= ~(SITH_PF_ALIGNED | SITH_PF_ALIGNSURFACE);
         }
 
