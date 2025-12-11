@@ -67,7 +67,7 @@ static char sith_aTmpScreenShotDirPath[SITH_PATHSIZE];
 
 static int sith_bDrawUnknown;
 static bool sith_bDrawPlayerMoveBounds = false; // Added: Init to false
-static bool sith_bDrawThingMoveBounds = false; // Added: Init to false
+static bool sith_bDrawThingMoveBounds  = false; // Added: Init to false
 static int sith_performanceLevel;
 
 rdVector3 sith_unknownPos;
@@ -75,6 +75,9 @@ rdVector3 sith_unknownPos2;
 
 float sith_unknownRadius;
 float sith_unknownRadius2;
+
+size_t sithMain_g_intendedFrameNumber = 0;    //new
+static float sith_frameAccumulator    = 0.0f; // new
 
 static const SithMainStartLevelNdsInfo sithMain_aLevelNdsInfos[17] =
 {
@@ -138,6 +141,7 @@ void sithMain_ResetGlobals(void)
 {
     memset(&sith_g_pHS, 0, sizeof(sith_g_pHS));
     memset(&sithMain_g_frameNumber, 0, sizeof(sithMain_g_frameNumber));
+    memset(&sithMain_g_intendedFrameNumber, 0, sizeof(sithMain_g_intendedFrameNumber));
     memset(&sithMain_g_sith_mode, 0, sizeof(sithMain_g_sith_mode));
     memset(&sithMain_g_curRenderTick, 0, sizeof(sithMain_g_curRenderTick));
 }
@@ -391,7 +395,7 @@ void sithOpenPostProcess(void)
     else if ( (sithMain_g_sith_mode.debugModeFlags & SITHDEBUG_INEDITOR) == 0 )
     {
         // Make savegame at the start of the level
-        const char* pWorldName = sithGetCurrentWorldSaveName();
+        const char* pWorldName      = sithGetCurrentWorldSaveName();
         const char* pSaveNamePrefix = sithGetAutoSaveFilePrefix();
 
         char aFilename[128];
@@ -447,8 +451,10 @@ int J3DAPI sithOpen(const wchar_t* pwPlayerName)
         sith_pfOpenCallback();
     }
 
-    sithMain_g_frameNumber   = 0;
-    sithMain_g_curRenderTick = 1;
+    sithMain_g_frameNumber         = 0;
+    sithMain_g_intendedFrameNumber = 0;
+    sith_frameAccumulator          = 0.0f;
+    sithMain_g_curRenderTick       = 1;
     sithWorld_ResetRenderState(sithWorld_g_pCurrentWorld);
 
     sithEvent_Open();
@@ -528,8 +534,8 @@ void sithClose(void)
 
         if ( sithCamera_g_pCurCamera )
         {
-            sithCamera_g_pCurCamera->pSector = NULL;
-            sithCamera_g_pCurCamera->pPrimaryFocusThing = NULL;
+            sithCamera_g_pCurCamera->pSector              = NULL;
+            sithCamera_g_pCurCamera->pPrimaryFocusThing   = NULL;
             sithCamera_g_pCurCamera->pSecondaryFocusThing = NULL;
         }
 
@@ -567,6 +573,21 @@ void sithUpdate(void)
 
             sithAdvanceRenderTick();
             sithTime_Advance();
+
+            // update intended frame counter
+            sith_frameAccumulator += sithTime_g_frameTimeFlex;
+            const float targetFrameTime = 1.0f / SITH_INTENDED_FPS;
+
+            const size_t steps = (size_t)floorf(sith_frameAccumulator / targetFrameTime);
+
+            if ( steps > 0 )
+            {
+                // subtract the consumed time
+                sith_frameAccumulator -= (float)steps * targetFrameTime;
+                // increment the virtual frame counter
+                sithMain_g_intendedFrameNumber += steps;
+            }
+
             sithEvent_Process();
 
             if ( sithMessage_g_inputstream )
@@ -606,12 +627,13 @@ void sithDrawScene(void)
 
         if ( sith_bDrawPlayerMoveBounds && sithWorld_g_pCurrentWorld && sithPlayer_g_pLocalPlayerThing )
         {
-            rdPrimit3_DrawClippedCircle(&sithPlayer_g_pLocalPlayerThing->pos, sithPlayer_g_pLocalPlayerThing->collide.movesize, 20.0f, STD_RGB(58, 231, 123), 0xFFFFFFFF); // Altered: color encoding to 32 bpp, was RGB565 (0xFFFF3F2F)
+            rdPrimit3_DrawClippedCircle(&sithPlayer_g_pLocalPlayerThing->pos, sithPlayer_g_pLocalPlayerThing->collide.movesize, 20.0f, STD_RGB(58, 231, 123), 0xFFFFFFFF);
+            // Altered: color encoding to 32 bpp, was RGB565 (0xFFFF3F2F)
         }
 
         if ( sith_bDrawUnknown )
         {
-            rdPrimit3_DrawClippedCircle(&sith_unknownPos, sith_unknownRadius, 20.0f, STD_RGB(58, 231, 123), 0xFFFFFFFF); // Altered: color encoding to 32 bpp, was RGB565 (0xFFFF3F2F)
+            rdPrimit3_DrawClippedCircle(&sith_unknownPos, sith_unknownRadius, 20.0f, STD_RGB(58, 231, 123), 0xFFFFFFFF);   // Altered: color encoding to 32 bpp, was RGB565 (0xFFFF3F2F)
             rdPrimit3_DrawClippedCircle(&sith_unknownPos2, sith_unknownRadius2, 20.0f, STD_RGB(58, 231, 123), 0xFFFFFFFF); // Altered: color encoding to 32 bpp, was RGB565 (0xFFFF3F2F)
         }
 
@@ -806,7 +828,7 @@ const char* J3DAPI sithGetPath(char* aOutPath, const char* pSithStrName, int bPr
     {
         if ( strlen(aInstallPath) && bPrependInstallDirPath )
         {
-            char* pFilename = pName;
+            char* pFilename  = pName;
             char* pStripName = strchr(pName, '\\');
             if ( pStripName )
             {
