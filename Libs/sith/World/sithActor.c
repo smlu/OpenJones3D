@@ -55,7 +55,8 @@ void sithActor_InstallHooks(void)
 }
 
 void sithActor_ResetGlobals(void)
-{}
+{
+}
 
 void J3DAPI sithActor_SetDifficulty(SithThing* pActor)
 {
@@ -72,9 +73,9 @@ void J3DAPI sithActor_SetDifficulty(SithThing* pActor)
         if ( pActor->pTemplate )
         {
             float healthRatio = pActor->thingInfo.actorInfo.health / pActor->thingInfo.actorInfo.maxHealth;
-            maxHealth = pActor->pTemplate->thingInfo.actorInfo.maxHealth;
-            maxHealth = sithGetHitAccuarancyScalar() * maxHealth;
-            health = healthRatio * maxHealth;
+            maxHealth         = pActor->pTemplate->thingInfo.actorInfo.maxHealth;
+            maxHealth         = sithGetHitAccuarancyScalar() * maxHealth;
+            health            = healthRatio * maxHealth;
         }
         else
         {
@@ -116,19 +117,19 @@ void J3DAPI sithActor_Update(SithThing* pThing, unsigned int msecDeltaTime)
     {
         if ( (pThing->moveInfo.physics.flags & SITH_PF_ONWATERSURFACE) == 0 && (pThing->pInSector->flags & SITH_SECTOR_UNDERWATER) != 0 )
         {
-
-        #ifdef J3D_DEBUG 
+#ifdef J3D_DEBUG
             // Note, found in debug version of Indy3D
             if ( (pThing->moveInfo.physics.flags & SITH_PF_RAFT) != 0 )
             {
                 sithConsole_PrintString("Uh Oh. Raft underwater.");
             }
-        #endif
+#endif
 
             pThing->thingInfo.actorInfo.endurance.msecUnderwater += msecDeltaTime;
             if ( pThing->thingInfo.actorInfo.endurance.msecUnderwater >= SITHACTOR_MAX_UNDERWATER_MSEC )
             {
                 float damage = (float)msecDeltaTime / 5.0f;
+                damage       = J3DMAX(damage, 1.0f); // not ideal solution. Applies too much damage on high framerates
                 sithThing_DamageThing(pThing, pThing, damage, SITH_DAMAGE_DROWN);
                 pThing->thingInfo.actorInfo.endurance.msecUnderwater = SITHACTOR_MAX_UNDERWATER_MSEC;
             }
@@ -142,7 +143,7 @@ void J3DAPI sithActor_Update(SithThing* pThing, unsigned int msecDeltaTime)
                 if ( !SITH_ISFRAMECYCLE(pThing->idx, 16) ) // Not on every 16th frame 
                 {
                     if ( pThing->thingInfo.actorInfo.endurance.msecUnderwater > (SITHACTOR_MAX_UNDERWATER_MSEC / 2) // TODO: ???, verify this if statement
-                        && SITH_ISFRAMECYCLE(pThing->idx, 8) ) // On every 8th frame
+                        && SITH_ISFRAMECYCLE(pThing->idx, 8) )                                                      // On every 8th frame
                     {
                         sithSoundClass_PlayModeRandom(pThing, SITHSOUNDCLASS_BREATH);
                     }
@@ -169,16 +170,16 @@ void J3DAPI sithActor_Update(SithThing* pThing, unsigned int msecDeltaTime)
             // Update Raft damage
 
             float damage = (float)sithGetGameDifficulty() * (0.60000002f - 1.2f) / 5.0f + 1.2f;
-            damage = (float)msecDeltaTime / damage;
+            damage       = (float)msecDeltaTime / damage;
             sithThing_DamageThing(pThing, pThing, damage, SITH_DAMAGE_RAFT_LEAK);
         }
 
         if ( pThing->thingInfo.actorInfo.pThingMeshAttached )
         {
             SithThing* pThingMeshAttached = pThing->thingInfo.actorInfo.pThingMeshAttached;
-            int nodeNum = pThing->thingInfo.actorInfo.attachMeshNum;// TODO: [BUG] the meshNum and the actual model nodeNum can have different number
+            int nodeNum                   = pThing->thingInfo.actorInfo.attachMeshNum; // TODO: [BUG] the meshNum and the actual model nodeNum can have different number
 
-            int bSkipBuildingJoints = pThingMeshAttached->renderData.bSkipBuildingJoints;
+            int bSkipBuildingJoints                            = pThingMeshAttached->renderData.bSkipBuildingJoints;
             pThingMeshAttached->renderData.bSkipBuildingJoints = 1;
 
             rdMatrix34 meshOrient;
@@ -469,7 +470,7 @@ void J3DAPI sithActor_KillActor(SithThing* pThing, SithThing* pSrcThing, SithDam
         return;
     }
 
-    float curHealth = pThing->thingInfo.actorInfo.health;
+    float curHealth                    = pThing->thingInfo.actorInfo.health;
     pThing->thingInfo.actorInfo.health = 0.0f;
 
     sithCog_ThingSendMessageEx(pThing, pSrcThing, SITHCOG_MSG_KILLED, 0, damageType, 0, 0);
@@ -591,7 +592,7 @@ void J3DAPI sithActor_KillActor(SithThing* pThing, SithThing* pSrcThing, SithDam
             if ( damageType == SITH_DAMAGE_COLD_WATER )
             {
                 pThing->pPuppetState->majorMode = SITH_PUPPET_GETMOVEMAJORMODE(pThing, SITHPUPPET_MOVEMODE_SWIM); // TODO: why not use sithPuppet_SetMoveMode?
-                curHealth = -31.0f;
+                curHealth                       = -31.0f;
             }
 
             if ( curHealth < -30.0f && pThing->pPuppetClass->aModes[pThing->pPuppetState->majorMode][SITHPUPPETSUBMODE_DEATH2].pKeyframe )
@@ -726,7 +727,7 @@ void J3DAPI sithActor_RotateHead(SithThing* pThing, const rdVector3* headAngles,
             rdModel3_BendJointYaw(&pThing->renderData, neckNum, headAngles->yaw, sithActor_headRotDampRate, secDeltaTime);
         }
 
-        int hipNum  = pThing->pPuppetClass->aJoints[SITHPUPPET_JOINTINDEX_HIP];
+        int hipNum = pThing->pPuppetClass->aJoints[SITHPUPPET_JOINTINDEX_HIP];
         if ( hipNum >= 0 && hipNum <= lastNodeNum )
         {
             // Altered: Added smooth interpolation
@@ -763,7 +764,7 @@ void J3DAPI sithActor_UpdateAimJoints(SithThing* pThing)
             pThing->renderData.apTweakedAngles[aimPitchNum].pitch = pThing->thingInfo.actorInfo.headPYR.pitch;
         }
 
-        int aimYawNum   = pThing->pPuppetClass->aJoints[SITHPUPPET_JOINTINDEX_AIMYAW];
+        int aimYawNum = pThing->pPuppetClass->aJoints[SITHPUPPET_JOINTINDEX_AIMYAW];
         if ( aimYawNum >= 0 )
         {
             pThing->renderData.apTweakedAngles[aimYawNum].yaw = pThing->thingInfo.actorInfo.headPYR.yaw;
@@ -823,7 +824,7 @@ int J3DAPI sithActor_ParseArg(const StdConffileArg* pArg, SithThing* pThing, int
         case SITHTHING_ARG_HEALTH:
         {
             float health = strtof(pArg->argValue, NULL); // Changed: Use strtof instead atof
-            if ( health < 0.0f || (errno == ERANGE) ) // Added: Conversion range error check
+            if ( health < 0.0f || (errno == ERANGE) )    // Added: Conversion range error check
             {
                 goto error;
             }
