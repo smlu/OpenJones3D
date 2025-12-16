@@ -1,6 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <rdroid/types.h>
+#include <rdroid/Engine/rdCamera.h>
+#include <sith/Gameplay/sithTime.h>
 
 
 #include <std/General/std.h>
@@ -8,6 +11,8 @@
 #include <std/General/stdMemory.h>
 #include <std/Win95/stdShader.h>
 #include <std/Win95/GL/Shaders/stdGLSLShaders.h>
+
+#include "std/Win95/stdDisplay.h"
 
 #define MAX_SHADER_PROGRAMS 64
 
@@ -25,6 +30,47 @@ static size_t stdShader_shaderCount = 0;
 static GLTextureUnit stdShader_activeTextureUnit = 0;
 
 static GLShaderProgram* stdShader_activeShader = NULL;
+
+typedef struct sCameraDataGPU
+{
+    float view[16];
+    float inverseView[16];
+    float projection[16];
+    float inverseProjection[16];
+    float viewProjection[16];
+    float time; // vec4
+} CameraDataGPU;
+
+static CameraDataGPU cameraData = { 0 };
+static GLuint cameraDataUBO     = 0;
+
+static void stdShader_ConvertToMat4(const rdMatrix34* pMat, float out[16])
+{
+    // In JonesEngine z is up and +y id forward
+    // So for OpenGL Y <-> Z and Z <-> -Y
+    out[0] = pMat->rvec.x;
+    out[1] = pMat->rvec.z;
+    out[2] = -pMat->rvec.y;
+    out[3] = 0.0f;
+
+    // up vector
+    out[4] = pMat->uvec.x;
+    out[5] = pMat->uvec.z;
+    out[6] = -pMat->uvec.y;
+    out[7] = 0.0f;
+
+    // forward vector
+    out[8]  = -pMat->lvec.x;
+    out[9]  = -pMat->lvec.z;
+    out[10] = pMat->lvec.y;
+    out[11] = 0.0f;
+
+    // position
+    out[12] = pMat->dvec.x;
+    out[13] = pMat->dvec.z;
+    out[14] = -pMat->dvec.y;
+    out[15] = 1.0f;
+}
 
 void stdShader_ResetShader(GLShaderProgram* shaderProgram)
 {
@@ -49,6 +95,28 @@ void stdShader_ResetAllShaders(void)
     }
 }
 
+static void stdShader_InitUniformBuffers(void)
+{
+    const float unitMatrix[16] = {
+        1.0f, 0.0f, 0.0f, 0.0f,
+        0.0f, 1.0f, 0.0f, 0.0f,
+        0.0f, 0.0f, 1.0f, 0.0f,
+        0.0f, 0.0f, 0.0f, 1.0f
+    };
+    memcpy(&cameraData.view, unitMatrix, sizeof(unitMatrix));
+    memcpy(&cameraData.inverseView, unitMatrix, sizeof(unitMatrix));
+    memcpy(&cameraData.projection, unitMatrix, sizeof(unitMatrix));
+    memcpy(&cameraData.inverseProjection, unitMatrix, sizeof(unitMatrix));
+    memcpy(&cameraData.viewProjection, unitMatrix, sizeof(unitMatrix));
+    memcpy(&cameraData.view, unitMatrix, sizeof(unitMatrix));
+    cameraData.time = 0;
+    glGenBuffers(1, &cameraDataUBO);
+    glBindBuffer(GL_UNIFORM_BUFFER, cameraDataUBO);
+    glBufferData(GL_UNIFORM_BUFFER, sizeof(CameraDataGPU), &cameraData, GL_DYNAMIC_DRAW);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+    glBindBufferBase(GL_UNIFORM_BUFFER, 0, cameraDataUBO);
+}
+
 bool J3DAPI stdShader_Startup(void)
 {
     if ( stdShader_bStartup )
@@ -64,8 +132,10 @@ bool J3DAPI stdShader_Startup(void)
         return false;
     }
 
+    memset(&cameraData, 0, sizeof(CameraDataGPU));
     stdShader_ResetAllShaders();
     stdShader_bStartup = true;
+    stdShader_InitUniformBuffers();
     return true;
 }
 
@@ -77,6 +147,7 @@ void stdShader_Shutdown(void)
         return;
     }
 
+    memset(&cameraData, 0, sizeof(CameraDataGPU));
     stdShader_ResetAllShaders();
     stdHashtbl_Free(stdShader_pTable);
     stdShader_pTable = NULL;
@@ -368,6 +439,11 @@ GLShaderProgram* stdShader_CompileAndCreate(const char* pName, const char* pVert
     stdHashtbl_Add(stdShader_pTable, pName, pProgram);
     stdShader_shaderCount++;
 
+    GLuint blockIndex = glGetUniformBlockIndex(pProgram->handle, "CameraData");
+    if ( blockIndex != GL_INVALID_INDEX )
+    {
+        glUniformBlockBinding(pProgram->handle, blockIndex, 0);
+    }
     return pProgram;
 }
 
@@ -397,4 +473,80 @@ void stdShader_SetActiveTextureUnit(const GLTextureUnit unit)
 {
     glActiveTexture(GL_TEXTURE0 + unit);
     stdShader_activeTextureUnit = unit;
+}
+
+static void stdShader_SetProjection(float out[16])
+{
+    rdClipFrustum* pFrustum = rdCamera_g_pCurCamera->pFrustum;
+    if ( !pFrustum )
+        return;
+
+    float n = pFrustum->nearPlane;
+    float f = pFrustum->farPlane;
+
+    if ( fabsf(f - n) < 1e-4f )
+        return;
+
+    float hwidth  = (rdCamera_g_pCurCamera->pCanvas->rect.right - rdCamera_g_pCurCamera->pCanvas->rect.left) / 2.0f;
+    float hheight = (rdCamera_g_pCurCamera->pCanvas->rect.bottom - rdCamera_g_pCurCamera->pCanvas->rect.top) / 2.0f;
+
+    float fx = rdCamera_g_pCurCamera->focalLength / hwidth;
+    float fy = rdCamera_g_pCurCamera->focalLength / hheight;
+
+    float proj[16] = {
+        fx, 0, 0, 0,
+        0, fy, 0, 0,
+        0, 0, (f + n) / (n - f), -1,
+        0, 0, (2.0f * f * n) / (n - f), 0
+    };
+
+    memcpy(out, proj, sizeof(proj));
+}
+
+static void stdShader_SetInverseProjection(float out[16])
+{
+    rdClipFrustum* pFrustum = rdCamera_g_pCurCamera->pFrustum;
+    if ( !pFrustum )
+        return;
+
+    float n = pFrustum->nearPlane;
+    float f = pFrustum->farPlane;
+
+    if ( fabsf(f - n) < 1e-4f )
+        return;
+
+    float hwidth  = (rdCamera_g_pCurCamera->pCanvas->rect.right - rdCamera_g_pCurCamera->pCanvas->rect.left) / 2.0f;
+    float hheight = (rdCamera_g_pCurCamera->pCanvas->rect.bottom - rdCamera_g_pCurCamera->pCanvas->rect.top) / 2.0f;
+
+    float fx = rdCamera_g_pCurCamera->focalLength / hwidth;
+    float fy = rdCamera_g_pCurCamera->focalLength / hheight;
+
+    float invProj[16] = {
+        1.0f / fx, 0, 0, 0,
+        0, 1.0f / fy, 0, 0,
+        0, 0, 0, (n - f) / (2.0f * f * n),
+        0, 0, -1, (f + n) / (2.0f * f * n)
+    };
+
+    memcpy(out, invProj, sizeof(invProj));
+}
+
+
+void stdShader_UpdateGlobalUniforms(void)
+{
+    rdCamera* cam = rdCamera_g_pCurCamera;
+
+    if ( cam == NULL )
+    {
+        return;
+    }
+    rdMatrix34* view = &cam->viewMatrix;
+    stdShader_ConvertToMat4(view, cameraData.view);
+    stdShader_ConvertToMat4(&rdCamera_g_camMatrix, cameraData.inverseView);
+    stdShader_SetProjection(cameraData.projection);
+    stdShader_SetInverseProjection(cameraData.inverseProjection);
+    cameraData.time += sithTime_g_frameTimeFlex;
+
+    glBindBuffer(GL_UNIFORM_BUFFER, cameraDataUBO);
+    glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(CameraDataGPU), &cameraData);
 }

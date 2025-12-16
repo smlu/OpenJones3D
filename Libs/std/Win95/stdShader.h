@@ -102,6 +102,7 @@ GLShaderProgram* J3DAPI stdShader_CompileAndCreate(const char* pName, const char
 void J3DAPI stdShader_Free(GLShaderProgram* sh);
 void stdShader_SetTexture(GLShaderProgram* sh, GLuint tex);
 void stdShader_SetActiveTextureUnit(GLTextureUnit unit);
+void stdShader_UpdateGlobalUniforms(void);
 #else
 bool J3DAPI stdShader_SetActiveShader(StdShaderHandle sh);                                                                         // Apply shader to device
 StdShaderHandle J3DAPI stdShader_CompileAndCreate(const char* pName, const char* pVertexShaderCode, const char* pPixelShaderCode); // Compile shader from source code and create new shader

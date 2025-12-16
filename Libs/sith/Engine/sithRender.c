@@ -443,14 +443,14 @@ void J3DAPI sithRender_BuildVisibleSectorList(SithSector* pSector, rdClipFrustum
 
             rdVector3 lookDir;
             rdVector_Sub3(&lookDir, &sithCamera_g_pCurCamera->lookPos, &sithWorld_g_pCurrentWorld->aVertices[*pSurface->face.aVertices]);
-            float dot =  rdVector_Dot3(&pSurface->face.normal, &lookDir);
+            float dot = rdVector_Dot3(&pSurface->face.normal, &lookDir);
             if ( dot > 0.0f || (dot == 0.0f && pSector == sithCamera_g_pCurCamera->pSector) )
             {
                 sithRender_BuildVisibleSurface(pSurface);
 
-                sithRender_clipFaceView.aVertices  = sithRender_aClipVertices;
-                sithRender_faceView.numVertices    = pSurface->face.numVertices;
-                sithRender_faceView.aVertIdxs      = pSurface->face.aVertices;
+                sithRender_clipFaceView.aVertices = sithRender_aClipVertices;
+                sithRender_faceView.numVertices   = pSurface->face.numVertices;
+                sithRender_faceView.aVertIdxs     = pSurface->face.aVertices;
                 rdPrimit3_ClipFace(pFrustrum, RD_GEOMETRY_WIREFRAME, RD_LIGHTING_LIT, &sithRender_faceView, &sithRender_clipFaceView, &pSurface->face.texVertOffset);
 
                 if ( (sithRender_clipFaceView.numVertices >= 3 || (rdClip_g_faceStatus & 0x40) != 0)
@@ -587,9 +587,9 @@ void J3DAPI sithRender_BuildVisibleSectorListPVS(SithSector* pSector, rdClipFrus
             {
                 sithRender_BuildVisibleSurface(pSurface);
 
-                sithRender_clipFaceView.aVertices  = sithRender_aClipVertices;
-                sithRender_faceView.numVertices    = pSurface->face.numVertices;
-                sithRender_faceView.aVertIdxs      = pSurface->face.aVertices;
+                sithRender_clipFaceView.aVertices = sithRender_aClipVertices;
+                sithRender_faceView.numVertices   = pSurface->face.numVertices;
+                sithRender_faceView.aVertIdxs     = pSurface->face.aVertices;
 
                 rdClip_ClipFacePVS(pFrustum, &sithRender_faceView, &sithRender_clipFaceView);
                 //numVertices = sithRender_clipFaceView.numVertices;
@@ -819,12 +819,12 @@ void sithRender_RenderSectors(void)
                 }
 
                 // Render sky surface
-                if ( (pSurf->flags & (SITH_SURFACE_CEILINGSKY | SITH_SURFACE_HORIZONSKY)) != 0 )
+                if ( (pSurf->flags & (SITH_SURFACE_CEILINGSKY | SITH_SURFACE_HORIZONSKY)) != 0 && false )
                 {
                     // Clip vertices and transform to camera space
-                    sithRender_clipFaceView.aVertices  = sithRender_aClipVertices;
-                    sithRender_faceView.numVertices    = pSurf->face.numVertices;
-                    sithRender_faceView.aVertIdxs      = pSurf->face.aVertices;
+                    sithRender_clipFaceView.aVertices = sithRender_aClipVertices;
+                    sithRender_faceView.numVertices   = pSurf->face.numVertices;
+                    sithRender_faceView.aVertIdxs     = pSurf->face.aVertices;
 
                     rdClip_QClipFaceW(pSector->pClipFrustum, &sithRender_faceView, &sithRender_clipFaceView);
                     if ( sithRender_clipFaceView.numVertices < 3 )
@@ -856,7 +856,8 @@ void sithRender_RenderSectors(void)
                 else // Not a sky surface
                 {
                     // Clip vertices and transform to NDC screen space
-                    if ( !rdClip_FaceToPlane(pSector->pClipFrustum, pPoly, &pSurf->face, sithWorld_g_pCurrentWorld->aTransformedVertices, sithWorld_g_pCurrentWorld->aTexVerticies, sithWorld_g_pCurrentWorld->aVertDynamicLights, pSurf->aIntensities) )
+                    if ( !rdClip_FaceToPlane(pSector->pClipFrustum, pPoly, &pSurf->face, sithWorld_g_pCurrentWorld->aTransformedVertices, sithWorld_g_pCurrentWorld->aTexVerticies,
+                                             sithWorld_g_pCurrentWorld->aVertDynamicLights, pSurf->aIntensities) )
                     {
                         // Face is fully outside frustrum
                         continue;
@@ -874,11 +875,11 @@ void sithRender_RenderSectors(void)
                     // TODO: Also camera ambient light is not set (rdCamera_SetAmbientLight), but the alpha adjoin surfaces has ambient light set to sed.extraLight + sec.ambientLight
 
                     pPoly->flags = pSurf->face.flags;
-                    if ( (pSurf->flags & SITH_SURFACE_CEILINGSKY) != 0 ) // TODO: ???
-                    {
-                        sithRenderSky_CeilingFaceToPlane(pPoly, &pSurf->face, sithRender_aClipVertices, sithRender_aSurfaceTransformedVertices, pSurf->face.numVertices);
-                    }
-                    else
+                    // if ( (pSurf->flags & SITH_SURFACE_CEILINGSKY) != 0 ) // TODO: ???
+                    // {
+                    //     sithRenderSky_CeilingFaceToPlane(pPoly, &pSurf->face, sithRender_aClipVertices, sithRender_aSurfaceTransformedVertices, pSurf->face.numVertices);
+                    // }
+                    // else
                     {
                         pPoly->flags |= extraFaceFlags;
                     }
@@ -1000,7 +1001,7 @@ void sithRender_BuildVisibleThingSectorListBFS(void)
     //
     // Ensures all reachable sectors within range are processed regardless of
     // traversal order, preventing missed thing or dynamic light collection
-    // caused by path-order dependency like in case of sithRender_BuildVisibleThingSectorListDFS function. 
+    // caused by path-order dependency like in case of sithRender_BuildVisibleThingSectorListDFS function.
 
     sithRender_visitedSectorQueue.head = 0;
     sithRender_visitedSectorQueue.tail = 0;
@@ -1088,7 +1089,7 @@ void sithRender_CollectThingLights(const SithThing* pThing)
 
     if ( sithRender_numThingLights < STD_ARRAYLEN(sithRender_aThingLights)
         && (pThing->flags & SITH_TF_EMITLIGHT) != 0
-        && (pThing->flags & (SITH_TF_DISABLED | SITH_TF_INVISIBLE | SITH_TF_DESTROYED)) == 0 ) // Fixed: Added check for SITH_TF_INVISIBLE flag, 
+        && (pThing->flags & (SITH_TF_DISABLED | SITH_TF_INVISIBLE | SITH_TF_DESTROYED)) == 0 ) // Fixed: Added check for SITH_TF_INVISIBLE flag,
                                                                                                //        OG this flag was checked only in sithRender_BuildVisibleSector
                                                                                                //        but not in case of sithRender_BuildVisibleThingSector
     {
