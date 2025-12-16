@@ -58,7 +58,7 @@
 static int sithRender_renderflags;
 rdLightMode sithRender_lightMode;
 
-static int (J3DAPI* sithRender_pExtraThingRenderFunc)(SithThing* pThing);
+static int (J3DAPI*sithRender_pExtraThingRenderFunc)(SithThing* pThing);
 
 static bool sithRender_bResetCameraAspect;
 
@@ -84,8 +84,8 @@ static SithSurface* sithRender_aAlphaAdjoins[SITHRENDER_MAX_VISIBLE_SECTORS / 2]
 // Transformers & Clipping vars
 static rdPrimit3 sithRender_clipFaceView;
 static rdPrimit3 sithRender_faceView;
-static rdVector3 sithRender_aClipVertices[MAX_CLIP_VERTICIES] = { 0 }; // Added: Init to 0
-static rdVector3 sithRender_aTransformedClipVertices[MAX_CLIP_VERTICIES] = { 0 }; // Added: Init to 0
+static rdVector3 sithRender_aClipVertices[MAX_CLIP_VERTICIES]               = { 0 }; // Added: Init to 0
+static rdVector3 sithRender_aTransformedClipVertices[MAX_CLIP_VERTICIES]    = { 0 }; // Added: Init to 0
 static rdVector3 sithRender_aSurfaceTransformedVertices[MAX_CLIP_VERTICIES] = { 0 }; // Added: Init to 0
 
 // PVS vars
@@ -380,14 +380,14 @@ void J3DAPI sithRender_BuildVisibleSectorList(SithSector* pSector, rdClipFrustum
 
             rdVector3 lookDir;
             rdVector_Sub3(&lookDir, &sithCamera_g_pCurCamera->lookPos, &sithWorld_g_pCurrentWorld->aVertices[*pSurface->face.aVertices]);
-            float dot =  rdVector_Dot3(&pSurface->face.normal, &lookDir);
+            float dot = rdVector_Dot3(&pSurface->face.normal, &lookDir);
             if ( dot > 0.0f || (dot == 0.0f && pSector == sithCamera_g_pCurCamera->pSector) )
             {
                 sithRender_BuildVisibleSurface(pSurface);
 
-                sithRender_clipFaceView.aVertices  = sithRender_aClipVertices;
-                sithRender_faceView.numVertices    = pSurface->face.numVertices;
-                sithRender_faceView.aVertIdxs      = pSurface->face.aVertices;
+                sithRender_clipFaceView.aVertices = sithRender_aClipVertices;
+                sithRender_faceView.numVertices   = pSurface->face.numVertices;
+                sithRender_faceView.aVertIdxs     = pSurface->face.aVertices;
                 rdPrimit3_ClipFace(pFrustrum, RD_GEOMETRY_WIREFRAME, RD_LIGHTING_LIT, &sithRender_faceView, &sithRender_clipFaceView, &pSurface->face.texVertOffset);
 
                 if ( (sithRender_clipFaceView.numVertices >= 3 || (rdClip_g_faceStatus & 0x40) != 0)
@@ -483,7 +483,7 @@ void J3DAPI sithRender_PVSBuildVisibleSectorList(SithSector* pSector, rdClipFrus
     sithPVS_SetTable(sithRender_aAdjoinTable, &sithWorld_g_pCurrentWorld->aPVS[pSector->pvsIdx], sithWorld_g_pCurrentWorld->numAdjoins);
     STD_ZEROMEM(sithRender_aVisibleAdjoins, sizeof(sithRender_aVisibleAdjoins));
 
-    sithRender_curPVSIndex     = 1;
+    sithRender_curPVSIndex        = 1;
     sithRender_faceView.aVertices = sithWorld_g_pCurrentWorld->aTransformedVertices;
 
     uint32_t width, height;
@@ -498,7 +498,7 @@ void J3DAPI sithRender_PVSBuildVisibleSectorList(SithSector* pSector, rdClipFrus
 
     while ( sithRender_curPVSIndex <= sithRender_lastPVSIndex )
     {
-        SithSurfaceAdjoin* pAdjoin = sithRender_aVisibleAdjoins[sithRender_curPVSIndex];
+        SithSurfaceAdjoin* pAdjoin                         = sithRender_aVisibleAdjoins[sithRender_curPVSIndex];
         sithRender_aVisibleAdjoins[sithRender_curPVSIndex] = NULL;
 
         while ( pAdjoin )
@@ -508,7 +508,7 @@ void J3DAPI sithRender_PVSBuildVisibleSectorList(SithSector* pSector, rdClipFrus
             rdClipFrustum* pFrustum = pAdjoin->pAdjoinSurface->pSector->pClipFrustum;
             if ( (sithRender_aAdjoinTable[pAdjoin - sithWorld_g_pCurrentWorld->aAdjoins] & 0x80) != 0 )
             {
-                pFrustum = rdCamera_g_pCurCamera->pFrustum;
+                pFrustum                   = rdCamera_g_pCurCamera->pFrustum;
                 pFrustum->orthoLeftPlane   = 0.0f;
                 pFrustum->orthoTopPlane    = 0.0f;
                 pFrustum->orthoRightPlane  = (float)width;
@@ -524,9 +524,9 @@ void J3DAPI sithRender_PVSBuildVisibleSectorList(SithSector* pSector, rdClipFrus
             {
                 sithRender_BuildVisibleSurface(pSurface);
 
-                sithRender_clipFaceView.aVertices  = sithRender_aClipVertices;
-                sithRender_faceView.numVertices    = pSurface->face.numVertices;
-                sithRender_faceView.aVertIdxs      = pSurface->face.aVertices;
+                sithRender_clipFaceView.aVertices = sithRender_aClipVertices;
+                sithRender_faceView.numVertices   = pSurface->face.numVertices;
+                sithRender_faceView.aVertIdxs     = pSurface->face.aVertices;
 
                 rdClip_ClipFacePVS(pFrustum, &sithRender_faceView, &sithRender_clipFaceView);
                 //numVertices = sithRender_clipFaceView.numVertices;
@@ -608,7 +608,7 @@ void J3DAPI sithRender_PVSBuildVisibleSector(SithSector* pSector)
                 idx = sithRender_curPVSIndex;
             }
 
-            pAdjoin->pNextVisibleAdjoin = sithRender_aVisibleAdjoins[idx];
+            pAdjoin->pNextVisibleAdjoin     = sithRender_aVisibleAdjoins[idx];
             sithRender_aVisibleAdjoins[idx] = pAdjoin;
             if ( sithRender_lastPVSIndex <= idx )
             {
@@ -646,8 +646,8 @@ void J3DAPI sithRender_BuildVisibleSector(SithSector* pSector, const rdClipFrust
     }
 
     // Assign sectors frustum
-    sithRender_aSectorFrustrums[sithRender_numSecorFrustrums] =  *pFrustrum;
-    pSector->pClipFrustum = &sithRender_aSectorFrustrums[sithRender_numSecorFrustrums++];
+    sithRender_aSectorFrustrums[sithRender_numSecorFrustrums] = *pFrustrum;
+    pSector->pClipFrustum                                     = &sithRender_aSectorFrustrums[sithRender_numSecorFrustrums++];
 
     // Collect emitted thing lights (ambient spot light & actor head light)
     for ( pThing = pSector->pFirstThingInSector; pThing && sithRender_numThingLights < STD_ARRAYLEN(sithRender_aThingLights); pThing = pThing->pNextThingInSector )
@@ -758,12 +758,12 @@ void sithRender_RenderSectors(void)
                 }
 
                 // Render sky surface
-                if ( (pSurf->flags & (SITH_SURFACE_CEILINGSKY | SITH_SURFACE_HORIZONSKY)) != 0 )
+                if ( (pSurf->flags & (SITH_SURFACE_CEILINGSKY | SITH_SURFACE_HORIZONSKY)) != 0 && false )
                 {
                     // Clip vertices and transform to camera space
-                    sithRender_clipFaceView.aVertices  = sithRender_aClipVertices;
-                    sithRender_faceView.numVertices    = pSurf->face.numVertices;
-                    sithRender_faceView.aVertIdxs      = pSurf->face.aVertices;
+                    sithRender_clipFaceView.aVertices = sithRender_aClipVertices;
+                    sithRender_faceView.numVertices   = pSurf->face.numVertices;
+                    sithRender_faceView.aVertIdxs     = pSurf->face.aVertices;
 
                     rdClip_QClipFaceW(pSector->pClipFrustum, &sithRender_faceView, &sithRender_clipFaceView);
                     if ( sithRender_clipFaceView.numVertices < 3 )
@@ -795,7 +795,8 @@ void sithRender_RenderSectors(void)
                 else // Not a sky surface
                 {
                     // Clip vertices and transform to NDC screen space
-                    if ( !rdClip_FaceToPlane(pSector->pClipFrustum, pPoly, &pSurf->face, sithWorld_g_pCurrentWorld->aTransformedVertices, sithWorld_g_pCurrentWorld->aTexVerticies, sithWorld_g_pCurrentWorld->aVertDynamicLights, pSurf->aIntensities) )
+                    if ( !rdClip_FaceToPlane(pSector->pClipFrustum, pPoly, &pSurf->face, sithWorld_g_pCurrentWorld->aTransformedVertices, sithWorld_g_pCurrentWorld->aTexVerticies,
+                                             sithWorld_g_pCurrentWorld->aVertDynamicLights, pSurf->aIntensities) )
                     {
                         // Face is fully outside frustrum
                         continue;
@@ -813,11 +814,11 @@ void sithRender_RenderSectors(void)
                     // TODO: Also camera ambient light is not set (rdCamera_SetAmbientLight), but the alpha adjoin surfaces has ambient light set to sed.extraLight + sec.ambientLight
 
                     pPoly->flags = pSurf->face.flags;
-                    if ( (pSurf->flags & SITH_SURFACE_CEILINGSKY) != 0 ) // TODO: ???
-                    {
-                        sithRenderSky_CeilingFaceToPlane(pPoly, &pSurf->face, sithRender_aClipVertices, sithRender_aSurfaceTransformedVertices, pSurf->face.numVertices);
-                    }
-                    else
+                    // if ( (pSurf->flags & SITH_SURFACE_CEILINGSKY) != 0 ) // TODO: ???
+                    // {
+                    //     sithRenderSky_CeilingFaceToPlane(pPoly, &pSurf->face, sithRender_aClipVertices, sithRender_aSurfaceTransformedVertices, pSurf->face.numVertices);
+                    // }
+                    // else
                     {
                         pPoly->flags |= extraFaceFlags;
                     }
@@ -847,7 +848,7 @@ void sithRender_BuildVisibleSectorsThingList(void)
             if ( pAdjoin->pAdjoinSector->renderTick != sithMain_g_curRenderTick && (pAdjoin->flags & SITH_ADJOIN_VISIBLE) != 0 )
             {
                 pAdjoin->pAdjoinSector->pClipFrustum = pSector->pClipFrustum;
-                float distance = pAdjoin->distance + pAdjoin->pMirrorAdjoin->distance;
+                float distance                       = pAdjoin->distance + pAdjoin->pMirrorAdjoin->distance;
                 sithRender_BuildSectorThingList(pAdjoin->pAdjoinSector, 0.0f, distance);
             }
         }
@@ -951,7 +952,7 @@ void sithRender_BuildDynamicLights(void)
             rdVector3 lightDir;
             rdVector_Sub3(&lightDir, &rdCamera_g_pCurCamera->aLightPositions[lightNum], &pSector->center);
 
-            rdLight* pLight  = rdCamera_g_pCurCamera->aLights[lightNum];
+            rdLight* pLight = rdCamera_g_pCurCamera->aLights[lightNum];
             if ( (pSector->radius + pLight->minRadius) > rdVector_Len3(&lightDir) )
             {
                 aLights[numLights++] = pLight;
@@ -977,9 +978,9 @@ void sithRender_BuildDynamicLights(void)
                     if ( dist < (double)pLight->maxRadius )
                     {
                         float att = dist * attenuationMax;
-                        aVertDynamicLights[vertIdx].red   += pLight->color.red - att;
+                        aVertDynamicLights[vertIdx].red += pLight->color.red - att;
                         aVertDynamicLights[vertIdx].green += pLight->color.green - att;
-                        aVertDynamicLights[vertIdx].blue  += pLight->color.blue - att;
+                        aVertDynamicLights[vertIdx].blue += pLight->color.blue - att;
                     }
 
                     rdMath_ClampVector3Acc((rdVector3*)&aVertDynamicLights[vertIdx], 0.0f, 1.0f);
@@ -994,7 +995,7 @@ void sithRender_BuildDynamicLights(void)
 
 void sithRender_RenderThings(void)
 {
-    bool bLightSet = false;
+    bool bLightSet                 = false;
     sithRender_g_numThingPolys     = 0;
     sithRender_g_numAlphaThingPoly = 0;
 
@@ -1019,7 +1020,7 @@ void sithRender_RenderThings(void)
                 rdMatrix_TransformPoint34(&pCurThing->transformedPos, &pCurThing->pos, &rdCamera_g_pCurCamera->viewMatrix);
 
                 rdThing* prdThing = &pCurThing->renderData;
-                float radius = 0.0f; // Added: Init to 0;
+                float radius      = 0.0f; // Added: Init to 0;
 
                 switch ( pCurThing->renderData.type )
                 {
@@ -1049,7 +1050,8 @@ void sithRender_RenderThings(void)
                         rdCamera_AddLight(rdCamera_g_pCurCamera, &sithRender_aSectorPointLights[sithRender_numSectorPointLights], &pSector->light.pos);
 
                         bLightSet = true;
-                    }break;
+                    }
+                    break;
 
                     case RD_THING_SPRITE3:
                         radius = prdThing->data.pSprite3->radius;
@@ -1088,7 +1090,7 @@ void sithRender_RenderThings(void)
                     // Collect thing flat light
                     if ( (pCurThing->flags & SITH_TF_EMITLIGHT) != 0
                         && !rdVector_IsZero3((rdVector3*)&pCurThing->light.color)
-                        && SITHRENDER_ISFLATLIGHT(pCurThing->light.color.alpha) )// if light range is <= 0.01f
+                        && SITHRENDER_ISFLATLIGHT(pCurThing->light.color.alpha) ) // if light range is <= 0.01f
                     {
                         rdVector4 ambientLight;
                         rdVector_Add4(&ambientLight, &sectorAmbientLight, &pCurThing->light.color);
@@ -1146,13 +1148,13 @@ int J3DAPI sithRender_RenderThing(SithThing* pThing)
 
     // Now draw thing
     pThing->orient.dvec = pThing->pos;
-    int drawResult = sithThing_Draw(pThing);
+    int drawResult      = sithThing_Draw(pThing);
     if ( (pThing->flags & SITH_TF_SHADOW) != 0 ) // draw shadow
     {
         sithShadow_RenderThingShadow(pThing);
     }
 
-    sithRender_g_numThingPolys     += rdModel3_g_numDrawnFaces;
+    sithRender_g_numThingPolys += rdModel3_g_numDrawnFaces;
     sithRender_g_numAlphaThingPoly += rdModel3_g_numDrawnAlphaFaces;
 
     // Clear cur dvec aka position
@@ -1173,7 +1175,7 @@ int J3DAPI sithRender_RenderThing(SithThing* pThing)
     // In JKDF2 (OpenJKDF2), here is section of code that adds light flashing effect to player view
     stdMath_Dist3D1(pThing->transformedPos.x, pThing->transformedPos.y, pThing->transformedPos.z);
 
-    pThing->thingInfo.explosionInfo.flags &= ~SITH_EF_BLINDPLAYER;// 0x100 - SITH_EF_BLINDPLAYER
+    pThing->thingInfo.explosionInfo.flags &= ~SITH_EF_BLINDPLAYER; // 0x100 - SITH_EF_BLINDPLAYER
     return drawResult;
 }
 
@@ -1229,7 +1231,8 @@ void sithRender_RenderAlphaAdjoins(void)
 
         pPoly->lightingMode = pSurf->face.lightingMode >= sithRender_lightMode ? sithRender_lightMode : pSurf->face.lightingMode;
 
-        if ( !rdClip_FaceToPlane(pSector->pClipFrustum, pPoly, &pSurf->face, sithWorld_g_pCurrentWorld->aTransformedVertices, sithWorld_g_pCurrentWorld->aTexVerticies, sithWorld_g_pCurrentWorld->aVertDynamicLights, pSurf->aIntensities) )
+        if ( !rdClip_FaceToPlane(pSector->pClipFrustum, pPoly, &pSurf->face, sithWorld_g_pCurrentWorld->aTransformedVertices, sithWorld_g_pCurrentWorld->aTexVerticies,
+                                 sithWorld_g_pCurrentWorld->aVertDynamicLights, pSurf->aIntensities) )
         {
             // Face is fully outside frustrum
             continue;
@@ -1254,7 +1257,7 @@ void sithRender_RenderAlphaAdjoins(void)
     }
 }
 
-void J3DAPI sithRender_SetExtraThingRenderFunc(int (J3DAPI* pfFunc)(SithThing* pThing))
+void J3DAPI sithRender_SetExtraThingRenderFunc(int (J3DAPI*pfFunc)(SithThing* pThing))
 {
     // Note, in OpenJkdf this looks like to be a special weapon render function
     sithRender_pExtraThingRenderFunc = pfFunc;
@@ -1286,7 +1289,7 @@ int sithRender_MakeScreenShot(void)
         return stdDisplay_SaveScreen(aFilePath);
     }
 
-    ssnum = 0;
+    ssnum         = 0;
     pNameTemplate = sithGetScreenShotFileTemplate();
     STD_FORMAT(aFilename, pNameTemplate, ssnum);
 

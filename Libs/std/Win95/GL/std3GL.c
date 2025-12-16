@@ -448,6 +448,7 @@ size_t std3D_GetNumTextureFormats(void)
 int std3D_StartScene(void)
 {
     std3D_MapVertexBuffers();
+    //stdShader_UpdateGlobalUniforms();
     glBindSampler(TU_3D_DRAW, std3D_activeSampler);
     ++std3D_frameCount;
     const float vp[4] = {
@@ -998,24 +999,26 @@ int J3DAPI std3D_SetMipmapFilter(Std3DMipmapFilterType filter)
 
 int J3DAPI std3D_SetProjection(float fov, float nearPlane, float farPlane) // This is currently not needed since projection is not done in shader
 {
-    J3D_UNUSED(fov);
-    if ( fabsf(farPlane - nearPlane) < 1e-4f )
-        return 0;
-
-
-    // float f = 1.0f / tanf(fov * 0.5f * 0.01745329252);
-    //
-    // float proj[16] = {
-    //     f,    0,    0,                              0,
-    //     0,    f,    0,                              0,
-    //     0,    0,   (farPlane + nearPlane) / (nearPlane - farPlane),  -1,
-    //     0,    0,   (2.0f * farPlane * nearPlane) / (nearPlane - farPlane),  0
-    // };
-    //
-    // glMatrixMode(GL_PROJECTION);
-    // glLoadMatrixf(proj);
-    // glMatrixMode(GL_MODELVIEW);
+    stdShader_UpdateGlobalUniforms();
     return 1;
+    // J3D_UNUSED(fov);
+    // if ( fabsf(farPlane - nearPlane) < 1e-4f )
+    //     return 0;
+    //
+    //
+    // // float f = 1.0f / tanf(fov * 0.5f * 0.01745329252);
+    // //
+    // // float proj[16] = {
+    // //     f,    0,    0,                              0,
+    // //     0,    f,    0,                              0,
+    // //     0,    0,   (farPlane + nearPlane) / (nearPlane - farPlane),  -1,
+    // //     0,    0,   (2.0f * farPlane * nearPlane) / (nearPlane - farPlane),  0
+    // // };
+    // //
+    // // glMatrixMode(GL_PROJECTION);
+    // // glLoadMatrixf(proj);
+    // // glMatrixMode(GL_MODELVIEW);
+    // return 1;
 }
 
 void J3DAPI std3D_EnableFog(int bEnabled, float density)
