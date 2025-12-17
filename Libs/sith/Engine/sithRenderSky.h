@@ -30,5 +30,9 @@ void J3DAPI sithRenderSky_CeilingFaceToPlane(rdCacheProcEntry* pPoly, const rdFa
 void sithRenderSky_InstallHooks(void);
 void sithRenderSky_ResetGlobals(void);
 
+#ifdef J3D_OPENGL
+void J3DAPI sithRenderSky_SetCeilingSkyVertices(rdCacheProcEntry* pPoly, rdFace* pFace, const rdVector3* aWorldVerts, size_t numVerts);
+#endif
+
 J3D_EXTERN_C_END
 #endif // SITH_SITHRENDERSKY_H

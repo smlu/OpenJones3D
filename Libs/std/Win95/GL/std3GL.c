@@ -107,8 +107,10 @@ static size_t std3D_numDrawCalls = 0;
 static GLuint std3D_activeSampler = 0;
 
 // Shader system state
-static GLShaderProgram* std3D_defaultShader   = NULL;
-static GLShaderProgram* std3D_defaultShaderWf = NULL;
+static GLShaderProgram* std3D_defaultShader    = NULL;
+static GLShaderProgram* std3D_defaultShaderWf  = NULL;
+static GLShaderProgram* std3D_ceilingSkyShader = NULL;
+static GLShaderProgram* std3D_activeShader     = NULL;
 
 static int std3D_InitRenderState(void);
 static int std3D_BuildDeviceList(void);
@@ -576,20 +578,29 @@ static void std3D_DrawFrameBatch(void)
             i = j++;
         }
 
-        if ( dc->tex != std3D_pD3DTex && dc->type == GL_TRIANGLES )
+        if ( (dc->rdflags & STD3D_RS_CEILING_SKY) != 0 )
         {
-            stdShader_SetTexture(std3D_defaultShader, dc->tex->id);
-            std3D_pD3DTex = dc->tex;
+            //dc->rdflags |= STD3D_RS_ZWRITE_DISABLED;
+            std3D_activeShader = std3D_ceilingSkyShader;
         }
-
-        if ( dc->type == GL_TRIANGLES )
+        else if ( dc->type == GL_TRIANGLES )
         {
-            stdShader_SetActiveShader(std3D_defaultShader);
+            std3D_activeShader = std3D_defaultShader;
         }
         else
         {
-            stdShader_SetActiveShader(std3D_defaultShaderWf);
+            std3D_activeShader = std3D_defaultShaderWf;
         }
+
+        stdShader_SetActiveShader(std3D_activeShader);
+
+
+        if ( dc->tex != std3D_pD3DTex && dc->type == GL_TRIANGLES )
+        {
+            stdShader_SetTexture(std3D_activeShader, dc->tex->id);
+            std3D_pD3DTex = dc->tex;
+        }
+
         std3D_SetRenderState(dc->rdflags);
 
         const void* indexPtr = (const void*)(dc->firstIndex * sizeof(GLushort));
@@ -1436,6 +1447,15 @@ bool std3D_InitShaderSystem(void)
         return false;
     }
 
+    // Create default shader
+    std3D_ceilingSkyShader = stdShader_CompileAndCreate("std_ceilingSky", "ceilingSky.vert", "ceilingSky.frag");
+
+    if ( !std3D_ceilingSkyShader )
+    {
+        STDLOG_ERROR("Failed to create ceiling sky shader\n");
+        return false;
+    }
+
     //create wireframe shader
     std3D_defaultShaderWf = stdShader_CompileAndCreate("std_default_wf", "default.vert", "default_wf.frag");
     if ( !std3D_defaultShaderWf )
@@ -1470,3 +1490,14 @@ bool std3D_IsAnisotropicFilteringSupported(void) { return true; }
 bool std3D_IsMipmapAutoGenSupported(void) { return true; }
 
 bool std3D_IsMSAASupported(void) { return true; }
+
+void std3D_SetCeilingSkyHeight(float height)
+{
+    if ( !std3D_ceilingSkyShader )
+    {
+        STDLOG_ERROR("Ceiling sky shader was not initialized yet");
+    }
+
+    stdShader_SetActiveShader(std3D_ceilingSkyShader);
+    glUniform1f(glGetUniformLocation(std3D_ceilingSkyShader->handle, "uCeilingZ"), height);
+}

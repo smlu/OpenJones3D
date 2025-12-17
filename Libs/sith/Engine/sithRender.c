@@ -819,7 +819,7 @@ void sithRender_RenderSectors(void)
                 }
 
                 // Render sky surface
-                if ( (pSurf->flags & (SITH_SURFACE_CEILINGSKY | SITH_SURFACE_HORIZONSKY)) != 0 && false )
+                if ( (pSurf->flags & (SITH_SURFACE_CEILINGSKY | SITH_SURFACE_HORIZONSKY)) != 0 )
                 {
                     // Clip vertices and transform to camera space
                     sithRender_clipFaceView.aVertices = sithRender_aClipVertices;
@@ -833,7 +833,7 @@ void sithRender_RenderSectors(void)
                     }
                     // There are enough clipped vertices to render n-gon,
                     // first let's project them to NDC space
-                    rdCamera_g_pCurCamera->pfProjectList(sithRender_aSurfaceTransformedVertices, sithRender_aClipVertices, sithRender_clipFaceView.numVertices);
+                    //rdCamera_g_pCurCamera->pfProjectList(sithRender_aSurfaceTransformedVertices, sithRender_aClipVertices, sithRender_clipFaceView.numVertices);
 
                     pPoly->flags     = pSurf->face.flags;
                     pPoly->pMaterial = pSurf->face.pMaterial;
@@ -845,7 +845,12 @@ void sithRender_RenderSectors(void)
                     }
                     else if ( (pSurf->flags & SITH_SURFACE_CEILINGSKY) != 0 )
                     {
+#ifndef J3D_OPENGL
+                        rdCamera_g_pCurCamera->pfProjectList(sithRender_aSurfaceTransformedVertices, sithRender_aClipVertices, sithRender_clipFaceView.numVertices);
                         sithRenderSky_CeilingFaceToPlane(pPoly, &pSurf->face, sithRender_aClipVertices, sithRender_aSurfaceTransformedVertices, sithRender_clipFaceView.numVertices);
+#else
+                        sithRenderSky_SetCeilingSkyVertices(pPoly, &pSurf->face, sithRender_aClipVertices, sithRender_clipFaceView.numVertices);
+#endif
                     }
 
                     pPoly->matCelNum = pSurf->face.matCelNum;
@@ -875,11 +880,11 @@ void sithRender_RenderSectors(void)
                     // TODO: Also camera ambient light is not set (rdCamera_SetAmbientLight), but the alpha adjoin surfaces has ambient light set to sed.extraLight + sec.ambientLight
 
                     pPoly->flags = pSurf->face.flags;
-                    // if ( (pSurf->flags & SITH_SURFACE_CEILINGSKY) != 0 ) // TODO: ???
-                    // {
-                    //     sithRenderSky_CeilingFaceToPlane(pPoly, &pSurf->face, sithRender_aClipVertices, sithRender_aSurfaceTransformedVertices, pSurf->face.numVertices);
-                    // }
-                    // else
+                    if ( (pSurf->flags & SITH_SURFACE_CEILINGSKY) != 0 ) // TODO: ???
+                    {
+                        sithRenderSky_CeilingFaceToPlane(pPoly, &pSurf->face, sithRender_aClipVertices, sithRender_aSurfaceTransformedVertices, pSurf->face.numVertices);
+                    }
+                    else
                     {
                         pPoly->flags |= extraFaceFlags;
                     }

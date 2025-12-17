@@ -82,6 +82,9 @@ bool std3D_IsMSAASupported(void);                 // Checks if underlying GAPI s
 // Helper hooking functions
 void std3D_InstallHooks(void);
 void std3D_ResetGlobals(void);
+#ifdef J3D_OPENGL
+void std3D_SetCeilingSkyHeight(float height);
+#endif
 
 J3D_EXTERN_C_END
 #endif // STD_STD3D_H
