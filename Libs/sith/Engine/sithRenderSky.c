@@ -11,12 +11,13 @@
 #include <rdroid/Math/rdVector.h>
 
 #include <std/General/stdMath.h>
+#include <std/Win95/std3D.h>
 
 // Ceiling sky globals
 static float ceilingSkyHeight;
 static rdVector3 ceilingSkyMinZ;
 static rdVector3 ceilingSkyMaxZ;
-static const rdVector3 ceilingSkyNormal = { 0.0f ,  0.0f ,  -1.0f };
+static const rdVector3 ceilingSkyNormal = { 0.0f, 0.0f, -1.0f };
 
 // Horizon sky globals
 static float horizonSkyDistance;
@@ -38,7 +39,8 @@ void sithRenderSky_InstallHooks(void)
 }
 
 void sithRenderSky_ResetGlobals(void)
-{}
+{
+}
 
 int J3DAPI sithRenderSky_Open(float horizonDistance, float ceilingHeight)
 {
@@ -55,15 +57,21 @@ int J3DAPI sithRenderSky_Open(float horizonDistance, float ceilingHeight)
     ceilingSkyMinZ.y = 0.0f;
     ceilingSkyMinZ.z = -ceilingHeight;
 
+#ifdef J3D_OPENGL
+    std3D_SetCeilingSkyHeight(ceilingHeight);
+#endif
+
     return 0;
 }
 
 void sithRenderSky_Close(void)
-{}
+{
+}
 
 void sithRenderSky_Update(void)
 {
-    horizonScale = horizonSkyDistance / (rdCamera_g_pCurCamera->focalLength * rdCamera_g_pCurCamera->aspectRatio); // Added: Multiply focalLength by aspectRatio, fixes sky rendering when aspect ratio is not 1:1 (underwater)
+    horizonScale = horizonSkyDistance / (rdCamera_g_pCurCamera->focalLength * rdCamera_g_pCurCamera->aspectRatio);
+    // Added: Multiply focalLength by aspectRatio, fixes sky rendering when aspect ratio is not 1:1 (underwater)
     stdMath_SinCos(sithCamera_g_pCurCamera->lookPYR.z, &lookRollSin, &lookRollCos);
 
     lookYaw   = -(sithCamera_g_pCurCamera->lookPYR.yaw * horizonPixelsPerRev);
@@ -76,12 +84,12 @@ void J3DAPI sithRenderSky_HorizonFaceToPlane(rdCacheProcEntry* pPoly, const rdFa
     for ( size_t i = 0; i < numVerts; ++i )
     {
         LPD3DTLVERTEX pOutVert = &pPoly->aVertices[i];
-        pOutVert->sx = aVerts[i].x;
-        pOutVert->sy = aVerts[i].y;
-        pOutVert->sz = aVerts[i].z;
+        pOutVert->sx           = aVerts[i].x;
+        pOutVert->sy           = aVerts[i].y;
+        pOutVert->sz           = aVerts[i].z;
 
         pOutVert->rhw = horizonSkyDistance;
-        pOutVert->sz = 0.99996948f; // almost at cam far plane dist
+        pOutVert->sz  = 0.99996948f; // almost at cam far plane dist
 
         float xFactor = (pOutVert->sx - rdCamera_g_pCurCamera->pCanvas->center.x) * horizonScale;
         float yFactor = (pOutVert->sy - rdCamera_g_pCurCamera->pCanvas->center.y) * horizonScale;
@@ -97,8 +105,8 @@ void J3DAPI sithRenderSky_CeilingFaceToPlane(rdCacheProcEntry* pPoly, const rdFa
 {
     if ( pFace->pMaterial )
     {
-        float invMatWidth = 1.0f / (float)pFace->pMaterial->width;
-        float invMatHeight = 1.0f / (float)pFace->pMaterial->height;
+        float invMatWidth   = 1.0f / (float)pFace->pMaterial->width;
+        float invMatHeight  = 1.0f / (float)pFace->pMaterial->height;
         pPoly->lightingMode = RD_LIGHTING_NONE;
 
         for ( size_t i = 0; i < numVerts; ++i )
@@ -126,12 +134,34 @@ void J3DAPI sithRenderSky_CeilingFaceToPlane(rdCacheProcEntry* pPoly, const rdFa
             tv += pFace->texVertOffset.y;
 
             LPD3DTLVERTEX pOutVert = &pPoly->aVertices[i];
-            pOutVert->tu  = tu;
-            pOutVert->tv  = tv;
-            pOutVert->sx  = aTransformedVerts[i].x;
-            pOutVert->sy  = aTransformedVerts[i].y;
-            pOutVert->sz  = 0.99996948f;
-            pOutVert->rhw = aTransformedVerts[i].z / 32.0f;
+            pOutVert->tu           = tu;
+            pOutVert->tv           = tv;
+            pOutVert->sx           = aTransformedVerts[i].x;
+            pOutVert->sy           = aTransformedVerts[i].y;
+            pOutVert->sz           = 0.99996948f;
+            pOutVert->rhw          = aTransformedVerts[i].z / 32.0f;
         }
     }
 }
+
+#ifdef J3D_OPENGL
+void J3DAPI sithRenderSky_SetCeilingSkyVertices(rdCacheProcEntry* pPoly, rdFace* pFace, const rdVector3* aVerts, size_t numVerts)
+{
+    pPoly->lightingMode = RD_LIGHTING_NONE;
+    pPoly->flags |= RD_FF_CEILING_SKY;
+
+    for ( size_t i = 0; i < numVerts; ++i )
+    {
+        LPD3DTLVERTEX pOutVert = &pPoly->aVertices[i];
+        pOutVert->tu           = sithWorld_g_pCurrentWorld->ceilingSkyOffset.x + pFace->texVertOffset.x;
+        pOutVert->tv           = sithWorld_g_pCurrentWorld->ceilingSkyOffset.y + pFace->texVertOffset.y;
+
+        rdVector3 vertex = aVerts[i];
+
+        pOutVert->sx  = vertex.x;
+        pOutVert->sy  = vertex.z;
+        pOutVert->sz  = -vertex.y;
+        pOutVert->rhw = 1.0f;
+    }
+}
+#endif

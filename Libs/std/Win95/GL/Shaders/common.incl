@@ -1,3 +1,4 @@
+#include <globals.incl>
 uniform vec4 viewPort;
 uniform vec4 vFogParams;
 uniform vec3 vFogColor;

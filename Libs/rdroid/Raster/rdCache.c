@@ -16,7 +16,7 @@
 static size_t rdCache_numProcFaces              = 0;
 static rdCacheProcEntry rdCache_aProcFaces[128] = { 0 };
 
-static size_t rdCache_numUsedVertices = 0;
+static size_t rdCache_numUsedVertices                             = 0;
 static D3DTLVERTEX rdCache_aVertices[RDCACHE_VERTBUFFERSIZE]      = { 0 };
 static rdVector4 rdCache_aVertIntensities[RDCACHE_VERTBUFFERSIZE] = { 0 }; // Fixed: Changed to match size of rdCache_aVertices, was 8192
 
@@ -24,7 +24,7 @@ static rdVector4 rdCache_aVertIntensities[RDCACHE_VERTBUFFERSIZE] = { 0 }; // Fi
 static size_t rdCache_numAlphaProcFaces               = 0;
 static rdCacheProcEntry rdCache_aAlphaProcFaces[4096] = { 0 };
 
-static size_t rdCache_numUsedAlphaVertices = 0;
+static size_t rdCache_numUsedAlphaVertices                             = 0;
 static D3DTLVERTEX rdCache_aAlphaVertices[RDCACHE_VERTBUFFERSIZE]      = { 0 };
 static rdVector4 rdCache_aAlphaVertIntensities[RDCACHE_VERTBUFFERSIZE] = { 0 };
 
@@ -32,8 +32,8 @@ static size_t rdCache_totalVerts             = 0;
 static LPD3DTLVERTEX rdCache_pCurInVert      = NULL;
 static LPD3DTLVERTEX rdCache_pCurCacheVertex = NULL;
 
-static D3DTLVERTEX rdCache_aHWVertices[RDCACHE_VERTBUFFERSIZE]     = { 0 };
-static uint16_t rdCache_aVertIndices[RDCACHE_VERTBUFFERSIZE * 3]   = { 0 };
+static D3DTLVERTEX rdCache_aHWVertices[RDCACHE_VERTBUFFERSIZE]   = { 0 };
+static uint16_t rdCache_aVertIndices[RDCACHE_VERTBUFFERSIZE * 3] = { 0 };
 
 static size_t rdCache_drawnFaces = 0;
 static size_t rdCache_frameNum   = 0;
@@ -60,7 +60,8 @@ void rdCache_InstallHooks(void)
 }
 
 void rdCache_ResetGlobals(void)
-{}
+{
+}
 
 void rdCache_Startup(void)
 {
@@ -97,7 +98,7 @@ rdCacheProcEntry* rdCache_GetProcEntry(void)
         procNum = rdCache_numProcFaces;
     }
 
-     // Added: Check if the vertex buffer is large enough to hold all face vertices.
+    // Added: Check if the vertex buffer is large enough to hold all face vertices.
     //        Note, taken from grimengine / OpenJKDF2
     if ( RDCACHE_VERTBUFFERSIZE - rdCache_numUsedVertices < RDCACHE_MAXFACEVERTICES )
     {
@@ -157,7 +158,7 @@ void rdCache_Flush(void)
                 break;
         }
 
-        rdCache_drawnFaces      += rdCache_numProcFaces;
+        rdCache_drawnFaces += rdCache_numProcFaces;
         rdCache_numProcFaces    = 0;
         rdCache_numUsedVertices = 0;
     }
@@ -182,7 +183,7 @@ void rdCache_FlushAlpha(void)
                 break;
         }
 
-        rdCache_drawnFaces          += rdCache_numAlphaProcFaces;
+        rdCache_drawnFaces += rdCache_numAlphaProcFaces;
         rdCache_numAlphaProcFaces    = 0;
         rdCache_numUsedAlphaVertices = 0;
     }
@@ -198,7 +199,7 @@ void J3DAPI rdCache_AddProcFace(size_t numVerts)
 void J3DAPI rdCache_AddAlphaProcFace(size_t numVertices)
 {
     rdCacheProcEntry* pEntry = &rdCache_aAlphaProcFaces[rdCache_numAlphaProcFaces];
-    pEntry->numVertices = numVertices;
+    pEntry->numVertices      = numVertices;
 
     float sz = FLT_MAX; // 3.4028235e38f;
     for ( size_t i = 0; i < numVertices; ++i )
@@ -216,8 +217,8 @@ void J3DAPI rdCache_AddAlphaProcFace(size_t numVertices)
 
 void J3DAPI rdCache_SendFaceListToHardware(size_t numPolys, rdCacheProcEntry* pCurPoly, rdCacheSortFunc pfSort)
 {
-    size_t polyNum   = 0;
-    int curMatCelNum = -1;
+    size_t polyNum                    = 0;
+    int curMatCelNum                  = -1;
     const tStdFadeFactor* pFadeFactor = stdEffect_GetFadeFactor();
 
     if ( pfSort == rdCache_ProcFaceDistanceCompare )
@@ -228,7 +229,7 @@ void J3DAPI rdCache_SendFaceListToHardware(size_t numPolys, rdCacheProcEntry* pC
 LABEL_4:
     if ( polyNum < numPolys )
     {
-        rdFaceFlags fflags = pCurPoly->flags;
+        rdFaceFlags fflags       = pCurPoly->flags;
         Std3DRenderState rdflags = STD3D_RS_SUBPIXEL_CORRECTION | STD3D_RS_UNKNOWN_2 | STD3D_RS_UNKNOWN_1;
 
         if ( (fflags & RD_FF_TEX_CLAMP_X) != 0 )
@@ -248,12 +249,17 @@ LABEL_4:
 
         if ( (fflags & RD_FF_ZWRITE_DISABLED) != 0 )
         {
-            rdflags |=  STD3D_RS_ZWRITE_DISABLED;
+            rdflags |= STD3D_RS_ZWRITE_DISABLED;
         }
 
         if ( (fflags & RD_FF_FOG_ENABLED) != 0 )
         {
             rdflags |= STD3D_RS_FOG_ENABLED;
+        }
+
+        if ( (fflags & RD_FF_CEILING_SKY) != 0 )
+        {
+            rdflags |= STD3D_RS_CEILING_SKY;
         }
 
         rdMaterial* pCurMat = NULL;
@@ -272,7 +278,7 @@ LABEL_4:
             }
 
             tSystemTexture* pTex = NULL;
-            curMatCelNum = pCurPoly->matCelNum;
+            curMatCelNum         = pCurPoly->matCelNum;
             if ( curMatCelNum == -1 )
             {
                 if ( pCurPoly->pMaterial->curCelNum < 0 )
@@ -318,14 +324,14 @@ LABEL_4:
         rdCache_totalVerts  = 0;
         while ( 1 )
         {
-            uint16_t curVertIdx = rdCache_totalVerts;
+            uint16_t curVertIdx      = rdCache_totalVerts;
             rdLightMode lightingMode = rdroid_g_curLightingMode;
             if ( pCurPoly->lightingMode < rdroid_g_curLightingMode )
             {
                 lightingMode = pCurPoly->lightingMode;
             }
 
-            rdCache_pCurInVert = pCurPoly->aVertices;
+            rdCache_pCurInVert      = pCurPoly->aVertices;
             rdCache_pCurCacheVertex = &rdCache_aHWVertices[rdCache_totalVerts];
             for ( size_t i = 0; i < pCurPoly->numVertices; ++i )
             {
@@ -345,9 +351,9 @@ LABEL_4:
 
                 if ( lightingMode == RD_LIGHTING_GOURAUD )
                 {
-                    red   += pCurPoly->aVertIntensities[i].red;
+                    red += pCurPoly->aVertIntensities[i].red;
                     green += pCurPoly->aVertIntensities[i].green;
-                    blue  += pCurPoly->aVertIntensities[i].blue;
+                    blue += pCurPoly->aVertIntensities[i].blue;
                     if ( pCurPoly->extraLight.alpha >= 1.0f )
                     {
                         alpha = pCurPoly->aVertIntensities[i].alpha;
@@ -372,11 +378,13 @@ LABEL_4:
 
                 if ( (fflags & RD_FF_TEX_TRANSLUCENT) != 0 )
                 {
-                    rdCache_pCurCacheVertex->color = D3DRGBA(red, green, blue, alpha); // (int32_t)(blue * 255.0f) | ((unsigned int)(int32_t)(green * 255.0f) << 8) | ((unsigned int)(int32_t)(red * 255.0f) << 16) | ((unsigned int)(int32_t)(alpha * 255.0f) << 24);
+                    rdCache_pCurCacheVertex->color = D3DRGBA(red, green, blue, alpha);
+                    // (int32_t)(blue * 255.0f) | ((unsigned int)(int32_t)(green * 255.0f) << 8) | ((unsigned int)(int32_t)(red * 255.0f) << 16) | ((unsigned int)(int32_t)(alpha * 255.0f) << 24);
                 }
                 else
                 {
-                    rdCache_pCurCacheVertex->color = D3DRGB(red, green, blue); //(int32_t)(blue * 255.0f) | ((unsigned int)(int32_t)(green * 255.0f) << 8) | ((unsigned int)(int32_t)(red * 255.0f) << 16) | 0xFF000000;
+                    rdCache_pCurCacheVertex->color = D3DRGB(red, green, blue);
+                    //(int32_t)(blue * 255.0f) | ((unsigned int)(int32_t)(green * 255.0f) << 8) | ((unsigned int)(int32_t)(red * 255.0f) << 16) | 0xFF000000;
                 }
 
                 ++rdCache_pCurCacheVertex;
@@ -405,7 +413,7 @@ LABEL_4:
                     if ( (triNum & 1) != 0 ) // if odd
                     {
                         triPoint1Num = triPoint3Num;
-                        triPoint3Num--;// = triPoint3Num - 1;
+                        triPoint3Num--; // = triPoint3Num - 1;
                     }
                     else
                     {
@@ -439,7 +447,7 @@ void J3DAPI rdCache_SendWireframeFaceListToHardware(size_t numPolys, rdCacheProc
     {
         for ( size_t j = 0; j < pCurPoly->numVertices; ++j )
         {
-            pCurPoly->aVertices[j].color = RGBA_MAKE(255, 255, 255, 255);// aka white color
+            pCurPoly->aVertices[j].color = RGBA_MAKE(255, 255, 255, 255); // aka white color
         }
 
         if ( rdroid_g_curGeometryMode == RD_GEOMETRY_VERTEX )
