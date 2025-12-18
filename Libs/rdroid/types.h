@@ -54,7 +54,8 @@ typedef enum erdFaceFlags J3D_ENUM_TYPE(int32_t)
     RD_FF_UNKNOWN_80         = 0x80,
     RD_FF_FOG_ENABLED        = 0x100,
     RD_FF_3DO_WHIP_AIM       = 0x200,
-    RD_FF_CEILING_SKY        = 0x400 //new
+    RD_FF_CEILING_SKY        = 0x400, //new
+    RD_FF_HORIZON_SKY        = 0x800  //new
 } rdFaceFlags;
 
 typedef enum erdGeometryMode

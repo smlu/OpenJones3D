@@ -84,6 +84,7 @@ void std3D_InstallHooks(void);
 void std3D_ResetGlobals(void);
 #ifdef J3D_OPENGL
 void std3D_SetCeilingSkyHeight(float height);
+void std3D_UpdateHorizonSky(float camPitch, float camYaw, float scale);
 #endif
 
 J3D_EXTERN_C_END
