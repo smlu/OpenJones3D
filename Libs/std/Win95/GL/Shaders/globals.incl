@@ -6,3 +6,7 @@ layout(std140) uniform CameraData {
     mat4 VIEWPROJECTION;
     float TIME;
 };
+
+layout(std140) uniform ViewportData {
+    vec4 VIEWPORT;
+};

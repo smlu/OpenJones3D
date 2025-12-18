@@ -702,6 +702,8 @@ void sithRender_RenderSectors(void)
     sithRender_faceView.aTexVertices = sithWorld_g_pCurrentWorld->aTexVerticies;
     sithRender_faceView.aVertLights  = sithWorld_g_pCurrentWorld->aVertDynamicLights;
 
+    bool bHorizonSkyRendered = false;
+
     for ( size_t secNum = 0; secNum < sithRender_g_numVisibleSectors; ++secNum )
     {
         SithSector* pSector = sithRender_aVisibleSectors[secNum];
@@ -717,6 +719,24 @@ void sithRender_RenderSectors(void)
             rdVector_Sub3(&camDir, &sithCamera_g_pCurCamera->lookPos, &sithWorld_g_pCurrentWorld->aVertices[*pSurf->face.aVertices]);
             if ( rdVector_Dot3(&pSurf->face.normal, &camDir) <= 0.0f ) // If surface is not facing camera
             {
+                continue;
+            }
+
+            if ( (pSurf->flags & SITH_SURFACE_HORIZONSKY) != 0 )
+            {
+                if ( bHorizonSkyRendered )
+                {
+                    continue;
+                }
+                rdCacheProcEntry* pPoly = rdCache_GetProcEntry();
+                pPoly->flags            = pSurf->face.flags;
+                pPoly->pMaterial        = pSurf->face.pMaterial;
+                pPoly->matCelNum        = pSurf->face.matCelNum;
+                sithRenderSky_SetHorizonSkyVertices(pPoly);
+                rdCache_AddProcFace(4);
+
+                ++sithRender_g_numArchPolys;
+                bHorizonSkyRendered = true;
                 continue;
             }
 
@@ -780,6 +800,7 @@ void sithRender_RenderSectors(void)
                     // Now make sky poly from transformed vertices
                     if ( (pSurf->flags & SITH_SURFACE_HORIZONSKY) != 0 )
                     {
+                        rdCamera_g_pCurCamera->pfProjectList(sithRender_aSurfaceTransformedVertices, sithRender_aClipVertices, sithRender_clipFaceView.numVertices);
                         sithRenderSky_HorizonFaceToPlane(pPoly, &pSurf->face, sithRender_aSurfaceTransformedVertices, sithRender_clipFaceView.numVertices);
                     }
                     else if ( (pSurf->flags & SITH_SURFACE_CEILINGSKY) != 0 )

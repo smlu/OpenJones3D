@@ -32,6 +32,7 @@ void sithRenderSky_ResetGlobals(void);
 
 #ifdef J3D_OPENGL
 void J3DAPI sithRenderSky_SetCeilingSkyVertices(rdCacheProcEntry* pPoly, rdFace* pFace, const rdVector3* aWorldVerts, size_t numVerts);
+void J3DAPI sithRenderSky_SetHorizonSkyVertices(rdCacheProcEntry* pPoly);
 #endif
 
 J3D_EXTERN_C_END

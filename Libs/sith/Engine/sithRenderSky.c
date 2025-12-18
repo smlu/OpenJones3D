@@ -30,6 +30,14 @@ static float lookYaw;
 static float lookRollCos;
 static float lookRollSin;
 
+static const float horizonPlaneVertices[4][4] =
+{
+    { -1.0f, -1.0f, 1.0f },
+    { 1.0f, -1.0f, 1.0f },
+    { 1.0f, 1.0f, 1.0f },
+    { -1.0f, 1.0f, 1.0f }
+};
+
 void sithRenderSky_InstallHooks(void)
 {
     J3D_HOOKFUNC(sithRenderSky_Open);
@@ -76,6 +84,8 @@ void sithRenderSky_Update(void)
 
     lookYaw   = -(sithCamera_g_pCurCamera->lookPYR.yaw * horizonPixelsPerRev);
     lookPitch = -(sithCamera_g_pCurCamera->lookPYR.pitch * horizonPixelsPerRev);
+
+    std3D_UpdateHorizonSky(lookPitch, lookYaw, horizonScale);
 }
 
 void J3DAPI sithRenderSky_HorizonFaceToPlane(rdCacheProcEntry* pPoly, const rdFace* pFace, rdVector3* aVerts, size_t numVerts)
@@ -111,8 +121,8 @@ void J3DAPI sithRenderSky_CeilingFaceToPlane(rdCacheProcEntry* pPoly, const rdFa
 
         for ( size_t i = 0; i < numVerts; ++i )
         {
-            rdVector3 skyVert;
-            rdMatrix_TransformPoint34(&skyVert, &aVerts[i], &rdCamera_g_camMatrix);
+            rdVector3 skyVert = aVerts[i]; //sithWorld_g_pCurrentWorld->aVertices[pFace->aVertices[i]];
+            //rdMatrix_TransformPoint34(&skyVert, &aVerts[i], &rdCamera_g_camMatrix);
 
             rdVector_Sub3Acc(&skyVert, &sithCamera_g_pCurCamera->lookPos);
             rdVector_Normalize3Acc(&skyVert);
@@ -162,6 +172,25 @@ void J3DAPI sithRenderSky_SetCeilingSkyVertices(rdCacheProcEntry* pPoly, rdFace*
         pOutVert->sy  = vertex.z;
         pOutVert->sz  = -vertex.y;
         pOutVert->rhw = 1.0f;
+    }
+}
+
+void J3DAPI sithRenderSky_SetHorizonSkyVertices(rdCacheProcEntry* pPoly)
+{
+    pPoly->lightingMode = RD_LIGHTING_NONE;
+    pPoly->flags |= RD_FF_HORIZON_SKY;
+    const LPD3DTLVERTEX pOutVert = pPoly->aVertices;
+
+    for ( size_t i = 0; i < 4; ++i )
+    {
+        const float* position = horizonPlaneVertices[i];
+        pOutVert[i].sx        = position[0];
+        pOutVert[i].sy        = position[1];
+        pOutVert[i].sz        = position[2];
+        pOutVert[i].rhw       = 1.0f;
+
+        pOutVert[i].tu = sithWorld_g_pCurrentWorld->horizonSkyOffset.x;
+        pOutVert[i].tv = sithWorld_g_pCurrentWorld->horizonSkyOffset.y;
     }
 }
 #endif

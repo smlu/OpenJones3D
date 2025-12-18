@@ -1,18 +1,18 @@
 #include <globals.incl>
-uniform vec4 viewPort;
+//uniform vec4 VIEWPORT;
 uniform vec4 vFogParams;
 uniform vec3 vFogColor;
 
 vec4 screenToClip(vec3 screenPos, float rhw)
 {
-    float width  = viewPort.z - viewPort.x;
-    float height = viewPort.w - viewPort.y;
+    float width  = VIEWPORT.z - VIEWPORT.x;
+    float height = VIEWPORT.w - VIEWPORT.y;
 
     float w_clip = 1.0 / rhw;
 
 
-    float ndc_x = ((screenPos.x - viewPort.x) / width)  * 2.0 - 1.0;
-    float ndc_y = (1.0 - (screenPos.y - viewPort.y) / height) * 2.0 - 1.0;
+    float ndc_x = ((screenPos.x - VIEWPORT.x) / width)  * 2.0 - 1.0;
+    float ndc_y = (1.0 - (screenPos.y - VIEWPORT.y) / height) * 2.0 - 1.0;
 
     vec4 clip;
     clip.x = ndc_x * w_clip;

@@ -43,6 +43,7 @@ typedef struct sCameraDataGPU
 
 static CameraDataGPU cameraData = { 0 };
 static GLuint cameraDataUBO     = 0;
+static GLuint viewPortUBO       = 0;
 
 static void stdShader_ConvertToMat4(const rdMatrix34* pMat, float out[16])
 {
@@ -115,6 +116,12 @@ static void stdShader_InitUniformBuffers(void)
     glBufferData(GL_UNIFORM_BUFFER, sizeof(CameraDataGPU), &cameraData, GL_DYNAMIC_DRAW);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
     glBindBufferBase(GL_UNIFORM_BUFFER, 0, cameraDataUBO);
+
+    glGenBuffers(1, &viewPortUBO);
+    glBindBuffer(GL_UNIFORM_BUFFER, viewPortUBO);
+    glBufferData(GL_UNIFORM_BUFFER, sizeof(StdShaderViewport), NULL, GL_DYNAMIC_DRAW);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+    glBindBufferBase(GL_UNIFORM_BUFFER, 1, viewPortUBO);
 }
 
 bool J3DAPI stdShader_Startup(void)
@@ -189,21 +196,23 @@ void stdShader_Close(void)
 
 bool J3DAPI stdShader_SetViewport(const StdShaderViewport vp)
 {
-    for ( size_t i = 0; i < MAX_SHADER_PROGRAMS; i++ )
-    {
-        GLShaderProgram* shaderProgram = &stdShader_ShaderPrograms[i];
-        if ( shaderProgram->handle > 0 )
-        {
-            glUseProgram(shaderProgram->handle);
-            int loc = glGetUniformLocation(shaderProgram->handle, "viewPort");
-
-            if ( loc == -1 )
-            {
-                continue;
-            }
-            glUniform4f(loc, vp[0], vp[1], vp[2], vp[3]);
-        }
-    }
+    glBindBuffer(GL_UNIFORM_BUFFER, viewPortUBO);
+    glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(StdShaderViewport), vp);
+    // for ( size_t i = 0; i < MAX_SHADER_PROGRAMS; i++ )
+    // {
+    //     GLShaderProgram* shaderProgram = &stdShader_ShaderPrograms[i];
+    //     if ( shaderProgram->handle > 0 )
+    //     {
+    //         glUseProgram(shaderProgram->handle);
+    //         int loc = glGetUniformLocation(shaderProgram->handle, "viewPort");
+    //
+    //         if ( loc == -1 )
+    //         {
+    //             continue;
+    //         }
+    //         glUniform4f(loc, vp[0], vp[1], vp[2], vp[3]);
+    //     }
+    // }
     return true;
 }
 
@@ -443,6 +452,12 @@ GLShaderProgram* stdShader_CompileAndCreate(const char* pName, const char* pVert
     if ( blockIndex != GL_INVALID_INDEX )
     {
         glUniformBlockBinding(pProgram->handle, blockIndex, 0);
+    }
+
+    blockIndex = glGetUniformBlockIndex(pProgram->handle, "ViewportData");
+    if ( blockIndex != GL_INVALID_INDEX )
+    {
+        glUniformBlockBinding(pProgram->handle, blockIndex, 1);
     }
     return pProgram;
 }

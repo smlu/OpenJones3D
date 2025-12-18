@@ -110,6 +110,7 @@ static GLuint std3D_activeSampler = 0;
 static GLShaderProgram* std3D_defaultShader    = NULL;
 static GLShaderProgram* std3D_defaultShaderWf  = NULL;
 static GLShaderProgram* std3D_ceilingSkyShader = NULL;
+static GLShaderProgram* std3D_horizonSkyShader = NULL;
 static GLShaderProgram* std3D_activeShader     = NULL;
 
 static int std3D_InitRenderState(void);
@@ -582,6 +583,11 @@ static void std3D_DrawFrameBatch(void)
         {
             //dc->rdflags |= STD3D_RS_ZWRITE_DISABLED;
             std3D_activeShader = std3D_ceilingSkyShader;
+        }
+        else if ( (dc->rdflags & STD3D_RS_HORIZON_SKY) != 0 )
+        {
+            //dc->rdflags |= STD3D_RS_ZWRITE_DISABLED;
+            std3D_activeShader = std3D_horizonSkyShader;
         }
         else if ( dc->type == GL_TRIANGLES )
         {
@@ -1447,12 +1453,21 @@ bool std3D_InitShaderSystem(void)
         return false;
     }
 
-    // Create default shader
+    // Create ceiling sky shader
     std3D_ceilingSkyShader = stdShader_CompileAndCreate("std_ceilingSky", "ceilingSky.vert", "ceilingSky.frag");
 
     if ( !std3D_ceilingSkyShader )
     {
         STDLOG_ERROR("Failed to create ceiling sky shader\n");
+        return false;
+    }
+
+    // Create horizon sky shader
+    std3D_horizonSkyShader = stdShader_CompileAndCreate("std_horizonSky", "horizonSky.vert", "horizonSky.frag");
+
+    if ( !std3D_horizonSkyShader )
+    {
+        STDLOG_ERROR("Failed to create horizon sky shader\n");
         return false;
     }
 
@@ -1500,4 +1515,15 @@ void std3D_SetCeilingSkyHeight(float height)
 
     stdShader_SetActiveShader(std3D_ceilingSkyShader);
     glUniform1f(glGetUniformLocation(std3D_ceilingSkyShader->handle, "uCeilingZ"), height);
+}
+
+void std3D_UpdateHorizonSky(float camPitch, float camYaw, float scale)
+{
+    if ( !std3D_horizonSkyShader )
+    {
+        STDLOG_ERROR("Horizon sky shader was not initialized yet");
+    }
+    stdShader_SetActiveShader(std3D_horizonSkyShader);
+    glUniform1f(glGetUniformLocation(std3D_horizonSkyShader->handle, "horizonScale"), scale);
+    glUniform3f(glGetUniformLocation(std3D_horizonSkyShader->handle, "camPYR"), camPitch, camYaw, 0);
 }
