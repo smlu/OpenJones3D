@@ -193,6 +193,9 @@ struct srdMaterial
     size_t curCelNum;
     size_t numCels;
     tSystemTexture* aTextures;
+#ifdef J3D_OPENGL
+    GLShaderProgram* pShader;
+#endif
 };
 
 static_assert(sizeof(rdMaterial) == 92, "sizeof(rdMaterial) == 92");
