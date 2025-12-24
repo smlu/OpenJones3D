@@ -114,6 +114,7 @@ typedef struct GLShaderProgram
 typedef struct sGLTexture
 {
     GLuint id;
+    GLShaderProgram* pShader;
 } GLTexture;
 
 typedef struct sSysPixelFormat

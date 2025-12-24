@@ -589,13 +589,17 @@ static void std3D_DrawFrameBatch(void)
             //dc->rdflags |= STD3D_RS_ZWRITE_DISABLED;
             std3D_activeShader = std3D_horizonSkyShader;
         }
-        else if ( dc->type == GL_TRIANGLES )
+        else if ( dc->type == GL_LINES || dc->type == GL_POINTS )
         {
-            std3D_activeShader = std3D_defaultShader;
+            std3D_activeShader = std3D_defaultShaderWf;
+        }
+        else if ( dc->tex->pShader )
+        {
+            std3D_activeShader = dc->tex->pShader;
         }
         else
         {
-            std3D_activeShader = std3D_defaultShaderWf;
+            std3D_activeShader = std3D_defaultShader;
         }
 
         stdShader_SetActiveShader(std3D_activeShader);
