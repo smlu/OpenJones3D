@@ -104,6 +104,12 @@ typedef struct _GLRECT
     LONG y2;
 } GLRECT;
 
+typedef struct GLShaderProgram
+{
+    GLuint handle;
+    const char* name; // for debugging
+} GLShaderProgram;
+
 
 typedef struct sGLTexture
 {

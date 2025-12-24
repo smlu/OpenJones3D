@@ -18,14 +18,6 @@ typedef size_t StdShaderHandle;
 
 #define STDSHADER_INVALIDHANDLE ((StdShaderHandle)0)
 
-#if defined(J3D_OPENGL)
-typedef struct GLShaderProgram
-{
-    GLuint handle;
-    const char* name; // for debugging
-} GLShaderProgram;
-#endif
-
 
 // Shader types
 typedef enum eStdShaderType
