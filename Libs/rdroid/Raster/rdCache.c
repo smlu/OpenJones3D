@@ -257,16 +257,6 @@ LABEL_4:
             rdflags |= STD3D_RS_FOG_ENABLED;
         }
 
-        if ( (fflags & RD_FF_CEILING_SKY) != 0 )
-        {
-            rdflags |= STD3D_RS_CEILING_SKY;
-        }
-
-        if ( (fflags & RD_FF_HORIZON_SKY) != 0 )
-        {
-            rdflags |= STD3D_RS_HORIZON_SKY;
-        }
-
         rdMaterial* pCurMat = NULL;
         if ( rdroid_g_curGeometryMode != RD_GEOMETRY_SOLID )
         {

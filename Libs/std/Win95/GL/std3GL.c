@@ -579,17 +579,7 @@ static void std3D_DrawFrameBatch(void)
             i = j++;
         }
 
-        if ( (dc->rdflags & STD3D_RS_CEILING_SKY) != 0 )
-        {
-            //dc->rdflags |= STD3D_RS_ZWRITE_DISABLED;
-            std3D_activeShader = std3D_ceilingSkyShader;
-        }
-        else if ( (dc->rdflags & STD3D_RS_HORIZON_SKY) != 0 )
-        {
-            //dc->rdflags |= STD3D_RS_ZWRITE_DISABLED;
-            std3D_activeShader = std3D_horizonSkyShader;
-        }
-        else if ( dc->type == GL_LINES || dc->type == GL_POINTS )
+        if ( dc->type == GL_LINES || dc->type == GL_POINTS )
         {
             std3D_activeShader = std3D_defaultShaderWf;
         }
