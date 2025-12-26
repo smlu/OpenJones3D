@@ -681,6 +681,18 @@ void J3DAPI std3D_SetRenderState(Std3DRenderState rdflags)
         }
     }
 
+    if ( (std3D_renderState & STD3D_BLEND_ENABLED) != (rdflags & STD3D_BLEND_ENABLED) )
+    {
+        if ( rdflags & STD3D_BLEND_ENABLED )
+        {
+            glEnable(GL_BLEND);
+        }
+        else
+        {
+            glDisable(GL_BLEND);
+        }
+    }
+
     if ( (std3D_renderState & STD3D_RS_TEX_CPAMP_U) != (rdflags & STD3D_RS_TEX_CPAMP_U) )
     {
         glSamplerParameteri(std3D_activeSampler, GL_TEXTURE_WRAP_S, (rdflags & STD3D_RS_TEX_CPAMP_U) ? GL_CLAMP_TO_EDGE : GL_REPEAT);

@@ -191,7 +191,9 @@ void rdCache_FlushAlpha(void)
 
 void J3DAPI rdCache_AddProcFace(size_t numVerts)
 {
-    rdCache_aProcFaces[rdCache_numProcFaces].numVertices = numVerts;
+    rdCacheProcEntry* pEntry = &rdCache_aProcFaces[rdCache_numProcFaces];
+    pEntry->numVertices      = numVerts;
+    pEntry->flags &= ~RD_FF_BLEND_ENABLED;
     rdCache_numUsedVertices += numVerts;
     ++rdCache_numProcFaces;
 }
@@ -200,6 +202,7 @@ void J3DAPI rdCache_AddAlphaProcFace(size_t numVertices)
 {
     rdCacheProcEntry* pEntry = &rdCache_aAlphaProcFaces[rdCache_numAlphaProcFaces];
     pEntry->numVertices      = numVertices;
+    pEntry->flags |= RD_FF_BLEND_ENABLED;
 
     float sz = FLT_MAX; // 3.4028235e38f;
     for ( size_t i = 0; i < numVertices; ++i )
@@ -255,6 +258,11 @@ LABEL_4:
         if ( (fflags & RD_FF_FOG_ENABLED) != 0 )
         {
             rdflags |= STD3D_RS_FOG_ENABLED;
+        }
+
+        if ( (fflags & RD_FF_BLEND_ENABLED) != 0 )
+        {
+            rdflags |= STD3D_BLEND_ENABLED;
         }
 
         rdMaterial* pCurMat = NULL;
