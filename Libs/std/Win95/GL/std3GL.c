@@ -1562,20 +1562,6 @@ void std3D_UpdateHorizonSky(float camPitch, float camYaw, float scale)
     glUniform3f(glGetUniformLocation(std3D_horizonSkyShader->handle, "camPYR"), camPitch, camYaw, 0);
 }
 
-static void std3D_DisableDepthTest(void)
-{
-    // first make sure everything with depth test is rendered
-    rdCache_Flush();
-    rdCache_FlushAlpha();
-    std3D_DrawFrameBatch();
-    std3D_MapVertexBuffers();
-    stdShader_DisableFog();
-
-
-    glDisable(GL_DEPTH_TEST);
-    glDepthMask(GL_FALSE);
-}
-
 void std3D_SetDrawState(const std3DDrawState drawState)
 {
     // if ( drawState == std3D_currentDrawState )
@@ -1602,7 +1588,12 @@ void std3D_SetDrawState(const std3DDrawState drawState)
             vertexSpace = STD3D_VS_VIEW;
             break;
         case STD3D_DS_HUD:
-            std3D_DisableDepthTest();
+            // make sure to render all 3D stuff before HUD is drawn
+            rdCache_Flush();
+            rdCache_FlushAlpha();
+            std3D_DrawFrameBatch();
+            std3D_MapVertexBuffers();
+            stdShader_DisableFog();
             vertexSpace = STD3D_VS_SCREEN;
             break;
     }
