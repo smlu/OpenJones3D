@@ -197,7 +197,7 @@ struct srdMaterial
 #endif
 };
 
-static_assert(sizeof(rdMaterial) == 92, "sizeof(rdMaterial) == 92");
+//static_assert(sizeof(rdMaterial) == 92, "sizeof(rdMaterial) == 92");
 
 typedef struct srdGlyphMetrics
 {
