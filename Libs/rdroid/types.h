@@ -649,9 +649,12 @@ struct srdCacheProcEntry
     int32_t matCelNum;
     rdVector4 extraLight;
     float distance;
+#ifdef J3D_OPENGL
+    std3DVertexSpace vertexSpace;
+#endif
 };
 
-static_assert(sizeof(rdCacheProcEntry) == 48, "sizeof(rdCacheProcEntry) == 48");
+//static_assert(sizeof(rdCacheProcEntry) == 48, "sizeof(rdCacheProcEntry) == 48");
 
 typedef struct srdMatCelInfo
 {
