@@ -11,9 +11,27 @@ out vec4 vColor;
 out vec2 vTexCoord;
 
 void main() {
-    vColor = inColor; // DX->GL Farbreihenfolge
+    vColor = inColor;
     vTexCoord = inTexCoord;
 
-    vec4 clip = screenToClip(inPosition.xyz, inPosition.w);
+    vec4 clip = vec4(0.0f);
+    if (iVertexSpace == VS_SCREEN)
+    {
+        clip = screenToClip(inPosition.xyz, inPosition.w);
+        //clip.z = -clip.w;
+    }
+    else if (iVertexSpace == VS_WORLD)
+    {
+        clip = PROJECTION * VIEW * inPosition;
+    }
+    else if (iVertexSpace == VS_VIEW)
+    {
+        clip = PROJECTION * inPosition;
+    }
+    else if (iVertexSpace == VS_CLIP)
+    {
+        clip = inPosition;
+    }
+
     gl_Position = clip;
 }
