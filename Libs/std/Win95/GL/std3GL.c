@@ -12,6 +12,8 @@
 
 #include <math.h>
 
+#include "rdroid/Raster/rdCache.h"
+
 #define STD3D_DEFAULT_MAX_VERTICES 512
 
 static bool bStartup    = false;
@@ -76,6 +78,7 @@ typedef struct sGLDrawCall
     tSysTexture* tex;
     Std3DRenderState rdflags;
     GLenum type; // GL_TRIANGLES / GL_LINES / GL_POINTS
+    std3DVertexSpace vertexSpace;
 } GLDrawCall;
 
 typedef struct sFrameBatch
@@ -106,6 +109,9 @@ static size_t std3D_numDrawCalls = 0;
 
 static GLuint std3D_activeSampler = 0;
 
+static std3DDrawState std3D_currentDrawState     = STD3D_DS_HUD;
+static std3DVertexSpace std3D_currentVertexState = STD3D_VS_SCREEN;
+
 // Shader system state
 static GLShaderProgram* std3D_defaultShader    = NULL;
 static GLShaderProgram* std3D_defaultShaderWf  = NULL;
@@ -130,7 +136,8 @@ void std3D_ShutdownShaderSystem(void);
 
 static void std3D_DrawFrameBatch(void);                                       //new
 static bool std3D_EnsureDrawCapacity(size_t extraVerts, size_t extraIndices); //new
-static void std3D_MapVertexBuffers(void);                                     //new
+static void std3D_MapVertexBuffers(void);
+static void std3D_UnmapVertexBuffers(void);
 
 void std3D_InstallHooks(void)
 {
@@ -450,6 +457,8 @@ size_t std3D_GetNumTextureFormats(void)
 
 int std3D_StartScene(void)
 {
+    glEnable(GL_DEPTH_TEST);
+    glDisable(GL_BLEND);
     std3D_MapVertexBuffers();
     //stdShader_UpdateGlobalUniforms();
     glBindSampler(TU_3D_DRAW, std3D_activeSampler);
@@ -470,6 +479,10 @@ void std3D_EndScene(void)
     {
         std3D_DrawFrameBatch();
     }
+    else
+    {
+        std3D_UnmapVertexBuffers();
+    }
     std3D_renderState  = 0;
     std3D_numDrawCalls = 0;
     std3D_pD3DTex      = NULL;
@@ -479,7 +492,7 @@ void std3D_EndScene(void)
     stdShader_DisableFog();
 }
 
-int std3D_CacheDrawCall(GLenum type, tSysTexture* pTex, Std3DRenderState rdflags, LPD3DTLVERTEX aVerts, size_t numVerts, LPWORD aIndices, size_t numIndices)
+int std3D_CacheDrawCall(GLenum type, tSysTexture* pTex, Std3DRenderState rdflags, LPD3DTLVERTEX aVerts, size_t numVerts, LPWORD aIndices, size_t numIndices, std3DVertexSpace vs)
 {
     if ( type == GL_LINES )
     {
@@ -535,12 +548,13 @@ int std3D_CacheDrawCall(GLenum type, tSysTexture* pTex, Std3DRenderState rdflags
     std3D_frameBatch.indexCount += numIndices;
 
     // cache draw call
-    GLDrawCall* dc = &std3D_frameBatch.draws[std3D_frameBatch.drawCount++];
-    dc->firstIndex = firstIndex;
-    dc->indexCount = (GLsizei)numIndices;
-    dc->tex        = pTex ? pTex : std3D_pWhiteTexture;
-    dc->rdflags    = rdflags;
-    dc->type       = type;
+    GLDrawCall* dc  = &std3D_frameBatch.draws[std3D_frameBatch.drawCount++];
+    dc->firstIndex  = firstIndex;
+    dc->indexCount  = (GLsizei)numIndices;
+    dc->tex         = pTex ? pTex : std3D_pWhiteTexture;
+    dc->rdflags     = rdflags;
+    dc->type        = type;
+    dc->vertexSpace = vs;
 
     return 1;
 }
@@ -555,13 +569,7 @@ static void std3D_DrawFrameBatch(void)
 
     glBindVertexArray(std3D_pVertexArrayObject);
 
-    // Upload vertex data
-    glBindBuffer(GL_ARRAY_BUFFER, std3D_pVertexBufferOpaque);
-    glUnmapBuffer(GL_ARRAY_BUFFER);
-
-    // Upload index data;
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, std3D_pIndexBuffer);
-    glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
+    std3D_UnmapVertexBuffers();
 
 
     // fire draw calls
@@ -573,7 +581,8 @@ static void std3D_DrawFrameBatch(void)
         size_t j           = i + 1;
 
         //batch draw calls with same textures and same rdFlags together.
-        while ( j < std3D_frameBatch.drawCount && dc->tex->id == std3D_frameBatch.draws[j].tex->id && dc->rdflags == std3D_frameBatch.draws[j].rdflags )
+        while ( j < std3D_frameBatch.drawCount && dc->vertexSpace == std3D_frameBatch.draws[j].vertexSpace && dc->tex->id == std3D_frameBatch.draws[j].tex->id &&
+            dc->rdflags == std3D_frameBatch.draws[j].rdflags )
         {
             indexCount += std3D_frameBatch.draws[j].indexCount;
             i = j++;
@@ -593,6 +602,12 @@ static void std3D_DrawFrameBatch(void)
         }
 
         stdShader_SetActiveShader(std3D_activeShader);
+
+        if ( std3D_activeShader == std3D_defaultShader || std3D_activeShader == std3D_defaultShaderWf )
+        {
+            GLint loc = glGetUniformLocation(std3D_activeShader->handle, "iVertexSpace");
+            glUniform1i(loc, dc->vertexSpace);
+        }
 
 
         if ( dc->tex != std3D_pD3DTex && dc->type == GL_TRIANGLES )
@@ -622,7 +637,7 @@ static bool std3D_EnsureDrawCapacity(size_t extraVerts, size_t extraIndices)
         std3D_frameBatch.drawCount + 1 < std3D_maxDrawCallGroupSize;
 }
 
-void J3DAPI std3D_DrawRenderList(tSysTexture* pTex, Std3DRenderState rdflags, LPD3DTLVERTEX aVerts, size_t numVerts, LPWORD aIndices, size_t numIndices)
+void J3DAPI std3D_DrawRenderList(tSysTexture* pTex, Std3DRenderState rdflags, LPD3DTLVERTEX aVerts, size_t numVerts, LPWORD aIndices, size_t numIndices, std3DVertexSpace vs)
 {
     // STDLOG_DEBUG("Draw %d vertices\n", numVerts);
     if ( numVerts > (unsigned int)std3D_g_maxVertices )
@@ -631,14 +646,14 @@ void J3DAPI std3D_DrawRenderList(tSysTexture* pTex, Std3DRenderState rdflags, LP
         return;
     }
 
-    std3D_CacheDrawCall(GL_TRIANGLES, pTex, rdflags, aVerts, numVerts, aIndices, numIndices);
+    std3D_CacheDrawCall(GL_TRIANGLES, pTex, rdflags, aVerts, numVerts, aIndices, numIndices, vs);
 }
 
 void std3D_SetWireframeRenderState(void)
 {
 } //not needed anymore, as this is done when wireframe draw call is cached
 
-void J3DAPI std3D_DrawLineStrip(LPD3DTLVERTEX aVerts, size_t numVerts)
+void J3DAPI std3D_DrawLineStrip(LPD3DTLVERTEX aVerts, size_t numVerts, std3DVertexSpace vs)
 {
     if ( numVerts > std3D_g_maxVertices )
     {
@@ -649,10 +664,10 @@ void J3DAPI std3D_DrawLineStrip(LPD3DTLVERTEX aVerts, size_t numVerts)
 
     Std3DRenderState rdstate = std3D_renderState & ~(STD3D_RS_FOG_ENABLED | STD3D_RS_UNKNOWN_400 | STD3D_RS_UNKNOWN_200);
 
-    std3D_CacheDrawCall(GL_LINES, NULL, rdstate, aVerts, numVerts, NULL, 0);
+    std3D_CacheDrawCall(GL_LINES, NULL, rdstate, aVerts, numVerts, NULL, 0, vs);
 }
 
-void J3DAPI std3D_DrawPointList(LPD3DTLVERTEX aVerts, size_t numVerts)
+void J3DAPI std3D_DrawPointList(LPD3DTLVERTEX aVerts, size_t numVerts, std3DVertexSpace vs)
 {
     if ( numVerts > std3D_g_maxVertices )
     {
@@ -661,7 +676,7 @@ void J3DAPI std3D_DrawPointList(LPD3DTLVERTEX aVerts, size_t numVerts)
         return;
     }
 
-    std3D_CacheDrawCall(GL_POINTS, NULL, 0, aVerts, numVerts, NULL, 0);
+    std3D_CacheDrawCall(GL_POINTS, NULL, 0, aVerts, numVerts, NULL, 0, vs);
 }
 
 void J3DAPI std3D_SetRenderState(Std3DRenderState rdflags)
@@ -1004,7 +1019,7 @@ int std3D_InitRenderState(void)
     glEnable(GL_DEPTH_TEST);
     glDepthMask(GL_TRUE);
     glDepthFunc(GL_LEQUAL);
-    glEnable(GL_BLEND);
+    glDisable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glFrontFace(GL_CW);
 
@@ -1544,3 +1559,56 @@ void std3D_UpdateHorizonSky(float camPitch, float camYaw, float scale)
     glUniform1f(glGetUniformLocation(std3D_horizonSkyShader->handle, "horizonScale"), scale);
     glUniform3f(glGetUniformLocation(std3D_horizonSkyShader->handle, "camPYR"), camPitch, camYaw, 0);
 }
+
+static void std3D_DisableDepthTest(void)
+{
+    // first make sure everything with depth test is rendered
+    rdCache_Flush();
+    rdCache_FlushAlpha();
+    std3D_DrawFrameBatch();
+    std3D_MapVertexBuffers();
+
+
+    glDisable(GL_DEPTH_TEST);
+    glDepthMask(GL_FALSE);
+}
+
+void std3D_SetDrawState(const std3DDrawState drawState)
+{
+    // if ( drawState == std3D_currentDrawState )
+    // {
+    //     return;
+    // }
+
+    std3DVertexSpace vertexSpace = 0;
+
+    switch ( drawState )
+    {
+        case STD3D_DS_GEOMETRY:
+        case STD3D_DS_ALPHA_ADJOINS:
+            vertexSpace = STD3D_VS_WORLD;
+            break;
+        case STD3D_DS_THINGS:
+            vertexSpace = STD3D_VS_VIEW;
+            break;
+        case STD3D_DS_HUD:
+            std3D_DisableDepthTest();
+            vertexSpace = STD3D_VS_SCREEN;
+            break;
+    }
+
+    std3D_currentDrawState   = drawState;
+    std3D_currentVertexState = vertexSpace;
+}
+
+std3DDrawState std3D_GetCurrentDrawState(void)
+{
+    return std3D_currentDrawState;
+}
+
+std3DVertexSpace std3D_GetCurrentVertexSpace(void)
+{
+    return std3D_currentVertexState;
+}
+
+
