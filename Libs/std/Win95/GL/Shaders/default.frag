@@ -12,7 +12,7 @@ void main()
 {
     vec4 texColor = texture(sTexture, vTexCoord);
     FragColor = vec4(vColor * texColor);
-    if (texColor.a <= 0.01f || vColor.a <= 0.01f) {
+    if (FragColor.a <= 0.0f) {
         discard;
     }
     FragColor.rgb = ApplyFog(FragColor.rgb, 1.0f / gl_FragCoord.w);
