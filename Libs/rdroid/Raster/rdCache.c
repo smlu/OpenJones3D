@@ -420,6 +420,10 @@ LABEL_4:
             }
 
             pCachedTexture = pTex->pCachedTexture;
+
+#ifdef J3D_OPENGL
+            pCachedTexture->pShader = pCurPoly->pMaterial->pShader;
+#endif
         }
 
         size_t totalIndices = 0;
