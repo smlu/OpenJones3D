@@ -38,6 +38,9 @@ typedef struct sCameraDataGPU
     float projection[16];
     float inverseProjection[16];
     float viewProjection[16];
+    float farPlane;
+    float nearPlane;
+    float focalLength;
     float time; // vec4
 } CameraDataGPU;
 
@@ -110,7 +113,10 @@ static void stdShader_InitUniformBuffers(void)
     memcpy(&cameraData.inverseProjection, unitMatrix, sizeof(unitMatrix));
     memcpy(&cameraData.viewProjection, unitMatrix, sizeof(unitMatrix));
     memcpy(&cameraData.view, unitMatrix, sizeof(unitMatrix));
-    cameraData.time = 0;
+    cameraData.nearPlane   = 0;
+    cameraData.farPlane    = 0;
+    cameraData.focalLength = 5.0f;
+    cameraData.time        = 0;
     glGenBuffers(1, &cameraDataUBO);
     glBindBuffer(GL_UNIFORM_BUFFER, cameraDataUBO);
     glBufferData(GL_UNIFORM_BUFFER, sizeof(CameraDataGPU), &cameraData, GL_DYNAMIC_DRAW);
@@ -560,6 +566,9 @@ void stdShader_UpdateGlobalUniforms(void)
     stdShader_ConvertToMat4(&rdCamera_g_camMatrix, cameraData.inverseView);
     stdShader_SetProjection(cameraData.projection);
     stdShader_SetInverseProjection(cameraData.inverseProjection);
+    cameraData.nearPlane   = cam->pFrustum->nearPlane;
+    cameraData.farPlane    = cam->pFrustum->farPlane;
+    cameraData.focalLength = cam->focalLength * cam->aspectRatio;
     cameraData.time += sithTime_g_frameTimeFlex;
 
     glBindBuffer(GL_UNIFORM_BUFFER, cameraDataUBO);

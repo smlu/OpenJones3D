@@ -4,6 +4,9 @@ layout(std140) uniform CameraData {
     mat4 PROJECTION;
     mat4 INVERSE_PROJECTION;
     mat4 VIEWPROJECTION;
+    float NEAR_PLANE;
+    float FAR_PLANE;
+    float FOCAL_LENGTH;
     float TIME;
 };
 
