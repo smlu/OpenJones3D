@@ -43,6 +43,11 @@
 #include <math.h>
 #include <stdint.h>
 
+#include "std/Win95/stdShader.h"
+
+#define SITHRENDER_MAXTHINGCOLLECTDISTANCE    16.0f                   // Max distance from each visible sector to collect things to be rendered. Altered: Changed to 16 (160m) form 8 (80m)
+#define SITHRENDER_MAXTHINGLIGHTS             RDCAMERA_MAX_LIGHTS / 2 // 64; note this var must not exceed RDCAMERA_MAX_LIGHTS-1
+#define SITHRENDER_MAXSECTORLIGHTS            (RDCAMERA_MAX_LIGHTS - SITHRENDER_MAXTHINGLIGHTS)
 typedef struct sSithRenderSectorQueueEntry
 {
     SithSector* pSector;
@@ -314,6 +319,11 @@ void sithRender_RenderScene(void)
     }
 
     sithRender_Draw();
+
+#ifdef J3D_OPENGL
+    std3D_SetDrawState(STD3D_DS_HUD);
+#endif
+
     stdEffect_SetFadeFactor(0, 1.0f);
     sithVoice_Draw();
     sithConsole_Flush();
@@ -402,6 +412,25 @@ void sithRender_Draw(void)
     // Set projection
     std3D_SetProjection(sithCamera_g_pCurCamera->rdCamera.fov, sithCamera_g_pCurCamera->rdCamera.pFrustum->nearPlane, sithCamera_g_pCurCamera->rdCamera.pFrustum->farPlane);
 
+#ifdef J3D_OPENGL
+    std3D_SetDrawState(STD3D_DS_GEOMETRY);
+    // Now draw everything
+    sithRender_RenderSectors();
+
+    std3D_SetDrawState(STD3D_DS_THINGS);
+
+    if ( sithRender_numVisibleThingSectors > 0 )
+    {
+        sithRender_RenderThings();
+    }
+
+    std3D_SetDrawState(STD3D_DS_ALPHA_ADJOINS);
+
+    if ( sithRender_numAlphaAdjoins > 0 )
+    {
+        sithRender_RenderAlphaAdjoins();
+    }
+#else
     // Now draw everything
     sithRender_RenderSectors();
 
@@ -414,8 +443,7 @@ void sithRender_Draw(void)
     {
         sithRender_RenderAlphaAdjoins();
     }
-
-    sithAIUtil_RenderAIWaypoints();
+#endif       sithAIUtil_RenderAIWaypoints();
 }
 
 void J3DAPI sithRender_BuildVisibleSectorList(SithSector* pSector, rdClipFrustum* pFrustrum)
@@ -749,7 +777,8 @@ void J3DAPI sithRender_BuildVisibleSector(SithSector* pSector, const rdClipFrust
     sithRender_aVisibleThingSectors[sithRender_numVisibleThingSectors++] = pSector;
 }
 
-void sithRender_RenderSectors(void)
+#ifdef J3D_OPENGL
+static void sithRender_RenderSectorsWorldSpace(void)
 {
     sithRender_g_numArchPolys = 0;
 
@@ -758,12 +787,6 @@ void sithRender_RenderSectors(void)
     {
         extraFaceFlags = RD_FF_FOG_ENABLED;
     }
-
-    sithRender_faceView.aVertices    = sithWorld_g_pCurrentWorld->aTransformedVertices;
-    sithRender_faceView.aTexVertices = sithWorld_g_pCurrentWorld->aTexVerticies;
-    sithRender_faceView.aVertLights  = sithWorld_g_pCurrentWorld->aVertDynamicLights;
-
-    bool bHorizonSkyRendered = false;
 
     for ( size_t secNum = 0; secNum < sithRender_g_numVisibleSectors; ++secNum )
     {
@@ -783,21 +806,129 @@ void sithRender_RenderSectors(void)
                 continue;
             }
 
-            if ( (pSurf->flags & SITH_SURFACE_HORIZONSKY) != 0 )
+            if ( pSurf->pAdjoin && (pSurf->face.flags & RD_FF_TEX_TRANSLUCENT) != 0 )
             {
-                if ( bHorizonSkyRendered )
+                if ( sithRender_numAlphaAdjoins < STD_ARRAYLEN(sithRender_aAlphaAdjoins) )
                 {
+                    sithRender_aAlphaAdjoins[sithRender_numAlphaAdjoins++] = pSurf;
+                }
+                // Maybe add log when alpha adjoin couldn't be processed
+            }
+            else
+            {
+                rdCacheProcEntry* pPoly = rdCache_GetProcEntry();
+                if ( !pPoly )
+                {
+                    // TODO: Add maybe log
                     continue;
                 }
-                rdCacheProcEntry* pPoly = rdCache_GetProcEntry();
-                pPoly->flags            = pSurf->face.flags;
-                pPoly->pMaterial        = pSurf->face.pMaterial;
-                pPoly->matCelNum        = pSurf->face.matCelNum;
-                sithRenderSky_SetHorizonSkyVertices(pPoly);
-                rdCache_AddProcFace(4);
 
-                ++sithRender_g_numArchPolys;
-                bHorizonSkyRendered = true;
+                // Render sky surface
+                if ( (pSurf->flags & (SITH_SURFACE_CEILINGSKY | SITH_SURFACE_HORIZONSKY)) != 0 )
+                {
+                    // There are enough clipped vertices to render n-gon,
+                    // first let's project them to NDC space
+                    //rdCamera_g_pCurCamera->pfProjectList(sithRender_aSurfaceTransformedVertices, sithRender_aClipVertices, sithRender_clipFaceView.numVertices);
+
+                    pPoly->flags     = pSurf->face.flags;
+                    pPoly->pMaterial = pSurf->face.pMaterial;
+
+                    // Now make sky poly from transformed vertices
+                    if ( (pSurf->flags & SITH_SURFACE_HORIZONSKY) != 0 )
+                    {
+                        // rdCamera_g_pCurCamera->pfProjectList(sithRender_aSurfaceTransformedVertices, sithRender_aClipVertices, sithRender_clipFaceView.numVertices);
+                        //sithRenderSky_HorizonFaceToPlane(pPoly, &pSurf->face, sithRender_aSurfaceTransformedVertices, sithRender_clipFaceView.numVertices);
+                        sithRenderSky_SetHorizonSkyVertices(pPoly, &pSurf->face);
+                        pPoly->pMaterial->pShader = stdShader_GetShader("std_horizonSky");
+                    }
+                    else if ( (pSurf->flags & SITH_SURFACE_CEILINGSKY) != 0 )
+                    {
+                        sithRenderSky_SetCeilingSkyVertices(pPoly, &pSurf->face, sithWorld_g_pCurrentWorld->aVertices, pSurf->face.numVertices);
+                        pPoly->pMaterial->pShader = stdShader_GetShader("std_ceilingSky");
+                    }
+
+                    pPoly->matCelNum = pSurf->face.matCelNum;
+                    rdCache_AddProcFace(pSurf->face.numVertices);
+
+                    ++sithRender_g_numArchPolys;
+                }
+                else // Not a sky surface
+                {
+                    rdClip_AddFaceVertices(pPoly, &pSurf->face, sithWorld_g_pCurrentWorld->aVertices, sithWorld_g_pCurrentWorld->aTexVerticies,sithWorld_g_pCurrentWorld->aVertDynamicLights,
+                                           pSurf->aIntensities);
+
+                    pPoly->lightingMode = pSurf->face.lightingMode;
+                    if ( pPoly->lightingMode >= sithRender_lightMode )
+                    {
+                        pPoly->lightingMode = sithRender_lightMode;
+                    }
+
+                    // TODO: Clamp maybe vector to 0.0f - 1.0f?
+                    rdVector_Add4(&pPoly->extraLight, &pSurf->face.extraLight, &pSector->extraLight);
+
+                    // TODO: Also camera ambient light is not set (rdCamera_SetAmbientLight), but the alpha adjoin surfaces has ambient light set to sed.extraLight + sec.ambientLight
+
+                    pPoly->flags = pSurf->face.flags;
+                    if ( (pSurf->flags & SITH_SURFACE_CEILINGSKY) != 0 ) // TODO: ???
+                    {
+                        sithRenderSky_CeilingFaceToPlane(pPoly, &pSurf->face, sithRender_aClipVertices, sithRender_aSurfaceTransformedVertices, pSurf->face.numVertices);
+                    }
+                    else
+                    {
+                        pPoly->flags |= extraFaceFlags;
+                    }
+
+                    pPoly->pMaterial = pSurf->face.pMaterial;
+                    pPoly->matCelNum = pSurf->face.matCelNum;
+                    rdCache_AddProcFace(pSurf->face.numVertices);
+
+                    ++sithRender_g_numArchPolys;
+                }
+            }
+        }
+
+        ++sithRender_numRenderedSectors;
+    }
+
+    rdCache_Flush();
+}
+#endif
+
+
+void sithRender_RenderSectors(void)
+{
+#ifdef J3D_OPENGL
+    sithRender_RenderSectorsWorldSpace();
+    return;
+#endif
+
+    sithRender_g_numArchPolys = 0;
+
+    rdFaceFlags extraFaceFlags = 0;
+    if ( sithWorld_g_pCurrentWorld->fog.bEnabled )
+    {
+        extraFaceFlags = RD_FF_FOG_ENABLED;
+    }
+
+    sithRender_faceView.aVertices    = sithWorld_g_pCurrentWorld->aTransformedVertices;
+    sithRender_faceView.aTexVertices = sithWorld_g_pCurrentWorld->aTexVerticies;
+    sithRender_faceView.aVertLights  = sithWorld_g_pCurrentWorld->aVertDynamicLights;
+
+    for ( size_t secNum = 0; secNum < sithRender_g_numVisibleSectors; ++secNum )
+    {
+        SithSector* pSector = sithRender_aVisibleSectors[secNum];
+        for ( size_t surfNum = 0; surfNum < pSector->numSurfaces; ++surfNum )
+        {
+            SithSurface* pSurf = &pSector->pFirstSurface[surfNum];
+            if ( pSurf->face.geometryMode == RD_GEOMETRY_NONE )
+            {
+                continue;
+            }
+
+            rdVector3 camDir;
+            rdVector_Sub3(&camDir, &sithCamera_g_pCurCamera->lookPos, &sithWorld_g_pCurrentWorld->aVertices[*pSurf->face.aVertices]);
+            if ( rdVector_Dot3(&pSurf->face.normal, &camDir) <= 0.0f ) // If surface is not facing camera
+            {
                 continue;
             }
 
@@ -1398,8 +1529,69 @@ int J3DAPI sithRender_RenderThing(SithThing* pThing)
     return drawResult;
 }
 
+#ifdef J3D_OPENGL
+void sithRender_RenderAlphaAdjoinsWorldSpace(void)
+{
+    sithRender_g_numAlphaArchPolys = 0;
+
+    rdFaceFlags extraFaceFlags = 0;
+    if ( sithWorld_g_pCurrentWorld->fog.bEnabled )
+    {
+        extraFaceFlags = RD_FF_FOG_ENABLED;
+    }
+
+    bool bFlush = false;
+    for ( size_t surfNum = 0; surfNum < sithRender_numAlphaAdjoins; ++surfNum )
+    {
+        SithSurface* pSurf  = sithRender_aAlphaAdjoins[surfNum];
+        SithSector* pSector = pSurf->pSector;
+
+        rdVector4 ambientLight = pSector->ambientLight; // TODO: Why the ambient light is applied? For normal surfs that is not the case
+        rdVector_Add4Acc(&ambientLight, &pSector->extraLight);
+        ambientLight.alpha = 0.0f;
+        // TOCO: clamp vector to 0.0 - 1.0f?
+
+        rdCamera_SetAmbientLight(rdCamera_g_pCurCamera, &ambientLight);
+
+        rdCacheProcEntry* pPoly = rdCache_GetAlphaProcEntry();
+        if ( !pPoly )
+        {
+            // TODO: Maybe add log
+            continue;
+        }
+
+        pPoly->lightingMode = pSurf->face.lightingMode >= sithRender_lightMode ? sithRender_lightMode : pSurf->face.lightingMode;
+
+        rdClip_AddFaceVertices(pPoly, &pSurf->face, sithWorld_g_pCurrentWorld->aVertices, sithWorld_g_pCurrentWorld->aTexVerticies, sithWorld_g_pCurrentWorld->aVertDynamicLights,
+                               pSurf->aIntensities);
+
+        rdVector_Add4(&pPoly->extraLight, &pSurf->face.extraLight, &pSector->extraLight);
+        // TODO: Maybe clamp [0.0,1.0]
+
+        pPoly->matCelNum = pSurf->face.matCelNum;
+        pPoly->flags     = extraFaceFlags | pSurf->face.flags;
+        pPoly->pMaterial = pSurf->face.pMaterial;
+
+        rdCache_AddAlphaProcFace(pSurf->face.numVertices);
+
+        ++sithRender_g_numAlphaArchPolys;
+        bFlush = true;
+    }
+
+    if ( bFlush )
+    {
+        rdCache_FlushAlpha();
+    }
+}
+#endif
+
 void sithRender_RenderAlphaAdjoins(void)
 {
+#ifdef J3D_OPENGL
+    sithRender_RenderAlphaAdjoinsWorldSpace();
+    return;
+#endif
+
     sithRender_g_numAlphaArchPolys = 0;
 
     rdFaceFlags extraFaceFlags = 0;
