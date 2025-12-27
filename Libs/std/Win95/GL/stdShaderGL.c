@@ -12,6 +12,7 @@
 #include <std/Win95/stdShader.h>
 #include <std/Win95/GL/Shaders/stdGLSLShaders.h>
 
+#include "std/Win95/std3D.h"
 #include "std/Win95/stdDisplay.h"
 
 #define MAX_SHADER_PROGRAMS 64
@@ -573,4 +574,22 @@ void stdShader_UpdateGlobalUniforms(void)
 
     glBindBuffer(GL_UNIFORM_BUFFER, cameraDataUBO);
     glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(CameraDataGPU), &cameraData);
+}
+
+GLShaderProgram* stdShader_GetShader(const char* pName)
+{
+    STD_ASSERT(pName); //Only in debug
+    if ( !stdShader_bOpen )
+    {
+        STDLOG_ERROR("Shader system not open.\n");
+        return NULL;
+    }
+
+    GLShaderProgram* pShader = stdHashtbl_Find(stdShader_pTable, pName);
+    if ( !pShader )
+    {
+        STDLOG_ERROR("Shader '%s' not found.\n", pName);
+        return NULL;
+    }
+    return pShader;
 }
