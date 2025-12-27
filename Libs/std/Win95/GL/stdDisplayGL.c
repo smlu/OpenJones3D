@@ -1225,6 +1225,7 @@ int stdDisplay_Update(void)
     }
     glBindVertexArray(stdDisplay_fullscreenVao);
     glDisable(GL_DEPTH_TEST);
+    glDisable(GL_BLEND);
 
     tVSurface* backBufferSurface = &stdDisplay_g_backBuffer.surface;
     uint32_t width               = stdDisplay_g_backBuffer.rasterInfo.width;
@@ -1244,8 +1245,6 @@ int stdDisplay_Update(void)
     glViewport(vp[0], vp[1], vp[2], vp[3]);
     stdShader_SetActiveShader(stdDisplay_fboShader);
     glClear(GL_COLOR_BUFFER_BIT);
-    glDisable(GL_BLEND);
-
     glDrawArrays(GL_TRIANGLES, 0, 3);
 
 
@@ -1261,7 +1260,7 @@ int stdDisplay_Update(void)
     }
     //glClear(GL_COLOR_BUFFER_BIT);
     glEnable(GL_DEPTH_TEST);
-    glEnable(GL_BLEND);
+    //glEnable(GL_BLEND);
     glViewport(0, 0, stdDisplay_g_backBuffer.rasterInfo.width, stdDisplay_g_backBuffer.rasterInfo.height);
 
     return 0;
