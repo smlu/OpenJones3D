@@ -318,6 +318,11 @@ void J3DAPI rdCache_SendFaceListToHardware(size_t numPolys, rdCacheProcEntry* pC
     int curMatCelNum                  = -1;
     const tStdFadeFactor* pFadeFactor = stdEffect_GetFadeFactor();
 
+#ifndef J3D_OPENGL
+    // sort polys by texture, gives a small fps boost for OpenGL since draw calls with same textures can be batched
+    qsort(pCurPoly, numPolys, sizeof(rdCacheProcEntry), rdCache_ProcFaceCompare);
+#endif
+
     if ( pfSort == rdCache_ProcFaceDistanceCompare )
     {
         qsort(pCurPoly, numPolys, sizeof(rdCacheProcEntry), pfSort);
