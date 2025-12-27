@@ -10,9 +10,9 @@ out vec3 vWorldPosition;
 out vec2 vTexCoord;
 
 void main() {
-    vWorldPosition = (INVERSE_VIEW * inPosition).xyz;
+    vWorldPosition = inPosition.xyz;
     vTexCoord = inTexCoord;
-    vec4 clip = PROJECTION * inPosition;
+    vec4 clip = PROJECTION * VIEW * inPosition;
     clip.z = clip.w;
     gl_Position = clip;
 }
