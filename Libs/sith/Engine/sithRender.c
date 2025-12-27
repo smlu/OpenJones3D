@@ -898,8 +898,11 @@ static void sithRender_RenderSectorsWorldSpace(void)
 void sithRender_RenderSectors(void)
 {
 #ifdef J3D_OPENGL
-    sithRender_RenderSectorsWorldSpace();
-    return;
+    if ( std3D_GetCurrentDrawState() == STD3D_DS_GEOMETRY )
+    {
+        sithRender_RenderSectorsWorldSpace();
+        return;
+    }
 #endif
 
     sithRender_g_numArchPolys = 0;
@@ -1588,8 +1591,11 @@ void sithRender_RenderAlphaAdjoinsWorldSpace(void)
 void sithRender_RenderAlphaAdjoins(void)
 {
 #ifdef J3D_OPENGL
-    sithRender_RenderAlphaAdjoinsWorldSpace();
-    return;
+    if ( std3D_GetCurrentDrawState() == STD3D_DS_ALPHA_ADJOINS )
+    {
+        sithRender_RenderAlphaAdjoinsWorldSpace();
+        return;
+    }
 #endif
 
     sithRender_g_numAlphaArchPolys = 0;

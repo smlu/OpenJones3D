@@ -16,8 +16,9 @@
 
 #define STD3D_DEFAULT_MAX_VERTICES 512
 
-static bool bStartup    = false;
-static bool std3D_bOpen = false;
+static bool bUseLegacyRendering = false; // use old screen space vertices
+static bool bStartup            = false;
+static bool std3D_bOpen         = false;
 
 static GLRECT std3D_activeRect = { 0 };
 static_assert(sizeof(std3D_activeRect) == 4 * sizeof(float), "sizeof(std3D_activeRect) == 4 * sizeof(float)");
@@ -1068,7 +1069,7 @@ void J3DAPI std3D_EnableFog(int bEnabled, float density)
 void J3DAPI std3D_SetFog(float red, float green, float blue, float startDepth, float endDepth)
 {
     // Store fog parameters for shader use
-    float fogFactor = 0.03459f;
+    float fogFactor = bUseLegacyRendering ? 1.0f : 0.03459f;
     std3D_EnableFog(std3D_bRenderFog, std3D_g_fogDensity);
     std3D_fogStartDepth  = startDepth * fogFactor;
     std3D_fogEndDepth    = (2.0f - std3D_g_fogDensity) * endDepth * fogFactor;
@@ -1580,6 +1581,13 @@ void std3D_SetDrawState(const std3DDrawState drawState)
     // {
     //     return;
     // }
+
+    if ( bUseLegacyRendering )
+    {
+        std3D_currentDrawState   = STD3D_DS_HUD;
+        std3D_currentVertexState = STD3D_VS_SCREEN;
+        return;
+    }
 
     std3DVertexSpace vertexSpace = 0;
 
