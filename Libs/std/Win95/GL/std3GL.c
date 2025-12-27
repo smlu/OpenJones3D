@@ -1569,6 +1569,7 @@ static void std3D_DisableDepthTest(void)
     rdCache_FlushAlpha();
     std3D_DrawFrameBatch();
     std3D_MapVertexBuffers();
+    stdShader_DisableFog();
 
 
     glDisable(GL_DEPTH_TEST);
