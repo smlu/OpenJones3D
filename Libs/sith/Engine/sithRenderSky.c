@@ -158,7 +158,6 @@ void J3DAPI sithRenderSky_CeilingFaceToPlane(rdCacheProcEntry* pPoly, const rdFa
 void J3DAPI sithRenderSky_SetCeilingSkyVertices(rdCacheProcEntry* pPoly, rdFace* pFace, const rdVector3* aVerts, size_t numVerts)
 {
     pPoly->lightingMode = RD_LIGHTING_NONE;
-    pPoly->flags |= RD_FF_CEILING_SKY;
 
     for ( size_t i = 0; i < numVerts; ++i )
     {
@@ -166,7 +165,7 @@ void J3DAPI sithRenderSky_SetCeilingSkyVertices(rdCacheProcEntry* pPoly, rdFace*
         pOutVert->tu           = sithWorld_g_pCurrentWorld->ceilingSkyOffset.x + pFace->texVertOffset.x;
         pOutVert->tv           = sithWorld_g_pCurrentWorld->ceilingSkyOffset.y + pFace->texVertOffset.y;
 
-        rdVector3 vertex = aVerts[i];
+        rdVector3 vertex = sithWorld_g_pCurrentWorld->aVertices[pFace->aVertices[i]];
 
         pOutVert->sx  = vertex.x;
         pOutVert->sy  = vertex.z;
