@@ -192,12 +192,9 @@ struct srdMaterial
     size_t curCelNum;
     size_t numCels;
     tSystemTexture* aTextures;
-#ifdef J3D_OPENGL
-    GLShaderProgram* pShader;
-#endif
 };
 
-//static_assert(sizeof(rdMaterial) == 92, "sizeof(rdMaterial) == 92");
+static_assert(sizeof(rdMaterial) == 92, "sizeof(rdMaterial) == 92");
 
 typedef struct srdGlyphMetrics
 {
@@ -651,6 +648,7 @@ struct srdCacheProcEntry
     float distance;
 #ifdef J3D_OPENGL
     std3DVertexSpace vertexSpace;
+    GLShaderProgram* pShader;
 #endif
 };
 

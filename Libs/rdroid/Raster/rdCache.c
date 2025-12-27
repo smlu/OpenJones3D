@@ -422,7 +422,8 @@ LABEL_4:
             pCachedTexture = pTex->pCachedTexture;
 
 #ifdef J3D_OPENGL
-            pCachedTexture->pShader = pCurPoly->pMaterial->pShader;
+            pCachedTexture->pShader = pCurPoly->pShader;
+            pCurPoly->pShader       = NULL;
 #endif
         }
 
