@@ -11,6 +11,11 @@
 
 #include <stdlib.h>
 
+#include "rdroid/Engine/rdCamera.h"
+#include "rdroid/Math/rdMatrix.h"
+#include "rdroid/Math/rdVector.h"
+#include "sith/Engine/sithCamera.h"
+
 #define RDCACHE_VERTBUFFERSIZE RDCACHE_MAXVERTICES * RDCACHE_MAXFACEVERTICES
 
 static size_t rdCache_numProcFaces              = 0;
@@ -196,6 +201,60 @@ void rdCache_FlushAlpha(void)
 }
 
 #ifdef J3D_OPENGL
+
+static float rdCache_CalculatePolyDistance(rdCacheProcEntry* pEntry)
+{
+    const size_t numVertices           = pEntry->numVertices;
+    const std3DVertexSpace vertexSpace = pEntry->vertexSpace;
+    if ( vertexSpace == STD3D_VS_SCREEN )
+    {
+        float sz = FLT_MAX; // 3.4028235e38f;
+        for ( size_t i = 0; i < numVertices; ++i )
+        {
+            if ( pEntry->aVertices[i].sz < sz )
+            {
+                sz = pEntry->aVertices[i].sz;
+            }
+        }
+        return sz;
+    }
+
+    float x = 0;
+    float y = 0;
+    float z = 0;
+
+    for ( size_t i = 0; i < numVertices; ++i )
+    {
+        x += pEntry->aVertices[i].sx;
+        y += pEntry->aVertices[i].sy;
+        z += pEntry->aVertices[i].sz;
+    }
+
+    x /= (float)numVertices;
+    y /= (float)numVertices;
+    z /= (float)numVertices;
+
+    rdVector3 averagePosition;
+    averagePosition.x = x;
+    averagePosition.y = y;
+    averagePosition.z = z;
+
+    if ( vertexSpace == STD3D_VS_VIEW )
+    {
+        return -averagePosition.z;
+    }
+
+    const float tmp   = averagePosition.z;
+    averagePosition.z = averagePosition.y;
+    averagePosition.y = -tmp;
+
+    rdVector3 skyVert;
+    rdMatrix_TransformPoint34(&skyVert, &averagePosition, &rdCamera_g_pCurCamera->viewMatrix);
+
+    rdVector_Sub3Acc(&averagePosition, &sithCamera_g_pCurCamera->pos);
+
+    return averagePosition.y;
+}
 
 void J3DAPI rdCache_AddProcFace(size_t numVerts)
 {
