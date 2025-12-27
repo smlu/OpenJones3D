@@ -30,13 +30,6 @@ static float lookYaw;
 static float lookRollCos;
 static float lookRollSin;
 
-static const float horizonPlaneVertices[4][4] =
-{
-    { -1.0f, -1.0f, 1.0f },
-    { 1.0f, -1.0f, 1.0f },
-    { 1.0f, 1.0f, 1.0f },
-    { -1.0f, 1.0f, 1.0f }
-};
 
 void sithRenderSky_InstallHooks(void)
 {
@@ -174,22 +167,23 @@ void J3DAPI sithRenderSky_SetCeilingSkyVertices(rdCacheProcEntry* pPoly, rdFace*
     }
 }
 
-void J3DAPI sithRenderSky_SetHorizonSkyVertices(rdCacheProcEntry* pPoly)
+void J3DAPI sithRenderSky_SetHorizonSkyVertices(rdCacheProcEntry* pPoly, rdFace* pFace)
 {
     pPoly->lightingMode = RD_LIGHTING_NONE;
-    pPoly->flags |= RD_FF_HORIZON_SKY;
-    const LPD3DTLVERTEX pOutVert = pPoly->aVertices;
-
-    for ( size_t i = 0; i < 4; ++i )
+    for ( size_t i = 0; i < pFace->numVertices; ++i )
     {
-        const float* position = horizonPlaneVertices[i];
-        pOutVert[i].sx        = position[0];
-        pOutVert[i].sy        = position[1];
-        pOutVert[i].sz        = position[2];
-        pOutVert[i].rhw       = 1.0f;
+        LPD3DTLVERTEX pOutVert = &pPoly->aVertices[i];
 
-        pOutVert[i].tu = sithWorld_g_pCurrentWorld->horizonSkyOffset.x;
-        pOutVert[i].tv = sithWorld_g_pCurrentWorld->horizonSkyOffset.y;
+        rdVector3 vertex = sithWorld_g_pCurrentWorld->aVertices[pFace->aVertices[i]];
+
+        pOutVert->sx = vertex.x;
+        pOutVert->sy = vertex.z;
+        pOutVert->sz = -vertex.y;
+
+        pOutVert->rhw = horizonSkyDistance;
+
+        pOutVert->tu = sithWorld_g_pCurrentWorld->horizonSkyOffset.x + pFace->texVertOffset.x;
+        pOutVert->tv = sithWorld_g_pCurrentWorld->horizonSkyOffset.y + pFace->texVertOffset.y;
     }
 }
 #endif
