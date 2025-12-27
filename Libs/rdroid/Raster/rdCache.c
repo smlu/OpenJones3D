@@ -109,6 +109,9 @@ rdCacheProcEntry* rdCache_GetProcEntry(void)
     pProcEntry                   = &rdCache_aProcFaces[procNum];
     pProcEntry->aVertices        = &rdCache_aVertices[rdCache_numUsedVertices];
     pProcEntry->aVertIntensities = &rdCache_aVertIntensities[rdCache_numUsedVertices];
+#ifdef J3D_OPENGL
+    pProcEntry->vertexSpace = STD3D_VS_SCREEN;
+#endif
     return pProcEntry;
 }
 
@@ -136,6 +139,9 @@ rdCacheProcEntry* rdCache_GetAlphaProcEntry(void)
     pProcEntry                   = &rdCache_aAlphaProcFaces[entryNum];
     pProcEntry->aVertices        = &rdCache_aAlphaVertices[rdCache_numUsedAlphaVertices];
     pProcEntry->aVertIntensities = &rdCache_aAlphaVertIntensities[rdCache_numUsedAlphaVertices];
+#ifdef J3D_OPENGL
+    pProcEntry->vertexSpace = STD3D_VS_SCREEN;
+#endif
     return pProcEntry;
 }
 
@@ -189,11 +195,16 @@ void rdCache_FlushAlpha(void)
     }
 }
 
+#ifdef J3D_OPENGL
+
 void J3DAPI rdCache_AddProcFace(size_t numVerts)
 {
     rdCacheProcEntry* pEntry = &rdCache_aProcFaces[rdCache_numProcFaces];
-    pEntry->numVertices      = numVerts;
+
+    pEntry->numVertices = numVerts;
     pEntry->flags &= ~RD_FF_BLEND_ENABLED;
+    pEntry->vertexSpace = std3D_GetCurrentVertexSpace();
+
     rdCache_numUsedVertices += numVerts;
     ++rdCache_numProcFaces;
 }
@@ -202,12 +213,32 @@ void J3DAPI rdCache_AddAlphaProcFace(size_t numVertices)
 {
     rdCacheProcEntry* pEntry = &rdCache_aAlphaProcFaces[rdCache_numAlphaProcFaces];
     pEntry->numVertices      = numVertices;
+    pEntry->vertexSpace      = std3D_GetCurrentVertexSpace();
+    pEntry->distance         = rdCache_CalculatePolyDistance(pEntry);
     pEntry->flags |= RD_FF_BLEND_ENABLED;
+    rdCache_numUsedAlphaVertices += numVertices;
+    ++rdCache_numAlphaProcFaces;
+}
 
-    float sz = FLT_MAX; // 3.4028235e38f;
+#else
+
+
+void J3DAPI rdCache_AddProcFace(size_t numVerts)
+{
+    rdCache_aProcFaces[rdCache_numProcFaces].numVertices = numVerts;
+    rdCache_numUsedVertices += numVerts;
+    ++rdCache_numProcFaces;
+}
+
+void J3DAPI rdCache_AddAlphaProcFace(size_t numVertices)
+{
+    rdCacheProcEntry* pEntry = &rdCache_aAlphaProcFaces[rdCache_numAlphaProcFaces];
+    pEntry->numVertices      = numVertices;
+
+    float sz = 3.4028235e38f;
     for ( size_t i = 0; i < numVertices; ++i )
     {
-        if ( pEntry->aVertices[i].sz < sz )
+        if ( pEntry->aVertices[i].sz < (double)sz )
         {
             sz = pEntry->aVertices[i].sz;
         }
@@ -217,6 +248,10 @@ void J3DAPI rdCache_AddAlphaProcFace(size_t numVertices)
     rdCache_numUsedAlphaVertices += numVertices;
     ++rdCache_numAlphaProcFaces;
 }
+
+
+#endif
+
 
 void J3DAPI rdCache_SendFaceListToHardware(size_t numPolys, rdCacheProcEntry* pCurPoly, rdCacheSortFunc pfSort)
 {
@@ -425,6 +460,23 @@ LABEL_4:
                 }
             }
 
+#ifdef J3D_OPENGL
+            std3DVertexSpace vertexSpace = pCurPoly->vertexSpace;
+
+            ++pCurPoly;
+            ++polyNum;
+
+            if ( 3 * (pCurPoly->numVertices - 2) + totalIndices >= std3D_g_maxVertices // i.e. totalIndices + num required triangle indices for next poly >= std3D_g_maxVertices
+                || polyNum >= numPolys
+                || pCurMat != pCurPoly->pMaterial
+                || curMatCelNum != pCurPoly->matCelNum
+                || fflags != pCurPoly->flags )
+            {
+                RD_ASSERTREL(rdCache_totalVerts < RDCACHE_VERTBUFFERSIZE);
+                std3D_DrawRenderList(pCachedTexture, rdflags, rdCache_aHWVertices, rdCache_totalVerts, rdCache_aVertIndices, totalIndices, vertexSpace);
+                goto LABEL_4;
+            }
+#else
             ++pCurPoly;
             ++polyNum;
 
@@ -438,6 +490,7 @@ LABEL_4:
                 std3D_DrawRenderList(pCachedTexture, rdflags, rdCache_aHWVertices, rdCache_totalVerts, rdCache_aVertIndices, totalIndices);
                 goto LABEL_4;
             }
+#endif
         }
     }
 }
@@ -453,6 +506,21 @@ void J3DAPI rdCache_SendWireframeFaceListToHardware(size_t numPolys, rdCacheProc
             pCurPoly->aVertices[j].color = RGBA_MAKE(255, 255, 255, 255); // aka white color
         }
 
+#ifdef J3D_OPENGL
+        if ( rdroid_g_curGeometryMode == RD_GEOMETRY_VERTEX )
+        {
+            std3D_DrawPointList(pCurPoly->aVertices, pCurPoly->numVertices, pCurPoly->vertexSpace); // Fixed: Use correct vertex buffer for drawing. Was using rdCache_aHWVertices.
+        }
+        else if ( rdroid_g_curGeometryMode == RD_GEOMETRY_WIREFRAME )
+        {
+            std3D_DrawLineStrip(pCurPoly->aVertices, pCurPoly->numVertices, pCurPoly->vertexSpace);
+
+            D3DTLVERTEX aVerts[2]; // Draw end vert twice to complete the line
+            memcpy(aVerts, &pCurPoly->aVertices[pCurPoly->numVertices - 1], sizeof(D3DTLVERTEX));
+            memcpy(&aVerts[1], pCurPoly->aVertices, sizeof(D3DTLVERTEX));
+            std3D_DrawLineStrip(aVerts, 2u, pCurPoly->vertexSpace);
+        }
+#else
         if ( rdroid_g_curGeometryMode == RD_GEOMETRY_VERTEX )
         {
             std3D_DrawPointList(pCurPoly->aVertices, pCurPoly->numVertices); // Fixed: Use correct vertex buffer for drawing. Was using rdCache_aHWVertices.
@@ -466,6 +534,8 @@ void J3DAPI rdCache_SendWireframeFaceListToHardware(size_t numPolys, rdCacheProc
             memcpy(&aVerts[1], pCurPoly->aVertices, sizeof(D3DTLVERTEX));
             std3D_DrawLineStrip(aVerts, 2u);
         }
+#endif
+
 
         ++pCurPoly;
     }
