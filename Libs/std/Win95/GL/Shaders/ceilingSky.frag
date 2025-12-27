@@ -28,8 +28,8 @@ void main()
     skyVert += cameraPositionWorld;
     vec2 invTexSize = 1.0f / textureSize(sTexture, 0);
 
-    float tu = invTexSize.x * skyVert.x * 16f + vTexCoord.x;
-    float tv = invTexSize.y * -skyVert.z * 16f + vTexCoord.y;
+    float tu = invTexSize.x * skyVert.x * 16.0f + vTexCoord.x;
+    float tv = invTexSize.y * -skyVert.z * 16.0f + vTexCoord.y;
     vec2 uv = vec2(tu, tv);
     vec4 texColor = texture(sTexture, uv);
     FragColor = texColor;
