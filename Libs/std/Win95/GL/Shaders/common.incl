@@ -1,7 +1,14 @@
 #include <globals.incl>
 //uniform vec4 VIEWPORT;
+
+#define VS_SCREEN   0
+#define VS_WORLD    1
+#define VS_VIEW     2
+#define VS_CLIP     3
+
 uniform vec4 vFogParams;
 uniform vec3 vFogColor;
+uniform int iVertexSpace = 0;
 
 vec4 screenToClip(vec3 screenPos, float rhw)
 {
