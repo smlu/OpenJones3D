@@ -212,7 +212,11 @@ int J3DAPI rdPrimit2_DrawClippedLine2(float x1, float y1, float x2, float y2, ui
     rdPrimit2_aD3DVertices[1].rhw = RD_FIXEDPOINT_RHW_SCALE_X3; // Fixed: Assigned rhw value, should fix scaling & depth layering which fixes drawing line in some cases
     rdPrimit2_aD3DVertices[1].color = color;
 
+#ifndef J3D_OPENGL
     std3D_DrawLineStrip(rdPrimit2_aD3DVertices, 2u);
+#else
+    std3D_DrawLineStrip(rdPrimit2_aD3DVertices, 2u, 0);
+#endif
     return 1;
 }
 
