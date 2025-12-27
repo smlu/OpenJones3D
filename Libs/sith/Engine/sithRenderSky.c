@@ -121,8 +121,8 @@ void J3DAPI sithRenderSky_CeilingFaceToPlane(rdCacheProcEntry* pPoly, const rdFa
 
         for ( size_t i = 0; i < numVerts; ++i )
         {
-            rdVector3 skyVert = aVerts[i]; //sithWorld_g_pCurrentWorld->aVertices[pFace->aVertices[i]];
-            //rdMatrix_TransformPoint34(&skyVert, &aVerts[i], &rdCamera_g_camMatrix);
+            rdVector3 skyVert;
+            rdMatrix_TransformPoint34(&skyVert, &aVerts[i], &rdCamera_g_camMatrix);
 
             rdVector_Sub3Acc(&skyVert, &sithCamera_g_pCurCamera->lookPos);
             rdVector_Normalize3Acc(&skyVert);
