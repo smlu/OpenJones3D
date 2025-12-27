@@ -87,7 +87,6 @@ bool J3DAPI stdShader_SetFog(bool enable, float start, float end, float depthDac
 bool stdShader_DisableFog(void);
 
 // Shader op
-StdShaderHandle stdShader_GetShader(const char* pName); // Get shader handle by name
 #if defined(J3D_OPENGL)
 bool J3DAPI stdShader_SetActiveShader(GLShaderProgram* pSp); // Apply shader to device
 GLShaderProgram* J3DAPI stdShader_CompileAndCreate(const char* pName, const char* pVertexShaderCode, const char* pPixelShaderCode);
@@ -95,10 +94,12 @@ void J3DAPI stdShader_Free(GLShaderProgram* sh);
 void stdShader_SetTexture(GLShaderProgram* sh, GLuint tex);
 void stdShader_SetActiveTextureUnit(GLTextureUnit unit);
 void stdShader_UpdateGlobalUniforms(void);
+GLShaderProgram* stdShader_GetShader(const char* pName); // Get shader handle by name
 #else
 bool J3DAPI stdShader_SetActiveShader(StdShaderHandle sh);                                                                         // Apply shader to device
 StdShaderHandle J3DAPI stdShader_CompileAndCreate(const char* pName, const char* pVertexShaderCode, const char* pPixelShaderCode); // Compile shader from source code and create new shader
 void J3DAPI stdShader_Free(StdShaderHandle sh);
+StdShaderHandle stdShader_GetShader(const char* pName); // Get shader handle by name
 #endif
 StdShaderHandle J3DAPI stdShader_Create(const char* pName, const uint8_t* pCompiledVertexShader, const uint8_t* pCompiledPixelShader); // Create shader from compiled shader code
 
