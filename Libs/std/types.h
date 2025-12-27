@@ -117,6 +117,14 @@ typedef struct sGLTexture
     GLShaderProgram* pShader;
 } GLTexture;
 
+typedef enum eStd3DDrawState
+{
+    STD3D_DS_GEOMETRY      = 0,
+    STD3D_DS_ALPHA_ADJOINS = 1,
+    STD3D_DS_THINGS        = 2,
+    STD3D_DS_HUD           = 3
+} std3DDrawState;
+
 typedef enum eStd3DVertexSpace
 {
     STD3D_VS_SCREEN = 0,
