@@ -142,7 +142,7 @@ typedef struct sSysPixelFormat
 
 typedef GLTexture tSysTexture;
 
-typedef enum sTextureUnits
+typedef enum eTextureUnits
 {
     TU_DEFAULT = 0,
     TU_SCENE   = 1,
