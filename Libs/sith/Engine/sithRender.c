@@ -775,12 +775,12 @@ static void sithRender_RenderSectorsWorldSpace(void)
                         // rdCamera_g_pCurCamera->pfProjectList(sithRender_aSurfaceTransformedVertices, sithRender_aClipVertices, sithRender_clipFaceView.numVertices);
                         //sithRenderSky_HorizonFaceToPlane(pPoly, &pSurf->face, sithRender_aSurfaceTransformedVertices, sithRender_clipFaceView.numVertices);
                         sithRenderSky_SetHorizonSkyVertices(pPoly, &pSurf->face);
-                        pPoly->pMaterial->pShader = stdShader_GetShader("std_horizonSky");
+                        pPoly->pShader = stdShader_GetShader("std_horizonSky");
                     }
                     else if ( (pSurf->flags & SITH_SURFACE_CEILINGSKY) != 0 )
                     {
                         sithRenderSky_SetCeilingSkyVertices(pPoly, &pSurf->face, sithWorld_g_pCurrentWorld->aVertices, pSurf->face.numVertices);
-                        pPoly->pMaterial->pShader = stdShader_GetShader("std_ceilingSky");
+                        pPoly->pShader = stdShader_GetShader("std_ceilingSky");
                     }
 
                     pPoly->matCelNum = pSurf->face.matCelNum;
