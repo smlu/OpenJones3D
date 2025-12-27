@@ -78,7 +78,9 @@ void sithRenderSky_Update(void)
     lookYaw   = -(sithCamera_g_pCurCamera->lookPYR.yaw * horizonPixelsPerRev);
     lookPitch = -(sithCamera_g_pCurCamera->lookPYR.pitch * horizonPixelsPerRev);
 
+#ifdef J3D_OPENGL
     std3D_UpdateHorizonSky(lookPitch, lookYaw, horizonScale);
+#endif
 }
 
 void J3DAPI sithRenderSky_HorizonFaceToPlane(rdCacheProcEntry* pPoly, const rdFace* pFace, rdVector3* aVerts, size_t numVerts)
