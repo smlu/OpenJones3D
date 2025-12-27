@@ -1068,9 +1068,10 @@ void J3DAPI std3D_EnableFog(int bEnabled, float density)
 void J3DAPI std3D_SetFog(float red, float green, float blue, float startDepth, float endDepth)
 {
     // Store fog parameters for shader use
+    float fogFactor = 0.03459f;
     std3D_EnableFog(std3D_bRenderFog, std3D_g_fogDensity);
-    std3D_fogStartDepth  = startDepth;
-    std3D_fogEndDepth    = (2.0f - std3D_g_fogDensity) * endDepth;
+    std3D_fogStartDepth  = startDepth * fogFactor;
+    std3D_fogEndDepth    = (2.0f - std3D_g_fogDensity) * endDepth * fogFactor;
     std3D_fogDepthFactor = 1.0f / (std3D_fogEndDepth - std3D_fogStartDepth);
 
     std3D_fogColor[0] = red;
