@@ -16,6 +16,7 @@ function(embed_shaders SHADER_DIR OUTPUT_FILE)
             "${SHADER_DIR}/*.tesc"
             "${SHADER_DIR}/*.tese"
             "${SHADER_DIR}/*.comp"
+            "${SHADER_DIR}/*.incl"
     )
 
     if(NOT SHADER_FILES)
