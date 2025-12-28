@@ -108,6 +108,8 @@ static GLuint std3D_pVertexBufferOpaque = 0;
 static GLuint std3D_pIndexBuffer = 0;
 static size_t std3D_numDrawCalls = 0;
 
+static bool std3D_bVertexBuffersMapped = false;
+
 static GLuint std3D_activeSampler = 0;
 
 static std3DDrawState std3D_currentDrawState     = STD3D_DS_HUD;
@@ -460,7 +462,6 @@ int std3D_StartScene(void)
 {
     glEnable(GL_DEPTH_TEST);
     glDisable(GL_BLEND);
-    std3D_MapVertexBuffers();
     //stdShader_UpdateGlobalUniforms();
     glBindSampler(TU_3D_DRAW, std3D_activeSampler);
     ++std3D_frameCount;
@@ -476,13 +477,9 @@ int std3D_StartScene(void)
 
 void std3D_EndScene(void)
 {
-    if ( std3D_frameBatch.drawCount > 0 )
+    if ( std3D_bVertexBuffersMapped > 0 )
     {
         std3D_DrawFrameBatch();
-    }
-    else
-    {
-        std3D_UnmapVertexBuffers();
     }
     std3D_renderState  = 0;
     std3D_numDrawCalls = 0;
@@ -504,10 +501,14 @@ int std3D_CacheDrawCall(GLenum type, tSysTexture* pTex, Std3DRenderState rdflags
         numIndices = numVerts;
     }
 
+    if ( !std3D_bVertexBuffersMapped )
+    {
+        std3D_MapVertexBuffers();
+    }
+
     if ( !std3D_EnsureDrawCapacity(numVerts, numIndices) )
     {
         std3D_DrawFrameBatch();
-        std3D_MapVertexBuffers();
     }
 
     size_t baseVertex = std3D_frameBatch.vertCount;
@@ -964,6 +965,16 @@ size_t J3DAPI std3D_GetMipMapCount(const tSystemTexture* pTexture)
 
 void std3D_ResetTextureCache(void)
 {
+    if ( std3D_bVertexBuffersMapped )
+    {
+        //clear framebatch since saved textures are not valid anymore
+        std3D_frameBatch.vertCount  = 0;
+        std3D_frameBatch.indexCount = 0;
+        std3D_frameBatch.drawCount  = 0;
+        std3D_UnmapVertexBuffers();
+    }
+
+
     STDLOG_DEBUG("Clearing texture cache....\n");
     glBindFramebuffer(GL_FRAMEBUFFER, 0); //draw in empty framebuffer for one time to avoid texture flickering
     stdShader_SetActiveTextureUnit(TU_3D_DRAW);
@@ -977,6 +988,7 @@ void std3D_ResetTextureCache(void)
         {
             GLuint tex = pCurTex->pCachedTexture->id;
             glDeleteTextures(1, &tex);
+            pCurTex->pCachedTexture->pShader = NULL;
             STDFREE(pCurTex->pCachedTexture);
             pCurTex->pCachedTexture = NULL;
         }
@@ -1442,6 +1454,8 @@ static void std3D_MapVertexBuffers(void)
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, std3D_pIndexBuffer);
     std3D_frameBatch.indices = glMapBufferRange(GL_ELEMENT_ARRAY_BUFFER, 0, std3D_maxIndicesPerDrawCall * sizeof(GL_SHORT), GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
+
+    std3D_bVertexBuffersMapped = true;
 }
 
 static void std3D_UnmapVertexBuffers(void)
@@ -1453,6 +1467,8 @@ static void std3D_UnmapVertexBuffers(void)
     // Upload index data;
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, std3D_pIndexBuffer);
     glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
+
+    std3D_bVertexBuffersMapped = false;
 }
 
 void std3D_ReleaseVertexBuffers(void)
