@@ -1657,10 +1657,25 @@ void J3DAPI rdModel3_DrawMesh(const rdModel3Mesh* pMesh, const rdMatrix34* orien
         //       meshFrustrumCull = 0;
         //    }
 
+#ifdef J3D_OPENGL
+        if ( std3D_GetCurrentDrawState() == STD3D_DS_THINGS )
+        {
+            // Transform vertices to world space and let shader do the projection
+            rdMatrix_TransformPointList34(orient, pCurMesh->apVertices, aView, pCurMesh->numVertices);
+        }
+        else
+        {
+            // Rotate vertices for orient model matrix (world space) and transform them to view (camera) space
+            rdMatrix34 tmat;
+            rdMatrix_Multiply34(&tmat, &rdCamera_g_pCurCamera->viewMatrix, orient);                   // Combine model-view matrices
+            rdMatrix_TransformPointList34(&tmat, pCurMesh->apVertices, aView, pCurMesh->numVertices); // Transform vertices to view space (i.e. rotate to orinet and convert to view space)
+        }
+#else
         // Rotate vertices for orient model matrix (world space) and transform them to view (camera) space
         rdMatrix34 tmat;
         rdMatrix_Multiply34(&tmat, &rdCamera_g_pCurCamera->viewMatrix, orient); // Combine model-view matrices
         rdMatrix_TransformPointList34(&tmat, pCurMesh->apVertices, aView, pCurMesh->numVertices); // Transform vertices to view space (i.e. rotate to orinet and convert to view space)
+#endif
 
         // Calculate model matrix
         rdMatrix34 InvModelMatrix;

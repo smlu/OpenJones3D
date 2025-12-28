@@ -1582,10 +1582,8 @@ void std3D_SetDrawState(const std3DDrawState drawState)
     {
         case STD3D_DS_GEOMETRY:
         case STD3D_DS_ALPHA_ADJOINS:
-            vertexSpace = STD3D_VS_WORLD;
-            break;
         case STD3D_DS_THINGS:
-            vertexSpace = STD3D_VS_VIEW;
+            vertexSpace = STD3D_VS_WORLD;
             break;
         case STD3D_DS_HUD:
             // make sure to render all 3D stuff before HUD is drawn
