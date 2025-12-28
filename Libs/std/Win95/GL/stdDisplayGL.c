@@ -1033,7 +1033,7 @@ static int J3DAPI stdDisplay_SetWindowMode(HWND hWnd, StdVideoMode* pDisplayMode
     stdDisplay_windowViewport[1] = 0;
     stdDisplay_windowViewport[2] = pDisplayMode->rasterInfo.width;
     stdDisplay_windowViewport[3] = pDisplayMode->rasterInfo.height;
-    stdDisplay_curDevice         = SDL_GetDisplayForWindow(window);
+    //stdDisplay_curDevice         = SDL_GetDisplayForWindow(window);
     SDL_Rect displayRect;
     SDL_GetDisplayBounds(stdDisplay_curDevice, &displayRect);
     int Top, Left, Bottom, Right;
@@ -1052,6 +1052,10 @@ int J3DAPI stdDisplay_SetFullscreenMode(HWND hwnd, const StdVideoMode* pDisplayM
 
 
     // Use borderless fullscreen so dialogboxes are visible.
+    SDL_Window* window = SDL_GL_GetCurrentWindow();
+    SDL_Rect displayRect;
+    SDL_GetDisplayBounds(stdDisplay_curDevice, &displayRect);
+    SDL_SetWindowPosition(window, displayRect.x, displayRect.y);
 
     const SDL_DisplayMode* desktopMode = SDL_GetDesktopDisplayMode(stdDisplay_curDevice);
     int winW                           = desktopMode->w;
