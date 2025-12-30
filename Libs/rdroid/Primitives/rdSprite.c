@@ -288,6 +288,17 @@ int J3DAPI rdSprite_Draw(rdThing* prdThing, const rdMatrix34* orient)
         }
     }
 
+#ifdef J3D_OPENGL
+    // For now transform sprite vertices back to world space. Later when each thing has its own vao, it's better to do everything in shader.
+    if ( std3D_GetCurrentDrawState() == STD3D_DS_THINGS )
+    {
+        for ( size_t i = 0; i < 4; ++i )
+        {
+            rdMatrix_TransformPoint34Acc(&rdSprite_aView.rvec + i, &rdCamera_g_camMatrix);
+        }
+    }
+#endif
+
     // Project vertices to screen space and assign them to pPoly
     if ( !rdClip_FaceToPlane(rdCamera_g_pCurCamera->pFrustum, pPoly, &pSprite3->face, &rdSprite_aView.rvec, pSprite3->aTexVerts, NULL, NULL) )
     {
