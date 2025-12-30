@@ -49,6 +49,25 @@ static CameraDataGPU cameraData = { 0 };
 static GLuint cameraDataUBO     = 0;
 static GLuint viewPortUBO       = 0;
 
+static void stdShader_MulMat4(const float a[16], const float b[16], float out[16])
+{
+    float r[16];
+
+    for ( int col = 0; col < 4; ++col )
+    {
+        for ( int row = 0; row < 4; ++row )
+        {
+            r[col * 4 + row] =
+                a[0 * 4 + row] * b[col * 4 + 0] +
+                a[1 * 4 + row] * b[col * 4 + 1] +
+                a[2 * 4 + row] * b[col * 4 + 2] +
+                a[3 * 4 + row] * b[col * 4 + 3];
+        }
+    }
+
+    memcpy(out, r, sizeof(float) * 16);
+}
+
 static void stdShader_ConvertToMat4(const rdMatrix34* pMat, float out[16])
 {
     // In JonesEngine z is up and +y id forward
