@@ -248,7 +248,8 @@ static bool std3D_InitSystem(void)
     }
 
     // create 1x1 white texture for solid mode
-    std3D_pWhiteTexture = STDMALLOC(sizeof(tSysTexture));
+    std3D_pWhiteTexture          = STDMALLOC(sizeof(tSysTexture));
+    std3D_pWhiteTexture->pShader = NULL;
     glGenTextures(1, &std3D_pWhiteTexture->id);
     glBindTexture(GL_TEXTURE_2D, std3D_pWhiteTexture->id);
 
