@@ -39,7 +39,7 @@
 //static_assert(SITHSAVEGAME_THUMBSIZE == 0x9000, "SITHSAVEGAME_THUMBSIZE must be  0x9000 bytes");
 
 #define SITHSAVEGAME_FILEVERSION  13
-#define SITHSAVEGAME_ENDFILE      0x1000
+#define SITHSAVEGAME_ENDFILE      0x1000 
 
 static int sithGamesave_state;
 
@@ -465,7 +465,8 @@ int sithGamesave_Process(void)
         const char* pFilename = stdFnames_FindMedName(sithGamesave_aCurFilename);
         if ( strneq(pFilename, pPrefix, strlen(pPrefix)) && sithCog_g_pMasterCog )
         {
-            sithCog_SendMessage(sithCog_g_pMasterCog, SITHCOG_MSG_USER0, SITHCOG_SYM_REF_NONE, 0, SITHCOG_SYM_REF_NONE, 0, 0);
+            sithCog_SendMessage(sithCog_g_pMasterCog, SITHCOG_MSG_USER0, SITHCOG_SYM_REF_NONE, 0, SITHCOG_SYM_REF_NONE,
+                                0, 0);
         }
     }
     else
@@ -719,8 +720,8 @@ int J3DAPI sithGamesave_SaveFile(const char* pFilename)
     sithMessage_g_outputstream  = SITHMESSAGE_STREAM_FILE;
 
     // Init NDS file header
-    NdsHeader header = {0};
-    header.version   = SITHSAVEGAME_FILEVERSION;
+    NdsHeader header = { 0 };
+    header.version = SITHSAVEGAME_FILEVERSION;
     STD_STRCPY(header.aDate, "Oct 28 1999"); // TODO: use current date
     STD_STRCPY(header.aLevelFilename, sithWorld_g_pCurrentWorld->aName);
     STD_STRCPY(header.aPreviousLevelFilename, sithGamesave_aPrevLevelFilename);
