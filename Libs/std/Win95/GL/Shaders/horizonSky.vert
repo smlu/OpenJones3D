@@ -12,7 +12,7 @@ void main()
 {
     vTexCoord = inTexCoord;
 
-    vec4 clip = PROJECTION * VIEW * vec4(inPosition.xyz, 1.0f);
+    vec4 clip = VIEWPROJECTION * vec4(inPosition.xyz, 1.0f);
     clip.z = clip.w;
     gl_Position = clip;
 }
