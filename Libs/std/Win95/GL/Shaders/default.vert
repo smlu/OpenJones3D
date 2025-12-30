@@ -22,7 +22,7 @@ void main() {
     }
     else if (iVertexSpace == VS_WORLD)
     {
-        clip = PROJECTION * VIEW * inPosition;
+        clip = VIEWPROJECTION * inPosition;
     }
     else if (iVertexSpace == VS_VIEW)
     {
