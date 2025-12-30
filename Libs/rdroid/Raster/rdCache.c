@@ -116,6 +116,7 @@ rdCacheProcEntry* rdCache_GetProcEntry(void)
     pProcEntry->aVertIntensities = &rdCache_aVertIntensities[rdCache_numUsedVertices];
 #ifdef J3D_OPENGL
     pProcEntry->vertexSpace = STD3D_VS_SCREEN;
+    pProcEntry->pShader     = NULL;
 #endif
     return pProcEntry;
 }
@@ -146,6 +147,7 @@ rdCacheProcEntry* rdCache_GetAlphaProcEntry(void)
     pProcEntry->aVertIntensities = &rdCache_aAlphaVertIntensities[rdCache_numUsedAlphaVertices];
 #ifdef J3D_OPENGL
     pProcEntry->vertexSpace = STD3D_VS_SCREEN;
+    pProcEntry->pShader     = NULL;
 #endif
     return pProcEntry;
 }
