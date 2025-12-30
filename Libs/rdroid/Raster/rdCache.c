@@ -219,41 +219,23 @@ static float rdCache_CalculatePolyDistance(rdCacheProcEntry* pEntry)
         return sz;
     }
 
-    float x = 0;
-    float y = 0;
-    float z = 0;
+    rdVector3 min = { 0, 0, 0 };
+    float sz      = FLT_MAX; // 3.4028235e38f;
 
+    // get min z in camera space
     for ( size_t i = 0; i < numVertices; ++i )
     {
-        x += pEntry->aVertices[i].sx;
-        y += pEntry->aVertices[i].sy;
-        z += pEntry->aVertices[i].sz;
+        min.x = pEntry->aVertices[i].sx;
+        min.y = -pEntry->aVertices[i].sz;
+        min.z = pEntry->aVertices[i].sy;
+        rdMatrix_TransformPoint34Acc(&min, &rdCamera_g_pCurCamera->viewMatrix);
+        if ( min.y < sz )
+        {
+            sz = min.y;
+        }
     }
 
-    x /= (float)numVertices;
-    y /= (float)numVertices;
-    z /= (float)numVertices;
-
-    rdVector3 averagePosition;
-    averagePosition.x = x;
-    averagePosition.y = y;
-    averagePosition.z = z;
-
-    if ( vertexSpace == STD3D_VS_VIEW )
-    {
-        return -averagePosition.z;
-    }
-
-    const float tmp   = averagePosition.z;
-    averagePosition.z = averagePosition.y;
-    averagePosition.y = -tmp;
-
-    rdVector3 skyVert;
-    rdMatrix_TransformPoint34(&skyVert, &averagePosition, &rdCamera_g_pCurCamera->viewMatrix);
-
-    rdVector_Sub3Acc(&averagePosition, &sithCamera_g_pCurCamera->pos);
-
-    return averagePosition.y;
+    return sz;
 }
 
 void J3DAPI rdCache_AddProcFace(size_t numVerts)
