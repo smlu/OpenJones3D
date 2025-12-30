@@ -45,9 +45,6 @@
 
 #include "std/Win95/stdShader.h"
 
-#define SITHRENDER_MAXTHINGCOLLECTDISTANCE    16.0f                   // Max distance from each visible sector to collect things to be rendered. Altered: Changed to 16 (160m) form 8 (80m)
-#define SITHRENDER_MAXTHINGLIGHTS             RDCAMERA_MAX_LIGHTS / 2 // 64; note this var must not exceed RDCAMERA_MAX_LIGHTS-1
-#define SITHRENDER_MAXSECTORLIGHTS            (RDCAMERA_MAX_LIGHTS - SITHRENDER_MAXTHINGLIGHTS)
 typedef struct sSithRenderSectorQueueEntry
 {
     SithSector* pSector;
