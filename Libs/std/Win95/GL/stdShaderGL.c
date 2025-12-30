@@ -586,6 +586,7 @@ void stdShader_UpdateGlobalUniforms(void)
     stdShader_ConvertToMat4(&rdCamera_g_camMatrix, cameraData.inverseView);
     stdShader_SetProjection(cameraData.projection);
     stdShader_SetInverseProjection(cameraData.inverseProjection);
+    stdShader_MulMat4(cameraData.projection, cameraData.view, cameraData.viewProjection);
     cameraData.nearPlane   = cam->pFrustum->nearPlane;
     cameraData.farPlane    = cam->pFrustum->farPlane;
     cameraData.focalLength = cam->focalLength * cam->aspectRatio;
