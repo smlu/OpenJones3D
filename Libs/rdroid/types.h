@@ -650,6 +650,7 @@ struct srdCacheProcEntry
 #ifdef J3D_OPENGL
     std3DVertexSpace vertexSpace;
     GLShaderProgram* pShader;
+    bool bGPULighting;
 #endif
 };
 

@@ -115,8 +115,9 @@ rdCacheProcEntry* rdCache_GetProcEntry(void)
     pProcEntry->aVertices        = &rdCache_aVertices[rdCache_numUsedVertices];
     pProcEntry->aVertIntensities = &rdCache_aVertIntensities[rdCache_numUsedVertices];
 #ifdef J3D_OPENGL
-    pProcEntry->vertexSpace = STD3D_VS_SCREEN;
-    pProcEntry->pShader     = NULL;
+    pProcEntry->vertexSpace  = STD3D_VS_SCREEN;
+    pProcEntry->pShader      = NULL;
+    pProcEntry->bGPULighting = false;
 #endif
     return pProcEntry;
 }
@@ -146,8 +147,9 @@ rdCacheProcEntry* rdCache_GetAlphaProcEntry(void)
     pProcEntry->aVertices        = &rdCache_aAlphaVertices[rdCache_numUsedAlphaVertices];
     pProcEntry->aVertIntensities = &rdCache_aAlphaVertIntensities[rdCache_numUsedAlphaVertices];
 #ifdef J3D_OPENGL
-    pProcEntry->vertexSpace = STD3D_VS_SCREEN;
-    pProcEntry->pShader     = NULL;
+    pProcEntry->vertexSpace  = STD3D_VS_SCREEN;
+    pProcEntry->pShader      = NULL;
+    pProcEntry->bGPULighting = false;
 #endif
     return pProcEntry;
 }
@@ -246,7 +248,9 @@ void J3DAPI rdCache_AddProcFace(size_t numVerts)
 
     pEntry->numVertices = numVerts;
     pEntry->flags &= ~RD_FF_BLEND_ENABLED;
-    pEntry->vertexSpace = std3D_GetCurrentVertexSpace();
+    pEntry->vertexSpace            = std3D_GetCurrentVertexSpace();
+    enum eStd3DDrawState drawState = std3D_GetCurrentDrawState();
+    pEntry->bGPULighting           = drawState == STD3D_DS_GEOMETRY || drawState == STD3D_DS_ALPHA_ADJOINS;
 
     rdCache_numUsedVertices += numVerts;
     ++rdCache_numProcFaces;
@@ -259,6 +263,8 @@ void J3DAPI rdCache_AddAlphaProcFace(size_t numVertices)
     pEntry->vertexSpace      = std3D_GetCurrentVertexSpace();
     pEntry->distance         = rdCache_CalculatePolyDistance(pEntry);
     pEntry->flags |= RD_FF_BLEND_ENABLED;
+    enum eStd3DDrawState drawState = std3D_GetCurrentDrawState();
+    pEntry->bGPULighting           = drawState == STD3D_DS_GEOMETRY || drawState == STD3D_DS_ALPHA_ADJOINS;
     rdCache_numUsedAlphaVertices += numVertices;
     ++rdCache_numAlphaProcFaces;
 }
@@ -454,6 +460,12 @@ LABEL_4:
                         alpha = pCurPoly->aVertIntensities[i].alpha + pCurPoly->extraLight.alpha;
                     }
                 }
+#ifdef J3D_OPENGL
+                else
+                {
+                    pCurPoly->bGPULighting = false;
+                }
+#endif
 
                 if ( pFadeFactor->bEnabled )
                 {
@@ -515,6 +527,7 @@ LABEL_4:
 
 #ifdef J3D_OPENGL
             std3DVertexSpace vertexSpace = pCurPoly->vertexSpace;
+            bool useShaderLighting       = pCurPoly->bGPULighting;
 
             ++pCurPoly;
             ++polyNum;
@@ -526,7 +539,7 @@ LABEL_4:
                 || fflags != pCurPoly->flags )
             {
                 RD_ASSERTREL(rdCache_totalVerts < RDCACHE_VERTBUFFERSIZE);
-                std3D_DrawRenderList(pCachedTexture, rdflags, rdCache_aHWVertices, rdCache_totalVerts, rdCache_aVertIndices, totalIndices, vertexSpace);
+                std3D_DrawRenderList(pCachedTexture, rdflags, rdCache_aHWVertices, rdCache_totalVerts, rdCache_aVertIndices, totalIndices, vertexSpace, useShaderLighting);
                 goto LABEL_4;
             }
 #else
