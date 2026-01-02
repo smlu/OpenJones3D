@@ -80,6 +80,7 @@ typedef struct sGLDrawCall
     Std3DRenderState rdflags;
     GLenum type; // GL_TRIANGLES / GL_LINES / GL_POINTS
     std3DVertexSpace vertexSpace;
+    bool bUseShaderLighting;
 } GLDrawCall;
 
 typedef struct sFrameBatch
@@ -491,7 +492,8 @@ void std3D_EndScene(void)
     stdShader_DisableFog();
 }
 
-int std3D_CacheDrawCall(GLenum type, tSysTexture* pTex, Std3DRenderState rdflags, LPD3DTLVERTEX aVerts, size_t numVerts, LPWORD aIndices, size_t numIndices, std3DVertexSpace vs)
+int std3D_CacheDrawCall(GLenum type, tSysTexture* pTex, Std3DRenderState rdflags, LPD3DTLVERTEX aVerts, size_t numVerts, LPWORD aIndices, size_t numIndices, std3DVertexSpace vs,
+                        bool bUseShaderLighting)
 {
     if ( type == GL_LINES )
     {
@@ -551,13 +553,14 @@ int std3D_CacheDrawCall(GLenum type, tSysTexture* pTex, Std3DRenderState rdflags
     std3D_frameBatch.indexCount += numIndices;
 
     // cache draw call
-    GLDrawCall* dc  = &std3D_frameBatch.draws[std3D_frameBatch.drawCount++];
-    dc->firstIndex  = firstIndex;
-    dc->indexCount  = (GLsizei)numIndices;
-    dc->tex         = pTex ? pTex : std3D_pWhiteTexture;
-    dc->rdflags     = rdflags;
-    dc->type        = type;
-    dc->vertexSpace = vs;
+    GLDrawCall* dc         = &std3D_frameBatch.draws[std3D_frameBatch.drawCount++];
+    dc->firstIndex         = firstIndex;
+    dc->indexCount         = (GLsizei)numIndices;
+    dc->tex                = pTex ? pTex : std3D_pWhiteTexture;
+    dc->rdflags            = rdflags;
+    dc->type               = type;
+    dc->vertexSpace        = vs;
+    dc->bUseShaderLighting = bUseShaderLighting;
 
     return 1;
 }
@@ -612,6 +615,12 @@ static void std3D_DrawFrameBatch(void)
             glUniform1i(loc, dc->vertexSpace);
         }
 
+        if ( std3D_activeShader == std3D_defaultShader )
+        {
+            GLint loc = glGetUniformLocation(std3D_activeShader->handle, "bRenderLights");
+            glUniform1i(loc, dc->bUseShaderLighting);
+        }
+
 
         if ( dc->tex != std3D_pD3DTex && dc->type == GL_TRIANGLES )
         {
@@ -640,7 +649,7 @@ static bool std3D_EnsureDrawCapacity(size_t extraVerts, size_t extraIndices)
         std3D_frameBatch.drawCount + 1 < std3D_maxDrawCallGroupSize;
 }
 
-void J3DAPI std3D_DrawRenderList(tSysTexture* pTex, Std3DRenderState rdflags, LPD3DTLVERTEX aVerts, size_t numVerts, LPWORD aIndices, size_t numIndices, std3DVertexSpace vs)
+void J3DAPI std3D_DrawRenderList(tSysTexture* pTex, Std3DRenderState rdflags, LPD3DTLVERTEX aVerts, size_t numVerts, LPWORD aIndices, size_t numIndices, std3DVertexSpace vs, bool bUseShaderLighting)
 {
     // STDLOG_DEBUG("Draw %d vertices\n", numVerts);
     if ( numVerts > (unsigned int)std3D_g_maxVertices )
@@ -649,7 +658,7 @@ void J3DAPI std3D_DrawRenderList(tSysTexture* pTex, Std3DRenderState rdflags, LP
         return;
     }
 
-    std3D_CacheDrawCall(GL_TRIANGLES, pTex, rdflags, aVerts, numVerts, aIndices, numIndices, vs);
+    std3D_CacheDrawCall(GL_TRIANGLES, pTex, rdflags, aVerts, numVerts, aIndices, numIndices, vs, bUseShaderLighting);
 }
 
 void std3D_SetWireframeRenderState(void)
@@ -667,7 +676,7 @@ void J3DAPI std3D_DrawLineStrip(LPD3DTLVERTEX aVerts, size_t numVerts, std3DVert
 
     Std3DRenderState rdstate = std3D_renderState & ~(STD3D_RS_FOG_ENABLED | STD3D_RS_UNKNOWN_400 | STD3D_RS_UNKNOWN_200);
 
-    std3D_CacheDrawCall(GL_LINES, NULL, rdstate, aVerts, numVerts, NULL, 0, vs);
+    std3D_CacheDrawCall(GL_LINES, NULL, rdstate, aVerts, numVerts, NULL, 0, vs, false);
 }
 
 void J3DAPI std3D_DrawPointList(LPD3DTLVERTEX aVerts, size_t numVerts, std3DVertexSpace vs)
@@ -679,7 +688,7 @@ void J3DAPI std3D_DrawPointList(LPD3DTLVERTEX aVerts, size_t numVerts, std3DVert
         return;
     }
 
-    std3D_CacheDrawCall(GL_POINTS, NULL, 0, aVerts, numVerts, NULL, 0, vs);
+    std3D_CacheDrawCall(GL_POINTS, NULL, 0, aVerts, numVerts, NULL, 0, vs, false);
 }
 
 void J3DAPI std3D_SetRenderState(Std3DRenderState rdflags)

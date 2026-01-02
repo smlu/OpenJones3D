@@ -86,7 +86,7 @@ void std3D_UpdateHorizonSky(float camPitch, float camYaw, float scale);
 void std3D_SetDrawState(std3DDrawState drawState);
 std3DDrawState std3D_GetCurrentDrawState(void);
 std3DVertexSpace std3D_GetCurrentVertexSpace(void);
-void J3DAPI std3D_DrawRenderList(tSysTexture* pTex, Std3DRenderState rdflags, LPD3DTLVERTEX aVerts, size_t numVerts, LPWORD aIndices, size_t numIndices, std3DVertexSpace vs);
+void J3DAPI std3D_DrawRenderList(tSysTexture* pTex, Std3DRenderState rdflags, LPD3DTLVERTEX aVerts, size_t numVerts, LPWORD aIndices, size_t numIndices, std3DVertexSpace vs, bool bUseShaderLighting);
 void J3DAPI std3D_DrawLineStrip(LPD3DTLVERTEX aVerts, size_t numVerts, std3DVertexSpace vs);
 void J3DAPI std3D_DrawPointList(LPD3DTLVERTEX aVerts, size_t numVerts, std3DVertexSpace vs);
 #else
