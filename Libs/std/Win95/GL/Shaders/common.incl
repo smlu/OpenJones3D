@@ -42,3 +42,26 @@ vec3 ApplyFog(vec3 color, float depth)
 
     return mix(color, vFogColor, fogFactor);
 }
+
+vec3 CalculateLightColor(vec3 worldPos)
+{
+    vec3 finalColor = vec3(0.0f);
+
+    for (int i = 0; i < LIGHT_COUNT; i++)
+    {
+        PointLight light = LIGHTS[i];
+        vec3 lightPos = light.position.xyz;
+        vec3 lightDir = lightPos - worldPos;
+
+        float dist = length(lightDir);
+        //float range = step(dist, light.maxRadius);
+        float fade = light.maxRadius * 0.5f;
+        float range = 1.0 - smoothstep(fade, light.maxRadius, dist);
+        float att = dist * 0.8f;
+        vec3 contrib = (light.color.rgb - vec3(att)) * range;
+        contrib = max(contrib, vec3(0.0));
+        finalColor += contrib;
+    }
+
+    return clamp(finalColor, vec3(0.0f), vec3(1.0f));
+}
