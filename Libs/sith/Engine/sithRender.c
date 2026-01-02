@@ -401,6 +401,10 @@ void sithRender_Draw(void)
         RDLOG_ERROR("Too many sectors with things in view %d of %d\n", STD_ARRAYLEN(sithRender_aVisibleThingSectors), sithRender_totalVisibleThingSectors); // TODO: Why using RDLOG
     }
 
+#ifdef J3D_OPENGL
+    std3D_SetDrawState(STD3D_DS_GEOMETRY);
+#endif
+
     if ( (sithRender_renderflags & RDROID_USE_AMBIENT_CAMERA_LIGHT) != 0 )
     {
         sithRender_BuildDynamicLights();
@@ -1284,6 +1288,13 @@ void sithRender_CollectThingLights(const SithThing* pThing)
 
 void sithRender_BuildDynamicLights(void)
 {
+#ifdef J3D_OPENGL
+    if ( std3D_GetCurrentDrawState() == STD3D_DS_GEOMETRY )
+    {
+        stdShader_SetShaderLights();
+        return;
+    }
+#endif
     // Function calculates vertex intensities from collected dynamic lights for all visible sectors
 
     rdVector3* aVertices             = sithWorld_g_pCurrentWorld->aVertices;
