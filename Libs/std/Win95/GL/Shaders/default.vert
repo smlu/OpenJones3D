@@ -9,6 +9,10 @@ layout(location = 3) in vec2 inTexCoord;
 
 out vec4 vColor;
 out vec2 vTexCoord;
+out vec3 vWorldPos;
+
+uniform bool bRenderLights = false;
+
 
 void main() {
     vColor = inColor;
@@ -23,6 +27,11 @@ void main() {
     else if (iVertexSpace == VS_WORLD)
     {
         clip = VIEWPROJECTION * inPosition;
+        vWorldPos = inPosition.xyz;
+//        if (bRenderLights)
+//        {
+//            vColor.rgb += CalculateLightColor(vWorldPos);
+//        }
     }
     else if (iVertexSpace == VS_VIEW)
     {
