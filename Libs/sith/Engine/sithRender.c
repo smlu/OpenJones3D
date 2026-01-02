@@ -414,7 +414,6 @@ void sithRender_Draw(void)
     std3D_SetProjection(sithCamera_g_pCurCamera->rdCamera.fov, sithCamera_g_pCurCamera->rdCamera.pFrustum->nearPlane, sithCamera_g_pCurCamera->rdCamera.pFrustum->farPlane);
 
 #ifdef J3D_OPENGL
-    std3D_SetDrawState(STD3D_DS_GEOMETRY);
     // Now draw everything
     sithRender_RenderSectors();
 
