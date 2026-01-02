@@ -16,6 +16,7 @@
 #include "std/Win95/stdDisplay.h"
 
 #define MAX_SHADER_PROGRAMS 64
+#define MAX_SHADER_LIGHTS 64
 
 static bool stdShader_bStartup = false;
 static bool stdShader_bOpen    = false;
@@ -48,6 +49,25 @@ typedef struct sCameraDataGPU
 static CameraDataGPU cameraData = { 0 };
 static GLuint cameraDataUBO     = 0;
 static GLuint viewPortUBO       = 0;
+
+typedef struct sPointLightGPU
+{
+    float position[4]; // xyz + pad
+    float color[4];    // rgba
+    float minRadius;
+    float maxRadius;
+    float pad[2]; // std140 padding
+} PointLightGPU;
+
+typedef struct
+{
+    PointLightGPU lights[MAX_SHADER_LIGHTS];
+    int lightCount;
+    int pad[3]; // std140 padding auf 16 Byte
+} PointLightsUBO;
+
+static PointLightsUBO stdShader_pointLights = { 0 };
+static GLuint stdShader_pointLightUBO       = 0;
 
 static void stdShader_MulMat4(const float a[16], const float b[16], float out[16])
 {
@@ -127,6 +147,7 @@ static void stdShader_InitUniformBuffers(void)
         0.0f, 0.0f, 1.0f, 0.0f,
         0.0f, 0.0f, 0.0f, 1.0f
     };
+
     memcpy(&cameraData.view, unitMatrix, sizeof(unitMatrix));
     memcpy(&cameraData.inverseView, unitMatrix, sizeof(unitMatrix));
     memcpy(&cameraData.projection, unitMatrix, sizeof(unitMatrix));
@@ -148,6 +169,12 @@ static void stdShader_InitUniformBuffers(void)
     glBufferData(GL_UNIFORM_BUFFER, sizeof(StdShaderViewport), NULL, GL_DYNAMIC_DRAW);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
     glBindBufferBase(GL_UNIFORM_BUFFER, 1, viewPortUBO);
+
+    glGenBuffers(1, &stdShader_pointLightUBO);
+    glBindBuffer(GL_UNIFORM_BUFFER, stdShader_pointLightUBO);
+    glBufferData(GL_UNIFORM_BUFFER, sizeof(PointLightsUBO), NULL, GL_DYNAMIC_DRAW);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+    glBindBufferBase(GL_UNIFORM_BUFFER, 2, stdShader_pointLightUBO);
 }
 
 bool J3DAPI stdShader_Startup(void)
@@ -485,6 +512,12 @@ GLShaderProgram* stdShader_CompileAndCreate(const char* pName, const char* pVert
     {
         glUniformBlockBinding(pProgram->handle, blockIndex, 1);
     }
+
+    blockIndex = glGetUniformBlockIndex(pProgram->handle, "PointLightsData");
+    if ( blockIndex != GL_INVALID_INDEX )
+    {
+        glUniformBlockBinding(pProgram->handle, blockIndex, 2);
+    }
     return pProgram;
 }
 
@@ -612,4 +645,32 @@ GLShaderProgram* stdShader_GetShader(const char* pName)
         return NULL;
     }
     return pShader;
+}
+
+void stdShader_SetShaderLights(void)
+{
+    rdCamera* cam = rdCamera_g_pCurCamera;
+
+    if ( cam == NULL )
+    {
+        return;
+    }
+    int lightCount = cam->numLights;
+    for ( int i = 0; i < lightCount; i++ )
+    {
+        rdLight* pLight    = cam->aLights[i];
+        rdVector3 lightPos = cam->aLightPositions[pLight->num];
+
+        PointLightGPU* pShaderLight = &stdShader_pointLights.lights[i];
+        memcpy(&pShaderLight->color, &pLight->color, sizeof(rdVector4));
+        pShaderLight->position[0] = lightPos.x;
+        pShaderLight->position[1] = lightPos.z;
+        pShaderLight->position[2] = -lightPos.y;
+        pShaderLight->maxRadius   = pLight->maxRadius;
+        pShaderLight->minRadius   = pLight->minRadius;
+    }
+    stdShader_pointLights.lightCount = lightCount;
+
+    glBindBuffer(GL_UNIFORM_BUFFER, stdShader_pointLightUBO);
+    glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(PointLightsUBO), &stdShader_pointLights);
 }

@@ -13,3 +13,20 @@ layout(std140) uniform CameraData {
 layout(std140) uniform ViewportData {
     vec4 VIEWPORT;
 };
+
+#define MAX_LIGHTS 64
+
+struct PointLight
+{
+    vec4 position;   // xyz = position, w = unused
+    vec4 color;      // rgba
+    float minRadius;
+    float maxRadius;
+    vec2 _pad;       // padding für std140
+};
+
+layout(std140) uniform PointLightsData
+{
+    PointLight LIGHTS[MAX_LIGHTS];
+    int LIGHT_COUNT;
+};

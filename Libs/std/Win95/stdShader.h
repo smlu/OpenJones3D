@@ -94,6 +94,7 @@ void J3DAPI stdShader_Free(GLShaderProgram* sh);
 void stdShader_SetTexture(GLShaderProgram* sh, GLuint tex);
 void stdShader_SetActiveTextureUnit(GLTextureUnit unit);
 void stdShader_UpdateGlobalUniforms(void);
+void stdShader_SetShaderLights(void);
 GLShaderProgram* stdShader_GetShader(const char* pName); // Get shader handle by name
 #else
 bool J3DAPI stdShader_SetActiveShader(StdShaderHandle sh);                                                                         // Apply shader to device
