@@ -221,7 +221,7 @@
 #define sithThing_ValidateThingPointer_TYPE int (J3DAPI*)(const SithWorld*, const SithThing*)
 #define sithThing_SyncThing_TYPE void (J3DAPI*)(SithThing*, SithThingSyncFlags)
 #define sithThing_SyncThings_TYPE void (*)(void)
-#define sithThing_CanSync_TYPE int (J3DAPI*)(const SithThing*)
+#define sithThing_CanSyncThing_TYPE int (J3DAPI*)(const SithThing*)
 #define sithThing_GetThingMeshIndex_TYPE int (J3DAPI*)(const SithThing*, const char*)
 #define sithThing_GetThingJointIndex_TYPE int (J3DAPI*)(const SithThing*, const char*)
 #define sithThing_FreeThingIndex_TYPE void (J3DAPI*)(SithWorld*, size_t)

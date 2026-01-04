@@ -222,7 +222,7 @@
 #define sithThing_ValidateThingPointer_ADDR 0x00439EF0
 #define sithThing_SyncThing_ADDR 0x00439F40
 #define sithThing_SyncThings_ADDR 0x00439FD0
-#define sithThing_CanSync_ADDR 0x0043A090
+#define sithThing_CanSyncThing_ADDR 0x0043A090
 #define sithThing_GetThingMeshIndex_ADDR 0x0043A0C0
 #define sithThing_GetThingJointIndex_ADDR 0x0043A150
 #define sithThing_FreeThingIndex_ADDR 0x0043A1D0

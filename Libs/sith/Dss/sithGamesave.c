@@ -210,7 +210,7 @@ int J3DAPI sithGamesave_SaveCurrentWorld(SithMessageStream outstream)
     for ( size_t i = 0; i < pWorld->numThings; i++ )
     {
         const SithThing* pThing = &pWorld->aThings[i];
-        if ( sithThing_CanSync(pThing) )
+        if ( sithThing_CanSyncThing(pThing) )
         {
             int bError = sithDSSThing_ThingFullDescription(pThing, DPID_ALLPLAYERS, outstream);
             if ( bError )
@@ -236,7 +236,7 @@ int J3DAPI sithGamesave_SaveCurrentWorld(SithMessageStream outstream)
     // Write attachment things state
     for ( size_t i = 0; i < pWorld->numThings; ++i )
     {
-        if ( sithThing_CanSync(&pWorld->aThings[i]) && pWorld->aThings[i].attach.flags )
+        if ( sithThing_CanSyncThing(&pWorld->aThings[i]) && pWorld->aThings[i].attach.flags )
         {
             int bError = sithDSSThing_Attachment(&pWorld->aThings[i], DPID_ALLPLAYERS, outstream, DPSEND_GUARANTEED);
             if ( bError )

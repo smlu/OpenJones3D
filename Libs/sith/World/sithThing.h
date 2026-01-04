@@ -119,7 +119,7 @@ int J3DAPI sithThing_ParseArg(StdConffileArg* pArg, SithWorld* pWorld, SithThing
 int J3DAPI sithThing_ValidateThingPointer(const SithWorld* pWorld, const SithThing* pThing);
 uint32_t J3DAPI sithThing_CalcThingChecksum(const SithThing* pTemplate, uint32_t seed); // Added
 
-int J3DAPI sithThing_CanSync(const SithThing* pThing);
+int J3DAPI sithThing_CanSyncThing(const SithThing* pThing);
 void J3DAPI sithThing_SyncThing(SithThing* pThing, SithThingSyncFlags flags);
 void sithThing_SyncThings(void); // Processes un-synced things
 

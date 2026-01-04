@@ -302,7 +302,7 @@ void sithThing_InstallHooks(void)
     J3D_HOOKFUNC(sithThing_ValidateThingPointer);
     J3D_HOOKFUNC(sithThing_SyncThing);
     J3D_HOOKFUNC(sithThing_SyncThings);
-    J3D_HOOKFUNC(sithThing_CanSync);
+    J3D_HOOKFUNC(sithThing_CanSyncThing);
     J3D_HOOKFUNC(sithThing_GetThingMeshIndex);
     J3D_HOOKFUNC(sithThing_GetThingJointIndex);
     J3D_HOOKFUNC(sithThing_FreeThingIndex);
@@ -3306,9 +3306,9 @@ void sithThing_SyncThings(void)
     sithThing_numUnsyncedThings = 0;
 }
 
-int J3DAPI sithThing_CanSync(const SithThing* pThing)
+int J3DAPI sithThing_CanSyncThing(const SithThing* pThing)
 {
-    if ( pThing->type == SITH_THING_FREE )
+    if ( pThing->type == SITH_THING_FREE || (pThing->flags & SITH_TF_NOSYNC) != 0 ) // Altered: Added check for SITH_TF_NOSYNC flag
     {
         return 0;
     }
