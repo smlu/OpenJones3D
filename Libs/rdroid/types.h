@@ -444,6 +444,7 @@ typedef struct srdPolyline
 
     rdPolylineFlags flags; // Added: new field
 } rdPolyline;
+static_assert(sizeof(rdPolyline) == 164, "sizeof(rdPolyline) == 164");
 
 typedef struct srdParticle
 {

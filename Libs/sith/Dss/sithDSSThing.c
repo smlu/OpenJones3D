@@ -212,19 +212,19 @@ int J3DAPI sithDSSThing_ThingFullDescription(const SithThing* pThing, DPID idTo,
 
     if ( pThing->type == SITH_THING_FREE )
     {
-        SITH_ASSERT(SITHDSS_CURPOS() == 4);
+        SITH_ASSERT(SITHDSS_CURPOS() == 4); // Added: Sanity check
         SITHDSS_ENDOUT;
         return sithMessage_SendMessage(&sithMulti_g_message, idTo, outstream, DPSEND_GUARANTEED);
     }
 
     // Template and identification
-    SITH_ASSERT(SITHDSS_CURPOS() == 4);
+    SITH_ASSERT(SITHDSS_CURPOS() == 4); // Added: Sanity check
     SITHDSS_PUSHINT16(sithTemplate_GetTemplateIndex(pThing->pTemplate));
     SITHDSS_PUSHUINT32(pThing->signature);
     SITHDSS_PUSHINT32(pThing->guid);
 
     // Position and orientation
-    SITH_ASSERT(SITHDSS_CURPOS() == 14);
+    SITH_ASSERT(SITHDSS_CURPOS() == 14); // Added: Sanity check
     SITHDSS_PUSHVEC3(&pThing->pos);
     SITHDSS_PUSHVEC3(&pThing->forceMoveStartPos);
     SITHDSS_PUSHVEC3(&pThing->orient.rvec);
@@ -232,12 +232,12 @@ int J3DAPI sithDSSThing_ThingFullDescription(const SithThing* pThing, DPID idTo,
     SITHDSS_PUSHVEC3(&pThing->orient.uvec);
 
     // Movement and sector
-    SITH_ASSERT(SITHDSS_CURPOS() == 74);
+    SITH_ASSERT(SITHDSS_CURPOS() == 74); // Added: Sanity check
     SITHDSS_PUSHUINT32(pThing->moveStatus);
     SITHDSS_PUSHINT16(sithSector_GetSectorIndex(pThing->pInSector));
 
     // Flags and timers
-    SITH_ASSERT(SITHDSS_CURPOS() == 80);
+    SITH_ASSERT(SITHDSS_CURPOS() == 80); // Added: Sanity check
     SITHDSS_PUSHUINT32(pThing->flags);
     SITHDSS_PUSHUINT32(pThing->msecLifeLeft);
     SITHDSS_PUSHUINT32(pThing->msecTimerTime);
@@ -245,28 +245,28 @@ int J3DAPI sithDSSThing_ThingFullDescription(const SithThing* pThing, DPID idTo,
     SITHDSS_PUSHUINT32(pThing->msecPulseInterval);
 
     // User value and collision
-    SITH_ASSERT(SITHDSS_CURPOS() == 100);
+    SITH_ASSERT(SITHDSS_CURPOS() == 100); // Added: Sanity check
     SITHDSS_PUSHFLOAT(pThing->userval);
     SITHDSS_PUSHUINT16(pThing->collide.type);
     SITHDSS_PUSHFLOAT(pThing->collide.size);
     SITHDSS_PUSHFLOAT(pThing->collide.movesize);
 
     // Light
-    SITH_ASSERT(SITHDSS_CURPOS() == 114);
+    SITH_ASSERT(SITHDSS_CURPOS() == 114); // Added: Sanity check
     SITHDSS_PUSHVEC4(&pThing->light.color);
     SITHDSS_PUSHFLOAT(pThing->light.minRadius);
     SITHDSS_PUSHFLOAT(pThing->light.maxRadius);
 
-    SITH_ASSERT(SITHDSS_CURPOS() == 138);
+    SITH_ASSERT(SITHDSS_CURPOS() == 138); // Added: Sanity check
     SITHDSS_PUSHUINT32(pThing->unknownFlags);
 
     // COG linkage
     if ( (pThing->flags & SITH_TF_COGLINKED) != 0 )
     {
-        SITH_ASSERT(SITHDSS_CURPOS() == 142);
+        SITH_ASSERT(SITHDSS_CURPOS() == 142); // Added: Sanity check
         SITHDSS_PUSHINT16(pThing->pCog ? pThing->pCog->idx : -1);
         SITHDSS_PUSHINT16(pThing->pCaptureCog ? pThing->pCaptureCog->idx : -1);
-        SITH_ASSERT(SITHDSS_CURPOS() == 146);
+        SITH_ASSERT(SITHDSS_CURPOS() == 146); // Added: Sanity check
     }
 
     // Type-specific info
@@ -486,8 +486,20 @@ int J3DAPI sithDSSThing_ThingFullDescription(const SithThing* pThing, DPID idTo,
         }
     }
 
-    // Heh lol why serialize down here :D ?
+    // Note, serialized here as alpha is new field added to SithThing struct in Jones engine.
     SITHDSS_PUSHFLOAT(pThing->alpha);
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // OpenJones3D extension from here onwards
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    if ( pThing->type == SITH_THING_POLYLINE )
+    {
+        // Added: Serialize polyline new flags field
+        SITHDSS_PUSHINT32(pThing->renderData.data.pPolyline->flags);
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     SITHDSS_ENDOUT;
     return sithMessage_SendMessage(&sithMulti_g_message, idTo, (SithMessageStream)outstream, DPSEND_GUARANTEED);
@@ -859,6 +871,17 @@ int J3DAPI sithDSSThing_ProcessThingFullDescription(const SithMessage* pMsg)
     {
         pThing->alpha = alphaValue;
     }
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // OpenJones3D extension from here onwards
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    if ( pThing->type == SITH_THING_POLYLINE )
+    {
+        // Added: Deserialize polyline new flags field
+        pThing->renderData.data.pPolyline->flags = SITHDSS_POPINT32();
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     SITHDSS_ENDIN;
 
