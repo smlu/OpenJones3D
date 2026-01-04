@@ -3551,7 +3551,7 @@ void J3DAPI sithPlayerControls_ExitVehicle(SithThing* pVehiclePlayerThing)
         walkPlayerOrient.uvec = rdroid_g_zVector3;
 
         // Cross product to get forward vector on horizontal plane
-        rdVector_Cross3(&walkPlayerOrient.lvec, &pVehiclePlayerThing->orient.lvec, &walkPlayerOrient.uvec);
+        rdVector_Cross3(&walkPlayerOrient.lvec, &walkPlayerOrient.uvec, &pVehiclePlayerThing->orient.lvec);
         rdVector_Normalize3Acc(&walkPlayerOrient.lvec);
 
         rdVector_Cross3(&walkPlayerOrient.rvec, &walkPlayerOrient.lvec, &walkPlayerOrient.uvec);
