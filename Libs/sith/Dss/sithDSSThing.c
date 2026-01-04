@@ -93,7 +93,7 @@ int J3DAPI sithDSSThing_ProcessMovePos(const SithMessage* pMsg)
     return J3D_TRAMPOLINE_CALL(sithDSSThing_ProcessMovePos, pMsg);
 }
 
-int J3DAPI sithDSSThing_UpdateState(const SithThing* pThing, DPID toID, unsigned int outstream)
+int J3DAPI sithDSSThing_UpdateState(const SithThing* pThing, DPID toID, SithMessageStream outstream)
 {
     return J3D_TRAMPOLINE_CALL(sithDSSThing_UpdateState, pThing, toID, outstream);
 }
@@ -103,7 +103,7 @@ int J3DAPI sithDSSThing_ProcessStateUpdate(const SithMessage* pMsg)
     return J3D_TRAMPOLINE_CALL(sithDSSThing_ProcessStateUpdate, pMsg);
 }
 
-int J3DAPI sithDSSThing_PlaySound(const SithThing* pThing, const rdVector3* pPos, tSoundHandle hSnd, float volume, float pan, SoundPlayFlag playflags, int guid, DPID idTo, unsigned int outstream)
+int J3DAPI sithDSSThing_PlaySound(const SithThing* pThing, const rdVector3* pPos, tSoundHandle hSnd, float volume, float pan, SoundPlayFlag playflags, int guid, DPID idTo, SithMessageStream outstream)
 {
     return J3D_TRAMPOLINE_CALL(sithDSSThing_PlaySound, pThing, pPos, hSnd, volume, pan, playflags, guid, idTo, outstream);
 }
@@ -123,7 +123,7 @@ int J3DAPI sithDSSThing_ProcessPlaySoundMode(const SithMessage* pMsg)
     return J3D_TRAMPOLINE_CALL(sithDSSThing_ProcessPlaySoundMode, pMsg);
 }
 
-int J3DAPI sithDSSThing_PlayKey(const SithThing* pThing, const rdKeyframe* pKey, rdKeyframeFlags flags, int16_t lo, unsigned int trackGUID, DPID idTo, unsigned int outstream)
+int J3DAPI sithDSSThing_PlayKey(const SithThing* pThing, const rdKeyframe* pKey, rdKeyframeFlags flags, int16_t lo, unsigned int trackGUID, DPID idTo, SithMessageStream outstream)
 {
     return J3D_TRAMPOLINE_CALL(sithDSSThing_PlayKey, pThing, pKey, flags, lo, trackGUID, idTo, outstream);
 }
@@ -133,7 +133,7 @@ int J3DAPI sithDSSThing_ProcessPlayKey(const SithMessage* pMsg)
     return J3D_TRAMPOLINE_CALL(sithDSSThing_ProcessPlayKey, pMsg);
 }
 
-int J3DAPI sithDSSThing_PlayKeyMode(const SithThing* pThing, SithPuppetSubMode mode, unsigned int trackGUID, DPID idTo, unsigned int outstream)
+int J3DAPI sithDSSThing_PlayKeyMode(const SithThing* pThing, SithPuppetSubMode mode, unsigned int trackGUID, DPID idTo, SithMessageStream outstream)
 {
     return J3D_TRAMPOLINE_CALL(sithDSSThing_PlayKeyMode, pThing, mode, trackGUID, idTo, outstream);
 }
@@ -153,7 +153,7 @@ int J3DAPI sithDSSThing_ProcessSetModel(const SithMessage* pMsg)
     return J3D_TRAMPOLINE_CALL(sithDSSThing_ProcessSetModel, pMsg);
 }
 
-int J3DAPI sithDSSThing_StopKey(const SithThing* pThing, int trackGUID, float fadeTime, DPID idTo, unsigned int outstream)
+int J3DAPI sithDSSThing_StopKey(const SithThing* pThing, int trackGUID, float fadeTime, DPID idTo, SithMessageStream outstream)
 {
     return J3D_TRAMPOLINE_CALL(sithDSSThing_StopKey, pThing, trackGUID, fadeTime, idTo, outstream);
 }
@@ -163,7 +163,7 @@ int J3DAPI sithDSSThing_ProcessStopKey(const SithMessage* pMsg)
     return J3D_TRAMPOLINE_CALL(sithDSSThing_ProcessStopKey, pMsg);
 }
 
-int J3DAPI sithDSSThing_StopSound(tSoundChannelHandle hChannel, float secFadeTime, DPID idTo, unsigned int outstream)
+int J3DAPI sithDSSThing_StopSound(tSoundChannelHandle hChannel, float secFadeTime, DPID idTo, SithMessageStream outstream)
 {
     return J3D_TRAMPOLINE_CALL(sithDSSThing_StopSound, hChannel, secFadeTime, idTo, outstream);
 }
@@ -173,7 +173,7 @@ int J3DAPI sithDSSThing_ProcessStopSound(const SithMessage* pMsg)
     return J3D_TRAMPOLINE_CALL(sithDSSThing_ProcessStopSound, pMsg);
 }
 
-int J3DAPI sithDSSThing_Fire(const SithThing* pShooter, const SithThing* pProjectileTemplate, const rdVector3* fireDir, const rdVector3* firePos, tSoundHandle hFireSnd, uint16_t puppetSubmode, float extra, int16_t projectileFlags, float sedRapidFireTime, int projectileGUID, DPID idTo, unsigned int outstream)
+int J3DAPI sithDSSThing_Fire(const SithThing* pShooter, const SithThing* pProjectileTemplate, const rdVector3* fireDir, const rdVector3* firePos, tSoundHandle hFireSnd, uint16_t puppetSubmode, float extra, int16_t projectileFlags, float sedRapidFireTime, int projectileGUID, DPID idTo, SithMessageStream outstream)
 {
     return J3D_TRAMPOLINE_CALL(sithDSSThing_Fire, pShooter, pProjectileTemplate, fireDir, firePos, hFireSnd, puppetSubmode, extra, projectileFlags, sedRapidFireTime, projectileGUID, idTo, outstream);
 }
@@ -183,7 +183,7 @@ int J3DAPI sithDSSThing_ProcessFire(const SithMessage* pMsg)
     return J3D_TRAMPOLINE_CALL(sithDSSThing_ProcessFire, pMsg);
 }
 
-int J3DAPI sithDSSThing_Death(const SithThing* pThing, const SithThing* pKiller, char bKillPlayer, DPID to, unsigned int outstream)
+int J3DAPI sithDSSThing_Death(const SithThing* pThing, const SithThing* pKiller, char bKillPlayer, DPID to, SithMessageStream outstream)
 {
     return J3D_TRAMPOLINE_CALL(sithDSSThing_Death, pThing, pKiller, bKillPlayer, to, outstream);
 }
@@ -193,7 +193,7 @@ int J3DAPI sithDSSThing_ProcessDeath(const SithMessage* pMsg)
     return J3D_TRAMPOLINE_CALL(sithDSSThing_ProcessDeath, pMsg);
 }
 
-int J3DAPI sithDSSThing_DamageThing(const SithThing* pVictim, const SithThing* pPurpetrator, float damage, SithDamageType hitType, DPID idTo, unsigned int outstream)
+int J3DAPI sithDSSThing_DamageThing(const SithThing* pVictim, const SithThing* pPurpetrator, float damage, SithDamageType hitType, DPID idTo, SithMessageStream outstream)
 {
     return J3D_TRAMPOLINE_CALL(sithDSSThing_DamageThing, pVictim, pPurpetrator, damage, hitType, idTo, outstream);
 }
@@ -896,7 +896,7 @@ int J3DAPI sithDSSThing_ProcessThingFullDescription(const SithMessage* pMsg)
     return 1;
 }
 
-int J3DAPI sithDSSThing_PathMove(const SithThing* pThing, int16_t frame, float speed, int moveType, DPID idTO, unsigned int outstream)
+int J3DAPI sithDSSThing_PathMove(const SithThing* pThing, int16_t frame, float speed, int moveType, DPID idTO, SithMessageStream outstream)
 {
     return J3D_TRAMPOLINE_CALL(sithDSSThing_PathMove, pThing, frame, speed, moveType, idTO, outstream);
 }
@@ -906,7 +906,7 @@ int J3DAPI sithDSSThing_ProcessPathMove(const SithMessage* pMsg)
     return J3D_TRAMPOLINE_CALL(sithDSSThing_ProcessPathMove, pMsg);
 }
 
-int J3DAPI sithDSSThing_Attachment(const SithThing* pThing, DPID idTo, unsigned int outstream, unsigned int sendFlags)
+int J3DAPI sithDSSThing_Attachment(const SithThing* pThing, DPID idTo, SithMessageStream outstream, unsigned int sendFlags)
 {
     SITHDSS_STARTOUT(SITHDSS_ATTACHMENT);
     SITHDSS_PUSHINT32(pThing->guid);
@@ -1074,7 +1074,7 @@ int J3DAPI sithDSSThing_ProcessAttachment(const SithMessage* pMsg)
     return 1;
 }
 
-int J3DAPI sithDSSThing_Take(const SithThing* pItem, const SithThing* pThing, unsigned int outstream)
+int J3DAPI sithDSSThing_Take(const SithThing* pItem, const SithThing* pThing, SithMessageStream outstream)
 {
     return J3D_TRAMPOLINE_CALL(sithDSSThing_Take, pItem, pThing, outstream);
 }
@@ -1084,7 +1084,7 @@ int J3DAPI sithDSSThing_ProcessTake(const SithMessage* pMsg)
     return J3D_TRAMPOLINE_CALL(sithDSSThing_ProcessTake, pMsg);
 }
 
-int J3DAPI sithDSSThing_CreateThing(const SithThing* pTemplate, const SithThing* pNewThing, const SithThing* pMarker, const SithSector* pSector, const rdVector3* pos, const rdVector3* pyr, unsigned int outstream, unsigned int sendFlags)
+int J3DAPI sithDSSThing_CreateThing(const SithThing* pTemplate, const SithThing* pNewThing, const SithThing* pMarker, const SithSector* pSector, const rdVector3* pos, const rdVector3* pyr, SithMessageStream outstream, unsigned int sendFlags)
 {
     return J3D_TRAMPOLINE_CALL(sithDSSThing_CreateThing, pTemplate, pNewThing, pMarker, pSector, pos, pyr, outstream, sendFlags);
 }

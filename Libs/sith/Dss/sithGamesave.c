@@ -238,7 +238,7 @@ int J3DAPI sithGamesave_SaveCurrentWorld(SithMessageStream outstream)
     {
         if ( sithThing_CanSync(&pWorld->aThings[i]) && pWorld->aThings[i].attach.flags )
         {
-            int bError = sithDSSThing_Attachment(&pWorld->aThings[i], DPID_ALLPLAYERS, outstream, 1u);
+            int bError = sithDSSThing_Attachment(&pWorld->aThings[i], DPID_ALLPLAYERS, outstream, DPSEND_GUARANTEED);
             if ( bError )
             {
                 return bError;
