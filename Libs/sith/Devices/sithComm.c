@@ -138,7 +138,7 @@ void sithMessage_ProcessMessages(void)
         if ( sithMulti_g_message.type != SITHDSS_WELCOME
             && sithMulti_g_message.type != SITHDSS_JOIN
             && sithMulti_g_message.type != SITHDSS_SYNCPLAYERS
-            && (sithMain_g_sith_mode.subModeFlags & 8) == 0 )
+            && (sithMain_g_sith_mode.subModeFlags & SITH_SUBMODE_SYNC) == 0 )
         {
             SITHLOG_ERROR("Ignored message type %d from non-active sender %x.\n", sithMulti_g_message.type, sithMessage_senderId);
 
@@ -215,7 +215,7 @@ int J3DAPI sithMessage_ReceiveMessage(SithMessage* pMsg, DPID* pSender)
         return 1;
     }
 
-    if ( (sithMain_g_sith_mode.subModeFlags & 8) != 0 )
+    if ( (sithMain_g_sith_mode.subModeFlags & SITH_SUBMODE_SYNC) != 0 )
     {
         return 0;
     }
@@ -370,7 +370,7 @@ void J3DAPI sithMessage_CheckMembershipList(DPID idTo)
 
 int J3DAPI sithMessage_ProcessCheckMembershipList(const SithMessage* pMsg)
 {
-    if ( stdComm_IsGameHost() || (sithMain_g_sith_mode.subModeFlags & 8) == 0 )
+    if ( stdComm_IsGameHost() || (sithMain_g_sith_mode.subModeFlags & SITH_SUBMODE_SYNC) == 0 )
     {
         SITHLOG_STATUS("Ignoring MembershipList check from %x.\n", sithMessage_senderId);
         return 1;

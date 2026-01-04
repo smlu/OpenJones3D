@@ -136,7 +136,7 @@ int J3DAPI sithGamesave_Save(const char* pFilename, int bOverWrite)
     SITH_ASSERTREL(pWorld);
 
     // Multiplayer game?
-    if ( (sithMain_g_sith_mode.subModeFlags & 1) != 0 )
+    if ( (sithMain_g_sith_mode.subModeFlags & 0x01) != 0 )
     {
         return 1;
     }
