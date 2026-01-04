@@ -421,7 +421,7 @@ void J3DAPI sithPhysics_FindFloor(SithThing* pThing, int bNoSurfaceImpactUpdate)
                             bFlatSurface = rdVector_Dot3(&faceNormal, &rdroid_g_zVector3) >= 0.60000002f;
                         }
 
-                        if ( !bSkipFloorCheck || bFlatSurface )
+                        if ( bSkipFloorCheck || bFlatSurface )
                         {
                             sithThing_AttachThingToThingFace(
                                 pThing,
@@ -430,6 +430,7 @@ void J3DAPI sithPhysics_FindFloor(SithThing* pThing, int bNoSurfaceImpactUpdate)
                                 pCollision->pMeshCollided->apVertices,
                                 bNoSurfaceImpactUpdate
                             );
+
                             sithCollision_DecreaseStackLevel();
                             return;
                         }
