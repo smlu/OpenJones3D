@@ -146,67 +146,6 @@ int J3DAPI sithDSS_ProcessAnimStatus(const SithMessage* pMsg)
     return J3D_TRAMPOLINE_CALL(sithDSS_ProcessAnimStatus, pMsg);
 }
 
-//int J3DAPI sithDSS_PuppetStatus(const SithThing* pThing, DPID idTo, unsigned int outstream)
-//{
-//    return J3D_TRAMPOLINE_CALL(sithDSS_PuppetStatus, pThing, idTo, outstream);
-//}
-//
-//int J3DAPI sithDSS_ProcessPuppetStatus(const SithMessage* pMsg)
-//{
-//    return J3D_TRAMPOLINE_CALL(sithDSS_ProcessPuppetStatus, pMsg);
-//}
-
-int J3DAPI sithDSS_SyncTaskEvents(const SithEvent* pEvent, DPID idTo, unsigned int outstream)
-{
-    return J3D_TRAMPOLINE_CALL(sithDSS_SyncTaskEvents, pEvent, idTo, outstream);
-}
-
-int J3DAPI sithDSS_ProcessSyncTaskEvents(const SithMessage* pMsg)
-{
-    return J3D_TRAMPOLINE_CALL(sithDSS_ProcessSyncTaskEvents, pMsg);
-}
-
-int J3DAPI sithDSS_SyncCameras(DPID idTo, unsigned int outstream)
-{
-    return J3D_TRAMPOLINE_CALL(sithDSS_SyncCameras, idTo, outstream);
-}
-
-int J3DAPI sithDSS_ProcessSyncCameras(const SithMessage* pMsg)
-{
-    return J3D_TRAMPOLINE_CALL(sithDSS_ProcessSyncCameras, pMsg);
-}
-
-int J3DAPI sithDSS_SyncGameState(DPID idTo, unsigned int outstream)
-{
-    return J3D_TRAMPOLINE_CALL(sithDSS_SyncGameState, idTo, outstream);
-}
-
-int J3DAPI sithDSS_ProcessSyncGameState(const SithMessage* pMsg)
-{
-    return J3D_TRAMPOLINE_CALL(sithDSS_ProcessSyncGameState, pMsg);
-}
-
-int J3DAPI sithDSS_SyncVehicleControlState(DPID idTo, unsigned int outstream)
-{
-    return J3D_TRAMPOLINE_CALL(sithDSS_SyncVehicleControlState, idTo, outstream);
-}
-
-int J3DAPI sithDSS_ProcessVehicleControlsState(const SithMessage* pMsg)
-{
-    return J3D_TRAMPOLINE_CALL(sithDSS_ProcessVehicleControlsState, pMsg);
-}
-
-int J3DAPI sithDSS_sub_4B3760(DPID idTo, unsigned int outstream)
-{
-    return J3D_TRAMPOLINE_CALL(sithDSS_sub_4B3760, idTo, outstream);
-}
-
-int J3DAPI sithDSS_sub_4B3790(const SithMessage* pMsg)
-{
-    return J3D_TRAMPOLINE_CALL(sithDSS_sub_4B3790, pMsg);
-}
-
-
 int J3DAPI sithDSS_PuppetStatus(const SithThing* pThing, DPID idTo, unsigned int outstream)
 {
     SITH_ASSERTREL(pThing && pThing->renderData.pPuppet);
@@ -484,4 +423,54 @@ int J3DAPI sithDSS_ProcessPuppetStatus(const SithMessage* pMsg)
 
     SITHDSS_ENDIN;
     return 1;
+}
+
+int J3DAPI sithDSS_SyncTaskEvents(const SithEvent* pEvent, DPID idTo, unsigned int outstream)
+{
+    return J3D_TRAMPOLINE_CALL(sithDSS_SyncTaskEvents, pEvent, idTo, outstream);
+}
+
+int J3DAPI sithDSS_ProcessSyncTaskEvents(const SithMessage* pMsg)
+{
+    return J3D_TRAMPOLINE_CALL(sithDSS_ProcessSyncTaskEvents, pMsg);
+}
+
+int J3DAPI sithDSS_SyncCameras(DPID idTo, unsigned int outstream)
+{
+    return J3D_TRAMPOLINE_CALL(sithDSS_SyncCameras, idTo, outstream);
+}
+
+int J3DAPI sithDSS_ProcessSyncCameras(const SithMessage* pMsg)
+{
+    return J3D_TRAMPOLINE_CALL(sithDSS_ProcessSyncCameras, pMsg);
+}
+
+int J3DAPI sithDSS_SyncGameState(DPID idTo, unsigned int outstream)
+{
+    return J3D_TRAMPOLINE_CALL(sithDSS_SyncGameState, idTo, outstream);
+}
+
+int J3DAPI sithDSS_ProcessSyncGameState(const SithMessage* pMsg)
+{
+    return J3D_TRAMPOLINE_CALL(sithDSS_ProcessSyncGameState, pMsg);
+}
+
+int J3DAPI sithDSS_SyncVehicleControlState(DPID idTo, unsigned int outstream)
+{
+    return J3D_TRAMPOLINE_CALL(sithDSS_SyncVehicleControlState, idTo, outstream);
+}
+
+int J3DAPI sithDSS_ProcessVehicleControlsState(const SithMessage* pMsg)
+{
+    return J3D_TRAMPOLINE_CALL(sithDSS_ProcessVehicleControlsState, pMsg);
+}
+
+int J3DAPI sithDSS_sub_4B3760(DPID idTo, unsigned int outstream)
+{
+    return J3D_TRAMPOLINE_CALL(sithDSS_sub_4B3760, idTo, outstream);
+}
+
+int J3DAPI sithDSS_sub_4B3790(const SithMessage* pMsg)
+{
+    return J3D_TRAMPOLINE_CALL(sithDSS_sub_4B3790, pMsg);
 }

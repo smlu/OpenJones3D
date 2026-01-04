@@ -435,8 +435,16 @@ int J3DAPI sithDSSThing_ThingFullDescription(const SithThing* pThing, DPID idTo,
     SITHDSS_PUSHUINT32(pThing->numSwapEntries);
 
     // 3DO model index and insert offset
-    // TODO: Why is this even necessary?
-    if ( pThing->renderData.data.pModel3 ) // TODO [BUG]: Should not check for pModel3 pointer as other rd primitives can have pointer  assigned.. instead it should check for rd type == model3
+    // TODO: Why is this even necessary. Assuming due to model could be changed at runtime, e.g.: via COG script
+    // Fixed: Added check for render type to be RD_THING_MODEL3. OG was checking only for pModel3 being non-null,
+    //        This was causing serialization corruption when thing had different render type and sithModel_GetModelIndex would return -1 but still write insertOffset.
+    //        Such thing would then deserialize incorrectly, as insertOffset wouldn't be read when model index was -1, causing all subsequent data to be misaligned.
+    // 
+    //        For example, a sprite thing would serialize data of 2D vector pThing->renderData.data.pSprite3->face.texVertOffset
+    //        and pThing->renderData.data.pSprite3->face.extraLight.red. But on deserialization, since model index would be -1,
+    //        these values wouldn't be read out as insertOffset vector and pThing->alpha = pThing->renderData.data.pSprite3->face.texVertOffset.x
+    //        causing thing transparency value to be incorrect.
+    if ( pThing->renderData.type == RD_THING_MODEL3 && pThing->renderData.data.pModel3 )
     {
         SITHDSS_PUSHINT16(sithModel_GetModelIndex(pThing->renderData.data.pModel3));
         SITHDSS_PUSHVEC3(&pThing->renderData.data.pModel3->insertOffset);
@@ -804,6 +812,7 @@ int J3DAPI sithDSSThing_ProcessThingFullDescription(const SithMessage* pMsg)
     int16_t modelIdx = SITHDSS_POPINT16();
     if ( modelIdx != -1 )
     {
+        // TODO: just to be sure, maybe add check for renderData type == model3 as well?
         rdModel3* pModel = sithModel_GetModelByIndex(modelIdx);
         if ( pModel && pThing->renderData.data.pModel3 != pModel )
         {
@@ -814,8 +823,7 @@ int J3DAPI sithDSSThing_ProcessThingFullDescription(const SithMessage* pMsg)
     }
 
     // Actor/Player weapon and voice info
-    SithThingType type = pThing->type;
-    if ( type == SITH_THING_ACTOR || type == SITH_THING_PLAYER )
+    if ( pThing->type == SITH_THING_ACTOR || pThing->type == SITH_THING_PLAYER )
     {
         SithActorWeaponInfo* pWeaponInfo = &pThing->thingInfo.actorInfo.weaponInfo;
         SithActorVoiceInfo* pVoiceInfo   = &pThing->thingInfo.actorInfo.voiceInfo;
@@ -854,11 +862,13 @@ int J3DAPI sithDSSThing_ProcessThingFullDescription(const SithMessage* pMsg)
 
     SITHDSS_ENDIN;
 
-    // TODO: Wrap in debug build macros when stable
+    // Added: Sanity check to see if all bytes were consumed from the message
+#ifdef J3D_DEBUG
     if ( SITHDSS_CURPOS() != pMsg->length )
     {
         SITHLOG_ERROR("sithDSSThing_ProcessThingFullDescription: Not all data was processed for thing: %s [curpos: %d msglen: %d]\n", pThing->aName, SITHDSS_CURPOS(), pMsg->length);
     }
+#endif
 
     return 1;
 }
