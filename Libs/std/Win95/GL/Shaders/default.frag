@@ -18,11 +18,11 @@ void main()
     {
         vertColor.xyz += CalculateLightColor(vWorldPos);
     }
+    vertColor = clamp(vertColor, vec4(0.0f), vec4(1.0f));
     FragColor = vec4(vertColor * texColor);
     if (FragColor.a <= 0.0f) {
         discard;
     }
     FragColor.rgb = ApplyFog(FragColor.rgb, 1.0f / gl_FragCoord.w);
-    FragColor = clamp(FragColor, vec4(0.0f), vec4(1.0f));
 
 }
