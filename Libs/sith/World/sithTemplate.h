@@ -9,7 +9,6 @@
 
 J3D_EXTERN_C_START
 
-
 int sithTemplate_Startup(void);
 void J3DAPI sithTemplate_Shutdown(void);
 
@@ -19,6 +18,7 @@ void J3DAPI sithTemplate_FreeWorldTemplates(SithWorld* pWorld);
 SithThing* J3DAPI sithTemplate_GetTemplateByIndex(int idx);
 int J3DAPI sithTemplate_GetTemplateIndex(const SithThing* pTemplate);
 
+//int J3DAPI sithTemplate_WriteThingTemplateListText(const SithWorld* pWorld); // Added from debug
 int J3DAPI sithTemplate_ReadThingTemplatesListText(SithWorld* pWorld, int bSkip);
 int J3DAPI sithTemplate_WriteThingTemplatesListBinary(tFileHandle fh, const SithWorld* pWorld);
 int J3DAPI sithTemplate_ReadThingTemplatesListBinary(tFileHandle fh, SithWorld* pWorld);

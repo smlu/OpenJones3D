@@ -98,7 +98,7 @@ int J3DAPI sithTemplate_AllocWorldTemplates(SithWorld* pWorld, size_t size)
         return 1;
     }
 
-    memset(pWorld->aThingTemplates, 0, sizeof(SithThing) * size);
+    STD_ZEROMEM(pWorld->aThingTemplates, sizeof(SithThing) * size);
 
     for ( size_t i = 0; i < size; ++i )
     {
@@ -160,6 +160,61 @@ int J3DAPI sithTemplate_GetTemplateIndex(const SithThing* pTemplate)
 
     return -1;
 }
+
+// TODO: Uncomment after stdConffile_WriteLine function is implemented.
+//int J3DAPI sithTemplate_WriteThingTemplateListText(const SithWorld* pWorld)
+//{
+//    SithThing baseTpl = { 0 }; // Altered: Init to 0
+//    baseTpl.idx       = 0;
+//    baseTpl.signature = 0;
+//
+//    sithThing_Reset(&baseTpl);
+//
+//    if ( stdConffile_WriteLine("##### Templates information ####\n")
+//        || stdConffile_WriteLine("Section: TEMPLATES\n")
+//        || stdConffile_Printf("\nWorld templates %d\n\n", pWorld->numThingTemplates)
+//        || stdConffile_WriteLine("#Name:           Based On:        Params:\n") )
+//    {
+//        return 1;
+//    }
+//
+//    for ( size_t i = 0; i < pWorld->numThingTemplates; ++i )
+//    {
+//        SithThing* pTemplate      = &pWorld->aThingTemplates[i];
+//        const SithThing* pBaseTpl = pTemplate->pTemplate;
+//
+//        if ( pTemplate->type == SITH_THING_FREE || pTemplate->type >= SITH_THING_NUMTYPES )
+//        {
+//            sith_g_pHS->pAssert(
+//                "(pTemplate->type != SITH_THING_FREE) && (pTemplate->type < SITH_THING_NUMTYPES)",
+//                "C:\\Jones3D\\Libs\\sith\\World\\sithTemplate.c",
+//                197);
+//        }
+//
+//        const char* pBaseName = "none";
+//        if ( pBaseTpl )
+//        {
+//            pBaseName = pBaseTpl->aName;
+//        }
+//
+//        if ( stdConffile_Printf("%-16s %-16s ", pTemplate->aName, pBaseName) )
+//        {
+//            return 1;
+//        }
+//
+//        if ( !pBaseTpl )
+//        {
+//            pBaseTpl = &baseTpl;
+//        }
+//
+//        if ( sithWrite_WriteThingArgs(pTemplate, pBaseTpl, 1) || stdConffile_WriteLine("\n") )
+//        {
+//            return 1;
+//        }
+//    }
+//
+//    return stdConffile_WriteLine("end\n") || stdConffile_WriteLine("################################\n\n\n");
+//}
 
 int J3DAPI sithTemplate_ReadThingTemplatesListText(SithWorld* pWorld, int bSkip)
 {
@@ -229,7 +284,7 @@ int J3DAPI sithTemplate_LoadMasterFile(const char* pFilename)
         return 1;
     }
 
-    memset(sithTemplate_pMasterFile, 0, SITHTEMPLAT_MAXFILETEMPLATES * sizeof(SithTemplate));
+    STD_ZEROMEM(sithTemplate_pMasterFile, SITHTEMPLAT_MAXFILETEMPLATES * sizeof(SithTemplate));
 
     bool bFinished = false;
     const char* pDesc = NULL;
@@ -253,7 +308,8 @@ int J3DAPI sithTemplate_LoadMasterFile(const char* pFilename)
         }
         else if ( aFirstToken[0] )
         {
-            if ( !pEnd ) {
+            if ( !pEnd )
+            {
                 SITHLOG_ERROR("Syntax Error in file %s on line %d\n", pFilename, stdConffile_GetLineNumber());
             }
             else
@@ -261,6 +317,7 @@ int J3DAPI sithTemplate_LoadMasterFile(const char* pFilename)
                 char aBasedOn[64];
                 stdUtil_StringSplit(pEnd, aBasedOn, STD_ARRAYLEN(aBasedOn), " \t");
                 const char* pBaseOn = stdUtil_StringDuplicate(aBasedOn, sith_g_pHS);
+
                 const char* pText = stdUtil_StringDuplicate(stdConffile_g_aLine, sith_g_pHS);
                 const char* pName = stdUtil_StringDuplicate(aFirstToken, sith_g_pHS);
                 sithTemplate_MasterFileAddTemplate(pName, pDesc, pText, pBaseOn);
@@ -280,28 +337,28 @@ void sithTemplate_FreeMasterFile(void)
     {
         if ( sithTemplate_pMasterFile[i].pName )
         {
-            stdMemory_Free((void*)sithTemplate_pMasterFile[i].pName);
+            STDFREE((void*)sithTemplate_pMasterFile[i].pName);
         }
 
         if ( sithTemplate_pMasterFile[i].pText )
         {
-            stdMemory_Free((void*)sithTemplate_pMasterFile[i].pText);
+            STDFREE((void*)sithTemplate_pMasterFile[i].pText);
         }
 
         if ( sithTemplate_pMasterFile[i].pBasedOn )
         {
-            stdMemory_Free((void*)sithTemplate_pMasterFile[i].pBasedOn);
+            STDFREE((void*)sithTemplate_pMasterFile[i].pBasedOn);
         }
 
         if ( sithTemplate_pMasterFile[i].pDescription )
         {
-            stdMemory_Free((void*)sithTemplate_pMasterFile[i].pDescription);
+            STDFREE((void*)sithTemplate_pMasterFile[i].pDescription);
         }
     }
 
     if ( sithTemplate_pMasterFile )
     {
-        stdMemory_Free(sithTemplate_pMasterFile);
+        STDFREE(sithTemplate_pMasterFile);
         sithTemplate_pMasterFile = NULL;
     }
 
@@ -357,7 +414,8 @@ SithTemplate* J3DAPI sithTemplate_MasterFileGetTemplate(const char* pName)
 {
     SITH_ASSERTREL(pName != NULL);
 
-    if ( !sithTemplate_pMasterHashtable ) {
+    if ( !sithTemplate_pMasterHashtable )
+    {
         return NULL;
     }
 
@@ -382,7 +440,7 @@ void J3DAPI sithTemplate_FreeWorldTemplates(SithWorld* pWorld)
     {
         SITH_ASSERTREL(pWorld->sizeThingTemplates > 0);
 
-        stdMemory_Free(pWorld->aThingTemplates);
+        STDFREE(pWorld->aThingTemplates);
         pWorld->aThingTemplates    = NULL;
         pWorld->sizeThingTemplates = 0;
         pWorld->numThingTemplates  = 0;
@@ -487,7 +545,7 @@ SithThing* J3DAPI sithTemplate_Parse(SithWorld* pWorld)
     // Copy template to word template array
     pTemplate = &pWorld->aThingTemplates[pWorld->numThingTemplates++];
     newTemplate.idx = pTemplate->idx;
-    memcpy(pTemplate, &newTemplate, sizeof(SithThing));
+    STD_COPYMEM(pTemplate, &newTemplate, sizeof(SithThing));
 
     sithTemplate_CacheAdd(pTemplate);
     return pTemplate;
