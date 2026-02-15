@@ -67,7 +67,8 @@ Gob* J3DAPI stdGob_Load(const char* pFilename, int numFileHandles, int bMMapFile
     }
 
     memset(pGob, 0, sizeof(Gob));
-    if ( !stdGob_LoadEntry(pGob, pFilename, numFileHandles, bMMapFile) ) {
+    if ( !stdGob_LoadEntry(pGob, pFilename, numFileHandles, bMMapFile) )
+    {
         return NULL;
     }
 
@@ -288,7 +289,6 @@ int J3DAPI stdGob_FileSeek(GobFileHandle* pHandle, int offset, int origin)
             break;
         default:
             return 0;
-
     }
 
     if ( pHandle == pHandle->pGob->pCurHandle )

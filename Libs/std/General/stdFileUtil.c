@@ -17,8 +17,7 @@ void stdFileUtil_InstallHooks(void)
 }
 
 void stdFileUtil_ResetGlobals(void)
-{
-}
+{}
 
 time_t FileTimeToUnixTime(const FILETIME* ft)
 {
@@ -41,13 +40,15 @@ time_t FileTimeToUnixTime(const FILETIME* ft)
 FindFileData* J3DAPI stdFileUtil_NewFind(const char* path, int mode, const char* pFilter)
 {
     FindFileData* pData = (FindFileData*)STDMALLOC(sizeof(FindFileData));
-    if ( !pData ) {
+    if ( !pData )
+    {
         return NULL;
     }
 
     memset(pData, 0, sizeof(FindFileData));
 
-    if ( mode < 0 ) {
+    if ( mode < 0 )
+    {
         return pData;
     }
 
@@ -57,11 +58,13 @@ FindFileData* J3DAPI stdFileUtil_NewFind(const char* path, int mode, const char*
         return pData;
     }
 
-    if ( mode != 3 ) {
+    if ( mode != 3 )
+    {
         return pData;
     }
 
-    if ( *pFilter == '.' ) {
+    if ( *pFilter == '.' )
+    {
         pFilter++;
     }
 
@@ -74,7 +77,8 @@ void J3DAPI stdFileUtil_DisposeFind(FindFileData* ffData)
 {
     if ( ffData )
     {
-        if ( ffData->nFoundFiles ) {
+        if ( ffData->nFoundFiles )
+        {
             FindClose(ffData->handle);
         }
         stdMemory_Free(ffData);
@@ -85,7 +89,8 @@ int J3DAPI stdFileUtil_FindNext(FindFileData* ffData, tFoundFileInfo* pFileInfo)
 {
     WIN32_FIND_DATA findData;
 
-    if ( !ffData ) {
+    if ( !ffData )
+    {
         return 0;
     }
 
@@ -93,14 +98,16 @@ int J3DAPI stdFileUtil_FindNext(FindFileData* ffData, tFoundFileInfo* pFileInfo)
     ffData->nFoundFiles = nFoundFiles + 1;
     if ( nFoundFiles )
     {
-        if ( !FindNextFile(ffData->handle, &findData) ) {
+        if ( !FindNextFile(ffData->handle, &findData) )
+        {
             return 0;
         }
     }
     else
     {
         ffData->handle = FindFirstFile(ffData->aSearchFilter, &findData);
-        if ( ffData->handle == INVALID_HANDLE_VALUE ) {
+        if ( ffData->handle == INVALID_HANDLE_VALUE )
+        {
             return 0;
         }
     }
@@ -136,7 +143,8 @@ int J3DAPI stdFileUtil_CountMatches(const char* pPath, int mode, const char* pFi
         return 0;
     }
 
-    while ( stdFileUtil_FindNext(pFileData, &fileInfo) ) {
+    while ( stdFileUtil_FindNext(pFileData, &fileInfo) )
+    {
         ++count;
     }
 
