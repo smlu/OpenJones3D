@@ -22,7 +22,6 @@
 #include <std/General/stdUtil.h>
 #include <std/Win95/stdComm.h>
 
-
 void sithDSSThing_InstallHooks(void)
 {
     // Uncomment only lines for functions that have full definition and doesn't call original function (non-thunk functions)
@@ -69,9 +68,7 @@ void sithDSSThing_InstallHooks(void)
 }
 
 void sithDSSThing_ResetGlobals(void)
-{
-
-}
+{}
 
 int J3DAPI sithDSSThing_Pos(const SithThing* pThing, DPID toID, unsigned int dpFlags)
 {
@@ -439,7 +436,7 @@ int J3DAPI sithDSSThing_ThingFullDescription(const SithThing* pThing, DPID idTo,
     // Fixed: Added check for render type to be RD_THING_MODEL3. OG was checking only for pModel3 being non-null,
     //        This was causing serialization corruption when thing had different render type and sithModel_GetModelIndex would return -1 but still write insertOffset.
     //        Such thing would then deserialize incorrectly, as insertOffset wouldn't be read when model index was -1, causing all subsequent data to be misaligned.
-    // 
+    //
     //        For example, a sprite thing would serialize data of 2D vector pThing->renderData.data.pSprite3->face.texVertOffset
     //        and pThing->renderData.data.pSprite3->face.extraLight.red. But on deserialization, since model index would be -1,
     //        these values wouldn't be read out as insertOffset vector and pThing->alpha = pThing->renderData.data.pSprite3->face.texVertOffset.x
@@ -875,10 +872,13 @@ int J3DAPI sithDSSThing_ProcessThingFullDescription(const SithMessage* pMsg)
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // OpenJones3D extension from here onwards
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    if ( pThing->type == SITH_THING_POLYLINE )
+    if ( SITHDSS_CURPOS() != pMsg->length ) // Only new streams will have extra data (savegame files create with oj3D >= v0.4)
     {
-        // Added: Deserialize polyline new flags field
-        pThing->renderData.data.pPolyline->flags = SITHDSS_POPINT32();
+        if ( pThing->type == SITH_THING_POLYLINE )
+        {
+            // Added: Deserialize polyline new flags field
+            pThing->renderData.data.pPolyline->flags = SITHDSS_POPINT32();
+        }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
