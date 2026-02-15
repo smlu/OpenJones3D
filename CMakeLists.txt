@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.10)
 
 project(OpenJones3D VERSION 0.4.0)
 
@@ -30,7 +30,7 @@ else()
     set(JONES3D_SPEEDRUN_BUILD ON)
 endif()
 
-if (JONES3D_SPEEDRUN_BUILD)  
+if (JONES3D_SPEEDRUN_BUILD)
     message(STATUS "Speedrun build enabled")
     set(J3D_SPEEDRUN_BUILD on)
     if (JONES3D_QOL_IMPROVEMENTS)

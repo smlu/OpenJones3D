@@ -16,7 +16,7 @@
 
 #define STRBUFFER_MIN_SIZE 16
 #define STRBUFFER_FACTOR   2
-#define STRBUFFER_SIZE_MAX ((size_t)-1)
+#define STRBUFFER_SIZE_MAX ((size_t)(-1))
 
 int strbuffer_init(strbuffer_t *strbuff) {
     strbuff->size = STRBUFFER_MIN_SIZE;
@@ -70,13 +70,10 @@ int strbuffer_append_bytes(strbuffer_t *strbuff, const char *data, size_t size) 
 
         new_size = max(strbuff->size * STRBUFFER_FACTOR, strbuff->length + size + 1);
 
-        new_value = jsonp_malloc(new_size);
+        new_value = jsonp_realloc(strbuff->value, strbuff->size, new_size);
         if (!new_value)
             return -1;
 
-        memcpy(new_value, strbuff->value, strbuff->length);
-
-        jsonp_free(strbuff->value);
         strbuff->value = new_value;
         strbuff->size = new_size;
     }
