@@ -47,7 +47,7 @@
 
 static bool sithWeapon_bGenBloodSplatter                = true;
 static bool sithWeapon_bProjectileFireFlashFx           = J3D_QOL_VALUE(true, false); // OG fire flash fx didn't work due to light range error, thus is disabled by default
-static float sithWeapon_projectileFireFlashAmbThreshold = 0.5f;
+static float sithWeapon_projectileFireFlashAmbThreshold = 0.65f;
 
 static const float sithWeapon_aMaxAimDistances[25] =
 {
