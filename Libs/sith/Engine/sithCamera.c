@@ -85,20 +85,20 @@ void sithCamera_InstallHooks(void)
 
 void sithCamera_ResetGlobals(void)
 {
-    memset(&sithCamera_g_pCurCamera, 0, sizeof(sithCamera_g_pCurCamera));
-    memset(&sithCamera_g_bExtCameraLookMode, 0, sizeof(sithCamera_g_bExtCameraLookMode));
+    STD_ZEROMEM(&sithCamera_g_pCurCamera, sizeof(sithCamera_g_pCurCamera));
+    STD_ZEROMEM(&sithCamera_g_bExtCameraLookMode, sizeof(sithCamera_g_bExtCameraLookMode));
 
-    memset(&sithCamera_g_camSpot, 0, sizeof(sithCamera_g_camSpot));
-    memset(&sithCamera_g_aCameras, 0, sizeof(sithCamera_g_aCameras));
-    memset(&sithCamera_g_bCurCameraSet, 0, sizeof(sithCamera_g_bCurCameraSet));
-    memset(&sithCamera_g_stateFlags, 0, sizeof(sithCamera_g_stateFlags));
-    memset(&sithCamera_g_curCycleCamNum, 0, sizeof(sithCamera_g_curCycleCamNum));
-    memset(&sithCamera_g_vecCameraPosOffset, 0, sizeof(sithCamera_g_vecCameraPosOffset));
-    memset(&sithCamera_g_vecCameraAngleOffset, 0, sizeof(sithCamera_g_vecCameraAngleOffset));
-    memset(&sithCamera_g_cameraPosDelta, 0, sizeof(sithCamera_g_cameraPosDelta));
-    memset(&sithCamera_g_cameraAngleDelta, 0, sizeof(sithCamera_g_cameraAngleDelta));
-    memset(&sithCamera_g_orbCamOrient, 0, sizeof(sithCamera_g_orbCamOrient));
-    memset(&sithCamera_g_camLookSpot, 0, sizeof(sithCamera_g_camLookSpot));
+    STD_ZEROMEM(&sithCamera_g_camSpot, sizeof(sithCamera_g_camSpot));
+    STD_ZEROMEM(&sithCamera_g_aCameras, sizeof(sithCamera_g_aCameras));
+    STD_ZEROMEM(&sithCamera_g_bCurCameraSet, sizeof(sithCamera_g_bCurCameraSet));
+    STD_ZEROMEM(&sithCamera_g_stateFlags, sizeof(sithCamera_g_stateFlags));
+    STD_ZEROMEM(&sithCamera_g_curCycleCamNum, sizeof(sithCamera_g_curCycleCamNum));
+    STD_ZEROMEM(&sithCamera_g_vecCameraPosOffset, sizeof(sithCamera_g_vecCameraPosOffset));
+    STD_ZEROMEM(&sithCamera_g_vecCameraAngleOffset, sizeof(sithCamera_g_vecCameraAngleOffset));
+    STD_ZEROMEM(&sithCamera_g_cameraPosDelta, sizeof(sithCamera_g_cameraPosDelta));
+    STD_ZEROMEM(&sithCamera_g_cameraAngleDelta, sizeof(sithCamera_g_cameraAngleDelta));
+    STD_ZEROMEM(&sithCamera_g_orbCamOrient, sizeof(sithCamera_g_orbCamOrient));
+    STD_ZEROMEM(&sithCamera_g_camLookSpot, sizeof(sithCamera_g_camLookSpot));
 }
 
 int sithCamera_Startup(void)
@@ -110,8 +110,8 @@ int sithCamera_Startup(void)
 
     // 3rd person camera
     sithCamera_NewEntry(&sithCamera_g_aCameras[SITHCAMERA_EXTCAMERANUM], 0, SITHCAMERA_EXTERNAL, SITHCAMERA_FOVDEFAULT, 1.0f, NULL, NULL, NULL);
-    rdVector_Copy3(&sithCamera_g_aCameras[SITHCAMERA_EXTCAMERANUM].offset, &sithCamera_vecExtCameraOffset);
-    sithCamera_g_aCameras[SITHCAMERA_EXTCAMERANUM].interpSpeed = 0.34999999f;
+    sithCamera_g_aCameras[SITHCAMERA_EXTCAMERANUM].offset      = sithCamera_vecExtCameraOffset;
+    sithCamera_g_aCameras[SITHCAMERA_EXTCAMERANUM].interpSpeed = 0.35f;
 
     sithCamera_NewEntry(&sithCamera_g_aCameras[SITHCAMERA_CINEMACAMERANUM], 0, SITHCAMERA_CINEMATIC, SITHCAMERA_FOVDEFAULT, 1.0f, NULL, NULL, NULL);
     sithCamera_g_aCameras[SITHCAMERA_CINEMACAMERANUM].interpSpeed = 1.0f;
@@ -188,8 +188,8 @@ void sithCamera_ResetAllCameras(void)
     sithCamera_SetCameraFocus(&sithCamera_g_aCameras[SITHCAMERA_UNKNONWCAMERANUM], sithWorld_g_pCurrentWorld->pCameraFocusThing, sithWorld_g_pCurrentWorld->pCameraFocusThing);
     sithCamera_SetCameraFocus(&sithCamera_g_aCameras[SITHCAMERA_ORBCAMERANUM], sithWorld_g_pCurrentWorld->pCameraFocusThing, sithWorld_g_pCurrentWorld->pCameraFocusThing);
 
-    rdVector_Copy3(&sithCamera_vecExtCameraOffset, &sithCamera_vecExtCameraDefaultOffset);
-    rdVector_Copy3(&sithCamera_vecExtCameraLookOffset, &sithCamera_vecExtCameraDefaultLookOffset);
+    sithCamera_vecExtCameraOffset     = sithCamera_vecExtCameraDefaultOffset;
+    sithCamera_vecExtCameraLookOffset = sithCamera_vecExtCameraDefaultLookOffset;
 
     // Set default FOV for 3rd person camera
     sithCamera_SetCameraFOV(&sithCamera_g_aCameras[SITHCAMERA_EXTCAMERANUM], SITHCAMERA_FOVDEFAULT);
@@ -247,16 +247,16 @@ int J3DAPI sithCamera_NewEntry(SithCamera* pCamera, uint32_t a2, SithCameraType 
         rdCamera_SetCanvas(&pCamera->rdCamera, pCanvas);
     }
 
-    memset(&pCamera->lookPos, 0, sizeof(pCamera->lookPos));
-    memset(&pCamera->lookPYR, 0, sizeof(pCamera->lookPYR));
+    rdVector_Zero3(&pCamera->lookPos);
+    rdVector_Zero3(&pCamera->lookPYR);
 
-    rdMatrix_Copy34(&pCamera->orient, &rdroid_g_identMatrix34);
+    pCamera->orient = rdroid_g_identMatrix34;
 
-    memset(&pCamera->offset, 0, sizeof(pCamera->offset));
-    memset(&pCamera->vecUnknown1, 0, sizeof(pCamera->vecUnknown1));
+    rdVector_Zero3(&pCamera->offset);
+    rdVector_Zero3(&pCamera->vecUnknown1);
 
     pCamera->bLookInterp = 0;
-    pCamera->bPosInterp = 0;
+    pCamera->bPosInterp  = 0;
     return 1;
 }
 
@@ -269,7 +269,7 @@ void J3DAPI sithCamera_Free(SithCamera* pCamera)
     }
 
     sithCamera_FreeEntry(pCamera);
-    stdMemory_Free(pCamera);
+    STDFREE(pCamera);
 }
 
 void J3DAPI sithCamera_FreeEntry(SithCamera* pCamera)
@@ -370,10 +370,10 @@ void J3DAPI sithCamera_SetCameraFocus(SithCamera* pCamera, SithThing* pPrimaryFo
     }
 }
 
-void J3DAPI SithCamera_IncrementFOV(SithCamera* pCamera)
+void J3DAPI SithCamera_ZoomIn(SithCamera* pCamera)
 {
     SITH_ASSERTREL(pCamera);
-    pCamera->fov = pCamera->fov + 1.0f;
+    pCamera->fov += 1.0f;
     if ( pCamera->fov > SITHCAMERA_FOVMAX )
     {
         pCamera->fov = SITHCAMERA_FOVMAX;
@@ -382,10 +382,10 @@ void J3DAPI SithCamera_IncrementFOV(SithCamera* pCamera)
     rdCamera_SetFOV(&pCamera->rdCamera, pCamera->fov);
 }
 
-void J3DAPI sithCamera_DecrementFOV(SithCamera* pCamera)
+void J3DAPI SithCamera_ZoomOut(SithCamera* pCamera)
 {
     SITH_ASSERTREL(pCamera);
-    pCamera->fov = pCamera->fov - 1.0f;
+    pCamera->fov -= 1.0f;
     if ( pCamera->fov < SITHCAMERA_FOVMIN )
     {
         pCamera->fov = SITHCAMERA_FOVMIN;
@@ -407,7 +407,7 @@ void J3DAPI sithCamera_SetCameraFOV(SithCamera* pCamera, float fov)
 void J3DAPI sithCamera_SetCameraPosition(SithCamera* pCamera, const rdVector3* pPos)
 {
     SITH_ASSERTREL(pCamera);
-    rdVector_Copy3(&pCamera->pos, pPos);
+    pCamera->pos = *pPos;
     pCamera->posInterpState   = 0;
     pCamera->focusInterpState = 0;
 }
@@ -416,14 +416,14 @@ void J3DAPI sithCamera_SetCameraPosition(SithCamera* pCamera, const rdVector3* p
 void J3DAPI sithCamera_GetCameraPosition(const SithCamera* pCamera, rdVector3* pDstPos)
 {
     SITH_ASSERTREL(pCamera);
-    rdVector_Copy3(pDstPos, &pCamera->orient.dvec);
+    *pDstPos = pCamera->orient.dvec;
 }
 
 void J3DAPI sithCamera_SetExtCameraOffset(const rdVector3* pOffset)
 {
     if ( sithCamera_g_pCurCamera->type == SITHCAMERA_EXTERNAL )
     {
-        rdVector_Copy3(&sithCamera_vecExtCameraOffset, pOffset);
+        sithCamera_vecExtCameraOffset  = *pOffset;
         sithCamera_bUpdateCameraOffset = 1;
     }
 }
@@ -432,10 +432,10 @@ void J3DAPI sithCamera_SetExtCameraLookOffset(const rdVector3* pOffset)
 {
     if ( sithCamera_g_pCurCamera->type == SITHCAMERA_EXTERNAL )
     {
-        rdVector_Copy3(&sithCamera_vecExtCameraPrevLookOffset, &sithCamera_vecExtCameraLookOffset);
+        sithCamera_vecExtCameraPrevLookOffset = sithCamera_vecExtCameraLookOffset;
 
         sithCamera_secLookOffsetTranslateDelta = 0.5f;
-        rdVector_Copy3(&sithCamera_vecExtCameraLookOffset, pOffset);
+        sithCamera_vecExtCameraLookOffset      = *pOffset;
     }
 }
 
@@ -443,8 +443,8 @@ void sithCamera_RestoreExtCamera(void)
 {
     if ( sithCamera_g_pCurCamera->type == SITHCAMERA_EXTERNAL )
     {
-        rdVector_Copy3(&sithCamera_vecExtCameraOffset, &sithCamera_vecExtCameraDefaultOffset);
-        rdVector_Copy3(&sithCamera_vecExtCameraLookOffset, &sithCamera_vecExtCameraDefaultLookOffset);
+        sithCamera_vecExtCameraOffset     = sithCamera_vecExtCameraDefaultOffset;
+        sithCamera_vecExtCameraLookOffset = sithCamera_vecExtCameraDefaultLookOffset;
 
         sithCamera_g_pCurCamera->interpSpeed = 0.34999999f;
         sithCamera_bUpdateCameraOffset = 0;
@@ -1430,8 +1430,8 @@ void sithCamera_RenderScene(void)
 
 void J3DAPI sithCamera_SetPOVShake(const rdVector3* posOffset, const rdVector3* angleOffset, float posDelta, float angleDelta)
 {
-    rdVector_Copy3(&sithCamera_g_vecCameraPosOffset, posOffset);
-    rdVector_Copy3(&sithCamera_g_vecCameraAngleOffset, angleOffset);
+    sithCamera_g_vecCameraPosOffset   = *posOffset;
+    sithCamera_g_vecCameraAngleOffset = *angleOffset;
 
     sithCamera_g_cameraPosDelta   = posDelta;
     sithCamera_g_cameraAngleDelta = angleDelta;
@@ -1446,21 +1446,14 @@ SithSector* J3DAPI sithCamera_SearchSectorInRadius(int a1, SithSector* pSector, 
 
     rdVector3 moveNorm;
     rdVector_Sub3(&moveNorm, endPos, startPos);
-    /*  moveNorm.x = endPos->x - startPos->x;
-      moveNorm.y = endPos->y - startPos->y;
-      moveNorm.z = endPos->z - startPos->z;*/
     float moveDist = rdVector_Normalize3Acc(&moveNorm);
 
     SithSector* pFoundSector = pSector;
     sithCollision_SearchForCollisions(pSector, NULL, startPos, &moveNorm, moveDist, 0.014f, flags | 0x800);
-    while ( 1 )
-    {
-        SithCollision* pCollision = sithCollision_PopStack();
-        if ( !pCollision )
-        {
-            break;
-        }
 
+    SithCollision* pCollision = NULL;
+    while ( (pCollision = sithCollision_PopStack()) != NULL )
+    {
         if ( (pCollision->type & SITHCOLLISION_ADJOINTOUCH) != 0 )
         {
             SITH_ASSERTREL(pCollision->pSurfaceCollided->pAdjoin != NULL);
@@ -1474,9 +1467,6 @@ SithSector* J3DAPI sithCamera_SearchSectorInRadius(int a1, SithSector* pSector, 
             && pCollision->pThingCollided->type != SITH_THING_WEAPON)
             && ((pCollision->type & SITHCOLLISION_THING) == 0 || pCollision->pThingCollided != sithPlayer_g_pLocalPlayerThing) )
         {
-            /*endPos->x = pCollision->distance * moveNorm.x + startPos->x;
-            endPos->y = pCollision->distance * moveNorm.y + startPos->y;
-            endPos->z = pCollision->distance * moveNorm.z + startPos->z;*/
             rdVector_ScaleAdd3(endPos, &moveNorm, pCollision->distance, startPos);
             break;
         }
