@@ -5,6 +5,9 @@
 #define VS_WORLD    1
 #define VS_VIEW     2
 #define VS_CLIP     3
+#define VS_MODEL    4
+
+//light modes
 #define LM_NONE    0 // full lit (white color)
 #define LM_LIT     1 // only extra light
 #define LM_DIFFUSE 2 // only extra light
@@ -66,6 +69,34 @@ vec3 CalculateLightColor(vec3 worldPos)
 
     return clamp(finalColor, vec3(0.0f), vec3(1.0f));
 }
+
+vec3 CalculateModelLightColor(vec3 worldPos, vec3 worldNormal)
+{
+    vec3 finalColor = vec3(0.0f);
+
+    for (int i = 0; i < LIGHT_COUNT; i++)
+    {
+        PointLight light = LIGHTS[i];
+        vec3 lightPos = light.position.xyz;
+        vec3 lightDir = lightPos - worldPos;
+
+        float dist = length(lightDir);
+        //float range = step(dist, light.maxRadius);
+        float fade = light.maxRadius * 0.5f;
+        float range = 1.0 - smoothstep(fade, light.maxRadius, dist);
+        lightDir = normalize(lightDir);
+        float dot = dot(worldNormal, lightDir);
+        float att = dist * 0.8f;
+        vec3 contrib = (light.color.rgb - vec3(att)) * range * dot;
+        contrib = max(contrib, vec3(0.0));
+        finalColor += contrib;
+    }
+
+    return clamp(finalColor, vec3(0.0f), vec3(1.0f));
+
+}
+
+
 vec3 CalculateVertexColor(vec3 vertexColor, vec3 extraLight, int lightMode)
 {
     if (lightMode == LM_NONE)
