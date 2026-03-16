@@ -155,7 +155,8 @@ typedef enum eStd3DVertexSpace
     STD3D_VS_SCREEN = 0,
     STD3D_VS_WORLD  = 1,
     STD3D_VS_VIEW   = 2,
-    STD3D_VS_CLIP   = 3
+    STD3D_VS_CLIP   = 3,
+    STD3D_VS_MODEL  = 4
 } std3DVertexSpace;
 
 typedef struct sSysPixelFormat
