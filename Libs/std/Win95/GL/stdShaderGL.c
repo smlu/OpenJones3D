@@ -12,6 +12,7 @@
 #include <std/Win95/stdShader.h>
 #include <std/Win95/GL/Shaders/stdGLSLShaders.h>
 
+#include "std/General/stdEffect.h"
 #include "std/Win95/std3D.h"
 #include "std/Win95/stdDisplay.h"
 
@@ -46,6 +47,12 @@ typedef struct sCameraDataGPU
     float time; // vec4
 } CameraDataGPU;
 
+typedef struct sFadeFactorGPU
+{
+    float fadeFactor;
+    float _pad[2];
+} FadeFactorGPU;
+
 static CameraDataGPU cameraData = { 0 };
 static GLuint cameraDataUBO     = 0;
 static GLuint viewPortUBO       = 0;
@@ -68,6 +75,9 @@ typedef struct
 
 static PointLightsUBO stdShader_pointLights = { 0 };
 static GLuint stdShader_pointLightUBO       = 0;
+static FadeFactorGPU stdShader_fadeFactor   = { 0 };
+static GLuint stdShader_fadeFactorUBO       = 0;
+
 typedef struct sFogDataGPU
 {
     float bEnabled;
@@ -189,6 +199,13 @@ static void stdShader_InitUniformBuffers(void)
     glBufferData(GL_UNIFORM_BUFFER, sizeof(PointLightsUBO), NULL, GL_DYNAMIC_DRAW);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
     glBindBufferBase(GL_UNIFORM_BUFFER, 2, stdShader_pointLightUBO);
+
+    stdShader_fadeFactor.fadeFactor = 1.0f;
+    glGenBuffers(1, &stdShader_fadeFactorUBO);
+    glBindBuffer(GL_UNIFORM_BUFFER, stdShader_fadeFactorUBO);
+    glBufferData(GL_UNIFORM_BUFFER, sizeof(FadeFactorGPU), &stdShader_fadeFactor, GL_DYNAMIC_DRAW);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+    glBindBufferBase(GL_UNIFORM_BUFFER, 4, stdShader_fadeFactorUBO);
 
     memset(&stdShader_fogData, 0, sizeof(FogDataGPU));
     glGenBuffers(1, &stdShader_fogDataUBO);
@@ -559,6 +576,12 @@ GLShaderProgram* stdShader_CompileAndCreate(const char* pName, const char* pVert
         glUniformBlockBinding(pProgram->handle, blockIndex, 2);
     }
 
+    blockIndex = glGetUniformBlockIndex(pProgram->handle, "FadeFactorData");
+    if ( blockIndex != GL_INVALID_INDEX )
+    {
+        glUniformBlockBinding(pProgram->handle, blockIndex, 4);
+    }
+
     blockIndex = glGetUniformBlockIndex(pProgram->handle, "FogData");
     if ( blockIndex != GL_INVALID_INDEX )
     {
@@ -746,4 +769,12 @@ void stdShader_SetShaderLights(void)
 
     glBindBuffer(GL_UNIFORM_BUFFER, stdShader_pointLightUBO);
     glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(PointLightsUBO), &stdShader_pointLights);
+}
+
+void stdShader_UpdateFadeFactor(void)
+{
+    const tStdFadeFactor* fadeFactor = stdEffect_GetFadeFactor();
+    stdShader_fadeFactor.fadeFactor  = fadeFactor->bEnabled ? fadeFactor->factor : 1.0f;
+    glBindBuffer(GL_UNIFORM_BUFFER, stdShader_fadeFactorUBO);
+    glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(FadeFactorGPU), &stdShader_fadeFactor);
 }

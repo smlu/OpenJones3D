@@ -14,6 +14,10 @@ layout(std140) uniform ViewportData {
     vec4 VIEWPORT;
 };
 
+layout(std140) uniform FadeFactorData {
+    float FADE_FACTOR;
+};
+
 layout(std140) uniform FogData {
     float FOG_B_ENABLED;
     float FOG_START;

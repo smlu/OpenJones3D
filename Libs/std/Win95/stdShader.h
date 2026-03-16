@@ -96,6 +96,7 @@ void stdShader_SetActiveTextureUnit(GLTextureUnit unit);
 void stdShader_UpdateGlobalUniforms(void);
 void stdShader_SetShaderLights(void);
 GLShaderProgram* stdShader_GetShader(const char* pName); // Get shader handle by name
+void stdShader_UpdateFadeFactor(void);
 #else
 bool J3DAPI stdShader_SetActiveShader(StdShaderHandle sh);                                                                         // Apply shader to device
 StdShaderHandle J3DAPI stdShader_CompileAndCreate(const char* pName, const char* pVertexShaderCode, const char* pPixelShaderCode); // Compile shader from source code and create new shader

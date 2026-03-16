@@ -24,5 +24,6 @@ void main()
         discard;
     }
     FragColor.rgb = ApplyFog(FragColor.rgb, 1.0f / gl_FragCoord.w);
+    FragColor.rgb *= FADE_FACTOR;
 
 }
