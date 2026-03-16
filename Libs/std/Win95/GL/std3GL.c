@@ -1486,6 +1486,7 @@ bool std3D_InitVertexBuffers(GLuint* vbo, GLuint* ibo, GLuint* vao)
 
 static void std3D_MapVertexBuffers(void)
 {
+    glBindVertexArray(std3D_pVertexArrayObject);
     glBindBuffer(GL_ARRAY_BUFFER, std3D_pVertexBufferOpaque);
     std3D_frameBatch.verts = glMapBufferRange(GL_ARRAY_BUFFER, 0, std3D_maxVerticesPerDrawCall * sizeof(D3DTLVERTEX), GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
 
@@ -1497,6 +1498,8 @@ static void std3D_MapVertexBuffers(void)
 
 static void std3D_UnmapVertexBuffers(void)
 {
+    glBindVertexArray(std3D_pVertexArrayObject);
+
     // Upload vertex data
     glBindBuffer(GL_ARRAY_BUFFER, std3D_pVertexBufferOpaque);
     glUnmapBuffer(GL_ARRAY_BUFFER);
