@@ -198,6 +198,11 @@ typedef struct sD3DTLVERTEX
     /* Texture coordinates */
     float tu;
     float tv;
+
+    /* Per vertex normals */
+    float nx;
+    float ny;
+    float nz;
 } D3DTLVERTEX, *LPD3DTLVERTEX;
 
 #endif
@@ -255,6 +260,15 @@ typedef enum eStd3DRenderState
 #ifdef J3D_OPENGL
 
 #define MAX_BATCHES 4096
+
+typedef struct sPointLightGPU
+{
+    float position[4]; // xyz + pad
+    float color[4];    // rgba
+    float minRadius;
+    float maxRadius;
+    float pad[2]; // std140 padding
+} PointLightGPU;
 
 typedef struct sGeometryBatch
 {
