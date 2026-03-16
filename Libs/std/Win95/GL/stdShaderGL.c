@@ -112,7 +112,7 @@ static void stdShader_MulMat4(const float a[16], const float b[16], float out[16
     memcpy(out, r, sizeof(float) * 16);
 }
 
-static void stdShader_ConvertToMat4(const rdMatrix34* pMat, float out[16])
+void stdShader_ConvertToMat4(const rdMatrix34* pMat, float out[16])
 {
     // In JonesEngine z is up and +y id forward
     // So for OpenGL Y <-> Z and Z <-> -Y
