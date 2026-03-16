@@ -730,6 +730,18 @@ void J3DAPI std3D_SetRenderState(Std3DRenderState rdflags)
         }
     }
 
+    if ( (std3D_renderState & STD3D_CULL_DISABLED) != (rdflags & STD3D_CULL_DISABLED) )
+    {
+        if ( rdflags & STD3D_CULL_DISABLED )
+        {
+            glDisable(GL_CULL_FACE);
+        }
+        else
+        {
+            glEnable(GL_CULL_FACE);
+        }
+    }
+
     if ( (std3D_renderState & STD3D_RS_TEX_CPAMP_U) != (rdflags & STD3D_RS_TEX_CPAMP_U) )
     {
         glSamplerParameteri(std3D_activeSampler, GL_TEXTURE_WRAP_S, (rdflags & STD3D_RS_TEX_CPAMP_U) ? GL_CLAMP_TO_EDGE : GL_REPEAT);
@@ -1054,7 +1066,8 @@ int std3D_InitRenderState(void)
     glDepthFunc(GL_LEQUAL);
     glDisable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glFrontFace(GL_CW);
+    glFrontFace(GL_CCW);
+    glEnable(GL_CULL_FACE);
 
     std3D_renderState |= STD3D_RS_UNKNOWN_1 | STD3D_RS_UNKNOWN_2 | STD3D_RS_TEXFILTER_BILINEAR;
     std3D_SetMipmapFilter(STD3D_MIPMAPFILTER_TRILINEAR);
