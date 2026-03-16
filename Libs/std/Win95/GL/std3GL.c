@@ -667,6 +667,10 @@ void J3DAPI std3D_DrawRenderList(tSysTexture* pTex, Std3DRenderState rdflags, LP
         STDLOG_ERROR("Error %d > %d maxVertices.\n", numVerts, std3D_g_maxVertices);
         return;
     }
+    if ( numVerts <= 0 || numIndices <= 0 )
+    {
+        return;
+    }
 
     std3D_CacheDrawCall(GL_TRIANGLES, pTex, rdflags, aVerts, numVerts, aIndices, numIndices, vs, bUseShaderLighting);
 }
