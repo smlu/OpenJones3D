@@ -2,11 +2,11 @@
 #include <globals.incl>
 out vec4 FragColor;
 
-in vec2 vTexCoord;
-
 uniform sampler2D sTexture;
 uniform vec3 camPYR;
 uniform float horizonScale;
+uniform vec2 horizonSkyOffset;
+uniform vec2 uvOffset;
 
 
 void main()
@@ -24,9 +24,10 @@ void main()
     float yaw = camPYR.y;
     float pitch = camPYR.x;
 
-    float u = xFactor + yaw + vTexCoord.x;
-    float v = yFactor + pitch + vTexCoord.y;
+    float u = xFactor + yaw + horizonSkyOffset.x + uvOffset.x;
+    float v = yFactor + pitch + horizonSkyOffset.y + uvOffset.y;
 
     vec4 texColor = texture(sTexture, vec2(u, v));
     FragColor = texColor;
+    FragColor.rgb *= FADE_FACTOR;
 }

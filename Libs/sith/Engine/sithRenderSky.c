@@ -58,10 +58,6 @@ int J3DAPI sithRenderSky_Open(float horizonDistance, float ceilingHeight)
     ceilingSkyMinZ.y = 0.0f;
     ceilingSkyMinZ.z = -ceilingHeight;
 
-#ifdef J3D_OPENGL
-    std3D_SetCeilingSkyHeight(ceilingHeight);
-#endif
-
     return 0;
 }
 
@@ -79,7 +75,9 @@ void sithRenderSky_Update(void)
     lookPitch = -(sithCamera_g_pCurCamera->lookPYR.pitch * horizonPixelsPerRev);
 
 #ifdef J3D_OPENGL
-    std3D_UpdateHorizonSky(lookPitch, lookYaw, horizonScale);
+    std3D_UpdateHorizonSky(lookPitch, lookYaw, horizonScale, sithWorld_g_pCurrentWorld->horizonSkyOffset.x, sithWorld_g_pCurrentWorld->horizonSkyOffset.y);
+    std3D_UpdateCeilingSky(ceilingSkyHeight, sithWorld_g_pCurrentWorld->ceilingSkyOffset.x, sithWorld_g_pCurrentWorld->ceilingSkyOffset.y);
+
 #endif
 }
 

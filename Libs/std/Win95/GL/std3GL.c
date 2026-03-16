@@ -1641,7 +1641,7 @@ bool std3D_IsMipmapAutoGenSupported(void) { return true; }
 
 bool std3D_IsMSAASupported(void) { return true; }
 
-void std3D_SetCeilingSkyHeight(float height)
+void std3D_UpdateCeilingSky(float height, float offsetX, float offsetY)
 {
     if ( !std3D_ceilingSkyShader )
     {
@@ -1650,9 +1650,10 @@ void std3D_SetCeilingSkyHeight(float height)
 
     stdShader_SetActiveShader(std3D_ceilingSkyShader);
     glUniform1f(glGetUniformLocation(std3D_ceilingSkyShader->handle, "uCeilingZ"), height);
+    glUniform2f(glGetUniformLocation(std3D_ceilingSkyShader->handle, "ceilingSkyOffset"), offsetX, offsetY);
 }
 
-void std3D_UpdateHorizonSky(float camPitch, float camYaw, float scale)
+void std3D_UpdateHorizonSky(float camPitch, float camYaw, float scale, float horizonOffsetX, float horizonOffsetY)
 {
     if ( !std3D_horizonSkyShader )
     {
@@ -1661,6 +1662,7 @@ void std3D_UpdateHorizonSky(float camPitch, float camYaw, float scale)
     stdShader_SetActiveShader(std3D_horizonSkyShader);
     glUniform1f(glGetUniformLocation(std3D_horizonSkyShader->handle, "horizonScale"), scale);
     glUniform3f(glGetUniformLocation(std3D_horizonSkyShader->handle, "camPYR"), camPitch, camYaw, 0);
+    glUniform2f(glGetUniformLocation(std3D_horizonSkyShader->handle, "horizonSkyOffset"), horizonOffsetX, horizonOffsetY);
 }
 
 void std3D_SetDrawState(const std3DDrawState drawState)
