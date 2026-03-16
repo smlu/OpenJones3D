@@ -106,8 +106,14 @@ static FrameBatch std3D_frameBatch = { 0 };
 static GLuint std3D_pVertexArrayObject  = 0;
 static GLuint std3D_pVertexBufferOpaque = 0;
 
-static GLuint std3D_pIndexBuffer = 0;
-static size_t std3D_numDrawCalls = 0;
+static GLuint std3D_pVertexArrayGeometry  = 0;
+static GLuint std3D_pVertexBufferGeometry = 0;
+static GLuint std3D_pIndexBufferGeometry  = 0;
+static GLuint std3D_InstanceBuffer        = 0;
+
+static GLuint std3D_pIndexBuffer   = 0;
+static size_t std3D_numDrawCalls   = 0;
+static size_t std3D_instanceOffset = 0;
 
 static bool std3D_bVertexBuffersMapped = false;
 
@@ -1501,6 +1507,16 @@ void std3D_ReleaseVertexBuffers(void)
     }
 }
 
+void std3D_ReleaseGeoVertexBuffers(void)
+{
+    if ( std3D_pVertexArrayGeometry > 0 )
+    {
+        glDeleteVertexArrays(1, &std3D_pVertexArrayGeometry);
+        glDeleteBuffers(1, &std3D_pVertexBufferGeometry);
+        glDeleteBuffers(1, &std3D_pIndexBufferGeometry);
+    }
+}
+
 bool std3D_InitShaderSystem(void)
 {
     if ( !stdShader_Open() )
@@ -1675,4 +1691,119 @@ std3DVertexSpace std3D_GetCurrentVertexSpace(void)
     return std3D_currentVertexState;
 }
 
+
+void std3D_InitGeometryVBO(LPD3DTLVERTEX vertices, size_t numVertices, GLuint* indices, size_t numIndices)
+{
+    if ( std3D_pVertexArrayGeometry > 0 )
+    {
+        glDeleteVertexArrays(1, &std3D_pVertexArrayGeometry);
+        glDeleteBuffers(1, &std3D_pVertexBufferGeometry);
+        glDeleteBuffers(1, &std3D_pIndexBufferGeometry);
+    }
+    glGenVertexArrays(1, &std3D_pVertexArrayGeometry);
+    glBindVertexArray(std3D_pVertexArrayGeometry);
+
+    // create vbo
+    glGenBuffers(1, &std3D_pVertexBufferGeometry);
+    glBindBuffer(GL_ARRAY_BUFFER, std3D_pVertexBufferGeometry);
+    glBufferData(GL_ARRAY_BUFFER, numVertices * sizeof(D3DTLVERTEX), vertices, GL_STATIC_DRAW);
+
+    // create ibo
+    glGenBuffers(1, &std3D_pIndexBufferGeometry);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, std3D_pIndexBufferGeometry);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, numIndices * sizeof(GLuint), indices, GL_STATIC_DRAW);
+
+    const GLsizei stride = sizeof(D3DTLVERTEX);
+
+    // set attributes
+    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(D3DTLVERTEX, sx));
+    glEnableVertexAttribArray(0);
+
+    glVertexAttribPointer(1, 4, GL_UNSIGNED_BYTE, GL_TRUE, stride, (void*)offsetof(D3DTLVERTEX, color));
+    glEnableVertexAttribArray(1);
+
+    glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, GL_TRUE, stride, (void*)offsetof(D3DTLVERTEX, specular));
+    glEnableVertexAttribArray(2);
+
+    glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(D3DTLVERTEX, tu));
+    glEnableVertexAttribArray(3);
+
+    glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(D3DTLVERTEX, nx));
+    glEnableVertexAttribArray(4);
+
+    glEnableVertexAttribArray(5);
+    glEnableVertexAttribArray(6);
+    glEnableVertexAttribArray(7);
+    glEnableVertexAttribArray(8);
+    glEnableVertexAttribArray(9);
+    glEnableVertexAttribArray(10);
+    glEnableVertexAttribArray(11);
+
+    glVertexAttribDivisor(5, 1);
+    glVertexAttribDivisor(6, 1);
+    glVertexAttribDivisor(7, 1);
+    glVertexAttribDivisor(8, 1);
+    glVertexAttribDivisor(9, 1);
+    glVertexAttribDivisor(10, 1);
+    glVertexAttribDivisor(11, 1);
+
+    glBindVertexArray(0);
+}
+
+void std3D_InitInstanceVBO(const size_t maxInstances)
+{
+    if ( std3D_InstanceBuffer > 0 )
+    {
+        glDeleteBuffers(1, &std3D_InstanceBuffer);
+    }
+
+    glGenBuffers(1, &std3D_InstanceBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, std3D_InstanceBuffer);
+    glBufferData(GL_ARRAY_BUFFER, maxInstances * sizeof(InstanceData), NULL, GL_DYNAMIC_DRAW);
+}
+
+void std3D_UpdateInstanceVBO(const InstanceData* pData, size_t numInstances)
+{
+    if ( numInstances == 0 )
+        return;
+
+    //STDLOG_DEBUG("AHA %u\n", std3D_pVertexBufferOpaque);
+
+    glBindVertexArray(std3D_pVertexArrayGeometry);
+    glBindBuffer(GL_ARRAY_BUFFER, std3D_InstanceBuffer);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, numInstances * sizeof(InstanceData), pData);
+    std3D_instanceOffset = 0;
+}
+
+static void std3D_UpdateInstancePointers()
+{
+    size_t base    = std3D_instanceOffset * sizeof(InstanceData);
+    GLsizei stride = sizeof(InstanceData);
+
+    glBindBuffer(GL_ARRAY_BUFFER, std3D_InstanceBuffer);
+
+    // mat4 (locations 5–8)
+    glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, stride, (void*)(base + 0));
+    glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, stride, (void*)(base + 16));
+    glVertexAttribPointer(7, 4, GL_FLOAT, GL_FALSE, stride, (void*)(base + 32));
+    glVertexAttribPointer(8, 4, GL_FLOAT, GL_FALSE, stride, (void*)(base + 48));
+
+    // extraLight
+    glVertexAttribPointer(
+        9, 4, GL_UNSIGNED_BYTE, GL_TRUE,
+        stride, (void*)(base + offsetof(InstanceData, extraLight))
+    );
+
+    // secLightPos
+    glVertexAttribPointer(
+        10, 4, GL_FLOAT, GL_FALSE,
+        stride, (void*)(base + offsetof(InstanceData, secLightPos))
+    );
+
+    // secLightColor
+    glVertexAttribPointer(
+        11, 4, GL_FLOAT, GL_FALSE,
+        stride, (void*)(base + offsetof(InstanceData, secLightColor))
+    );
+}
 
