@@ -254,7 +254,8 @@ typedef enum eStd3DRenderState
     STD3D_RS_ZWRITE_DISABLED       = 0x2000,
     STD3D_RS_FOG_ENABLED           = 0x8000,
     STD3D_RS_TEXFILTER_ANISOTROPIC = 0x10000, // Added
-    STD3D_BLEND_ENABLED            = 0x20000  // Added
+    STD3D_BLEND_ENABLED            = 0x20000, // Added
+    STD3D_CULL_DISABLED            = 0x40000, // Added
 } Std3DRenderState;
 
 #ifdef J3D_OPENGL
