@@ -118,9 +118,13 @@ static std3DVertexSpace std3D_currentVertexState = STD3D_VS_SCREEN;
 
 // Shader system state
 static GLShaderProgram* std3D_defaultShader    = NULL;
+static GLShaderProgram* std3D_modelShader      = NULL;
 static GLShaderProgram* std3D_defaultShaderWf  = NULL;
 static GLShaderProgram* std3D_ceilingSkyShader = NULL;
 static GLShaderProgram* std3D_horizonSkyShader = NULL;
+static GLShaderProgram* std3D_spriteShader     = NULL;
+static GLShaderProgram* std3D_particleShader   = NULL;
+static GLShaderProgram* std3D_polyLineShader   = NULL;
 static GLShaderProgram* std3D_activeShader     = NULL;
 
 static int std3D_InitRenderState(void);
@@ -1513,6 +1517,14 @@ bool std3D_InitShaderSystem(void)
         return false;
     }
 
+    std3D_modelShader = stdShader_CompileAndCreate("std_model", "model.vert", "model.frag");
+
+    if ( !std3D_modelShader )
+    {
+        STDLOG_ERROR("Failed to create model shader\n");
+        return false;
+    }
+
     // Create ceiling sky shader
     std3D_ceilingSkyShader = stdShader_CompileAndCreate("std_ceilingSky", "ceilingSky.vert", "ceilingSky.frag");
 
@@ -1528,6 +1540,33 @@ bool std3D_InitShaderSystem(void)
     if ( !std3D_horizonSkyShader )
     {
         STDLOG_ERROR("Failed to create horizon sky shader\n");
+        return false;
+    }
+
+    // Create default shader
+    std3D_spriteShader = stdShader_CompileAndCreate("std_sprite", "sprite.vert", "default.frag");
+
+    if ( !std3D_spriteShader )
+    {
+        STDLOG_ERROR("Failed to create sprite shader\n");
+        return false;
+    }
+
+    // Create default shader
+    std3D_particleShader = stdShader_CompileAndCreate("std_particle", "particle.vert", "default.frag");
+
+    if ( !std3D_particleShader )
+    {
+        STDLOG_ERROR("Failed to create particle shader\n");
+        return false;
+    }
+
+    // Create default shader
+    std3D_polyLineShader = stdShader_CompileAndCreate("std_polyline", "polyline.vert", "default.frag");
+
+    if ( !std3D_polyLineShader )
+    {
+        STDLOG_ERROR("Failed to create polyline shader\n");
         return false;
     }
 
