@@ -5,10 +5,15 @@
 #define VS_WORLD    1
 #define VS_VIEW     2
 #define VS_CLIP     3
+#define LM_NONE    0 // full lit (white color)
+#define LM_LIT     1 // only extra light
+#define LM_DIFFUSE 2 // only extra light
+#define LM_GOURAUD 3 // extra light + vertex lights + dynamic lights
 
 uniform vec4 vFogParams;
 uniform vec3 vFogColor;
 uniform int iVertexSpace = 0;
+uniform int iLightMode = 0;
 
 vec4 screenToClip(vec3 screenPos, float rhw)
 {
@@ -57,6 +62,22 @@ vec3 CalculateLightColor(vec3 worldPos)
         vec3 contrib = (light.color.rgb - vec3(att)) * range;
         contrib = max(contrib, vec3(0.0));
         finalColor += contrib;
+    }
+
+    return clamp(finalColor, vec3(0.0f), vec3(1.0f));
+}
+vec3 CalculateVertexColor(vec3 vertexColor, vec3 extraLight, int lightMode)
+{
+    if (lightMode == LM_NONE)
+    {
+        return vec3(1.0f);
+    }
+
+    vec3 finalColor = extraLight;
+
+    if (lightMode == LM_GOURAUD)
+    {
+        finalColor += vertexColor;
     }
 
     return clamp(finalColor, vec3(0.0f), vec3(1.0f));
