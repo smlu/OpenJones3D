@@ -709,5 +709,73 @@ typedef struct srdPrimit3
     int unknown2;
 } rdPrimit3;
 
+#ifdef J3D_OPENGL
+typedef enum erdDrawType
+{
+    RD_DRAW_GEOMETRY = 0,
+    RD_DRAW_MODEL    = 1,
+    RD_DRAW_SPRITE   = 2,
+    RD_DRAW_PARTICLE = 3,
+    RD_DRAW_POLYLINE = 4,
+    RD_DRAW_SHADOW   = 5
+} rdDrawType;
+
+typedef struct srdGeoFacePayload
+{
+    size_t faceNum;
+    std3DVertexSpace vertexSpace;
+} rdGeoFacePayload;
+
+typedef struct srdModelFacePayload
+{
+    size_t faceNum;
+    const rdMatrix34* modelMatrix;
+    rdLight sectorLight;
+    rdVector3 lightPosition;
+} rdModelFacePayload;
+
+typedef struct srdSpritePayload
+{
+    rdMatrix34 modelMatrix;
+    rdVector3 spriteOffset;
+    rdVector2 spriteSize;
+
+    int spriteType;
+} rdSpritePayload;
+
+typedef struct srdParticlePayload
+{
+    rdVector3 particlePos;
+    float particleHalfSize;
+} rdParticlePayload;
+
+typedef struct sPolyLinePayload
+{
+    rdVector3 vertices[4];
+    rdVector2 texCoords[4];
+} rdPolyLinePayload, rdShadowPayload;
+
+typedef struct srdPayload
+{
+    rdDrawType type;
+
+    rdFaceFlags flags;
+    rdLightMode lightingMode;
+    rdMaterial* pMaterial;
+    int32_t matCelNum;
+    rdVector4 extraLight;
+    uint64_t sortKey;
+
+    Std3DRenderState rdFlags;
+    GLShaderProgram* pShader;
+    tSysTexture* pTex;
+
+
+    float distance;
+
+    void* payload;
+} rdPayload;
+#endif
+
 J3D_EXTERN_C_END
 #endif //RDROID_TYPES_H
