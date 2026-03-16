@@ -252,6 +252,69 @@ typedef enum eStd3DRenderState
     STD3D_BLEND_ENABLED            = 0x20000  // Added
 } Std3DRenderState;
 
+#ifdef J3D_OPENGL
+
+#define MAX_BATCHES 4096
+
+typedef struct sGeometryBatch
+{
+    GLsizei indexCounts[MAX_BATCHES];
+    uintptr_t indexOffsets[MAX_BATCHES];
+    GLsizei drawCount;
+
+    float extraLight[4];
+    uint8_t lightMode;
+    GLShaderProgram* pShader;
+    tSysTexture* pTex;
+    Std3DRenderState rdFlags;
+} GeometryBatch;
+
+typedef struct sInstanceData
+{
+    float modelMatrix[16];
+    D3DCOLOR extraLight;
+
+    union
+    {
+        float secLightPos[4];
+        float spriteOffset[4];
+        float particlePos[4];
+        float polyLineUV01[4];
+    };
+
+    union
+    {
+        float secLightColor[4];
+        float spriteHalfSize[4];
+        float polyLineUV23[4];
+    };
+} InstanceData;
+
+typedef struct sModelBatch
+{
+    size_t indexCount;
+    size_t indexOffset;
+
+    GLsizei numberOfInstances;
+
+    uint8_t lightMode;
+    GLShaderProgram* pShader;
+    tSysTexture* pTex;
+    Std3DRenderState rdFlags;
+} ModelBatch;
+
+typedef struct sQuadBatch
+{
+    int spriteType;
+    uint8_t lightMode;
+    GLShaderProgram* pShader;
+    tSysTexture* pTex;
+    Std3DRenderState rdFlags;
+    GLsizei numberOfInstances;
+} QuadBatch;
+
+#endif
+
 typedef enum eVBufferType
 {
     VBUFFER_SOFTWARE = 0, // Raw pixels allocated on heap
