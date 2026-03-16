@@ -513,16 +513,6 @@ GLShaderProgram* stdShader_CompileAndCreate(const char* pName, const char* pVert
     // char* fsrc = stdShader_readGLSLFile(pPixelShaderCode);
     if ( !vsrc || !fsrc )
     {
-        if ( vsrc )
-        {
-            STDFREE(vsrc);
-        }
-
-        if ( fsrc )
-        {
-            STDFREE(fsrc);
-        }
-
         return NULL;
     }
 
