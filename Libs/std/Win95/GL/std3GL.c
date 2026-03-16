@@ -493,11 +493,11 @@ void std3D_EndScene(void)
     {
         std3D_DrawFrameBatch();
     }
+    //STDLOG_DEBUG("Num rendered Draw Calls: %u\n", std3D_numDrawCalls);
+    std3D_SetRenderState(0);
     std3D_renderState  = 0;
     std3D_numDrawCalls = 0;
     std3D_pD3DTex      = NULL;
-    glSamplerParameteri(std3D_activeSampler, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glSamplerParameteri(std3D_activeSampler, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glBindSampler(TU_3D_DRAW, 0);
     stdShader_DisableFog();
 }
