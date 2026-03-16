@@ -32,15 +32,11 @@ vec4 screenToClip(vec3 screenPos, float rhw)
 
 vec3 ApplyFog(vec3 color, float depth)
 {
-    if (vFogParams.w == 0.0f)
-    {
-        return color;
-    }
 
-    float fogFactor = (depth - vFogParams.x) * vFogParams.z;
-    fogFactor = clamp(fogFactor, 0.0f, 1.0f);
+    float fogFactor = (depth - FOG_START) * FOG_DEPTH;
+    fogFactor = clamp(fogFactor, 0.0f, 1.0f) * FOG_B_ENABLED;
 
-    return mix(color, vFogColor, fogFactor);
+    return mix(color, FOG_COLOR, fogFactor);
 }
 
 vec3 CalculateLightColor(vec3 worldPos)

@@ -68,6 +68,19 @@ typedef struct
 
 static PointLightsUBO stdShader_pointLights = { 0 };
 static GLuint stdShader_pointLightUBO       = 0;
+typedef struct sFogDataGPU
+{
+    float bEnabled;
+    float start;
+    float end;
+    float depth;
+    float color[3];
+    float _pad;
+} FogDataGPU;
+
+static FogDataGPU stdShader_fogData = { 0 };
+static GLuint stdShader_fogDataUBO  = 0;
+
 static void GetUniformLocations(void);
 
 static void stdShader_MulMat4(const float a[16], const float b[16], float out[16])
@@ -176,6 +189,13 @@ static void stdShader_InitUniformBuffers(void)
     glBufferData(GL_UNIFORM_BUFFER, sizeof(PointLightsUBO), NULL, GL_DYNAMIC_DRAW);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
     glBindBufferBase(GL_UNIFORM_BUFFER, 2, stdShader_pointLightUBO);
+
+    memset(&stdShader_fogData, 0, sizeof(FogDataGPU));
+    glGenBuffers(1, &stdShader_fogDataUBO);
+    glBindBuffer(GL_UNIFORM_BUFFER, stdShader_fogDataUBO);
+    glBufferData(GL_UNIFORM_BUFFER, sizeof(FogDataGPU), &stdShader_fogData, GL_DYNAMIC_DRAW);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+    glBindBufferBase(GL_UNIFORM_BUFFER, 5, stdShader_fogDataUBO);
 }
 
 bool J3DAPI stdShader_Startup(void)
@@ -270,18 +290,32 @@ bool J3DAPI stdShader_SetViewport(const StdShaderViewport vp)
     return true;
 }
 
-bool J3DAPI stdShader_SetFog(bool enable, float start, float end, float depthDactor, const StdShaderVector color)
+bool J3DAPI stdShader_SetFog(bool enable, float start, float end, float depthFactor, const StdShaderVector color)
 {
-    glUniform4f(glGetUniformLocation(stdShader_activeShader->handle, "vFogParams"), start, end, depthDactor, enable ? 1.0f : 0.0f);
-    glUniform3f(glGetUniformLocation(stdShader_activeShader->handle, "vFogColor"), color[0], color[1], color[2]);
+    FogDataGPU* data = &stdShader_fogData;
+    data->bEnabled   = enable ? 1.0f : 0.0f;
+    data->start      = start;
+    data->end        = end;
+    data->depth      = depthFactor;
+    memcpy(&data->color, color, sizeof(StdShaderVector));
+
+    glBindBuffer(GL_UNIFORM_BUFFER, stdShader_fogDataUBO);
+    glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(FogDataGPU), data);
+    // glUniform4f(glGetUniformLocation(stdShader_activeShader->handle, "vFogParams"), start, end, depthDactor, enable ? 1.0f : 0.0f);
+    // glUniform3f(glGetUniformLocation(stdShader_activeShader->handle, "vFogColor"), color[0], color[1], color[2]);
 
     return true;
 }
 
 bool stdShader_DisableFog(void)
 {
-    float fogParams[4] = { 0 }; // Disable fog
-    glUniform4fv(glGetUniformLocation(stdShader_activeShader->handle, "vFogParams"), 1, fogParams);
+    stdShader_SetFog(false, 0.0f, 0.0f, 0.0f, stdShader_fogData.color);
+    // //stdShader_fogData.bEnabled = 0.0f;
+    // float off = 0.0f;
+    // glBindBuffer(GL_UNIFORM_BUFFER, stdShader_fogDataUBO);
+    // glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(float), &off);
+    // // float fogParams[4] = { 0 }; // Disable fog
+    // // glUniform4fv(glGetUniformLocation(stdShader_activeShader->handle, "vFogParams"), 1, fogParams);
 
     return true;
 }
@@ -523,6 +557,12 @@ GLShaderProgram* stdShader_CompileAndCreate(const char* pName, const char* pVert
     if ( blockIndex != GL_INVALID_INDEX )
     {
         glUniformBlockBinding(pProgram->handle, blockIndex, 2);
+    }
+
+    blockIndex = glGetUniformBlockIndex(pProgram->handle, "FogData");
+    if ( blockIndex != GL_INVALID_INDEX )
+    {
+        glUniformBlockBinding(pProgram->handle, blockIndex, 5);
     }
     return pProgram;
 }

@@ -14,6 +14,14 @@ layout(std140) uniform ViewportData {
     vec4 VIEWPORT;
 };
 
+layout(std140) uniform FogData {
+    float FOG_B_ENABLED;
+    float FOG_START;
+    float FOG_END;
+    float FOG_DEPTH;
+    vec3 FOG_COLOR;
+};
+
 #define MAX_LIGHTS 64
 
 struct PointLight
