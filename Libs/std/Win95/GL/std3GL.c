@@ -425,7 +425,7 @@ void J3DAPI std3D_GetTextureFormat(StdColorFormatType type, ColorInfo* pDest, in
     {
         *pbColorKeySet = 0;
         *ppColorKey    = 0;
-        *pDest         = stdColor_cfARGB8888;
+        *pDest         = stdColor_cfARGB5551;
     }
     else if ( type == STDCOLOR_FORMAT_RGBA )
     {
@@ -796,7 +796,7 @@ void J3DAPI std3D_AllocSystemTexture(tSystemTexture* pTexture, tVBuffer** apVBuf
     }
 
     tSysPixelFormat glFormat;
-    if ( formatType == STDCOLOR_FORMAT_RGBA )
+    if ( formatType == STDCOLOR_FORMAT_RGBA || formatType == STDCOLOR_FORMAT_RGBA_1BITALPHA )
     {
         glFormat = std3D_RGBATextureFormat;
     }

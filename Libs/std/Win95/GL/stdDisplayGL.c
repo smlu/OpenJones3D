@@ -632,14 +632,16 @@ tVBuffer* J3DAPI stdDisplay_VBufferConvertColorFormat(const ColorInfo* pDesiredC
 {
     STD_ASSERTREL(pSrc != NULL);
 
-    if ( memcmp(pDesiredColorFormat, &pSrc->rasterInfo.colorInfo, sizeof(ColorInfo)) == 0 )
+    const ColorInfo* pGLDesiredColorFormat = pDesiredColorFormat->alphaBPP > 0 ? &stdColor_cfARGB8888 : &stdColor_cfRGB888;
+
+    if ( memcmp(pGLDesiredColorFormat, &pSrc->rasterInfo.colorInfo, sizeof(ColorInfo)) == 0 )
     {
         return pSrc;
     }
 
     if ( pSrc->rasterInfo.colorInfo.colorMode == STDCOLOR_PAL )
     {
-        if ( pDesiredColorFormat->colorMode == STDCOLOR_PAL )
+        if ( pGLDesiredColorFormat->colorMode == STDCOLOR_PAL )
         {
             return pSrc;
         }
@@ -647,21 +649,21 @@ tVBuffer* J3DAPI stdDisplay_VBufferConvertColorFormat(const ColorInfo* pDesiredC
     }
 
     const ColorInfo* pSrcColorFormat = &pSrc->rasterInfo.colorInfo;
-    STD_ASSERTREL(pDesiredColorFormat->colorMode != STDCOLOR_PAL);
+    STD_ASSERTREL(pGLDesiredColorFormat->colorMode != STDCOLOR_PAL);
     STD_ASSERTREL(pSrcColorFormat->redBPP != 0);
     STD_ASSERTREL(pSrcColorFormat->greenBPP != 0);
     STD_ASSERTREL(pSrcColorFormat->blueBPP != 0);
-    STD_ASSERTREL(pDesiredColorFormat->redBPP != 0);
-    STD_ASSERTREL(pDesiredColorFormat->greenBPP != 0);
-    STD_ASSERTREL(pDesiredColorFormat->blueBPP != 0);
+    STD_ASSERTREL(pGLDesiredColorFormat->redBPP != 0);
+    STD_ASSERTREL(pGLDesiredColorFormat->greenBPP != 0);
+    STD_ASSERTREL(pGLDesiredColorFormat->blueBPP != 0);
     STD_ASSERTREL(
         pSrcColorFormat->redPosShift != 0 || pSrcColorFormat->greenPosShift != 0 || pSrcColorFormat->bluePosShift != 0);
     STD_ASSERTREL(
-        pDesiredColorFormat->redPosShift != 0 || pDesiredColorFormat->greenPosShift != 0 || pDesiredColorFormat->
+        pGLDesiredColorFormat->redPosShift != 0 || pGLDesiredColorFormat->greenPosShift != 0 || pGLDesiredColorFormat->
         bluePosShift != 0);
 
     tVBuffer* pDest;
-    if ( pSrc->rasterInfo.colorInfo.bpp == pDesiredColorFormat->bpp )
+    if ( pSrc->rasterInfo.colorInfo.bpp == pGLDesiredColorFormat->bpp )
     {
         pDest = pSrc;
     }
@@ -669,7 +671,7 @@ tVBuffer* J3DAPI stdDisplay_VBufferConvertColorFormat(const ColorInfo* pDesiredC
     {
         tRasterInfo rasterInfo;
         memcpy(&rasterInfo, &pSrc->rasterInfo, sizeof(rasterInfo));
-        memcpy(&rasterInfo.colorInfo, pDesiredColorFormat, sizeof(rasterInfo.colorInfo));
+        memcpy(&rasterInfo.colorInfo, pGLDesiredColorFormat, sizeof(rasterInfo.colorInfo));
 
         pDest = stdDisplay_VBufferNew(&rasterInfo, /*bUseVSurface=*/0, /*bUseVideoMemory=*/0);
         if ( !pDest )
@@ -695,7 +697,7 @@ tVBuffer* J3DAPI stdDisplay_VBufferConvertColorFormat(const ColorInfo* pDesiredC
 
         stdColor_ColorConvertOneRow(
             pDestRow,
-            pDesiredColorFormat,
+            pGLDesiredColorFormat,
             pSrcRow,
             &pSrc->rasterInfo.colorInfo,
             pDest->rasterInfo.width,
@@ -710,7 +712,7 @@ tVBuffer* J3DAPI stdDisplay_VBufferConvertColorFormat(const ColorInfo* pDesiredC
     stdDisplay_VBufferUnlock(pDest);
 
     // Copy color format
-    memcpy(&pDest->rasterInfo.colorInfo, pDesiredColorFormat, sizeof(pDest->rasterInfo.colorInfo));
+    memcpy(&pDest->rasterInfo.colorInfo, pGLDesiredColorFormat, sizeof(pDest->rasterInfo.colorInfo));
 
     if ( pDest != pSrc )
     {
