@@ -68,6 +68,7 @@ typedef struct
 
 static PointLightsUBO stdShader_pointLights = { 0 };
 static GLuint stdShader_pointLightUBO       = 0;
+static void GetUniformLocations(void);
 
 static void stdShader_MulMat4(const float a[16], const float b[16], float out[16])
 {
@@ -501,6 +502,11 @@ GLShaderProgram* stdShader_CompileAndCreate(const char* pName, const char* pVert
     stdHashtbl_Add(stdShader_pTable, pName, pProgram);
     stdShader_shaderCount++;
 
+    GLShaderProgram* pOld = stdShader_activeShader;
+    stdShader_SetActiveShader(pProgram);
+    GetUniformLocations();
+    stdShader_SetActiveShader(pOld);
+
     GLuint blockIndex = glGetUniformBlockIndex(pProgram->handle, "CameraData");
     if ( blockIndex != GL_INVALID_INDEX )
     {
@@ -521,6 +527,33 @@ GLShaderProgram* stdShader_CompileAndCreate(const char* pName, const char* pVert
     return pProgram;
 }
 
+static void GetUniformLocations(void)
+{
+    GLShaderProgram* pProgram = stdShader_activeShader;
+    GLuint handle             = pProgram->handle;
+    pProgram->mainTexLoc      = glGetUniformLocation(handle, "sTexture");
+    pProgram->extraLightLoc   = glGetUniformLocation(handle, "cExtraLight");
+    pProgram->vertexSpaceLoc  = glGetUniformLocation(handle, "iVertexSpace");
+    pProgram->lightModeLoc    = glGetUniformLocation(handle, "iLightMode");
+    pProgram->alphaLoc        = glGetUniformLocation(handle, "fAlpha");
+    pProgram->modelMatrixLoc  = glGetUniformLocation(handle, "mModelMatrix");
+    pProgram->alphaCutLoc     = glGetUniformLocation(handle, "bAlphaCut");
+    pProgram->renderLightsLoc = glGetUniformLocation(handle, "bRenderLights");
+    //Sprite stuff
+    pProgram->spritePosLoc    = glGetUniformLocation(handle, "spritePos");
+    pProgram->spriteSizeLoc   = glGetUniformLocation(handle, "spriteSize");
+    pProgram->spriteRollLoc   = glGetUniformLocation(handle, "rollAngle");
+    pProgram->spriteTypeLoc   = glGetUniformLocation(handle, "spriteType");
+    pProgram->spriteYVecLoc   = glGetUniformLocation(handle, "yVec");
+    pProgram->spriteOffsetLoc = glGetUniformLocation(handle, "spriteOffset");
+    //particle stuff
+    pProgram->particlePosLoc      = glGetUniformLocation(handle, "particlePos");
+    pProgram->particleHalfSizeLoc = glGetUniformLocation(handle, "particleHalfSize");
+    //polyline stuff
+    pProgram->polylinePosLoc = glGetUniformLocation(handle, "polyViewPos");
+    pProgram->polylineUVLoc  = glGetUniformLocation(handle, "polyTexCoord");
+}
+
 void J3DAPI stdShader_Free(GLShaderProgram* sh)
 {
     stdShader_ResetShader(sh);
@@ -539,7 +572,7 @@ void stdShader_SetTexture(GLShaderProgram* sh, GLuint tex)
         stdShader_SetActiveShader(sh);
     }
     glBindTexture(GL_TEXTURE_2D, tex);
-    glUniform1i(glGetUniformLocation(stdShader_activeShader->handle, "sTexture"), stdShader_activeTextureUnit);
+    glUniform1i(stdShader_activeShader->mainTexLoc, stdShader_activeTextureUnit);
     stdShader_SetActiveShader(currentProgram);
 }
 

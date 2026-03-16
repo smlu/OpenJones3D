@@ -104,10 +104,35 @@ typedef struct _GLRECT
     LONG y2;
 } GLRECT;
 
-typedef struct GLShaderProgram
+typedef struct sGLShaderProgram
 {
     GLuint handle;
     const char* name; // for debugging
+
+    GLint mainTexLoc;
+    GLint vertexSpaceLoc;
+    GLint extraLightLoc;
+    GLint alphaLoc;
+    GLint lightModeLoc;
+    GLint modelMatrixLoc;
+    GLint alphaCutLoc;
+    GLint renderLightsLoc;
+
+    //sprite stuff
+    GLint spritePosLoc;
+    GLint spriteOffsetLoc;
+    GLint spriteSizeLoc;
+    GLint spriteRollLoc;
+    GLint spriteTypeLoc;
+    GLint spriteYVecLoc;
+
+    //particle stuff
+    GLint particlePosLoc;
+    GLint particleHalfSizeLoc;
+
+    //polyline stuff
+    GLint polylinePosLoc;
+    GLint polylineUVLoc;
 } GLShaderProgram;
 
 
