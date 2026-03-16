@@ -706,7 +706,7 @@ void stdShader_UpdateGlobalUniforms(void)
 {
     rdCamera* cam = rdCamera_g_pCurCamera;
 
-    if ( cam == NULL )
+    if ( cam == NULL || cam->pCanvas == NULL || cam->pFrustum == NULL )
     {
         return;
     }
