@@ -690,4 +690,154 @@ static GeometryBatch rdCache_geometryBatch = { 0 };
 static ModelBatch rdCache_modelBatch       = { 0 };
 static QuadBatch rdCache_quadBatch         = { 0 };
 
+static int rdCache_DrawCallDistanceCompare(const rdPayload* pEntry1, const rdPayload* pEntry2)
+{
+    if ( pEntry2->distance <= pEntry1->distance )
+    {
+        return -1;
+    }
+    return 1;
+}
+
+static uint8_t rdQuantizeFloat8(float v)
+{
+    return (uint8_t)(DWORD)(v * 255.0f) & 0xFF;
+}
+
+static uint16_t rdQuantizeFloat16(float v)
+{
+    if ( v <= 0.0f ) return 0;
+    if ( v >= 10.0f ) return 0xFFFF; // 65535
+    return (uint16_t)(v / 10.0f * 65535.0f + 0.5f);
+}
+
+static uint8_t Std3D_ExtractBatchState(Std3DRenderState rs)
+{
+    uint8_t state = 0;
+
+    if ( rs & STD3D_RS_TEXFILTER_BILINEAR )
+        state |= 1 << 0;
+
+    if ( rs & STD3D_RS_TEXFILTER_ANISOTROPIC )
+        state |= 1 << 1;
+
+    if ( rs & STD3D_RS_TEX_CPAMP_U )
+        state |= 1 << 2;
+
+    if ( rs & STD3D_RS_TEX_CPAMP_V )
+        state |= 1 << 3;
+
+    if ( rs & STD3D_RS_ZWRITE_DISABLED )
+        state |= 1 << 4;
+
+    if ( rs & STD3D_RS_FOG_ENABLED )
+        state |= 1 << 5;
+
+    if ( rs & STD3D_CULL_DISABLED )
+        state |= 1 << 6;
+
+    return state;
+}
+
+static void rdCache_GenerateOpaqueGeoSortKey(rdPayload* draw)
+{
+    uint64_t key = 0;
+
+    key |= ((uint64_t)(draw->type & 0x7)) << 61;
+
+    uint8_t shaderId = (uint8_t)((draw->pShader ? draw->pShader->handle : 0) & 0xFF);
+    key |= ((uint64_t)shaderId) << 53;
+    uint16_t texId = (uint16_t)((draw->pTex ? draw->pTex->id : 0) & 0xFFFF);
+    key |= ((uint64_t)texId) << 37;
+
+    uint32_t rgb24 =
+        D3DRGB(
+            draw->extraLight.red,
+            draw->extraLight.green,
+            draw->extraLight.blue
+        ) & 0x00FFFFFF;
+
+    key |= ((uint64_t)rgb24) << 13;
+
+
+    uint8_t batchFlags = Std3D_ExtractBatchState(draw->rdFlags);
+    key |= ((uint64_t)batchFlags) << 5;
+
+
+    draw->sortKey = key;
+}
+
+
+static void rdCache_GenerateOpaqueModelSortKey(rdPayload* draw)
+{
+    rdModelFacePayload* pModelData = draw->payload;
+    uint64_t key                   = 0;
+
+    key |= ((uint64_t)draw->type & 0xFFu) << 56;
+
+    key |= ((uint64_t)pModelData & 0x00FFFFFFFFFFFFFFull);
+
+    draw->sortKey = key;
+}
+
+static void rdCache_GenerateSpriteSortKey(rdPayload* draw)
+{
+    uint64_t key             = 0;
+    rdSpritePayload* payload = draw->payload;
+
+
+    key |= ((uint64_t)payload->spriteType & 0xFFu) << 56;
+
+
+    uint32_t texId = draw->pTex ? draw->pTex->id : 0;
+    key |= (uint64_t)texId;
+
+    draw->sortKey = key;
+}
+
+static void rdCache_GenerateParticleSortKey(rdPayload* draw)
+{
+    uint64_t key               = 0;
+    rdParticlePayload* payload = draw->payload;
+
+
+    key |= ((uint64_t)draw->type & 0xFF) << 56;
+
+
+    uint16_t texId = (uint16_t)((draw->pTex ? draw->pTex->id : 0) & 0xFFFF);
+    key |= ((uint64_t)texId) << 40;
+
+
+    float halfSize     = payload->particleHalfSize;   // Muss als float im DrawHeader existieren
+    uint16_t qHalfSize = rdQuantizeFloat16(halfSize); // Funktion quantisiert Float auf 16 Bit
+    key |= ((uint64_t)qHalfSize) << 24;
+
+
+    uint8_t r = rdQuantizeFloat8(draw->extraLight.red);
+    uint8_t g = rdQuantizeFloat8(draw->extraLight.green);
+    uint8_t b = rdQuantizeFloat8(draw->extraLight.blue);
+    key |= ((uint64_t)r << 16);
+    key |= ((uint64_t)g << 8);
+    key |= (uint64_t)b;
+
+    draw->sortKey = key;
+}
+
+static void rdCache_GeneratePolyLineSortKey(rdPayload* draw)
+{
+    uint64_t key = 0;
+
+    key |= ((uint64_t)(draw->type & 0x7)) << 61;
+
+    uint16_t texId = (uint16_t)((draw->pTex ? draw->pTex->id : 0) & 0xFFFF);
+    key |= ((uint64_t)texId) << 45;
+
+    draw->sortKey = key;
+}
+
+int rdCache_DrawCallOpaqueCompare(const rdPayload* a, rdPayload* b)
+{
+    return (a->sortKey > b->sortKey) - (a->sortKey < b->sortKey);
+}
+
 #endif
