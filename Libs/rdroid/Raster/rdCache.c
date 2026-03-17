@@ -880,4 +880,83 @@ size_t rdCache_AddFaceInfoEntry(const size_t indexOffset, const size_t numVertic
     return faceNum;
 }
 
+static rdPayload* rdCache_GetDrawCall(rdDrawType type, rdPayload* payloads, size_t numDrawCalls)
+{
+    if ( numDrawCalls >= RD_CACHE_MAX_DRAW_CALLS )
+    {
+        rdCache_FlushGeoDrawCalls();
+        numDrawCalls = 0;
+    }
+
+    rdCache_currentDrawType = type;
+
+    bool bFlush   = false;
+    size_t* index = NULL;
+
+    switch ( type )
+    {
+        case RD_DRAW_GEOMETRY:
+            index = &rdCache_numGeoDrawCalls;
+            bFlush = rdCache_numGeoDrawCalls >= RD_CACHE_MAX_DRAW_CALLS;
+            break;
+        case RD_DRAW_MODEL:
+            index = &rdCache_numModelDrawCalls;
+            bFlush = rdCache_numModelDrawCalls >= RD_CACHE_MAX_DRAW_CALLS;
+            break;
+        case RD_DRAW_SPRITE:
+            index = &rdCache_numSpriteDrawCalls;
+            bFlush = rdCache_numSpriteDrawCalls >= RD_CACHE_MAX_DRAW_CALLS;
+            break;
+        case RD_DRAW_PARTICLE:
+            index = &rdCache_numParticleDrawCalls;
+            bFlush = rdCache_numParticleDrawCalls >= RD_CACHE_MAX_DRAW_CALLS;
+            break;
+        case RD_DRAW_POLYLINE:
+        case RD_DRAW_SHADOW:
+            index = &rdCache_numPolyLineDrawCalls;
+            bFlush = rdCache_numPolyLineDrawCalls >= RD_CACHE_MAX_DRAW_CALLS;
+            break;
+    }
+
+    if ( bFlush )
+    {
+        rdCache_FlushGeoDrawCalls();
+        numDrawCalls = 0;
+    }
+
+    rdPayload* pPayload = &payloads[numDrawCalls];
+    switch ( type )
+    {
+        case RD_DRAW_GEOMETRY:
+            pPayload->payload = &rdCache_geoDrawCalls[*index];
+            break;
+        case RD_DRAW_MODEL:
+            pPayload->payload = &rdCache_modelDrawCalls[*index];
+            break;
+        case RD_DRAW_SPRITE:
+            pPayload->payload = &rdCache_spriteDrawCalls[*index];
+            break;
+        case RD_DRAW_PARTICLE:
+            pPayload->payload = &rdCache_particleDrawCalls[*index];
+            break;
+        case RD_DRAW_POLYLINE:
+        case RD_DRAW_SHADOW:
+            pPayload->payload = &rdCache_polyLineDrawCalls[*index];
+            break;
+    }
+    pPayload->pShader   = NULL;
+    pPayload->pMaterial = NULL;
+    return pPayload;
+}
+
+rdPayload* rdCache_GetOpaqueDrawCall(rdDrawType type)
+{
+    return rdCache_GetDrawCall(type, rdCache_OpaqueDrawCalls, rdCache_NumOpaqueDrawCalls);
+}
+
+rdPayload* rdCache_GetTransparentDrawCall(rdDrawType type)
+{
+    return rdCache_GetDrawCall(type, rdCache_transparentDrawCalls, rdCache_NumTransparentDrawCalls);
+}
+
 #endif
