@@ -1117,4 +1117,81 @@ void rdCache_AddTransparentDrawCall(void)
     rdCache_AddDrawCall(header);
     header->rdFlags |= STD3D_BLEND_ENABLED;
 }
+
+static void rdCache_SetInstanceData(rdPayload* drawCalls, size_t numDrawCalls)
+{
+    for ( size_t i = 0; i < numDrawCalls; i++ )
+    {
+        rdPayload* header = &drawCalls[i];
+        if ( header->type != RD_DRAW_MODEL && header->type != RD_DRAW_SPRITE && header->type != RD_DRAW_PARTICLE && header->type != RD_DRAW_POLYLINE )
+            continue;
+
+        InstanceData* pData = &rdCache_instanceData[rdCache_numInstances++];
+
+        switch ( header->type )
+        {
+            case RD_DRAW_MODEL:
+                rdModelFacePayload* pModelData = header->payload;
+                stdShader_ConvertToMat4(pModelData->modelMatrix, pData->modelMatrix);
+                pData->secLightPos[0] = pModelData->lightPosition.x;
+                pData->secLightPos[1] = pModelData->lightPosition.z;
+                pData->secLightPos[2] = -pModelData->lightPosition.y;
+                pData->secLightPos[3] = pModelData->sectorLight.maxRadius;
+
+                pData->secLightColor[0] = pModelData->sectorLight.color.red;
+                pData->secLightColor[1] = pModelData->sectorLight.color.green;
+                pData->secLightColor[2] = pModelData->sectorLight.color.blue;
+                pData->secLightColor[3] = pModelData->sectorLight.minRadius;
+                break;
+            case RD_DRAW_SPRITE:
+                rdSpritePayload* pSpriteData = header->payload;
+                //sprite pos
+                stdShader_ConvertToMat4(&pSpriteData->modelMatrix, pData->modelMatrix);
+                //sprite offset
+                pData->spriteOffset[0] = pSpriteData->spriteOffset.x;
+                pData->spriteOffset[1] = pSpriteData->spriteOffset.z;
+                pData->spriteOffset[2] = -pSpriteData->spriteOffset.y;
+                //halfSize
+                pData->spriteHalfSize[0] = pSpriteData->spriteSize.x;
+                pData->spriteHalfSize[1] = pSpriteData->spriteSize.y;
+                break;
+            case RD_DRAW_PARTICLE:
+                rdParticlePayload* pParticleData = header->payload;
+                pData->particlePos[0] = pParticleData->particlePos.x;
+                pData->particlePos[1] = pParticleData->particlePos.z;
+                pData->particlePos[2] = -pParticleData->particlePos.y;
+                pData->particlePos[3] = pParticleData->particleHalfSize;
+
+                break;
+            case RD_DRAW_POLYLINE:
+            case RD_DRAW_SHADOW:
+                rdPolyLinePayload* polyLineData = header->payload;
+                for ( size_t j = 0; j < 4; ++j )
+                {
+                    pData->modelMatrix[j * 4 + 0] = polyLineData->vertices[j].x;
+                    pData->modelMatrix[j * 4 + 1] = polyLineData->vertices[j].z;
+                    pData->modelMatrix[j * 4 + 2] = -polyLineData->vertices[j].y;
+
+                    if ( j < 2 )
+                    {
+                        pData->polyLineUV01[j * 2 + 0] = polyLineData->texCoords[j].x;
+                        pData->polyLineUV01[j * 2 + 1] = polyLineData->texCoords[j].y;
+                    }
+                    else
+                    {
+                        pData->polyLineUV23[(j - 2) * 2 + 0] = polyLineData->texCoords[j].x;
+                        pData->polyLineUV23[(j - 2) * 2 + 1] = polyLineData->texCoords[j].y;
+                    }
+                }
+                break;
+            default:
+                continue;
+        }
+        float red         = header->extraLight.red;
+        float green       = header->extraLight.green;
+        float blue        = header->extraLight.blue;
+        float alpha       = header->extraLight.alpha;
+        pData->extraLight = D3DRGBA(red, green, blue, alpha);
+    }
+}
 #endif
