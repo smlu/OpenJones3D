@@ -37,5 +37,10 @@ void J3DAPI rdCache_AddToTextureCache(tSystemTexture* pTexture, StdColorFormatTy
 void rdCache_InstallHooks(void);
 void rdCache_ResetGlobals(void);
 
+#ifdef J3D_OPENGL
+void rdCache_InitFaceDrawInfo(size_t numFaces);
+void rdCache_FreeFaceDrawInfos(void);
+size_t rdCache_AddFaceInfoEntry(size_t indexOffset, size_t numVertices);
+#endif
 J3D_EXTERN_C_END
 #endif // RDROID_RDCACHE_H

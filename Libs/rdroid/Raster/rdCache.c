@@ -15,6 +15,7 @@
 #include "rdroid/Math/rdMatrix.h"
 #include "rdroid/Math/rdVector.h"
 #include "sith/Engine/sithCamera.h"
+#include "std/General/stdMemory.h"
 
 #define RDCACHE_VERTBUFFERSIZE RDCACHE_MAXVERTICES * RDCACHE_MAXFACEVERTICES
 
@@ -690,6 +691,11 @@ static GeometryBatch rdCache_geometryBatch = { 0 };
 static ModelBatch rdCache_modelBatch       = { 0 };
 static QuadBatch rdCache_quadBatch         = { 0 };
 
+static void rdCache_SendDrawCallsToHardware(rdPayload* drawCalls, size_t numDrawCalls);
+static size_t rdCache_BatchGeometryDrawCalls(size_t start, rdPayload* drawCalls, size_t numDrawCalls);
+static size_t rdCache_BatchModelDrawCalls(size_t start, rdPayload* drawCalls, size_t numDrawCalls);
+static size_t rdCache_BatchQuadDrawCalls(size_t start, rdPayload* drawCalls, size_t numDrawCalls);
+
 static int rdCache_DrawCallDistanceCompare(const rdPayload* pEntry1, const rdPayload* pEntry2)
 {
     if ( pEntry2->distance <= pEntry1->distance )
@@ -838,6 +844,40 @@ static void rdCache_GeneratePolyLineSortKey(rdPayload* draw)
 int rdCache_DrawCallOpaqueCompare(const rdPayload* a, rdPayload* b)
 {
     return (a->sortKey > b->sortKey) - (a->sortKey < b->sortKey);
+}
+
+
+void rdCache_InitFaceDrawInfo(const size_t numFaces)
+{
+    rdCache_FaceDrawInfos = STDMALLOC(numFaces * sizeof(FaceDrawInfo));
+    std3D_InitInstanceVBO(RD_CACHE_MAX_INSTANCES);
+}
+
+void rdCache_FreeFaceDrawInfos(void)
+{
+    if ( !rdCache_FaceDrawInfos )
+        return;
+
+    STDFREE(rdCache_FaceDrawInfos);
+    rdCache_FaceDrawInfos           = NULL;
+    rdCache_NumFaces                = 0;
+    rdCache_numGeoDrawCalls         = 0;
+    rdCache_NumOpaqueDrawCalls      = 0;
+    rdCache_NumTransparentDrawCalls = 0;
+    rdCache_numModelDrawCalls       = 0;
+    rdCache_numSpriteDrawCalls      = 0;
+    rdCache_numParticleDrawCalls    = 0;
+    rdCache_numPolyLineDrawCalls    = 0;
+}
+
+size_t rdCache_AddFaceInfoEntry(const size_t indexOffset, const size_t numVertices)
+{
+    size_t faceNum         = rdCache_NumFaces++;
+    FaceDrawInfo* drawInfo = &rdCache_FaceDrawInfos[faceNum];
+    drawInfo->indexOffset  = indexOffset;
+    drawInfo->numVertices  = numVertices;
+
+    return faceNum;
 }
 
 #endif
