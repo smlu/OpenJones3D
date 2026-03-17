@@ -1008,4 +1008,62 @@ static Std3DRenderState rdCache_GetRenderStateOfFace(const rdPayload* pPayload)
 
     return rdFlags;
 }
+
+static tSysTexture* rdCache_GetFaceTexture(const rdPayload* pPayload)
+{
+    rdMaterial* pCurMat = NULL;
+    if ( rdroid_g_curGeometryMode != RD_GEOMETRY_SOLID )
+    {
+        pCurMat = pPayload->pMaterial;
+    }
+
+    int curMatCelNum            = -1;
+    tSysTexture* pCachedTexture = NULL;
+    if ( pCurMat )
+    {
+        tSystemTexture* pTex = NULL;
+        curMatCelNum         = pPayload->matCelNum;
+        if ( curMatCelNum == -1 )
+        {
+            if ( pCurMat->curCelNum < 0 )
+            {
+                curMatCelNum = 0;
+            }
+            if ( pCurMat->curCelNum > pCurMat->numCels - 1 )
+            {
+                curMatCelNum = pCurMat->numCels - 1;
+            }
+            else
+            {
+                curMatCelNum = pCurMat->curCelNum;
+            }
+
+            pTex = &pCurMat->aTextures[curMatCelNum];
+            rdCache_AddToTextureCache(pTex, pCurMat->formatType);
+        }
+        else
+        {
+            if ( curMatCelNum < 0 )
+            {
+                curMatCelNum = 0;
+            }
+
+            else if ( curMatCelNum > pCurMat->numCels - 1 )
+            {
+                curMatCelNum = pCurMat->numCels - 1;
+            }
+            else
+            {
+                curMatCelNum = pPayload->matCelNum;
+            }
+
+            pTex = &pCurMat->aTextures[curMatCelNum];
+            rdCache_AddToTextureCache(pTex, pCurMat->formatType);
+        }
+
+        pCachedTexture = pTex->pCachedTexture;
+    }
+
+    return pCachedTexture;
+}
 #endif
