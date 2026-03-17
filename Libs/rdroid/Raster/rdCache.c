@@ -1220,4 +1220,132 @@ void rdCache_FlushGeoDrawCalls(void)
     rdCache_numInstances            = 0;
 }
 
+static size_t rdCache_BatchGeometryDrawCalls(size_t start, rdPayload* drawCalls, size_t numDrawCalls)
+{
+    size_t drawCount = 0;
+    size_t i         = start;
+
+    rdPayload* header         = &drawCalls[i];
+    rdGeoFacePayload* payload = header->payload;
+    uint64_t sortKey          = header->sortKey;
+
+    FaceDrawInfo* drawInfo = &rdCache_FaceDrawInfos[payload->faceNum];
+
+    // Batch state
+    rdCache_geometryBatch.pTex          = header->pTex;
+    rdCache_geometryBatch.pShader       = header->pShader;
+    rdCache_geometryBatch.rdFlags       = header->rdFlags;
+    rdCache_geometryBatch.extraLight[0] = header->extraLight.red;
+    rdCache_geometryBatch.extraLight[1] = header->extraLight.green;
+    rdCache_geometryBatch.extraLight[2] = header->extraLight.blue;
+    rdCache_geometryBatch.extraLight[3] = header->extraLight.alpha;
+    rdCache_geometryBatch.lightMode     = header->lightingMode;
+
+    // First draw
+    rdCache_geometryBatch.indexCounts[0]  = drawInfo->numVertices;
+    rdCache_geometryBatch.indexOffsets[0] = drawInfo->indexOffset * sizeof(GLuint);
+    drawCount++;
+    i++;
+
+    // Batch following
+    while ( i < numDrawCalls && drawCount < MAX_BATCHES )
+    {
+        header  = &drawCalls[i];
+        payload = header->payload;
+        if ( header->sortKey != sortKey ||
+            header->lightingMode != rdCache_geometryBatch.lightMode || header->rdFlags != rdCache_geometryBatch.rdFlags )
+        {
+            break;
+        }
+        drawInfo = &rdCache_FaceDrawInfos[payload->faceNum];
+
+        rdCache_geometryBatch.indexCounts[drawCount]  = drawInfo->numVertices;
+        rdCache_geometryBatch.indexOffsets[drawCount] = drawInfo->indexOffset * sizeof(GLuint);
+
+        drawCount++;
+        i++;
+    }
+
+    rdCache_geometryBatch.drawCount = (GLsizei)drawCount;
+    return drawCount;
+}
+
+static size_t rdCache_BatchModelDrawCalls(size_t start, rdPayload* drawCalls, size_t numDrawCalls)
+{
+    size_t drawCount = 0;
+    size_t i         = start;
+
+    rdPayload* header           = &drawCalls[i];
+    rdModelFacePayload* payload = header->payload;
+    uint64_t sortKey            = header->sortKey;
+
+    // Batch state
+    rdCache_modelBatch.pTex        = header->pTex;
+    rdCache_modelBatch.pShader     = header->pShader;
+    rdCache_modelBatch.rdFlags     = header->rdFlags;
+    rdCache_modelBatch.lightMode   = header->lightingMode; // First draw
+    rdCache_modelBatch.indexCount  = rdCache_FaceDrawInfos[payload->faceNum].numVertices;
+    rdCache_modelBatch.indexOffset = rdCache_FaceDrawInfos[payload->faceNum].indexOffset;
+    drawCount++;
+    i++;
+
+    // Batch following
+    while ( i < numDrawCalls )
+    {
+        header  = &drawCalls[i];
+        payload = header->payload;
+
+        if ( header->sortKey != sortKey ||
+            header->lightingMode != rdCache_modelBatch.lightMode )
+        {
+            break;
+        }
+
+        drawCount++;
+        i++;
+    }
+
+    //STDLOG_DEBUG("Instance count: %u\n", drawCount);
+
+    rdCache_modelBatch.numberOfInstances = (GLsizei)drawCount;
+    return drawCount;
+}
+
+static size_t rdCache_BatchQuadDrawCalls(size_t start, rdPayload* drawCalls, size_t numDrawCalls)
+{
+    size_t drawCount = 0;
+    size_t i         = start;
+
+    rdPayload* header = &drawCalls[i];
+    uint64_t sortKey  = header->sortKey;
+
+    QuadBatch* batch = &rdCache_quadBatch;
+
+    // Batch state
+    batch->pTex      = header->pTex;
+    batch->rdFlags   = header->rdFlags;
+    batch->lightMode = header->lightingMode;
+
+
+    drawCount++;
+    i++;
+
+    // Batch following
+    while ( i < numDrawCalls )
+    {
+        header = &drawCalls[i];
+
+        if ( header->sortKey != sortKey ||
+            header->lightingMode != batch->lightMode )
+        {
+            break;
+        }
+        drawCount++;
+        i++;
+    }
+
+    batch->numberOfInstances = (GLsizei)drawCount;
+    return drawCount;
+}
+
 #endif
