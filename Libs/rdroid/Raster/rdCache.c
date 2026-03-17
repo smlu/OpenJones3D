@@ -650,4 +650,44 @@ int J3DAPI rdCache_ProcFaceCompare(const rdCacheProcEntry* pEntry1, const rdCach
 #define RD_CACHE_MAX_POLYLINE_DRAW_CALLS 10
 
 #define RD_CACHE_MAX_INSTANCES RD_CACHE_MAX_MODEL_DRAW_CALLS + RD_CACHE_MAX_SPRITE_DRAW_CALLS + RD_CACHE_MAX_PARTICLE_DRAW_CALLS + RD_CACHE_MAX_POLYLINE_DRAW_CALLS
+
+typedef struct sFaceDrawInfo
+{
+    size_t indexOffset;
+    size_t numVertices;
+} FaceDrawInfo;
+
+static FaceDrawInfo* rdCache_FaceDrawInfos = NULL;
+static size_t rdCache_NumFaces             = 0;
+
+static rdPayload rdCache_OpaqueDrawCalls[RD_CACHE_MAX_DRAW_CALLS];
+static size_t rdCache_NumOpaqueDrawCalls = 0;
+
+static rdPayload rdCache_transparentDrawCalls[RD_CACHE_MAX_DRAW_CALLS];
+static size_t rdCache_NumTransparentDrawCalls = 0;
+
+static rdGeoFacePayload rdCache_geoDrawCalls[RD_CACHE_MAX_DRAW_CALLS];
+static size_t rdCache_numGeoDrawCalls = 0;
+
+static rdModelFacePayload rdCache_modelDrawCalls[RD_CACHE_MAX_DRAW_CALLS];
+static size_t rdCache_numModelDrawCalls = 0;
+
+static rdSpritePayload rdCache_spriteDrawCalls[RD_CACHE_MAX_DRAW_CALLS];
+static size_t rdCache_numSpriteDrawCalls = 0;
+
+static rdParticlePayload rdCache_particleDrawCalls[RD_CACHE_MAX_DRAW_CALLS];
+static size_t rdCache_numParticleDrawCalls = 0;
+
+static rdPolyLinePayload rdCache_polyLineDrawCalls[RD_CACHE_MAX_DRAW_CALLS];
+static size_t rdCache_numPolyLineDrawCalls = 0;
+
+static InstanceData rdCache_instanceData[RD_CACHE_MAX_INSTANCES];
+static size_t rdCache_numInstances = 0;
+
+static rdDrawType rdCache_currentDrawType;
+
+static GeometryBatch rdCache_geometryBatch = { 0 };
+static ModelBatch rdCache_modelBatch       = { 0 };
+static QuadBatch rdCache_quadBatch         = { 0 };
+
 #endif
