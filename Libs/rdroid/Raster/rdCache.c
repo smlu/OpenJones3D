@@ -1194,4 +1194,30 @@ static void rdCache_SetInstanceData(rdPayload* drawCalls, size_t numDrawCalls)
         pData->extraLight = D3DRGBA(red, green, blue, alpha);
     }
 }
+
+void rdCache_FlushGeoDrawCalls(void)
+{
+    // STDLOG_DEBUG("Num geo calls: %u\n", rdCache_numGeoDrawCalls);
+    // STDLOG_DEBUG("Num model face calls: %u\n", rdCache_numModelDrawCalls);
+    qsort(rdCache_OpaqueDrawCalls, rdCache_NumOpaqueDrawCalls, sizeof(rdPayload), rdCache_DrawCallOpaqueCompare);
+    qsort(rdCache_transparentDrawCalls, rdCache_NumTransparentDrawCalls, sizeof(rdPayload), rdCache_DrawCallDistanceCompare);
+
+    rdCache_SetInstanceData(rdCache_OpaqueDrawCalls, rdCache_NumOpaqueDrawCalls);
+    rdCache_SetInstanceData(rdCache_transparentDrawCalls, rdCache_NumTransparentDrawCalls);
+
+    std3D_UpdateInstanceVBO(rdCache_instanceData, rdCache_numInstances);
+
+    rdCache_SendDrawCallsToHardware(rdCache_OpaqueDrawCalls, rdCache_NumOpaqueDrawCalls);
+    rdCache_SendDrawCallsToHardware(rdCache_transparentDrawCalls, rdCache_NumTransparentDrawCalls);
+
+    rdCache_numGeoDrawCalls         = 0;
+    rdCache_NumOpaqueDrawCalls      = 0;
+    rdCache_NumTransparentDrawCalls = 0;
+    rdCache_numModelDrawCalls       = 0;
+    rdCache_numSpriteDrawCalls      = 0;
+    rdCache_numParticleDrawCalls    = 0;
+    rdCache_numPolyLineDrawCalls    = 0;
+    rdCache_numInstances            = 0;
+}
+
 #endif
