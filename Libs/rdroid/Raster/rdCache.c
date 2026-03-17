@@ -959,4 +959,53 @@ rdPayload* rdCache_GetTransparentDrawCall(rdDrawType type)
     return rdCache_GetDrawCall(type, rdCache_transparentDrawCalls, rdCache_NumTransparentDrawCalls);
 }
 
+
+static Std3DRenderState rdCache_GetRenderStateOfFace(const rdPayload* pPayload)
+{
+    rdFaceFlags fFlags       = pPayload->flags;
+    Std3DRenderState rdFlags = STD3D_RS_SUBPIXEL_CORRECTION | STD3D_RS_UNKNOWN_2 | STD3D_RS_UNKNOWN_1;
+
+    if ( (fFlags & RD_FF_TEX_CLAMP_X) != 0 )
+    {
+        rdFlags |= STD3D_RS_TEX_CPAMP_U;
+    }
+
+    if ( (fFlags & RD_FF_TEX_CLAMP_Y) != 0 )
+    {
+        rdFlags |= STD3D_RS_TEX_CPAMP_V;
+    }
+
+    if ( (fFlags & RD_FF_TEX_FILTER_NEAREST) == 0 )
+    {
+        rdFlags |= J3D_QOL_VALUE(STD3D_RS_TEXFILTER_ANISOTROPIC, STD3D_RS_TEXFILTER_BILINEAR); // Altered: Use STD3D_RS_TEXFILTER_ANISOTROPIC.
+    }
+
+    if ( (fFlags & RD_FF_ZWRITE_DISABLED) != 0 )
+    {
+        rdFlags |= STD3D_RS_ZWRITE_DISABLED;
+    }
+
+    if ( (fFlags & RD_FF_FOG_ENABLED) != 0 )
+    {
+        rdFlags |= STD3D_RS_FOG_ENABLED;
+    }
+
+    // if ( (fFlags & RD_FF_BLEND_ENABLED) != 0 )
+    // {
+    //     rdFlags |= STD3D_BLEND_ENABLED;
+    // }
+
+    if ( (fFlags & RD_FF_DOUBLE_SIDED) != 0 || (rdroid_g_curRenderOptions & RDROID_BACKFACE_CULLING_ENABLED) == 0 )
+    {
+        rdFlags |= STD3D_CULL_DISABLED;
+    }
+
+    if ( pPayload->pMaterial && pPayload->pMaterial->formatType == STDCOLOR_FORMAT_RGBA_1BITALPHA )
+    {
+        rdFlags |= STD3D_RS_ALPHAREF_SET;
+        rdFlags &= ~STD3D_RS_ZWRITE_DISABLED;
+    }
+
+    return rdFlags;
+}
 #endif

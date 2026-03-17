@@ -43,6 +43,9 @@ void rdCache_FreeFaceDrawInfos(void);
 size_t rdCache_AddFaceInfoEntry(size_t indexOffset, size_t numVertices);
 rdPayload* rdCache_GetOpaqueDrawCall(rdDrawType type);
 rdPayload* rdCache_GetTransparentDrawCall(rdDrawType type);
+void rdCache_AddOpaqueDrawCall(void);
+void rdCache_AddTransparentDrawCall(void);
+void rdCache_FlushGeoDrawCalls(void);
 #endif
 J3D_EXTERN_C_END
 #endif // RDROID_RDCACHE_H
