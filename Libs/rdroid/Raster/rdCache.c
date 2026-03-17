@@ -16,6 +16,7 @@
 #include "rdroid/Math/rdVector.h"
 #include "sith/Engine/sithCamera.h"
 #include "std/General/stdMemory.h"
+#include "std/Win95/stdShader.h"
 
 #define RDCACHE_VERTBUFFERSIZE RDCACHE_MAXVERTICES * RDCACHE_MAXFACEVERTICES
 
@@ -1218,6 +1219,46 @@ void rdCache_FlushGeoDrawCalls(void)
     rdCache_numParticleDrawCalls    = 0;
     rdCache_numPolyLineDrawCalls    = 0;
     rdCache_numInstances            = 0;
+}
+
+static void rdCache_SendDrawCallsToHardware(rdPayload* drawCalls, size_t numDrawCalls)
+{
+    int drawMode = rdroid_g_curGeometryMode;
+    for ( size_t i = 0; i < numDrawCalls; i++ )
+    {
+        rdPayload* header = &drawCalls[i];
+        switch ( header->type )
+        {
+            case RD_DRAW_GEOMETRY:
+                i += rdCache_BatchGeometryDrawCalls(i, drawCalls, numDrawCalls) - 1;
+                std3D_DrawGeometryBatch(&rdCache_geometryBatch, drawMode);
+                break;
+            case RD_DRAW_MODEL:
+                i += rdCache_BatchModelDrawCalls(i, drawCalls, numDrawCalls) - 1;
+                std3D_DrawModelBatch(&rdCache_modelBatch, drawMode);
+                break;
+            case RD_DRAW_SPRITE:
+                i += rdCache_BatchQuadDrawCalls(i, drawCalls, numDrawCalls) - 1;
+                const rdSpritePayload* pPayload = header->payload;
+                rdCache_quadBatch.spriteType    = pPayload->spriteType;
+                rdCache_quadBatch.pShader       = stdShader_GetShader("std_sprite");
+                std3D_DrawQuadBatch(&rdCache_quadBatch, drawMode);
+                break;
+            case RD_DRAW_PARTICLE:
+                i += rdCache_BatchQuadDrawCalls(i, drawCalls, numDrawCalls) - 1;
+                rdCache_quadBatch.pShader = stdShader_GetShader("std_particle");
+                std3D_DrawQuadBatch(&rdCache_quadBatch, drawMode);
+                break;
+            case RD_DRAW_POLYLINE:
+            case RD_DRAW_SHADOW:
+                i += rdCache_BatchQuadDrawCalls(i, drawCalls, numDrawCalls) - 1;
+                rdCache_quadBatch.pShader = stdShader_GetShader("std_polyline");
+                std3D_DrawQuadBatch(&rdCache_quadBatch, drawMode);
+                break;
+            default:
+                continue;
+        }
+    }
 }
 
 static size_t rdCache_BatchGeometryDrawCalls(size_t start, rdPayload* drawCalls, size_t numDrawCalls)
