@@ -1066,4 +1066,55 @@ static tSysTexture* rdCache_GetFaceTexture(const rdPayload* pPayload)
 
     return pCachedTexture;
 }
+
+static void rdCache_AddDrawCall(rdPayload* header)
+{
+    header->rdFlags = rdCache_GetRenderStateOfFace(header);
+    header->pTex    = rdCache_GetFaceTexture(header);
+
+    switch ( rdCache_currentDrawType )
+    {
+        case RD_DRAW_GEOMETRY:
+            rdCache_numGeoDrawCalls++;
+            header->type = RD_DRAW_GEOMETRY;
+            rdCache_GenerateOpaqueGeoSortKey(header);
+            break;
+        case RD_DRAW_MODEL:
+            rdCache_numModelDrawCalls++;
+            header->type = RD_DRAW_MODEL;
+            rdCache_GenerateOpaqueModelSortKey(header);
+            break;
+        case RD_DRAW_SPRITE:
+            rdCache_numSpriteDrawCalls++;
+            header->type = RD_DRAW_SPRITE;
+            rdCache_GenerateSpriteSortKey(header);
+            break;
+        case RD_DRAW_PARTICLE:
+            rdCache_numParticleDrawCalls++;
+            header->type = RD_DRAW_PARTICLE;
+            rdCache_GenerateParticleSortKey(header);
+            break;
+        case RD_DRAW_POLYLINE:
+        case RD_DRAW_SHADOW:
+            rdCache_numPolyLineDrawCalls++;
+            header->type = RD_DRAW_POLYLINE;
+            rdCache_GeneratePolyLineSortKey(header);
+            break;
+        default:
+            break;
+    }
+}
+
+void rdCache_AddOpaqueDrawCall(void)
+{
+    rdPayload* header = &rdCache_OpaqueDrawCalls[rdCache_NumOpaqueDrawCalls++];
+    rdCache_AddDrawCall(header);
+}
+
+void rdCache_AddTransparentDrawCall(void)
+{
+    rdPayload* header = &rdCache_transparentDrawCalls[rdCache_NumTransparentDrawCalls++];
+    rdCache_AddDrawCall(header);
+    header->rdFlags |= STD3D_BLEND_ENABLED;
+}
 #endif
