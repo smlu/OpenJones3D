@@ -2010,6 +2010,78 @@ void sithRender_RenderAlphaAdjoinsWorldSpace(void)
         rdCache_FlushAlpha();
     }
 }
+
+void sithRender_RenderAlphaAdjoinsStatic(void)
+{
+    sithRender_g_numAlphaArchPolys = 0;
+
+    rdFaceFlags extraFaceFlags = 0;
+    if ( sithWorld_g_pCurrentWorld->fog.bEnabled )
+    {
+        extraFaceFlags = RD_FF_FOG_ENABLED;
+    }
+
+    bool bFlush = false;
+    for ( size_t surfNum = 0; surfNum < sithRender_numAlphaAdjoins; ++surfNum )
+    {
+        SithSurface* pSurf = sithRender_aAlphaAdjoins[surfNum];
+        bool bAlpha        = pSurf->face.pMaterial->formatType == STDCOLOR_FORMAT_RGBA;
+        rdPayload* pPayload;
+        if ( bAlpha )
+        {
+            pPayload = rdCache_GetTransparentDrawCall(RD_DRAW_GEOMETRY);
+        }
+        else
+        {
+            pPayload = rdCache_GetOpaqueDrawCall(RD_DRAW_GEOMETRY);
+        }
+
+        rdGeoFacePayload* pDrawCall = pPayload->payload;
+
+
+        rdVector4 extraLight = pSurf->face.extraLight;
+        rdVector_Add4Acc(&extraLight, &pSurf->pSector->extraLight);
+        extraLight.alpha       = pSurf->aIntensities[0].alpha;
+        pDrawCall->vertexSpace = STD3D_VS_WORLD;
+        pPayload->lightingMode = pSurf->face.lightingMode >= sithRender_lightMode ? sithRender_lightMode : pSurf->face.lightingMode;
+        pDrawCall->faceNum     = pSurf->face.num;
+        pPayload->flags        = pSurf->face.flags;
+        pPayload->flags |= extraFaceFlags;
+        pPayload->extraLight = extraLight;
+        pPayload->pMaterial  = pSurf->face.pMaterial;
+        pPayload->matCelNum  = pSurf->face.matCelNum;
+
+        if ( bAlpha )
+        {
+            float distance = FLT_MAX; // 3.4028235e38f;
+
+            // get min z in camera space
+            for ( size_t i = 0; i < pSurf->face.numVertices; ++i )
+            {
+                rdVector3 min = sithWorld_g_pCurrentWorld->aVertices[pSurf->face.aVertices[i]];
+
+                rdMatrix_TransformPoint34Acc(&min, &rdCamera_g_pCurCamera->viewMatrix);
+                if ( min.y < distance )
+                {
+                    distance = min.y;
+                }
+            }
+            pPayload->distance = distance;
+            rdCache_AddTransparentDrawCall();
+        }
+        else
+        {
+            rdCache_AddOpaqueDrawCall();
+        }
+        ++sithRender_g_numAlphaArchPolys;
+        bFlush = true;
+    }
+
+
+    // if ( bFlush )
+    // {
+    // }
+}
 #endif
 
 void sithRender_RenderAlphaAdjoins(void)
@@ -2017,7 +2089,7 @@ void sithRender_RenderAlphaAdjoins(void)
 #ifdef J3D_OPENGL
     if ( std3D_GetCurrentDrawState() == STD3D_DS_ALPHA_ADJOINS )
     {
-        sithRender_RenderAlphaAdjoinsWorldSpace();
+        sithRender_RenderAlphaAdjoinsStatic();
         return;
     }
 #endif
