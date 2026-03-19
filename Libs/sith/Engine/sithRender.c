@@ -772,6 +772,9 @@ void sithRender_Draw(void)
     // Now draw everything
     sithRender_RenderSectors();
 
+    rdCache_FlushGeoDrawCalls();
+
+
     std3D_SetDrawState(STD3D_DS_THINGS);
 
     if ( sithRender_numVisibleThingSectors > 0 )
@@ -779,12 +782,15 @@ void sithRender_Draw(void)
         sithRender_RenderThings();
     }
 
+
     std3D_SetDrawState(STD3D_DS_ALPHA_ADJOINS);
 
     if ( sithRender_numAlphaAdjoins > 0 )
     {
         sithRender_RenderAlphaAdjoins();
     }
+    rdCache_FlushGeoDrawCalls();
+
 #else
     // Now draw everything
     sithRender_RenderSectors();
@@ -798,7 +804,9 @@ void sithRender_Draw(void)
     {
         sithRender_RenderAlphaAdjoins();
     }
-#endif       sithAIUtil_RenderAIWaypoints();
+#endif
+
+    sithAIUtil_RenderAIWaypoints();
 }
 
 void J3DAPI sithRender_BuildVisibleSectorList(SithSector* pSector, rdClipFrustum* pFrustrum)
