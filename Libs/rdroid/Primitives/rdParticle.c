@@ -354,8 +354,98 @@ int J3DAPI rdParticle_Write(const char* pFilename, rdParticle* pParticle, const 
     return 1;
 }
 
+#ifdef J3D_OPENGL
+static int rdParticle_DrawStatic(const rdThing* pParticle, const rdMatrix34* pOrient)
+{
+    if ( pParticle->frustumCull == RDFRUSTUMCULL_OUTSIDE )
+    {
+        return 0;
+    }
+
+    rdParticle* prdParticle = pParticle->data.pParticle;
+
+    bool bAlpha = false;
+    if ( prdParticle->pMaterial )
+    {
+        bAlpha = prdParticle->pMaterial->formatType == STDCOLOR_FORMAT_RGBA;
+    }
+
+    rdVector4 ambientLight = { 0 };
+    if ( (rdroid_g_curRenderOptions & RDROID_USE_AMBIENT_CAMERA_LIGHT) != 0 )
+    {
+        rdVector_Copy4(&ambientLight, &rdCamera_g_pCurCamera->ambientLight);
+    }
+    ambientLight.alpha = 1.0f;
+
+
+    rdMatrix34 tmat;
+    rdMatrix_Multiply34(&tmat, &rdCamera_g_pCurCamera->viewMatrix, pOrient);                                               // Combine model and view matrices
+    rdMatrix_TransformPointList34(&tmat, prdParticle->aVerticies, rdParticle_aTransformedVerts, prdParticle->numVertices); // Transform verts to view space
+
+    for ( size_t i = 0; i < prdParticle->numVertices; ++i )
+    {
+        rdPayload* pPayload;
+        bool bThisAlpha = bAlpha && (rdParticle_aTransformedVerts[0].y < 1.5f);
+        if ( bThisAlpha )
+        {
+            pPayload = rdCache_GetTransparentDrawCall(RD_DRAW_PARTICLE);
+        }
+        else
+        {
+            pPayload = rdCache_GetOpaqueDrawCall(RD_DRAW_PARTICLE);
+        }
+
+        pPayload->pMaterial = prdParticle->pMaterial;
+        pPayload->matCelNum = prdParticle->aVertMatCelNums[i];
+        pPayload->flags     = RD_FF_FOG_ENABLED | RD_FF_TEX_CLAMP_Y | RD_FF_TEX_CLAMP_X;
+
+        if ( bThisAlpha )
+        {
+            pPayload->flags |= RD_FF_TEX_TRANSLUCENT | RD_FF_ZWRITE_DISABLED;
+        }
+
+        rdParticlePayload* pDrawCall = pPayload->payload;
+
+
+        pDrawCall->particlePos = rdParticle_aTransformedVerts[i];
+
+        pDrawCall->particleHalfSize = prdParticle->sizeHalf;
+
+        pPayload->lightingMode = prdParticle->lightningMode;
+
+        rdVector4 extraLight;
+        rdVector_Add4(&extraLight, &ambientLight, &prdParticle->aExtraLights[i]);
+        extraLight.alpha     = prdParticle->aExtraLights[i].alpha;
+        pPayload->extraLight = extraLight;
+
+        if ( !sithWorld_g_pCurrentWorld->fog.bEnabled ) // TODO: add special function that will enable/disable fog rendering
+        {
+            pPayload->flags &= ~RD_FF_FOG_ENABLED;
+        }
+
+        if ( bThisAlpha )
+        {
+            pPayload->distance = tmat.dvec.y;
+            rdCache_AddTransparentDrawCall();
+        }
+        else
+        {
+            rdCache_AddOpaqueDrawCall();
+        }
+    }
+
+
+    return 1;
+}
+
+#endif
+
+
 int J3DAPI rdParticle_Draw(const rdThing* pParticle, const rdMatrix34* pOrient)
 {
+#ifdef J3D_OPENGL
+    return rdParticle_DrawStatic(pParticle, pOrient);
+#endif
     if ( pParticle->frustumCull == RDFRUSTUMCULL_OUTSIDE )
     {
         return 0;
