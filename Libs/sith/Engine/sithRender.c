@@ -202,8 +202,345 @@ int sithRender_Startup(void)
     return 1;
 }
 
+#ifdef J3D_OPENGL
+
+static void sithRender_CollectFaces(void)
+{
+    SithWorld* pCurWorld = sithWorld_g_pCurrentWorld;
+
+    size_t numFaces    = pCurWorld->numSurfaces;
+    size_t numVertices = 0;
+    size_t numIndices  = 0;
+
+    for ( size_t i = 0; i < pCurWorld->numSurfaces; i++ )
+    {
+        const SithSurface* pSurface = &pCurWorld->aSurfaces[i];
+
+        const size_t numVerticesOfFace = pSurface->face.numVertices;
+        numVertices += numVerticesOfFace;
+
+        // Triangulation
+        if ( numVerticesOfFace <= 3u )
+        {
+            numIndices += 3;
+        }
+        else
+        {
+            uint16_t triCount = numVerticesOfFace - 2;
+            for ( size_t triNum = 0; triNum < triCount; ++triNum )
+            {
+                numIndices += 3;
+            }
+        }
+    }
+
+    size_t numModels = pCurWorld->numModels + sithWorld_g_pStaticWorld->numModels;
+
+    rdModel3** aModels = STDMALLOC(numModels * sizeof(rdModel3*));
+
+    size_t idx = 0;
+
+    for ( size_t i     = 0; i < pCurWorld->numModels; i++ )
+        aModels[idx++] = &pCurWorld->aModels[i];
+
+    for ( size_t i     = 0; i < sithWorld_g_pStaticWorld->numModels; i++ )
+        aModels[idx++] = &sithWorld_g_pStaticWorld->aModels[i];
+
+
+    for ( size_t i = 0; i < numModels; i++ )
+    {
+        const rdModel3* pModel = aModels[i];
+
+        const rdModel3GeoSet* pGeoSet = &pModel->aGeos[0];
+
+        for ( size_t k = 0; k < pGeoSet->numMeshes; k++ )
+        {
+            rdModel3Mesh* pMesh = &pGeoSet->aMeshes[k];
+            //numFaces += pMesh->numFaces;
+
+            for ( size_t f = 0; f < pMesh->numFaces; f++ )
+            {
+                const size_t numVerticesOfFace = pMesh->aFaces[f].numVertices;
+                numVertices += numVerticesOfFace;
+
+                // Triangulation
+                if ( numVerticesOfFace <= 3u )
+                {
+                    numIndices += 3;
+                }
+                else
+                {
+                    uint16_t triCount = numVerticesOfFace - 2;
+                    for ( size_t triNum = 0; triNum < triCount; ++triNum )
+                    {
+                        numIndices += 3;
+                    }
+                }
+            }
+
+            for ( size_t f = 0; f < pMesh->numFaces; f++ )
+            {
+                numFaces++;
+                rdFace* pFace         = &pMesh->aFaces[f];
+                pFace->num            = 1;
+                rdMaterial* pMaterial = pFace->pMaterial;
+                rdFaceFlags flags     = pFace->flags;
+                rdLightMode lm        = pFace->lightingMode;
+                rdGeometryMode gm     = pFace->geometryMode;
+                size_t f2             = f;
+                while ( ++f2 < pMesh->numFaces )
+                {
+                    rdFace* pFace2         = &pMesh->aFaces[f2];
+                    rdMaterial* pMaterial2 = pFace2->pMaterial;
+                    rdFaceFlags flags2     = pFace2->flags;
+                    rdLightMode lm2        = pFace2->lightingMode;
+                    rdGeometryMode gm2     = pFace2->geometryMode;
+
+                    if ( pMaterial2 != pMaterial ||
+                        flags2 != flags ||
+                        lm2 != lm ||
+                        gm2 != gm )
+                    {
+                        break;
+                    }
+                    pFace2->num = -1;
+                }
+                f = f2 - 1;
+            }
+        }
+    }
+
+    rdCache_InitFaceDrawInfo(numFaces);
+
+    rdVector3* normals = STDMALLOC(sithWorld_g_pCurrentWorld->numVertices * sizeof(rdVector3));
+    memset(normals, 0, sithWorld_g_pCurrentWorld->numVertices * sizeof(rdVector3));
+
+    for ( size_t s = 0; s < sithWorld_g_pCurrentWorld->numSurfaces; s++ )
+    {
+        rdFace* pFace = &sithWorld_g_pCurrentWorld->aSurfaces[s].face;
+        for ( size_t pv = 0; pv < pFace->numVertices; pv++ )
+        {
+            size_t vertIndex = pFace->aVertices[pv];
+            rdVector_Add3Acc(&normals[vertIndex], &pFace->normal);
+        }
+    }
+
+
+    for ( size_t v = 0; v < sithWorld_g_pCurrentWorld->numVertices; v++ )
+    {
+        rdVector_Normalize3Acc(&normals[v]);
+    }
+
+
+    LPD3DTLVERTEX vertices = STDMALLOC(numVertices * sizeof(D3DTLVERTEX));
+    GLuint* indices        = STDMALLOC(numIndices * sizeof(GLuint));
+
+    size_t currentVert      = 0;
+    GLuint currentIndex     = 0;
+    GLuint currentVertIndex = 0;
+
+    size_t faceVertexCount = 0;
+    size_t faceIndexOffset = 0;
+
+    for ( size_t i = 0; i < pCurWorld->numSurfaces; i++ )
+    {
+        SithSurface* pSurface          = &pCurWorld->aSurfaces[i];
+        rdFace* pFace                  = &pSurface->face;
+        const size_t numVerticesOfFace = pFace->numVertices;
+        rdVector3 faceNormal           = { 0, 1, 0 };
+        if ( numVerticesOfFace >= 3 )
+        {
+            rdVector3* v0 = &sithWorld_g_pCurrentWorld->aVertices[pFace->aVertices[0]];
+            rdVector3* v1 = &sithWorld_g_pCurrentWorld->aVertices[pFace->aVertices[1]];
+            rdVector3* v2 = &sithWorld_g_pCurrentWorld->aVertices[pFace->aVertices[2]];
+
+            rdVector3 e0 = { 0 };
+            rdVector3 e1 = { 0 };
+            rdVector_Sub3(&e0, v1, v0);
+            rdVector_Sub3(&e1, v2, v0);
+            rdVector_Cross3(&faceNormal, &e0, &e1);
+            rdVector_Normalize3Acc(&faceNormal);
+        }
+        for ( size_t k = 0; k < numVerticesOfFace; k++, currentVert++ )
+        {
+            STD_ASSERTREL(currentVert < numVertices);
+            rdVector3* pVertex      = &sithWorld_g_pCurrentWorld->aVertices[pFace->aVertices[k]];
+            LPD3DTLVERTEX pGLVertex = &vertices[currentVert];
+            pGLVertex->sx           = pVertex->x;
+            pGLVertex->sy           = pVertex->z;
+            pGLVertex->sz           = -pVertex->y;
+            pGLVertex->rhw          = 1.0f;
+
+            rdVector2* pTexCoords = &sithWorld_g_pCurrentWorld->aTexVerticies[pFace->aTexVertices[k]];
+            pGLVertex->tu         = pTexCoords->x;
+            pGLVertex->tv         = pTexCoords->y;
+
+            //rdVector3* pNormal = &normals[pFace->aVertices[k]];
+            rdVector3* pNormal = &pFace->normal;
+            pGLVertex->nx      = pNormal->x;
+            pGLVertex->ny      = pNormal->z;
+            pGLVertex->nz      = -pNormal->y;
+
+            rdVector4* intensity = &pSurface->aIntensities[k];
+            float red            = intensity->red;
+            float green          = intensity->green;
+            float blue           = intensity->blue;
+            pGLVertex->color     = D3DRGB(red, green, blue);
+        }
+
+        faceIndexOffset = currentIndex;
+
+        // Triangulation
+        if ( numVerticesOfFace <= 3u )
+        {
+            indices[currentIndex++] = currentVertIndex;
+            indices[currentIndex++] = currentVertIndex + 1;
+            STD_ASSERTREL(currentIndex < numIndices);
+            indices[currentIndex++] = currentVertIndex + 2;
+            faceVertexCount         = 3;
+        }
+        else
+        {
+            uint16_t triCount     = numVerticesOfFace - 2;
+            uint16_t triPoint1Num = 0;
+            uint16_t triPoint2Num = 1;
+            uint16_t triPoint3Num = numVerticesOfFace - 1;
+            faceVertexCount       = triCount * 3;
+
+            for ( size_t triNum = 0; triNum < triCount; ++triNum )
+            {
+                indices[currentIndex++] = triPoint1Num + currentVertIndex;
+                indices[currentIndex++] = triPoint2Num + currentVertIndex;
+                STD_ASSERTREL(currentIndex < numIndices);
+                indices[currentIndex++] = triPoint3Num + currentVertIndex;
+
+                if ( (triNum & 1) != 0 ) // if odd
+                {
+                    triPoint1Num = triPoint3Num;
+                    triPoint3Num--; // = triPoint3Num - 1;
+                }
+                else
+                {
+                    triPoint1Num = triPoint2Num++;
+                }
+            }
+        }
+        pFace->num = rdCache_AddFaceInfoEntry(faceIndexOffset, faceVertexCount);
+        currentVertIndex += numVerticesOfFace;
+    }
+
+    STDFREE(normals);
+
+    for ( size_t i = 0; i < numModels; i++ )
+    {
+        const rdModel3* pModel        = aModels[i];
+        const rdModel3GeoSet* pGeoSet = &pModel->aGeos[0];
+        for ( size_t k = 0; k < pGeoSet->numMeshes; k++ )
+        {
+            rdModel3Mesh* pMesh = &pGeoSet->aMeshes[k];
+            rdFace* pRenderFace = &pMesh->aFaces[0];
+            faceVertexCount     = 0;
+            faceIndexOffset     = currentIndex;
+
+            for ( size_t f = 0; f < pMesh->numFaces; f++ )
+            {
+                rdFace* pFace                  = &pMesh->aFaces[f];
+                const size_t numVerticesOfFace = pFace->numVertices;
+
+                for ( size_t l = 0; l < numVerticesOfFace; l++ )
+                {
+                    STD_ASSERTREL(currentVert < numVertices);
+                    rdVector3* pVertex      = &pMesh->apVertices[pFace->aVertices[l]];
+                    LPD3DTLVERTEX pGLVertex = &vertices[currentVert++];
+                    pGLVertex->sx           = pVertex->x;
+                    pGLVertex->sy           = pVertex->z;
+                    pGLVertex->sz           = -pVertex->y;
+                    pGLVertex->rhw          = 1.0f;
+
+                    rdVector2* pTexCoords = &pMesh->apTexVertices[pFace->aTexVertices[l]];
+                    pGLVertex->tu         = pTexCoords->x;
+                    pGLVertex->tv         = pTexCoords->y;
+
+                    rdVector3* pNormal = &pMesh->aVertNormals[pFace->aVertices[l]];
+                    pGLVertex->nx      = pNormal->x;
+                    pGLVertex->ny      = pNormal->z;
+                    pGLVertex->nz      = -pNormal->y;
+
+                    pGLVertex->color = D3DRGB(0.0f, 0.0f, 0.0f);
+                }
+
+                if ( f > 0 && pFace->num != -1 )
+                {
+                    pRenderFace->num = rdCache_AddFaceInfoEntry(faceIndexOffset, faceVertexCount);
+                    faceIndexOffset  = currentIndex;
+                    faceVertexCount  = 0;
+                    pRenderFace      = pFace;
+                }
+                //faceIndexOffset = currentIndex;
+
+                // Triangulation
+                if ( numVerticesOfFace <= 3u )
+                {
+                    indices[currentIndex++] = currentVertIndex;
+                    indices[currentIndex++] = currentVertIndex + 1;
+                    STD_ASSERTREL(currentIndex < numIndices);
+
+                    indices[currentIndex++] = currentVertIndex + 2;
+                    faceVertexCount += 3;
+                }
+                else
+                {
+                    uint16_t triCount     = numVerticesOfFace - 2;
+                    uint16_t triPoint1Num = 0;
+                    uint16_t triPoint2Num = 1;
+                    uint16_t triPoint3Num = numVerticesOfFace - 1;
+                    faceVertexCount += triCount * 3;
+
+                    for ( size_t triNum = 0; triNum < triCount; ++triNum )
+                    {
+                        indices[currentIndex++] = triPoint1Num + currentVertIndex;
+                        indices[currentIndex++] = triPoint2Num + currentVertIndex;
+                        STD_ASSERTREL(currentIndex < numIndices);
+
+                        indices[currentIndex++] = triPoint3Num + currentVertIndex;
+
+                        if ( (triNum & 1) != 0 ) // if odd
+                        {
+                            triPoint1Num = triPoint3Num;
+                            triPoint3Num--; // = triPoint3Num - 1;
+                        }
+                        else
+                        {
+                            triPoint1Num = triPoint2Num++;
+                        }
+                    }
+                }
+                //pFace->num = rdCache_AddFaceInfoEntry(faceIndexOffset, faceVertexCount);
+                currentVertIndex += numVerticesOfFace;
+            }
+            if ( faceVertexCount > 0 )
+            {
+                pRenderFace->num = rdCache_AddFaceInfoEntry(faceIndexOffset, faceVertexCount);
+            }
+        }
+    }
+
+    STD_ASSERTREL(currentVert == numVertices);
+    STD_ASSERTREL(currentIndex == numIndices);
+
+    std3D_InitGeometryVBO(vertices, numVertices, indices, numIndices);
+
+    STDFREE(aModels);
+    STDFREE(vertices);
+    STDFREE(indices);
+}
+#endif
+
 int sithRender_Open(void)
 {
+#ifdef J3D_OPENGL
+    sithRender_CollectFaces();
+#endif
     sithRender_lightMode = RD_LIGHTING_GOURAUD;
 
     for ( size_t i = 0; i < STD_ARRAYLEN(sithRender_aThingLights); ++i )
