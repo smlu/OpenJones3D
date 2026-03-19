@@ -14,6 +14,9 @@
 
 #include <std/Win95/stdDisplay.h>
 
+#include "rdroid/Raster/rdCache.h"
+#include "std/Win95/stdShader.h"
+
 bool rdCamera_dword_5E10E8 = false;
 
 void J3DAPI rdCamera_BuildFOV(rdCamera* pCamera);
@@ -146,10 +149,19 @@ void J3DAPI rdCamera_SetCurrent(rdCamera* pCamera)
 {
     if ( pCamera )
     {
+#ifdef J3D_OPENGL
+        if ( rdCamera_g_pCurCamera != pCamera )
+        {
+            rdCache_FlushGeoDrawCalls();
+            rdCamera_g_pCurCamera = pCamera;
+            stdShader_UpdateGlobalUniforms();
+        }
+#else
         if ( rdCamera_g_pCurCamera != pCamera )
         {
             rdCamera_g_pCurCamera = pCamera;
         }
+#endif
     }
 }
 
