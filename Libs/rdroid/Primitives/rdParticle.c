@@ -93,7 +93,14 @@ int J3DAPI rdParticle_NewEntry(rdParticle* pParticle, size_t num, float size, rd
 
     memset(pParticle->aVerticies, 0, sizeof(rdVector3) * pParticle->numVertices);
     memset(pParticle->aVertMatCelNums, -1, sizeof(*pParticle->aVertMatCelNums) * pParticle->numVertices);
-    memset(pParticle->aExtraLights, 255, sizeof(rdVector4) * pParticle->numVertices); // TODO: verify if we have a bug here and the set value should be 1.0f instead
+    //memset(pParticle->aExtraLights, 255, sizeof(rdVector4) * pParticle->numVertices); // TODO: verify if we have a bug here and the set value should be 1.0f instead
+    for ( int i = 0; i < pParticle->numVertices; i++ )
+    {
+        pParticle->aExtraLights[i].x = 1.0f;
+        pParticle->aExtraLights[i].y = 1.0f;
+        pParticle->aExtraLights[i].z = 1.0f;
+        pParticle->aExtraLights[i].w = 1.0f;
+    }
     return 0;
 }
 
