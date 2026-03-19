@@ -154,9 +154,85 @@ void J3DAPI rdSprite_FreeEntry(rdSprite3* pSprite)
         pSprite->face.aTexVertices = NULL;
     }
 }
+#ifdef J3D_OPENGL
+static int J3DAPI rdSprite_DrawStatic(rdThing* prdThing, const rdMatrix34* orient)
+{
+    rdSprite3* pSprite3 = prdThing->data.pSprite3;
+
+    RdFrustumCull frustumCull = prdThing->frustumCull;
+    if ( frustumCull == RDFRUSTUMCULL_OUTSIDE )
+    {
+        return 0;
+    }
+    rdPayload* pPayload        = rdCache_GetTransparentDrawCall(RD_DRAW_SPRITE);
+    rdSpritePayload* pDrawCall = pPayload->payload;
+    pDrawCall->spriteType      = pSprite3->type;
+
+    rdVector3 tpos         = { 0 };
+    pDrawCall->modelMatrix = rdroid_g_identMatrix34;
+    if ( pSprite3->type == 0 )
+    {
+        // Transform position to view space
+        rdMatrix_TransformPoint34(&tpos, &orient->dvec, &rdCamera_g_pCurCamera->viewMatrix);
+        pDrawCall->spriteOffset = pSprite3->offset;
+
+        if ( pSprite3->rollAngle != 0.0f )
+        {
+            rdMatrix_BuildFromVectorAngle34(&pDrawCall->modelMatrix, &rdroid_g_yVector3, pSprite3->rollAngle);
+        }
+    }
+    else if ( pSprite3->type == 2 )
+    {
+        tpos                    = orient->dvec;
+        pDrawCall->spriteOffset = orient->lvec;
+        if ( pSprite3->rollAngle != 0.0f )
+        {
+            rdMatrix_BuildFromVectorAngle34(&pDrawCall->modelMatrix, &orient->lvec, pSprite3->rollAngle);
+        }
+    }
+    pDrawCall->modelMatrix.dvec = tpos;
+    pSprite3->rollAngle         = 0.0f;
+
+
+    pDrawCall->spriteSize.x = pSprite3->widthHalf;
+    pDrawCall->spriteSize.y = pSprite3->heightHalf;
+
+
+    rdVector4 extraLight = pSprite3->face.extraLight;
+
+    if ( (rdroid_g_curRenderOptions & RDROID_USE_AMBIENT_CAMERA_LIGHT) != 0 )
+    {
+        rdVector_Add4Acc(&extraLight, &rdCamera_g_pCurCamera->ambientLight);
+        rdMath_ClampVector4Acc(&extraLight, 0.0f, 1.0f); // Added: Clamp to [0,1.0]
+    }
+    pPayload->pMaterial  = pSprite3->face.pMaterial;
+    pPayload->matCelNum  = prdThing->matCelNum;
+    pPayload->extraLight = extraLight;
+
+    pPayload->flags = RD_FF_FOG_ENABLED | RD_FF_ZWRITE_DISABLED | RD_FF_TEX_CLAMP_Y | RD_FF_TEX_CLAMP_X | RD_FF_TEX_TRANSLUCENT;
+
+    // Fixed: Disable fog rendering for poly when fog is globally disabled
+    //        OG: Poly fog rendering was enabled by default which lead to undesired render effect when fog is disabled in level (i.e.: fog color is applied)
+    if ( !sithWorld_g_pCurrentWorld->fog.bEnabled ) // TODO: add special function that will enable/disable fog rendering
+    {
+        pPayload->flags &= ~RD_FF_FOG_ENABLED;
+    }
+    rdVector3 camPos;
+    rdMatrix_TransformPoint34(&camPos, &orient->dvec, &rdCamera_g_pCurCamera->viewMatrix);
+    pPayload->distance     = camPos.y;
+    pPayload->lightingMode = J3DMIN(J3DMIN(pSprite3->face.lightingMode, RD_LIGHTING_DIFFUSE), rdroid_g_curLightingMode);
+    rdCache_AddTransparentDrawCall();
+
+    return 1;
+}
+#endif
 
 int J3DAPI rdSprite_Draw(rdThing* prdThing, const rdMatrix34* orient)
 {
+#ifdef J3D_OPENGL
+    return rdSprite_DrawStatic(prdThing, orient);
+#endif
+
     rdSprite3* pSprite3 = prdThing->data.pSprite3;
 
     rdVector3 tpos = { 0 };
