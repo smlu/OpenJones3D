@@ -14,23 +14,28 @@ out vec3 vWorldPos;
 out vec3 vWorldNormal;
 
 uniform bool bRenderLights = false;
+uniform vec3 cExtraLight;
+uniform float fAlpha;
 
 
 void main() {
-    vColor = inColor;
+
     vTexCoord = inTexCoord;
 
     vec4 clip = vec4(0.0f);
     if (iVertexSpace == VS_SCREEN)
     {
         clip = screenToClip(inPosition.xyz, inPosition.w);
-        //clip.z = -clip.w;
+//        clip.z = -clip.w;
+        vColor = inColor;
     }
     else if (iVertexSpace == VS_WORLD)
     {
         clip = VIEWPROJECTION * inPosition;
         vWorldPos = inPosition.xyz;
         vWorldNormal = inNormal;
+        vColor.rgb = CalculateVertexColor(inColor.rgb, cExtraLight, iLightMode);
+        vColor.a = inColor.a * fAlpha;
 //        if (bRenderLights)
 //        {
 //            vColor.rgb += CalculateLightColor(vWorldPos);
