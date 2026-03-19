@@ -15,6 +15,7 @@ out vec3 vWorldNormal;
 
 uniform bool bRenderLights = false;
 uniform vec3 cExtraLight;
+uniform mat4 mModelMatrix;
 uniform float fAlpha;
 
 
@@ -48,6 +49,10 @@ void main() {
     else if (iVertexSpace == VS_CLIP)
     {
         clip = inPosition;
+    }
+    else if (iVertexSpace == VS_MODEL)
+    {
+        clip = VIEWPROJECTION * mModelMatrix * inPosition;
     }
 
     gl_Position = clip;
