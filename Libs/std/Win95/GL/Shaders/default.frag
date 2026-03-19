@@ -6,6 +6,7 @@ out vec4 FragColor;
 in vec4 vColor;
 in vec2 vTexCoord;
 in vec3 vWorldPos;
+in vec3 vWorldNormal;
 
 uniform sampler2D sTexture;
 uniform bool bRenderLights = false;
@@ -16,6 +17,7 @@ void main()
     vec4 vertColor = vColor;
     if (bRenderLights)
     {
+        //vertColor.xyz += CalculateModelLightColor(vWorldPos, normalize(vWorldNormal));
         vertColor.xyz += CalculateLightColor(vWorldPos);
     }
     vertColor = clamp(vertColor, vec4(0.0f), vec4(1.0f));

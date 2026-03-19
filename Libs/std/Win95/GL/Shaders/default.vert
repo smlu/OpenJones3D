@@ -5,11 +5,13 @@ layout(location = 0) in vec4 inPosition;
 layout(location = 1) in vec4 inColor;      // actually BGRA
 layout(location = 2) in vec4 inSpecular;   // optional
 layout(location = 3) in vec2 inTexCoord;
+layout(location = 4) in vec3 inNormal;
 
 
 out vec4 vColor;
 out vec2 vTexCoord;
 out vec3 vWorldPos;
+out vec3 vWorldNormal;
 
 uniform bool bRenderLights = false;
 
@@ -28,6 +30,7 @@ void main() {
     {
         clip = VIEWPROJECTION * inPosition;
         vWorldPos = inPosition.xyz;
+        vWorldNormal = inNormal;
 //        if (bRenderLights)
 //        {
 //            vColor.rgb += CalculateLightColor(vWorldPos);
