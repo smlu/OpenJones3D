@@ -1625,12 +1625,140 @@ void J3DAPI rdModel3_DrawHNode(const rdModel3GeoSet* prdGeo, const rdModel3HNode
     }
 }
 
+#ifdef J3D_OPENGL
+static void rdModel3_DrawMeshStatic(const rdModel3Mesh* pMesh, const rdMatrix34* orient)
+{
+    lightingMode = pCurMesh->lightMode;
+
+    for ( size_t i = 0; i < pMesh->numFaces; ++i )
+    {
+        rdFace* pFace     = &pMesh->aFaces[i];
+        bool bTranslucent = (pFace->flags & RD_FF_TEX_TRANSLUCENT) != 0;
+        if ( pFace->pMaterial )
+        {
+            bTranslucent = (bTranslucent || pFace->pMaterial->formatType == STDCOLOR_FORMAT_RGBA) && pFace->pMaterial->formatType != STDCOLOR_FORMAT_RGBA_1BITALPHA;
+        }
+
+        if ( pMesh->meshColor.alpha != 1.0f )
+        {
+            bTranslucent = true;
+        }
+
+        if ( bTranslucent )
+        {
+            ++rdModel3_g_numDrawnAlphaFaces;
+        }
+        else
+        {
+            ++rdModel3_g_numDrawnFaces;
+        }
+
+        if ( pFace->num == -1 )
+        {
+            continue;
+        }
+
+        rdPayload* pPayload;
+        if ( bTranslucent )
+        {
+            pPayload = rdCache_GetTransparentDrawCall(RD_DRAW_MODEL);
+        }
+        else
+        {
+            pPayload = rdCache_GetOpaqueDrawCall(RD_DRAW_MODEL);
+        }
+        rdModelFacePayload* pDrawCall = pPayload->payload;
+
+        pPayload->lightingMode = pFace->lightingMode;
+        if ( lightingMode < pFace->lightingMode )
+        {
+            pPayload->lightingMode = lightingMode;
+        }
+        rdVector4 extraLight = pFace->extraLight;
+        extraLight.alpha     = 1.0f;
+        if ( (rdroid_g_curRenderOptions & RDROID_USE_AMBIENT_CAMERA_LIGHT) != 0 )
+        {
+            rdVector_Add4Acc(&extraLight, &rdCamera_g_pCurCamera->ambientLight);
+        }
+
+        pDrawCall->modelMatrix = orient;
+
+        if ( rdCamera_g_pCurCamera->numLights > 0 )
+        {
+            pDrawCall->sectorLight   = *rdCamera_g_pCurCamera->aLights[rdCamera_g_pCurCamera->numLights - 1];
+            pDrawCall->lightPosition = rdCamera_g_pCurCamera->aLightPositions[rdCamera_g_pCurCamera->numLights - 1];
+        }
+        else
+        {
+            pDrawCall->sectorLight.bEnabled = false;
+        }
+
+        pPayload->flags     = pFace->flags | extraFaceFlags;
+        pPayload->pMaterial = pFace->pMaterial;
+        pPayload->matCelNum = pFace->matCelNum;
+        pDrawCall->faceNum  = pFace->num;
+
+
+        if ( bTranslucent )
+        {
+            extraLight.alpha = pMesh->meshColor.alpha;
+
+            // rdVector3 viewPos = orient->dvec; // world position (pivot)
+            // rdMatrix_TransformPoint34Acc(&viewPos, &rdCamera_g_pCurCamera->viewMatrix);
+
+            rdMatrix34 tmat;
+            rdMatrix_Multiply34(&tmat, &rdCamera_g_pCurCamera->viewMatrix, orient);
+            float distance = FLT_MAX; // 3.4028235e38f;
+
+            size_t f = i;
+
+            while ( f < pMesh->numFaces )
+            {
+                const rdFace* nextFace = &pMesh->aFaces[f];
+                if ( f > i && nextFace->num != -1 )
+                {
+                    break;
+                }
+                // get min z in camera space
+                for ( size_t j = 0; j < nextFace->numVertices; ++j )
+                {
+                    rdVector3 min = pMesh->apVertices[nextFace->aVertices[j]];
+                    rdMatrix_TransformPoint34Acc(&min, &tmat);
+                    if ( min.y < distance )
+                    {
+                        distance = min.y;
+                    }
+                }
+                f++;
+            }
+            pPayload->distance   = distance;
+            pPayload->extraLight = extraLight;
+            rdCache_AddTransparentDrawCall();
+        }
+        else
+        {
+            pPayload->extraLight = extraLight;
+            rdCache_AddOpaqueDrawCall();
+        }
+    }
+}
+#endif
+
 void J3DAPI rdModel3_DrawMesh(const rdModel3Mesh* pMesh, const rdMatrix34* orient)
 {
     RD_ASSERTREL(rdCamera_g_pCurCamera != NULL);
     RD_ASSERTREL(pMesh != NULL);
 
     pCurMesh = pMesh;
+
+#ifdef J3D_OPENGL
+    // if ( std3D_GetCurrentDrawState() == STD3D_DS_THINGS )
+    // {
+    rdModel3_DrawMeshStatic(pMesh, orient);
+    return;
+    // }
+
+#endif
 
     if ( pMesh->geoMode )
     {
