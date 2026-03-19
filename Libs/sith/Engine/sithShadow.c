@@ -224,8 +224,93 @@ float J3DAPI sithShadow_DistanceThingToSurface(const SithThing* pThing, const rd
     return rdMath_DistancePointToPlane(&pThing->pos, normal, &sithWorld_g_pCurrentWorld->aVertices[*pFace->aVertices]);
 }
 
+#ifdef J3D_OPENGL
+static void J3DAPI sithShadow_DrawShadowStatic(const rdMatrix34* orient, float size, float scale, int bCar)
+{
+    if ( scale <= 0.0f )
+    {
+        return;
+    }
+
+    rdMaterial* pMat = NULL; // Added: Init to null
+    if ( bCar )
+    {
+        pMat = sithMaterial_GetMaterialByIndex(SITHWORLD_STATICINDEX(2)); // jep_4shadow.mat - 0x8000 - SITH_STATICRESOURCE_INDEXMASK
+    }
+    else
+    {
+        pMat = sithMaterial_GetMaterialByIndex(SITHWORLD_STATICINDEX(0)); // gen_4indy_shadow.mat - 0x8000 - SITH_STATICRESOURCE_INDEXMAS
+    }
+
+    if ( !pMat )
+    {
+        return;
+    }
+
+    float shsize = size * scale / 2.0f;
+
+    sithShadow_aVertices[0].x = -shsize;
+    sithShadow_aVertices[0].y = -shsize;
+    sithShadow_aVertices[0].z = 0.0f;
+
+    sithShadow_aVertices[1].x = shsize;
+    sithShadow_aVertices[1].y = -shsize;
+    sithShadow_aVertices[1].z = 0.0f;
+
+    sithShadow_aVertices[2].x = sithShadow_aVertices[1].x;
+    sithShadow_aVertices[2].y = sithShadow_aVertices[1].x;
+    sithShadow_aVertices[2].z = 0.0f;
+
+    sithShadow_aVertices[3].x = -shsize;
+    sithShadow_aVertices[3].y = sithShadow_aVertices[1].x;
+    sithShadow_aVertices[3].z = 0.0f;
+
+    // Rotate vertices to orient model matrix (world space) and transform to view (camera) space
+    rdMatrix34 tmat;
+    rdMatrix_Multiply34(&tmat, &rdCamera_g_pCurCamera->viewMatrix, orient);
+    rdMatrix_TransformPointList34(&tmat, sithShadow_aVertices, sithShadow_aView, STD_ARRAYLEN(sithShadow_aView));
+
+    rdPayload* pPayload        = rdCache_GetTransparentDrawCall(RD_DRAW_SHADOW);
+    rdShadowPayload* pDrawCall = pPayload->payload;
+
+    float distance = FLT_MAX;
+    for ( size_t i = 0; i < 4; i++ )
+    {
+        pDrawCall->vertices[i] = sithShadow_aView[i];
+
+        pDrawCall->texCoords[i] = sithShadow_aShadowUVs[i];
+
+        if ( sithShadow_aView[i].y < distance )
+        {
+            distance = sithShadow_aView[i].y;
+        }
+    }
+    pPayload->distance = distance;
+
+
+    pPayload->lightingMode = RD_LIGHTING_GOURAUD;
+    pPayload->flags        = RD_FF_ZWRITE_DISABLED | RD_FF_TEX_CLAMP_Y | RD_FF_TEX_CLAMP_X | RD_FF_TEX_TRANSLUCENT;
+    pPayload->pMaterial    = pMat;
+    pPayload->matCelNum    = -1;
+
+
+    float alpha          = scale * 0.80000001f + 0.2f;
+    rdVector4 extraLight = { 1.0f, 1.0f, 1.0f, alpha };
+    pPayload->extraLight = extraLight;
+
+
+    rdCache_AddTransparentDrawCall();
+}
+
+#endif
+
+
 void J3DAPI sithShadow_DrawShadow(const rdMatrix34* orient, float size, float scale, int bCar)
 {
+#ifdef J3D_OPENGL
+    sithShadow_DrawShadowStatic(orient, size, scale, bCar);
+    return;
+#endif
     if ( scale <= 0.0f ) {
         return;
     }
@@ -289,8 +374,93 @@ void J3DAPI sithShadow_DrawShadow(const rdMatrix34* orient, float size, float sc
     rdCache_AddAlphaProcFace(4u);
 }
 
+#ifdef J3D_OPENGL
+static void J3DAPI sithShadow_DrawWalkShadowStatic(float size, float scale, const rdVector3* leg, const rdVector3* rleg, const rdVector3* lvec, const rdVector3* rvec)
+{
+    if ( scale <= 0.0f )
+    {
+        return;
+    }
+
+    rdMaterial* pMat = sithMaterial_GetMaterialByIndex(SITHWORLD_STATICINDEX(1)); // gen_4indy_shadow_stretch.mat
+    if ( !pMat )
+    {
+        return;
+    }
+
+    rdVector3 ldir;
+    rdVector_Normalize3(&ldir, lvec);
+
+    rdVector3 rdir;
+    rdVector_Normalize3(&rdir, rvec);
+
+    float sscale = size * scale / 8.0f;
+    float escale = 0.0074999998f * scale; // / 133.3333f
+
+    float sx = rdVector_Dot3(&ldir, &rdroid_g_xVector3) * sscale;
+    float sy = rdVector_Dot3(&ldir, &rdroid_g_yVector3) * sscale;
+
+    float ex = rdVector_Dot3(&rdir, &rdroid_g_xVector3) * escale;
+    float ey = rdVector_Dot3(&rdir, &rdroid_g_yVector3) * escale;
+
+    sithShadow_aVertices[0].x = leg->x - sx - ex;
+    sithShadow_aVertices[0].y = leg->y - sy - ey;
+    sithShadow_aVertices[0].z = leg->z;
+
+    sithShadow_aVertices[1].x = leg->x + sx - ex;
+    sithShadow_aVertices[1].y = leg->y + sy - ey;
+    sithShadow_aVertices[1].z = leg->z;
+
+    sithShadow_aVertices[2].x = rleg->x + sx + ex;
+    sithShadow_aVertices[2].y = rleg->y + sy + ey;
+    sithShadow_aVertices[2].z = rleg->z;
+
+    sithShadow_aVertices[3].x = rleg->x - sx + ex;
+    sithShadow_aVertices[3].y = rleg->y - sy + ey;
+    sithShadow_aVertices[3].z = rleg->z;
+
+    // Transform vertices to view space
+    rdMatrix_TransformPointList34(&rdCamera_g_pCurCamera->viewMatrix, sithShadow_aVertices, sithShadow_aView, STD_ARRAYLEN(sithShadow_aView));
+
+    rdPayload* pPayload        = rdCache_GetTransparentDrawCall(RD_DRAW_SHADOW);
+    rdShadowPayload* pDrawCall = pPayload->payload;
+
+    float distance = FLT_MAX;
+    for ( size_t i = 0; i < 4; i++ )
+    {
+        pDrawCall->vertices[i] = sithShadow_aView[i];
+
+        pDrawCall->texCoords[i] = sithShadow_aShadowUVs[i];
+
+        if ( sithShadow_aView[i].y < distance )
+        {
+            distance = sithShadow_aView[i].y;
+        }
+    }
+    pPayload->distance     = distance;
+    pPayload->lightingMode = RD_LIGHTING_GOURAUD;
+    pPayload->flags        = RD_FF_ZWRITE_DISABLED | RD_FF_TEX_CLAMP_Y | RD_FF_TEX_CLAMP_X | RD_FF_TEX_TRANSLUCENT | RD_FF_DOUBLE_SIDED;
+    pPayload->pMaterial    = pMat;
+    pPayload->matCelNum    = -1;
+
+    float alpha          = scale * 0.8f + 0.2f;
+    rdVector4 extraLight = { 1.0f, 1.0f, 1.0f, alpha };
+    pPayload->extraLight = extraLight;
+
+
+    rdCache_AddTransparentDrawCall();
+}
+
+#endif
+
+
 void J3DAPI sithShadow_DrawWalkShadow(float size, float scale, const rdVector3* leg, const rdVector3* rleg, const rdVector3* lvec, const rdVector3* rvec)
 {
+#ifdef J3D_OPENGL
+    sithShadow_DrawWalkShadowStatic(size, scale, leg, rleg, lvec, rvec);
+    return;
+#endif
+
     if ( scale <= 0.0f ) {
         return;
     }
