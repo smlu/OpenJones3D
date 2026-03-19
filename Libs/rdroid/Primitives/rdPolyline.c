@@ -232,9 +232,119 @@ int J3DAPI rdPolyline_Draw(const rdThing* pLine, const rdMatrix34* pOrient)
     rdPolyline_DrawFace(pLine, &pPolyline->face, rdPolyline_aView, pPolyline->apUVs);
     return 1;
 }
+#ifdef J3D_OPENGL
+
+static void J3DAPI rdPolyline_DrawFaceStatic(const rdThing* pLine, const rdFace* pFace, const rdVector3* aVerts, const rdVector2* aTVerts) // aVerts should be transformed to view space
+{
+    // Added: When UV tile flag set, tile polyline UVs instead of stretch as done by default.
+    //        This will make texture to repeat multiple times throughout the polyline.
+    //
+    //        When UV rotate flag is set, rotate UV for 90 degrees.
+    if ( (pLine->data.pPolyline->flags & (RDPOLYLINE_UVTILE | RDPOLYLINE_UVROTATE)) != 0 )
+    {
+        rdPolyline* pPolyline = pLine->data.pPolyline;
+        float texRepeat       = 1.0f; // Default for non-tiling
+
+        if ( pPolyline->flags & RDPOLYLINE_UVTILE )
+        {
+            float actualLength = rdVector_Dist3(&aVerts[0], &aVerts[3]);
+            if ( actualLength > 0.0f )
+            {
+                // Tile texture based on length
+                float avgRadius = (pPolyline->baseRadius + pPolyline->tipRadius) * 0.5f;
+                float circumf   = STDMATH_CIRCLE_CIRCUMF(avgRadius);
+                texRepeat       = actualLength / circumf;
+                if ( texRepeat < 0.1f )
+                {
+                    texRepeat = 0.1f;
+                }
+            }
+        }
+
+        rdVector2 aUVs[4];
+
+        // Check if UVs should be rotated 90 degrees
+        if ( pPolyline->flags & RDPOLYLINE_UVROTATE )
+        {
+            // Rotated 90 degrees clockwise: swap U/V and adjust orientation
+            // Original mapping: U along length, V around circumference
+            // Rotated mapping: V along length, U around circumference
+            aUVs[0].x = 0.0f;
+            aUVs[0].y = texRepeat; // tip right
+            aUVs[1].x = 1.0f;
+            aUVs[1].y = texRepeat; // tip left
+            aUVs[2].x = 1.0f;
+            aUVs[2].y = 0.0f; // base left
+            aUVs[3].x = 0.0f;
+            aUVs[3].y = 0.0f; // base right
+        }
+        else
+        {
+            // Standard mapping: U along length, V around circumference
+            aUVs[0].x = texRepeat;
+            aUVs[0].y = 0.0f;
+            aUVs[1].x = texRepeat;
+            aUVs[1].y = 1.0f;
+            aUVs[2].x = 0.0f;
+            aUVs[2].y = 1.0f;
+            aUVs[3].x = 0.0f;
+            aUVs[3].y = 0.0f;
+        }
+
+        aTVerts = aUVs;
+    }
+    rdVector4 extraLight = pFace->extraLight;
+
+    if ( (rdroid_g_curRenderOptions & RDROID_USE_AMBIENT_CAMERA_LIGHT) != 0 )
+    {
+        rdVector_Add4Acc(&extraLight, &rdCamera_g_pCurCamera->ambientLight);
+        rdMath_ClampVector4Acc(&extraLight, 0.0f, 1.0f); // Added: Clamp to [0,1.0]
+    }
+
+
+    rdPayload* pPayload  = rdCache_GetTransparentDrawCall(RD_DRAW_POLYLINE);
+    pPayload->extraLight = extraLight;
+    pPayload->flags      = RD_FF_FOG_ENABLED | RD_FF_ZWRITE_DISABLED | RD_FF_TEX_TRANSLUCENT;
+    // Fixed: Disable fog rendering for poly when fog is globally disabled
+    //        OG: Poly fog rendering was enabled by default which lead to undesired render effect when fog is disabled in level (i.e.: fog color is applied)
+    if ( !sithWorld_g_pCurrentWorld->fog.bEnabled ) // // TODO: add special function that will enable/disable fog rendering
+    {
+        pPayload->flags &= ~RD_FF_FOG_ENABLED;
+    }
+    pPayload->matCelNum          = pFace->matCelNum;
+    pPayload->pMaterial          = pFace->pMaterial;
+    rdPolyLinePayload* pDrawCall = pPayload->payload;
+    for ( size_t i = 0; i < 4; i++ )
+    {
+        pDrawCall->vertices[i]  = aVerts[i];
+        pDrawCall->texCoords[i] = aTVerts[i];
+    }
+
+    pPayload->lightingMode = RD_LIGHTING_NONE;
+
+    float distance = FLT_MAX; // 3.4028235e38f;
+
+    for ( size_t j = 0; j < 4; ++j )
+    {
+        rdVector3 min = aVerts[j];
+
+        if ( min.y < distance )
+        {
+            distance = min.y;
+        }
+    }
+    pPayload->distance = distance;
+    rdCache_AddTransparentDrawCall();
+}
+#endif
+
 
 void J3DAPI rdPolyline_DrawFace(const rdThing* pLine, const rdFace* pFace, const rdVector3* aVerts, const rdVector2* aTVerts) // aVerts should be transformed to view space
 {
+#ifdef J3D_OPENGL
+    rdPolyline_DrawFaceStatic(pLine, pFace, aVerts, aTVerts);
+    return;
+#endif
     J3D_UNUSED(pLine);
     rdCacheProcEntry* pPoly = rdCache_GetAlphaProcEntry();
     if ( !pPoly )
