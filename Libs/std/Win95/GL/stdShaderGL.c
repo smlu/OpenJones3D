@@ -57,14 +57,6 @@ static CameraDataGPU cameraData = { 0 };
 static GLuint cameraDataUBO     = 0;
 static GLuint viewPortUBO       = 0;
 
-typedef struct sPointLightGPU
-{
-    float position[4]; // xyz + pad
-    float color[4];    // rgba
-    float minRadius;
-    float maxRadius;
-    float pad[2]; // std140 padding
-} PointLightGPU;
 
 typedef struct
 {

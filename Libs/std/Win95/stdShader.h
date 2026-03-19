@@ -7,6 +7,8 @@
 #include <std/types.h>
 #include <std/General/stdHashtbl.h>
 
+#include "rdroid/types.h"
+
 J3D_EXTERN_C_START
 
 typedef float StdShaderVector[4];
@@ -83,7 +85,7 @@ void stdShader_Close(void);
 
 // Global constants
 bool J3DAPI stdShader_SetViewport(const StdShaderViewport vp);
-bool J3DAPI stdShader_SetFog(bool enable, float start, float end, float depthDactor, const StdShaderVector color);
+bool J3DAPI stdShader_SetFog(bool enable, float start, float end, float depthFactor, const StdShaderVector color);
 bool stdShader_DisableFog(void);
 
 // Shader op

@@ -10,10 +10,6 @@
 #include <std/General/stdMemory.h>
 #include <std/General/stdUtil.h>
 
-#include <math.h>
-
-#include "rdroid/Raster/rdCache.h"
-
 #define STD3D_DEFAULT_MAX_VERTICES 512
 
 static bool bUseLegacyRendering = false; // use old screen space vertices
