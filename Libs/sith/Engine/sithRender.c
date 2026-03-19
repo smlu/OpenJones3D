@@ -576,6 +576,10 @@ void sithRender_Close(void)
 
     sithRender_aAdjoinTable = NULL;
     sithRenderSky_Close();
+#ifdef J3D_OPENGL
+    std3D_ReleaseGeoVertexBuffers();
+    rdCache_FreeFaceDrawInfos();
+#endif
 }
 
 void sithRender_Shutdown(void)
