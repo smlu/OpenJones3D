@@ -1229,6 +1229,86 @@ static void sithRender_RenderSectorsWorldSpace(void)
 
     rdCache_Flush();
 }
+
+static void sithRender_RenderSectorsStatic(void)
+{
+    sithRender_g_numArchPolys = 0;
+
+    rdFaceFlags extraFaceFlags = 0;
+    if ( sithWorld_g_pCurrentWorld->fog.bEnabled )
+    {
+        extraFaceFlags = RD_FF_FOG_ENABLED;
+    }
+
+    for ( size_t secNum = 0; secNum < sithRender_g_numVisibleSectors; ++secNum )
+    {
+        SithSector* pSector = sithRender_aVisibleSectors[secNum];
+        for ( size_t surfNum = 0; surfNum < pSector->numSurfaces; ++surfNum )
+        {
+            SithSurface* pSurf = &pSector->pFirstSurface[surfNum];
+            if ( pSurf->face.geometryMode == RD_GEOMETRY_NONE )
+            {
+                continue;
+            }
+
+            rdVector3 camDir;
+            rdVector_Sub3(&camDir, &sithCamera_g_pCurCamera->lookPos, &sithWorld_g_pCurrentWorld->aVertices[*pSurf->face.aVertices]);
+            if ( rdVector_Dot3(&pSurf->face.normal, &camDir) <= 0.0f ) // If surface is not facing camera
+            {
+                continue;
+            }
+
+            if ( pSurf->pAdjoin && (pSurf->face.flags & RD_FF_TEX_TRANSLUCENT) != 0 )
+            {
+                if ( sithRender_numAlphaAdjoins < STD_ARRAYLEN(sithRender_aAlphaAdjoins) )
+                {
+                    sithRender_aAlphaAdjoins[sithRender_numAlphaAdjoins++] = pSurf;
+                }
+                // Maybe add log when alpha adjoin couldn't be processed
+            }
+            else
+            {
+                rdPayload* pPayload         = rdCache_GetOpaqueDrawCall(RD_DRAW_GEOMETRY);
+                rdGeoFacePayload* pDrawCall = pPayload->payload;
+                rdVector4 extraLight        = pSurf->face.extraLight;
+                rdVector_Add4Acc(&extraLight, &pSurf->pSector->extraLight);
+                extraLight.alpha       = 1.0f;
+                pDrawCall->vertexSpace = STD3D_VS_WORLD;
+                pPayload->lightingMode = pSurf->face.lightingMode;
+                pDrawCall->faceNum     = pSurf->face.num;
+                pPayload->flags        = pSurf->face.flags;
+                pPayload->pMaterial    = pSurf->face.pMaterial;
+                pPayload->matCelNum    = pSurf->face.matCelNum;
+
+
+                if ( (pSurf->flags & (SITH_SURFACE_CEILINGSKY | SITH_SURFACE_HORIZONSKY)) != 0 )
+                {
+                    rdVector_Set4(&extraLight, 1.0f, 1.0f, 1.0f, 1.0f);
+
+                    if ( (pSurf->flags & SITH_SURFACE_CEILINGSKY) != 0 )
+                    {
+                        pPayload->pShader = stdShader_GetShader("std_ceilingSky");
+                    }
+                    else
+                    {
+                        pPayload->pShader = stdShader_GetShader("std_horizonSky");
+                    }
+                }
+
+                if ( pPayload->lightingMode >= sithRender_lightMode )
+                {
+                    pPayload->lightingMode = sithRender_lightMode;
+                }
+                pPayload->extraLight = extraLight;
+                pPayload->flags |= extraFaceFlags;
+                rdCache_AddOpaqueDrawCall();
+                ++sithRender_g_numArchPolys;
+            }
+        }
+
+        ++sithRender_numRenderedSectors;
+    }
+}
 #endif
 
 
@@ -1237,7 +1317,7 @@ void sithRender_RenderSectors(void)
 #ifdef J3D_OPENGL
     if ( std3D_GetCurrentDrawState() == STD3D_DS_GEOMETRY )
     {
-        sithRender_RenderSectorsWorldSpace();
+        sithRender_RenderSectorsStatic();
         return;
     }
 #endif
