@@ -214,7 +214,7 @@
   - Fixed the minecart front light polygon effect to appear turned off when the cart is not running (f70d670, 26ef2e8)
   - Fixed issue with dynamic light of static minecar (797251c, 26ef2e8)
   - [QOL] Implemented turn movement animation playback for water surface movement (ba57877)
-  - Fixed water ripple creation on the ripple surface (18e09d5)  
+  - Fixed water ripple creation on the water surface (18e09d5)  
     The engine previously offset ripple positions at a fixed distance from the thing position,  
     which could cause ripples to appear incorrectly above or below the water surface.  
     This was particularly noticeable during actions like climbing out of water.  
