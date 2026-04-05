@@ -1,6 +1,6 @@
 # Jones Host Functions
 
-Source: `Jones3D/Play/jonesCog.c`
+Source: [`Jones3D/Play/jonesCog.c`](../../Jones3D/Play/jonesCog.c)
 
 This is the Jones-specific extension layer that sits on top of the base Sith COG system.
 
@@ -27,7 +27,7 @@ Signatures below use PascalCase for readability, even though host-function looku
 
 #### HealthDisplayOff
 
-```C
+```C++
 HealthDisplayOff()
 ```
 
@@ -36,7 +36,7 @@ Hides the health HUD and triggers the Jones HUD fade helper.
 
 #### HealthDisplayOn
 
-```C
+```C++
 HealthDisplayOn()
 ```
 
@@ -45,7 +45,7 @@ Shows the health HUD and triggers the Jones HUD fade helper.
 
 #### JonesInvItemChanged
 
-```C
+```C++
 JonesInvItemChanged(int bin)
 ```
 
@@ -57,7 +57,7 @@ Parameters:
 
 #### JonesEndLevel
 
-```C
+```C++
 JonesEndLevel()
 ```
 
@@ -66,7 +66,7 @@ Runs the Jones level-complete flow.
 
 #### ExitToShell
 
-```C
+```C++
 ExitToShell()
 ```
 
@@ -75,7 +75,7 @@ Leaves gameplay and routes to the Jones shell or ending flow.
 
 #### StartCutscene
 
-```C
+```C++
 StartCutscene(int type)
 ```
 
@@ -87,7 +87,7 @@ Parameters:
 
 #### EndCutscene
 
-```C
+```C++
 EndCutscene()
 ```
 
@@ -96,7 +96,7 @@ Leaves Jones cutscene mode and restores HUD and interface state.
 
 #### UpdateDifficulty
 
-```C
+```C++
 UpdateDifficulty(int difficulty)
 ```
 
@@ -108,7 +108,7 @@ Parameters:
 
 #### EnableInterface
 
-```C
+```C++
 EnableInterface(int bEnable)
 ```
 

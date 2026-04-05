@@ -1,6 +1,6 @@
 # Thing Host Functions
 
-Source: `Libs/sith/Cog/sithCogFunctionThing.c`
+Source: [`Libs/sith/Cog/sithCogFunctionThing.c`](../../Libs/sith/Cog/sithCogFunctionThing.c)
 
 This is the largest host-function group in the current tree. It covers object creation, movement, health and damage, inventory bins, puppet/keyframe playback, attachment and mesh swapping, special FX, and camera helpers.
 
@@ -272,7 +272,7 @@ This is the largest host-function group in the current tree. It covers object cr
 
 #### WaitForStop
 
-```C
+```C++
 WaitForStop(Thing thing)
 ```
 
@@ -289,7 +289,7 @@ Notes:
 
 #### WaitForAnimStop
 
-```C
+```C++
 WaitForAnimStop(int animID)
 ```
 
@@ -305,7 +305,7 @@ Notes:
 
 #### StopThing
 
-```C
+```C++
 StopThing(Thing thing)
 ```
 
@@ -320,7 +320,7 @@ Notes:
 
 #### DestroyThing
 
-```C
+```C++
 DestroyThing(Thing thing)
 ```
 
@@ -334,7 +334,7 @@ Notes:
 
 #### GetThingHealth
 
-```C
+```C++
 GetThingHealth(Thing thing) -> float
 ```
 
@@ -352,7 +352,7 @@ Notes:
 
 #### GetThingMaxHealth
 
-```C
+```C++
 GetThingMaxHealth(Thing thing) -> float
 ```
 
@@ -370,7 +370,7 @@ Notes:
 
 #### GetHealth
 
-```C
+```C++
 GetHealth(Thing thing) -> float
 ```
 
@@ -389,7 +389,7 @@ Notes:
 
 #### Healthing
 
-```C
+```C++
 Healthing(Thing thing, float health)
 ```
 
@@ -405,7 +405,7 @@ Notes:
 
 #### GetThingLight
 
-```C
+```C++
 GetThingLight(Thing thing) -> Vector
 ```
 
@@ -423,7 +423,7 @@ Notes:
 
 #### SetThingLight
 
-```C
+```C++
 SetThingLight(Thing thing, Vector color, float range, float litupTime)
 ```
 
@@ -442,7 +442,7 @@ Notes:
 
 #### ThingLight
 
-```C
+```C++
 ThingLight(Thing thing, Vector color, float range, float litupTime)
 ```
 
@@ -460,7 +460,7 @@ Notes:
 
 #### ThingLightAnim
 
-```C
+```C++
 ThingLightAnim(Thing thing, Vector startColor, float startRadius, Vector endColor, float endRadius, float speed) -> int
 ```
 
@@ -482,7 +482,7 @@ Notes:
 
 #### ThingFadeAnim
 
-```C
+```C++
 ThingFadeAnim(Thing thing, float startAlpha, float endAlpha, float timeDelta, int bLoop) -> int
 ```
 
@@ -503,7 +503,7 @@ Notes:
 
 #### CreateThing
 
-```C
+```C++
 CreateThing(Template template, Thing refThing) -> Thing
 ```
 
@@ -523,7 +523,7 @@ Notes:
 
 #### CreateThingAtPos
 
-```C
+```C++
 CreateThingAtPos(Template template, Sector sector, Vector pos, Vector pyr) -> Thing
 ```
 
@@ -544,7 +544,7 @@ Notes:
 
 #### CaptureThing
 
-```C
+```C++
 CaptureThing(Thing thing)
 ```
 
@@ -558,7 +558,7 @@ Notes:
 
 #### ReleaseThing
 
-```C
+```C++
 ReleaseThing(Thing thing)
 ```
 
@@ -572,7 +572,7 @@ Notes:
 
 #### DamageThing
 
-```C
+```C++
 DamageThing(Thing victim, float damage, int damageClass, Thing source) -> float
 ```
 
@@ -592,7 +592,7 @@ Notes:
 
 #### SetLifeLeft
 
-```C
+```C++
 SetLifeLeft(Thing thing, float secLeft)
 ```
 
@@ -608,7 +608,7 @@ Notes:
 
 #### GetLifeLeft
 
-```C
+```C++
 GetLifeLeft(Thing thing) -> float
 ```
 
@@ -623,7 +623,7 @@ Returns:
 
 #### SetThingHealth
 
-```C
+```C++
 SetThingHealth(Thing thing, float health)
 ```
 
@@ -636,7 +636,7 @@ Parameters:
 
 #### SetHealth
 
-```C
+```C++
 SetHealth(Thing thing, float health)
 ```
 
@@ -652,7 +652,7 @@ Notes:
 
 #### AmputateJoint
 
-```C
+```C++
 AmputateJoint(Thing thing, int joint)
 ```
 
@@ -669,7 +669,7 @@ Notes:
 
 #### SetActorWeapon
 
-```C
+```C++
 SetActorWeapon(Thing actor, Template weapon)
 ```
 
@@ -684,7 +684,7 @@ Notes:
 
 #### GetActorWeapon
 
-```C
+```C++
 GetActorWeapon(Thing actor) -> Template
 ```
 
@@ -701,7 +701,7 @@ Notes:
 
 #### TakeItem
 
-```C
+```C++
 TakeItem(Thing item, Thing thing)
 ```
 
@@ -716,7 +716,7 @@ Notes:
 
 #### HasLOS
 
-```C
+```C++
 HasLOS(Thing viewer, Thing target) -> int
 ```
 
@@ -734,7 +734,7 @@ Returns:
 
 #### SetThingVel
 
-```C
+```C++
 SetThingVel(Thing thing, Vector vel)
 ```
 
@@ -751,7 +751,7 @@ Notes:
 
 #### AddThingVel
 
-```C
+```C++
 AddThingVel(Thing thing, Vector vel)
 ```
 
@@ -768,7 +768,7 @@ Notes:
 
 #### ApplyForce
 
-```C
+```C++
 ApplyForce(Thing thing, Vector force)
 ```
 
@@ -783,7 +783,7 @@ Notes:
 
 #### DetachThing
 
-```C
+```C++
 DetachThing(Thing thing)
 ```
 
@@ -797,7 +797,7 @@ Notes:
 
 #### GetAttachFlags
 
-```C
+```C++
 GetAttachFlags(Thing thing) -> int
 ```
 
@@ -812,7 +812,7 @@ Returns:
 
 #### GetThingAttachFlags
 
-```C
+```C++
 GetThingAttachFlags(Thing thing) -> int
 ```
 
@@ -830,7 +830,7 @@ Notes:
 
 #### AttachThingToSurf
 
-```C
+```C++
 AttachThingToSurf(Thing thing, Surface surf)
 ```
 
@@ -845,7 +845,7 @@ Notes:
 
 #### AttachThingToThing
 
-```C
+```C++
 AttachThingToThing(Thing thing, Thing attachThing)
 ```
 
@@ -860,7 +860,7 @@ Notes:
 
 #### AttachThingToThingEx
 
-```C
+```C++
 AttachThingToThingEx(Thing thing, Thing attachThing, int attflags)
 ```
 
@@ -876,7 +876,7 @@ Notes:
 
 #### GetThingAttachedThing
 
-```C
+```C++
 GetThingAttachedThing(Thing thing, int attype) -> Thing
 ```
 
@@ -892,7 +892,7 @@ Returns:
 
 #### SetArmedMode
 
-```C
+```C++
 SetArmedMode(Thing thing, int armedMode)
 ```
 
@@ -908,7 +908,7 @@ Notes:
 
 #### SetThingFlags
 
-```C
+```C++
 SetThingFlags(Thing thing, int flags)
 ```
 
@@ -924,7 +924,7 @@ Notes:
 
 #### ClearThingFlags
 
-```C
+```C++
 ClearThingFlags(Thing thing, int flags)
 ```
 
@@ -940,7 +940,7 @@ Notes:
 
 #### TeleportThing
 
-```C
+```C++
 TeleportThing(Thing destThing, Thing srcThing)
 ```
 
@@ -958,7 +958,7 @@ Notes:
 
 #### SetThingType
 
-```C
+```C++
 SetThingType(Thing thing, int type)
 ```
 
@@ -975,7 +975,7 @@ Notes:
 
 #### SetCollideType
 
-```C
+```C++
 SetCollideType(Thing thing, int type)
 ```
 
@@ -991,7 +991,7 @@ Notes:
 
 #### SetHeadLightIntensity
 
-```C
+```C++
 SetHeadLightIntensity(Thing thing, Vector color) -> Vector
 ```
 
@@ -1010,7 +1010,7 @@ Notes:
 
 #### GetThingCurLightMode
 
-```C
+```C++
 GetThingCurLightMode(Thing thing) -> int
 ```
 
@@ -1025,7 +1025,7 @@ Returns:
 
 #### SetThingCurLightMode
 
-```C
+```C++
 SetThingCurLightMode(Thing thing, int mode)
 ```
 
@@ -1038,7 +1038,7 @@ Parameters:
 
 #### SetActorExtraSpeed
 
-```C
+```C++
 SetActorExtraSpeed(Thing thing, float speed)
 ```
 
@@ -1054,7 +1054,7 @@ Notes:
 
 #### SetThingPosEx
 
-```C
+```C++
 SetThingPosEx(Thing thing, Vector newPos, Sector sector) -> int
 ```
 
@@ -1076,7 +1076,7 @@ Notes:
 
 #### SetThingMaxVel
 
-```C
+```C++
 SetThingMaxVel(Thing thing, float maxSpeed)
 ```
 
@@ -1092,7 +1092,7 @@ Notes:
 
 #### SetThingMaxAngVel
 
-```C
+```C++
 SetThingMaxAngVel(Thing thing, float maxRotSpeed)
 ```
 
@@ -1108,7 +1108,7 @@ Notes:
 
 #### SetThingJointAngle
 
-```C
+```C++
 SetThingJointAngle(Thing thing, int jointNum, float angle)
 ```
 
@@ -1125,7 +1125,7 @@ Notes:
 
 #### SetThingMaxHeadPitch
 
-```C
+```C++
 SetThingMaxHeadPitch(Thing thing, float maxPitch) -> float
 ```
 
@@ -1141,7 +1141,7 @@ Returns:
 
 #### SetThingMinHeadPitch
 
-```C
+```C++
 SetThingMinHeadPitch(Thing thing, float minPitch) -> float
 ```
 
@@ -1157,7 +1157,7 @@ Returns:
 
 #### GetThingMaxHeadPitch
 
-```C
+```C++
 GetThingMaxHeadPitch(Thing thing) -> float
 ```
 
@@ -1172,7 +1172,7 @@ Returns:
 
 #### GetThingMinHeadPitch
 
-```C
+```C++
 GetThingMinHeadPitch(Thing thing) -> float
 ```
 
@@ -1187,7 +1187,7 @@ Returns:
 
 #### SetThingMaxHeadYaw
 
-```C
+```C++
 SetThingMaxHeadYaw(Thing thing, float maxYaw) -> float
 ```
 
@@ -1203,7 +1203,7 @@ Returns:
 
 #### GetThingMaxHeadYaw
 
-```C
+```C++
 GetThingMaxHeadYaw(Thing thing) -> float
 ```
 
@@ -1218,7 +1218,7 @@ Returns:
 
 #### SetThingLVecPYR
 
-```C
+```C++
 SetThingLVecPYR(Thing thing, Vector pyr)
 ```
 
@@ -1235,7 +1235,7 @@ Notes:
 
 #### SetActorHeadPYR
 
-```C
+```C++
 SetActorHeadPYR(Thing thing, Vector pyr)
 ```
 
@@ -1251,7 +1251,7 @@ Notes:
 
 #### SetThingAirDrag
 
-```C
+```C++
 SetThingAirDrag(Thing thing, float drag)
 ```
 
@@ -1267,7 +1267,7 @@ Notes:
 
 #### SetThingMaxRotVel
 
-```C
+```C++
 SetThingMaxRotVel(Thing thing, float vel)
 ```
 
@@ -1283,7 +1283,7 @@ Notes:
 
 #### SetThingMaxHeadVel
 
-```C
+```C++
 SetThingMaxHeadVel(Thing thing, float vel)
 ```
 
@@ -1299,7 +1299,7 @@ Notes:
 
 #### ResetThing
 
-```C
+```C++
 ResetThing(Thing thing)
 ```
 
@@ -1315,7 +1315,7 @@ Notes:
 
 #### MoveThing
 
-```C
+```C++
 MoveThing(Thing thing, Vector vecDirection, float moveDist, float timeDelta) -> int
 ```
 
@@ -1333,7 +1333,7 @@ Returns:
 
 #### MoveThingToPos
 
-```C
+```C++
 MoveThingToPos(Thing thing, Vector pos, float time) -> int
 ```
 
@@ -1350,7 +1350,7 @@ Returns:
 
 #### GetThingType
 
-```C
+```C++
 GetThingType(Thing thing) -> int
 ```
 
@@ -1365,7 +1365,7 @@ Returns:
 
 #### IsThingMoving
 
-```C
+```C++
 IsThingMoving(Thing thing) -> int
 ```
 
@@ -1380,7 +1380,7 @@ Returns:
 
 #### IsMoving
 
-```C
+```C++
 IsMoving(Thing thing) -> int
 ```
 
@@ -1398,7 +1398,7 @@ Notes:
 
 #### GetCurFrame
 
-```C
+```C++
 GetCurFrame(Thing thing) -> int
 ```
 
@@ -1416,7 +1416,7 @@ Notes:
 
 #### GetGoalFrame
 
-```C
+```C++
 GetGoalFrame(Thing thing) -> int
 ```
 
@@ -1434,7 +1434,7 @@ Notes:
 
 #### GetThingParent
 
-```C
+```C++
 GetThingParent(Thing thing) -> Thing
 ```
 
@@ -1449,7 +1449,7 @@ Returns:
 
 #### GetThingSector
 
-```C
+```C++
 GetThingSector(Thing thing) -> Sector
 ```
 
@@ -1464,7 +1464,7 @@ Returns:
 
 #### GetThingPos
 
-```C
+```C++
 GetThingPos(Thing thing) -> Vector
 ```
 
@@ -1479,7 +1479,7 @@ Returns:
 
 #### SetThingPos
 
-```C
+```C++
 SetThingPos(Thing thing, Vector newPos) -> int
 ```
 
@@ -1498,7 +1498,7 @@ Notes:
 
 #### GetThingVel
 
-```C
+```C++
 GetThingVel(Thing thing) -> Vector
 ```
 
@@ -1513,7 +1513,7 @@ Returns:
 
 #### GetThingUVec
 
-```C
+```C++
 GetThingUVec(Thing thing) -> Vector
 ```
 
@@ -1528,7 +1528,7 @@ Returns:
 
 #### GetThingLVec
 
-```C
+```C++
 GetThingLVec(Thing thing) -> Vector
 ```
 
@@ -1543,7 +1543,7 @@ Returns:
 
 #### GetThingRVec
 
-```C
+```C++
 GetThingRVec(Thing thing) -> Vector
 ```
 
@@ -1558,7 +1558,7 @@ Returns:
 
 #### GetThingFlags
 
-```C
+```C++
 GetThingFlags(Thing thing) -> int
 ```
 
@@ -1573,7 +1573,7 @@ Returns:
 
 #### GetCollideType
 
-```C
+```C++
 GetCollideType(Thing thing) -> int
 ```
 
@@ -1588,7 +1588,7 @@ Returns:
 
 #### GetHeadLightIntensity
 
-```C
+```C++
 GetHeadLightIntensity(Thing thing) -> Vector
 ```
 
@@ -1607,7 +1607,7 @@ Notes:
 
 #### IsThingVisible
 
-```C
+```C++
 IsThingVisible(Thing thing) -> int
 ```
 
@@ -1622,7 +1622,7 @@ Returns:
 
 #### GetThingGuid
 
-```C
+```C++
 GetThingGuid(Thing thing) -> int
 ```
 
@@ -1637,7 +1637,7 @@ Returns:
 
 #### GetGuidThing
 
-```C
+```C++
 GetGuidThing(int guid) -> Thing
 ```
 
@@ -1651,7 +1651,7 @@ Returns:
 
 #### GetThingMaxVel
 
-```C
+```C++
 GetThingMaxVel(Thing thing) -> float
 ```
 
@@ -1669,7 +1669,7 @@ Notes:
 
 #### GetThingMaxAngVel
 
-```C
+```C++
 GetThingMaxAngVel(Thing thing) -> float
 ```
 
@@ -1687,7 +1687,7 @@ Notes:
 
 #### GetThingJointAngle
 
-```C
+```C++
 GetThingJointAngle(Thing thing, int jointNum) -> float
 ```
 
@@ -1706,7 +1706,7 @@ Notes:
 
 #### InterpolatePYR
 
-```C
+```C++
 InterpolatePYR(Vector axisX, Vector axisY, Vector axisZ, float angle) -> Vector
 ```
 
@@ -1723,7 +1723,7 @@ Returns:
 
 #### GetThingLVecPYR
 
-```C
+```C++
 GetThingLVecPYR(Thing thing) -> Vector
 ```
 
@@ -1738,7 +1738,7 @@ Returns:
 
 #### GetActorHeadPYR
 
-```C
+```C++
 GetActorHeadPYR(Thing thing) -> Vector
 ```
 
@@ -1753,7 +1753,7 @@ Returns:
 
 #### GetThingJointPos
 
-```C
+```C++
 GetThingJointPos(Thing thing, int jointNum) -> Vector
 ```
 
@@ -1772,7 +1772,7 @@ Notes:
 
 #### IsThingModelName
 
-```C
+```C++
 IsThingModelName(Thing thing, string modelName) -> int
 ```
 
@@ -1791,7 +1791,7 @@ Notes:
 
 #### GetThingMaxRotVel
 
-```C
+```C++
 GetThingMaxRotVel(Thing thing) -> float
 ```
 
@@ -1809,7 +1809,7 @@ Notes:
 
 #### GetThingMaxHeadVel
 
-```C
+```C++
 GetThingMaxHeadVel(Thing thing) -> float
 ```
 
@@ -1827,7 +1827,7 @@ Notes:
 
 #### CopyOrient
 
-```C
+```C++
 CopyOrient(Thing srcThing, Thing destThing)
 ```
 
@@ -1840,7 +1840,7 @@ Parameters:
 
 #### CopyOrientAndPos
 
-```C
+```C++
 CopyOrientAndPos(Thing srcThing, Thing dstThing)
 ```
 
@@ -1853,7 +1853,7 @@ Parameters:
 
 #### GetThingInsertOffset
 
-```C
+```C++
 GetThingInsertOffset(Thing thing) -> Vector
 ```
 
@@ -1868,7 +1868,7 @@ Returns:
 
 #### SetThingInsertOffset
 
-```C
+```C++
 SetThingInsertOffset(Thing thing, Vector offset) -> Vector
 ```
 
@@ -1887,7 +1887,7 @@ Notes:
 
 #### GetThingEyeOffset
 
-```C
+```C++
 GetThingEyeOffset(Thing thing) -> Vector
 ```
 
@@ -1902,7 +1902,7 @@ Returns:
 
 #### GetThingRotVel
 
-```C
+```C++
 GetThingRotVel(Thing thing) -> Vector
 ```
 
@@ -1920,7 +1920,7 @@ Notes:
 
 #### SetThingRotVel
 
-```C
+```C++
 SetThingRotVel(Thing thing, Vector vel)
 ```
 
@@ -1937,7 +1937,7 @@ Notes:
 
 #### GetThingRotThrust
 
-```C
+```C++
 GetThingRotThrust(Thing thing) -> Vector
 ```
 
@@ -1955,7 +1955,7 @@ Notes:
 
 #### SetThingRotThrust
 
-```C
+```C++
 SetThingRotThrust(Thing thing, Vector thrust)
 ```
 
@@ -1972,7 +1972,7 @@ Notes:
 
 #### SetThingLook
 
-```C
+```C++
 SetThingLook(Thing thing, Vector look)
 ```
 
@@ -1988,7 +1988,7 @@ Notes:
 
 #### SetThingHeadLookPos
 
-```C
+```C++
 SetThingHeadLookPos(Thing thing, Vector look)
 ```
 
@@ -2005,7 +2005,7 @@ Notes:
 
 #### SetThingHeadLookThing
 
-```C
+```C++
 SetThingHeadLookThing(Thing thing, Thing lookThing)
 ```
 
@@ -2022,7 +2022,7 @@ Notes:
 
 #### IsThingCrouching
 
-```C
+```C++
 IsThingCrouching(Thing thing) -> int
 ```
 
@@ -2040,7 +2040,7 @@ Notes:
 
 #### IsCrouching
 
-```C
+```C++
 IsCrouching(Thing thing) -> int
 ```
 
@@ -2059,7 +2059,7 @@ Notes:
 
 #### GetThingRespawn
 
-```C
+```C++
 GetThingRespawn(Thing thing) -> float
 ```
 
@@ -2077,7 +2077,7 @@ Notes:
 
 #### GetThingSignature
 
-```C
+```C++
 GetThingSignature(Thing thing) -> int
 ```
 
@@ -2092,7 +2092,7 @@ Returns:
 
 #### GetThingUserData
 
-```C
+```C++
 GetThingUserData(Thing thing) -> float
 ```
 
@@ -2107,7 +2107,7 @@ Returns:
 
 #### SetThingUserData
 
-```C
+```C++
 SetThingUserData(Thing thing, float userval)
 ```
 
@@ -2120,7 +2120,7 @@ Parameters:
 
 #### GetThingCollideSize
 
-```C
+```C++
 GetThingCollideSize(Thing thing) -> float
 ```
 
@@ -2135,7 +2135,7 @@ Returns:
 
 #### SetThingCollideSize
 
-```C
+```C++
 SetThingCollideSize(Thing thing, float size)
 ```
 
@@ -2148,7 +2148,7 @@ Parameters:
 
 #### GetThingMoveSize
 
-```C
+```C++
 GetThingMoveSize(Thing thing) -> float
 ```
 
@@ -2163,7 +2163,7 @@ Returns:
 
 #### SetThingMoveSize
 
-```C
+```C++
 SetThingMoveSize(Thing thing, float movesize)
 ```
 
@@ -2176,7 +2176,7 @@ Parameters:
 
 #### GetThingMass
 
-```C
+```C++
 GetThingMass(Thing thing) -> float
 ```
 
@@ -2194,7 +2194,7 @@ Notes:
 
 #### SetThingMass
 
-```C
+```C++
 SetThingMass(Thing thing, float mass)
 ```
 
@@ -2211,7 +2211,7 @@ Notes:
 
 #### CheckFloorDistance
 
-```C
+```C++
 CheckFloorDistance(Thing thing) -> float
 ```
 
@@ -2225,7 +2225,7 @@ Returns:
 
 #### CheckPathToPoint
 
-```C
+```C++
 CheckPathToPoint(Thing viewer, Vector vecTarget, int bDetectThings, int bSkipFloor) -> float
 ```
 
@@ -2242,7 +2242,7 @@ Returns:
 
 #### GetMoveStatus
 
-```C
+```C++
 GetMoveStatus(Thing thing) -> int
 ```
 
@@ -2257,7 +2257,7 @@ Returns:
 
 #### SetMoveMode
 
-```C
+```C++
 SetMoveMode(Thing thing, int newMode) -> int
 ```
 
@@ -2273,7 +2273,7 @@ Returns:
 
 #### SetThingStateChange
 
-```C
+```C++
 SetThingStateChange(Thing thing, int state, int type)
 ```
 
@@ -2290,7 +2290,7 @@ Notes:
 
 #### BoardVehicle
 
-```C
+```C++
 BoardVehicle(Thing thing) -> int
 ```
 
@@ -2307,7 +2307,7 @@ Notes:
 
 #### IsGhostVisible
 
-```C
+```C++
 IsGhostVisible(Thing thing, Thing ghostThing, float angle) -> int
 ```
 
@@ -2326,7 +2326,7 @@ Returns:
 
 #### SetThingPulse
 
-```C
+```C++
 SetThingPulse(Thing thing, float secPulse)
 ```
 
@@ -2341,7 +2341,7 @@ Notes:
 
 #### SetThingTimer
 
-```C
+```C++
 SetThingTimer(Thing thing, float secTimer)
 ```
 
@@ -2356,7 +2356,7 @@ Notes:
 
 #### GetInv
 
-```C
+```C++
 GetInv(Thing thing, int typeId) -> float
 ```
 
@@ -2375,7 +2375,7 @@ Notes:
 
 #### SetInv
 
-```C
+```C++
 SetInv(Thing thing, int typeId, float amount)
 ```
 
@@ -2392,7 +2392,7 @@ Notes:
 
 #### ChangeInv
 
-```C
+```C++
 ChangeInv(Thing thing, int typeId, float amount) -> float
 ```
 
@@ -2412,7 +2412,7 @@ Notes:
 
 #### GetInvCog
 
-```C
+```C++
 GetInvCog(Thing thing, int typeId) -> Cog
 ```
 
@@ -2431,7 +2431,7 @@ Notes:
 
 #### GetInvMin
 
-```C
+```C++
 GetInvMin(Thing thing, int bin) -> float
 ```
 
@@ -2450,7 +2450,7 @@ Notes:
 
 #### GetInvMax
 
-```C
+```C++
 GetInvMax(Thing thing, int bin) -> float
 ```
 
@@ -2469,7 +2469,7 @@ Notes:
 
 #### GetPhysicsFlags
 
-```C
+```C++
 GetPhysicsFlags(Thing thing) -> int
 ```
 
@@ -2487,7 +2487,7 @@ Notes:
 
 #### SetPhysicsFlags
 
-```C
+```C++
 SetPhysicsFlags(Thing thing, int physflags)
 ```
 
@@ -2504,7 +2504,7 @@ Notes:
 
 #### ClearPhysicsFlags
 
-```C
+```C++
 ClearPhysicsFlags(Thing thing, int physflags)
 ```
 
@@ -2520,7 +2520,7 @@ Notes:
 
 #### GetThingClassCog
 
-```C
+```C++
 GetThingClassCog(Thing thing) -> Cog
 ```
 
@@ -2535,7 +2535,7 @@ Returns:
 
 #### SetThingClassCog
 
-```C
+```C++
 SetThingClassCog(Thing thing, Cog thingCog)
 ```
 
@@ -2547,7 +2547,7 @@ Parameters:
 
 #### GetThingCaptureCog
 
-```C
+```C++
 GetThingCaptureCog(Thing thing) -> Cog
 ```
 
@@ -2562,7 +2562,7 @@ Returns:
 
 #### SetThingCaptureCog
 
-```C
+```C++
 SetThingCaptureCog(Thing thing, Cog captureCog)
 ```
 
@@ -2574,7 +2574,7 @@ Parameters:
 
 #### SetThingAttachFlags
 
-```C
+```C++
 SetThingAttachFlags(Thing thing, int attflags)
 ```
 
@@ -2590,7 +2590,7 @@ Notes:
 
 #### ClearThingAttachFlags
 
-```C
+```C++
 ClearThingAttachFlags(Thing thing, int attflags)
 ```
 
@@ -2606,7 +2606,7 @@ Notes:
 
 #### GetParticleSize
 
-```C
+```C++
 GetParticleSize(Thing thing) -> float
 ```
 
@@ -2624,7 +2624,7 @@ Notes:
 
 #### SetParticleSize
 
-```C
+```C++
 SetParticleSize(Thing thing, float size)
 ```
 
@@ -2640,7 +2640,7 @@ Notes:
 
 #### GetParticleGrowthSpeed
 
-```C
+```C++
 GetParticleGrowthSpeed(Thing thing) -> float
 ```
 
@@ -2658,7 +2658,7 @@ Notes:
 
 #### SetParticleGrowthSpeed
 
-```C
+```C++
 SetParticleGrowthSpeed(Thing thing, float speed)
 ```
 
@@ -2674,7 +2674,7 @@ Notes:
 
 #### GetParticleTimeoutRate
 
-```C
+```C++
 GetParticleTimeoutRate(Thing thing) -> float
 ```
 
@@ -2692,7 +2692,7 @@ Notes:
 
 #### SetParticleTimeoutRate
 
-```C
+```C++
 SetParticleTimeoutRate(Thing thing, float timeoutRate)
 ```
 
@@ -2708,7 +2708,7 @@ Notes:
 
 #### GetTypeFlags
 
-```C
+```C++
 GetTypeFlags(Thing thing) -> int
 ```
 
@@ -2726,7 +2726,7 @@ Notes:
 
 #### SetTypeFlags
 
-```C
+```C++
 SetTypeFlags(Thing thing, int typeflags)
 ```
 
@@ -2743,7 +2743,7 @@ Notes:
 
 #### ClearTypeFlags
 
-```C
+```C++
 ClearTypeFlags(Thing thing, int typeflags)
 ```
 
@@ -2760,7 +2760,7 @@ Notes:
 
 #### GetActorFlags
 
-```C
+```C++
 GetActorFlags(Thing thing) -> int
 ```
 
@@ -2778,7 +2778,7 @@ Notes:
 
 #### SetActorFlags
 
-```C
+```C++
 SetActorFlags(Thing thing, int typeflags)
 ```
 
@@ -2795,7 +2795,7 @@ Notes:
 
 #### ClearActorFlags
 
-```C
+```C++
 ClearActorFlags(Thing thing, int typeflags)
 ```
 
@@ -2812,7 +2812,7 @@ Notes:
 
 #### GetWeaponFlags
 
-```C
+```C++
 GetWeaponFlags(Thing thing) -> int
 ```
 
@@ -2830,7 +2830,7 @@ Notes:
 
 #### SetWeaponFlags
 
-```C
+```C++
 SetWeaponFlags(Thing thing, int typeflags)
 ```
 
@@ -2847,7 +2847,7 @@ Notes:
 
 #### ClearWeaponFlags
 
-```C
+```C++
 ClearWeaponFlags(Thing thing, int typeflags)
 ```
 
@@ -2864,7 +2864,7 @@ Notes:
 
 #### GetExplosionFlags
 
-```C
+```C++
 GetExplosionFlags(Thing thing) -> int
 ```
 
@@ -2882,7 +2882,7 @@ Notes:
 
 #### SetExplosionFlags
 
-```C
+```C++
 SetExplosionFlags(Thing thing, int typeflags)
 ```
 
@@ -2899,7 +2899,7 @@ Notes:
 
 #### ClearExplosionFlags
 
-```C
+```C++
 ClearExplosionFlags(Thing thing, int typeflags)
 ```
 
@@ -2916,7 +2916,7 @@ Notes:
 
 #### GetItemFlags
 
-```C
+```C++
 GetItemFlags(Thing thing) -> int
 ```
 
@@ -2934,7 +2934,7 @@ Notes:
 
 #### SetItemFlags
 
-```C
+```C++
 SetItemFlags(Thing thing, int typeflags)
 ```
 
@@ -2951,7 +2951,7 @@ Notes:
 
 #### ClearItemFlags
 
-```C
+```C++
 ClearItemFlags(Thing thing, int typeflags)
 ```
 
@@ -2968,7 +2968,7 @@ Notes:
 
 #### GetParticleFlags
 
-```C
+```C++
 GetParticleFlags(Thing thing) -> int
 ```
 
@@ -2986,7 +2986,7 @@ Notes:
 
 #### SetParticleFlags
 
-```C
+```C++
 SetParticleFlags(Thing thing, int typeflags)
 ```
 
@@ -3003,7 +3003,7 @@ Notes:
 
 #### ClearParticleFlags
 
-```C
+```C++
 ClearParticleFlags(Thing thing, int typeflags)
 ```
 
@@ -3020,7 +3020,7 @@ Notes:
 
 #### GetThingFireOffset
 
-```C
+```C++
 GetThingFireOffset(Thing thing) -> Vector
 ```
 
@@ -3035,7 +3035,7 @@ Returns:
 
 #### SetThingFireOffset
 
-```C
+```C++
 SetThingFireOffset(Thing thing, Vector offset)
 ```
 
@@ -3050,7 +3050,7 @@ Parameters:
 
 #### PlayKey
 
-```C
+```C++
 PlayKey(Thing thing, Keyframe kfTrack, int lowPriority, int kfflags, int bWait) -> int
 ```
 
@@ -3073,7 +3073,7 @@ Notes:
 
 #### PlayKeyEx
 
-```C
+```C++
 PlayKeyEx(Thing thing, Keyframe kfTrack, int lowPriority, int highPriority, int kfflags, int bWait) -> int
 ```
 
@@ -3096,7 +3096,7 @@ Notes:
 
 #### StopKey
 
-```C
+```C++
 StopKey(Thing thing, int trackNum, float fadeTime)
 ```
 
@@ -3113,7 +3113,7 @@ Notes:
 
 #### PauseKey
 
-```C
+```C++
 PauseKey(Thing thing, int trackNum) -> int
 ```
 
@@ -3131,7 +3131,7 @@ Notes:
 
 #### ResumeKey
 
-```C
+```C++
 ResumeKey(Thing thing, int trackNum) -> int
 ```
 
@@ -3149,7 +3149,7 @@ Notes:
 
 #### SetThingModel
 
-```C
+```C++
 SetThingModel(Thing thing, Model model) -> int
 ```
 
@@ -3167,7 +3167,7 @@ Notes:
 
 #### GetThingModel
 
-```C
+```C++
 GetThingModel(Thing thing) -> int
 ```
 
@@ -3182,7 +3182,7 @@ Returns:
 
 #### PlayMode
 
-```C
+```C++
 PlayMode(Thing thing, int mode, int bWait) -> int
 ```
 
@@ -3203,7 +3203,7 @@ Notes:
 
 #### StopMode
 
-```C
+```C++
 StopMode(Thing thing, int mode, float fadeTime)
 ```
 
@@ -3217,7 +3217,7 @@ Parameters:
 
 #### SynchMode
 
-```C
+```C++
 SynchMode(Thing thing, int oldMode, int newMode, float unk, int bReverse)
 ```
 
@@ -3232,7 +3232,7 @@ Parameters:
 
 #### IsModePlaying
 
-```C
+```C++
 IsModePlaying(Thing thing, int mode) -> int
 ```
 
@@ -3252,7 +3252,7 @@ Notes:
 
 #### PauseMode
 
-```C
+```C++
 PauseMode(Thing thing, int mode) -> int
 ```
 
@@ -3272,7 +3272,7 @@ Notes:
 
 #### ResumeMode
 
-```C
+```C++
 ResumeMode(Thing thing, int mode) -> int
 ```
 
@@ -3292,7 +3292,7 @@ Notes:
 
 #### TrackToMode
 
-```C
+```C++
 TrackToMode(Thing thing, int trackNum) -> int
 ```
 
@@ -3310,7 +3310,7 @@ Notes:
 
 #### WaitMode
 
-```C
+```C++
 WaitMode(Thing thing, int mode) -> int
 ```
 
@@ -3329,7 +3329,7 @@ Notes:
 
 #### GetMajorMode
 
-```C
+```C++
 GetMajorMode(Thing thing) -> int
 ```
 
@@ -3348,7 +3348,7 @@ Notes:
 
 #### FirstThingInSector
 
-```C
+```C++
 FirstThingInSector(Sector sector) -> Thing
 ```
 
@@ -3362,7 +3362,7 @@ Returns:
 
 #### NextThingInSector
 
-```C
+```C++
 NextThingInSector(Thing thing) -> Thing
 ```
 
@@ -3376,7 +3376,7 @@ Returns:
 
 #### PrevThingInSector
 
-```C
+```C++
 PrevThingInSector(Thing thing) -> Thing
 ```
 
@@ -3390,7 +3390,7 @@ Returns:
 
 #### MoveToFrame
 
-```C
+```C++
 MoveToFrame(Thing thing, int frame, float speed)
 ```
 
@@ -3408,7 +3408,7 @@ Notes:
 
 #### SkipToFrame
 
-```C
+```C++
 SkipToFrame(Thing thing, int frame, float speed)
 ```
 
@@ -3426,7 +3426,7 @@ Notes:
 
 #### JumpToFrame
 
-```C
+```C++
 JumpToFrame(Thing thing, int frame, Sector newSector)
 ```
 
@@ -3443,7 +3443,7 @@ Notes:
 
 #### PathMovePause
 
-```C
+```C++
 PathMovePause(Thing thing) -> int
 ```
 
@@ -3460,7 +3460,7 @@ Notes:
 
 #### PathMoveResume
 
-```C
+```C++
 PathMoveResume(Thing thing) -> int
 ```
 
@@ -3477,7 +3477,7 @@ Notes:
 
 #### Rotate
 
-```C
+```C++
 Rotate(Thing thing, float degrees, int axis, float rotTime)
 ```
 
@@ -3495,7 +3495,7 @@ Notes:
 
 #### RotatePivot
 
-```C
+```C++
 RotatePivot(Thing thing, int frame, float rotTime)
 ```
 
@@ -3512,7 +3512,7 @@ Notes:
 
 #### RotateToPYR
 
-```C
+```C++
 RotateToPYR(Thing thing, Vector pyr, float time)
 ```
 
@@ -3529,7 +3529,7 @@ Notes:
 
 #### GetThingTemplate
 
-```C
+```C++
 GetThingTemplate(Thing thing) -> Template
 ```
 
@@ -3544,7 +3544,7 @@ Returns:
 
 #### ParseArg
 
-```C
+```C++
 ParseArg(Thing thing, string args)
 ```
 
@@ -3557,7 +3557,7 @@ Parameters:
 
 #### SetPuppetModeFPS
 
-```C
+```C++
 SetPuppetModeFPS(Thing thing, int majorMode, int submode, float fps) -> float
 ```
 
@@ -3578,7 +3578,7 @@ Notes:
 
 #### StartQuetzAnim
 
-```C
+```C++
 StartQuetzAnim(Thing thing, int mode) -> int
 ```
 
@@ -3594,7 +3594,7 @@ Returns:
 
 #### FadeInTrack
 
-```C
+```C++
 FadeInTrack(Thing thing, int track, float speed) -> int
 ```
 
@@ -3611,7 +3611,7 @@ Returns:
 
 #### PlayForceMoveMode
 
-```C
+```C++
 PlayForceMoveMode(Thing thing, int submode) -> int
 ```
 
@@ -3629,7 +3629,7 @@ Returns:
 
 #### SyncThingPos
 
-```C
+```C++
 SyncThingPos(Thing thing)
 ```
 
@@ -3641,7 +3641,7 @@ Parameters:
 
 #### SyncThingAttachment
 
-```C
+```C++
 SyncThingAttachment(Thing thing)
 ```
 
@@ -3653,7 +3653,7 @@ Parameters:
 
 #### SyncThingState
 
-```C
+```C++
 SyncThingState(Thing thing)
 ```
 
@@ -3665,7 +3665,7 @@ Parameters:
 
 #### GetMeshByName
 
-```C
+```C++
 GetMeshByName(Thing thing, string meshName) -> int
 ```
 
@@ -3684,7 +3684,7 @@ Notes:
 
 #### GetNodeByName
 
-```C
+```C++
 GetNodeByName(Thing thing, string nodeName) -> int
 ```
 
@@ -3703,7 +3703,7 @@ Notes:
 
 #### AttachThingToThingMesh
 
-```C
+```C++
 AttachThingToThingMesh(Thing attachThing, Template template, int meshNum) -> Thing
 ```
 
@@ -3724,7 +3724,7 @@ Notes:
 
 #### DetachThingMesh
 
-```C
+```C++
 DetachThingMesh(Thing thing)
 ```
 
@@ -3736,7 +3736,7 @@ Parameters:
 
 #### SetThingMesh
 
-```C
+```C++
 SetThingMesh(Thing thing, int meshNum, Model model, int meshNumSrc) -> int
 ```
 
@@ -3758,7 +3758,7 @@ Notes:
 
 #### RestoreThingMesh
 
-```C
+```C++
 RestoreThingMesh(Thing thing, int refnum)
 ```
 
@@ -3774,7 +3774,7 @@ Notes:
 
 #### GetThingAlpha
 
-```C
+```C++
 GetThingAlpha(Thing thing) -> float
 ```
 
@@ -3789,7 +3789,7 @@ Returns:
 
 #### SetThingAlpha
 
-```C
+```C++
 SetThingAlpha(Thing thing, float alpha) -> float
 ```
 
@@ -3805,7 +3805,7 @@ Returns:
 
 #### GetCameraFOV
 
-```C
+```C++
 GetCameraFOV() -> float
 ```
 
@@ -3817,7 +3817,7 @@ Returns:
 
 #### SetCameraFOV
 
-```C
+```C++
 SetCameraFOV(float fov, int bInterp, float timeDelta)
 ```
 
@@ -3831,7 +3831,7 @@ Parameters:
 
 #### ResetCameraFOV
 
-```C
+```C++
 ResetCameraFOV(int bInterp, float time)
 ```
 
@@ -3844,7 +3844,7 @@ Parameters:
 
 #### SetCameraLookInterp
 
-```C
+```C++
 SetCameraLookInterp(int camNum, int bEnable)
 ```
 
@@ -3857,7 +3857,7 @@ Parameters:
 
 #### SetCameraPosInterp
 
-```C
+```C++
 SetCameraPosInterp(int camNum, int bDollyMode)
 ```
 
@@ -3870,7 +3870,7 @@ Parameters:
 
 #### SetCameraInterpSpeed
 
-```C
+```C++
 SetCameraInterpSpeed(int camNum, float speed)
 ```
 
@@ -3883,7 +3883,7 @@ Parameters:
 
 #### SetCameraPosition
 
-```C
+```C++
 SetCameraPosition(int camNum, Vector vec)
 ```
 
@@ -3896,7 +3896,7 @@ Parameters:
 
 #### AnimateSpriteSize
 
-```C
+```C++
 AnimateSpriteSize(Thing sprite, Vector vecStart, Vector vecEnd, float deltaTime) -> int
 ```
 
@@ -3914,7 +3914,7 @@ Returns:
 
 #### GetCameraPosition
 
-```C
+```C++
 GetCameraPosition(int camNum) -> Vector
 ```
 
@@ -3929,7 +3929,7 @@ Returns:
 
 #### SetCameraFadeThing
 
-```C
+```C++
 SetCameraFadeThing(int camNum, Thing fadeThing, Thing camPosThing, int bWhiteFade)
 ```
 
@@ -3948,7 +3948,7 @@ Notes:
 
 #### SetExtCamOffset
 
-```C
+```C++
 SetExtCamOffset(Vector vec)
 ```
 
@@ -3960,7 +3960,7 @@ Parameters:
 
 #### SetExtCamOffsetToThing
 
-```C
+```C++
 SetExtCamOffsetToThing(Thing thing)
 ```
 
@@ -3972,7 +3972,7 @@ Parameters:
 
 #### SetExtCamLookOffsetToThing
 
-```C
+```C++
 SetExtCamLookOffsetToThing(Thing thing)
 ```
 
@@ -3984,7 +3984,7 @@ Parameters:
 
 #### SetExtCamLookOffset
 
-```C
+```C++
 SetExtCamLookOffset(Vector vec)
 ```
 
@@ -3996,7 +3996,7 @@ Parameters:
 
 #### RestoreExtCam
 
-```C
+```C++
 RestoreExtCam()
 ```
 
@@ -4005,7 +4005,7 @@ Restores the default external-camera settings.
 
 #### IsThingAutoAiming
 
-```C
+```C++
 IsThingAutoAiming()
 ```
 
@@ -4014,7 +4014,7 @@ This verb is currently a stub in the engine and does not report an auto-aiming s
 
 #### CreateLaser
 
-```C
+```C++
 CreateLaser(Thing srcThing, Vector offset, Vector endPos, float baseRadius, float tipRadius, float duration) -> Thing
 ```
 
@@ -4034,7 +4034,7 @@ Returns:
 
 #### CreateLightning
 
-```C
+```C++
 CreateLightning(Thing sourceThing, Vector offset, Vector endPos, float baseRadius, float tipRadius, float duration) -> Thing
 ```
 
@@ -4054,7 +4054,7 @@ Returns:
 
 #### MakeFairyDust
 
-```C
+```C++
 MakeFairyDust(Thing thing, Vector pos)
 ```
 
@@ -4067,7 +4067,7 @@ Parameters:
 
 #### MakeFairyDustDeluxe
 
-```C
+```C++
 MakeFairyDustDeluxe(Thing thing, Vector pos)
 ```
 
@@ -4080,7 +4080,7 @@ Parameters:
 
 #### CreatePolylineThing
 
-```C
+```C++
 CreatePolylineThing(Thing srcThing, Thing destThing, Vector endPos, Material material, float baseRadius, float tipRadius, float duration) -> Thing
 ```
 
@@ -4104,7 +4104,7 @@ Notes:
 
 #### MakeCamera2LikeCamera1
 
-```C
+```C++
 MakeCamera2LikeCamera1(Thing cam1Pos, Thing cam1Look) -> int
 ```
 

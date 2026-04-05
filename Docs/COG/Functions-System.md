@@ -1,6 +1,6 @@
 # System Host Functions
 
-Source: `Libs/sith/Cog/sithCogFunction.c`
+Source: [`Libs/sith/Cog/sithCogFunction.c`](../../Libs/sith/Cog/sithCogFunction.c)
 
 This page covers the core verb set shared by most scripts: message context, timers, printing/debug helpers, vector math, messaging, camera helpers, misc world queries, and several compatibility verbs inherited from the original engine.
 
@@ -197,7 +197,7 @@ This page covers the core verb set shared by most scripts: message context, time
 
 #### GetSenderRef
 
-```C
+```C++
 GetSenderRef() -> int
 ```
 
@@ -209,7 +209,7 @@ Returns:
 
 #### GetSenderType
 
-```C
+```C++
 GetSenderType() -> int
 ```
 
@@ -221,7 +221,7 @@ Returns:
 
 #### GetSenderID
 
-```C
+```C++
 GetSenderID() -> int
 ```
 
@@ -233,7 +233,7 @@ Returns:
 
 #### GetSourceType
 
-```C
+```C++
 GetSourceType() -> int
 ```
 
@@ -245,7 +245,7 @@ Returns:
 
 #### GetSourceRef
 
-```C
+```C++
 GetSourceRef() -> int
 ```
 
@@ -257,7 +257,7 @@ Returns:
 
 #### GetParam
 
-```C
+```C++
 GetParam(int idx) -> int
 ```
 
@@ -272,7 +272,7 @@ Returns:
 
 #### SetParam
 
-```C
+```C++
 SetParam(int num, int val)
 ```
 
@@ -288,7 +288,7 @@ Notes:
 
 #### ReturnEx
 
-```C
+```C++
 ReturnEx(int returnValue)
 ```
 
@@ -300,7 +300,7 @@ Parameters:
 
 #### GetSelfCog
 
-```C
+```C++
 GetSelfCog() -> Cog
 ```
 
@@ -312,7 +312,7 @@ Returns:
 
 #### GetMasterCog
 
-```C
+```C++
 GetMasterCog() -> Cog
 ```
 
@@ -324,7 +324,7 @@ Returns:
 
 #### SetMasterCog
 
-```C
+```C++
 SetMasterCog(Cog masterCog)
 ```
 
@@ -336,7 +336,7 @@ Parameters:
 
 #### GetCogByIndex
 
-```C
+```C++
 GetCogByIndex(int idx) -> Cog
 ```
 
@@ -355,7 +355,7 @@ Notes:
 
 #### SendMessage
 
-```C
+```C++
 SendMessage(Cog dstCog, int msgType)
 ```
 
@@ -372,7 +372,7 @@ Notes:
 
 #### SendMessageEx
 
-```C
+```C++
 SendMessageEx(Cog dstCog, int msg, int param0, int param1, int param2, int param3) -> int
 ```
 
@@ -395,7 +395,7 @@ Notes:
 
 #### SendTrigger
 
-```C
+```C++
 SendTrigger(Thing thing, int srcIdx, int param0, int param1, int param2, int param3)
 ```
 
@@ -417,7 +417,7 @@ Notes:
 
 #### GetSysDate
 
-```C
+```C++
 GetSysDate() -> Vector
 ```
 
@@ -429,7 +429,7 @@ Returns:
 
 #### GetSysTime
 
-```C
+```C++
 GetSysTime() -> Vector
 ```
 
@@ -441,7 +441,7 @@ Returns:
 
 #### InEditor
 
-```C
+```C++
 InEditor() -> int
 ```
 
@@ -453,7 +453,7 @@ Returns:
 
 #### GetThingCount
 
-```C
+```C++
 GetThingCount() -> int
 ```
 
@@ -465,7 +465,7 @@ Returns:
 
 #### GetGravity
 
-```C
+```C++
 GetGravity() -> float
 ```
 
@@ -477,7 +477,7 @@ Returns:
 
 #### SetGravity
 
-```C
+```C++
 SetGravity(float gravity)
 ```
 
@@ -489,7 +489,7 @@ Parameters:
 
 #### GetLevelTime
 
-```C
+```C++
 GetLevelTime() -> float
 ```
 
@@ -501,7 +501,7 @@ Returns:
 
 #### GetGameTime
 
-```C
+```C++
 GetGameTime() -> int
 ```
 
@@ -513,7 +513,7 @@ Returns:
 
 #### GetFlexGameTime
 
-```C
+```C++
 GetFlexGameTime() -> float
 ```
 
@@ -525,7 +525,7 @@ Returns:
 
 #### GetThingTemplateCount
 
-```C
+```C++
 GetThingTemplateCount(Template template) -> int
 ```
 
@@ -540,7 +540,7 @@ Returns:
 
 #### SetFog
 
-```C
+```C++
 SetFog(int bEnable, Vector vecColor, float start, float end)
 ```
 
@@ -558,7 +558,7 @@ Notes:
 
 #### FindNewSector
 
-```C
+```C++
 FindNewSector(Vector startPos, Sector sector, Vector endPos) -> Sector
 ```
 
@@ -575,7 +575,7 @@ Returns:
 
 #### FindNewSectorFromThing
 
-```C
+```C++
 FindNewSectorFromThing(Thing thing, Vector endPos) -> Sector
 ```
 
@@ -591,7 +591,7 @@ Returns:
 
 #### GetSithMode
 
-```C
+```C++
 GetSithMode() -> int
 ```
 
@@ -603,7 +603,7 @@ Returns:
 
 #### GetDifficulty
 
-```C
+```C++
 GetDifficulty() -> int
 ```
 
@@ -615,7 +615,7 @@ Returns:
 
 #### SetSubModeFlags
 
-```C
+```C++
 SetSubModeFlags(int flags)
 ```
 
@@ -627,7 +627,7 @@ Parameters:
 
 #### GetSubModeFlags
 
-```C
+```C++
 GetSubModeFlags() -> int
 ```
 
@@ -639,7 +639,7 @@ Returns:
 
 #### ClearSubModeFlags
 
-```C
+```C++
 ClearSubModeFlags(int flags)
 ```
 
@@ -651,7 +651,7 @@ Parameters:
 
 #### SetDebugModeFlags
 
-```C
+```C++
 SetDebugModeFlags(int flags)
 ```
 
@@ -663,7 +663,7 @@ Parameters:
 
 #### GetDebugModeFlags
 
-```C
+```C++
 GetDebugModeFlags() -> int
 ```
 
@@ -675,7 +675,7 @@ Returns:
 
 #### ClearDebugModeFlags
 
-```C
+```C++
 ClearDebugModeFlags(int flags)
 ```
 
@@ -687,7 +687,7 @@ Parameters:
 
 #### SetMapModeFlags
 
-```C
+```C++
 SetMapModeFlags(int flags)
 ```
 
@@ -699,7 +699,7 @@ Parameters:
 
 #### GetMapModeFlags
 
-```C
+```C++
 GetMapModeFlags() -> int
 ```
 
@@ -711,7 +711,7 @@ Returns:
 
 #### ClearMapModeFlags
 
-```C
+```C++
 ClearMapModeFlags(int flags)
 ```
 
@@ -723,7 +723,7 @@ Parameters:
 
 #### GetPerformanceLevel
 
-```C
+```C++
 GetPerformanceLevel() -> int
 ```
 
@@ -735,7 +735,7 @@ Returns:
 
 #### IsLevelName
 
-```C
+```C++
 IsLevelName(string name) -> int
 ```
 
@@ -750,7 +750,7 @@ Returns:
 
 #### IsMulti
 
-```C
+```C++
 IsMulti() -> int
 ```
 
@@ -762,7 +762,7 @@ Returns:
 
 #### IsServer
 
-```C
+```C++
 IsServer() -> int
 ```
 
@@ -774,7 +774,7 @@ Returns:
 
 #### AutoSavegame
 
-```C
+```C++
 AutoSavegame()
 ```
 
@@ -785,7 +785,7 @@ Performs the requested savegame operation.
 
 #### Sleep
 
-```C
+```C++
 Sleep(float secWait)
 ```
 
@@ -797,7 +797,7 @@ Parameters:
 
 #### SetPulse
 
-```C
+```C++
 SetPulse(float interval)
 ```
 
@@ -811,7 +811,7 @@ Notes:
 
 #### SetTimer
 
-```C
+```C++
 SetTimer(float when)
 ```
 
@@ -825,7 +825,7 @@ Notes:
 
 #### SetTimerEx
 
-```C
+```C++
 SetTimerEx(float seconds, int timerId, int param0, int param1)
 ```
 
@@ -840,7 +840,7 @@ Parameters:
 
 #### KillTimerEx
 
-```C
+```C++
 KillTimerEx(int timerId)
 ```
 
@@ -851,7 +851,7 @@ Parameters:
 
 #### Reset
 
-```C
+```C++
 Reset()
 ```
 
@@ -862,7 +862,7 @@ Notes:
 
 #### MaterialAnim
 
-```C
+```C++
 MaterialAnim(Material mat, float fps, int flags) -> int
 ```
 
@@ -878,7 +878,7 @@ Returns:
 
 #### StopMaterialAnim
 
-```C
+```C++
 StopMaterialAnim(Material material)
 ```
 
@@ -890,7 +890,7 @@ Parameters:
 
 #### StopAnim
 
-```C
+```C++
 StopAnim(int animID)
 ```
 
@@ -902,7 +902,7 @@ Parameters:
 
 #### StopSurfaceAnim
 
-```C
+```C++
 StopSurfaceAnim(Surface surf)
 ```
 
@@ -914,7 +914,7 @@ Parameters:
 
 #### GetSurfaceAnim
 
-```C
+```C++
 GetSurfaceAnim(Surface surf) -> int
 ```
 
@@ -929,7 +929,7 @@ Returns:
 
 #### SurfaceAnim
 
-```C
+```C++
 SurfaceAnim(Surface surf, float speed, int flags) -> int
 ```
 
@@ -946,7 +946,7 @@ Returns:
 
 #### GetKeyLen
 
-```C
+```C++
 GetKeyLen(Keyframe keyframe) -> float
 ```
 
@@ -961,7 +961,7 @@ Returns:
 
 #### LoadTemplate
 
-```C
+```C++
 LoadTemplate(string templateName) -> Template
 ```
 
@@ -976,7 +976,7 @@ Returns:
 
 #### LoadKeyframe
 
-```C
+```C++
 LoadKeyframe(string keyFilename) -> Keyframe
 ```
 
@@ -991,7 +991,7 @@ Returns:
 
 #### LoadModel
 
-```C
+```C++
 LoadModel(string filename) -> Model
 ```
 
@@ -1008,7 +1008,7 @@ Returns:
 
 #### EnablePrint
 
-```C
+```C++
 EnablePrint(int bEnable) -> int
 ```
 
@@ -1023,7 +1023,7 @@ Returns:
 
 #### IsPrintEnabled
 
-```C
+```C++
 IsPrintEnabled() -> int
 ```
 
@@ -1035,7 +1035,7 @@ Returns:
 
 #### Print
 
-```C
+```C++
 Print(string str)
 ```
 
@@ -1047,7 +1047,7 @@ Parameters:
 
 #### PrintInt
 
-```C
+```C++
 PrintInt(int val)
 ```
 
@@ -1059,7 +1059,7 @@ Parameters:
 
 #### PrintFlex
 
-```C
+```C++
 PrintFlex(float value)
 ```
 
@@ -1071,7 +1071,7 @@ Parameters:
 
 #### PrintVector
 
-```C
+```C++
 PrintVector(Vector vec)
 ```
 
@@ -1083,7 +1083,7 @@ Parameters:
 
 #### PrintHex
 
-```C
+```C++
 PrintHex(int value)
 ```
 
@@ -1095,7 +1095,7 @@ Parameters:
 
 #### DebugPrint
 
-```C
+```C++
 DebugPrint(string str)
 ```
 
@@ -1107,7 +1107,7 @@ Parameters:
 
 #### DebugFlex
 
-```C
+```C++
 DebugFlex(string str, float val) -> float
 ```
 
@@ -1123,7 +1123,7 @@ Returns:
 
 #### DebugInt
 
-```C
+```C++
 DebugInt(string str, int val) -> int
 ```
 
@@ -1139,7 +1139,7 @@ Returns:
 
 #### DebugVector
 
-```C
+```C++
 DebugVector(string str, Vector vec) -> Vector
 ```
 
@@ -1155,7 +1155,7 @@ Returns:
 
 #### DebugLocalSymbols
 
-```C
+```C++
 DebugLocalSymbols(string headerText) -> int
 ```
 
@@ -1170,7 +1170,7 @@ Returns:
 
 #### DebugWaitForKey
 
-```C
+```C++
 DebugWaitForKey()
 ```
 
@@ -1184,7 +1184,7 @@ Notes:
 
 #### VectorAdd
 
-```C
+```C++
 VectorAdd(Vector a, Vector b) -> Vector
 ```
 
@@ -1199,7 +1199,7 @@ Returns:
 
 #### VectorSub
 
-```C
+```C++
 VectorSub(Vector a, Vector b) -> Vector
 ```
 
@@ -1214,7 +1214,7 @@ Returns:
 
 #### VectorDot
 
-```C
+```C++
 VectorDot(Vector a, Vector b) -> float
 ```
 
@@ -1229,7 +1229,7 @@ Returns:
 
 #### VectorCross
 
-```C
+```C++
 VectorCross(Vector a, Vector b) -> Vector
 ```
 
@@ -1247,7 +1247,7 @@ Notes:
 
 #### VectorSet
 
-```C
+```C++
 VectorSet(float x, float y, float z) -> Vector
 ```
 
@@ -1263,7 +1263,7 @@ Returns:
 
 #### VectorLen
 
-```C
+```C++
 VectorLen(Vector vec) -> float
 ```
 
@@ -1277,7 +1277,7 @@ Returns:
 
 #### VectorScale
 
-```C
+```C++
 VectorScale(Vector a, float scalar) -> Vector
 ```
 
@@ -1292,7 +1292,7 @@ Returns:
 
 #### VectorDist
 
-```C
+```C++
 VectorDist(Vector a, Vector b) -> float
 ```
 
@@ -1307,7 +1307,7 @@ Returns:
 
 #### VectorX
 
-```C
+```C++
 VectorX(Vector vec) -> float
 ```
 
@@ -1321,7 +1321,7 @@ Returns:
 
 #### VectorY
 
-```C
+```C++
 VectorY(Vector vec) -> float
 ```
 
@@ -1335,7 +1335,7 @@ Returns:
 
 #### VectorZ
 
-```C
+```C++
 VectorZ(Vector vec) -> float
 ```
 
@@ -1349,7 +1349,7 @@ Returns:
 
 #### VectorNorm
 
-```C
+```C++
 VectorNorm(Vector vec) -> Vector
 ```
 
@@ -1363,7 +1363,7 @@ Returns:
 
 #### VectorEqual
 
-```C
+```C++
 VectorEqual(Vector a, Vector b) -> int
 ```
 
@@ -1378,7 +1378,7 @@ Returns:
 
 #### VectorRotate
 
-```C
+```C++
 VectorRotate(Vector vec, Vector pyr) -> Vector
 ```
 
@@ -1393,7 +1393,7 @@ Returns:
 
 #### VectorTransformToOrient
 
-```C
+```C++
 VectorTransformToOrient(Thing thing, Vector vec) -> Vector
 ```
 
@@ -1408,7 +1408,7 @@ Returns:
 
 #### BitSet
 
-```C
+```C++
 BitSet(int flags, int mask) -> int
 ```
 
@@ -1424,7 +1424,7 @@ Returns:
 
 #### BitTest
 
-```C
+```C++
 BitTest(int flags, int mask) -> int
 ```
 
@@ -1440,7 +1440,7 @@ Returns:
 
 #### BitClear
 
-```C
+```C++
 BitClear(int flags, int mask) -> int
 ```
 
@@ -1456,7 +1456,7 @@ Returns:
 
 #### Rand
 
-```C
+```C++
 Rand() -> float
 ```
 
@@ -1468,7 +1468,7 @@ Returns:
 
 #### RandBetween
 
-```C
+```C++
 RandBetween(int min, int max) -> int
 ```
 
@@ -1484,7 +1484,7 @@ Returns:
 
 #### RandVec
 
-```C
+```C++
 RandVec() -> Vector
 ```
 
@@ -1496,7 +1496,7 @@ Returns:
 
 #### Round
 
-```C
+```C++
 Round(float val) -> float
 ```
 
@@ -1511,7 +1511,7 @@ Returns:
 
 #### Truncate
 
-```C
+```C++
 Truncate(float val) -> float
 ```
 
@@ -1526,7 +1526,7 @@ Returns:
 
 #### Abs
 
-```C
+```C++
 Abs(float val) -> float
 ```
 
@@ -1541,7 +1541,7 @@ Returns:
 
 #### Pow
 
-```C
+```C++
 Pow(float base, float exp) -> float
 ```
 
@@ -1557,7 +1557,7 @@ Returns:
 
 #### Sin
 
-```C
+```C++
 Sin(float angle) -> float
 ```
 
@@ -1572,7 +1572,7 @@ Returns:
 
 #### Cos
 
-```C
+```C++
 Cos(float angle) -> float
 ```
 
@@ -1587,7 +1587,7 @@ Returns:
 
 #### ArcTan
 
-```C
+```C++
 ArcTan(float x, float y) -> float
 ```
 
@@ -1605,7 +1605,7 @@ Returns:
 
 #### FireProjectile
 
-```C
+```C++
 FireProjectile(Thing shooter, Template projectileTemplate, Sound hFireSnd, int submode, Vector fireOffset, Vector fireError, float extra, int flags, float autoAimFovX, float autoAimFovZ) -> Thing
 ```
 
@@ -1631,7 +1631,7 @@ Notes:
 
 #### ActivateWeapon
 
-```C
+```C++
 ActivateWeapon(Thing thing, float timeToWait)
 ```
 
@@ -1643,7 +1643,7 @@ Parameters:
 
 #### DeactivateWeapon
 
-```C
+```C++
 DeactivateWeapon(Thing thing) -> float
 ```
 
@@ -1657,7 +1657,7 @@ Returns:
 
 #### DeactivateCurWeapon
 
-```C
+```C++
 DeactivateCurWeapon(Thing thing)
 ```
 
@@ -1668,7 +1668,7 @@ Parameters:
 
 #### SetMountWait
 
-```C
+```C++
 SetMountWait(Thing thing, float timeToWait)
 ```
 
@@ -1683,7 +1683,7 @@ Notes:
 
 #### SetFireWait
 
-```C
+```C++
 SetFireWait(Thing thing, float waitTime)
 ```
 
@@ -1695,7 +1695,7 @@ Parameters:
 
 #### SetAimWait
 
-```C
+```C++
 SetAimWait(Thing thing, float timeToWait)
 ```
 
@@ -1707,7 +1707,7 @@ Parameters:
 
 #### SelectWeapon
 
-```C
+```C++
 SelectWeapon(Thing thing, int weaponID) -> int
 ```
 
@@ -1722,7 +1722,7 @@ Returns:
 
 #### SelectWeaponWait
 
-```C
+```C++
 SelectWeaponWait(Thing thing, int typeID) -> int
 ```
 
@@ -1740,7 +1740,7 @@ Notes:
 
 #### DeselectWeapon
 
-```C
+```C++
 DeselectWeapon(Thing thing) -> int
 ```
 
@@ -1754,7 +1754,7 @@ Returns:
 
 #### DeselectWeaponWait
 
-```C
+```C++
 DeselectWeaponWait(Thing thing) -> int
 ```
 
@@ -1771,7 +1771,7 @@ Notes:
 
 #### SetCurWeapon
 
-```C
+```C++
 SetCurWeapon(Thing thing, int weaponID)
 ```
 
@@ -1784,7 +1784,7 @@ Parameters:
 
 #### GetCurWeapon
 
-```C
+```C++
 GetCurWeapon(Thing thing) -> int
 ```
 
@@ -1799,7 +1799,7 @@ Returns:
 
 #### SetWeaponModel
 
-```C
+```C++
 SetWeaponModel(Thing thing, int typeId)
 ```
 
@@ -1815,7 +1815,7 @@ Notes:
 
 #### ResetWeaponModel
 
-```C
+```C++
 ResetWeaponModel(Thing thing)
 ```
 
@@ -1830,7 +1830,7 @@ Notes:
 
 #### LoadHolsterModel
 
-```C
+```C++
 LoadHolsterModel(int holsterType, string modelFilename) -> int
 ```
 
@@ -1846,7 +1846,7 @@ Returns:
 
 #### SetHolsterModel
 
-```C
+```C++
 SetHolsterModel(Thing thing, int weaponId, int meshNum)
 ```
 
@@ -1863,7 +1863,7 @@ Notes:
 
 #### ResetHolsterModel
 
-```C
+```C++
 ResetHolsterModel(Thing thing, int holsterNum)
 ```
 
@@ -1879,7 +1879,7 @@ Notes:
 
 #### GetLastPistol
 
-```C
+```C++
 GetLastPistol(Thing thing) -> int
 ```
 
@@ -1897,7 +1897,7 @@ Notes:
 
 #### GetLastRifle
 
-```C
+```C++
 GetLastRifle(Thing thing) -> int
 ```
 
@@ -1915,7 +1915,7 @@ Notes:
 
 #### CopyPlayerHolsters
 
-```C
+```C++
 CopyPlayerHolsters(Thing sourceThing, Thing destThing)
 ```
 
@@ -1928,7 +1928,7 @@ Parameters:
 
 #### SetInvFlags
 
-```C
+```C++
 SetInvFlags(Thing thing, int bin, int flags)
 ```
 
@@ -1944,7 +1944,7 @@ Parameters:
 
 #### GetMaterialCel
 
-```C
+```C++
 GetMaterialCel(Material material) -> int
 ```
 
@@ -1962,7 +1962,7 @@ Notes:
 
 #### SetMaterialCel
 
-```C
+```C++
 SetMaterialCel(Material mat, int celNum) -> int
 ```
 
@@ -1993,7 +1993,7 @@ Technically, this number is the index into the engine's fixed internal list of p
 
 #### SetCameraFocus
 
-```C
+```C++
 SetCameraFocus(int camNum, Thing thing)
 ```
 
@@ -2009,7 +2009,7 @@ Notes:
 
 #### GetPrimaryFocus
 
-```C
+```C++
 GetPrimaryFocus(int camNum) -> Thing
 ```
 
@@ -2024,7 +2024,7 @@ Returns:
 
 #### GetSecondaryFocus
 
-```C
+```C++
 GetSecondaryFocus(int camNum) -> Thing
 ```
 
@@ -2039,7 +2039,7 @@ Returns:
 
 #### SetCurrentCamera
 
-```C
+```C++
 SetCurrentCamera(int camNum)
 ```
 
@@ -2051,7 +2051,7 @@ Parameters:
 
 #### GetCurrentCamera
 
-```C
+```C++
 GetCurrentCamera() -> int
 ```
 
@@ -2063,7 +2063,7 @@ Returns:
 
 #### CycleCamera
 
-```C
+```C++
 CycleCamera()
 ```
 
@@ -2075,7 +2075,7 @@ Notes:
 
 #### SetPOVShake
 
-```C
+```C++
 SetPOVShake(Vector posOffset, Vector angleOffset, float posDelta, float angDelta)
 ```
 
@@ -2090,7 +2090,7 @@ Parameters:
 
 #### SetCameraStateFlags
 
-```C
+```C++
 SetCameraStateFlags(int flags)
 ```
 
@@ -2102,7 +2102,7 @@ Parameters:
 
 #### GetCameraStateFlags
 
-```C
+```C++
 GetCameraStateFlags() -> int
 ```
 
@@ -2114,7 +2114,7 @@ Returns:
 
 #### SetCameraSecondaryFocus
 
-```C
+```C++
 SetCameraSecondaryFocus(int camNum, Thing focus)
 ```
 
@@ -2129,7 +2129,7 @@ Parameters:
 
 #### HeapNew
 
-```C
+```C++
 HeapNew(int size)
 ```
 
@@ -2144,7 +2144,7 @@ Notes:
 
 #### HeapSet
 
-```C
+```C++
 HeapSet(int idx, value val)
 ```
 
@@ -2161,7 +2161,7 @@ Notes:
 
 #### HeapGet
 
-```C
+```C++
 HeapGet(int num) -> value
 ```
 
@@ -2176,7 +2176,7 @@ Returns:
 
 #### HeapFree
 
-```C
+```C++
 HeapFree()
 ```
 
@@ -2185,7 +2185,7 @@ Frees the current cog heap array, if one is allocated.
 
 #### GetHintSolved
 
-```C
+```C++
 GetHintSolved(Thing thing) -> int
 ```
 
@@ -2200,7 +2200,7 @@ Returns:
 
 #### SetHintSolved
 
-```C
+```C++
 SetHintSolved(Thing thing)
 ```
 
@@ -2215,7 +2215,7 @@ Notes:
 
 #### SetHintUnsolved
 
-```C
+```C++
 SetHintUnsolved(Thing thing)
 ```
 

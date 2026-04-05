@@ -1,6 +1,6 @@
 # Sound Host Functions
 
-Source: `Libs/sith/Cog/sithCogFunctionSound.c`
+Source: [`Libs/sith/Cog/sithCogFunctionSound.c`](../../Libs/sith/Cog/sithCogFunctionSound.c)
 
 These verbs cover direct sound playback, sound-class helpers, ambient sector sound, and channel fade/wait helpers.
 
@@ -39,7 +39,7 @@ These verbs cover direct sound playback, sound-class helpers, ambient sector sou
 
 #### PlaySoundThing
 
-```C
+```C++
 PlaySoundThing(Sound snd, Thing thing, float volume, float minRadius, float maxRadius, int playFlags) -> int
 ```
 
@@ -62,7 +62,7 @@ Notes:
 
 #### StopSoundThing
 
-```C
+```C++
 StopSoundThing(Sound snd, Thing thing)
 ```
 
@@ -74,7 +74,7 @@ Parameters:
 
 #### PlaySoundPos
 
-```C
+```C++
 PlaySoundPos(Sound snd, Vector pos, float volume, float minRadius, float maxRadius, int playFlags) -> int
 ```
 
@@ -96,7 +96,7 @@ Notes:
 
 #### PlaySoundLocal
 
-```C
+```C++
 PlaySoundLocal(Sound snd, float volume, float pan, int playFlags, int bWait) -> int
 ```
 
@@ -117,7 +117,7 @@ Notes:
 
 #### PlaySoundGlobal
 
-```C
+```C++
 PlaySoundGlobal(Sound snd, float volume, float pan, int playFlags, int bWait) -> int
 ```
 
@@ -138,7 +138,7 @@ Notes:
 
 #### StopSound
 
-```C
+```C++
 StopSound(int channelGuid, float fadeSeconds)
 ```
 
@@ -153,7 +153,7 @@ Notes:
 
 #### LoadSound
 
-```C
+```C++
 LoadSound(string filename) -> Sound
 ```
 
@@ -171,7 +171,7 @@ Notes:
 
 #### PlaySoundClass
 
-```C
+```C++
 PlaySoundClass(Thing thing, int mode) -> int
 ```
 
@@ -189,7 +189,7 @@ Notes:
 
 #### StopSoundClass
 
-```C
+```C++
 StopSoundClass(Thing thing, int mode)
 ```
 
@@ -204,7 +204,7 @@ Notes:
 
 #### PlayVoiceMode
 
-```C
+```C++
 PlayVoiceMode(Thing thing, int mode)
 ```
 
@@ -216,7 +216,7 @@ Parameters:
 
 #### ChangeSoundVol
 
-```C
+```C++
 ChangeSoundVol(int channelGuid, float volume, float fadeSeconds)
 ```
 
@@ -229,7 +229,7 @@ Parameters:
 
 #### ChangeSoundPitch
 
-```C
+```C++
 ChangeSoundPitch(int channelGuid, float pitch, float fadeSeconds)
 ```
 
@@ -242,7 +242,7 @@ Parameters:
 
 #### SectorSound
 
-```C
+```C++
 SectorSound(Sector sector, Sound snd, float volume)
 ```
 
@@ -255,7 +255,7 @@ Parameters:
 
 #### GetSoundLen
 
-```C
+```C++
 GetSoundLen(Sound snd) -> float
 ```
 
@@ -269,7 +269,7 @@ Returns:
 
 #### WaitForSound
 
-```C
+```C++
 WaitForSound(int channelGuid) -> int
 ```
 
@@ -286,7 +286,7 @@ Notes:
 
 #### StopAllSoundsThing
 
-```C
+```C++
 StopAllSoundsThing(Thing thing)
 ```
 

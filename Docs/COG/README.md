@@ -4,9 +4,9 @@ This folder documents the COG scripting system used by OpenJones3D.
 
 The notes here are based on the current implementation in:
 
-- `Libs/sith/Cog/`
-- `Libs/sith/World/sithVoice.c`
-- `Jones3D/Play/jonesCog.c`
+- [`Libs/sith/Cog/`](../../Libs/sith/Cog/)
+- [`Libs/sith/World/sithVoice.c`](../../Libs/sith/World/sithVoice.c)
+- [`Jones3D/Play/jonesCog.c`](../../Jones3D/Play/jonesCog.c)
 
 Older public Jones3D documentation was useful as a cross-check, but the current codebase is the source of truth for the behavior described here.
 
@@ -45,15 +45,15 @@ The host-function pages list each registered verb together with a PascalCase scr
 
 | Group | Verbs | Source |
 | --- | ---: | --- |
-| System | 142 | `Libs/sith/Cog/sithCogFunction.c` |
-| Thing | 236 | `Libs/sith/Cog/sithCogFunctionThing.c` |
-| AI | 59 | `Libs/sith/Cog/sithCogFunctionAI.c` |
-| Player | 39 | `Libs/sith/Cog/sithCogFunctionPlayer.c` |
-| Sector | 31 | `Libs/sith/Cog/sithCogFunctionSector.c` |
-| Surface | 40 | `Libs/sith/Cog/sithCogFunctionSurface.c` |
-| Sound | 16 | `Libs/sith/Cog/sithCogFunctionSound.c` |
-| Voice | 5 | `Libs/sith/World/sithVoice.c` |
-| Jones | 9 | `Jones3D/Play/jonesCog.c` |
+| System | 142 | [`Libs/sith/Cog/sithCogFunction.c`](../../Libs/sith/Cog/sithCogFunction.c) |
+| Thing | 236 | [`Libs/sith/Cog/sithCogFunctionThing.c`](../../Libs/sith/Cog/sithCogFunctionThing.c) |
+| AI | 59 | [`Libs/sith/Cog/sithCogFunctionAI.c`](../../Libs/sith/Cog/sithCogFunctionAI.c) |
+| Player | 39 | [`Libs/sith/Cog/sithCogFunctionPlayer.c`](../../Libs/sith/Cog/sithCogFunctionPlayer.c) |
+| Sector | 31 | [`Libs/sith/Cog/sithCogFunctionSector.c`](../../Libs/sith/Cog/sithCogFunctionSector.c) |
+| Surface | 40 | [`Libs/sith/Cog/sithCogFunctionSurface.c`](../../Libs/sith/Cog/sithCogFunctionSurface.c) |
+| Sound | 16 | [`Libs/sith/Cog/sithCogFunctionSound.c`](../../Libs/sith/Cog/sithCogFunctionSound.c) |
+| Voice | 5 | [`Libs/sith/World/sithVoice.c`](../../Libs/sith/World/sithVoice.c) |
+| Jones | 9 | [`Jones3D/Play/jonesCog.c`](../../Jones3D/Play/jonesCog.c) |
 
 ## Devmode And Editor Caveats
 

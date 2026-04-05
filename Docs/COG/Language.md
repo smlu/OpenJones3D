@@ -14,7 +14,7 @@ A COG script is split into the classic sections:
 
 A minimal layout looks like this:
 
-```C
+```C++
 flags=0x0
 
 symbols
@@ -86,7 +86,7 @@ For readability, this doc set recommends:
 
 Example:
 
-```C
+```C++
 symbols
 thing player local
 surface doorSurf
@@ -123,7 +123,7 @@ Comment syntax depends on the section:
 
 Example:
 
-```C
+```C++
 symbols
 # symbol comment
 thing player local
@@ -190,13 +190,13 @@ The parser accepts the following symbol types in the `symbols` section:
 
 A symbol declaration generally looks like:
 
-```C
+```C++
 <type> <name>[=<initializer>] [attributes...]
 ```
 
 Example:
 
-```C
+```C++
 symbols
 message activated
 thing player local
@@ -281,7 +281,7 @@ Supported control flow includes:
 
 COG source writes arguments in the natural order:
 
-```C
+```C++
 SetThingLight(thing, color, radius, timeDelta);
 ```
 

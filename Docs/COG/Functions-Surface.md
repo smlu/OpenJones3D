@@ -1,6 +1,6 @@
 # Surface Host Functions
 
-Source: `Libs/sith/Cog/sithCogFunctionSurface.c`
+Source: [`Libs/sith/Cog/sithCogFunctionSurface.c`](../../Libs/sith/Cog/sithCogFunctionSurface.c)
 
 These verbs operate on adjoins, materials, cels, scrolling, face flags, and per-surface lighting.
 
@@ -65,7 +65,7 @@ These verbs operate on adjoins, materials, cels, scrolling, face flags, and per-
 
 #### GetSurfaceAdjoin
 
-```C
+```C++
 GetSurfaceAdjoin(Surface surf) -> Surface
 ```
 
@@ -80,7 +80,7 @@ Returns:
 
 #### GetSurfaceSector
 
-```C
+```C++
 GetSurfaceSector(Surface surf) -> Sector
 ```
 
@@ -95,7 +95,7 @@ Returns:
 
 #### GetNumSurfaceVertices
 
-```C
+```C++
 GetNumSurfaceVertices(Surface surf) -> int
 ```
 
@@ -110,7 +110,7 @@ Returns:
 
 #### GetSurfaceVertexPos
 
-```C
+```C++
 GetSurfaceVertexPos(Surface surf, int vertNum) -> Vector
 ```
 
@@ -126,7 +126,7 @@ Returns:
 
 #### SetHorizonSkyOffset
 
-```C
+```C++
 SetHorizonSkyOffset(Vector offset)
 ```
 
@@ -138,7 +138,7 @@ Parameters:
 
 #### GetHorizonSkyOffset
 
-```C
+```C++
 GetHorizonSkyOffset() -> Vector
 ```
 
@@ -150,7 +150,7 @@ Returns:
 
 #### SetCeilingSkyOffset
 
-```C
+```C++
 SetCeilingSkyOffset(Vector offset)
 ```
 
@@ -162,7 +162,7 @@ Parameters:
 
 #### GetCeilingSkyOffset
 
-```C
+```C++
 GetCeilingSkyOffset() -> Vector
 ```
 
@@ -174,7 +174,7 @@ Returns:
 
 #### SlideHorizonSky
 
-```C
+```C++
 SlideHorizonSky(float x, float y) -> int
 ```
 
@@ -190,7 +190,7 @@ Returns:
 
 #### SlideCeilingSky
 
-```C
+```C++
 SlideCeilingSky(float x, float y) -> int
 ```
 
@@ -206,7 +206,7 @@ Returns:
 
 #### GetSurfaceCount
 
-```C
+```C++
 GetSurfaceCount() -> int
 ```
 
@@ -218,7 +218,7 @@ Returns:
 
 #### SlideWall
 
-```C
+```C++
 SlideWall(Surface surf, Vector dir, float speed) -> int
 ```
 
@@ -238,7 +238,7 @@ Notes:
 
 #### SlideSurface
 
-```C
+```C++
 SlideSurface(Surface surf, Vector dir, float speed) -> int
 ```
 
@@ -258,7 +258,7 @@ Notes:
 
 #### GetWallCel
 
-```C
+```C++
 GetWallCel(Surface surf) -> int
 ```
 
@@ -273,7 +273,7 @@ Returns:
 
 #### SetWallCel
 
-```C
+```C++
 SetWallCel(Surface surf, int celNum) -> int
 ```
 
@@ -292,7 +292,7 @@ Notes:
 
 #### GetSurfaceCel
 
-```C
+```C++
 GetSurfaceCel(Surface surf) -> int
 ```
 
@@ -310,7 +310,7 @@ Notes:
 
 #### SetSurfaceCel
 
-```C
+```C++
 SetSurfaceCel(Surface surf, int celNum) -> int
 ```
 
@@ -329,7 +329,7 @@ Notes:
 
 #### GetSurfaceMat
 
-```C
+```C++
 GetSurfaceMat(Surface surf) -> Material
 ```
 
@@ -344,7 +344,7 @@ Returns:
 
 #### SetSurfaceMat
 
-```C
+```C++
 SetSurfaceMat(Surface surf, Material mat) -> Material
 ```
 
@@ -360,7 +360,7 @@ Returns:
 
 #### GetSurfaceFlags
 
-```C
+```C++
 GetSurfaceFlags(Surface surf) -> int
 ```
 
@@ -375,7 +375,7 @@ Returns:
 
 #### SetSurfaceFlags
 
-```C
+```C++
 SetSurfaceFlags(Surface surf, int surfaceFlags)
 ```
 
@@ -388,7 +388,7 @@ Parameters:
 
 #### ClearSurfaceFlags
 
-```C
+```C++
 ClearSurfaceFlags(Surface surf, int surfaceFlags)
 ```
 
@@ -401,7 +401,7 @@ Parameters:
 
 #### GetAdjoinFlags
 
-```C
+```C++
 GetAdjoinFlags(Surface surf) -> int
 ```
 
@@ -416,7 +416,7 @@ Returns:
 
 #### SetAdjoinFlags
 
-```C
+```C++
 SetAdjoinFlags(Surface surf, int adjoinFlags)
 ```
 
@@ -429,7 +429,7 @@ Parameters:
 
 #### ClearAdjoinFlags
 
-```C
+```C++
 ClearAdjoinFlags(Surface surf, int adjoinFlags)
 ```
 
@@ -442,7 +442,7 @@ Parameters:
 
 #### SetFaceType
 
-```C
+```C++
 SetFaceType(Surface surf, int faceFlags)
 ```
 
@@ -455,7 +455,7 @@ Parameters:
 
 #### ClearFaceType
 
-```C
+```C++
 ClearFaceType(Surface surf, int faceFlags)
 ```
 
@@ -468,7 +468,7 @@ Parameters:
 
 #### GetFaceType
 
-```C
+```C++
 GetFaceType(Surface surf) -> int
 ```
 
@@ -483,7 +483,7 @@ Returns:
 
 #### SetFaceGeoMode
 
-```C
+```C++
 SetFaceGeoMode(Surface surf, int geoMode)
 ```
 
@@ -496,7 +496,7 @@ Parameters:
 
 #### GetFaceGeoMode
 
-```C
+```C++
 GetFaceGeoMode(Surface surf) -> int
 ```
 
@@ -511,7 +511,7 @@ Returns:
 
 #### SetFaceLightMode
 
-```C
+```C++
 SetFaceLightMode(Surface surf, int lightMode)
 ```
 
@@ -524,7 +524,7 @@ Parameters:
 
 #### GetFaceLightMode
 
-```C
+```C++
 GetFaceLightMode(Surface surf) -> int
 ```
 
@@ -539,7 +539,7 @@ Returns:
 
 #### GetSurfaceLight
 
-```C
+```C++
 GetSurfaceLight(Surface surf) -> Vector
 ```
 
@@ -554,7 +554,7 @@ Returns:
 
 #### SetSurfaceLight
 
-```C
+```C++
 SetSurfaceLight(Surface surf, Vector color, float timeDelta) -> int
 ```
 
@@ -571,7 +571,7 @@ Returns:
 
 #### GetSurfaceCenter
 
-```C
+```C++
 GetSurfaceCenter(Surface surf) -> Vector
 ```
 
@@ -586,7 +586,7 @@ Returns:
 
 #### SurfaceLightAnim
 
-```C
+```C++
 SurfaceLightAnim(Surface surf, float startR, float startG, float startB, float endR, float endG, float endB, float speed) -> int
 ```
 
@@ -608,7 +608,7 @@ Returns:
 
 #### GetSurfaceNormal
 
-```C
+```C++
 GetSurfaceNormal(Surface surf) -> Vector
 ```
 
@@ -623,7 +623,7 @@ Returns:
 
 #### SyncSurface
 
-```C
+```C++
 SyncSurface(Surface surf)
 ```
 
@@ -635,7 +635,7 @@ Parameters:
 
 #### GetAdjoinAlpha
 
-```C
+```C++
 GetAdjoinAlpha(Surface surf) -> float
 ```
 
@@ -650,7 +650,7 @@ Returns:
 
 #### SetAdjoinAlpha
 
-```C
+```C++
 SetAdjoinAlpha(Surface surf, float alpha255)
 ```
 

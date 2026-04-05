@@ -1,6 +1,6 @@
 # AI Host Functions
 
-Source: `Libs/sith/Cog/sithCogFunctionAI.c`
+Source: [`Libs/sith/Cog/sithCogFunctionAI.c`](../../Libs/sith/Cog/sithCogFunctionAI.c)
 
 These verbs operate on AI-controlled things, AI classes, line-of-sight queries, and the waypoint graph.
 
@@ -94,7 +94,7 @@ These verbs operate on AI-controlled things, AI classes, line-of-sight queries, 
 
 #### AIGetMode
 
-```C
+```C++
 AIGetMode(Thing thing) -> int
 ```
 
@@ -112,7 +112,7 @@ Notes:
 
 #### AISetMode
 
-```C
+```C++
 AISetMode(Thing thing, int newMode)
 ```
 
@@ -130,7 +130,7 @@ Notes:
 
 #### AIClearMode
 
-```C
+```C++
 AIClearMode(Thing thing, int mode)
 ```
 
@@ -147,7 +147,7 @@ Notes:
 
 #### AIGetSubMode
 
-```C
+```C++
 AIGetSubMode(Thing thing) -> int
 ```
 
@@ -165,7 +165,7 @@ Notes:
 
 #### AISetSubMode
 
-```C
+```C++
 AISetSubMode(Thing thing, int submode)
 ```
 
@@ -181,7 +181,7 @@ Notes:
 
 #### AIClearSubMode
 
-```C
+```C++
 AIClearSubMode(Thing thing, int submode)
 ```
 
@@ -197,7 +197,7 @@ Notes:
 
 #### AIGetArmedMode
 
-```C
+```C++
 AIGetArmedMode(Thing thing) -> int
 ```
 
@@ -212,7 +212,7 @@ Returns:
 
 #### AISetClass
 
-```C
+```C++
 AISetClass(Thing thing, AIClass aiClass)
 ```
 
@@ -229,7 +229,7 @@ Notes:
 
 #### AIEnableInstinct
 
-```C
+```C++
 AIEnableInstinct(Thing thing, string instinctName, int bEnable) -> int
 ```
 
@@ -249,7 +249,7 @@ Notes:
 
 #### AISetCutsceneMode
 
-```C
+```C++
 AISetCutsceneMode(Thing thing)
 ```
 
@@ -264,7 +264,7 @@ Notes:
 
 #### AIClearCutsceneMode
 
-```C
+```C++
 AIClearCutsceneMode(Thing thing)
 ```
 
@@ -279,7 +279,7 @@ Notes:
 
 #### AISetInstinctWpntMode
 
-```C
+```C++
 AISetInstinctWpntMode(Thing thing)
 ```
 
@@ -294,7 +294,7 @@ Notes:
 
 #### AIClearInstinctWpntMode
 
-```C
+```C++
 AIClearInstinctWpntMode(Thing thing)
 ```
 
@@ -311,7 +311,7 @@ Notes:
 
 #### AIGetMovePos
 
-```C
+```C++
 AIGetMovePos(Thing thing) -> Vector
 ```
 
@@ -329,7 +329,7 @@ Notes:
 
 #### AISetMovePos
 
-```C
+```C++
 AISetMovePos(Thing thing, Vector pos, int bWait)
 ```
 
@@ -348,7 +348,7 @@ Notes:
 
 #### AIGetHomePos
 
-```C
+```C++
 AIGetHomePos(Thing thing) -> Vector
 ```
 
@@ -366,7 +366,7 @@ Notes:
 
 #### AIPauseMove
 
-```C
+```C++
 AIPauseMove(Thing thing, int msecPause)
 ```
 
@@ -382,7 +382,7 @@ Notes:
 
 #### AISetMaxHomeDist
 
-```C
+```C++
 AISetMaxHomeDist(Thing thing, float dist)
 ```
 
@@ -398,7 +398,7 @@ Notes:
 
 #### AIGetGoalThing
 
-```C
+```C++
 AIGetGoalThing(Thing thing) -> Thing
 ```
 
@@ -416,7 +416,7 @@ Notes:
 
 #### AIGetGoalLVec
 
-```C
+```C++
 AIGetGoalLVec(Thing thing) -> Vector
 ```
 
@@ -431,7 +431,7 @@ Returns:
 
 #### AISetFireTarget
 
-```C
+```C++
 AISetFireTarget(Thing thing, Thing target)
 ```
 
@@ -449,7 +449,7 @@ Notes:
 
 #### AISetMoveThing
 
-```C
+```C++
 AISetMoveThing(Thing thing, Thing goalThing, int bWait)
 ```
 
@@ -467,7 +467,7 @@ Notes:
 
 #### AISetMoveSpeed
 
-```C
+```C++
 AISetMoveSpeed(Thing thing, float speed)
 ```
 
@@ -483,7 +483,7 @@ Notes:
 
 #### AISetGoalThing
 
-```C
+```C++
 AISetGoalThing(Thing thing, Thing goalThing)
 ```
 
@@ -499,7 +499,7 @@ Notes:
 
 #### AIFlee
 
-```C
+```C++
 AIFlee(Thing thing, Thing fleeFromThing)
 ```
 
@@ -514,7 +514,7 @@ Notes:
 
 #### AIStopFlee
 
-```C
+```C++
 AIStopFlee(Thing thing)
 ```
 
@@ -528,7 +528,7 @@ Notes:
 
 #### AIFleeToWpnt
 
-```C
+```C++
 AIFleeToWpnt(Thing thing, int idx)
 ```
 
@@ -543,7 +543,7 @@ Notes:
 
 #### AIJump
 
-```C
+```C++
 AIJump(Thing thing, Vector movePos, float arg)
 ```
 
@@ -559,7 +559,7 @@ Notes:
 
 #### AIKnockout
 
-```C
+```C++
 AIKnockout(Thing thing, float secDuration, int timerId)
 ```
 
@@ -578,7 +578,7 @@ Notes:
 
 #### AIRunOver
 
-```C
+```C++
 AIRunOver(Thing thing, float duration, int timerId)
 ```
 
@@ -595,7 +595,7 @@ Notes:
 
 #### AIWaitForStop
 
-```C
+```C++
 AIWaitForStop(Thing thing)
 ```
 
@@ -613,7 +613,7 @@ Notes:
 
 #### FirstThingInView
 
-```C
+```C++
 FirstThingInView(Thing thing, float fovX, float distance, int thingTypeMask) -> Thing
 ```
 
@@ -634,7 +634,7 @@ Notes:
 
 #### NextThingInView
 
-```C
+```C++
 NextThingInView() -> Thing
 ```
 
@@ -645,7 +645,7 @@ Returns:
 
 #### ThingViewDot
 
-```C
+```C++
 ThingViewDot(Thing thing1, Thing thing2) -> float
 ```
 
@@ -663,7 +663,7 @@ Notes:
 
 #### IsAITargetInSight
 
-```C
+```C++
 IsAITargetInSight(Thing thing) -> int
 ```
 
@@ -681,7 +681,7 @@ Notes:
 
 #### AISetLookPos
 
-```C
+```C++
 AISetLookPos(Thing thing, Vector targetPos)
 ```
 
@@ -696,7 +696,7 @@ Notes:
 
 #### AISetLookFrame
 
-```C
+```C++
 AISetLookFrame(Thing thing, int frameNum)
 ```
 
@@ -711,7 +711,7 @@ Notes:
 
 #### AISetMoveFrame
 
-```C
+```C++
 AISetMoveFrame(Thing thing, int frame)
 ```
 
@@ -726,7 +726,7 @@ Notes:
 
 #### AISetLookThing
 
-```C
+```C++
 AISetLookThing(Thing thing, Thing target)
 ```
 
@@ -741,7 +741,7 @@ Notes:
 
 #### AISetLookThingEyeLevel
 
-```C
+```C++
 AISetLookThingEyeLevel(Thing thing, Thing target)
 ```
 
@@ -756,7 +756,7 @@ Notes:
 
 #### AIEnableHeadTracking
 
-```C
+```C++
 AIEnableHeadTracking(Thing thing, Thing target)
 ```
 
@@ -771,7 +771,7 @@ Notes:
 
 #### AIDisableHeadTracking
 
-```C
+```C++
 AIDisableHeadTracking(Thing thing)
 ```
 
@@ -785,7 +785,7 @@ Notes:
 
 #### AIEnableBodyTracking
 
-```C
+```C++
 AIEnableBodyTracking(Thing thing, Thing target)
 ```
 
@@ -800,7 +800,7 @@ Notes:
 
 #### AIDisableBodyTracking
 
-```C
+```C++
 AIDisableBodyTracking(Thing thing)
 ```
 
@@ -814,7 +814,7 @@ Notes:
 
 #### AIWaitForHeadTracking
 
-```C
+```C++
 AIWaitForHeadTracking(Thing thing)
 ```
 
@@ -832,7 +832,7 @@ Notes:
 
 #### AISetAllowedSurfaceType
 
-```C
+```C++
 AISetAllowedSurfaceType(Thing thing, int surftypes)
 ```
 
@@ -847,7 +847,7 @@ Notes:
 
 #### AIClearAllowedSurfaceType
 
-```C
+```C++
 AIClearAllowedSurfaceType(Thing thing, int surftypes)
 ```
 
@@ -862,7 +862,7 @@ Notes:
 
 #### AISpat
 
-```C
+```C++
 AISpat(Thing thing, float duration, int timerId)
 ```
 
@@ -882,7 +882,7 @@ Notes:
 
 #### AISetWpnt
 
-```C
+```C++
 AISetWpnt(Thing thing, int wpntIdx)
 ```
 
@@ -895,7 +895,7 @@ Parameters:
 
 #### AISetWpntRank
 
-```C
+```C++
 AISetWpntRank(int wpntNum, int rank)
 ```
 
@@ -907,7 +907,7 @@ Parameters:
 
 #### AISetWpntFlags
 
-```C
+```C++
 AISetWpntFlags(int wpntNum, int flags)
 ```
 
@@ -919,7 +919,7 @@ Parameters:
 
 #### AIClearWpntFlags
 
-```C
+```C++
 AIClearWpntFlags(int wpntIdx, int flags)
 ```
 
@@ -931,7 +931,7 @@ Parameters:
 
 #### AISetActiveWpntLayer
 
-```C
+```C++
 AISetActiveWpntLayer(int layer)
 ```
 
@@ -942,7 +942,7 @@ Parameters:
 
 #### AIConnectWpnts
 
-```C
+```C++
 AIConnectWpnts(int wpntIdx1, int wpntIdx2)
 ```
 
@@ -954,7 +954,7 @@ Parameters:
 
 #### AIConnectWpntsOneWay
 
-```C
+```C++
 AIConnectWpntsOneWay(int wpntIdx1, int wpntIdx2)
 ```
 
@@ -966,7 +966,7 @@ Parameters:
 
 #### AITraverseWpnts
 
-```C
+```C++
 AITraverseWpnts(Thing thing, int wpntIdx, float moveSpeed, float degTurn, int mode) -> int
 ```
 
@@ -987,7 +987,7 @@ Notes:
 
 #### AIClearTraverseWpnts
 
-```C
+```C++
 AIClearTraverseWpnts(Thing thing)
 ```
 
@@ -1002,7 +1002,7 @@ Notes:
 
 #### AIFindNearestWpnt
 
-```C
+```C++
 AIFindNearestWpnt(Thing thing) -> int
 ```
 
@@ -1020,7 +1020,7 @@ Notes:
 
 #### AIWpntHuntTarget
 
-```C
+```C++
 AIWpntHuntTarget(Thing thing, float moveSpeed, float degTurn) -> int
 ```
 

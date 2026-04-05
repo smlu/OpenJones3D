@@ -1,6 +1,6 @@
 # Sector Host Functions
 
-Source: `Libs/sith/Cog/sithCogFunctionSector.c`
+Source: [`Libs/sith/Cog/sithCogFunctionSector.c`](../../Libs/sith/Cog/sithCogFunctionSector.c)
 
 These verbs operate on sector tint, extra light, adjoins, flags, thrust, and a few geometry/topology queries.
 
@@ -55,7 +55,7 @@ These verbs operate on sector tint, extra light, adjoins, flags, thrust, and a f
 
 #### GetSectorTint
 
-```C
+```C++
 GetSectorTint(Sector sector) -> Vector
 ```
 
@@ -70,7 +70,7 @@ Returns:
 
 #### SetSectorTint
 
-```C
+```C++
 SetSectorTint(Sector sector, Vector color)
 ```
 
@@ -83,7 +83,7 @@ Parameters:
 
 #### SetSectorAdjoins
 
-```C
+```C++
 SetSectorAdjoins(Sector sector, int bOn)
 ```
 
@@ -96,7 +96,7 @@ Parameters:
 
 #### SectorAdjoins
 
-```C
+```C++
 SectorAdjoins(Sector sector, int bOn)
 ```
 
@@ -112,7 +112,7 @@ Notes:
 
 #### GetSectorLight
 
-```C
+```C++
 GetSectorLight(Sector sector) -> Vector
 ```
 
@@ -127,7 +127,7 @@ Returns:
 
 #### SetSectorLight
 
-```C
+```C++
 SetSectorLight(Sector sector, Vector color, float timeDelta)
 ```
 
@@ -141,7 +141,7 @@ Parameters:
 
 #### SectorLight
 
-```C
+```C++
 SectorLight(Sector sector, Vector color, float timeDelta)
 ```
 
@@ -158,7 +158,7 @@ Notes:
 
 #### GetColormap
 
-```C
+```C++
 GetColormap(Sector sector) -> int
 ```
 
@@ -176,7 +176,7 @@ Notes:
 
 #### GetSectorColormap
 
-```C
+```C++
 GetSectorColormap(Sector sector) -> int
 ```
 
@@ -194,7 +194,7 @@ Notes:
 
 #### SetColormap
 
-```C
+```C++
 SetColormap(int value)
 ```
 
@@ -209,7 +209,7 @@ Notes:
 
 #### SetSectorColormap
 
-```C
+```C++
 SetSectorColormap(int value)
 ```
 
@@ -224,7 +224,7 @@ Notes:
 
 #### GetSectorThrust
 
-```C
+```C++
 GetSectorThrust(Sector sector) -> Vector
 ```
 
@@ -239,7 +239,7 @@ Returns:
 
 #### SetSectorThrust
 
-```C
+```C++
 SetSectorThrust(Sector sector, Vector dir, float speed)
 ```
 
@@ -256,7 +256,7 @@ Notes:
 
 #### SectorThrust
 
-```C
+```C++
 SectorThrust(Sector sector, Vector dir, float speed)
 ```
 
@@ -276,7 +276,7 @@ Notes:
 
 #### GetSectorFlags
 
-```C
+```C++
 GetSectorFlags(Sector sector) -> int
 ```
 
@@ -291,7 +291,7 @@ Returns:
 
 #### SetSectorFlags
 
-```C
+```C++
 SetSectorFlags(Sector sector, int flags)
 ```
 
@@ -304,7 +304,7 @@ Parameters:
 
 #### ClearSectorFlags
 
-```C
+```C++
 ClearSectorFlags(Sector sector, int flags)
 ```
 
@@ -317,7 +317,7 @@ Parameters:
 
 #### GetSectorThingCount
 
-```C
+```C++
 GetSectorThingCount(Sector sector) -> int
 ```
 
@@ -332,7 +332,7 @@ Returns:
 
 #### SectorThingCount
 
-```C
+```C++
 SectorThingCount(Sector sector) -> int
 ```
 
@@ -350,7 +350,7 @@ Notes:
 
 #### GetSectorPlayerCount
 
-```C
+```C++
 GetSectorPlayerCount(Sector sector) -> int
 ```
 
@@ -365,7 +365,7 @@ Returns:
 
 #### SectorPlayerCount
 
-```C
+```C++
 SectorPlayerCount(Sector sector) -> int
 ```
 
@@ -383,7 +383,7 @@ Notes:
 
 #### GetSectorCount
 
-```C
+```C++
 GetSectorCount() -> int
 ```
 
@@ -395,7 +395,7 @@ Returns:
 
 #### GetSectorCenter
 
-```C
+```C++
 GetSectorCenter(Sector sector) -> Vector
 ```
 
@@ -410,7 +410,7 @@ Returns:
 
 #### GetNumSectorVertices
 
-```C
+```C++
 GetNumSectorVertices(Sector sector) -> int
 ```
 
@@ -425,7 +425,7 @@ Returns:
 
 #### GetSectorVertexPos
 
-```C
+```C++
 GetSectorVertexPos(Sector sector, int vertNum) -> Vector
 ```
 
@@ -441,7 +441,7 @@ Returns:
 
 #### GetNumSectorSurfaces
 
-```C
+```C++
 GetNumSectorSurfaces(Sector sector) -> int
 ```
 
@@ -456,7 +456,7 @@ Returns:
 
 #### GetSectorSurfaceRef
 
-```C
+```C++
 GetSectorSurfaceRef(Sector sector, int surfIdx) -> Surface
 ```
 
@@ -472,7 +472,7 @@ Returns:
 
 #### SyncSector
 
-```C
+```C++
 SyncSector(Sector sector)
 ```
 
@@ -484,7 +484,7 @@ Parameters:
 
 #### FindSectorAtPos
 
-```C
+```C++
 FindSectorAtPos(Vector pos) -> Sector
 ```
 
@@ -499,7 +499,7 @@ Returns:
 
 #### SetSectorSurfflags
 
-```C
+```C++
 SetSectorSurfflags(Sector sector, int surfFlags)
 ```
 
@@ -512,7 +512,7 @@ Parameters:
 
 #### ClearSectorSurfflags
 
-```C
+```C++
 ClearSectorSurfflags(Sector sector, int surfFlags)
 ```
 

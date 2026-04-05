@@ -128,6 +128,7 @@ cmake --build build --config Release
 
 ## 📚 Documentation
 
+- [Docs/Jones.cfg.md](Docs/Jones.cfg.md) for engine configuration options and settings
 - [Docs/COG/README.md](Docs/COG/README.md) for COG scripting language notes and host-function reference pages
 - [Docs/Formats/README.md](Docs/Formats/README.md) for engine resource format notes
 - [Docs/Architecture/README.md](Docs/Architecture/README.md) for detailed engine architecture notes

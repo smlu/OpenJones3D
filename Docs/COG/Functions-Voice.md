@@ -1,6 +1,6 @@
 # Voice Host Functions
 
-Source: `Libs/sith/World/sithVoice.c`
+Source: [`Libs/sith/World/sithVoice.c`](../../Libs/sith/World/sithVoice.c)
 
 These verbs drive spoken voice playback, subtitle display, and swap-head lip-sync support. They are separate from the generic sound verbs and from the [`PlayVoiceMode()`](Functions-Sound.md#playvoicemode) sound-class helper.
 
@@ -23,7 +23,7 @@ Signatures below use PascalCase for readability, even though host-function looku
 
 #### PlayVoice
 
-```C
+```C++
 PlayVoice(Thing thing, Sound snd, float volume, int bWait) -> int
 ```
 
@@ -45,7 +45,7 @@ Notes:
 
 #### SetThingVoiceHeads
 
-```C
+```C++
 SetThingVoiceHeads(Thing thing, string meshName, string head0, string head1, string head2, string head3)
 ```
 
@@ -64,7 +64,7 @@ Notes:
 
 #### SetVoiceHeadHeight
 
-```C
+```C++
 SetVoiceHeadHeight(int row, int h0, int h1, int h2, int h3)
 ```
 
@@ -79,7 +79,7 @@ Parameters:
 
 #### SetThingVoiceColor
 
-```C
+```C++
 SetThingVoiceColor(Thing thing, Vector color0, Vector color1, Vector color2, Vector color3)
 ```
 
@@ -97,7 +97,7 @@ Notes:
 
 #### SetVoiceParams
 
-```C
+```C++
 SetVoiceParams(float headSwapInterval, int mouthYOffset)
 ```
 

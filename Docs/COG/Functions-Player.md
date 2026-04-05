@@ -1,6 +1,6 @@
 # Player Host Functions
 
-Source: `Libs/sith/Cog/sithCogFunctionPlayer.c`
+Source: [`Libs/sith/Cog/sithCogFunctionPlayer.c`](../../Libs/sith/Cog/sithCogFunctionPlayer.c)
 
 These verbs cover player inventory flags, backpack helpers, local-player special states, and a few multiplayer or front-end specific helpers.
 
@@ -71,7 +71,7 @@ These verbs cover player inventory flags, backpack helpers, local-player special
 
 #### SetInvActivated
 
-```C
+```C++
 SetInvActivated(Thing thing, int typeId, int bActivated)
 ```
 
@@ -88,7 +88,7 @@ Notes:
 
 #### SetInvAvailable
 
-```C
+```C++
 SetInvAvailable(Thing thing, int typeId, int bAvailable)
 ```
 
@@ -105,7 +105,7 @@ Notes:
 
 #### SetInvDisabled
 
-```C
+```C++
 SetInvDisabled(Thing thing, int typeId, int bDisabled)
 ```
 
@@ -119,7 +119,7 @@ Parameters:
 
 #### IsInvActivated
 
-```C
+```C++
 IsInvActivated(Thing thing, int bin) -> int
 ```
 
@@ -138,7 +138,7 @@ Notes:
 
 #### IsInvAvailable
 
-```C
+```C++
 IsInvAvailable(Thing thing, int typeId) -> int
 ```
 
@@ -157,7 +157,7 @@ Notes:
 
 #### SetGoalFlags
 
-```C
+```C++
 SetGoalFlags(Thing thing, int bin, int flags)
 ```
 
@@ -174,7 +174,7 @@ Notes:
 
 #### ClearGoalFlags
 
-```C
+```C++
 ClearGoalFlags(Thing thing, int bin, int flags)
 ```
 
@@ -191,7 +191,7 @@ Notes:
 
 #### GetCurItem
 
-```C
+```C++
 GetCurItem(Thing thing) -> int
 ```
 
@@ -209,7 +209,7 @@ Notes:
 
 #### SetSwimmingInventory
 
-```C
+```C++
 SetSwimmingInventory(Thing thing, int bItemsAvailable)
 ```
 
@@ -222,7 +222,7 @@ Parameters:
 
 #### ResetInventory
 
-```C
+```C++
 ResetInventory(Thing thing)
 ```
 
@@ -237,7 +237,7 @@ Notes:
 
 #### IsItemFound
 
-```C
+```C++
 IsItemFound(int itemID) -> int
 ```
 
@@ -255,7 +255,7 @@ Notes:
 
 #### SetWhipElectric
 
-```C
+```C++
 SetWhipElectric(int bElectric)
 ```
 
@@ -272,7 +272,7 @@ Notes:
 
 #### GetNumPlayers
 
-```C
+```C++
 GetNumPlayers() -> int
 ```
 
@@ -283,7 +283,7 @@ Returns:
 
 #### GetMaxPlayers
 
-```C
+```C++
 GetMaxPlayers() -> int
 ```
 
@@ -294,7 +294,7 @@ Returns:
 
 #### GetAbsoluteMaxPlayers
 
-```C
+```C++
 GetAbsoluteMaxPlayers() -> int
 ```
 
@@ -305,7 +305,7 @@ Returns:
 
 #### GetLocalPlayerThing
 
-```C
+```C++
 GetLocalPlayerThing() -> Thing
 ```
 
@@ -316,7 +316,7 @@ Returns:
 
 #### GetPlayerThing
 
-```C
+```C++
 GetPlayerThing(int playerNum) -> Thing
 ```
 
@@ -330,7 +330,7 @@ Returns:
 
 #### GetPlayerNum
 
-```C
+```C++
 GetPlayerNum(Thing thing) -> int
 ```
 
@@ -345,7 +345,7 @@ Returns:
 
 #### PickupBackpack
 
-```C
+```C++
 PickupBackpack(Thing thing, Thing backpack)
 ```
 
@@ -360,7 +360,7 @@ Notes:
 
 #### CreateBackpack
 
-```C
+```C++
 CreateBackpack(Thing thing) -> Thing
 ```
 
@@ -377,7 +377,7 @@ Notes:
 
 #### NthBackpackBin
 
-```C
+```C++
 NthBackpackBin(Thing thing, int itemNum) -> int
 ```
 
@@ -396,7 +396,7 @@ Notes:
 
 #### NthBackpackValue
 
-```C
+```C++
 NthBackpackValue(Thing thing, int itemId) -> float
 ```
 
@@ -415,7 +415,7 @@ Notes:
 
 #### NumBackpackItems
 
-```C
+```C++
 NumBackpackItems(Thing thing) -> int
 ```
 
@@ -433,7 +433,7 @@ Notes:
 
 #### GetRespawnMask
 
-```C
+```C++
 GetRespawnMask(Thing thing) -> int
 ```
 
@@ -451,7 +451,7 @@ Notes:
 
 #### SetRespawnMask
 
-```C
+```C++
 SetRespawnMask(Thing thing, int mask)
 ```
 
@@ -467,7 +467,7 @@ Notes:
 
 #### SyncScores
 
-```C
+```C++
 SyncScores()
 ```
 
@@ -481,7 +481,7 @@ Notes:
 
 #### JewelFlyingStatus
 
-```C
+```C++
 JewelFlyingStatus(int bEnable, Thing plasmaThing)
 ```
 
@@ -500,7 +500,7 @@ Notes:
 
 #### StartJewelFlying
 
-```C
+```C++
 StartJewelFlying() -> int
 ```
 
@@ -516,7 +516,7 @@ Notes:
 
 #### IsAiming
 
-```C
+```C++
 IsAiming(Thing thing) -> int
 ```
 
@@ -533,7 +533,7 @@ Notes:
 
 #### StartInvisibility
 
-```C
+```C++
 StartInvisibility()
 ```
 
@@ -541,7 +541,7 @@ Starts the local-player invisibility effect.
 
 #### EndInvisibility
 
-```C
+```C++
 EndInvisibility()
 ```
 
@@ -549,7 +549,7 @@ Ends the local-player invisibility effect.
 
 #### IsInvisible
 
-```C
+```C++
 IsInvisible() -> int
 ```
 
@@ -560,7 +560,7 @@ Returns:
 
 #### MakeMeStop
 
-```C
+```C++
 MakeMeStop() -> int
 ```
 
@@ -575,7 +575,7 @@ Notes:
 
 #### PlayerInPor
 
-```C
+```C++
 PlayerInPor(int bInPor)
 ```
 
@@ -591,7 +591,7 @@ Notes:
 
 #### GetCutsceneMode
 
-```C
+```C++
 GetCutsceneMode() -> int
 ```
 
@@ -602,7 +602,7 @@ Returns:
 
 #### GetLastWeapon
 
-```C
+```C++
 GetLastWeapon() -> int
 ```
 
@@ -613,7 +613,7 @@ Returns:
 
 #### MakeMeAPirate
 
-```C
+```C++
 MakeMeAPirate()
 ```
 
@@ -621,7 +621,7 @@ Toggles the Guybrush pirate easter egg for the player.
 
 #### IMPStartFiring
 
-```C
+```C++
 IMPStartFiring(int fireType)
 ```
 
@@ -639,7 +639,7 @@ Notes:
 
 #### IMPEndFiring
 
-```C
+```C++
 IMPEndFiring(int fireType)
 ```
 
