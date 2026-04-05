@@ -78,6 +78,9 @@
   - Refactored `SithActorInfo` strict by replacing weapon state fields with new `SithActorWeaponInfo` struct (b3656d7)
   - Renamed `sithWeapon_InitializeActor` -> `sithWeapon_InitializeActorWeapon` (b3656d7)
   - Renamed `sithWeapon_UpdateActorWeaponState` -> `sithWeapon_UpdateActorWeapon` (b3656d7)
+  - Added documentation for game engine architecture (96d4c57)
+  - Added documentation for COG scripting language (96d4c57)
+  - Added documentation for engine configuration (96d4c57)
 
 ### Engine:
   - Added check for zero size in lip sync data generation to prevent allocation errors (f79736b)
