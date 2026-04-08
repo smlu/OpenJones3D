@@ -717,7 +717,8 @@ typedef enum erdDrawType
     RD_DRAW_SPRITE   = 2,
     RD_DRAW_PARTICLE = 3,
     RD_DRAW_POLYLINE = 4,
-    RD_DRAW_SHADOW   = 5
+    RD_DRAW_SHADOW   = 5,
+    RD_DRAW_LEGACY   = 6 // draw call with screen space vertices
 } rdDrawType;
 
 typedef struct srdGeoFacePayload
