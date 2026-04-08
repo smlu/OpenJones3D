@@ -727,6 +727,13 @@ typedef struct srdGeoFacePayload
     std3DVertexSpace vertexSpace;
 } rdGeoFacePayload;
 
+typedef struct srdLegacyPayload
+{
+    GLenum type; // triangles, lines, points...
+    size_t numIndices;
+    size_t indexOffset;
+} rdLegacyPayload;
+
 typedef struct srdModelFacePayload
 {
     size_t faceNum;
