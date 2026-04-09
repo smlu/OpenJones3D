@@ -772,7 +772,7 @@ void sithRender_Draw(void)
     // Now draw everything
     sithRender_RenderSectors();
 
-    rdCache_FlushGeoDrawCalls();
+    rdCache_Flush();
 
 
     std3D_SetDrawState(STD3D_DS_THINGS);
@@ -789,7 +789,7 @@ void sithRender_Draw(void)
     {
         sithRender_RenderAlphaAdjoins();
     }
-    rdCache_FlushGeoDrawCalls();
+    rdCache_FlushAlpha();
 
 #else
     // Now draw everything
