@@ -15,7 +15,7 @@
 
 uniform vec4 vFogParams;
 uniform vec3 vFogColor;
-uniform int iVertexSpace = 0;
+
 uniform int iLightMode = 0;
 
 vec4 screenToClip(vec3 screenPos, float rhw)
