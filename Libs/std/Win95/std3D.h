@@ -99,9 +99,9 @@ void std3D_ReleaseGeoVertexBuffers(void);
 void std3D_InitInstanceVBO(size_t numInstances);
 size_t std3D_AddScreenSpaceVertices(LPD3DTLVERTEX aVertices, size_t numVertices, LPWORD aIndices, size_t numIndices, GLenum type);
 void std3D_UpdateInstanceVBO(const InstanceData* pData, size_t numInstances);
-void std3D_DrawGeometryBatch(GeometryBatch* pBatch, int drawMode);
-void std3D_DrawModelBatch(ModelBatch* pBatch, int drawMode);
-void std3D_DrawQuadBatch(QuadBatch* pBatch, int drawMode);
+void std3D_DrawGeometryBatch(GeometryBatch* pBatch);
+void std3D_DrawModelBatch(ModelBatch* pBatch);
+void std3D_DrawQuadBatch(QuadBatch* pBatch);
 void std3D_DrawLegacyBatch(LegacyBatch* pBatch);
 void std3D_SetDrawMode(int mode);
 #else

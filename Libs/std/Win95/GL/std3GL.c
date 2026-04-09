@@ -1664,13 +1664,13 @@ static void std3D_UpdateInstancePointers()
 }
 
 
-void std3D_DrawGeometryBatch(GeometryBatch* pBatch, const int drawMode)
+void std3D_DrawGeometryBatch(GeometryBatch* pBatch)
 {
     glBindVertexArray(std3D_pVertexArrayGeometry);
 
     stdShader_SetActiveTextureUnit(TU_3D_DRAW);
 
-    if ( pBatch->pShader != NULL && drawMode > 2 )
+    if ( pBatch->pShader != NULL )
     {
         std3D_activeShader = pBatch->pShader;
     }
@@ -1679,30 +1679,13 @@ void std3D_DrawGeometryBatch(GeometryBatch* pBatch, const int drawMode)
         std3D_activeShader = std3D_defaultShader;
     }
 
-    GLuint texID;
-    if ( drawMode == 1 ) //vertex
-    {
-        glPolygonMode(GL_FRONT_AND_BACK, GL_POINT);
-        texID = std3D_pWhiteTexture->id;
-        pBatch->rdFlags |= STD3D_CULL_DISABLED;
-        pBatch->lightMode = 0;
-    }
-    else if ( drawMode == 2 ) //wireframe
-    {
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-        texID = std3D_pWhiteTexture->id;
-        pBatch->rdFlags |= STD3D_CULL_DISABLED;
-        pBatch->lightMode = 0;
-    }
-    else
-    {
-        texID = pBatch->pTex ? pBatch->pTex->id : std3D_pWhiteTexture->id;
-    }
-
     stdShader_SetActiveShader(std3D_activeShader);
+
+    const GLuint texID = std3D_currentDrawMode == DM_FULL && pBatch->pTex ? pBatch->pTex->id : std3D_pWhiteTexture->id;
+
     stdShader_SetTexture(std3D_activeShader, texID);
     std3D_SetRenderState(pBatch->rdFlags);
-    glUniform1i(std3D_activeShader->vertexSpaceLoc, STD3D_VS_WORLD);
+
     glUniform3f(std3D_activeShader->extraLightLoc, pBatch->extraLight[0], pBatch->extraLight[1], pBatch->extraLight[2]);
     glUniform1i(std3D_activeShader->lightModeLoc, pBatch->lightMode);
     glUniform1f(std3D_activeShader->alphaLoc, pBatch->extraLight[3]);
@@ -1714,11 +1697,9 @@ void std3D_DrawGeometryBatch(GeometryBatch* pBatch, const int drawMode)
 
     glMultiDrawElements(GL_TRIANGLES, pBatch->indexCounts, GL_UNSIGNED_INT, (const void* const*)pBatch->indexOffsets, pBatch->drawCount);
     std3D_numDrawCalls++;
-
-    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
-void std3D_DrawModelBatch(ModelBatch* pBatch, int const drawMode)
+void std3D_DrawModelBatch(ModelBatch* pBatch)
 {
     glBindVertexArray(std3D_pVertexArrayGeometry);
 
@@ -1735,27 +1716,9 @@ void std3D_DrawModelBatch(ModelBatch* pBatch, int const drawMode)
         std3D_activeShader = std3D_modelShader;
     }
 
-    GLuint texID;
-    if ( drawMode == 1 ) //vertex
-    {
-        glPolygonMode(GL_FRONT_AND_BACK, GL_POINT);
-        texID = std3D_pWhiteTexture->id;
-        pBatch->rdFlags |= STD3D_CULL_DISABLED;
-        pBatch->lightMode = 0;
-    }
-    else if ( drawMode == 2 ) //wireframe
-    {
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-        texID = std3D_pWhiteTexture->id;
-        pBatch->rdFlags |= STD3D_CULL_DISABLED;
-        pBatch->lightMode = 0;
-    }
-    else
-    {
-        texID = pBatch->pTex ? pBatch->pTex->id : std3D_pWhiteTexture->id;
-    }
-
     stdShader_SetActiveShader(std3D_activeShader);
+
+    GLuint texID = std3D_currentDrawMode == DM_FULL && pBatch->pTex ? pBatch->pTex->id : std3D_pWhiteTexture->id;
     stdShader_SetTexture(std3D_activeShader, texID);
     std3D_SetRenderState(pBatch->rdFlags);
 
@@ -1766,38 +1729,15 @@ void std3D_DrawModelBatch(ModelBatch* pBatch, int const drawMode)
     glDrawElementsInstanced(GL_TRIANGLES, (GLsizei)pBatch->indexCount, GL_UNSIGNED_INT, (void*)(pBatch->indexOffset * sizeof(GLuint)), pBatch->numberOfInstances);
     std3D_instanceOffset += pBatch->numberOfInstances;
     std3D_numDrawCalls++;
-
-
-    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
-void std3D_DrawQuadBatch(QuadBatch* pBatch, const int drawMode)
+void std3D_DrawQuadBatch(QuadBatch* pBatch)
 {
     glBindVertexArray(std3D_pVertexArrayGeometry);
 
     std3D_UpdateInstancePointers();
 
-
-    GLuint texID;
-    if ( drawMode == 1 ) //vertex
-    {
-        glPolygonMode(GL_FRONT_AND_BACK, GL_POINT);
-        texID = std3D_pWhiteTexture->id;
-        pBatch->rdFlags |= STD3D_CULL_DISABLED;
-        pBatch->lightMode = 0;
-    }
-    else if ( drawMode == 2 ) //wireframe
-    {
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-        texID = std3D_pWhiteTexture->id;
-        pBatch->rdFlags |= STD3D_CULL_DISABLED;
-        pBatch->lightMode = 0;
-    }
-    else
-    {
-        texID = pBatch->pTex ? pBatch->pTex->id : std3D_pWhiteTexture->id;
-    }
-
+    GLuint texID = std3D_currentDrawMode == DM_FULL && pBatch->pTex ? pBatch->pTex->id : std3D_pWhiteTexture->id;
     stdShader_SetActiveTextureUnit(TU_3D_DRAW);
 
     if ( pBatch->pShader != NULL )
@@ -1845,6 +1785,9 @@ void std3D_DrawLegacyBatch(LegacyBatch* pBatch)
     glFrontFace(GL_CCW);
 }
 
+void J3DAPI std3D_DrawRenderList(tSysTexture* pTex, Std3DRenderState rdflags, LPD3DTLVERTEX aVerts, size_t numVerts, LPWORD aIndices, size_t numIndices, std3DVertexSpace vs, bool bUseShaderLighting)
+{
+}
 
 void std3D_SetDrawMode(const int mode)
 {
