@@ -869,7 +869,7 @@ int J3DAPI wkernel_CreateWindow(HINSTANCE hInstance, int nShowCmd, LPCSTR lpWind
 #ifdef J3D_DEBUG
     glEnable(GL_DEBUG_OUTPUT);
 
-    //glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS); // synchronous callback (very useful for debugging)
+    glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS); // synchronous callback (very useful for debugging)
 
     glDebugMessageCallback(wKernel_GLDebugMessageCallback, NULL);
     // filter out noisy messages or categories you don't care about
