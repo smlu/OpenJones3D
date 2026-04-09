@@ -48,6 +48,10 @@ static size_t rdCache_frameNum   = 0;
 int J3DAPI rdCache_ProcFaceDistanceCompare(const rdCacheProcEntry* pEntry1, const rdCacheProcEntry* pEntry2);
 int J3DAPI rdCache_ProcFaceCompare(const rdCacheProcEntry* pEntry1, const rdCacheProcEntry* pEntry2);
 
+#ifdef J3D_OPENGL
+void J3DAPI rdCache_AddLegacyDrawCall(tSysTexture* pTex, Std3DRenderState rdflags, LPD3DTLVERTEX aVerts, size_t numVerts, LPWORD aIndices, size_t numIndices, bool bAlpha);
+#endif
+
 void rdCache_InstallHooks(void)
 {
     J3D_HOOKFUNC(rdCache_Startup);
@@ -1389,4 +1393,42 @@ static size_t rdCache_BatchQuadDrawCalls(size_t start, rdPayload* drawCalls, siz
     return drawCount;
 }
 
+
+void J3DAPI rdCache_AddLegacyDrawCall(tSysTexture* pTex, Std3DRenderState rdflags, LPD3DTLVERTEX aVerts, size_t numVerts, LPWORD aIndices, size_t numIndices, bool bAlpha)
+{
+    rdPayload* pDrawCall;
+    if ( bAlpha )
+    {
+        pDrawCall      = rdCache_GetTransparentDrawCall(RD_DRAW_LEGACY);
+        float distance = FLT_MAX; // 3.4028235e38f;
+        for ( size_t i = 0; i < numVerts; ++i )
+        {
+            if ( aVerts[i].sz < distance )
+            {
+                distance = aVerts[i].sz;
+            }
+        }
+        pDrawCall->distance = distance;
+    }
+    else
+    {
+        pDrawCall = rdCache_GetOpaqueDrawCall(RD_DRAW_LEGACY);
+    }
+    pDrawCall->pTex    = pTex;
+    pDrawCall->rdFlags = rdflags;
+
+    rdLegacyPayload* pPayload = pDrawCall->payload;
+    pPayload->type            = GL_TRIANGLES;
+    pPayload->numIndices      = numIndices;
+    pPayload->indexOffset     = std3D_AddScreenSpaceVertices(aVerts, numVerts, aIndices, numIndices, GL_TRIANGLES);
+
+    if ( bAlpha )
+    {
+        rdCache_AddTransparentDrawCall();
+    }
+    else
+    {
+        rdCache_AddOpaqueDrawCall();
+    }
+}
 #endif
