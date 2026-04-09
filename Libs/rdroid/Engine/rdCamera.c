@@ -152,7 +152,8 @@ void J3DAPI rdCamera_SetCurrent(rdCamera* pCamera)
 #ifdef J3D_OPENGL
         if ( rdCamera_g_pCurCamera != pCamera )
         {
-            rdCache_FlushGeoDrawCalls();
+            rdCache_Flush();
+            rdCache_FlushAlpha();
             rdCamera_g_pCurCamera = pCamera;
             stdShader_UpdateGlobalUniforms();
         }
