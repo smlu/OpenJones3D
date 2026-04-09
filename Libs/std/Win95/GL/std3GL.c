@@ -63,10 +63,6 @@ static tSysPixelFormat std3D_RGBTextureFormat =
 
 static bool std3D_bHasRGBTextureFormat = true;
 
-const size_t std3D_maxVerticesPerDrawCall = 65536;  // max vertices which can be drawn in one draw call
-const size_t std3D_maxIndicesPerDrawCall  = 131072; // max indices which can be drawn in one draw call
-const size_t std3D_maxDrawCallGroupSize   = 16384;  // max amount of draw calls which can be summarized in a group
-
 typedef enum eDrawMode
 {
     DM_NONE      = 0,
@@ -76,36 +72,10 @@ typedef enum eDrawMode
     DM_FULL      = 4
 } DrawMode;
 
-// structure for caching a draw call
-typedef struct sGLDrawCall
-{
-    size_t firstIndex;
-    GLsizei indexCount;
-    tSysTexture* tex;
-    Std3DRenderState rdflags;
-    GLenum type; // GL_TRIANGLES / GL_LINES / GL_POINTS
-    std3DVertexSpace vertexSpace;
-    bool bUseShaderLighting;
-} GLDrawCall;
-
-typedef struct sFrameBatch
-{
-    D3DTLVERTEX* verts;
-    size_t vertCapacity;
-    size_t vertCount;
-
-    GLushort* indices;
-    size_t indexCapacity;
-    size_t indexCount;
-
-    GLDrawCall* draws;
-    size_t drawCapacity;
-    size_t drawCount;
-} FrameBatch;
-
-static FrameBatch std3D_frameBatch = { 0 };
-
-// Global state
+static LPD3DTLVERTEX std3D_pScreenSpaceVertexBuffer;
+static WORD* std3D_pScreenSpaceElementBuffer;
+static size_t std3D_numScreenSpaceVertices = 0;
+static size_t std3D_numScreenSpaceIndices  = 0;
 
 // VBO & IBO
 static GLuint std3D_pVertexArrayObject  = 0;
@@ -156,8 +126,6 @@ void std3D_ReleaseVertexBuffers(void);
 bool std3D_InitShaderSystem(void);
 void std3D_ShutdownShaderSystem(void);
 
-static void std3D_DrawFrameBatch(void);                                       //new
-static bool std3D_EnsureDrawCapacity(size_t extraVerts, size_t extraIndices); //new
 static void std3D_MapVertexBuffers(void);
 static void std3D_UnmapVertexBuffers(void);
 
@@ -497,10 +465,6 @@ int std3D_StartScene(void)
 
 void std3D_EndScene(void)
 {
-    if ( std3D_bVertexBuffersMapped > 0 )
-    {
-        std3D_DrawFrameBatch();
-    }
     //STDLOG_DEBUG("Num rendered Draw Calls: %u\n", std3D_numDrawCalls);
     std3D_SetRenderState(0);
     std3D_renderState  = 0;
@@ -508,179 +472,6 @@ void std3D_EndScene(void)
     std3D_pD3DTex      = NULL;
     glBindSampler(TU_3D_DRAW, 0);
     stdShader_DisableFog();
-}
-
-int std3D_CacheDrawCall(GLenum type, tSysTexture* pTex, Std3DRenderState rdflags, LPD3DTLVERTEX aVerts, size_t numVerts, LPWORD aIndices, size_t numIndices, std3DVertexSpace vs,
-                        bool bUseShaderLighting)
-{
-    if ( type == GL_LINES )
-    {
-        numIndices = (numVerts - 1) * 2;
-    }
-    else if ( type == GL_POINTS )
-    {
-        numIndices = numVerts;
-    }
-
-    if ( !std3D_bVertexBuffersMapped )
-    {
-        std3D_MapVertexBuffers();
-    }
-
-    if ( !std3D_EnsureDrawCapacity(numVerts, numIndices) )
-    {
-        std3D_DrawFrameBatch();
-    }
-
-    size_t baseVertex = std3D_frameBatch.vertCount;
-    size_t firstIndex = std3D_frameBatch.indexCount;
-
-    // paste new vertices
-    memcpy(&std3D_frameBatch.verts[baseVertex], aVerts, numVerts * sizeof(D3DTLVERTEX));
-    std3D_frameBatch.vertCount += numVerts;
-
-    // paste new indices
-    if ( type == GL_TRIANGLES )
-    {
-        for ( size_t i = 0; i < numIndices; i++ )
-        {
-            std3D_frameBatch.indices[firstIndex + i] = aIndices[i] + baseVertex;
-        }
-    }
-    else if ( type == GL_LINES ) //for line strip, just create a pair of indices for each line
-    {
-        for ( size_t i = 0; i < numVerts - 1; i++ )
-        {
-            std3D_frameBatch.indices[firstIndex + i * 2]     = baseVertex + i;
-            std3D_frameBatch.indices[firstIndex + i * 2 + 1] = baseVertex + i + 1;
-        }
-    }
-    else if ( type == GL_POINTS ) // for points, just give each vertex an index.
-    {
-        for ( size_t i = 0; i < numVerts - 1; i++ )
-        {
-            std3D_frameBatch.indices[firstIndex + i] = baseVertex + i;
-        }
-    }
-    else
-    {
-        STDLOG_ERROR("Unknown draw type %d.\n", type);
-        return 0;
-    }
-
-    std3D_frameBatch.indexCount += numIndices;
-
-    // cache draw call
-    GLDrawCall* dc         = &std3D_frameBatch.draws[std3D_frameBatch.drawCount++];
-    dc->firstIndex         = firstIndex;
-    dc->indexCount         = (GLsizei)numIndices;
-    dc->tex                = pTex ? pTex : std3D_pWhiteTexture;
-    dc->rdflags            = rdflags;
-    dc->type               = type;
-    dc->vertexSpace        = vs;
-    dc->bUseShaderLighting = bUseShaderLighting;
-
-    return 1;
-}
-
-static void std3D_DrawFrameBatch(void)
-{
-    if ( !std3D_frameBatch.vertCount || !std3D_frameBatch.indexCount )
-    {
-        return;
-    }
-    stdShader_SetActiveTextureUnit(TU_3D_DRAW);
-
-    glBindVertexArray(std3D_pVertexArrayObject);
-
-    std3D_UnmapVertexBuffers();
-
-
-    // fire draw calls
-    for ( size_t i = 0; i < std3D_frameBatch.drawCount; i++ )
-    {
-        GLDrawCall* dc = &std3D_frameBatch.draws[i];
-
-        GLsizei indexCount = dc->indexCount;
-        size_t j           = i + 1;
-
-        //batch draw calls with same textures and same rdFlags together.
-        while ( j < std3D_frameBatch.drawCount && dc->vertexSpace == std3D_frameBatch.draws[j].vertexSpace && dc->tex->id == std3D_frameBatch.draws[j].tex->id &&
-            dc->rdflags == std3D_frameBatch.draws[j].rdflags )
-        {
-            indexCount += std3D_frameBatch.draws[j].indexCount;
-            i = j++;
-        }
-
-        if ( dc->type == GL_LINES || dc->type == GL_POINTS )
-        {
-            std3D_activeShader = std3D_defaultShaderWf;
-        }
-        else if ( dc->tex->pShader )
-        {
-            std3D_activeShader = dc->tex->pShader;
-        }
-        else
-        {
-            std3D_activeShader = std3D_defaultShader;
-        }
-
-        stdShader_SetActiveShader(std3D_activeShader);
-
-        if ( std3D_activeShader == std3D_defaultShader || std3D_activeShader == std3D_defaultShaderWf )
-        {
-            GLint loc = glGetUniformLocation(std3D_activeShader->handle, "iVertexSpace");
-            glUniform1i(loc, dc->vertexSpace);
-        }
-
-        if ( std3D_activeShader == std3D_defaultShader )
-        {
-            GLint loc = glGetUniformLocation(std3D_activeShader->handle, "bRenderLights");
-            glUniform1i(loc, dc->bUseShaderLighting);
-        }
-
-
-        if ( dc->tex != std3D_pD3DTex && dc->type == GL_TRIANGLES )
-        {
-            stdShader_SetTexture(std3D_activeShader, dc->tex->id);
-            std3D_pD3DTex = dc->tex;
-        }
-
-        std3D_SetRenderState(dc->rdflags);
-
-        const void* indexPtr = (const void*)(dc->firstIndex * sizeof(GLushort));
-        glDrawElements(dc->type, indexCount, GL_UNSIGNED_SHORT, indexPtr);
-    }
-
-    //clear
-    std3D_frameBatch.vertCount  = 0;
-    std3D_frameBatch.indexCount = 0;
-    std3D_frameBatch.drawCount  = 0;
-
-    glBindVertexArray(0);
-}
-
-static bool std3D_EnsureDrawCapacity(size_t extraVerts, size_t extraIndices)
-{
-    return std3D_frameBatch.vertCount + extraVerts < std3D_maxVerticesPerDrawCall &&
-        std3D_frameBatch.indexCount + extraIndices < std3D_maxIndicesPerDrawCall &&
-        std3D_frameBatch.drawCount + 1 < std3D_maxDrawCallGroupSize;
-}
-
-void J3DAPI std3D_DrawRenderList(tSysTexture* pTex, Std3DRenderState rdflags, LPD3DTLVERTEX aVerts, size_t numVerts, LPWORD aIndices, size_t numIndices, std3DVertexSpace vs, bool bUseShaderLighting)
-{
-    // STDLOG_DEBUG("Draw %d vertices\n", numVerts);
-    if ( numVerts > (unsigned int)std3D_g_maxVertices )
-    {
-        STDLOG_ERROR("Error %d > %d maxVertices.\n", numVerts, std3D_g_maxVertices);
-        return;
-    }
-    if ( numVerts <= 0 || numIndices <= 0 )
-    {
-        return;
-    }
-
-    std3D_CacheDrawCall(GL_TRIANGLES, pTex, rdflags, aVerts, numVerts, aIndices, numIndices, vs, bUseShaderLighting);
 }
 
 void std3D_SetWireframeRenderState(void)
@@ -1012,9 +803,8 @@ void std3D_ResetTextureCache(void)
     if ( std3D_bVertexBuffersMapped )
     {
         //clear framebatch since saved textures are not valid anymore
-        std3D_frameBatch.vertCount  = 0;
-        std3D_frameBatch.indexCount = 0;
-        std3D_frameBatch.drawCount  = 0;
+        std3D_numScreenSpaceVertices = 0;
+        std3D_numScreenSpaceIndices  = 0;
         std3D_UnmapVertexBuffers();
     }
 
@@ -1196,7 +986,7 @@ static int std3D_BuildDeviceList(void)
 
         pD3DDriver->bAlphaBlendSupported = TRUE;
 
-        pD3DDriver->maxVertexCount = std3D_maxVerticesPerDrawCall;
+        pD3DDriver->maxVertexCount = STD3D_MAX_VERTICES_PER_DRAW;
         if ( pD3DDriver->maxVertexCount == 0 )
         {
             pD3DDriver->maxVertexCount = 65535; // Reasonable default
@@ -1456,21 +1246,18 @@ void J3DAPI std3D_SetFindAllDevices(int bFindAll)
 
 bool std3D_InitVertexBuffers(GLuint* vbo, GLuint* ibo, GLuint* vao)
 {
-    memset(&std3D_frameBatch, 0, sizeof(std3D_frameBatch));
-    std3D_frameBatch.draws = STDMALLOC(std3D_maxDrawCallGroupSize * sizeof(GLDrawCall));
-
     glGenVertexArrays(1, vao);
     glBindVertexArray(*vao);
 
     // create vbo
     glGenBuffers(1, vbo);
     glBindBuffer(GL_ARRAY_BUFFER, *vbo);
-    glBufferData(GL_ARRAY_BUFFER, std3D_maxVerticesPerDrawCall * sizeof(D3DTLVERTEX), NULL, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, STD3D_MAX_VERTICES_PER_DRAW * sizeof(D3DTLVERTEX), NULL, GL_DYNAMIC_DRAW);
 
     // create ibo
     glGenBuffers(1, ibo);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, *ibo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, std3D_maxIndicesPerDrawCall * sizeof(GL_SHORT), NULL, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, STD3D_MAX_INDICES_PER_DRAW * sizeof(GLushort), NULL, GL_DYNAMIC_DRAW);
 
     const GLsizei stride = sizeof(D3DTLVERTEX);
 
@@ -1496,10 +1283,10 @@ static void std3D_MapVertexBuffers(void)
 {
     glBindVertexArray(std3D_pVertexArrayObject);
     glBindBuffer(GL_ARRAY_BUFFER, std3D_pVertexBufferOpaque);
-    std3D_frameBatch.verts = glMapBufferRange(GL_ARRAY_BUFFER, 0, std3D_maxVerticesPerDrawCall * sizeof(D3DTLVERTEX), GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
+    std3D_pScreenSpaceVertexBuffer = glMapBufferRange(GL_ARRAY_BUFFER, 0, STD3D_MAX_VERTICES_PER_DRAW * sizeof(D3DTLVERTEX), GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, std3D_pIndexBuffer);
-    std3D_frameBatch.indices = glMapBufferRange(GL_ELEMENT_ARRAY_BUFFER, 0, std3D_maxIndicesPerDrawCall * sizeof(GL_SHORT), GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
+    std3D_pScreenSpaceElementBuffer = glMapBufferRange(GL_ELEMENT_ARRAY_BUFFER, 0, STD3D_MAX_INDICES_PER_DRAW * sizeof(GLushort), GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
 
     std3D_bVertexBuffersMapped = true;
 }
@@ -1517,11 +1304,14 @@ static void std3D_UnmapVertexBuffers(void)
     glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
 
     std3D_bVertexBuffersMapped = false;
+
+    std3D_numScreenSpaceVertices = 0;
+    std3D_numScreenSpaceIndices  = 0;
+}
 }
 
 void std3D_ReleaseVertexBuffers(void)
 {
-    STDFREE(std3D_frameBatch.draws);
     if ( std3D_pVertexBufferOpaque )
     {
         glDeleteBuffers(1, &std3D_pVertexBufferOpaque);

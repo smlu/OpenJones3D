@@ -3,6 +3,11 @@
 #include <j3dcore/j3d.h>
 #include <std/types.h>
 
+#ifdef J3D_OPENGL
+#define STD3D_MAX_VERTICES_PER_DRAW 65536
+#define STD3D_MAX_INDICES_PER_DRAW 131072
+#endif
+
 
 // Added following macros from rdCache to use for VBO & IBO sizes
 #define STD3D_MAXFACEVERTICES 64
@@ -92,6 +97,7 @@ void J3DAPI std3D_DrawPointList(LPD3DTLVERTEX aVerts, size_t numVerts, std3DVert
 void std3D_InitGeometryVBO(LPD3DTLVERTEX vertices, size_t numVertices, GLuint* indices, size_t numIndices);
 void std3D_ReleaseGeoVertexBuffers(void);
 void std3D_InitInstanceVBO(size_t numInstances);
+size_t std3D_AddScreenSpaceVertices(LPD3DTLVERTEX aVertices, size_t numVertices, LPWORD aIndices, size_t numIndices, GLenum type);
 void std3D_UpdateInstanceVBO(const InstanceData* pData, size_t numInstances);
 void std3D_DrawGeometryBatch(GeometryBatch* pBatch, int drawMode);
 void std3D_DrawModelBatch(ModelBatch* pBatch, int drawMode);
