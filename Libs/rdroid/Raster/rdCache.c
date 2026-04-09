@@ -1163,6 +1163,11 @@ static void rdCache_AddDrawCall(rdPayload* header)
 
     header->rdFlags = rdCache_GetRenderStateOfFace(header);
     header->pTex    = rdCache_GetFaceTexture(header);
+    if ( rdroid_g_curGeometryMode == RD_GEOMETRY_VERTEX || rdroid_g_curGeometryMode == RD_GEOMETRY_WIREFRAME )
+    {
+        header->lightingMode = RD_LIGHTING_NONE;
+        header->rdFlags &= ~STD3D_RS_FOG_ENABLED;
+    }
 
     switch ( rdCache_currentDrawType )
     {
