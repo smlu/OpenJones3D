@@ -13,9 +13,7 @@ out vec2 vTexCoord;
 out vec3 vWorldPos;
 out vec3 vWorldNormal;
 
-uniform bool bRenderLights = false;
 uniform vec3 cExtraLight;
-uniform mat4 mModelMatrix;
 uniform float fAlpha;
 
 
@@ -23,37 +21,12 @@ void main() {
 
     vTexCoord = inTexCoord;
 
-    vec4 clip = vec4(0.0f);
-    if (iVertexSpace == VS_SCREEN)
-    {
-        clip = screenToClip(inPosition.xyz, inPosition.w);
-//        clip.z = -clip.w;
-        vColor = inColor;
-    }
-    else if (iVertexSpace == VS_WORLD)
-    {
-        clip = VIEWPROJECTION * inPosition;
-        vWorldPos = inPosition.xyz;
-        vWorldNormal = inNormal;
-        vColor.rgb = CalculateVertexColor(inColor.rgb, cExtraLight, iLightMode);
-        vColor.a = inColor.a * fAlpha;
-//        if (bRenderLights)
-//        {
-//            vColor.rgb += CalculateLightColor(vWorldPos);
-//        }
-    }
-    else if (iVertexSpace == VS_VIEW)
-    {
-        clip = PROJECTION * inPosition;
-    }
-    else if (iVertexSpace == VS_CLIP)
-    {
-        clip = inPosition;
-    }
-    else if (iVertexSpace == VS_MODEL)
-    {
-        clip = VIEWPROJECTION * mModelMatrix * inPosition;
-    }
+    vec4 clip = VIEWPROJECTION * inPosition;
+    vWorldPos = inPosition.xyz;
+    vWorldNormal = inNormal;
+    vColor.rgb = CalculateVertexColor(inColor.rgb, cExtraLight, iLightMode);
+    vColor.a = inColor.a * fAlpha;
+
 
     gl_Position = clip;
 }
