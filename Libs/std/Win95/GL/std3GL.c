@@ -67,6 +67,15 @@ const size_t std3D_maxVerticesPerDrawCall = 65536;  // max vertices which can be
 const size_t std3D_maxIndicesPerDrawCall  = 131072; // max indices which can be drawn in one draw call
 const size_t std3D_maxDrawCallGroupSize   = 16384;  // max amount of draw calls which can be summarized in a group
 
+typedef enum eDrawMode
+{
+    DM_NONE      = 0,
+    DM_VERTEX    = 1,
+    DM_WIREFRAME = 2,
+    DM_SOLID     = 3,
+    DM_FULL      = 4
+} DrawMode;
+
 // structure for caching a draw call
 typedef struct sGLDrawCall
 {
@@ -117,6 +126,8 @@ static GLuint std3D_activeSampler = 0;
 
 static std3DDrawState std3D_currentDrawState     = STD3D_DS_HUD;
 static std3DVertexSpace std3D_currentVertexState = STD3D_VS_SCREEN;
+
+static DrawMode std3D_currentDrawMode = DM_FULL;
 
 // Shader system state
 static GLShaderProgram* std3D_defaultShader    = NULL;
