@@ -698,11 +698,13 @@ static rdDrawType rdCache_currentDrawType;
 static GeometryBatch rdCache_geometryBatch = { 0 };
 static ModelBatch rdCache_modelBatch       = { 0 };
 static QuadBatch rdCache_quadBatch         = { 0 };
+static LegacyBatch rdCache_legacyBatch     = { 0 };
 
 static void rdCache_SendDrawCallsToHardware(rdPayload* drawCalls, size_t numDrawCalls);
 static size_t rdCache_BatchGeometryDrawCalls(size_t start, rdPayload* drawCalls, size_t numDrawCalls);
 static size_t rdCache_BatchModelDrawCalls(size_t start, rdPayload* drawCalls, size_t numDrawCalls);
 static size_t rdCache_BatchQuadDrawCalls(size_t start, rdPayload* drawCalls, size_t numDrawCalls);
+static size_t rdCache_BatchLegacyDrawCalls(size_t start, rdPayload* drawCalls, size_t numDrawCalls);
 
 static int rdCache_DrawCallDistanceCompare(const rdPayload* pEntry1, const rdPayload* pEntry2)
 {
@@ -777,6 +779,26 @@ static void rdCache_GenerateOpaqueGeoSortKey(rdPayload* draw)
     uint8_t batchFlags = Std3D_ExtractBatchState(draw->rdFlags);
     key |= ((uint64_t)batchFlags) << 5;
 
+
+    draw->sortKey = key;
+}
+
+static void rdCache_GenerateLegacySortKey(rdPayload* draw)
+{
+    rdLegacyPayload* pPayload = draw->payload;
+
+    uint64_t key = 0;
+
+    key |= ((uint64_t)(draw->type & 0x7)) << 61;
+
+    uint16_t texId = (uint16_t)((draw->pTex ? draw->pTex->id : 0) & 0xFFFF);
+    key |= ((uint64_t)texId) << 45;
+
+    uint32_t type = pPayload->type;
+    key |= ((uint64_t)type) << 13;
+
+    uint8_t batchFlags = Std3D_ExtractBatchState(draw->rdFlags);
+    key |= ((uint64_t)batchFlags) << 5;
 
     draw->sortKey = key;
 }
@@ -1413,6 +1435,46 @@ static size_t rdCache_BatchQuadDrawCalls(size_t start, rdPayload* drawCalls, siz
     return drawCount;
 }
 
+static size_t rdCache_BatchLegacyDrawCalls(size_t start, rdPayload* drawCalls, size_t numDrawCalls)
+{
+    size_t drawCount = 0;
+    size_t i         = start;
+
+    rdPayload* header        = &drawCalls[i];
+    rdLegacyPayload* payload = header->payload;
+    uint64_t sortKey         = header->sortKey;
+
+    // Batch state
+    rdCache_legacyBatch.pTex    = header->pTex;
+    rdCache_legacyBatch.rdFlags = header->rdFlags;
+    rdCache_legacyBatch.type    = payload->type;
+
+    // First draw
+    rdCache_legacyBatch.indexCounts[0]  = payload->numIndices;
+    rdCache_legacyBatch.indexOffsets[0] = payload->indexOffset * sizeof(GLushort);
+    drawCount++;
+    i++;
+
+    // Batch following
+    while ( i < numDrawCalls && drawCount < MAX_BATCHES )
+    {
+        header = &drawCalls[i];
+        if ( header->sortKey != sortKey )
+        {
+            break;
+        }
+        payload = header->payload;
+
+        rdCache_legacyBatch.indexCounts[drawCount]  = payload->numIndices;
+        rdCache_legacyBatch.indexOffsets[drawCount] = payload->indexOffset * sizeof(GLushort);
+
+        drawCount++;
+        i++;
+    }
+
+    rdCache_legacyBatch.drawCount = (GLsizei)drawCount;
+    return drawCount;
+}
 
 void J3DAPI rdCache_AddLegacyDrawCall(tSysTexture* pTex, Std3DRenderState rdflags, LPD3DTLVERTEX aVerts, size_t numVerts, LPWORD aIndices, size_t numIndices, bool bAlpha)
 {
