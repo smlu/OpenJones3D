@@ -687,6 +687,9 @@ static size_t rdCache_numParticleDrawCalls = 0;
 static rdPolyLinePayload rdCache_polyLineDrawCalls[RD_CACHE_MAX_DRAW_CALLS];
 static size_t rdCache_numPolyLineDrawCalls = 0;
 
+static rdLegacyPayload rdCache_legacyDrawCalls[RD_CACHE_MAX_DRAW_CALLS];
+static size_t rdCache_numLegacyDrawCalls = 0;
+
 static InstanceData rdCache_instanceData[RD_CACHE_MAX_INSTANCES];
 static size_t rdCache_numInstances = 0;
 
@@ -873,6 +876,7 @@ void rdCache_FreeFaceDrawInfos(void)
     rdCache_numSpriteDrawCalls      = 0;
     rdCache_numParticleDrawCalls    = 0;
     rdCache_numPolyLineDrawCalls    = 0;
+    rdCache_numLegacyDrawCalls      = 0;
 }
 
 size_t rdCache_AddFaceInfoEntry(const size_t indexOffset, const size_t numVertices)
@@ -921,6 +925,10 @@ static rdPayload* rdCache_GetDrawCall(rdDrawType type, rdPayload* payloads, size
             index = &rdCache_numPolyLineDrawCalls;
             bFlush = rdCache_numPolyLineDrawCalls >= RD_CACHE_MAX_DRAW_CALLS;
             break;
+        case RD_DRAW_LEGACY:
+            index = &rdCache_numLegacyDrawCalls;
+            bFlush = rdCache_numLegacyDrawCalls >= RD_CACHE_MAX_DRAW_CALLS;
+            break;
     }
 
     if ( bFlush )
@@ -947,6 +955,9 @@ static rdPayload* rdCache_GetDrawCall(rdDrawType type, rdPayload* payloads, size
         case RD_DRAW_POLYLINE:
         case RD_DRAW_SHADOW:
             pPayload->payload = &rdCache_polyLineDrawCalls[*index];
+            break;
+        case RD_DRAW_LEGACY:
+            pPayload->payload = &rdCache_legacyDrawCalls[*index];
             break;
     }
     pPayload->pShader   = NULL;
@@ -1074,6 +1085,14 @@ static tSysTexture* rdCache_GetFaceTexture(const rdPayload* pPayload)
 
 static void rdCache_AddDrawCall(rdPayload* header)
 {
+    if ( rdCache_currentDrawType == RD_DRAW_LEGACY )
+    {
+        rdCache_numLegacyDrawCalls++;
+        header->type = RD_DRAW_LEGACY;
+        rdCache_GenerateLegacySortKey(header);
+        return;
+    }
+
     header->rdFlags = rdCache_GetRenderStateOfFace(header);
     header->pTex    = rdCache_GetFaceTexture(header);
 
@@ -1222,6 +1241,7 @@ void rdCache_FlushGeoDrawCalls(void)
     rdCache_numSpriteDrawCalls      = 0;
     rdCache_numParticleDrawCalls    = 0;
     rdCache_numPolyLineDrawCalls    = 0;
+    rdCache_numLegacyDrawCalls      = 0;
     rdCache_numInstances            = 0;
 }
 
