@@ -160,6 +160,7 @@ rdCacheProcEntry* rdCache_GetAlphaProcEntry(void)
     return pProcEntry;
 }
 
+#ifndef J3D_OPENGL
 void rdCache_Flush(void)
 {
     if ( rdCache_numProcFaces )
@@ -209,6 +210,50 @@ void rdCache_FlushAlpha(void)
         rdCache_numUsedAlphaVertices = 0;
     }
 }
+#else
+void rdCache_Flush(void)
+{
+    if ( rdCache_numProcFaces )
+    {
+        switch ( rdroid_g_curGeometryMode )
+        {
+            case RD_GEOMETRY_NONE:
+                break;
+
+            default:
+                rdCache_SendFaceListToHardware(rdCache_numProcFaces, rdCache_aProcFaces, rdCache_ProcFaceCompare);
+                break;
+        }
+
+        rdCache_drawnFaces += rdCache_numProcFaces;
+        rdCache_numProcFaces    = 0;
+        rdCache_numUsedVertices = 0;
+    }
+    rdCache_FlushGeoDrawCalls();
+}
+
+void rdCache_FlushAlpha(void)
+{
+    if ( rdCache_numAlphaProcFaces )
+    {
+        switch ( rdroid_g_curGeometryMode )
+        {
+            case RD_GEOMETRY_NONE:
+                break;
+
+            default:
+                rdCache_SendFaceListToHardware(rdCache_numAlphaProcFaces, rdCache_aAlphaProcFaces, rdCache_ProcFaceDistanceCompare);
+                break;
+        }
+
+        rdCache_drawnFaces += rdCache_numAlphaProcFaces;
+        rdCache_numAlphaProcFaces    = 0;
+        rdCache_numUsedAlphaVertices = 0;
+    }
+    rdCache_FlushGeoDrawCalls();
+}
+#endif
+
 
 #ifdef J3D_OPENGL
 
