@@ -10,6 +10,10 @@
 #include <std/Win95/std3D.h>
 #include <std/Win95/stdDisplay.h>
 
+#ifdef J3D_OPENGL
+#include "rdroid/Raster/rdCache.h"
+#endif
+
 D3DTLVERTEX rdPrimit2_aD3DVertices[2];
 
 void rdPrimit2_InstallHooks(void)
@@ -215,7 +219,7 @@ int J3DAPI rdPrimit2_DrawClippedLine2(float x1, float y1, float x2, float y2, ui
 #ifndef J3D_OPENGL
     std3D_DrawLineStrip(rdPrimit2_aD3DVertices, 2u);
 #else
-    std3D_DrawLineStrip(rdPrimit2_aD3DVertices, 2u, 0);
+    rdCache_AddLineDrawCall(rdPrimit2_aD3DVertices, 2u);
 #endif
     return 1;
 }
