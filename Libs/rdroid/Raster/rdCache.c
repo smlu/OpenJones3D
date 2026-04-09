@@ -1294,6 +1294,7 @@ static void rdCache_SetInstanceData(rdPayload* drawCalls, size_t numDrawCalls)
 
 void rdCache_FlushGeoDrawCalls(void)
 {
+    std3D_SetDrawMode(rdroid_g_curGeometryMode);
     // STDLOG_DEBUG("Num geo calls: %u\n", rdCache_numGeoDrawCalls);
     // STDLOG_DEBUG("Num model face calls: %u\n", rdCache_numModelDrawCalls);
     qsort(rdCache_OpaqueDrawCalls, rdCache_NumOpaqueDrawCalls, sizeof(rdPayload), rdCache_DrawCallOpaqueCompare);
