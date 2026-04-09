@@ -127,6 +127,7 @@ static GLShaderProgram* std3D_horizonSkyShader = NULL;
 static GLShaderProgram* std3D_spriteShader     = NULL;
 static GLShaderProgram* std3D_particleShader   = NULL;
 static GLShaderProgram* std3D_polyLineShader   = NULL;
+static GLShaderProgram* std3D_legacyShader     = NULL;
 static GLShaderProgram* std3D_activeShader     = NULL;
 
 static int std3D_InitRenderState(void);
@@ -1602,11 +1603,12 @@ bool std3D_InitShaderSystem(void)
         return false;
     }
 
-    //create wireframe shader
-    std3D_defaultShaderWf = stdShader_CompileAndCreate("std_default_wf", "default.vert", "default_wf.frag");
-    if ( !std3D_defaultShaderWf )
+    // Create legacy shader
+    std3D_legacyShader = stdShader_CompileAndCreate("std_legacy", "legacy.vert", "legacy.frag");
+
+    if ( !std3D_polyLineShader )
     {
-        STDLOG_ERROR("Failed to create default wf shader\n");
+        STDLOG_ERROR("Failed to create legacy shader\n");
         return false;
     }
 
