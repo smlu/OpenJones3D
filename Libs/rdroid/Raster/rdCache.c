@@ -590,7 +590,8 @@ LABEL_4:
                 || fflags != pCurPoly->flags )
             {
                 RD_ASSERTREL(rdCache_totalVerts < RDCACHE_VERTBUFFERSIZE);
-                std3D_DrawRenderList(pCachedTexture, rdflags, rdCache_aHWVertices, rdCache_totalVerts, rdCache_aVertIndices, totalIndices, vertexSpace, useShaderLighting);
+                //std3D_DrawRenderList(pCachedTexture, rdflags, rdCache_aHWVertices, rdCache_totalVerts, rdCache_aVertIndices, totalIndices, vertexSpace, useShaderLighting);
+                rdCache_AddLegacyDrawCall(pCachedTexture, rdflags, rdCache_aHWVertices, rdCache_totalVerts, rdCache_aVertIndices, totalIndices, pfSort == rdCache_ProcFaceDistanceCompare);
                 goto LABEL_4;
             }
 #else
