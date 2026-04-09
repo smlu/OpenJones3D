@@ -1308,6 +1308,41 @@ static void std3D_UnmapVertexBuffers(void)
     std3D_numScreenSpaceVertices = 0;
     std3D_numScreenSpaceIndices  = 0;
 }
+
+size_t std3D_AddScreenSpaceVertices(LPD3DTLVERTEX aVertices, size_t numVertices, LPWORD aIndices, size_t numIndices, GLenum type)
+{
+    if ( !std3D_bVertexBuffersMapped )
+    {
+        std3D_MapVertexBuffers();
+    }
+
+    size_t baseVertex  = std3D_numScreenSpaceVertices;
+    size_t indexOffset = std3D_numScreenSpaceIndices;
+
+    LPD3DTLVERTEX pVertices = &std3D_pScreenSpaceVertexBuffer[baseVertex];
+    memcpy(pVertices, aVertices, sizeof(D3DTLVERTEX) * numVertices);
+
+    if ( type == GL_TRIANGLES )
+    {
+        for ( size_t i = 0; i < numIndices; ++i )
+        {
+            std3D_pScreenSpaceElementBuffer[indexOffset + i] = aIndices[i] + baseVertex;
+        }
+    }
+    else if ( type == GL_LINES ) //for line strip, just create a pair of indices for each line
+    {
+        for ( size_t i = 0; i < numVertices - 1; ++i )
+        {
+            std3D_pScreenSpaceElementBuffer[indexOffset + i * 2]     = baseVertex + i;
+            std3D_pScreenSpaceElementBuffer[indexOffset + i * 2 + 1] = baseVertex + i + 1;
+        }
+    }
+
+
+    std3D_numScreenSpaceVertices += numVertices;
+    std3D_numScreenSpaceIndices += numIndices;
+
+    return indexOffset;
 }
 
 void std3D_ReleaseVertexBuffers(void)
