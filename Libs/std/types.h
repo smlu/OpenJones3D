@@ -285,6 +285,17 @@ typedef struct sGeometryBatch
     Std3DRenderState rdFlags;
 } GeometryBatch;
 
+typedef struct sLegacyBatch
+{
+    GLsizei indexCounts[MAX_BATCHES];
+    uintptr_t indexOffsets[MAX_BATCHES];
+    GLsizei drawCount;
+
+    Std3DRenderState rdFlags;
+    tSysTexture* pTex;
+    GLenum type;
+} LegacyBatch;
+
 typedef struct sInstanceData
 {
     float modelMatrix[16];
