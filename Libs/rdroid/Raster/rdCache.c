@@ -2,7 +2,6 @@
 #include <j3dcore/j3dhook.h>
 
 #include <rdroid/Main/rdroid.h>
-#include <rdroid/RTI/symbols.h>
 
 #include <std/General/stdEffect.h>
 #include <std/General/stdMath.h>
@@ -13,7 +12,6 @@
 
 #include "rdroid/Engine/rdCamera.h"
 #include "rdroid/Math/rdMatrix.h"
-#include "rdroid/Math/rdVector.h"
 #include "sith/Engine/sithCamera.h"
 #include "std/General/stdMemory.h"
 #include "std/Win95/stdShader.h"
@@ -1443,8 +1441,6 @@ static size_t rdCache_BatchModelDrawCalls(size_t start, rdPayload* drawCalls, si
         drawCount++;
         i++;
     }
-
-    //STDLOG_DEBUG("Instance count: %u\n", drawCount);
 
     rdCache_modelBatch.numberOfInstances = (GLsizei)drawCount;
     return drawCount;
