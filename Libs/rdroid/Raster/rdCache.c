@@ -1315,7 +1315,6 @@ void rdCache_FlushGeoDrawCalls(void)
 
 static void rdCache_SendDrawCallsToHardware(rdPayload* drawCalls, size_t numDrawCalls)
 {
-    int drawMode = rdroid_g_curGeometryMode;
     for ( size_t i = 0; i < numDrawCalls; i++ )
     {
         rdPayload* header = &drawCalls[i];
@@ -1323,32 +1322,33 @@ static void rdCache_SendDrawCallsToHardware(rdPayload* drawCalls, size_t numDraw
         {
             case RD_DRAW_GEOMETRY:
                 i += rdCache_BatchGeometryDrawCalls(i, drawCalls, numDrawCalls) - 1;
-                std3D_DrawGeometryBatch(&rdCache_geometryBatch, drawMode);
+                std3D_DrawGeometryBatch(&rdCache_geometryBatch);
                 break;
             case RD_DRAW_MODEL:
                 i += rdCache_BatchModelDrawCalls(i, drawCalls, numDrawCalls) - 1;
-                std3D_DrawModelBatch(&rdCache_modelBatch, drawMode);
+                std3D_DrawModelBatch(&rdCache_modelBatch);
                 break;
             case RD_DRAW_SPRITE:
                 i += rdCache_BatchQuadDrawCalls(i, drawCalls, numDrawCalls) - 1;
                 const rdSpritePayload* pPayload = header->payload;
                 rdCache_quadBatch.spriteType    = pPayload->spriteType;
                 rdCache_quadBatch.pShader       = stdShader_GetShader("std_sprite");
-                std3D_DrawQuadBatch(&rdCache_quadBatch, drawMode);
+                std3D_DrawQuadBatch(&rdCache_quadBatch);
                 break;
             case RD_DRAW_PARTICLE:
                 i += rdCache_BatchQuadDrawCalls(i, drawCalls, numDrawCalls) - 1;
                 rdCache_quadBatch.pShader = stdShader_GetShader("std_particle");
-                std3D_DrawQuadBatch(&rdCache_quadBatch, drawMode);
+                std3D_DrawQuadBatch(&rdCache_quadBatch);
                 break;
             case RD_DRAW_POLYLINE:
             case RD_DRAW_SHADOW:
                 i += rdCache_BatchQuadDrawCalls(i, drawCalls, numDrawCalls) - 1;
                 rdCache_quadBatch.pShader = stdShader_GetShader("std_polyline");
-                std3D_DrawQuadBatch(&rdCache_quadBatch, drawMode);
+                std3D_DrawQuadBatch(&rdCache_quadBatch);
                 break;
-            default:
-                continue;
+            case RD_DRAW_LEGACY:
+                i += rdCache_BatchLegacyDrawCalls(i, drawCalls, numDrawCalls) - 1;
+                std3D_DrawLegacyBatch(&rdCache_legacyBatch);
         }
     }
 }
