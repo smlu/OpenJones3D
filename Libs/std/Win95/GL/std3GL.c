@@ -102,7 +102,6 @@ static DrawMode std3D_currentDrawMode = DM_FULL;
 // Shader system state
 static GLShaderProgram* std3D_defaultShader    = NULL;
 static GLShaderProgram* std3D_modelShader      = NULL;
-static GLShaderProgram* std3D_defaultShaderWf  = NULL;
 static GLShaderProgram* std3D_ceilingSkyShader = NULL;
 static GLShaderProgram* std3D_horizonSkyShader = NULL;
 static GLShaderProgram* std3D_spriteShader     = NULL;
@@ -1448,22 +1447,12 @@ bool std3D_InitShaderSystem(void)
         return false;
     }
 
-    stdShader_SetActiveShader(std3D_defaultShaderWf);
-    const GLint wfColorLoc = glGetUniformLocation(std3D_defaultShaderWf->handle, "vWireFrameColor");
-    if ( wfColorLoc == -1 )
-    {
-        STDLOG_ERROR("Failed to get wireframe color location in shader \n");
-        return false;
-    }
-    glUniform4f(wfColorLoc, 1.0f, 1.0f, 1.0f, 1.0f); //set wireframe color to white.
-
     return true;
 }
 
 void std3D_ShutdownShaderSystem(void)
 {
     std3D_defaultShader   = NULL;
-    std3D_defaultShaderWf = NULL;
     stdShader_Close();
 }
 
