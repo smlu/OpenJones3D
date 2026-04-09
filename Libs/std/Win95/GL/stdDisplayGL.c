@@ -1229,6 +1229,7 @@ int stdDisplay_Update(void)
     {
         return 1;
     }
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     glBindVertexArray(stdDisplay_fullscreenVao);
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_BLEND);
