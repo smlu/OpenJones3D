@@ -1836,7 +1836,6 @@ void std3D_DrawLegacyBatch(LegacyBatch* pBatch)
 
     GLuint texID = std3D_currentDrawMode == DM_FULL && pBatch->pTex ? pBatch->pTex->id : std3D_pWhiteTexture->id;
 
-    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     stdShader_SetTexture(std3D_activeShader, texID);
     std3D_SetRenderState(pBatch->rdFlags);
     glUniform1i(std3D_activeShader->vertexSpaceLoc, STD3D_VS_SCREEN);
@@ -1846,6 +1845,29 @@ void std3D_DrawLegacyBatch(LegacyBatch* pBatch)
     glFrontFace(GL_CCW);
 }
 
+
+void std3D_SetDrawMode(const int mode)
+{
+    stdShader_SetActiveShader(std3D_legacyShader);
+    switch ( mode )
+    {
+        case DM_VERTEX:
+            glUniform3f(std3D_legacyShader->extraLightLoc, 1.0f, 1.0f, 1.0f);
+            glPolygonMode(GL_FRONT_AND_BACK, GL_POINT);
+            break;
+        case DM_WIREFRAME:
+            glUniform3f(std3D_legacyShader->extraLightLoc, 1.0f, 1.0f, 1.0f);
+            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+            break;
+        case DM_SOLID:
+        case DM_FULL:
+            glUniform3f(std3D_legacyShader->extraLightLoc, 0.0f, 0.0f, 0.0f);
+            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        default:
+            break;
+    }
+    stdShader_SetActiveShader(std3D_activeShader);
+    std3D_currentDrawMode = mode;
 }
 
 
