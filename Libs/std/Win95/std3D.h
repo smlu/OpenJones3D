@@ -102,6 +102,7 @@ void std3D_UpdateInstanceVBO(const InstanceData* pData, size_t numInstances);
 void std3D_DrawGeometryBatch(GeometryBatch* pBatch, int drawMode);
 void std3D_DrawModelBatch(ModelBatch* pBatch, int drawMode);
 void std3D_DrawQuadBatch(QuadBatch* pBatch, int drawMode);
+void std3D_DrawLegacyBatch(LegacyBatch* pBatch);
 #else
 void J3DAPI std3D_DrawRenderList(tSysTexture* pTex, Std3DRenderState rdflags, LPD3DTLVERTEX aVerts, size_t numVerts, LPWORD aIndices, size_t numIndices);
 void J3DAPI std3D_DrawLineStrip(LPD3DTLVERTEX aVerts, size_t numVerts);

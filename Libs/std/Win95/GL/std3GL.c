@@ -1818,8 +1818,34 @@ void std3D_DrawQuadBatch(QuadBatch* pBatch, const int drawMode)
     std3D_instanceOffset += pBatch->numberOfInstances;
 
     std3D_numDrawCalls++;
+}
+
+void std3D_DrawLegacyBatch(LegacyBatch* pBatch)
+{
+    if ( std3D_bVertexBuffersMapped )
+    {
+        std3D_UnmapVertexBuffers();
+    }
+    glFrontFace(GL_CW);
+    glBindVertexArray(std3D_pVertexArrayObject);
+
+    stdShader_SetActiveTextureUnit(TU_3D_DRAW);
+    std3D_activeShader = std3D_legacyShader;
+
+    stdShader_SetActiveShader(std3D_activeShader);
+
+    GLuint texID = std3D_currentDrawMode == DM_FULL && pBatch->pTex ? pBatch->pTex->id : std3D_pWhiteTexture->id;
 
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    stdShader_SetTexture(std3D_activeShader, texID);
+    std3D_SetRenderState(pBatch->rdFlags);
+    glUniform1i(std3D_activeShader->vertexSpaceLoc, STD3D_VS_SCREEN);
+    glUniform1i(std3D_activeShader->renderLightsLoc, false);
+    glMultiDrawElements(pBatch->type, pBatch->indexCounts, GL_UNSIGNED_SHORT, (const void* const*)pBatch->indexOffsets, pBatch->drawCount);
+    std3D_numDrawCalls++;
+    glFrontFace(GL_CCW);
+}
+
 }
 
 
