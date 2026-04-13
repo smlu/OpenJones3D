@@ -750,6 +750,11 @@ void sithRender_Draw(void)
         sithRender_BuildVisibleSectorList(sithCamera_g_pCurCamera->pSector, rdCamera_g_pCurCamera->pFrustum);
     }
 
+    // for ( size_t i = 0; i < sithWorld_g_pCurrentWorld->numSectors; i++ )
+    // {
+    //     sithRender_BuildVisibleSectorList(&sithWorld_g_pCurrentWorld->aSectors[i], rdCamera_g_pCurCamera->pFrustum);
+    // }
+
     sithRender_BuildVisibleThingSectorList();
     if ( sithRender_totalVisibleThingSectors > STD_ARRAYLEN(sithRender_aVisibleThingSectors) ) // Note, this was originally prolly put in place to inform level designers of too many visible thing sectors
     {

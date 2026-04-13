@@ -1545,7 +1545,7 @@ void J3DAPI rdCache_AddLegacyDrawCall(tSysTexture* pTex, Std3DRenderState rdflag
         pDrawCall = rdCache_GetOpaqueDrawCall(RD_DRAW_LEGACY);
     }
     pDrawCall->pTex    = pTex;
-    pDrawCall->rdFlags = rdflags;
+    pDrawCall->rdFlags = rdflags | STD3D_CULL_DISABLED;
 
     rdLegacyPayload* pPayload = pDrawCall->payload;
     pPayload->type            = GL_TRIANGLES;
@@ -1566,7 +1566,7 @@ void J3DAPI rdCache_AddLineDrawCall(LPD3DTLVERTEX aVerts, size_t numVerts)
 {
     rdPayload* pDrawCall = rdCache_GetOpaqueDrawCall(RD_DRAW_LEGACY);
     pDrawCall->pTex      = NULL;
-    pDrawCall->rdFlags   = ~(STD3D_RS_FOG_ENABLED | STD3D_RS_UNKNOWN_400 | STD3D_RS_UNKNOWN_200);
+    pDrawCall->rdFlags   = ~(STD3D_RS_FOG_ENABLED | STD3D_RS_UNKNOWN_400 | STD3D_RS_UNKNOWN_200) | STD3D_CULL_DISABLED;
 
     rdLegacyPayload* pPayload = pDrawCall->payload;
     size_t numIndices         = (numVerts - 1) * 2;
