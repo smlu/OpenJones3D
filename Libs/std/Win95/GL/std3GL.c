@@ -75,6 +75,9 @@ typedef enum eDrawMode
     DM_FULL      = 4
 } DrawMode;
 
+static LegacyBatch std3D_cachedLegacyBatches[STD3D_MAX_LEGACY_BATCHES];
+static size_t std3D_numCachedLegacyBatches = 0;
+
 static LPD3DTLVERTEX std3D_pScreenSpaceVertexBuffer;
 static WORD* std3D_pScreenSpaceElementBuffer;
 static size_t std3D_numScreenSpaceVertices = 0;
@@ -469,6 +472,7 @@ int std3D_StartScene(void)
 
 void std3D_EndScene(void)
 {
+    std3D_DrawLegacyBatches();
     //STDLOG_DEBUG("Num rendered Draw Calls: %u\n", std3D_numDrawCalls);
     std3D_SetRenderState(0);
     std3D_renderState  = 0;
@@ -807,9 +811,10 @@ void std3D_ResetTextureCache(void)
     if ( std3D_bVertexBuffersMapped )
     {
         //clear framebatch since saved textures are not valid anymore
-        std3D_numScreenSpaceVertices = 0;
-        std3D_numScreenSpaceIndices  = 0;
-        std3D_UnmapVertexBuffers();
+        std3D_DrawLegacyBatches();
+        // std3D_numScreenSpaceVertices = 0;
+        // std3D_numScreenSpaceIndices  = 0;
+        // std3D_UnmapVertexBuffers();
     }
 
 
@@ -1320,6 +1325,11 @@ size_t std3D_AddScreenSpaceVertices(LPD3DTLVERTEX aVertices, size_t numVertices,
         std3D_MapVertexBuffers();
     }
 
+    if ( std3D_numScreenSpaceVertices + numVertices > STD3D_MAX_VERTICES_PER_DRAW || std3D_numScreenSpaceIndices + numIndices > STD3D_MAX_INDICES_PER_DRAW )
+    {
+        std3D_DrawLegacyBatches();
+    }
+
     size_t baseVertex  = std3D_numScreenSpaceVertices;
     size_t indexOffset = std3D_numScreenSpaceIndices;
 
@@ -1754,13 +1764,20 @@ void std3D_DrawQuadBatch(QuadBatch* pBatch)
     std3D_numDrawCalls++;
 }
 
-void std3D_DrawLegacyBatch(LegacyBatch* pBatch)
+void std3D_CacheLegacyBatch(const LegacyBatch batch)
 {
-    if ( std3D_bVertexBuffersMapped )
+    std3D_cachedLegacyBatches[std3D_numCachedLegacyBatches++] = batch;
+}
+
+void std3D_DrawLegacyBatches(void)
+{
+    if ( !std3D_bVertexBuffersMapped )
     {
-        std3D_UnmapVertexBuffers();
+        return;
     }
-    glFrontFace(GL_CW);
+    std3D_UnmapVertexBuffers();
+
+    //glFrontFace(GL_CCW);
     glBindVertexArray(std3D_pVertexArrayObject);
 
     stdShader_SetActiveTextureUnit(TU_3D_DRAW);
@@ -1768,15 +1785,20 @@ void std3D_DrawLegacyBatch(LegacyBatch* pBatch)
 
     stdShader_SetActiveShader(std3D_activeShader);
 
-    GLuint texID = std3D_currentDrawMode == DM_FULL && pBatch->pTex ? pBatch->pTex->id : std3D_pWhiteTexture->id;
+    for ( size_t i = 0; i < std3D_numCachedLegacyBatches; i++ )
+    {
+        LegacyBatch* pBatch = &std3D_cachedLegacyBatches[i];
+        GLuint texID        = std3D_currentDrawMode == DM_FULL && pBatch->pTex ? pBatch->pTex->id : std3D_pWhiteTexture->id;
 
-    stdShader_SetTexture(std3D_activeShader, texID);
-    std3D_SetRenderState(pBatch->rdFlags);
-    glUniform1i(std3D_activeShader->vertexSpaceLoc, STD3D_VS_SCREEN);
-    glUniform1i(std3D_activeShader->renderLightsLoc, false);
-    glMultiDrawElements(pBatch->type, pBatch->indexCounts, GL_UNSIGNED_SHORT, (const void* const*)pBatch->indexOffsets, pBatch->drawCount);
-    std3D_numDrawCalls++;
-    glFrontFace(GL_CCW);
+        stdShader_SetTexture(std3D_activeShader, texID);
+        std3D_SetRenderState(pBatch->rdFlags);
+        glUniform1i(std3D_activeShader->alphaCutLoc, (pBatch->rdFlags & STD3D_RS_ALPHAREF_SET) != 0);
+        glMultiDrawElements(pBatch->type, pBatch->indexCounts, GL_UNSIGNED_SHORT, (const void* const*)pBatch->indexOffsets, pBatch->drawCount);
+        std3D_numDrawCalls++;
+        //glFrontFace(GL_CCW);
+    }
+
+    std3D_numCachedLegacyBatches = 0;
 }
 
 void J3DAPI std3D_DrawRenderList(tSysTexture* pTex, Std3DRenderState rdflags, LPD3DTLVERTEX aVerts, size_t numVerts, LPWORD aIndices, size_t numIndices, std3DVertexSpace vs, bool bUseShaderLighting)

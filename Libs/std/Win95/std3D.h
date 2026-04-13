@@ -6,6 +6,7 @@
 #ifdef J3D_OPENGL
 #define STD3D_MAX_VERTICES_PER_DRAW 65536
 #define STD3D_MAX_INDICES_PER_DRAW 131072
+#define STD3D_MAX_LEGACY_BATCHES 10000
 
 extern bool std3D_g_bUseLegacyRendering;
 #define STD3D_CFG_LEGACYRENDERING "graphics.legacyRendering"
@@ -106,7 +107,8 @@ void std3D_UpdateInstanceVBO(const InstanceData* pData, size_t numInstances);
 void std3D_DrawGeometryBatch(GeometryBatch* pBatch);
 void std3D_DrawModelBatch(ModelBatch* pBatch);
 void std3D_DrawQuadBatch(QuadBatch* pBatch);
-void std3D_DrawLegacyBatch(LegacyBatch* pBatch);
+void std3D_CacheLegacyBatch(LegacyBatch batch);
+void std3D_DrawLegacyBatches(void);
 void std3D_SetDrawMode(int mode);
 #else
 void J3DAPI std3D_DrawRenderList(tSysTexture* pTex, Std3DRenderState rdflags, LPD3DTLVERTEX aVerts, size_t numVerts, LPWORD aIndices, size_t numIndices);

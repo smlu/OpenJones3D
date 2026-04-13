@@ -1352,7 +1352,7 @@ static void rdCache_SendDrawCallsToHardware(rdPayload* drawCalls, size_t numDraw
                 break;
             case RD_DRAW_LEGACY:
                 i += rdCache_BatchLegacyDrawCalls(i, drawCalls, numDrawCalls) - 1;
-                std3D_DrawLegacyBatch(&rdCache_legacyBatch);
+                std3D_CacheLegacyBatch(rdCache_legacyBatch);
         }
     }
 }
