@@ -16,6 +16,9 @@ static bool bUseLegacyRendering = false; // use old screen space vertices
 static bool bStartup            = false;
 static bool std3D_bOpen         = false;
 
+bool std3D_g_bUseLegacyRendering;
+
+
 static GLRECT std3D_activeRect = { 0 };
 static_assert(sizeof(std3D_activeRect) == 4 * sizeof(float), "sizeof(std3D_activeRect) == 4 * sizeof(float)");
 // Must be 4 floats to be used in shader
@@ -232,6 +235,8 @@ static bool std3D_InitSystem(void)
         STDLOG_ERROR("Error creating Z buffer.\n");
         return false;
     }
+
+    std3D_g_bUseLegacyRendering = stdConfig_GetBool(STD3D_CFG_LEGACYRENDERING, false);
 
     // create 1x1 white texture for solid mode
     std3D_pWhiteTexture          = STDMALLOC(sizeof(tSysTexture));

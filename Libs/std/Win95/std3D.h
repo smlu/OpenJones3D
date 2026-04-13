@@ -6,6 +6,10 @@
 #ifdef J3D_OPENGL
 #define STD3D_MAX_VERTICES_PER_DRAW 65536
 #define STD3D_MAX_INDICES_PER_DRAW 131072
+
+extern bool std3D_g_bUseLegacyRendering;
+#define STD3D_CFG_LEGACYRENDERING "graphics.legacyRendering"
+
 #endif
 
 
