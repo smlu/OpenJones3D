@@ -1316,7 +1316,7 @@ void sithRender_RenderSectors(void)
                     }
                     // There are enough clipped vertices to render n-gon,
                     // first let's project them to NDC space
-                    //rdCamera_g_pCurCamera->pfProjectList(sithRender_aSurfaceTransformedVertices, sithRender_aClipVertices, sithRender_clipFaceView.numVertices);
+                    rdCamera_g_pCurCamera->pfProjectList(sithRender_aSurfaceTransformedVertices, sithRender_aClipVertices, sithRender_clipFaceView.numVertices);
 
                     pPoly->flags     = pSurf->face.flags;
                     pPoly->pMaterial = pSurf->face.pMaterial;
@@ -1324,17 +1324,11 @@ void sithRender_RenderSectors(void)
                     // Now make sky poly from transformed vertices
                     if ( (pSurf->flags & SITH_SURFACE_HORIZONSKY) != 0 )
                     {
-                        rdCamera_g_pCurCamera->pfProjectList(sithRender_aSurfaceTransformedVertices, sithRender_aClipVertices, sithRender_clipFaceView.numVertices);
                         sithRenderSky_HorizonFaceToPlane(pPoly, &pSurf->face, sithRender_aSurfaceTransformedVertices, sithRender_clipFaceView.numVertices);
                     }
                     else if ( (pSurf->flags & SITH_SURFACE_CEILINGSKY) != 0 )
                     {
-#ifndef J3D_OPENGL
-                        rdCamera_g_pCurCamera->pfProjectList(sithRender_aSurfaceTransformedVertices, sithRender_aClipVertices, sithRender_clipFaceView.numVertices);
                         sithRenderSky_CeilingFaceToPlane(pPoly, &pSurf->face, sithRender_aClipVertices, sithRender_aSurfaceTransformedVertices, sithRender_clipFaceView.numVertices);
-#else
-                        sithRenderSky_SetCeilingSkyVertices(pPoly, &pSurf->face, sithRender_aClipVertices, sithRender_clipFaceView.numVertices);
-#endif
                     }
 
                     pPoly->matCelNum = pSurf->face.matCelNum;
