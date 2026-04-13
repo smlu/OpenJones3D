@@ -444,8 +444,12 @@ static int rdParticle_DrawStatic(const rdThing* pParticle, const rdMatrix34* pOr
 int J3DAPI rdParticle_Draw(const rdThing* pParticle, const rdMatrix34* pOrient)
 {
 #ifdef J3D_OPENGL
-    return rdParticle_DrawStatic(pParticle, pOrient);
+    if ( !std3D_g_bUseLegacyRendering )
+    {
+        return rdParticle_DrawStatic(pParticle, pOrient);
+    }
 #endif
+
     if ( pParticle->frustumCull == RDFRUSTUMCULL_OUTSIDE )
     {
         return 0;

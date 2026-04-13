@@ -308,8 +308,11 @@ static void J3DAPI sithShadow_DrawShadowStatic(const rdMatrix34* orient, float s
 void J3DAPI sithShadow_DrawShadow(const rdMatrix34* orient, float size, float scale, int bCar)
 {
 #ifdef J3D_OPENGL
-    sithShadow_DrawShadowStatic(orient, size, scale, bCar);
-    return;
+    if ( !std3D_g_bUseLegacyRendering )
+    {
+        sithShadow_DrawShadowStatic(orient, size, scale, bCar);
+        return;
+    }
 #endif
     if ( scale <= 0.0f ) {
         return;
@@ -457,8 +460,11 @@ static void J3DAPI sithShadow_DrawWalkShadowStatic(float size, float scale, cons
 void J3DAPI sithShadow_DrawWalkShadow(float size, float scale, const rdVector3* leg, const rdVector3* rleg, const rdVector3* lvec, const rdVector3* rvec)
 {
 #ifdef J3D_OPENGL
-    sithShadow_DrawWalkShadowStatic(size, scale, leg, rleg, lvec, rvec);
-    return;
+    if ( !std3D_g_bUseLegacyRendering )
+    {
+        sithShadow_DrawWalkShadowStatic(size, scale, leg, rleg, lvec, rvec);
+        return;
+    }
 #endif
 
     if ( scale <= 0.0f ) {

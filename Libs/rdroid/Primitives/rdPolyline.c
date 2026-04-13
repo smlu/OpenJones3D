@@ -342,8 +342,11 @@ static void J3DAPI rdPolyline_DrawFaceStatic(const rdThing* pLine, const rdFace*
 void J3DAPI rdPolyline_DrawFace(const rdThing* pLine, const rdFace* pFace, const rdVector3* aVerts, const rdVector2* aTVerts) // aVerts should be transformed to view space
 {
 #ifdef J3D_OPENGL
-    rdPolyline_DrawFaceStatic(pLine, pFace, aVerts, aTVerts);
-    return;
+    if ( !std3D_g_bUseLegacyRendering )
+    {
+        rdPolyline_DrawFaceStatic(pLine, pFace, aVerts, aTVerts);
+        return;
+    }
 #endif
     J3D_UNUSED(pLine);
     rdCacheProcEntry* pPoly = rdCache_GetAlphaProcEntry();

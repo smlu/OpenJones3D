@@ -1341,7 +1341,7 @@ static void sithRender_RenderSectorsStatic(void)
 void sithRender_RenderSectors(void)
 {
 #ifdef J3D_OPENGL
-    if ( std3D_GetCurrentDrawState() == STD3D_DS_GEOMETRY )
+    if ( !std3D_g_bUseLegacyRendering )
     {
         sithRender_RenderSectorsStatic();
         return;
@@ -1731,7 +1731,7 @@ void sithRender_CollectThingLights(const SithThing* pThing)
 void sithRender_BuildDynamicLights(void)
 {
 #ifdef J3D_OPENGL
-    if ( std3D_GetCurrentDrawState() == STD3D_DS_GEOMETRY )
+    if ( !std3D_g_bUseLegacyRendering )
     {
         stdShader_SetShaderLights();
         return;
@@ -2113,7 +2113,7 @@ void sithRender_RenderAlphaAdjoinsStatic(void)
 void sithRender_RenderAlphaAdjoins(void)
 {
 #ifdef J3D_OPENGL
-    if ( std3D_GetCurrentDrawState() == STD3D_DS_ALPHA_ADJOINS )
+    if ( !std3D_g_bUseLegacyRendering )
     {
         sithRender_RenderAlphaAdjoinsStatic();
         return;
