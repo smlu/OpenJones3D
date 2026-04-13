@@ -13,8 +13,6 @@
 
 #include<math.h>
 
-#include "std/Win95/std3D.h"
-
 static rdVector2 rdClip_aWorkTVerts[MAX_CLIP_VERTICIES] = { 0 };
 static rdVector2* rdClip_pSourceTVert;
 static rdVector2* rdClip_pDestTVert;
@@ -3986,14 +3984,6 @@ void J3DAPI rdClip_QClipFaceW(const rdClipFrustum* pFrustrum, const rdPrimit3* p
 
 int J3DAPI rdClip_FaceToPlane(const rdClipFrustum* pFrustrum, rdCacheProcEntry* pProcFace, const rdFace* pFace, const rdVector3* aVerts, const rdVector2* aTexVerts, const rdVector4* aLightColors, const rdVector4* aVertColors)
 {
-#ifdef J3D_OPENGL
-    if ( std3D_GetCurrentDrawState() != STD3D_DS_HUD )
-    {
-        rdClip_AddFaceVertices(pProcFace, pFace, aVerts, aTexVerts, aLightColors, aVertColors);
-        return 1;
-    }
-#endif
-
     // Clip and transform face vertices to screen space then assigns pProcFace
 
     // Added bounds check
@@ -4085,14 +4075,6 @@ int J3DAPI rdClip_FaceToPlane(const rdClipFrustum* pFrustrum, rdCacheProcEntry* 
 
 void J3DAPI rdClip_VerticesToPlane(rdCacheProcEntry* pProcFace, const rdVector3* aVerts, const rdVector2* aTexVerts, size_t numVerts)
 {
-#ifdef J3D_OPENGL
-    if ( std3D_GetCurrentDrawState() != STD3D_DS_HUD )
-    {
-        rdClip_AddVertices(pProcFace, aVerts, aTexVerts, numVerts);
-        return;
-    }
-#endif
-
     // Transform vertices to screen space then assigns pProcFace
 
     float ccenterX = rdCamera_g_pCurCamera->pCanvas->center.x;
@@ -4118,93 +4100,3 @@ void J3DAPI rdClip_VerticesToPlane(rdCacheProcEntry* pProcFace, const rdVector3*
         pOutVert->tv = aTexVerts[i].y;
     }
 }
-
-#ifdef J3D_OPENGL
-void J3DAPI rdClip_AddFaceVertices(rdCacheProcEntry* pProcFace, const rdFace* pFace, const rdVector3* aVerts, const rdVector2* aTexVerts, const rdVector4* aLightColors, const rdVector4* aVertColors)
-{
-    for ( size_t i = 0; i < pFace->numVertices; ++i )
-    {
-        rdClip_aWorkFaceVerts[i] = aVerts[pFace->aVertices[i]];
-    }
-
-    if ( aLightColors )
-    {
-        if ( aVertColors )
-        {
-            for ( size_t i = 0; i < pFace->numVertices; ++i )
-            {
-                LPD3DTLVERTEX pOutVert = &pProcFace->aVertices[i];
-                pOutVert->sx           = rdClip_aWorkFaceVerts[i].x;
-                pOutVert->sy           = rdClip_aWorkFaceVerts[i].z;
-                pOutVert->sz           = -rdClip_aWorkFaceVerts[i].y;
-
-                pOutVert->rhw = 1.0f;
-
-                pOutVert->tu = aTexVerts[pFace->aTexVertices[i]].x + pFace->texVertOffset.x;
-                pOutVert->tv = aTexVerts[pFace->aTexVertices[i]].y + pFace->texVertOffset.y;
-
-                int vertIdx = pFace->aVertices[i];
-                rdVector_Add4(&pProcFace->aVertIntensities[i], &aLightColors[vertIdx], &aVertColors[i]);
-                rdMath_ClampVector4Acc(&pProcFace->aVertIntensities[i], 0.0f, 1.0f);
-            }
-        }
-        else
-        {
-            for ( size_t i = 0; i < pFace->numVertices; ++i )
-            {
-                LPD3DTLVERTEX pOutVert = &pProcFace->aVertices[i];
-                pOutVert->sx           = rdClip_aWorkFaceVerts[i].x;
-                pOutVert->sy           = rdClip_aWorkFaceVerts[i].z;
-                pOutVert->sz           = -rdClip_aWorkFaceVerts[i].y;
-
-                pOutVert->rhw = 1.0f;
-
-                pOutVert->tu = aTexVerts[pFace->aTexVertices[i]].x + pFace->texVertOffset.x;
-                pOutVert->tv = aTexVerts[pFace->aTexVertices[i]].y + pFace->texVertOffset.y;
-
-                pOutVert->tu = aTexVerts[pFace->aTexVertices[i]].x + pFace->texVertOffset.x;
-                pOutVert->tv = aTexVerts[pFace->aTexVertices[i]].y + pFace->texVertOffset.y;
-
-                pProcFace->aVertIntensities[i] = aLightColors[pFace->aVertices[i]];
-            }
-        }
-    }
-    else
-    {
-        for ( size_t i = 0; i < pFace->numVertices; ++i )
-        {
-            LPD3DTLVERTEX pOutVert = &pProcFace->aVertices[i];
-            pOutVert->sx           = rdClip_aWorkFaceVerts[i].x;
-            pOutVert->sy           = rdClip_aWorkFaceVerts[i].z;
-            pOutVert->sz           = -rdClip_aWorkFaceVerts[i].y;
-
-            pOutVert->rhw = 1.0f;
-
-            pOutVert->tu = aTexVerts[pFace->aTexVertices[i]].x + pFace->texVertOffset.x;
-            pOutVert->tv = aTexVerts[pFace->aTexVertices[i]].y + pFace->texVertOffset.y;
-
-            pOutVert->tu = aTexVerts[pFace->aTexVertices[i]].x + pFace->texVertOffset.x;
-            pOutVert->tv = aTexVerts[pFace->aTexVertices[i]].y + pFace->texVertOffset.y;
-        }
-    }
-}
-
-void J3DAPI rdClip_AddVertices(rdCacheProcEntry* pProcFace, const rdVector3* aVerts, const rdVector2* aTexVerts, size_t numVerts)
-{
-    // Transform vertices to screen space then assigns pProcFace
-
-
-    for ( size_t i = 0; i < numVerts; ++i )
-    {
-        LPD3DTLVERTEX pOutVert = &pProcFace->aVertices[i];
-        pOutVert->sx           = aVerts[i].x;
-        pOutVert->sy           = aVerts[i].z;
-        pOutVert->sz           = -aVerts[i].y;
-
-        pOutVert->rhw = 1.0f;
-
-        pOutVert->tu = aTexVerts[i].x;
-        pOutVert->tv = aTexVerts[i].y;
-    }
-}
-#endif

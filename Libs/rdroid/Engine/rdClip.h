@@ -60,11 +60,5 @@ void J3DAPI rdClip_VerticesToPlane(rdCacheProcEntry* pProcFace, const rdVector3*
 void rdClip_InstallHooks(void);
 void rdClip_ResetGlobals(void);
 
-#ifdef J3D_OPENGL
-void J3DAPI rdClip_AddFaceVertices(rdCacheProcEntry* pProcFace, const rdFace* pFace, const rdVector3* aVerts, const rdVector2* aTexVerts, const rdVector4* aLightColors, const rdVector4* aVertColors);
-void J3DAPI rdClip_AddVertices(rdCacheProcEntry* pProcFace, const rdVector3* aVerts, const rdVector2* aTexVerts, size_t numVerts);
-#endif
-
-
 J3D_EXTERN_C_END
 #endif // RDROID_RDCLIP_H
