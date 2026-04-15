@@ -772,7 +772,6 @@ typedef struct srdPayload
     rdMaterial* pMaterial;
     int32_t matCelNum;
     rdVector4 extraLight;
-    uint64_t sortKey;
 
     Std3DRenderState rdFlags;
     GLShaderProgram* pShader;
