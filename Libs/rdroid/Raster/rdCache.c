@@ -227,7 +227,7 @@ void rdCache_Flush(void)
         rdCache_numProcFaces    = 0;
         rdCache_numUsedVertices = 0;
     }
-    rdCache_FlushGeoDrawCalls();
+    rdCache_FlushOpaqueDrawCalls();
 }
 
 void rdCache_FlushAlpha(void)
@@ -248,7 +248,7 @@ void rdCache_FlushAlpha(void)
         rdCache_numAlphaProcFaces    = 0;
         rdCache_numUsedAlphaVertices = 0;
     }
-    rdCache_FlushGeoDrawCalls();
+    rdCache_FlushTransparentDrawCalls();
 }
 #endif
 
@@ -692,7 +692,8 @@ int J3DAPI rdCache_ProcFaceCompare(const rdCacheProcEntry* pEntry1, const rdCach
 
 #ifdef J3D_OPENGL
 
-#define RD_CACHE_MAX_DRAW_CALLS 10000
+#define RD_CACHE_MAX_OPAQUE_DRAW_CALLS 10000
+#define RD_CACHE_MAX_TRANSPARENT_DRAW_CALLS 5000
 
 #define RD_CACHE_MAX_INSTANCES 3000
 
@@ -705,10 +706,10 @@ typedef struct sFaceDrawInfo
 static FaceDrawInfo* rdCache_FaceDrawInfos = NULL;
 static size_t rdCache_NumFaces             = 0;
 
-static rdPayload rdCache_OpaqueDrawCalls[RD_CACHE_MAX_DRAW_CALLS];
+static rdPayload rdCache_OpaqueDrawCalls[RD_CACHE_MAX_OPAQUE_DRAW_CALLS];
 static size_t rdCache_NumOpaqueDrawCalls = 0;
 
-static rdPayload rdCache_transparentDrawCalls[RD_CACHE_MAX_DRAW_CALLS];
+static rdPayload rdCache_transparentDrawCalls[RD_CACHE_MAX_TRANSPARENT_DRAW_CALLS];
 static size_t rdCache_NumTransparentDrawCalls = 0;
 
 static InstanceData rdCache_instanceData[RD_CACHE_MAX_INSTANCES];
@@ -939,18 +940,18 @@ static rdPayload* rdCache_GetDrawCall(rdDrawType type, rdPayload* payloads, size
 
 rdPayload* rdCache_GetOpaqueDrawCall(rdDrawType type)
 {
-    if ( rdCache_NumOpaqueDrawCalls >= RD_CACHE_MAX_DRAW_CALLS )
+    if ( rdCache_NumOpaqueDrawCalls >= RD_CACHE_MAX_OPAQUE_DRAW_CALLS )
     {
-        rdCache_FlushGeoDrawCalls();
+        rdCache_FlushOpaqueDrawCalls();
     }
     return rdCache_GetDrawCall(type, rdCache_OpaqueDrawCalls, rdCache_NumOpaqueDrawCalls);
 }
 
 rdPayload* rdCache_GetTransparentDrawCall(rdDrawType type)
 {
-    if ( rdCache_NumTransparentDrawCalls >= RD_CACHE_MAX_DRAW_CALLS )
+    if ( rdCache_NumTransparentDrawCalls >= RD_CACHE_MAX_TRANSPARENT_DRAW_CALLS )
     {
-        rdCache_FlushGeoDrawCalls();
+        rdCache_FlushTransparentDrawCalls();
     }
     return rdCache_GetDrawCall(type, rdCache_transparentDrawCalls, rdCache_NumTransparentDrawCalls);
 }
@@ -1198,23 +1199,45 @@ static void rdCache_SetInstanceData(rdPayload* drawCalls, size_t numDrawCalls)
     }
 }
 
-void rdCache_FlushGeoDrawCalls(void)
+void rdCache_FlushOpaqueDrawCalls(void)
 {
+    if ( !rdCache_NumOpaqueDrawCalls )
+    {
+        return;
+    }
+
     std3D_SetDrawMode(rdroid_g_curGeometryMode);
-    // STDLOG_DEBUG("Num geo calls: %u\n", rdCache_numGeoDrawCalls);
-    // STDLOG_DEBUG("Num model face calls: %u\n", rdCache_numModelDrawCalls);
+
     qsort(rdCache_OpaqueDrawCalls, rdCache_NumOpaqueDrawCalls, sizeof(rdPayload), rdCache_DrawCallOpaqueCompare);
-    qsort(rdCache_transparentDrawCalls, rdCache_NumTransparentDrawCalls, sizeof(rdPayload), rdCache_DrawCallDistanceCompare);
 
     rdCache_SetInstanceData(rdCache_OpaqueDrawCalls, rdCache_NumOpaqueDrawCalls);
-    rdCache_SetInstanceData(rdCache_transparentDrawCalls, rdCache_NumTransparentDrawCalls);
 
     std3D_UpdateInstanceVBO(rdCache_instanceData, rdCache_numInstances);
 
     rdCache_SendDrawCallsToHardware(rdCache_OpaqueDrawCalls, rdCache_NumOpaqueDrawCalls);
-    rdCache_SendDrawCallsToHardware(rdCache_transparentDrawCalls, rdCache_NumTransparentDrawCalls);
 
     rdCache_NumOpaqueDrawCalls      = 0;
+    rdCache_NumTransparentDrawCalls = 0;
+    rdCache_numInstances            = 0;
+}
+
+void rdCache_FlushTransparentDrawCalls(void)
+{
+    if ( !rdCache_NumTransparentDrawCalls )
+    {
+        return;
+    }
+
+    std3D_SetDrawMode(rdroid_g_curGeometryMode);
+
+    qsort(rdCache_transparentDrawCalls, rdCache_NumTransparentDrawCalls, sizeof(rdPayload), rdCache_DrawCallDistanceCompare);
+
+    rdCache_SetInstanceData(rdCache_transparentDrawCalls, rdCache_NumTransparentDrawCalls);
+
+    std3D_UpdateInstanceVBO(rdCache_instanceData, rdCache_numInstances);
+
+    rdCache_SendDrawCallsToHardware(rdCache_transparentDrawCalls, rdCache_NumTransparentDrawCalls);
+
     rdCache_NumTransparentDrawCalls = 0;
     rdCache_numInstances            = 0;
 }

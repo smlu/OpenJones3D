@@ -45,7 +45,8 @@ rdPayload* rdCache_GetOpaqueDrawCall(rdDrawType type);
 rdPayload* rdCache_GetTransparentDrawCall(rdDrawType type);
 void rdCache_AddOpaqueDrawCall(void);
 void rdCache_AddTransparentDrawCall(void);
-void rdCache_FlushGeoDrawCalls(void);
+void rdCache_FlushOpaqueDrawCalls(void);
+void rdCache_FlushTransparentDrawCalls(void);
 void J3DAPI rdCache_AddLineDrawCall(LPD3DTLVERTEX aVerts, size_t numVerts);
 #endif
 J3D_EXTERN_C_END
