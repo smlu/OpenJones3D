@@ -271,7 +271,7 @@ static void J3DAPI sithShadow_DrawShadowStatic(const rdMatrix34* orient, float s
     rdMatrix_TransformPointList34(&tmat, sithShadow_aVertices, sithShadow_aView, STD_ARRAYLEN(sithShadow_aView));
 
     rdPayload* pPayload        = rdCache_GetTransparentDrawCall(RD_DRAW_SHADOW);
-    rdShadowPayload* pDrawCall = pPayload->payload;
+    rdShadowPayload* pDrawCall = &pPayload->shadowPayload;
 
     float distance = FLT_MAX;
     for ( size_t i = 0; i < 4; i++ )
@@ -426,7 +426,7 @@ static void J3DAPI sithShadow_DrawWalkShadowStatic(float size, float scale, cons
     rdMatrix_TransformPointList34(&rdCamera_g_pCurCamera->viewMatrix, sithShadow_aVertices, sithShadow_aView, STD_ARRAYLEN(sithShadow_aView));
 
     rdPayload* pPayload        = rdCache_GetTransparentDrawCall(RD_DRAW_SHADOW);
-    rdShadowPayload* pDrawCall = pPayload->payload;
+    rdShadowPayload* pDrawCall = &pPayload->shadowPayload;
 
     float distance = FLT_MAX;
     for ( size_t i = 0; i < 4; i++ )

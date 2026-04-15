@@ -165,7 +165,7 @@ static int J3DAPI rdSprite_DrawStatic(rdThing* prdThing, const rdMatrix34* orien
         return 0;
     }
     rdPayload* pPayload        = rdCache_GetTransparentDrawCall(RD_DRAW_SPRITE);
-    rdSpritePayload* pDrawCall = pPayload->payload;
+    rdSpritePayload* pDrawCall = &pPayload->spritePayload;
     pDrawCall->spriteType      = pSprite3->type;
 
     rdVector3 tpos         = { 0 };

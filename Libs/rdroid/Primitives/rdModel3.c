@@ -1667,7 +1667,7 @@ static void rdModel3_DrawMeshStatic(const rdModel3Mesh* pMesh, const rdMatrix34*
         {
             pPayload = rdCache_GetOpaqueDrawCall(RD_DRAW_MODEL);
         }
-        rdModelFacePayload* pDrawCall = pPayload->payload;
+        rdModelFacePayload* pDrawCall = &pPayload->modelFacePayload;
 
         pPayload->lightingMode = pFace->lightingMode;
         if ( lightingMode < pFace->lightingMode )

@@ -404,7 +404,7 @@ static int rdParticle_DrawStatic(const rdThing* pParticle, const rdMatrix34* pOr
             pPayload->flags |= RD_FF_TEX_TRANSLUCENT | RD_FF_ZWRITE_DISABLED;
         }
 
-        rdParticlePayload* pDrawCall = pPayload->payload;
+        rdParticlePayload* pDrawCall = &pPayload->particlePayload;
 
 
         pDrawCall->particlePos = rdParticle_aTransformedVerts[i];

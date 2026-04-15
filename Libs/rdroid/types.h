@@ -781,7 +781,16 @@ typedef struct srdPayload
 
     float distance;
 
-    void* payload;
+    union
+    {
+        rdGeoFacePayload geoFacePayload;
+        rdLegacyPayload legacyPayload;
+        rdModelFacePayload modelFacePayload;
+        rdSpritePayload spritePayload;
+        rdParticlePayload particlePayload;
+        rdPolyLinePayload polyLinePayload;
+        rdShadowPayload shadowPayload;
+    };
 } rdPayload;
 #endif
 

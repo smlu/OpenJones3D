@@ -1186,7 +1186,7 @@ static void sithRender_RenderSectorsStatic(void)
             else
             {
                 rdPayload* pPayload         = rdCache_GetOpaqueDrawCall(RD_DRAW_GEOMETRY);
-                rdGeoFacePayload* pDrawCall = pPayload->payload;
+                rdGeoFacePayload* pDrawCall = &pPayload->geoFacePayload;
                 rdVector4 extraLight        = pSurf->face.extraLight;
                 rdVector_Add4Acc(&extraLight, &pSurf->pSector->extraLight);
                 extraLight.alpha       = 1.0f;
@@ -1893,7 +1893,7 @@ void sithRender_RenderAlphaAdjoinsStatic(void)
             pPayload = rdCache_GetOpaqueDrawCall(RD_DRAW_GEOMETRY);
         }
 
-        rdGeoFacePayload* pDrawCall = pPayload->payload;
+        rdGeoFacePayload* pDrawCall = &pPayload->geoFacePayload;
 
 
         rdVector4 extraLight = pSurf->face.extraLight;

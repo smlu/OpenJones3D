@@ -693,13 +693,8 @@ int J3DAPI rdCache_ProcFaceCompare(const rdCacheProcEntry* pEntry1, const rdCach
 #ifdef J3D_OPENGL
 
 #define RD_CACHE_MAX_DRAW_CALLS 10000
-#define RD_CACHE_MAX_GEO_DRAW_CALLS 1000
-#define RD_CACHE_MAX_MODEL_DRAW_CALLS 2000
-#define RD_CACHE_MAX_SPRITE_DRAW_CALLS 100
-#define RD_CACHE_MAX_PARTICLE_DRAW_CALLS 1000
-#define RD_CACHE_MAX_POLYLINE_DRAW_CALLS 10
 
-#define RD_CACHE_MAX_INSTANCES RD_CACHE_MAX_MODEL_DRAW_CALLS + RD_CACHE_MAX_SPRITE_DRAW_CALLS + RD_CACHE_MAX_PARTICLE_DRAW_CALLS + RD_CACHE_MAX_POLYLINE_DRAW_CALLS
+#define RD_CACHE_MAX_INSTANCES 3000
 
 typedef struct sFaceDrawInfo
 {
@@ -715,24 +710,6 @@ static size_t rdCache_NumOpaqueDrawCalls = 0;
 
 static rdPayload rdCache_transparentDrawCalls[RD_CACHE_MAX_DRAW_CALLS];
 static size_t rdCache_NumTransparentDrawCalls = 0;
-
-static rdGeoFacePayload rdCache_geoDrawCalls[RD_CACHE_MAX_DRAW_CALLS];
-static size_t rdCache_numGeoDrawCalls = 0;
-
-static rdModelFacePayload rdCache_modelDrawCalls[RD_CACHE_MAX_DRAW_CALLS];
-static size_t rdCache_numModelDrawCalls = 0;
-
-static rdSpritePayload rdCache_spriteDrawCalls[RD_CACHE_MAX_DRAW_CALLS];
-static size_t rdCache_numSpriteDrawCalls = 0;
-
-static rdParticlePayload rdCache_particleDrawCalls[RD_CACHE_MAX_DRAW_CALLS];
-static size_t rdCache_numParticleDrawCalls = 0;
-
-static rdPolyLinePayload rdCache_polyLineDrawCalls[RD_CACHE_MAX_DRAW_CALLS];
-static size_t rdCache_numPolyLineDrawCalls = 0;
-
-static rdLegacyPayload rdCache_legacyDrawCalls[RD_CACHE_MAX_DRAW_CALLS];
-static size_t rdCache_numLegacyDrawCalls = 0;
 
 static InstanceData rdCache_instanceData[RD_CACHE_MAX_INSTANCES];
 static size_t rdCache_numInstances = 0;
@@ -829,7 +806,7 @@ static void rdCache_GenerateOpaqueGeoSortKey(rdPayload* draw)
 
 static void rdCache_GenerateLegacySortKey(rdPayload* draw)
 {
-    rdLegacyPayload* pPayload = draw->payload;
+    rdLegacyPayload* pPayload = &draw->legacyPayload;
 
     uint64_t key = 0;
 
@@ -850,7 +827,7 @@ static void rdCache_GenerateLegacySortKey(rdPayload* draw)
 
 static void rdCache_GenerateOpaqueModelSortKey(rdPayload* draw)
 {
-    rdModelFacePayload* pModelData = draw->payload;
+    rdModelFacePayload* pModelData = &draw->modelFacePayload;
     uint64_t key                   = 0;
 
     key |= ((uint64_t)draw->type & 0xFFu) << 56;
@@ -863,7 +840,7 @@ static void rdCache_GenerateOpaqueModelSortKey(rdPayload* draw)
 static void rdCache_GenerateSpriteSortKey(rdPayload* draw)
 {
     uint64_t key             = 0;
-    rdSpritePayload* payload = draw->payload;
+    rdSpritePayload* payload = &draw->spritePayload;
 
 
     key |= ((uint64_t)payload->spriteType & 0xFFu) << 56;
@@ -878,7 +855,7 @@ static void rdCache_GenerateSpriteSortKey(rdPayload* draw)
 static void rdCache_GenerateParticleSortKey(rdPayload* draw)
 {
     uint64_t key               = 0;
-    rdParticlePayload* payload = draw->payload;
+    rdParticlePayload* payload = &draw->particlePayload;
 
 
     key |= ((uint64_t)draw->type & 0xFF) << 56;
@@ -935,14 +912,8 @@ void rdCache_FreeFaceDrawInfos(void)
     STDFREE(rdCache_FaceDrawInfos);
     rdCache_FaceDrawInfos           = NULL;
     rdCache_NumFaces                = 0;
-    rdCache_numGeoDrawCalls         = 0;
     rdCache_NumOpaqueDrawCalls      = 0;
     rdCache_NumTransparentDrawCalls = 0;
-    rdCache_numModelDrawCalls       = 0;
-    rdCache_numSpriteDrawCalls      = 0;
-    rdCache_numParticleDrawCalls    = 0;
-    rdCache_numPolyLineDrawCalls    = 0;
-    rdCache_numLegacyDrawCalls      = 0;
 }
 
 size_t rdCache_AddFaceInfoEntry(const size_t indexOffset, const size_t numVertices)
@@ -957,75 +928,10 @@ size_t rdCache_AddFaceInfoEntry(const size_t indexOffset, const size_t numVertic
 
 static rdPayload* rdCache_GetDrawCall(rdDrawType type, rdPayload* payloads, size_t numDrawCalls)
 {
-    if ( numDrawCalls >= RD_CACHE_MAX_DRAW_CALLS )
-    {
-        rdCache_FlushGeoDrawCalls();
-        numDrawCalls = 0;
-    }
-
     rdCache_currentDrawType = type;
 
-    bool bFlush   = false;
-    size_t* index = NULL;
-
-    switch ( type )
-    {
-        case RD_DRAW_GEOMETRY:
-            index = &rdCache_numGeoDrawCalls;
-            bFlush = rdCache_numGeoDrawCalls >= RD_CACHE_MAX_DRAW_CALLS;
-            break;
-        case RD_DRAW_MODEL:
-            index = &rdCache_numModelDrawCalls;
-            bFlush = rdCache_numModelDrawCalls >= RD_CACHE_MAX_DRAW_CALLS;
-            break;
-        case RD_DRAW_SPRITE:
-            index = &rdCache_numSpriteDrawCalls;
-            bFlush = rdCache_numSpriteDrawCalls >= RD_CACHE_MAX_DRAW_CALLS;
-            break;
-        case RD_DRAW_PARTICLE:
-            index = &rdCache_numParticleDrawCalls;
-            bFlush = rdCache_numParticleDrawCalls >= RD_CACHE_MAX_DRAW_CALLS;
-            break;
-        case RD_DRAW_POLYLINE:
-        case RD_DRAW_SHADOW:
-            index = &rdCache_numPolyLineDrawCalls;
-            bFlush = rdCache_numPolyLineDrawCalls >= RD_CACHE_MAX_DRAW_CALLS;
-            break;
-        case RD_DRAW_LEGACY:
-            index = &rdCache_numLegacyDrawCalls;
-            bFlush = rdCache_numLegacyDrawCalls >= RD_CACHE_MAX_DRAW_CALLS;
-            break;
-    }
-
-    if ( bFlush )
-    {
-        rdCache_FlushGeoDrawCalls();
-        numDrawCalls = 0;
-    }
-
     rdPayload* pPayload = &payloads[numDrawCalls];
-    switch ( type )
-    {
-        case RD_DRAW_GEOMETRY:
-            pPayload->payload = &rdCache_geoDrawCalls[*index];
-            break;
-        case RD_DRAW_MODEL:
-            pPayload->payload = &rdCache_modelDrawCalls[*index];
-            break;
-        case RD_DRAW_SPRITE:
-            pPayload->payload = &rdCache_spriteDrawCalls[*index];
-            break;
-        case RD_DRAW_PARTICLE:
-            pPayload->payload = &rdCache_particleDrawCalls[*index];
-            break;
-        case RD_DRAW_POLYLINE:
-        case RD_DRAW_SHADOW:
-            pPayload->payload = &rdCache_polyLineDrawCalls[*index];
-            break;
-        case RD_DRAW_LEGACY:
-            pPayload->payload = &rdCache_legacyDrawCalls[*index];
-            break;
-    }
+
     pPayload->pShader   = NULL;
     pPayload->pMaterial = NULL;
     return pPayload;
@@ -1033,11 +939,19 @@ static rdPayload* rdCache_GetDrawCall(rdDrawType type, rdPayload* payloads, size
 
 rdPayload* rdCache_GetOpaqueDrawCall(rdDrawType type)
 {
+    if ( rdCache_NumOpaqueDrawCalls >= RD_CACHE_MAX_DRAW_CALLS )
+    {
+        rdCache_FlushGeoDrawCalls();
+    }
     return rdCache_GetDrawCall(type, rdCache_OpaqueDrawCalls, rdCache_NumOpaqueDrawCalls);
 }
 
 rdPayload* rdCache_GetTransparentDrawCall(rdDrawType type)
 {
+    if ( rdCache_NumTransparentDrawCalls >= RD_CACHE_MAX_DRAW_CALLS )
+    {
+        rdCache_FlushGeoDrawCalls();
+    }
     return rdCache_GetDrawCall(type, rdCache_transparentDrawCalls, rdCache_NumTransparentDrawCalls);
 }
 
@@ -1153,7 +1067,6 @@ static void rdCache_AddDrawCall(rdPayload* header)
 {
     if ( rdCache_currentDrawType == RD_DRAW_LEGACY )
     {
-        rdCache_numLegacyDrawCalls++;
         header->type = RD_DRAW_LEGACY;
         rdCache_GenerateLegacySortKey(header);
         return;
@@ -1170,28 +1083,23 @@ static void rdCache_AddDrawCall(rdPayload* header)
     switch ( rdCache_currentDrawType )
     {
         case RD_DRAW_GEOMETRY:
-            rdCache_numGeoDrawCalls++;
             header->type = RD_DRAW_GEOMETRY;
             rdCache_GenerateOpaqueGeoSortKey(header);
             break;
         case RD_DRAW_MODEL:
-            rdCache_numModelDrawCalls++;
             header->type = RD_DRAW_MODEL;
             rdCache_GenerateOpaqueModelSortKey(header);
             break;
         case RD_DRAW_SPRITE:
-            rdCache_numSpriteDrawCalls++;
             header->type = RD_DRAW_SPRITE;
             rdCache_GenerateSpriteSortKey(header);
             break;
         case RD_DRAW_PARTICLE:
-            rdCache_numParticleDrawCalls++;
             header->type = RD_DRAW_PARTICLE;
             rdCache_GenerateParticleSortKey(header);
             break;
         case RD_DRAW_POLYLINE:
         case RD_DRAW_SHADOW:
-            rdCache_numPolyLineDrawCalls++;
             header->type = RD_DRAW_POLYLINE;
             rdCache_GeneratePolyLineSortKey(header);
             break;
@@ -1226,7 +1134,7 @@ static void rdCache_SetInstanceData(rdPayload* drawCalls, size_t numDrawCalls)
         switch ( header->type )
         {
             case RD_DRAW_MODEL:
-                rdModelFacePayload* pModelData = header->payload;
+                rdModelFacePayload* pModelData = &header->modelFacePayload;
                 stdShader_ConvertToMat4(pModelData->modelMatrix, pData->modelMatrix);
                 pData->secLightPos[0] = pModelData->lightPosition.x;
                 pData->secLightPos[1] = pModelData->lightPosition.z;
@@ -1239,7 +1147,7 @@ static void rdCache_SetInstanceData(rdPayload* drawCalls, size_t numDrawCalls)
                 pData->secLightColor[3] = pModelData->sectorLight.minRadius;
                 break;
             case RD_DRAW_SPRITE:
-                rdSpritePayload* pSpriteData = header->payload;
+                rdSpritePayload* pSpriteData = &header->spritePayload;
                 //sprite pos
                 stdShader_ConvertToMat4(&pSpriteData->modelMatrix, pData->modelMatrix);
                 //sprite offset
@@ -1251,7 +1159,7 @@ static void rdCache_SetInstanceData(rdPayload* drawCalls, size_t numDrawCalls)
                 pData->spriteHalfSize[1] = pSpriteData->spriteSize.y;
                 break;
             case RD_DRAW_PARTICLE:
-                rdParticlePayload* pParticleData = header->payload;
+                rdParticlePayload* pParticleData = &header->particlePayload;
                 pData->particlePos[0] = pParticleData->particlePos.x;
                 pData->particlePos[1] = pParticleData->particlePos.z;
                 pData->particlePos[2] = -pParticleData->particlePos.y;
@@ -1260,7 +1168,7 @@ static void rdCache_SetInstanceData(rdPayload* drawCalls, size_t numDrawCalls)
                 break;
             case RD_DRAW_POLYLINE:
             case RD_DRAW_SHADOW:
-                rdPolyLinePayload* polyLineData = header->payload;
+                rdPolyLinePayload* polyLineData = &header->polyLinePayload;
                 for ( size_t j = 0; j < 4; ++j )
                 {
                     pData->modelMatrix[j * 4 + 0] = polyLineData->vertices[j].x;
@@ -1306,14 +1214,8 @@ void rdCache_FlushGeoDrawCalls(void)
     rdCache_SendDrawCallsToHardware(rdCache_OpaqueDrawCalls, rdCache_NumOpaqueDrawCalls);
     rdCache_SendDrawCallsToHardware(rdCache_transparentDrawCalls, rdCache_NumTransparentDrawCalls);
 
-    rdCache_numGeoDrawCalls         = 0;
     rdCache_NumOpaqueDrawCalls      = 0;
     rdCache_NumTransparentDrawCalls = 0;
-    rdCache_numModelDrawCalls       = 0;
-    rdCache_numSpriteDrawCalls      = 0;
-    rdCache_numParticleDrawCalls    = 0;
-    rdCache_numPolyLineDrawCalls    = 0;
-    rdCache_numLegacyDrawCalls      = 0;
     rdCache_numInstances            = 0;
 }
 
@@ -1334,7 +1236,7 @@ static void rdCache_SendDrawCallsToHardware(rdPayload* drawCalls, size_t numDraw
                 break;
             case RD_DRAW_SPRITE:
                 i += rdCache_BatchQuadDrawCalls(i, drawCalls, numDrawCalls) - 1;
-                const rdSpritePayload* pPayload = header->payload;
+                const rdSpritePayload* pPayload = &header->spritePayload;
                 rdCache_quadBatch.spriteType    = pPayload->spriteType;
                 rdCache_quadBatch.pShader       = stdShader_GetShader("std_sprite");
                 std3D_DrawQuadBatch(&rdCache_quadBatch);
@@ -1363,7 +1265,7 @@ static size_t rdCache_BatchGeometryDrawCalls(size_t start, rdPayload* drawCalls,
     size_t i         = start;
 
     rdPayload* header         = &drawCalls[i];
-    rdGeoFacePayload* payload = header->payload;
+    rdGeoFacePayload* payload = &header->geoFacePayload;
     uint64_t sortKey          = header->sortKey;
 
     FaceDrawInfo* drawInfo = &rdCache_FaceDrawInfos[payload->faceNum];
@@ -1388,7 +1290,7 @@ static size_t rdCache_BatchGeometryDrawCalls(size_t start, rdPayload* drawCalls,
     while ( i < numDrawCalls && drawCount < MAX_BATCHES )
     {
         header  = &drawCalls[i];
-        payload = header->payload;
+        payload = &header->geoFacePayload;
         if ( header->sortKey != sortKey ||
             header->lightingMode != rdCache_geometryBatch.lightMode || header->rdFlags != rdCache_geometryBatch.rdFlags )
         {
@@ -1413,7 +1315,7 @@ static size_t rdCache_BatchModelDrawCalls(size_t start, rdPayload* drawCalls, si
     size_t i         = start;
 
     rdPayload* header           = &drawCalls[i];
-    rdModelFacePayload* payload = header->payload;
+    rdModelFacePayload* payload = &header->modelFacePayload;
     uint64_t sortKey            = header->sortKey;
 
     // Batch state
@@ -1430,7 +1332,7 @@ static size_t rdCache_BatchModelDrawCalls(size_t start, rdPayload* drawCalls, si
     while ( i < numDrawCalls )
     {
         header  = &drawCalls[i];
-        payload = header->payload;
+        payload = &header->modelFacePayload;
 
         if ( header->sortKey != sortKey ||
             header->lightingMode != rdCache_modelBatch.lightMode )
@@ -1489,7 +1391,7 @@ static size_t rdCache_BatchLegacyDrawCalls(size_t start, rdPayload* drawCalls, s
     size_t i         = start;
 
     rdPayload* header        = &drawCalls[i];
-    rdLegacyPayload* payload = header->payload;
+    rdLegacyPayload* payload = &header->legacyPayload;
     uint64_t sortKey         = header->sortKey;
 
     // Batch state
@@ -1511,7 +1413,7 @@ static size_t rdCache_BatchLegacyDrawCalls(size_t start, rdPayload* drawCalls, s
         {
             break;
         }
-        payload = header->payload;
+        payload = &header->legacyPayload;
 
         rdCache_legacyBatch.indexCounts[drawCount]  = payload->numIndices;
         rdCache_legacyBatch.indexOffsets[drawCount] = payload->indexOffset * sizeof(GLushort);
@@ -1547,7 +1449,7 @@ void J3DAPI rdCache_AddLegacyDrawCall(tSysTexture* pTex, Std3DRenderState rdflag
     pDrawCall->pTex    = pTex;
     pDrawCall->rdFlags = rdflags | STD3D_CULL_DISABLED;
 
-    rdLegacyPayload* pPayload = pDrawCall->payload;
+    rdLegacyPayload* pPayload = &pDrawCall->legacyPayload;
     pPayload->type            = GL_TRIANGLES;
     pPayload->numIndices      = numIndices;
     pPayload->indexOffset     = std3D_AddScreenSpaceVertices(aVerts, numVerts, aIndices, numIndices, GL_TRIANGLES);
@@ -1568,7 +1470,7 @@ void J3DAPI rdCache_AddLineDrawCall(LPD3DTLVERTEX aVerts, size_t numVerts)
     pDrawCall->pTex      = NULL;
     pDrawCall->rdFlags   = ~(STD3D_RS_FOG_ENABLED | STD3D_RS_UNKNOWN_400 | STD3D_RS_UNKNOWN_200) | STD3D_CULL_DISABLED;
 
-    rdLegacyPayload* pPayload = pDrawCall->payload;
+    rdLegacyPayload* pPayload = &pDrawCall->legacyPayload;
     size_t numIndices         = (numVerts - 1) * 2;
     pPayload->numIndices      = numIndices;
     pPayload->indexOffset     = std3D_AddScreenSpaceVertices(aVerts, numVerts, NULL, numIndices, GL_LINES);

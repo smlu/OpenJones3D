@@ -313,7 +313,7 @@ static void J3DAPI rdPolyline_DrawFaceStatic(const rdThing* pLine, const rdFace*
     }
     pPayload->matCelNum          = pFace->matCelNum;
     pPayload->pMaterial          = pFace->pMaterial;
-    rdPolyLinePayload* pDrawCall = pPayload->payload;
+    rdPolyLinePayload* pDrawCall = &pPayload->polyLinePayload;
     for ( size_t i = 0; i < 4; i++ )
     {
         pDrawCall->vertices[i]  = aVerts[i];
