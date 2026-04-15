@@ -1175,7 +1175,7 @@ static void sithRender_RenderSectorsStatic(void)
                 continue;
             }
 
-            if ( pSurf->pAdjoin && (pSurf->face.flags & RD_FF_TEX_TRANSLUCENT) != 0 )
+            if ( pSurf->pAdjoin && (pSurf->face.flags & RD_FF_TEX_TRANSLUCENT) != 0 && pSurf->face.pMaterial->formatType == STDCOLOR_FORMAT_RGBA )
             {
                 if ( sithRender_numAlphaAdjoins < STD_ARRAYLEN(sithRender_aAlphaAdjoins) )
                 {
@@ -1881,17 +1881,8 @@ void sithRender_RenderAlphaAdjoinsStatic(void)
     bool bFlush = false;
     for ( size_t surfNum = 0; surfNum < sithRender_numAlphaAdjoins; ++surfNum )
     {
-        SithSurface* pSurf = sithRender_aAlphaAdjoins[surfNum];
-        bool bAlpha        = pSurf->face.pMaterial->formatType == STDCOLOR_FORMAT_RGBA;
-        rdPayload* pPayload;
-        if ( bAlpha )
-        {
-            pPayload = rdCache_GetTransparentDrawCall(RD_DRAW_GEOMETRY);
-        }
-        else
-        {
-            pPayload = rdCache_GetOpaqueDrawCall(RD_DRAW_GEOMETRY);
-        }
+        SithSurface* pSurf  = sithRender_aAlphaAdjoins[surfNum];
+        rdPayload* pPayload = rdCache_GetTransparentDrawCall(RD_DRAW_GEOMETRY);
 
         rdGeoFacePayload* pDrawCall = &pPayload->geoFacePayload;
 
@@ -1908,36 +1899,31 @@ void sithRender_RenderAlphaAdjoinsStatic(void)
         pPayload->pMaterial  = pSurf->face.pMaterial;
         pPayload->matCelNum  = pSurf->face.matCelNum;
 
-        if ( bAlpha )
-        {
-            float distance = FLT_MAX; // 3.4028235e38f;
+        float distance = FLT_MAX; // 3.4028235e38f;
 
-            // get min z in camera space
-            for ( size_t i = 0; i < pSurf->face.numVertices; ++i )
+        // get min z in camera space
+        for ( size_t i = 0; i < pSurf->face.numVertices; ++i )
+        {
+            rdVector3 min = sithWorld_g_pCurrentWorld->aVertices[pSurf->face.aVertices[i]];
+
+            rdMatrix_TransformPoint34Acc(&min, &rdCamera_g_pCurCamera->viewMatrix);
+            if ( min.y < distance )
             {
-                rdVector3 min = sithWorld_g_pCurrentWorld->aVertices[pSurf->face.aVertices[i]];
-
-                rdMatrix_TransformPoint34Acc(&min, &rdCamera_g_pCurCamera->viewMatrix);
-                if ( min.y < distance )
-                {
-                    distance = min.y;
-                }
+                distance = min.y;
             }
-            pPayload->distance = distance;
-            rdCache_AddTransparentDrawCall();
         }
-        else
-        {
-            rdCache_AddOpaqueDrawCall();
-        }
+        pPayload->distance = distance;
+        rdCache_AddTransparentDrawCall();
+
         ++sithRender_g_numAlphaArchPolys;
         bFlush = true;
     }
 
 
-    // if ( bFlush )
-    // {
-    // }
+    if ( bFlush )
+    {
+        rdCache_FlushAlpha();
+    }
 }
 #endif
 
