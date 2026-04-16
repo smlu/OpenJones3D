@@ -651,32 +651,15 @@ void sithRender_RenderScene(void)
         pWorld->state &= ~SITH_WORLD_STATE_UPDATE_FOG;
     }
 
-#ifdef J3D_OPENGL
-    if ( sithTime_IsPaused() )
-    {
-        stdEffect_SetFadeFactor(1, 0.5f);
-        stdShader_UpdateFadeFactor();
-    }
-
-    sithRender_Draw();
-
-    stdEffect_SetFadeFactor(0, 1.0f);
-    stdShader_UpdateFadeFactor();
-    sithVoice_Draw();
-    sithConsole_Flush();
-#else
-
     if ( sithTime_IsPaused() )
     {
         stdEffect_SetFadeFactor(1, 0.5f);
     }
 
     sithRender_Draw();
-
     stdEffect_SetFadeFactor(0, 1.0f);
     sithVoice_Draw();
     sithConsole_Flush();
-#endif
 }
 
 void J3DAPI sithRender_EnablePVSCull(bool bEnable)
