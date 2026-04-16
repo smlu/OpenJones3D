@@ -77,7 +77,6 @@ void sithRenderSky_Update(void)
 #ifdef J3D_OPENGL
     std3D_UpdateHorizonSky(lookPitch, lookYaw, horizonScale, sithWorld_g_pCurrentWorld->horizonSkyOffset.x, sithWorld_g_pCurrentWorld->horizonSkyOffset.y);
     std3D_UpdateCeilingSky(ceilingSkyHeight, sithWorld_g_pCurrentWorld->ceilingSkyOffset.x, sithWorld_g_pCurrentWorld->ceilingSkyOffset.y);
-
 #endif
 }
 
@@ -146,44 +145,3 @@ void J3DAPI sithRenderSky_CeilingFaceToPlane(rdCacheProcEntry* pPoly, const rdFa
         }
     }
 }
-
-#ifdef J3D_OPENGL
-void J3DAPI sithRenderSky_SetCeilingSkyVertices(rdCacheProcEntry* pPoly, rdFace* pFace, const rdVector3* aVerts, size_t numVerts)
-{
-    pPoly->lightingMode = RD_LIGHTING_NONE;
-
-    for ( size_t i = 0; i < numVerts; ++i )
-    {
-        LPD3DTLVERTEX pOutVert = &pPoly->aVertices[i];
-        pOutVert->tu           = sithWorld_g_pCurrentWorld->ceilingSkyOffset.x + pFace->texVertOffset.x;
-        pOutVert->tv           = sithWorld_g_pCurrentWorld->ceilingSkyOffset.y + pFace->texVertOffset.y;
-
-        rdVector3 vertex = sithWorld_g_pCurrentWorld->aVertices[pFace->aVertices[i]];
-
-        pOutVert->sx  = vertex.x;
-        pOutVert->sy  = vertex.z;
-        pOutVert->sz  = -vertex.y;
-        pOutVert->rhw = 1.0f;
-    }
-}
-
-void J3DAPI sithRenderSky_SetHorizonSkyVertices(rdCacheProcEntry* pPoly, rdFace* pFace)
-{
-    pPoly->lightingMode = RD_LIGHTING_NONE;
-    for ( size_t i = 0; i < pFace->numVertices; ++i )
-    {
-        LPD3DTLVERTEX pOutVert = &pPoly->aVertices[i];
-
-        rdVector3 vertex = sithWorld_g_pCurrentWorld->aVertices[pFace->aVertices[i]];
-
-        pOutVert->sx = vertex.x;
-        pOutVert->sy = vertex.z;
-        pOutVert->sz = -vertex.y;
-
-        pOutVert->rhw = horizonSkyDistance;
-
-        pOutVert->tu = sithWorld_g_pCurrentWorld->horizonSkyOffset.x + pFace->texVertOffset.x;
-        pOutVert->tv = sithWorld_g_pCurrentWorld->horizonSkyOffset.y + pFace->texVertOffset.y;
-    }
-}
-#endif
