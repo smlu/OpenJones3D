@@ -667,9 +667,10 @@ static uint64_t rdCache_GenerateOpaqueModelSortKey(rdPayload* draw)
     rdModelFacePayload* pModelData = &draw->modelFacePayload;
     uint64_t key                   = 0;
 
-    key |= ((uint64_t)draw->type & 0xFFu) << 56;
+    key |= ((uint64_t)draw->type & 0x7) << 61;
 
-    key |= ((uint64_t)pModelData & 0x00FFFFFFFFFFFFFFull);
+    // Faces with same face num can be rendered via instancing
+    key |= ((uint64_t)(pModelData->faceNum & 0xFFFFFFFF)) << 29;
 
     return key;
 }
