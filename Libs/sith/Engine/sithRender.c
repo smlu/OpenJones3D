@@ -731,11 +731,6 @@ void sithRender_Draw(void)
         sithRender_BuildVisibleSectorList(sithCamera_g_pCurCamera->pSector, rdCamera_g_pCurCamera->pFrustum);
     }
 
-    // for ( size_t i = 0; i < sithWorld_g_pCurrentWorld->numSectors; i++ )
-    // {
-    //     sithRender_BuildVisibleSectorList(&sithWorld_g_pCurrentWorld->aSectors[i], rdCamera_g_pCurCamera->pFrustum);
-    // }
-
     sithRender_BuildVisibleThingSectorList();
     if ( sithRender_totalVisibleThingSectors > STD_ARRAYLEN(sithRender_aVisibleThingSectors) ) // Note, this was originally prolly put in place to inform level designers of too many visible thing sectors
     {
@@ -750,22 +745,6 @@ void sithRender_Draw(void)
     // Set projection
     std3D_SetProjection(sithCamera_g_pCurCamera->rdCamera.fov, sithCamera_g_pCurCamera->rdCamera.pFrustum->nearPlane, sithCamera_g_pCurCamera->rdCamera.pFrustum->farPlane);
 
-#ifdef J3D_OPENGL
-    // Now draw everything
-    sithRender_RenderSectors();
-
-
-    if ( sithRender_numVisibleThingSectors > 0 )
-    {
-        sithRender_RenderThings();
-    }
-
-
-    if ( sithRender_numAlphaAdjoins > 0 )
-    {
-        sithRender_RenderAlphaAdjoins();
-    }
-#else
     // Now draw everything
     sithRender_RenderSectors();
 
@@ -778,7 +757,6 @@ void sithRender_Draw(void)
     {
         sithRender_RenderAlphaAdjoins();
     }
-#endif
 
     sithAIUtil_RenderAIWaypoints();
 }
