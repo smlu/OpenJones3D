@@ -490,14 +490,7 @@ void J3DAPI std3D_DrawLineStrip(LPD3DTLVERTEX aVerts, size_t numVerts)
 
 void J3DAPI std3D_DrawPointList(LPD3DTLVERTEX aVerts, size_t numVerts)
 {
-    if ( numVerts > std3D_g_maxVertices )
-    {
-        STDLOG_ERROR("Error %d > %d maxVertices.\n", numVerts,
-                     std3D_g_maxVertices);
-        return;
-    }
-
-    std3D_CacheDrawCall(GL_POINTS, NULL, 0, aVerts, numVerts, NULL, 0, vs, false);
+    STDLOG_ERROR("Usage of std3D_DrawPointList is not supported in OpenGL.\n");
 }
 
 void J3DAPI std3D_SetRenderState(Std3DRenderState rdflags)
