@@ -11,8 +11,10 @@
 #include <std/General/stdUtil.h>
 
 #define STD3D_DEFAULT_MAX_VERTICES 512
+#define STD3D_MAX_VERTICES_PER_DRAW 65536
+#define STD3D_MAX_INDICES_PER_DRAW 131072
+#define STD3D_MAX_LEGACY_BATCHES 10000
 
-static bool bUseLegacyRendering = false; // use old screen space vertices
 static bool bStartup            = false;
 static bool std3D_bOpen         = false;
 
@@ -84,52 +86,51 @@ static size_t std3D_numScreenSpaceVertices = 0;
 static size_t std3D_numScreenSpaceIndices  = 0;
 
 // VBO & IBO
-static GLuint std3D_pVertexArrayObject  = 0;
-static GLuint std3D_pVertexBufferOpaque = 0;
+static GLuint std3D_screenSpaceVao          = 0;
+static GLuint std3D_screenSpaceVbo          = 0;
+static GLuint std3D_screenSpaceEbo          = 0;
+static bool std3D_bScreenSpaceBuffersMapped = false;
 
-static GLuint std3D_pVertexArrayGeometry  = 0;
-static GLuint std3D_pVertexBufferGeometry = 0;
-static GLuint std3D_pIndexBufferGeometry  = 0;
-static GLuint std3D_InstanceBuffer        = 0;
 
-static GLuint std3D_pIndexBuffer   = 0;
-static size_t std3D_numDrawCalls   = 0;
+static GLuint std3D_staticVao      = 0;
+static GLuint std3D_staticVbo      = 0;
+static GLuint std3D_staticEbo      = 0;
+static GLuint std3D_instanceBuffer = 0;
 static size_t std3D_instanceOffset = 0;
 
-static bool std3D_bVertexBuffersMapped = false;
+static size_t std3D_numDrawCalls   = 0;
 
 static GLuint std3D_activeSampler = 0;
 
 static DrawMode std3D_currentDrawMode = DM_FULL;
 
-// Shader system state
-static GLShaderProgram* std3D_defaultShader    = NULL;
-static GLShaderProgram* std3D_modelShader      = NULL;
-static GLShaderProgram* std3D_ceilingSkyShader = NULL;
-static GLShaderProgram* std3D_horizonSkyShader = NULL;
-static GLShaderProgram* std3D_spriteShader     = NULL;
-static GLShaderProgram* std3D_particleShader   = NULL;
-static GLShaderProgram* std3D_polyLineShader   = NULL;
-static GLShaderProgram* std3D_legacyShader     = NULL;
-static GLShaderProgram* std3D_activeShader     = NULL;
+// Shaders
+static GLShaderProgram* std3D_pDefaultShader    = NULL;
+static GLShaderProgram* std3D_pModelShader      = NULL;
+static GLShaderProgram* std3D_pCeilingSkyShader = NULL;
+static GLShaderProgram* std3D_pHorizonSkyShader = NULL;
+static GLShaderProgram* std3D_pSpriteShader     = NULL;
+static GLShaderProgram* std3D_pParticleShader   = NULL;
+static GLShaderProgram* std3D_pPolyLineShader   = NULL;
+static GLShaderProgram* std3D_pLegacyShader     = NULL;
+static GLShaderProgram* std3D_pActiveShader     = NULL;
 
 static int std3D_InitRenderState(void);
 static int std3D_BuildDeviceList(void);
 
 static int std3D_CreateViewport(void);
 static void J3DAPI std3D_AddTextureToCacheList(tSystemTexture* pTexture);
-static void J3DAPI
-std3D_RemoveTextureFromCacheList(tSystemTexture* pCacheTexture);
+static void J3DAPI std3D_RemoveTextureFromCacheList(tSystemTexture* pCacheTexture);
 static int J3DAPI std3D_PurgeTextureCache(size_t size);
 
-bool std3D_InitVertexBuffers(GLuint* vbo, GLuint* vao, GLuint* vio);
-void std3D_ReleaseVertexBuffers(void);
+bool std3D_InitVertexBuffers(GLuint* vbo, GLuint* ebo, GLuint* vao);
+void std3D_ReleaseScreenSpaceBuffers(void);
 
 bool std3D_InitShaderSystem(void);
 void std3D_ShutdownShaderSystem(void);
 
-static void std3D_MapVertexBuffers(void);
-static void std3D_UnmapVertexBuffers(void);
+static void std3D_MapScreenSpaceBuffers(void);
+static void std3D_UnmapScreenSpaceBuffers(void);
 
 void std3D_InstallHooks(void)
 {
@@ -176,8 +177,7 @@ void std3D_InstallHooks(void)
 void std3D_ResetGlobals(void)
 {
     float std3D_g_fogDensity_tmp = 1.0f;
-    memcpy(&std3D_g_fogDensity, &std3D_g_fogDensity_tmp,
-           sizeof(std3D_g_fogDensity));
+    memcpy(&std3D_g_fogDensity, &std3D_g_fogDensity_tmp, sizeof(std3D_g_fogDensity));
     memset(&std3D_g_maxVertices, 0, sizeof(std3D_g_maxVertices));
 }
 
@@ -213,8 +213,6 @@ void std3D_Shutdown(void)
     {
         std3D_Close();
     }
-
-    //stdShader_Shutdown();
 
     memset(std3D_aDevices, 0, sizeof(std3D_aDevices));
 
@@ -285,9 +283,7 @@ static bool std3D_InitSystem(void)
 
     glGenSamplers(1, &std3D_activeSampler);
 
-    std3D_InitVertexBuffers(&std3D_pVertexBufferOpaque, &std3D_pIndexBuffer, &std3D_pVertexArrayObject);
-
-
+    std3D_InitVertexBuffers(&std3D_screenSpaceVbo, &std3D_screenSpaceEbo, &std3D_screenSpaceVao);
     if ( !std3D_InitShaderSystem() )
     {
         STDLOG_ERROR("Error initializing pShader system.\n");
@@ -296,7 +292,6 @@ static bool std3D_InitSystem(void)
 
     std3D_mipmapFilter = -1; // Must be reset
     std3D_InitRenderState();
-
 
     if ( stdDisplay_GetTextureMemory(&std3D_pCurDevice->totalMemory, &std3D_pCurDevice->availableMemory) )
     {
@@ -315,7 +310,7 @@ static void std3D_ReleaseSystemResources(void)
 
     std3D_ResetTextureCache();
     std3D_ShutdownShaderSystem();
-    std3D_ReleaseVertexBuffers();
+    std3D_ReleaseScreenSpaceBuffers();
 }
 
 static void std3D_OnDisplayDeviceReset(tSysDevice3D* pDevice)
@@ -470,7 +465,6 @@ int std3D_StartScene(void)
 void std3D_EndScene(void)
 {
     std3D_DrawLegacyBatches();
-    //STDLOG_DEBUG("Num rendered Draw Calls: %u\n", std3D_numDrawCalls);
     std3D_SetRenderState(0);
     std3D_renderState  = 0;
     std3D_numDrawCalls = 0;
@@ -675,7 +669,6 @@ error:
     memset(pTexture, 0, sizeof(tSystemTexture));
 
     STDLOG_ERROR("Done error exit from std3D_AllocSystemTexture.\n");
-    return;
 }
 
 void J3DAPI std3D_GetValidDimensions(uint32_t width, uint32_t height, uint32_t* pOutWidth, uint32_t* pOutHeight)
@@ -789,13 +782,10 @@ size_t J3DAPI std3D_GetMipMapCount(const tSystemTexture* pTexture)
 
 void std3D_ResetTextureCache(void)
 {
-    if ( std3D_bVertexBuffersMapped )
+    if ( std3D_bScreenSpaceBuffersMapped )
     {
-        //clear framebatch since saved textures are not valid anymore
+        //clear cached batches since saved textures are not valid anymore
         std3D_DrawLegacyBatches();
-        // std3D_numScreenSpaceVertices = 0;
-        // std3D_numScreenSpaceIndices  = 0;
-        // std3D_UnmapVertexBuffers();
     }
 
 
@@ -877,24 +867,6 @@ int J3DAPI std3D_SetProjection(float fov, float nearPlane, float farPlane) // Th
 {
     stdShader_UpdateGlobalUniforms();
     return 1;
-    // J3D_UNUSED(fov);
-    // if ( fabsf(farPlane - nearPlane) < 1e-4f )
-    //     return 0;
-    //
-    //
-    // // float f = 1.0f / tanf(fov * 0.5f * 0.01745329252);
-    // //
-    // // float proj[16] = {
-    // //     f,    0,    0,                              0,
-    // //     0,    f,    0,                              0,
-    // //     0,    0,   (farPlane + nearPlane) / (nearPlane - farPlane),  -1,
-    // //     0,    0,   (2.0f * farPlane * nearPlane) / (nearPlane - farPlane),  0
-    // // };
-    // //
-    // // glMatrixMode(GL_PROJECTION);
-    // // glLoadMatrixf(proj);
-    // // glMatrixMode(GL_MODELVIEW);
-    // return 1;
 }
 
 void J3DAPI std3D_EnableFog(int bEnabled, float density)
@@ -1234,7 +1206,7 @@ void J3DAPI std3D_SetFindAllDevices(int bFindAll)
     std3D_bFindAllD3Devices = bFindAll;
 }
 
-bool std3D_InitVertexBuffers(GLuint* vbo, GLuint* ibo, GLuint* vao)
+bool std3D_InitVertexBuffers(GLuint* vbo, GLuint* ebo, GLuint* vao)
 {
     glGenVertexArrays(1, vao);
     glBindVertexArray(*vao);
@@ -1245,8 +1217,8 @@ bool std3D_InitVertexBuffers(GLuint* vbo, GLuint* ibo, GLuint* vao)
     glBufferData(GL_ARRAY_BUFFER, STD3D_MAX_VERTICES_PER_DRAW * sizeof(D3DTLVERTEX), NULL, GL_DYNAMIC_DRAW);
 
     // create ibo
-    glGenBuffers(1, ibo);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, *ibo);
+    glGenBuffers(1, ebo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, *ebo);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, STD3D_MAX_INDICES_PER_DRAW * sizeof(GLushort), NULL, GL_DYNAMIC_DRAW);
 
     const GLsizei stride = sizeof(D3DTLVERTEX);
@@ -1269,31 +1241,31 @@ bool std3D_InitVertexBuffers(GLuint* vbo, GLuint* ibo, GLuint* vao)
     return true;
 }
 
-static void std3D_MapVertexBuffers(void)
+static void std3D_MapScreenSpaceBuffers(void)
 {
-    glBindVertexArray(std3D_pVertexArrayObject);
-    glBindBuffer(GL_ARRAY_BUFFER, std3D_pVertexBufferOpaque);
+    glBindVertexArray(std3D_screenSpaceVao);
+    glBindBuffer(GL_ARRAY_BUFFER, std3D_screenSpaceVbo);
     std3D_pScreenSpaceVertexBuffer = glMapBufferRange(GL_ARRAY_BUFFER, 0, STD3D_MAX_VERTICES_PER_DRAW * sizeof(D3DTLVERTEX), GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
 
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, std3D_pIndexBuffer);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, std3D_screenSpaceEbo);
     std3D_pScreenSpaceElementBuffer = glMapBufferRange(GL_ELEMENT_ARRAY_BUFFER, 0, STD3D_MAX_INDICES_PER_DRAW * sizeof(GLushort), GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
 
-    std3D_bVertexBuffersMapped = true;
+    std3D_bScreenSpaceBuffersMapped = true;
 }
 
-static void std3D_UnmapVertexBuffers(void)
+static void std3D_UnmapScreenSpaceBuffers(void)
 {
-    glBindVertexArray(std3D_pVertexArrayObject);
+    glBindVertexArray(std3D_screenSpaceVao);
 
     // Upload vertex data
-    glBindBuffer(GL_ARRAY_BUFFER, std3D_pVertexBufferOpaque);
+    glBindBuffer(GL_ARRAY_BUFFER, std3D_screenSpaceVbo);
     glUnmapBuffer(GL_ARRAY_BUFFER);
 
     // Upload index data;
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, std3D_pIndexBuffer);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, std3D_screenSpaceEbo);
     glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
 
-    std3D_bVertexBuffersMapped = false;
+    std3D_bScreenSpaceBuffersMapped = false;
 
     std3D_numScreenSpaceVertices = 0;
     std3D_numScreenSpaceIndices  = 0;
@@ -1301,9 +1273,9 @@ static void std3D_UnmapVertexBuffers(void)
 
 size_t std3D_AddScreenSpaceVertices(LPD3DTLVERTEX aVertices, size_t numVertices, LPWORD aIndices, size_t numIndices, GLenum type)
 {
-    if ( !std3D_bVertexBuffersMapped )
+    if ( !std3D_bScreenSpaceBuffersMapped )
     {
-        std3D_MapVertexBuffers();
+        std3D_MapScreenSpaceBuffers();
     }
 
     if ( std3D_numScreenSpaceVertices + numVertices > STD3D_MAX_VERTICES_PER_DRAW || std3D_numScreenSpaceIndices + numIndices > STD3D_MAX_INDICES_PER_DRAW )
@@ -1340,28 +1312,28 @@ size_t std3D_AddScreenSpaceVertices(LPD3DTLVERTEX aVertices, size_t numVertices,
     return indexOffset;
 }
 
-void std3D_ReleaseVertexBuffers(void)
+void std3D_ReleaseScreenSpaceBuffers(void)
 {
-    if ( std3D_pVertexBufferOpaque )
+    if ( std3D_screenSpaceVbo )
     {
-        glDeleteBuffers(1, &std3D_pVertexBufferOpaque);
-        std3D_pVertexBufferOpaque = 0;
+        glDeleteBuffers(1, &std3D_screenSpaceVbo);
+        std3D_screenSpaceVbo = 0;
     }
 
-    if ( std3D_pIndexBuffer )
+    if ( std3D_screenSpaceEbo )
     {
-        glDeleteBuffers(1, &std3D_pIndexBuffer);
-        std3D_pIndexBuffer = 0;
+        glDeleteBuffers(1, &std3D_screenSpaceEbo);
+        std3D_screenSpaceEbo = 0;
     }
 }
 
-void std3D_ReleaseGeoVertexBuffers(void)
+void std3D_ReleaseStaticBuffers(void)
 {
-    if ( std3D_pVertexArrayGeometry > 0 )
+    if ( std3D_staticVao > 0 )
     {
-        glDeleteVertexArrays(1, &std3D_pVertexArrayGeometry);
-        glDeleteBuffers(1, &std3D_pVertexBufferGeometry);
-        glDeleteBuffers(1, &std3D_pIndexBufferGeometry);
+        glDeleteVertexArrays(1, &std3D_staticVao);
+        glDeleteBuffers(1, &std3D_staticVbo);
+        glDeleteBuffers(1, &std3D_staticEbo);
     }
 }
 
@@ -1373,71 +1345,72 @@ bool std3D_InitShaderSystem(void)
     }
 
     // Create default shader
-    std3D_defaultShader = stdShader_CompileAndCreate("std_default", "default.vert", "default.frag");
+    std3D_pDefaultShader = stdShader_CompileAndCreate("std_default", "default.vert", "default.frag");
 
-    if ( !std3D_defaultShader )
+    if ( !std3D_pDefaultShader )
     {
         STDLOG_ERROR("Failed to create default shader\n");
         return false;
     }
 
-    std3D_modelShader = stdShader_CompileAndCreate("std_model", "model.vert", "model.frag");
+    // Creade model shader
+    std3D_pModelShader = stdShader_CompileAndCreate("std_model", "model.vert", "model.frag");
 
-    if ( !std3D_modelShader )
+    if ( !std3D_pModelShader )
     {
         STDLOG_ERROR("Failed to create model shader\n");
         return false;
     }
 
     // Create ceiling sky shader
-    std3D_ceilingSkyShader = stdShader_CompileAndCreate("std_ceilingSky", "ceilingSky.vert", "ceilingSky.frag");
+    std3D_pCeilingSkyShader = stdShader_CompileAndCreate("std_ceilingSky", "ceilingSky.vert", "ceilingSky.frag");
 
-    if ( !std3D_ceilingSkyShader )
+    if ( !std3D_pCeilingSkyShader )
     {
         STDLOG_ERROR("Failed to create ceiling sky shader\n");
         return false;
     }
 
     // Create horizon sky shader
-    std3D_horizonSkyShader = stdShader_CompileAndCreate("std_horizonSky", "horizonSky.vert", "horizonSky.frag");
+    std3D_pHorizonSkyShader = stdShader_CompileAndCreate("std_horizonSky", "horizonSky.vert", "horizonSky.frag");
 
-    if ( !std3D_horizonSkyShader )
+    if ( !std3D_pHorizonSkyShader )
     {
         STDLOG_ERROR("Failed to create horizon sky shader\n");
         return false;
     }
 
-    // Create default shader
-    std3D_spriteShader = stdShader_CompileAndCreate("std_sprite", "sprite.vert", "default.frag");
+    // Create sprite shader
+    std3D_pSpriteShader = stdShader_CompileAndCreate("std_sprite", "sprite.vert", "default.frag");
 
-    if ( !std3D_spriteShader )
+    if ( !std3D_pSpriteShader )
     {
         STDLOG_ERROR("Failed to create sprite shader\n");
         return false;
     }
 
-    // Create default shader
-    std3D_particleShader = stdShader_CompileAndCreate("std_particle", "particle.vert", "default.frag");
+    // Create particle shader
+    std3D_pParticleShader = stdShader_CompileAndCreate("std_particle", "particle.vert", "default.frag");
 
-    if ( !std3D_particleShader )
+    if ( !std3D_pParticleShader )
     {
         STDLOG_ERROR("Failed to create particle shader\n");
         return false;
     }
 
-    // Create default shader
-    std3D_polyLineShader = stdShader_CompileAndCreate("std_polyline", "polyline.vert", "default.frag");
+    // Create polyline shader
+    std3D_pPolyLineShader = stdShader_CompileAndCreate("std_polyline", "polyline.vert", "default.frag");
 
-    if ( !std3D_polyLineShader )
+    if ( !std3D_pPolyLineShader )
     {
         STDLOG_ERROR("Failed to create polyline shader\n");
         return false;
     }
 
     // Create legacy shader
-    std3D_legacyShader = stdShader_CompileAndCreate("std_legacy", "legacy.vert", "legacy.frag");
+    std3D_pLegacyShader = stdShader_CompileAndCreate("std_legacy", "legacy.vert", "legacy.frag");
 
-    if ( !std3D_polyLineShader )
+    if ( !std3D_pPolyLineShader )
     {
         STDLOG_ERROR("Failed to create legacy shader\n");
         return false;
@@ -1448,11 +1421,9 @@ bool std3D_InitShaderSystem(void)
 
 void std3D_ShutdownShaderSystem(void)
 {
-    std3D_defaultShader   = NULL;
+    std3D_pDefaultShader = NULL;
     stdShader_Close();
 }
-
-bool J3DAPI std3D_IsShaderSystemActive(void) { return true; }
 
 bool std3D_IsAnisotropicFilteringSupported(void) { return true; }
 
@@ -1462,48 +1433,48 @@ bool std3D_IsMSAASupported(void) { return true; }
 
 void std3D_UpdateCeilingSky(float height, float offsetX, float offsetY)
 {
-    if ( !std3D_ceilingSkyShader )
+    if ( !std3D_pCeilingSkyShader )
     {
         STDLOG_ERROR("Ceiling sky shader was not initialized yet");
     }
 
-    stdShader_SetActiveShader(std3D_ceilingSkyShader);
-    glUniform1f(glGetUniformLocation(std3D_ceilingSkyShader->handle, "uCeilingZ"), height);
-    glUniform2f(glGetUniformLocation(std3D_ceilingSkyShader->handle, "ceilingSkyOffset"), offsetX, offsetY);
+    stdShader_SetActiveShader(std3D_pCeilingSkyShader);
+    glUniform1f(glGetUniformLocation(std3D_pCeilingSkyShader->handle, "uCeilingZ"), height);
+    glUniform2f(glGetUniformLocation(std3D_pCeilingSkyShader->handle, "ceilingSkyOffset"), offsetX, offsetY);
 }
 
 void std3D_UpdateHorizonSky(float camPitch, float camYaw, float scale, float horizonOffsetX, float horizonOffsetY)
 {
-    if ( !std3D_horizonSkyShader )
+    if ( !std3D_pHorizonSkyShader )
     {
         STDLOG_ERROR("Horizon sky shader was not initialized yet");
     }
-    stdShader_SetActiveShader(std3D_horizonSkyShader);
-    glUniform1f(glGetUniformLocation(std3D_horizonSkyShader->handle, "horizonScale"), scale);
-    glUniform3f(glGetUniformLocation(std3D_horizonSkyShader->handle, "camPYR"), camPitch, camYaw, 0);
-    glUniform2f(glGetUniformLocation(std3D_horizonSkyShader->handle, "horizonSkyOffset"), horizonOffsetX, horizonOffsetY);
+    stdShader_SetActiveShader(std3D_pHorizonSkyShader);
+    glUniform1f(glGetUniformLocation(std3D_pHorizonSkyShader->handle, "horizonScale"), scale);
+    glUniform3f(glGetUniformLocation(std3D_pHorizonSkyShader->handle, "camPYR"), camPitch, camYaw, 0);
+    glUniform2f(glGetUniformLocation(std3D_pHorizonSkyShader->handle, "horizonSkyOffset"), horizonOffsetX, horizonOffsetY);
 }
 
 
 void std3D_InitGeometryVBO(LPD3DTLVERTEX vertices, size_t numVertices, GLuint* indices, size_t numIndices)
 {
-    if ( std3D_pVertexArrayGeometry > 0 )
+    if ( std3D_staticVao > 0 )
     {
-        glDeleteVertexArrays(1, &std3D_pVertexArrayGeometry);
-        glDeleteBuffers(1, &std3D_pVertexBufferGeometry);
-        glDeleteBuffers(1, &std3D_pIndexBufferGeometry);
+        glDeleteVertexArrays(1, &std3D_staticVao);
+        glDeleteBuffers(1, &std3D_staticVbo);
+        glDeleteBuffers(1, &std3D_staticEbo);
     }
-    glGenVertexArrays(1, &std3D_pVertexArrayGeometry);
-    glBindVertexArray(std3D_pVertexArrayGeometry);
+    glGenVertexArrays(1, &std3D_staticVao);
+    glBindVertexArray(std3D_staticVao);
 
     // create vbo
-    glGenBuffers(1, &std3D_pVertexBufferGeometry);
-    glBindBuffer(GL_ARRAY_BUFFER, std3D_pVertexBufferGeometry);
+    glGenBuffers(1, &std3D_staticVbo);
+    glBindBuffer(GL_ARRAY_BUFFER, std3D_staticVbo);
     glBufferData(GL_ARRAY_BUFFER, numVertices * sizeof(D3DTLVERTEX), vertices, GL_STATIC_DRAW);
 
-    // create ibo
-    glGenBuffers(1, &std3D_pIndexBufferGeometry);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, std3D_pIndexBufferGeometry);
+    // create ebo
+    glGenBuffers(1, &std3D_staticEbo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, std3D_staticEbo);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, numIndices * sizeof(GLuint), indices, GL_STATIC_DRAW);
 
     const GLsizei stride = sizeof(D3DTLVERTEX);
@@ -1545,13 +1516,13 @@ void std3D_InitGeometryVBO(LPD3DTLVERTEX vertices, size_t numVertices, GLuint* i
 
 void std3D_InitInstanceVBO(const size_t maxInstances)
 {
-    if ( std3D_InstanceBuffer > 0 )
+    if ( std3D_instanceBuffer > 0 )
     {
-        glDeleteBuffers(1, &std3D_InstanceBuffer);
+        glDeleteBuffers(1, &std3D_instanceBuffer);
     }
 
-    glGenBuffers(1, &std3D_InstanceBuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, std3D_InstanceBuffer);
+    glGenBuffers(1, &std3D_instanceBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, std3D_instanceBuffer);
     glBufferData(GL_ARRAY_BUFFER, maxInstances * sizeof(InstanceData), NULL, GL_DYNAMIC_DRAW);
 }
 
@@ -1560,10 +1531,8 @@ void std3D_UpdateInstanceVBO(const InstanceData* pData, size_t numInstances)
     if ( numInstances == 0 )
         return;
 
-    //STDLOG_DEBUG("AHA %u\n", std3D_pVertexBufferOpaque);
-
-    glBindVertexArray(std3D_pVertexArrayGeometry);
-    glBindBuffer(GL_ARRAY_BUFFER, std3D_InstanceBuffer);
+    glBindVertexArray(std3D_staticVao);
+    glBindBuffer(GL_ARRAY_BUFFER, std3D_instanceBuffer);
     glBufferSubData(GL_ARRAY_BUFFER, 0, numInstances * sizeof(InstanceData), pData);
     std3D_instanceOffset = 0;
 }
@@ -1573,7 +1542,7 @@ static void std3D_UpdateInstancePointers()
     size_t base    = std3D_instanceOffset * sizeof(InstanceData);
     GLsizei stride = sizeof(InstanceData);
 
-    glBindBuffer(GL_ARRAY_BUFFER, std3D_InstanceBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, std3D_instanceBuffer);
 
     // mat4 (locations 5–8)
     glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, stride, (void*)(base + 0));
@@ -1603,33 +1572,33 @@ static void std3D_UpdateInstancePointers()
 
 void std3D_DrawGeometryBatch(GeometryBatch* pBatch)
 {
-    glBindVertexArray(std3D_pVertexArrayGeometry);
+    glBindVertexArray(std3D_staticVao);
 
     stdShader_SetActiveTextureUnit(TU_3D_DRAW);
 
     if ( pBatch->pShader != NULL )
     {
-        std3D_activeShader = pBatch->pShader;
+        std3D_pActiveShader = pBatch->pShader;
     }
     else
     {
-        std3D_activeShader = std3D_defaultShader;
+        std3D_pActiveShader = std3D_pDefaultShader;
     }
 
-    stdShader_SetActiveShader(std3D_activeShader);
+    stdShader_SetActiveShader(std3D_pActiveShader);
 
     const GLuint texID = std3D_currentDrawMode == DM_FULL && pBatch->pTex ? pBatch->pTex->id : std3D_pWhiteTexture->id;
 
-    stdShader_SetTexture(std3D_activeShader, texID);
+    stdShader_SetTexture(std3D_pActiveShader, texID);
     std3D_SetRenderState(pBatch->rdFlags);
 
-    glUniform3f(std3D_activeShader->extraLightLoc, pBatch->extraLight[0], pBatch->extraLight[1], pBatch->extraLight[2]);
-    glUniform1i(std3D_activeShader->lightModeLoc, pBatch->lightMode);
-    glUniform1f(std3D_activeShader->alphaLoc, pBatch->extraLight[3]);
-    glUniform1i(std3D_activeShader->renderLightsLoc, pBatch->lightMode == 3);
-    glUniform1i(std3D_activeShader->alphaCutLoc, (pBatch->rdFlags & STD3D_RS_ALPHAREF_SET) != 0);
+    glUniform3f(std3D_pActiveShader->extraLightLoc, pBatch->extraLight[0], pBatch->extraLight[1], pBatch->extraLight[2]);
+    glUniform1i(std3D_pActiveShader->lightModeLoc, pBatch->lightMode);
+    glUniform1f(std3D_pActiveShader->alphaLoc, pBatch->extraLight[3]);
+    glUniform1i(std3D_pActiveShader->renderLightsLoc, pBatch->lightMode == 3);
+    glUniform1i(std3D_pActiveShader->alphaCutLoc, (pBatch->rdFlags & STD3D_RS_ALPHAREF_SET) != 0);
 
-    STD_ASSERTREL(glIsVertexArray(std3D_pVertexArrayGeometry));
+    STD_ASSERTREL(glIsVertexArray(std3D_staticVao));
 
 
     glMultiDrawElements(GL_TRIANGLES, pBatch->indexCounts, GL_UNSIGNED_INT, (const void* const*)pBatch->indexOffsets, pBatch->drawCount);
@@ -1638,7 +1607,7 @@ void std3D_DrawGeometryBatch(GeometryBatch* pBatch)
 
 void std3D_DrawModelBatch(ModelBatch* pBatch)
 {
-    glBindVertexArray(std3D_pVertexArrayGeometry);
+    glBindVertexArray(std3D_staticVao);
 
     std3D_UpdateInstancePointers();
 
@@ -1646,22 +1615,22 @@ void std3D_DrawModelBatch(ModelBatch* pBatch)
 
     if ( pBatch->pShader != NULL )
     {
-        std3D_activeShader = pBatch->pShader;
+        std3D_pActiveShader = pBatch->pShader;
     }
     else
     {
-        std3D_activeShader = std3D_modelShader;
+        std3D_pActiveShader = std3D_pModelShader;
     }
 
-    stdShader_SetActiveShader(std3D_activeShader);
+    stdShader_SetActiveShader(std3D_pActiveShader);
 
     GLuint texID = std3D_currentDrawMode == DM_FULL && pBatch->pTex ? pBatch->pTex->id : std3D_pWhiteTexture->id;
-    stdShader_SetTexture(std3D_activeShader, texID);
+    stdShader_SetTexture(std3D_pActiveShader, texID);
     std3D_SetRenderState(pBatch->rdFlags);
 
-    glUniform1i(std3D_activeShader->lightModeLoc, pBatch->lightMode);
-    glUniform1i(std3D_activeShader->renderLightsLoc, pBatch->lightMode == 3);
-    glUniform1i(std3D_activeShader->alphaCutLoc, (pBatch->rdFlags & STD3D_RS_ALPHAREF_SET) != 0);
+    glUniform1i(std3D_pActiveShader->lightModeLoc, pBatch->lightMode);
+    glUniform1i(std3D_pActiveShader->renderLightsLoc, pBatch->lightMode == 3);
+    glUniform1i(std3D_pActiveShader->alphaCutLoc, (pBatch->rdFlags & STD3D_RS_ALPHAREF_SET) != 0);
 
     glDrawElementsInstanced(GL_TRIANGLES, (GLsizei)pBatch->indexCount, GL_UNSIGNED_INT, (void*)(pBatch->indexOffset * sizeof(GLuint)), pBatch->numberOfInstances);
     std3D_instanceOffset += pBatch->numberOfInstances;
@@ -1670,7 +1639,7 @@ void std3D_DrawModelBatch(ModelBatch* pBatch)
 
 void std3D_DrawQuadBatch(QuadBatch* pBatch)
 {
-    glBindVertexArray(std3D_pVertexArrayGeometry);
+    glBindVertexArray(std3D_staticVao);
 
     std3D_UpdateInstancePointers();
 
@@ -1679,17 +1648,17 @@ void std3D_DrawQuadBatch(QuadBatch* pBatch)
 
     if ( pBatch->pShader != NULL )
     {
-        std3D_activeShader = pBatch->pShader;
+        std3D_pActiveShader = pBatch->pShader;
     }
     else
     {
-        std3D_activeShader = std3D_spriteShader;
+        std3D_pActiveShader = std3D_pSpriteShader;
     }
 
-    stdShader_SetActiveShader(std3D_activeShader);
-    stdShader_SetTexture(std3D_activeShader, texID);
+    stdShader_SetActiveShader(std3D_pActiveShader);
+    stdShader_SetTexture(std3D_pActiveShader, texID);
     std3D_SetRenderState(pBatch->rdFlags);
-    glUniform1i(std3D_activeShader->spriteTypeLoc, pBatch->spriteType);
+    glUniform1i(std3D_pActiveShader->spriteTypeLoc, pBatch->spriteType);
 
     glDrawArraysInstanced(GL_TRIANGLE_FAN, 0, 4, pBatch->numberOfInstances);
     std3D_instanceOffset += pBatch->numberOfInstances;
@@ -1704,31 +1673,29 @@ void std3D_CacheLegacyBatch(const LegacyBatch batch)
 
 void std3D_DrawLegacyBatches(void)
 {
-    if ( !std3D_bVertexBuffersMapped )
+    if ( !std3D_bScreenSpaceBuffersMapped )
     {
         return;
     }
-    std3D_UnmapVertexBuffers();
+    std3D_UnmapScreenSpaceBuffers();
 
-    //glFrontFace(GL_CCW);
-    glBindVertexArray(std3D_pVertexArrayObject);
+    glBindVertexArray(std3D_screenSpaceVao);
 
     stdShader_SetActiveTextureUnit(TU_3D_DRAW);
-    std3D_activeShader = std3D_legacyShader;
+    std3D_pActiveShader = std3D_pLegacyShader;
 
-    stdShader_SetActiveShader(std3D_activeShader);
+    stdShader_SetActiveShader(std3D_pActiveShader);
 
     for ( size_t i = 0; i < std3D_numCachedLegacyBatches; i++ )
     {
         LegacyBatch* pBatch = &std3D_cachedLegacyBatches[i];
         GLuint texID        = std3D_currentDrawMode == DM_FULL && pBatch->pTex ? pBatch->pTex->id : std3D_pWhiteTexture->id;
 
-        stdShader_SetTexture(std3D_activeShader, texID);
+        stdShader_SetTexture(std3D_pActiveShader, texID);
         std3D_SetRenderState(pBatch->rdFlags);
-        glUniform1i(std3D_activeShader->alphaCutLoc, (pBatch->rdFlags & STD3D_RS_ALPHAREF_SET) != 0);
+        glUniform1i(std3D_pActiveShader->alphaCutLoc, (pBatch->rdFlags & STD3D_RS_ALPHAREF_SET) != 0);
         glMultiDrawElements(pBatch->type, pBatch->indexCounts, GL_UNSIGNED_SHORT, (const void* const*)pBatch->indexOffsets, pBatch->drawCount);
         std3D_numDrawCalls++;
-        //glFrontFace(GL_CCW);
     }
 
     std3D_numCachedLegacyBatches = 0;
@@ -1741,25 +1708,25 @@ void J3DAPI std3D_DrawRenderList(tSysTexture* pTex, Std3DRenderState rdflags, LP
 
 void std3D_SetDrawMode(const int mode)
 {
-    stdShader_SetActiveShader(std3D_legacyShader);
+    stdShader_SetActiveShader(std3D_pLegacyShader);
     switch ( mode )
     {
         case DM_VERTEX:
-            glUniform3f(std3D_legacyShader->extraLightLoc, 1.0f, 1.0f, 1.0f);
+            glUniform3f(std3D_pLegacyShader->extraLightLoc, 1.0f, 1.0f, 1.0f);
             glPolygonMode(GL_FRONT_AND_BACK, GL_POINT);
             break;
         case DM_WIREFRAME:
-            glUniform3f(std3D_legacyShader->extraLightLoc, 1.0f, 1.0f, 1.0f);
+            glUniform3f(std3D_pLegacyShader->extraLightLoc, 1.0f, 1.0f, 1.0f);
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
             break;
         case DM_SOLID:
         case DM_FULL:
-            glUniform3f(std3D_legacyShader->extraLightLoc, 0.0f, 0.0f, 0.0f);
+            glUniform3f(std3D_pLegacyShader->extraLightLoc, 0.0f, 0.0f, 0.0f);
             glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
         default:
             break;
     }
-    stdShader_SetActiveShader(std3D_activeShader);
+    stdShader_SetActiveShader(std3D_pActiveShader);
     std3D_currentDrawMode = mode;
 }
 

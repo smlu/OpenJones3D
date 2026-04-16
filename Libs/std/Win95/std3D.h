@@ -4,13 +4,8 @@
 #include <std/types.h>
 
 #ifdef J3D_OPENGL
-#define STD3D_MAX_VERTICES_PER_DRAW 65536
-#define STD3D_MAX_INDICES_PER_DRAW 131072
-#define STD3D_MAX_LEGACY_BATCHES 10000
-
 extern bool std3D_g_bUseLegacyRendering;
 #define STD3D_CFG_LEGACYRENDERING "graphics.legacyRendering"
-
 #endif
 
 
@@ -82,7 +77,6 @@ tSysDevice3D* std3D_GetD3DDevice(void); // Added
 #endif // J3D_DIRECTX9 || J3D_DIRECTX6
 
 // New funcs
-bool std3D_IsShaderSystemActive(void);
 bool std3D_IsAnisotropicFilteringSupported(void); // Checks if underlying GAPI supports anisotropic texute filtering. Note, device might still not support it.
 bool std3D_IsMipmapAutoGenSupported(void);        // Checks if underlying GAPI supports automatic generation of Mipmaps. Note, device might still not support it.
 bool std3D_IsMSAASupported(void);                 // Checks if underlying GAPI supports Multisample anti-aliasing (MSAA). Note, device might still not support it.
@@ -99,7 +93,7 @@ void J3DAPI std3D_DrawPointList(LPD3DTLVERTEX aVerts, size_t numVerts);
 void std3D_UpdateCeilingSky(float height, float offsetX, float offsetY);
 void std3D_UpdateHorizonSky(float camPitch, float camYaw, float scale, float horizonOffsetX, float horizonOffsetY);
 void std3D_InitGeometryVBO(LPD3DTLVERTEX vertices, size_t numVertices, GLuint* indices, size_t numIndices);
-void std3D_ReleaseGeoVertexBuffers(void);
+void std3D_ReleaseStaticBuffers(void);
 void std3D_InitInstanceVBO(size_t numInstances);
 size_t std3D_AddScreenSpaceVertices(LPD3DTLVERTEX aVertices, size_t numVertices, LPWORD aIndices, size_t numIndices, GLenum type);
 void std3D_UpdateInstanceVBO(const InstanceData* pData, size_t numInstances);
@@ -109,6 +103,8 @@ void std3D_DrawQuadBatch(QuadBatch* pBatch);
 void std3D_CacheLegacyBatch(LegacyBatch batch);
 void std3D_DrawLegacyBatches(void);
 void std3D_SetDrawMode(int mode);
+#else
+bool std3D_IsShaderSystemActive(void);
 #endif
 
 J3D_EXTERN_C_END
