@@ -1,6 +1,10 @@
 #include "stdEffect.h"
 #include <j3dcore/j3dhook.h>
 #include <std/RTI/symbols.h>
+#ifdef J3D_OPENGL
+#include <std/Win95/stdShader.h>
+#endif
+
 
 static tStdFadeFactor stdEffect_fadeFactor;
 
@@ -36,6 +40,9 @@ void J3DAPI stdEffect_SetFadeFactor(int bEnabled, float factor)
 {
     stdEffect_fadeFactor.bEnabled = bEnabled;
     stdEffect_fadeFactor.factor = factor;
+#ifdef J3D_OPENGL
+    stdShader_UpdateFadeFactor();
+#endif
 }
 
 const tStdFadeFactor* J3DAPI stdEffect_GetFadeFactor()
