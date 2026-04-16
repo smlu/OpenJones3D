@@ -485,16 +485,7 @@ void std3D_SetWireframeRenderState(void)
 
 void J3DAPI std3D_DrawLineStrip(LPD3DTLVERTEX aVerts, size_t numVerts)
 {
-    if ( numVerts > std3D_g_maxVertices )
-    {
-        STDLOG_ERROR("Error %d > %d maxVertices.\n", numVerts,
-                     std3D_g_maxVertices);
-        return;
-    }
-
-    Std3DRenderState rdstate = std3D_renderState & ~(STD3D_RS_FOG_ENABLED | STD3D_RS_UNKNOWN_400 | STD3D_RS_UNKNOWN_200);
-
-    std3D_CacheDrawCall(GL_LINES, NULL, rdstate, aVerts, numVerts, NULL, 0, vs, false);
+    STDLOG_ERROR("Usage of std3D_DrawLineStrip is not supported in OpenGL. Use rdCache_AddLineDrawCall instead.\n");
 }
 
 void J3DAPI std3D_DrawPointList(LPD3DTLVERTEX aVerts, size_t numVerts)
