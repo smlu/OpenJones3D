@@ -1171,6 +1171,7 @@ static void sithRender_RenderSectorsStatic(void)
 
         ++sithRender_numRenderedSectors;
     }
+    rdCache_Flush();
 }
 #endif
 
