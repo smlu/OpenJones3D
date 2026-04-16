@@ -18,13 +18,11 @@ void main()
     vec4 vertices[4] = vec4[] (inVertex1, inVertex2, inVertex3, inVertex4);
     vec2 texCoords[4] = vec2[] (inUV01.xy, inUV01.zw, inUV12.xy, inUV12.zw);
     vec4 screenPos = vertices[gl_VertexID];
-    //gl_Position = screenToClip(screenPos.xyz, screenPos.w);
     vec3 viewPos = vertices[gl_VertexID].xyz;
     gl_Position = PROJECTION * vec4(viewPos, 1.0f);
     vTexCoord = texCoords[gl_VertexID];
     vec4 extraLight = inExtraLight;
 
-    //vColor.rgb = CalculateVertexColor(vec3(0), extraLight.rgb, iLightMode);
-    vColor.rgb = extraLight.rgb;
+    vColor.rgb = CalculateVertexColor(vec3(0), extraLight.rgb, iLightMode);
     vColor.a = extraLight.a;
 }
