@@ -660,8 +660,6 @@ void sithRender_RenderScene(void)
 
     sithRender_Draw();
 
-    std3D_SetDrawState(STD3D_DS_HUD);
-
     stdEffect_SetFadeFactor(0, 1.0f);
     stdShader_UpdateFadeFactor();
     sithVoice_Draw();
@@ -761,10 +759,6 @@ void sithRender_Draw(void)
         RDLOG_ERROR("Too many sectors with things in view %d of %d\n", STD_ARRAYLEN(sithRender_aVisibleThingSectors), sithRender_totalVisibleThingSectors); // TODO: Why using RDLOG
     }
 
-#ifdef J3D_OPENGL
-    std3D_SetDrawState(STD3D_DS_GEOMETRY);
-#endif
-
     if ( (sithRender_renderflags & RDROID_USE_AMBIENT_CAMERA_LIGHT) != 0 )
     {
         sithRender_BuildDynamicLights();
@@ -777,10 +771,6 @@ void sithRender_Draw(void)
     // Now draw everything
     sithRender_RenderSectors();
 
-    rdCache_Flush();
-
-
-    std3D_SetDrawState(STD3D_DS_THINGS);
 
     if ( sithRender_numVisibleThingSectors > 0 )
     {
@@ -788,14 +778,10 @@ void sithRender_Draw(void)
     }
 
 
-    std3D_SetDrawState(STD3D_DS_ALPHA_ADJOINS);
-
     if ( sithRender_numAlphaAdjoins > 0 )
     {
         sithRender_RenderAlphaAdjoins();
     }
-    rdCache_FlushAlpha();
-
 #else
     // Now draw everything
     sithRender_RenderSectors();
@@ -1190,7 +1176,6 @@ static void sithRender_RenderSectorsStatic(void)
                 rdVector4 extraLight        = pSurf->face.extraLight;
                 rdVector_Add4Acc(&extraLight, &pSurf->pSector->extraLight);
                 extraLight.alpha       = 1.0f;
-                pDrawCall->vertexSpace = STD3D_VS_WORLD;
                 pPayload->lightingMode = pSurf->face.lightingMode;
                 pDrawCall->faceNum     = pSurf->face.num;
                 pPayload->flags        = pSurf->face.flags;
@@ -1890,7 +1875,6 @@ void sithRender_RenderAlphaAdjoinsStatic(void)
         rdVector4 extraLight = pSurf->face.extraLight;
         rdVector_Add4Acc(&extraLight, &pSurf->pSector->extraLight);
         extraLight.alpha       = pSurf->aIntensities[0].alpha;
-        pDrawCall->vertexSpace = STD3D_VS_WORLD;
         pPayload->lightingMode = pSurf->face.lightingMode >= sithRender_lightMode ? sithRender_lightMode : pSurf->face.lightingMode;
         pDrawCall->faceNum     = pSurf->face.num;
         pPayload->flags        = pSurf->face.flags;

@@ -90,15 +90,14 @@ bool std3D_IsMSAASupported(void);                 // Checks if underlying GAPI s
 // Helper hooking functions
 void std3D_InstallHooks(void);
 void std3D_ResetGlobals(void);
+
+void J3DAPI std3D_DrawRenderList(tSysTexture* pTex, Std3DRenderState rdflags, LPD3DTLVERTEX aVerts, size_t numVerts, LPWORD aIndices, size_t numIndices);
+void J3DAPI std3D_DrawLineStrip(LPD3DTLVERTEX aVerts, size_t numVerts);
+void J3DAPI std3D_DrawPointList(LPD3DTLVERTEX aVerts, size_t numVerts);
+
 #ifdef J3D_OPENGL
 void std3D_UpdateCeilingSky(float height, float offsetX, float offsetY);
 void std3D_UpdateHorizonSky(float camPitch, float camYaw, float scale, float horizonOffsetX, float horizonOffsetY);
-void std3D_SetDrawState(std3DDrawState drawState);
-std3DDrawState std3D_GetCurrentDrawState(void);
-std3DVertexSpace std3D_GetCurrentVertexSpace(void);
-void J3DAPI std3D_DrawRenderList(tSysTexture* pTex, Std3DRenderState rdflags, LPD3DTLVERTEX aVerts, size_t numVerts, LPWORD aIndices, size_t numIndices, std3DVertexSpace vs, bool bUseShaderLighting);
-void J3DAPI std3D_DrawLineStrip(LPD3DTLVERTEX aVerts, size_t numVerts, std3DVertexSpace vs);
-void J3DAPI std3D_DrawPointList(LPD3DTLVERTEX aVerts, size_t numVerts, std3DVertexSpace vs);
 void std3D_InitGeometryVBO(LPD3DTLVERTEX vertices, size_t numVertices, GLuint* indices, size_t numIndices);
 void std3D_ReleaseGeoVertexBuffers(void);
 void std3D_InitInstanceVBO(size_t numInstances);
@@ -110,11 +109,6 @@ void std3D_DrawQuadBatch(QuadBatch* pBatch);
 void std3D_CacheLegacyBatch(LegacyBatch batch);
 void std3D_DrawLegacyBatches(void);
 void std3D_SetDrawMode(int mode);
-#else
-void J3DAPI std3D_DrawRenderList(tSysTexture* pTex, Std3DRenderState rdflags, LPD3DTLVERTEX aVerts, size_t numVerts, LPWORD aIndices, size_t numIndices);
-void J3DAPI std3D_DrawLineStrip(LPD3DTLVERTEX aVerts, size_t numVerts);
-void J3DAPI std3D_DrawPointList(LPD3DTLVERTEX aVerts, size_t numVerts);
-
 #endif
 
 J3D_EXTERN_C_END

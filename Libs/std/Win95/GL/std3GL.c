@@ -100,9 +100,6 @@ static bool std3D_bVertexBuffersMapped = false;
 
 static GLuint std3D_activeSampler = 0;
 
-static std3DDrawState std3D_currentDrawState     = STD3D_DS_HUD;
-static std3DVertexSpace std3D_currentVertexState = STD3D_VS_SCREEN;
-
 static DrawMode std3D_currentDrawMode = DM_FULL;
 
 // Shader system state
@@ -486,7 +483,7 @@ void std3D_SetWireframeRenderState(void)
 {
 } //not needed anymore, as this is done when wireframe draw call is cached
 
-void J3DAPI std3D_DrawLineStrip(LPD3DTLVERTEX aVerts, size_t numVerts, std3DVertexSpace vs)
+void J3DAPI std3D_DrawLineStrip(LPD3DTLVERTEX aVerts, size_t numVerts)
 {
     if ( numVerts > std3D_g_maxVertices )
     {
@@ -500,7 +497,7 @@ void J3DAPI std3D_DrawLineStrip(LPD3DTLVERTEX aVerts, size_t numVerts, std3DVert
     std3D_CacheDrawCall(GL_LINES, NULL, rdstate, aVerts, numVerts, NULL, 0, vs, false);
 }
 
-void J3DAPI std3D_DrawPointList(LPD3DTLVERTEX aVerts, size_t numVerts, std3DVertexSpace vs)
+void J3DAPI std3D_DrawPointList(LPD3DTLVERTEX aVerts, size_t numVerts)
 {
     if ( numVerts > std3D_g_maxVertices )
     {
@@ -925,7 +922,7 @@ void J3DAPI std3D_EnableFog(int bEnabled, float density)
 void J3DAPI std3D_SetFog(float red, float green, float blue, float startDepth, float endDepth)
 {
     // Store fog parameters for shader use
-    float fogFactor = bUseLegacyRendering ? 1.0f : 0.03459f;
+    float fogFactor = std3D_g_bUseLegacyRendering ? 1.0f : 0.03459f;
     std3D_EnableFog(std3D_bRenderFog, std3D_g_fogDensity);
     std3D_fogStartDepth  = startDepth * fogFactor;
     std3D_fogEndDepth    = (2.0f - std3D_g_fogDensity) * endDepth * fogFactor;
@@ -1503,54 +1500,6 @@ void std3D_UpdateHorizonSky(float camPitch, float camYaw, float scale, float hor
     glUniform2f(glGetUniformLocation(std3D_horizonSkyShader->handle, "horizonSkyOffset"), horizonOffsetX, horizonOffsetY);
 }
 
-void std3D_SetDrawState(const std3DDrawState drawState)
-{
-    // if ( drawState == std3D_currentDrawState )
-    // {
-    //     return;
-    // }
-
-    if ( bUseLegacyRendering )
-    {
-        std3D_currentDrawState   = STD3D_DS_HUD;
-        std3D_currentVertexState = STD3D_VS_SCREEN;
-        return;
-    }
-
-    std3DVertexSpace vertexSpace = 0;
-
-    switch ( drawState )
-    {
-        case STD3D_DS_GEOMETRY:
-        case STD3D_DS_ALPHA_ADJOINS:
-        case STD3D_DS_THINGS:
-            vertexSpace = STD3D_VS_WORLD;
-            break;
-        case STD3D_DS_HUD:
-            // make sure to render all 3D stuff before HUD is drawn
-            rdCache_Flush();
-            rdCache_FlushAlpha();
-            std3D_DrawFrameBatch();
-            std3D_MapVertexBuffers();
-            stdShader_DisableFog();
-            vertexSpace = STD3D_VS_SCREEN;
-            break;
-    }
-
-    std3D_currentDrawState   = drawState;
-    std3D_currentVertexState = vertexSpace;
-}
-
-std3DDrawState std3D_GetCurrentDrawState(void)
-{
-    return std3D_currentDrawState;
-}
-
-std3DVertexSpace std3D_GetCurrentVertexSpace(void)
-{
-    return std3D_currentVertexState;
-}
-
 
 void std3D_InitGeometryVBO(LPD3DTLVERTEX vertices, size_t numVertices, GLuint* indices, size_t numIndices)
 {
@@ -1801,7 +1750,7 @@ void std3D_DrawLegacyBatches(void)
     std3D_numCachedLegacyBatches = 0;
 }
 
-void J3DAPI std3D_DrawRenderList(tSysTexture* pTex, Std3DRenderState rdflags, LPD3DTLVERTEX aVerts, size_t numVerts, LPWORD aIndices, size_t numIndices, std3DVertexSpace vs, bool bUseShaderLighting)
+void J3DAPI std3D_DrawRenderList(tSysTexture* pTex, Std3DRenderState rdflags, LPD3DTLVERTEX aVerts, size_t numVerts, LPWORD aIndices, size_t numIndices)
 {
 }
 

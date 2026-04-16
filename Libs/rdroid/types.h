@@ -647,11 +647,6 @@ struct srdCacheProcEntry
     int32_t matCelNum;
     rdVector4 extraLight;
     float distance;
-#ifdef J3D_OPENGL
-    std3DVertexSpace vertexSpace;
-    GLShaderProgram* pShader;
-    bool bGPULighting;
-#endif
 };
 
 //static_assert(sizeof(rdCacheProcEntry) == 48, "sizeof(rdCacheProcEntry) == 48");
@@ -724,7 +719,6 @@ typedef enum erdDrawType
 typedef struct srdGeoFacePayload
 {
     size_t faceNum;
-    std3DVertexSpace vertexSpace;
 } rdGeoFacePayload;
 
 typedef struct srdLegacyPayload
