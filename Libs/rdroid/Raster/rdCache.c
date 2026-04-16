@@ -250,7 +250,6 @@ void J3DAPI rdCache_AddProcFace(size_t numVerts)
     rdCacheProcEntry* pEntry = &rdCache_aProcFaces[rdCache_numProcFaces];
 
     pEntry->numVertices = numVerts;
-    pEntry->flags &= ~RD_FF_BLEND_ENABLED;
 
     rdCache_numUsedVertices += numVerts;
     ++rdCache_numProcFaces;
@@ -261,7 +260,6 @@ void J3DAPI rdCache_AddAlphaProcFace(size_t numVertices)
     rdCacheProcEntry* pEntry = &rdCache_aAlphaProcFaces[rdCache_numAlphaProcFaces];
     pEntry->numVertices      = numVertices;
     //pEntry->distance         = rdCache_CalculatePolyDistance(pEntry);
-    pEntry->flags |= RD_FF_BLEND_ENABLED;
     rdCache_numUsedAlphaVertices += numVertices;
     ++rdCache_numAlphaProcFaces;
 }
