@@ -1736,6 +1736,7 @@ void std3D_DrawLegacyBatches(void)
 
 void J3DAPI std3D_DrawRenderList(tSysTexture* pTex, Std3DRenderState rdflags, LPD3DTLVERTEX aVerts, size_t numVerts, LPWORD aIndices, size_t numIndices)
 {
+    STDLOG_ERROR("Usage of std3D_DrawRenderList is not supported in OpenGL! Use rdCache_AddLegacyDrawCall instead.\n");
 }
 
 void std3D_SetDrawMode(const int mode)
