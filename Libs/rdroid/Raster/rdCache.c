@@ -10,8 +10,6 @@
 
 #include <stdlib.h>
 
-#include "rdroid/Engine/rdCamera.h"
-#include "rdroid/Math/rdMatrix.h"
 #include "sith/Engine/sithCamera.h"
 #include "std/General/stdMemory.h"
 #include "std/Win95/stdShader.h"
@@ -198,74 +196,7 @@ void rdCache_FlushAlpha(void)
         rdCache_numUsedAlphaVertices = 0;
     }
 }
-#else
-void rdCache_Flush(void)
-{
-    if ( rdCache_numProcFaces )
-    {
-        switch ( rdroid_g_curGeometryMode )
-        {
-            case RD_GEOMETRY_NONE:
-                break;
-
-            default:
-                rdCache_SendFaceListToHardware(rdCache_numProcFaces, rdCache_aProcFaces, rdCache_ProcFaceCompare);
-                break;
-        }
-
-        rdCache_drawnFaces += rdCache_numProcFaces;
-        rdCache_numProcFaces    = 0;
-        rdCache_numUsedVertices = 0;
-    }
-    rdCache_FlushOpaqueDrawCalls();
-}
-
-void rdCache_FlushAlpha(void)
-{
-    if ( rdCache_numAlphaProcFaces )
-    {
-        switch ( rdroid_g_curGeometryMode )
-        {
-            case RD_GEOMETRY_NONE:
-                break;
-
-            default:
-                rdCache_SendFaceListToHardware(rdCache_numAlphaProcFaces, rdCache_aAlphaProcFaces, rdCache_ProcFaceDistanceCompare);
-                break;
-        }
-
-        rdCache_drawnFaces += rdCache_numAlphaProcFaces;
-        rdCache_numAlphaProcFaces    = 0;
-        rdCache_numUsedAlphaVertices = 0;
-    }
-    rdCache_FlushTransparentDrawCalls();
-}
 #endif
-
-
-#ifdef J3D_OPENGL
-
-void J3DAPI rdCache_AddProcFace(size_t numVerts)
-{
-    rdCacheProcEntry* pEntry = &rdCache_aProcFaces[rdCache_numProcFaces];
-
-    pEntry->numVertices = numVerts;
-
-    rdCache_numUsedVertices += numVerts;
-    ++rdCache_numProcFaces;
-}
-
-void J3DAPI rdCache_AddAlphaProcFace(size_t numVertices)
-{
-    rdCacheProcEntry* pEntry = &rdCache_aAlphaProcFaces[rdCache_numAlphaProcFaces];
-    pEntry->numVertices      = numVertices;
-    //pEntry->distance         = rdCache_CalculatePolyDistance(pEntry);
-    rdCache_numUsedAlphaVertices += numVertices;
-    ++rdCache_numAlphaProcFaces;
-}
-
-#else
-
 
 void J3DAPI rdCache_AddProcFace(size_t numVerts)
 {
@@ -279,23 +210,21 @@ void J3DAPI rdCache_AddAlphaProcFace(size_t numVertices)
     rdCacheProcEntry* pEntry = &rdCache_aAlphaProcFaces[rdCache_numAlphaProcFaces];
     pEntry->numVertices      = numVertices;
 
-    float sz = 3.4028235e38f;
+#ifndef J3D_OPENGL
+    float sz = FLT_MAX; // 3.4028235e38f;
     for ( size_t i = 0; i < numVertices; ++i )
     {
-        if ( pEntry->aVertices[i].sz < (double)sz )
+        if ( pEntry->aVertices[i].sz < sz )
         {
             sz = pEntry->aVertices[i].sz;
         }
     }
 
     pEntry->distance = sz;
+#endif
     rdCache_numUsedAlphaVertices += numVertices;
     ++rdCache_numAlphaProcFaces;
 }
-
-
-#endif
-
 
 void J3DAPI rdCache_SendFaceListToHardware(size_t numPolys, rdCacheProcEntry* pCurPoly, rdCacheSortFunc pfSort)
 {
@@ -304,14 +233,11 @@ void J3DAPI rdCache_SendFaceListToHardware(size_t numPolys, rdCacheProcEntry* pC
     const tStdFadeFactor* pFadeFactor = stdEffect_GetFadeFactor();
 
 #ifndef J3D_OPENGL
-    // sort polys by texture, gives a small fps boost for OpenGL since draw calls with same textures can be batched
-    qsort(pCurPoly, numPolys, sizeof(rdCacheProcEntry), rdCache_ProcFaceCompare);
-#endif
-
     if ( pfSort == rdCache_ProcFaceDistanceCompare )
     {
         qsort(pCurPoly, numPolys, sizeof(rdCacheProcEntry), pfSort);
     }
+#endif
 
 LABEL_4:
     if ( polyNum < numPolys )
@@ -342,11 +268,6 @@ LABEL_4:
         if ( (fflags & RD_FF_FOG_ENABLED) != 0 )
         {
             rdflags |= STD3D_RS_FOG_ENABLED;
-        }
-
-        if ( (fflags & RD_FF_BLEND_ENABLED) != 0 )
-        {
-            rdflags |= STD3D_BLEND_ENABLED;
         }
 
         rdMaterial* pCurMat = NULL;
@@ -509,37 +430,23 @@ LABEL_4:
                 }
             }
 
+            ++pCurPoly;
+            ++polyNum;
+
+            if ( 3 * (pCurPoly->numVertices - 2) + totalIndices >= std3D_g_maxVertices // i.e. totalIndices + num required triangle indices for next poly >= std3D_g_maxVertices
+                || polyNum >= numPolys
+                || pCurMat != pCurPoly->pMaterial
+                || curMatCelNum != pCurPoly->matCelNum
+                || fflags != pCurPoly->flags )
+            {
+                RD_ASSERTREL(rdCache_totalVerts < RDCACHE_VERTBUFFERSIZE);
 #ifdef J3D_OPENGL
-
-            ++pCurPoly;
-            ++polyNum;
-
-            if ( 3 * (pCurPoly->numVertices - 2) + totalIndices >= std3D_g_maxVertices // i.e. totalIndices + num required triangle indices for next poly >= std3D_g_maxVertices
-                || polyNum >= numPolys
-                || pCurMat != pCurPoly->pMaterial
-                || curMatCelNum != pCurPoly->matCelNum
-                || fflags != pCurPoly->flags )
-            {
-                RD_ASSERTREL(rdCache_totalVerts < RDCACHE_VERTBUFFERSIZE);
-                //std3D_DrawRenderList(pCachedTexture, rdflags, rdCache_aHWVertices, rdCache_totalVerts, rdCache_aVertIndices, totalIndices, vertexSpace, useShaderLighting);
                 rdCache_AddLegacyDrawCall(pCachedTexture, rdflags, rdCache_aHWVertices, rdCache_totalVerts, rdCache_aVertIndices, totalIndices, pfSort == rdCache_ProcFaceDistanceCompare);
-                goto LABEL_4;
-            }
 #else
-            ++pCurPoly;
-            ++polyNum;
-
-            if ( 3 * (pCurPoly->numVertices - 2) + totalIndices >= std3D_g_maxVertices // i.e. totalIndices + num required triangle indices for next poly >= std3D_g_maxVertices
-                || polyNum >= numPolys
-                || pCurMat != pCurPoly->pMaterial
-                || curMatCelNum != pCurPoly->matCelNum
-                || fflags != pCurPoly->flags )
-            {
-                RD_ASSERTREL(rdCache_totalVerts < RDCACHE_VERTBUFFERSIZE);
                 std3D_DrawRenderList(pCachedTexture, rdflags, rdCache_aHWVertices, rdCache_totalVerts, rdCache_aVertIndices, totalIndices);
+#endif
                 goto LABEL_4;
             }
-#endif
         }
     }
 }
@@ -554,6 +461,7 @@ void J3DAPI rdCache_SendWireframeFaceListToHardware(size_t numPolys, rdCacheProc
         {
             pCurPoly->aVertices[j].color = RGBA_MAKE(255, 255, 255, 255); // aka white color
         }
+
         if ( rdroid_g_curGeometryMode == RD_GEOMETRY_VERTEX )
         {
             std3D_DrawPointList(pCurPoly->aVertices, pCurPoly->numVertices); // Fixed: Use correct vertex buffer for drawing. Was using rdCache_aHWVertices.
@@ -567,7 +475,6 @@ void J3DAPI rdCache_SendWireframeFaceListToHardware(size_t numPolys, rdCacheProc
             memcpy(&aVerts[1], pCurPoly->aVertices, sizeof(D3DTLVERTEX));
             std3D_DrawLineStrip(aVerts, 2u);
         }
-
 
         ++pCurPoly;
     }
@@ -866,7 +773,7 @@ rdPayload* rdCache_GetOpaqueDrawCall(rdDrawType type)
 {
     if ( rdCache_NumOpaqueDrawCalls >= RD_CACHE_MAX_OPAQUE_DRAW_CALLS )
     {
-        rdCache_FlushOpaqueDrawCalls();
+        rdCache_Flush();
     }
     return rdCache_GetDrawCall(type, rdCache_OpaqueDrawCalls, rdCache_NumOpaqueDrawCalls);
 }
@@ -875,7 +782,7 @@ rdPayload* rdCache_GetTransparentDrawCall(rdDrawType type)
 {
     if ( rdCache_NumTransparentDrawCalls >= RD_CACHE_MAX_TRANSPARENT_DRAW_CALLS )
     {
-        rdCache_FlushTransparentDrawCalls();
+        rdCache_FlushAlpha();
     }
     return rdCache_GetDrawCall(type, rdCache_transparentDrawCalls, rdCache_NumTransparentDrawCalls);
 }
@@ -910,11 +817,6 @@ static Std3DRenderState rdCache_GetRenderStateOfFace(const rdPayload* pPayload)
     {
         rdFlags |= STD3D_RS_FOG_ENABLED;
     }
-
-    // if ( (fFlags & RD_FF_BLEND_ENABLED) != 0 )
-    // {
-    //     rdFlags |= STD3D_BLEND_ENABLED;
-    // }
 
     if ( (fFlags & RD_FF_DOUBLE_SIDED) != 0 || (rdroid_g_curRenderOptions & RDROID_BACKFACE_CULLING_ENABLED) == 0 )
     {
@@ -1128,8 +1030,25 @@ static void rdCache_SetInstanceData(rdPayload* drawCalls, DrawCallSortBucket* so
     }
 }
 
-void rdCache_FlushOpaqueDrawCalls(void)
+void rdCache_Flush(void)
 {
+    if ( rdCache_numProcFaces )
+    {
+        switch ( rdroid_g_curGeometryMode )
+        {
+            case RD_GEOMETRY_NONE:
+                break;
+
+            default:
+                rdCache_SendFaceListToHardware(rdCache_numProcFaces, rdCache_aProcFaces, rdCache_ProcFaceCompare);
+                break;
+        }
+
+        rdCache_drawnFaces += rdCache_numProcFaces;
+        rdCache_numProcFaces    = 0;
+        rdCache_numUsedVertices = 0;
+    }
+
     if ( !rdCache_NumOpaqueDrawCalls )
     {
         return;
@@ -1137,7 +1056,6 @@ void rdCache_FlushOpaqueDrawCalls(void)
 
     std3D_SetDrawMode(rdroid_g_curGeometryMode);
 
-    //qsort(rdCache_OpaqueDrawCalls, rdCache_NumOpaqueDrawCalls, sizeof(rdPayload), rdCache_DrawCallOpaqueCompare);
     qsort(rdCache_opaqueSortBuckets, rdCache_NumOpaqueDrawCalls, sizeof(DrawCallSortBucket), rdCache_DrawCallOpaqueCompare);
 
     rdCache_SetInstanceData(rdCache_OpaqueDrawCalls, rdCache_opaqueSortBuckets, rdCache_NumOpaqueDrawCalls);
@@ -1150,8 +1068,25 @@ void rdCache_FlushOpaqueDrawCalls(void)
     rdCache_numInstances       = 0;
 }
 
-void rdCache_FlushTransparentDrawCalls(void)
+void rdCache_FlushAlpha(void)
 {
+    if ( rdCache_numAlphaProcFaces )
+    {
+        switch ( rdroid_g_curGeometryMode )
+        {
+            case RD_GEOMETRY_NONE:
+                break;
+
+            default:
+                rdCache_SendFaceListToHardware(rdCache_numAlphaProcFaces, rdCache_aAlphaProcFaces, rdCache_ProcFaceDistanceCompare);
+                break;
+        }
+
+        rdCache_drawnFaces += rdCache_numAlphaProcFaces;
+        rdCache_numAlphaProcFaces    = 0;
+        rdCache_numUsedAlphaVertices = 0;
+    }
+
     if ( !rdCache_NumTransparentDrawCalls )
     {
         return;
@@ -1159,7 +1094,6 @@ void rdCache_FlushTransparentDrawCalls(void)
 
     std3D_SetDrawMode(rdroid_g_curGeometryMode);
 
-    //qsort(rdCache_transparentDrawCalls, rdCache_NumTransparentDrawCalls, sizeof(rdPayload), rdCache_DrawCallDistanceCompare);
     qsort(rdCache_transparentSortBuckets, rdCache_NumTransparentDrawCalls, sizeof(DrawCallSortBucket), rdCache_DrawCallDistanceCompare);
 
     rdCache_SetInstanceData(rdCache_transparentDrawCalls, rdCache_transparentSortBuckets, rdCache_NumTransparentDrawCalls);
