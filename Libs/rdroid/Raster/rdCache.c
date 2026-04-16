@@ -680,12 +680,13 @@ static uint64_t rdCache_GenerateSpriteSortKey(rdPayload* draw)
     uint64_t key             = 0;
     rdSpritePayload* payload = &draw->spritePayload;
 
+    key |= ((uint64_t)draw->type & 0x7) << 61;
 
-    key |= ((uint64_t)payload->spriteType & 0xFFu) << 56;
+    key |= ((uint64_t)payload->spriteType & 0xFFu) << 53;
 
 
-    uint32_t texId = draw->pTex ? draw->pTex->id : 0;
-    key |= (uint64_t)texId;
+    uint16_t texId = (uint16_t)((draw->pTex ? draw->pTex->id : 0) & 0xFFFF);
+    key |= ((uint64_t)texId) << 37;
 
     return key;
 }
