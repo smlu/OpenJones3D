@@ -750,7 +750,7 @@ typedef struct srdParticlePayload
     float particleHalfSize;
 } rdParticlePayload;
 
-typedef struct sPolyLinePayload
+typedef struct srdPolyLinePayload
 {
     rdVector3 vertices[4];
     rdVector2 texCoords[4];

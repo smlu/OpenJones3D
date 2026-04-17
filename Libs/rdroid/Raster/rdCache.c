@@ -520,30 +520,30 @@ int J3DAPI rdCache_ProcFaceCompare(const rdCacheProcEntry* pEntry1, const rdCach
 
 #define RD_CACHE_MAX_INSTANCES 3000
 
-typedef struct sFaceDrawInfo
+typedef struct srdFaceDrawInfo
 {
     size_t indexOffset;
-    size_t numVertices;
-} FaceDrawInfo;
+    size_t numElements;
+} rdFaceDrawInfo;
 
-typedef struct sDrawCallSortBucket
+typedef struct srdDrawCallSortBucket
 {
     uint64_t key;
     size_t index;
-} DrawCallSortBucket;
+} rdDrawCallSortBucket;
 
-static FaceDrawInfo* rdCache_FaceDrawInfos = NULL;
-static size_t rdCache_NumFaces             = 0;
+static rdFaceDrawInfo* rdCache_aFaceDrawInfos = NULL;
+static size_t rdCache_numFaces                = 0;
 
-static rdPayload rdCache_OpaqueDrawCalls[RD_CACHE_MAX_OPAQUE_DRAW_CALLS];
-static DrawCallSortBucket rdCache_opaqueSortBuckets[RD_CACHE_MAX_OPAQUE_DRAW_CALLS];
-static size_t rdCache_NumOpaqueDrawCalls = 0;
+static rdPayload rdCache_aOpaqueDrawCalls[RD_CACHE_MAX_OPAQUE_DRAW_CALLS];
+static rdDrawCallSortBucket rdCache_aOpaqueSortBuckets[RD_CACHE_MAX_OPAQUE_DRAW_CALLS];
+static size_t rdCache_numOpaqueDrawCalls = 0;
 
-static rdPayload rdCache_transparentDrawCalls[RD_CACHE_MAX_TRANSPARENT_DRAW_CALLS];
-static DrawCallSortBucket rdCache_transparentSortBuckets[RD_CACHE_MAX_TRANSPARENT_DRAW_CALLS];
-static size_t rdCache_NumTransparentDrawCalls = 0;
+static rdPayload rdCache_aTransparentDrawCalls[RD_CACHE_MAX_TRANSPARENT_DRAW_CALLS];
+static rdDrawCallSortBucket rdCache_aTransparentSortBuckets[RD_CACHE_MAX_TRANSPARENT_DRAW_CALLS];
+static size_t rdCache_numTransparentDrawCalls = 0;
 
-static InstanceData rdCache_instanceData[RD_CACHE_MAX_INSTANCES];
+static InstanceData rdCache_aInstanceData[RD_CACHE_MAX_INSTANCES];
 static size_t rdCache_numInstances = 0;
 
 static rdDrawType rdCache_currentDrawType;
@@ -553,21 +553,21 @@ static ModelBatch rdCache_modelBatch       = { 0 };
 static QuadBatch rdCache_quadBatch         = { 0 };
 static LegacyBatch rdCache_legacyBatch     = { 0 };
 
-static void rdCache_SendDrawCallsToHardware(rdPayload* drawCalls, DrawCallSortBucket* pSortBuckets, size_t numDrawCalls);
-static size_t rdCache_BatchGeometryDrawCalls(size_t start, rdPayload* drawCalls, DrawCallSortBucket* pSortBuckets, size_t numDrawCalls);
-static size_t rdCache_BatchModelDrawCalls(size_t start, rdPayload* drawCalls, DrawCallSortBucket* pSortBuckets, size_t numDrawCalls);
-static size_t rdCache_BatchQuadDrawCalls(size_t start, rdPayload* drawCalls, DrawCallSortBucket* pSortBuckets, size_t numDrawCalls);
-static size_t rdCache_BatchLegacyDrawCalls(size_t start, rdPayload* drawCalls, DrawCallSortBucket* pSortBuckets, size_t numDrawCalls);
+static void rdCache_SendDrawCallsToHardware(rdPayload* aDrawCalls, rdDrawCallSortBucket* aSortBuckets, size_t numDrawCalls);
+static size_t rdCache_BatchGeometryDrawCalls(size_t start, rdPayload* aDrawCalls, rdDrawCallSortBucket* aSortBuckets, size_t numDrawCalls);
+static size_t rdCache_BatchModelDrawCalls(size_t start, rdPayload* aDrawCalls, rdDrawCallSortBucket* aSortBuckets, size_t numDrawCalls);
+static size_t rdCache_BatchQuadDrawCalls(size_t start, rdPayload* aDrawCalls, rdDrawCallSortBucket* aSortBuckets, size_t numDrawCalls);
+static size_t rdCache_BatchLegacyDrawCalls(size_t start, rdPayload* aDrawCalls, rdDrawCallSortBucket* aSortBuckets, size_t numDrawCalls);
 
-int rdCache_DrawCallOpaqueCompare(const DrawCallSortBucket* a, DrawCallSortBucket* b)
+int rdCache_DrawCallOpaqueCompare(const rdDrawCallSortBucket* pEntry1, rdDrawCallSortBucket* pEntry2)
 {
-    return (a->key > b->key) - (a->key < b->key);
+    return (pEntry1->key > pEntry2->key) - (pEntry1->key < pEntry2->key);
 }
 
-static int rdCache_DrawCallDistanceCompare(const DrawCallSortBucket* pEntry1, const DrawCallSortBucket* pEntry2)
+static int rdCache_DrawCallDistanceCompare(const rdDrawCallSortBucket* pEntry1, const rdDrawCallSortBucket* pEntry2)
 {
-    rdPayload* a = &rdCache_transparentDrawCalls[pEntry1->index];
-    rdPayload* b = &rdCache_transparentDrawCalls[pEntry2->index];
+    rdPayload* a = &rdCache_aTransparentDrawCalls[pEntry1->index];
+    rdPayload* b = &rdCache_aTransparentDrawCalls[pEntry2->index];
     if ( a->distance > b->distance ) return -1;
     if ( a->distance < b->distance ) return 1;
     return 0;
@@ -613,61 +613,61 @@ static uint8_t Std3D_ExtractBatchState(Std3DRenderState rs)
     return state;
 }
 
-static uint64_t rdCache_GenerateOpaqueGeoSortKey(rdPayload* draw)
+static uint64_t rdCache_GenerateGeoBatchKey(rdPayload* pDrawCall)
 {
     uint64_t key = 0;
 
-    key |= ((uint64_t)(draw->type & 0x7)) << 61;
+    // type is 0-7, so it only needs 3 bits
+    key |= ((uint64_t)(pDrawCall->type & 0x7)) << 61;
 
-    uint8_t shaderId = (uint8_t)((draw->pShader ? draw->pShader->handle : 0) & 0xFF);
+    // 8 bits for shader should be enough, that still makes 256 possible shaders
+    uint8_t shaderId = (uint8_t)((pDrawCall->pShader ? pDrawCall->pShader->handle : 0) & 0xFF);
     key |= ((uint64_t)shaderId) << 53;
-    uint16_t texId = (uint16_t)((draw->pTex ? draw->pTex->id : 0) & 0xFFFF);
+
+    // 16 bits for texture => max 65535 different textures possible
+    uint16_t texId = (uint16_t)((pDrawCall->pTex ? pDrawCall->pTex->id : 0) & 0xFFFF);
     key |= ((uint64_t)texId) << 37;
 
-    uint32_t rgb24 =
-        D3DRGB(
-            draw->extraLight.red,
-            draw->extraLight.green,
-            draw->extraLight.blue
-        ) & 0x00FFFFFF;
+    // 24 bits for extra light colors, alpha shouldn't be needed for opaque batches
+    uint32_t rgb24 = D3DRGB(pDrawCall->extraLight.red, pDrawCall->extraLight.green, pDrawCall->extraLight.blue) & 0x00FFFFFF;
 
     key |= ((uint64_t)rgb24) << 13;
 
-
-    uint8_t batchFlags = Std3D_ExtractBatchState(draw->rdFlags);
+    // 8 bits for batching relevant render flags
+    uint8_t batchFlags = Std3D_ExtractBatchState(pDrawCall->rdFlags);
     key |= ((uint64_t)batchFlags) << 5;
 
 
     return key;
 }
 
-static uint64_t rdCache_GenerateLegacySortKey(rdPayload* draw)
+static uint64_t rdCache_GenerateLegacyBatchKey(rdPayload* pDrawCall)
 {
-    rdLegacyPayload* pPayload = &draw->legacyPayload;
+    rdLegacyPayload* pPayload = &pDrawCall->legacyPayload;
 
     uint64_t key = 0;
 
-    key |= ((uint64_t)(draw->type & 0x7)) << 61;
+    key |= ((uint64_t)(pDrawCall->type & 0x7)) << 61;
 
-    uint16_t texId = (uint16_t)((draw->pTex ? draw->pTex->id : 0) & 0xFFFF);
+    uint16_t texId = (uint16_t)((pDrawCall->pTex ? pDrawCall->pTex->id : 0) & 0xFFFF);
     key |= ((uint64_t)texId) << 45;
 
     uint32_t type = pPayload->type;
     key |= ((uint64_t)type) << 13;
 
-    uint8_t batchFlags = Std3D_ExtractBatchState(draw->rdFlags);
+    uint8_t batchFlags = Std3D_ExtractBatchState(pDrawCall->rdFlags);
     key |= ((uint64_t)batchFlags) << 5;
 
     return key;
 }
 
 
-static uint64_t rdCache_GenerateOpaqueModelSortKey(rdPayload* draw)
+static uint64_t rdCache_GenerateOpaqueModelBatchKey(rdPayload* pDrawCall)
 {
-    rdModelFacePayload* pModelData = &draw->modelFacePayload;
+    rdModelFacePayload* pModelData = &pDrawCall->modelFacePayload;
     uint64_t key                   = 0;
 
-    key |= ((uint64_t)draw->type & 0x7) << 61;
+    key |= ((uint64_t)pDrawCall->type & 0x7) << 61;
 
     // Faces with same face num can be rendered via instancing
     key |= ((uint64_t)(pModelData->faceNum & 0xFFFFFFFF)) << 29;
@@ -675,43 +675,43 @@ static uint64_t rdCache_GenerateOpaqueModelSortKey(rdPayload* draw)
     return key;
 }
 
-static uint64_t rdCache_GenerateSpriteSortKey(rdPayload* draw)
+static uint64_t rdCache_GenerateSpriteBatchKey(rdPayload* pDrawCall)
 {
-    uint64_t key             = 0;
-    rdSpritePayload* payload = &draw->spritePayload;
+    uint64_t key              = 0;
+    rdSpritePayload* pPayload = &pDrawCall->spritePayload;
 
-    key |= ((uint64_t)draw->type & 0x7) << 61;
+    key |= ((uint64_t)pDrawCall->type & 0x7) << 61;
 
-    key |= ((uint64_t)payload->spriteType & 0xFFu) << 53;
+    key |= ((uint64_t)pPayload->spriteType & 0xFFu) << 53;
 
 
-    uint16_t texId = (uint16_t)((draw->pTex ? draw->pTex->id : 0) & 0xFFFF);
+    uint16_t texId = (uint16_t)((pDrawCall->pTex ? pDrawCall->pTex->id : 0) & 0xFFFF);
     key |= ((uint64_t)texId) << 37;
 
     return key;
 }
 
-static uint64_t rdCache_GenerateParticleSortKey(rdPayload* draw)
+static uint64_t rdCache_GenerateParticleBatchKey(rdPayload* pDrawCall)
 {
-    uint64_t key               = 0;
-    rdParticlePayload* payload = &draw->particlePayload;
+    uint64_t key                = 0;
+    rdParticlePayload* pPayload = &pDrawCall->particlePayload;
 
 
-    key |= ((uint64_t)draw->type & 0x7) << 61;
+    key |= ((uint64_t)pDrawCall->type & 0x7) << 61;
 
 
-    uint16_t texId = (uint16_t)((draw->pTex ? draw->pTex->id : 0) & 0xFFFF);
+    uint16_t texId = (uint16_t)((pDrawCall->pTex ? pDrawCall->pTex->id : 0) & 0xFFFF);
     key |= ((uint64_t)texId) << 45;
 
 
-    float halfSize     = payload->particleHalfSize;
+    float halfSize     = pPayload->particleHalfSize;
     uint16_t qHalfSize = rdQuantizeFloat16(halfSize);
     key |= ((uint64_t)qHalfSize) << 31;
 
 
-    uint8_t r = rdQuantizeFloat8(draw->extraLight.red);
-    uint8_t g = rdQuantizeFloat8(draw->extraLight.green);
-    uint8_t b = rdQuantizeFloat8(draw->extraLight.blue);
+    uint8_t r = rdQuantizeFloat8(pDrawCall->extraLight.red);
+    uint8_t g = rdQuantizeFloat8(pDrawCall->extraLight.green);
+    uint8_t b = rdQuantizeFloat8(pDrawCall->extraLight.blue);
     key |= ((uint64_t)r << 23);
     key |= ((uint64_t)g << 15);
     key |= ((uint64_t)b << 7);
@@ -719,13 +719,13 @@ static uint64_t rdCache_GenerateParticleSortKey(rdPayload* draw)
     return key;
 }
 
-static uint64_t rdCache_GeneratePolyLineSortKey(rdPayload* draw)
+static uint64_t rdCache_GeneratePolyLineBatchKey(rdPayload* pDrawCall)
 {
     uint64_t key = 0;
 
-    key |= ((uint64_t)(draw->type & 0x7)) << 61;
+    key |= ((uint64_t)(pDrawCall->type & 0x7)) << 61;
 
-    uint16_t texId = (uint16_t)((draw->pTex ? draw->pTex->id : 0) & 0xFFFF);
+    uint16_t texId = (uint16_t)((pDrawCall->pTex ? pDrawCall->pTex->id : 0) & 0xFFFF);
     key |= ((uint64_t)texId) << 45;
 
     return key;
@@ -734,65 +734,65 @@ static uint64_t rdCache_GeneratePolyLineSortKey(rdPayload* draw)
 
 void rdCache_InitFaceDrawInfo(const size_t numFaces)
 {
-    rdCache_FaceDrawInfos = STDMALLOC(numFaces * sizeof(FaceDrawInfo));
+    rdCache_aFaceDrawInfos = STDMALLOC(numFaces * sizeof(rdFaceDrawInfo));
     std3D_InitInstanceVBO(RD_CACHE_MAX_INSTANCES);
 }
 
 void rdCache_FreeFaceDrawInfos(void)
 {
-    if ( !rdCache_FaceDrawInfos )
+    if ( !rdCache_aFaceDrawInfos )
         return;
 
-    STDFREE(rdCache_FaceDrawInfos);
-    rdCache_FaceDrawInfos           = NULL;
-    rdCache_NumFaces                = 0;
-    rdCache_NumOpaqueDrawCalls      = 0;
-    rdCache_NumTransparentDrawCalls = 0;
+    STDFREE(rdCache_aFaceDrawInfos);
+    rdCache_aFaceDrawInfos          = NULL;
+    rdCache_numFaces                = 0;
+    rdCache_numOpaqueDrawCalls      = 0;
+    rdCache_numTransparentDrawCalls = 0;
 }
 
 size_t rdCache_AddFaceInfoEntry(const size_t indexOffset, const size_t numVertices)
 {
-    size_t faceNum         = rdCache_NumFaces++;
-    FaceDrawInfo* drawInfo = &rdCache_FaceDrawInfos[faceNum];
-    drawInfo->indexOffset  = indexOffset;
-    drawInfo->numVertices  = numVertices;
+    size_t faceNum           = rdCache_numFaces++;
+    rdFaceDrawInfo* drawInfo = &rdCache_aFaceDrawInfos[faceNum];
+    drawInfo->indexOffset    = indexOffset;
+    drawInfo->numElements    = numVertices;
 
     return faceNum;
 }
 
-static rdPayload* rdCache_GetDrawCall(rdDrawType type, rdPayload* payloads, size_t numDrawCalls)
+static rdPayload* rdCache_GetDrawCall(rdDrawType type, rdPayload* aDrawCalls, size_t numDrawCalls)
 {
     rdCache_currentDrawType = type;
 
-    rdPayload* pPayload = &payloads[numDrawCalls];
+    rdPayload* pDrawCall = &aDrawCalls[numDrawCalls];
 
-    pPayload->pShader   = NULL;
-    pPayload->pMaterial = NULL;
-    return pPayload;
+    pDrawCall->pShader   = NULL;
+    pDrawCall->pMaterial = NULL;
+    return pDrawCall;
 }
 
 rdPayload* rdCache_GetOpaqueDrawCall(rdDrawType type)
 {
-    if ( rdCache_NumOpaqueDrawCalls >= RD_CACHE_MAX_OPAQUE_DRAW_CALLS )
+    if ( rdCache_numOpaqueDrawCalls >= RD_CACHE_MAX_OPAQUE_DRAW_CALLS )
     {
         rdCache_Flush();
     }
-    return rdCache_GetDrawCall(type, rdCache_OpaqueDrawCalls, rdCache_NumOpaqueDrawCalls);
+    return rdCache_GetDrawCall(type, rdCache_aOpaqueDrawCalls, rdCache_numOpaqueDrawCalls);
 }
 
 rdPayload* rdCache_GetTransparentDrawCall(rdDrawType type)
 {
-    if ( rdCache_NumTransparentDrawCalls >= RD_CACHE_MAX_TRANSPARENT_DRAW_CALLS )
+    if ( rdCache_numTransparentDrawCalls >= RD_CACHE_MAX_TRANSPARENT_DRAW_CALLS )
     {
         rdCache_FlushAlpha();
     }
-    return rdCache_GetDrawCall(type, rdCache_transparentDrawCalls, rdCache_NumTransparentDrawCalls);
+    return rdCache_GetDrawCall(type, rdCache_aTransparentDrawCalls, rdCache_numTransparentDrawCalls);
 }
 
 
-static Std3DRenderState rdCache_GetRenderStateOfFace(const rdPayload* pPayload)
+static Std3DRenderState rdCache_GetRenderStateOfDrawCall(const rdPayload* pDrawCall)
 {
-    rdFaceFlags fFlags       = pPayload->flags;
+    rdFaceFlags fFlags       = pDrawCall->flags;
     Std3DRenderState rdFlags = STD3D_RS_SUBPIXEL_CORRECTION | STD3D_RS_UNKNOWN_2 | STD3D_RS_UNKNOWN_1;
 
     if ( (fFlags & RD_FF_TEX_CLAMP_X) != 0 )
@@ -825,7 +825,7 @@ static Std3DRenderState rdCache_GetRenderStateOfFace(const rdPayload* pPayload)
         rdFlags |= STD3D_CULL_DISABLED;
     }
 
-    if ( pPayload->pMaterial && pPayload->pMaterial->formatType == STDCOLOR_FORMAT_RGBA_1BITALPHA )
+    if ( pDrawCall->pMaterial && pDrawCall->pMaterial->formatType == STDCOLOR_FORMAT_RGBA_1BITALPHA )
     {
         rdFlags |= STD3D_RS_ALPHAREF_SET;
         rdFlags &= ~STD3D_RS_ZWRITE_DISABLED;
@@ -834,12 +834,12 @@ static Std3DRenderState rdCache_GetRenderStateOfFace(const rdPayload* pPayload)
     return rdFlags;
 }
 
-static tSysTexture* rdCache_GetFaceTexture(const rdPayload* pPayload)
+static tSysTexture* rdCache_GetDrawCallTexture(const rdPayload* pDrawCall)
 {
     rdMaterial* pCurMat = NULL;
     if ( rdroid_g_curGeometryMode != RD_GEOMETRY_SOLID )
     {
-        pCurMat = pPayload->pMaterial;
+        pCurMat = pDrawCall->pMaterial;
     }
 
     int curMatCelNum            = -1;
@@ -847,7 +847,7 @@ static tSysTexture* rdCache_GetFaceTexture(const rdPayload* pPayload)
     if ( pCurMat )
     {
         tSystemTexture* pTex = NULL;
-        curMatCelNum         = pPayload->matCelNum;
+        curMatCelNum         = pDrawCall->matCelNum;
         if ( curMatCelNum == -1 )
         {
             if ( pCurMat->curCelNum < 0 )
@@ -879,7 +879,7 @@ static tSysTexture* rdCache_GetFaceTexture(const rdPayload* pPayload)
             }
             else
             {
-                curMatCelNum = pPayload->matCelNum;
+                curMatCelNum = pDrawCall->matCelNum;
             }
 
             pTex = &pCurMat->aTextures[curMatCelNum];
@@ -892,45 +892,41 @@ static tSysTexture* rdCache_GetFaceTexture(const rdPayload* pPayload)
     return pCachedTexture;
 }
 
-static void rdCache_AddDrawCall(rdPayload* header, DrawCallSortBucket* pSortBucket)
+static void rdCache_AddDrawCall(rdPayload* pDrawCall, rdDrawCallSortBucket* pSortBucket)
 {
+    pDrawCall->type = rdCache_currentDrawType;
     if ( rdCache_currentDrawType == RD_DRAW_LEGACY )
     {
-        header->type     = RD_DRAW_LEGACY;
-        pSortBucket->key = rdCache_GenerateLegacySortKey(header);
+        pSortBucket->key = rdCache_GenerateLegacyBatchKey(pDrawCall);
         return;
     }
 
-    header->rdFlags = rdCache_GetRenderStateOfFace(header);
-    header->pTex    = rdCache_GetFaceTexture(header);
+    pDrawCall->rdFlags = rdCache_GetRenderStateOfDrawCall(pDrawCall);
+    pDrawCall->pTex    = rdCache_GetDrawCallTexture(pDrawCall);
+
     if ( rdroid_g_curGeometryMode == RD_GEOMETRY_VERTEX || rdroid_g_curGeometryMode == RD_GEOMETRY_WIREFRAME )
     {
-        header->lightingMode = RD_LIGHTING_NONE;
-        header->rdFlags &= ~STD3D_RS_FOG_ENABLED;
+        pDrawCall->lightingMode = RD_LIGHTING_NONE;
+        pDrawCall->rdFlags &= ~STD3D_RS_FOG_ENABLED;
     }
 
     switch ( rdCache_currentDrawType )
     {
         case RD_DRAW_GEOMETRY:
-            header->type = RD_DRAW_GEOMETRY;
-            pSortBucket->key = rdCache_GenerateOpaqueGeoSortKey(header);
+            pSortBucket->key = rdCache_GenerateGeoBatchKey(pDrawCall);
             break;
         case RD_DRAW_MODEL:
-            header->type = RD_DRAW_MODEL;
-            pSortBucket->key = rdCache_GenerateOpaqueModelSortKey(header);
+            pSortBucket->key = rdCache_GenerateOpaqueModelBatchKey(pDrawCall);
             break;
         case RD_DRAW_SPRITE:
-            header->type = RD_DRAW_SPRITE;
-            pSortBucket->key = rdCache_GenerateSpriteSortKey(header);
+            pSortBucket->key = rdCache_GenerateSpriteBatchKey(pDrawCall);
             break;
         case RD_DRAW_PARTICLE:
-            header->type = RD_DRAW_PARTICLE;
-            pSortBucket->key = rdCache_GenerateParticleSortKey(header);
+            pSortBucket->key = rdCache_GenerateParticleBatchKey(pDrawCall);
             break;
         case RD_DRAW_POLYLINE:
         case RD_DRAW_SHADOW:
-            header->type = RD_DRAW_POLYLINE;
-            pSortBucket->key = rdCache_GeneratePolyLineSortKey(header);
+            pSortBucket->key = rdCache_GeneratePolyLineBatchKey(pDrawCall);
             break;
         default:
             break;
@@ -939,31 +935,31 @@ static void rdCache_AddDrawCall(rdPayload* header, DrawCallSortBucket* pSortBuck
 
 void rdCache_AddOpaqueDrawCall(void)
 {
-    rdPayload* header               = &rdCache_OpaqueDrawCalls[rdCache_NumOpaqueDrawCalls];
-    DrawCallSortBucket* pSortBucket = &rdCache_opaqueSortBuckets[rdCache_NumOpaqueDrawCalls];
+    rdPayload* header                 = &rdCache_aOpaqueDrawCalls[rdCache_numOpaqueDrawCalls];
+    rdDrawCallSortBucket* pSortBucket = &rdCache_aOpaqueSortBuckets[rdCache_numOpaqueDrawCalls];
     rdCache_AddDrawCall(header, pSortBucket);
-    pSortBucket->index = rdCache_NumOpaqueDrawCalls++;
+    pSortBucket->index = rdCache_numOpaqueDrawCalls++;
 }
 
 void rdCache_AddTransparentDrawCall(void)
 {
-    rdPayload* header               = &rdCache_transparentDrawCalls[rdCache_NumTransparentDrawCalls];
-    DrawCallSortBucket* pSortBucket = &rdCache_transparentSortBuckets[rdCache_NumTransparentDrawCalls];
+    rdPayload* header                 = &rdCache_aTransparentDrawCalls[rdCache_numTransparentDrawCalls];
+    rdDrawCallSortBucket* pSortBucket = &rdCache_aTransparentSortBuckets[rdCache_numTransparentDrawCalls];
     rdCache_AddDrawCall(header, pSortBucket);
     header->rdFlags |= STD3D_BLEND_ENABLED;
-    pSortBucket->index = rdCache_NumTransparentDrawCalls++;
+    pSortBucket->index = rdCache_numTransparentDrawCalls++;
 }
 
-static void rdCache_SetInstanceData(rdPayload* drawCalls, DrawCallSortBucket* sortBuckets, size_t numDrawCalls)
+static void rdCache_SetInstanceData(rdPayload* aDrawCalls, rdDrawCallSortBucket* aSortBuckets, size_t numDrawCalls)
 {
     for ( size_t i = 0; i < numDrawCalls; i++ )
     {
-        DrawCallSortBucket* pSortBucket = &sortBuckets[i];
-        rdPayload* header               = &drawCalls[pSortBucket->index];
+        rdDrawCallSortBucket* pSortBucket = &aSortBuckets[i];
+        rdPayload* header                 = &aDrawCalls[pSortBucket->index];
         if ( header->type != RD_DRAW_MODEL && header->type != RD_DRAW_SPRITE && header->type != RD_DRAW_PARTICLE && header->type != RD_DRAW_POLYLINE )
             continue;
 
-        InstanceData* pData = &rdCache_instanceData[rdCache_numInstances++];
+        InstanceData* pData = &rdCache_aInstanceData[rdCache_numInstances++];
 
         switch ( header->type )
         {
@@ -982,13 +978,13 @@ static void rdCache_SetInstanceData(rdPayload* drawCalls, DrawCallSortBucket* so
                 break;
             case RD_DRAW_SPRITE:
                 rdSpritePayload* pSpriteData = &header->spritePayload;
-                //sprite pos
+
                 stdShader_ConvertToMat4(&pSpriteData->modelMatrix, pData->modelMatrix);
-                //sprite offset
+
                 pData->spriteOffset[0] = pSpriteData->spriteOffset.x;
                 pData->spriteOffset[1] = pSpriteData->spriteOffset.z;
                 pData->spriteOffset[2] = -pSpriteData->spriteOffset.y;
-                //halfSize
+
                 pData->spriteHalfSize[0] = pSpriteData->spriteSize.x;
                 pData->spriteHalfSize[1] = pSpriteData->spriteSize.y;
                 break;
@@ -1051,22 +1047,22 @@ void rdCache_Flush(void)
         rdCache_numUsedVertices = 0;
     }
 
-    if ( !rdCache_NumOpaqueDrawCalls )
+    if ( !rdCache_numOpaqueDrawCalls )
     {
         return;
     }
 
     std3D_SetDrawMode(rdroid_g_curGeometryMode);
 
-    qsort(rdCache_opaqueSortBuckets, rdCache_NumOpaqueDrawCalls, sizeof(DrawCallSortBucket), rdCache_DrawCallOpaqueCompare);
+    qsort(rdCache_aOpaqueSortBuckets, rdCache_numOpaqueDrawCalls, sizeof(rdDrawCallSortBucket), rdCache_DrawCallOpaqueCompare);
 
-    rdCache_SetInstanceData(rdCache_OpaqueDrawCalls, rdCache_opaqueSortBuckets, rdCache_NumOpaqueDrawCalls);
+    rdCache_SetInstanceData(rdCache_aOpaqueDrawCalls, rdCache_aOpaqueSortBuckets, rdCache_numOpaqueDrawCalls);
 
-    std3D_UpdateInstanceVBO(rdCache_instanceData, rdCache_numInstances);
+    std3D_UpdateInstanceVBO(rdCache_aInstanceData, rdCache_numInstances);
 
-    rdCache_SendDrawCallsToHardware(rdCache_OpaqueDrawCalls, rdCache_opaqueSortBuckets, rdCache_NumOpaqueDrawCalls);
+    rdCache_SendDrawCallsToHardware(rdCache_aOpaqueDrawCalls, rdCache_aOpaqueSortBuckets, rdCache_numOpaqueDrawCalls);
 
-    rdCache_NumOpaqueDrawCalls = 0;
+    rdCache_numOpaqueDrawCalls = 0;
     rdCache_numInstances       = 0;
 }
 
@@ -1089,91 +1085,95 @@ void rdCache_FlushAlpha(void)
         rdCache_numUsedAlphaVertices = 0;
     }
 
-    if ( !rdCache_NumTransparentDrawCalls )
+    if ( !rdCache_numTransparentDrawCalls )
     {
         return;
     }
 
     std3D_SetDrawMode(rdroid_g_curGeometryMode);
 
-    qsort(rdCache_transparentSortBuckets, rdCache_NumTransparentDrawCalls, sizeof(DrawCallSortBucket), rdCache_DrawCallDistanceCompare);
+    qsort(rdCache_aTransparentSortBuckets, rdCache_numTransparentDrawCalls, sizeof(rdDrawCallSortBucket), rdCache_DrawCallDistanceCompare);
 
-    rdCache_SetInstanceData(rdCache_transparentDrawCalls, rdCache_transparentSortBuckets, rdCache_NumTransparentDrawCalls);
+    rdCache_SetInstanceData(rdCache_aTransparentDrawCalls, rdCache_aTransparentSortBuckets, rdCache_numTransparentDrawCalls);
 
-    std3D_UpdateInstanceVBO(rdCache_instanceData, rdCache_numInstances);
+    std3D_UpdateInstanceVBO(rdCache_aInstanceData, rdCache_numInstances);
 
-    rdCache_SendDrawCallsToHardware(rdCache_transparentDrawCalls, rdCache_transparentSortBuckets, rdCache_NumTransparentDrawCalls);
+    rdCache_SendDrawCallsToHardware(rdCache_aTransparentDrawCalls, rdCache_aTransparentSortBuckets, rdCache_numTransparentDrawCalls);
 
-    rdCache_NumTransparentDrawCalls = 0;
+    rdCache_numTransparentDrawCalls = 0;
     rdCache_numInstances            = 0;
 }
 
-static void rdCache_SendDrawCallsToHardware(rdPayload* drawCalls, DrawCallSortBucket* pSortBuckets, size_t numDrawCalls)
+static void rdCache_SendDrawCallsToHardware(rdPayload* aDrawCalls, rdDrawCallSortBucket* aSortBuckets, size_t numDrawCalls)
 {
     for ( size_t i = 0; i < numDrawCalls; i++ )
     {
-        DrawCallSortBucket* pSortBucket = &pSortBuckets[i];
-        rdPayload* header               = &drawCalls[pSortBucket->index];
-        switch ( header->type )
+        rdDrawCallSortBucket* pSortBucket = &aSortBuckets[i];
+        rdPayload* pDrawCall              = &aDrawCalls[pSortBucket->index];
+        size_t drawCount                  = 0;
+        switch ( pDrawCall->type )
         {
             case RD_DRAW_GEOMETRY:
-                i += rdCache_BatchGeometryDrawCalls(i, drawCalls, pSortBuckets, numDrawCalls) - 1;
+                drawCount = rdCache_BatchGeometryDrawCalls(i, aDrawCalls, aSortBuckets, numDrawCalls);
                 std3D_DrawGeometryBatch(&rdCache_geometryBatch);
                 break;
             case RD_DRAW_MODEL:
-                i += rdCache_BatchModelDrawCalls(i, drawCalls, pSortBuckets, numDrawCalls) - 1;
+                drawCount = rdCache_BatchModelDrawCalls(i, aDrawCalls, aSortBuckets, numDrawCalls);
                 std3D_DrawModelBatch(&rdCache_modelBatch);
                 break;
             case RD_DRAW_SPRITE:
-                i += rdCache_BatchQuadDrawCalls(i, drawCalls, pSortBuckets, numDrawCalls) - 1;
-                const rdSpritePayload* pPayload = &header->spritePayload;
+                drawCount = rdCache_BatchQuadDrawCalls(i, aDrawCalls, aSortBuckets, numDrawCalls);
+                const rdSpritePayload* pPayload = &pDrawCall->spritePayload;
                 rdCache_quadBatch.spriteType    = pPayload->spriteType;
                 rdCache_quadBatch.pShader       = stdShader_GetShader("std_sprite");
                 std3D_DrawQuadBatch(&rdCache_quadBatch);
                 break;
             case RD_DRAW_PARTICLE:
-                i += rdCache_BatchQuadDrawCalls(i, drawCalls, pSortBuckets, numDrawCalls) - 1;
+                drawCount = rdCache_BatchQuadDrawCalls(i, aDrawCalls, aSortBuckets, numDrawCalls);
                 rdCache_quadBatch.pShader = stdShader_GetShader("std_particle");
                 std3D_DrawQuadBatch(&rdCache_quadBatch);
                 break;
             case RD_DRAW_POLYLINE:
             case RD_DRAW_SHADOW:
-                i += rdCache_BatchQuadDrawCalls(i, drawCalls, pSortBuckets, numDrawCalls) - 1;
+                drawCount = rdCache_BatchQuadDrawCalls(i, aDrawCalls, aSortBuckets, numDrawCalls);
                 rdCache_quadBatch.pShader = stdShader_GetShader("std_polyline");
                 std3D_DrawQuadBatch(&rdCache_quadBatch);
                 break;
             case RD_DRAW_LEGACY:
-                i += rdCache_BatchLegacyDrawCalls(i, drawCalls, pSortBuckets, numDrawCalls) - 1;
+                drawCount = rdCache_BatchLegacyDrawCalls(i, aDrawCalls, aSortBuckets, numDrawCalls);
                 std3D_CacheLegacyBatch(rdCache_legacyBatch);
+                break;
         }
+
+        i += drawCount - 1;
     }
 }
 
-static size_t rdCache_BatchGeometryDrawCalls(size_t start, rdPayload* drawCalls, DrawCallSortBucket* pSortBuckets, size_t numDrawCalls)
+static size_t rdCache_BatchGeometryDrawCalls(size_t start, rdPayload* aDrawCalls, rdDrawCallSortBucket* aSortBuckets, size_t numDrawCalls)
 {
     size_t drawCount = 0;
     size_t i         = start;
 
-    DrawCallSortBucket* pSortBucket = &pSortBuckets[i];
+    rdDrawCallSortBucket* pSortBucket = &aSortBuckets[i];
 
-    rdPayload* header         = &drawCalls[pSortBucket->index];
-    rdGeoFacePayload* payload = &header->geoFacePayload;
+    rdPayload* pDrawCall      = &aDrawCalls[pSortBucket->index];
+    rdGeoFacePayload* payload = &pDrawCall->geoFacePayload;
     uint64_t sortKey          = pSortBucket->key;
 
-    FaceDrawInfo* drawInfo = &rdCache_FaceDrawInfos[payload->faceNum];
+    rdFaceDrawInfo* drawInfo = &rdCache_aFaceDrawInfos[payload->faceNum];
 
     // Batch state
-    rdCache_geometryBatch.pTex          = header->pTex;
-    rdCache_geometryBatch.pShader       = header->pShader;
-    rdCache_geometryBatch.rdFlags       = header->rdFlags;
-    rdCache_geometryBatch.extraLight[0] = header->extraLight.red;
-    rdCache_geometryBatch.extraLight[1] = header->extraLight.green;
-    rdCache_geometryBatch.extraLight[2] = header->extraLight.blue;
-    rdCache_geometryBatch.extraLight[3] = header->extraLight.alpha;
-    rdCache_geometryBatch.lightMode     = header->lightingMode;
+    rdCache_geometryBatch.pTex          = pDrawCall->pTex;
+    rdCache_geometryBatch.pShader       = pDrawCall->pShader;
+    rdCache_geometryBatch.rdFlags       = pDrawCall->rdFlags;
+    rdCache_geometryBatch.extraLight[0] = pDrawCall->extraLight.red;
+    rdCache_geometryBatch.extraLight[1] = pDrawCall->extraLight.green;
+    rdCache_geometryBatch.extraLight[2] = pDrawCall->extraLight.blue;
+    rdCache_geometryBatch.extraLight[3] = pDrawCall->extraLight.alpha;
+    rdCache_geometryBatch.lightMode     = pDrawCall->lightingMode;
 
     // First draw
-    rdCache_geometryBatch.indexCounts[0]  = drawInfo->numVertices;
+    rdCache_geometryBatch.indexCounts[0]  = drawInfo->numElements;
     rdCache_geometryBatch.indexOffsets[0] = drawInfo->indexOffset * sizeof(GLuint);
     drawCount++;
     i++;
@@ -1181,18 +1181,18 @@ static size_t rdCache_BatchGeometryDrawCalls(size_t start, rdPayload* drawCalls,
     // Batch following
     while ( i < numDrawCalls && drawCount < MAX_BATCHES )
     {
-        pSortBucket = &pSortBuckets[i];
-        header      = &drawCalls[pSortBucket->index];
+        pSortBucket = &aSortBuckets[i];
+        pDrawCall   = &aDrawCalls[pSortBucket->index];
         if ( pSortBucket->key != sortKey ||
-            header->lightingMode != rdCache_geometryBatch.lightMode || header->rdFlags != rdCache_geometryBatch.rdFlags )
+            pDrawCall->lightingMode != rdCache_geometryBatch.lightMode || pDrawCall->rdFlags != rdCache_geometryBatch.rdFlags )
         {
             break;
         }
 
-        payload  = &header->geoFacePayload;
-        drawInfo = &rdCache_FaceDrawInfos[payload->faceNum];
+        payload  = &pDrawCall->geoFacePayload;
+        drawInfo = &rdCache_aFaceDrawInfos[payload->faceNum];
 
-        rdCache_geometryBatch.indexCounts[drawCount]  = drawInfo->numVertices;
+        rdCache_geometryBatch.indexCounts[drawCount]  = drawInfo->numElements;
         rdCache_geometryBatch.indexOffsets[drawCount] = drawInfo->indexOffset * sizeof(GLuint);
 
         drawCount++;
@@ -1203,32 +1203,32 @@ static size_t rdCache_BatchGeometryDrawCalls(size_t start, rdPayload* drawCalls,
     return drawCount;
 }
 
-static size_t rdCache_BatchModelDrawCalls(size_t start, rdPayload* drawCalls, DrawCallSortBucket* pSortBuckets, size_t numDrawCalls)
+static size_t rdCache_BatchModelDrawCalls(size_t start, rdPayload* aDrawCalls, rdDrawCallSortBucket* aSortBuckets, size_t numDrawCalls)
 {
     size_t drawCount = 0;
     size_t i         = start;
 
-    DrawCallSortBucket* pSortBucket = &pSortBuckets[i];
+    rdDrawCallSortBucket* pSortBucket = &aSortBuckets[i];
 
-    rdPayload* header           = &drawCalls[pSortBucket->index];
-    rdModelFacePayload* payload = &header->modelFacePayload;
-    uint64_t sortKey            = pSortBucket->key;
+    rdPayload* header             = &aDrawCalls[pSortBucket->index];
+    rdModelFacePayload* pDrawCall = &header->modelFacePayload;
+    uint64_t sortKey              = pSortBucket->key;
 
     // Batch state
     rdCache_modelBatch.pTex        = header->pTex;
     rdCache_modelBatch.pShader     = header->pShader;
     rdCache_modelBatch.rdFlags     = header->rdFlags;
     rdCache_modelBatch.lightMode   = header->lightingMode; // First draw
-    rdCache_modelBatch.indexCount  = rdCache_FaceDrawInfos[payload->faceNum].numVertices;
-    rdCache_modelBatch.indexOffset = rdCache_FaceDrawInfos[payload->faceNum].indexOffset;
+    rdCache_modelBatch.indexCount  = rdCache_aFaceDrawInfos[pDrawCall->faceNum].numElements;
+    rdCache_modelBatch.indexOffset = rdCache_aFaceDrawInfos[pDrawCall->faceNum].indexOffset;
     drawCount++;
     i++;
 
     // Batch following
     while ( i < numDrawCalls )
     {
-        pSortBucket = &pSortBuckets[i];
-        header      = &drawCalls[pSortBucket->index];
+        pSortBucket = &aSortBuckets[i];
+        header      = &aDrawCalls[pSortBucket->index];
 
         if ( pSortBucket->key != sortKey ||
             header->lightingMode != rdCache_modelBatch.lightMode )
@@ -1244,21 +1244,21 @@ static size_t rdCache_BatchModelDrawCalls(size_t start, rdPayload* drawCalls, Dr
     return drawCount;
 }
 
-static size_t rdCache_BatchQuadDrawCalls(size_t start, rdPayload* drawCalls, DrawCallSortBucket* pSortBuckets, size_t numDrawCalls)
+static size_t rdCache_BatchQuadDrawCalls(size_t start, rdPayload* aDrawCalls, rdDrawCallSortBucket* aSortBuckets, size_t numDrawCalls)
 {
     size_t drawCount = 0;
     size_t i         = start;
 
-    DrawCallSortBucket* pSortBucket = &pSortBuckets[i];
-    rdPayload* header               = &drawCalls[pSortBucket->index];
-    uint64_t sortKey                = pSortBucket->key;
+    rdDrawCallSortBucket* pSortBucket = &aSortBuckets[i];
+    rdPayload* pDrawCall              = &aDrawCalls[pSortBucket->index];
+    uint64_t sortKey                  = pSortBucket->key;
 
-    QuadBatch* batch = &rdCache_quadBatch;
+    QuadBatch* pBatch = &rdCache_quadBatch;
 
     // Batch state
-    batch->pTex      = header->pTex;
-    batch->rdFlags   = header->rdFlags;
-    batch->lightMode = header->lightingMode;
+    pBatch->pTex      = pDrawCall->pTex;
+    pBatch->rdFlags   = pDrawCall->rdFlags;
+    pBatch->lightMode = pDrawCall->lightingMode;
 
 
     drawCount++;
@@ -1267,11 +1267,11 @@ static size_t rdCache_BatchQuadDrawCalls(size_t start, rdPayload* drawCalls, Dra
     // Batch following
     while ( i < numDrawCalls )
     {
-        pSortBucket = &pSortBuckets[i];
-        header      = &drawCalls[pSortBucket->index];
+        pSortBucket = &aSortBuckets[i];
+        pDrawCall   = &aDrawCalls[pSortBucket->index];
 
         if ( pSortBucket->key != sortKey ||
-            header->lightingMode != batch->lightMode )
+            pDrawCall->lightingMode != pBatch->lightMode )
         {
             break;
         }
@@ -1279,24 +1279,24 @@ static size_t rdCache_BatchQuadDrawCalls(size_t start, rdPayload* drawCalls, Dra
         i++;
     }
 
-    batch->numberOfInstances = (GLsizei)drawCount;
+    pBatch->numberOfInstances = (GLsizei)drawCount;
     return drawCount;
 }
 
-static size_t rdCache_BatchLegacyDrawCalls(size_t start, rdPayload* drawCalls, DrawCallSortBucket* pSortBuckets, size_t numDrawCalls)
+static size_t rdCache_BatchLegacyDrawCalls(size_t start, rdPayload* aDrawCalls, rdDrawCallSortBucket* aSortBuckets, size_t numDrawCalls)
 {
     size_t drawCount = 0;
     size_t i         = start;
 
-    DrawCallSortBucket* pSortBucket = &pSortBuckets[i];
+    rdDrawCallSortBucket* pSortBucket = &aSortBuckets[i];
 
-    rdPayload* header        = &drawCalls[pSortBucket->index];
-    rdLegacyPayload* payload = &header->legacyPayload;
+    rdPayload* pDrawCall     = &aDrawCalls[pSortBucket->index];
+    rdLegacyPayload* payload = &pDrawCall->legacyPayload;
     uint64_t sortKey         = pSortBucket->key;
 
     // Batch state
-    rdCache_legacyBatch.pTex    = header->pTex;
-    rdCache_legacyBatch.rdFlags = header->rdFlags;
+    rdCache_legacyBatch.pTex    = pDrawCall->pTex;
+    rdCache_legacyBatch.rdFlags = pDrawCall->rdFlags;
     rdCache_legacyBatch.type    = payload->type;
 
     // First draw
@@ -1308,14 +1308,14 @@ static size_t rdCache_BatchLegacyDrawCalls(size_t start, rdPayload* drawCalls, D
     // Batch following
     while ( i < numDrawCalls && drawCount < MAX_BATCHES )
     {
-        pSortBucket = &pSortBuckets[i];
+        pSortBucket = &aSortBuckets[i];
         if ( pSortBucket->key != sortKey )
         {
             break;
         }
 
-        header  = &drawCalls[pSortBucket->index];
-        payload = &header->legacyPayload;
+        pDrawCall = &aDrawCalls[pSortBucket->index];
+        payload   = &pDrawCall->legacyPayload;
 
         rdCache_legacyBatch.indexCounts[drawCount]  = payload->numIndices;
         rdCache_legacyBatch.indexOffsets[drawCount] = payload->indexOffset * sizeof(GLushort);
