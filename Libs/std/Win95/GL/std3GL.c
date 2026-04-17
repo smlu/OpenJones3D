@@ -80,8 +80,8 @@ typedef enum eDrawMode
 static LegacyBatch std3D_cachedLegacyBatches[STD3D_MAX_LEGACY_BATCHES];
 static size_t std3D_numCachedLegacyBatches = 0;
 
-static LPD3DTLVERTEX std3D_pScreenSpaceVertexBuffer;
-static WORD* std3D_pScreenSpaceElementBuffer;
+static D3DTLVERTEX std3D_pScreenSpaceVertexBuffer[STD3D_MAX_VERTICES_PER_DRAW * sizeof(D3DTLVERTEX)];
+static WORD std3D_pScreenSpaceElementBuffer[STD3D_MAX_INDICES_PER_DRAW * sizeof(GLushort)];
 static size_t std3D_numScreenSpaceVertices = 0;
 static size_t std3D_numScreenSpaceIndices  = 0;
 
@@ -1214,12 +1214,12 @@ bool std3D_InitVertexBuffers(GLuint* vbo, GLuint* ebo, GLuint* vao)
     // create vbo
     glGenBuffers(1, vbo);
     glBindBuffer(GL_ARRAY_BUFFER, *vbo);
-    glBufferData(GL_ARRAY_BUFFER, STD3D_MAX_VERTICES_PER_DRAW * sizeof(D3DTLVERTEX), NULL, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, STD3D_MAX_VERTICES_PER_DRAW * sizeof(D3DTLVERTEX), NULL, GL_STREAM_DRAW);
 
     // create ibo
     glGenBuffers(1, ebo);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, *ebo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, STD3D_MAX_INDICES_PER_DRAW * sizeof(GLushort), NULL, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, STD3D_MAX_INDICES_PER_DRAW * sizeof(GLushort), NULL, GL_STREAM_DRAW);
 
     const GLsizei stride = sizeof(D3DTLVERTEX);
 
@@ -1245,10 +1245,10 @@ static void std3D_MapScreenSpaceBuffers(void)
 {
     glBindVertexArray(std3D_screenSpaceVao);
     glBindBuffer(GL_ARRAY_BUFFER, std3D_screenSpaceVbo);
-    std3D_pScreenSpaceVertexBuffer = glMapBufferRange(GL_ARRAY_BUFFER, 0, STD3D_MAX_VERTICES_PER_DRAW * sizeof(D3DTLVERTEX), GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
+    //std3D_pScreenSpaceVertexBuffer = glMapBufferRange(GL_ARRAY_BUFFER, 0, STD3D_MAX_VERTICES_PER_DRAW * sizeof(D3DTLVERTEX), GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, std3D_screenSpaceEbo);
-    std3D_pScreenSpaceElementBuffer = glMapBufferRange(GL_ELEMENT_ARRAY_BUFFER, 0, STD3D_MAX_INDICES_PER_DRAW * sizeof(GLushort), GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
+    //std3D_pScreenSpaceElementBuffer = glMapBufferRange(GL_ELEMENT_ARRAY_BUFFER, 0, STD3D_MAX_INDICES_PER_DRAW * sizeof(GLushort), GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
 
     std3D_bScreenSpaceBuffersMapped = true;
 }
@@ -1273,10 +1273,10 @@ static void std3D_UnmapScreenSpaceBuffers(void)
 
 size_t std3D_AddScreenSpaceVertices(LPD3DTLVERTEX aVertices, size_t numVertices, LPWORD aIndices, size_t numIndices, GLenum type)
 {
-    if ( !std3D_bScreenSpaceBuffersMapped )
-    {
-        std3D_MapScreenSpaceBuffers();
-    }
+    // if ( !std3D_bScreenSpaceBuffersMapped )
+    // {
+    //     std3D_MapScreenSpaceBuffers();
+    // }
 
     if ( std3D_numScreenSpaceVertices + numVertices > STD3D_MAX_VERTICES_PER_DRAW || std3D_numScreenSpaceIndices + numIndices > STD3D_MAX_INDICES_PER_DRAW )
     {
@@ -1673,13 +1673,22 @@ void std3D_CacheLegacyBatch(const LegacyBatch batch)
 
 void std3D_DrawLegacyBatches(void)
 {
-    if ( !std3D_bScreenSpaceBuffersMapped )
-    {
-        return;
-    }
-    std3D_UnmapScreenSpaceBuffers();
+    // if ( !std3D_bScreenSpaceBuffersMapped )
+    // {
+    //     return;
+    // }
+    // std3D_UnmapScreenSpaceBuffers();
 
     glBindVertexArray(std3D_screenSpaceVao);
+
+    glBindBuffer(GL_ARRAY_BUFFER, std3D_screenSpaceVbo);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, std3D_numScreenSpaceVertices * sizeof(D3DTLVERTEX), std3D_pScreenSpaceVertexBuffer);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, std3D_screenSpaceEbo);
+    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, std3D_numScreenSpaceIndices * sizeof(GLushort), std3D_pScreenSpaceElementBuffer);
+
+    std3D_numScreenSpaceVertices = 0;
+    std3D_numScreenSpaceIndices  = 0;
 
     stdShader_SetActiveTextureUnit(TU_3D_DRAW);
     std3D_pActiveShader = std3D_pLegacyShader;
