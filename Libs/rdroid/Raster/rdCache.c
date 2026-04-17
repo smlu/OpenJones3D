@@ -956,7 +956,7 @@ static void rdCache_SetInstanceData(rdPayload* aDrawCalls, rdDrawCallSortBucket*
     {
         rdDrawCallSortBucket* pSortBucket = &aSortBuckets[i];
         rdPayload* header                 = &aDrawCalls[pSortBucket->index];
-        if ( header->type != RD_DRAW_MODEL && header->type != RD_DRAW_SPRITE && header->type != RD_DRAW_PARTICLE && header->type != RD_DRAW_POLYLINE )
+        if ( header->type == RD_DRAW_GEOMETRY || header->type == RD_DRAW_LEGACY )
             continue;
 
         InstanceData* pData = &rdCache_aInstanceData[rdCache_numInstances++];
