@@ -697,24 +697,24 @@ static uint64_t rdCache_GenerateParticleSortKey(rdPayload* draw)
     rdParticlePayload* payload = &draw->particlePayload;
 
 
-    key |= ((uint64_t)draw->type & 0xFF) << 56;
+    key |= ((uint64_t)draw->type & 0x7) << 61;
 
 
     uint16_t texId = (uint16_t)((draw->pTex ? draw->pTex->id : 0) & 0xFFFF);
-    key |= ((uint64_t)texId) << 40;
+    key |= ((uint64_t)texId) << 45;
 
 
-    float halfSize     = payload->particleHalfSize;   // Muss als float im DrawHeader existieren
-    uint16_t qHalfSize = rdQuantizeFloat16(halfSize); // Funktion quantisiert Float auf 16 Bit
-    key |= ((uint64_t)qHalfSize) << 24;
+    float halfSize     = payload->particleHalfSize;
+    uint16_t qHalfSize = rdQuantizeFloat16(halfSize);
+    key |= ((uint64_t)qHalfSize) << 31;
 
 
     uint8_t r = rdQuantizeFloat8(draw->extraLight.red);
     uint8_t g = rdQuantizeFloat8(draw->extraLight.green);
     uint8_t b = rdQuantizeFloat8(draw->extraLight.blue);
-    key |= ((uint64_t)r << 16);
-    key |= ((uint64_t)g << 8);
-    key |= (uint64_t)b;
+    key |= ((uint64_t)r << 23);
+    key |= ((uint64_t)g << 15);
+    key |= ((uint64_t)b << 7);
 
     return key;
 }
