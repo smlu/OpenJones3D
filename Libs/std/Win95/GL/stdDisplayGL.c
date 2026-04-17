@@ -1215,7 +1215,7 @@ void stdDisplay_DisableVSync(bool bDisable)
         }
         else
         {
-            SDL_GL_SetSwapInterval(0);
+            SDL_GL_SetSwapInterval(1);
         }
 
         stdDisplay_bNoSync = bDisable;
@@ -1265,7 +1265,7 @@ int stdDisplay_Update(void)
     {
         glBindFramebuffer(GL_FRAMEBUFFER, stdDisplay_g_backBuffer.surface.fbo);
     }
-    glClear(GL_COLOR_BUFFER_BIT);
+    //glClear(GL_COLOR_BUFFER_BIT);
     glEnable(GL_DEPTH_TEST);
     //glEnable(GL_BLEND);
     glViewport(0, 0, stdDisplay_g_backBuffer.rasterInfo.width, stdDisplay_g_backBuffer.rasterInfo.height);
