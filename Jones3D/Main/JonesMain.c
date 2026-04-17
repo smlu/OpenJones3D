@@ -1370,6 +1370,18 @@ void JonesMain_PrintFramerate(void)
             JonesMain_prevFrameTime  = JonesMain_frameTime;
             JonesMain_prevFrameCount = JonesMain_frameCount;
 
+#ifdef J3D_OPENGL
+            STD_FORMAT(
+                std_g_genBuffer,
+                "GL: %02.2fHz A:%d S:%d P:%d T:%d L:%d", // Changed: Fixed typo 'Z' -> 'T'; Added: num lights
+                JonesMain_frameRate,
+                sithRender_g_numVisibleAdjoins,
+                sithRender_g_numVisibleSectors,
+                sithRender_g_numAlphaThingPoly + sithRender_g_numThingPolys + sithRender_g_numAlphaArchPolys + sithRender_g_numArchPolys,
+                sithRender_g_numDrawnThings,
+                sithCamera_g_pCurCamera->rdCamera.numLights // Added
+            );
+#else
             STD_FORMAT(
                 std_g_genBuffer,
                 "%02.2fHz A:%d S:%d P:%d T:%d L:%d", // Changed: Fixed typo 'Z' -> 'T'; Added: num lights
@@ -1380,6 +1392,7 @@ void JonesMain_PrintFramerate(void)
                 sithRender_g_numDrawnThings,
                 sithCamera_g_pCurCamera->rdCamera.numLights // Added
             );
+#endif
 
             JonesConsole_PrintTextWithID(JONESCONSOLE_FRAMERATEID, std_g_genBuffer);
             STDLOG_STATUS("%s\n", std_g_genBuffer);
