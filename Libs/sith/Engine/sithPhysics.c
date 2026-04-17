@@ -421,7 +421,7 @@ void J3DAPI sithPhysics_FindFloor(SithThing* pThing, int bNoSurfaceImpactUpdate)
                             bFlatSurface = rdVector_Dot3(&faceNormal, &rdroid_g_zVector3) >= 0.60000002f;
                         }
 
-                        if ( !bSkipFloorCheck || bFlatSurface )
+                        if ( bSkipFloorCheck || bFlatSurface )
                         {
                             sithThing_AttachThingToThingFace(
                                 pThing,
@@ -430,6 +430,7 @@ void J3DAPI sithPhysics_FindFloor(SithThing* pThing, int bNoSurfaceImpactUpdate)
                                 pCollision->pMeshCollided->apVertices,
                                 bNoSurfaceImpactUpdate
                             );
+
                             sithCollision_DecreaseStackLevel();
                             return;
                         }
@@ -1662,7 +1663,9 @@ int J3DAPI sithPhysics_CreateMineCarUserBlock(SithThing* pThing)
         pThing->userblock.pMinecar->state.bEngineAnim = 1;
 
         // Added
+    #ifdef J3D_QOL_IMPROVEMENTS
         sithPhysics_InitMineCarLights(pThing, &pThing->userblock.pMinecar->state.lights);
+    #endif
     }
     else if ( !stdUtil_StrCmp(pThing->aName, "killtruk") )
     {
@@ -1697,7 +1700,9 @@ int J3DAPI sithPhysics_CreateMineCarUserBlock(SithThing* pThing)
         sithPhysics_InitMineCarState(pThing, &pThing->userblock.pMinecar->state);
 
         // Added
+    #ifdef J3D_QOL_IMPROVEMENTS
         sithPhysics_InitMineCarLights(pThing, &pThing->userblock.pMinecar->state.lights);
+    #endif
     }
     else
     {
@@ -1924,17 +1929,6 @@ void J3DAPI sithPhysics_InitTrackTruckState(SithThing* pThing, SithMineCarState*
 
 void J3DAPI sithPhysics_InitMineCarLights(SithThing* pThing, SithVehicleLights* pLights)
 {
-    // TODO: A better solution would be to flag thing not to sync to savegame files
-    // First remove & destroy any attached thing
-    // This is required due to savegame preserves light things
-    SithThing* pNextAttach = NULL;
-    for ( SithThing* pAttach = pThing->pAttachedThing; pAttach; pAttach = pNextAttach )
-    {
-        pNextAttach = pAttach->pNextAttachedThing;
-        sithThing_DetachThing(pAttach);
-        sithThing_DestroyThing(pAttach);
-    }
-
     // Init front light
     rdModel3HNode* pFrLampJoint = rdModel3_FindNamedNode("frlamp", pThing->renderData.data.pModel3);
     if ( pFrLampJoint )
@@ -1971,7 +1965,8 @@ void J3DAPI sithPhysics_InitMineCarLights(SithThing* pThing, SithVehicleLights* 
             SithThing* pLightThing = sithThing_CreateThingAtPos(pLightTmpl, &lampPos, &pThing->orient, pThing->pInSector, pThing->pParent);
             if ( pLightThing )
             {
-                pLightThing->flags |= SITH_TF_EMITLIGHT;
+                pLightThing->flags |= SITH_TF_EMITLIGHT | SITH_TF_NOSYNC; // Note: Must not sync to savegame file otherwise
+                                                                          //       there will be dangling light object attached to minecar on restore
 
                 pLightThing->light.color.red   = 1.0f;
                 pLightThing->light.color.green = 0.0f;
@@ -2780,7 +2775,6 @@ void J3DAPI sithPhysics_PowerOffMineCar(SithThing* pThing)
         sithPhysics_SetVehicleLights(&pCarState->lights, /*bOn=*/ false);
         pCarState->bEngineRunning = false;
     }
-
 }
 
 void J3DAPI sithPhysics_UpdateRaftPhysics(SithThing* pThing, float secDeltaTime)

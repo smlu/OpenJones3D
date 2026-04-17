@@ -73,10 +73,10 @@ bool sithCamera_IsOpen(void); // Added (not from debug ver)
 
 void sithCamera_ResetAllCameras(void);
 
-SithCamera* J3DAPI sithCamera_New(SithCameraType type, uint32_t a2, float fov, float aspect, rdCanvas* pCanvas, SithThing* pPrimaryFocus, SithThing* pSecondaryFocus); // Added
+SithCamera* J3DAPI sithCamera_New(SithCameraType type, uint32_t a2, float fov, float aspect, rdCanvas* pCanvas, SithThing* pPrimaryFocus, SithThing* pSecondaryFocus); // Added from debug
 int J3DAPI sithCamera_NewEntry(SithCamera* pCamera, uint32_t a2, SithCameraType type, float fov, float aspect, rdCanvas* pCanvas, SithThing* pPrimaryFocus, SithThing* pSecondaryFocus);
 
-void J3DAPI sithCamera_Free(SithCamera* pCamera); // Added
+void J3DAPI sithCamera_Free(SithCamera* pCamera); // Added from debug
 void J3DAPI sithCamera_FreeEntry(SithCamera* pCamera);
 
 void J3DAPI sithCamera_SetCameraCanvas(SithCamera* pCamera, float aspect, rdCanvas* pCanvas);
@@ -86,8 +86,8 @@ void sithCamera_CycleCamera(void);
 int sithCamera_SetCurrentToCycleCamera(void);
 void J3DAPI sithCamera_SetCameraFocus(SithCamera* pCamera, SithThing* pPrimaryFocusThing, SithThing* pSecondaryFocusThing);
 
-void J3DAPI SithCamera_IncrementFOV(SithCamera* pCamera); // Added
-void J3DAPI sithCamera_DecrementFOV(SithCamera* pCamera); // Added
+void J3DAPI SithCamera_ZoomIn(SithCamera* pCamera); // Added from debug
+void J3DAPI SithCamera_ZoomOut(SithCamera* pCamera); // Added from debug
 void J3DAPI sithCamera_SetCameraFOV(SithCamera* pCamera, float fov);
 
 void J3DAPI sithCamera_SetCameraPosition(SithCamera* pCamera, const rdVector3* pPos);

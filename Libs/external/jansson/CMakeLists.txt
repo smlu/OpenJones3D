@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.5)
+cmake_minimum_required (VERSION 3.10)
 project(jansson C)
 
 # Options
@@ -36,10 +36,10 @@ endif()
 # set (JANSSON_VERSION "2.3.1")
 # set (JANSSON_SOVERSION 2)
 
-set(JANSSON_DISPLAY_VERSION "2.14.1")
+set(JANSSON_DISPLAY_VERSION "2.15.0")
 
 # This is what is required to match the same numbers as automake's
-set(JANSSON_VERSION "4.14.0")
+set(JANSSON_VERSION "4.15.0")
 set(JANSSON_SOVERSION 4)
 
 # for CheckFunctionKeywords
@@ -266,17 +266,14 @@ configure_file (${CMAKE_CURRENT_SOURCE_DIR}/cmake/jansson_config.h.cmake
 file (COPY ${CMAKE_CURRENT_SOURCE_DIR}/src/jansson.h
            DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/include/)
 
-add_definitions(-DJANSSON_USING_CMAKE)
-
 # configure the private config file
 configure_file (${CMAKE_CURRENT_SOURCE_DIR}/cmake/jansson_private_config.h.cmake
                 ${CMAKE_CURRENT_BINARY_DIR}/private_include/jansson_private_config.h)
 
-# and tell the source code to include it
-add_definitions(-DHAVE_CONFIG_H)
-
-include_directories (${CMAKE_CURRENT_BINARY_DIR}/include)
 include_directories (${CMAKE_CURRENT_BINARY_DIR}/private_include)
+
+# Configuration flags will be set on project later once we have defined the target
+
 
 # Add the lib sources.
 file(GLOB JANSSON_SRC src/*.c)
@@ -355,6 +352,20 @@ else()
    set_target_properties(jansson PROPERTIES
       POSITION_INDEPENDENT_CODE true)
 endif()
+
+
+# Now target jansson is declared, set per-target values
+
+target_compile_definitions(jansson PUBLIC JANSSON_USING_CMAKE)
+target_compile_definitions(jansson PRIVATE HAVE_CONFIG_H)
+
+target_include_directories(jansson
+	PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
+	INTERFACE $<INSTALL_INTERFACE:include>
+)
+
+add_library( jansson::jansson ALIAS jansson )
+
 
 if (JANSSON_EXAMPLES)
 	add_executable(simple_parse "${CMAKE_CURRENT_SOURCE_DIR}/examples/simple_parse.c")
@@ -480,6 +491,7 @@ if (NOT JANSSON_WITHOUT_TESTS)
    set(api_tests
          test_array
          test_chaos
+         test_chaos_realloc
          test_copy
          test_dump
          test_dump_callback
@@ -499,6 +511,7 @@ if (NOT JANSSON_WITHOUT_TESTS)
    # such as secure_malloc and secure_free is doing, so exclude it for now.
    if (NOT MSVC)
       list(APPEND api_tests test_memory_funcs)
+      list(APPEND api_tests test_memory_funcs_realloc)
    endif()
 
    # Helper macro for building and linking a test program.

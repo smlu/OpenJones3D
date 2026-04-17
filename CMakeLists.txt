@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.10)
 
 project(OpenJones3D VERSION 0.4.0)
 
@@ -13,12 +13,32 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 set(CMAKE_POLICY_DEFAULT_CMP0077 NEW) # option() honors normal variables (variables of same name set prior to calling the option()).
 
+function(jones3d_print_config_entry label value)
+    set(jones3d_dot_fill "........................................")
+    string(LENGTH "${label}" label_len)
+    math(EXPR pad_len "28 - ${label_len}")
+    if (pad_len LESS 1)
+        set(pad_len 1)
+    endif()
+    string(SUBSTRING "${jones3d_dot_fill}" 0 ${pad_len} dot_pad)
+    message(STATUS "  ${label} ${dot_pad} ${value}")
+endfunction()
+
+function(jones3d_print_config_option label value)
+    if(${value})
+        set(option_state "ON")
+    else()
+        set(option_state "OFF")
+    endif()
+    jones3d_print_config_entry("${label}" "${option_state}")
+endfunction()
+
 option(JONES3D_BUILD_PROGRAMS "Build programs" ON)
 option(JONES3D_QOL_IMPROVEMENTS "Enable quality-of-life improvements" ON)
 option(JONES3D_SPEEDRUN_BUILD "Enable vanilla bugs and glitches used in speedruns" OFF)
 
 # --- GAPI options ---
-# Add an option to choose graphics API. Default is DirectX9.
+# Add an option to choose graphics API. Default is OpenGL.
 set(JONES3D_RENDERER "OpenGL" CACHE STRING "Choose graphics backend")
 set_property(CACHE JONES3D_RENDERER PROPERTY STRINGS "OpenGL;DirectX9;DirectX6")
 #option(JONES3D_USE_DIRECTX9 "Build with DirectX 9 support" ON)
@@ -26,15 +46,13 @@ set_property(CACHE JONES3D_RENDERER PROPERTY STRINGS "OpenGL;DirectX9;DirectX6")
 #---------------------
 
 if (JONES3D_QOL_IMPROVEMENTS)
-    message(STATUS "QOL improvements enabled")
     set(J3D_QOL_IMPROVEMENTS ON)
 else()
     # Legacy build, enable the speedrun build option to restore all vanilla engine quirks and bugs
     set(JONES3D_SPEEDRUN_BUILD ON)
 endif()
 
-if (JONES3D_SPEEDRUN_BUILD)  
-    message(STATUS "Speedrun build enabled")
+if (JONES3D_SPEEDRUN_BUILD)
     set(J3D_SPEEDRUN_BUILD on)
     if (JONES3D_QOL_IMPROVEMENTS)
       set(JONES3D_BUILD_SUFFIX "-sr") # Add '-sr' version suffix when not legacy build
@@ -42,19 +60,19 @@ if (JONES3D_SPEEDRUN_BUILD)
 endif()
 
 if (JONES3D_RENDERER STREQUAL "OpenGL")
-    message(STATUS "Configuring for OpenGL")
+    set(JONES3D_GAPI_NAME "OpenGL")
     set(J3D_OPENGL ON) # Set the variable for the header template
     if (NOT JONES3D_QOL_IMPROVEMENTS)
         set(JONES3D_BUILD_SUFFIX "-gl-lgc") # Add '-gl-lgc' version suffix when not legacy build
     endif()
 elseif(JONES3D_RENDERER STREQUAL "DirectX9")
-    message(STATUS "Configuring for DirectX 9")
+    set(JONES3D_GAPI_NAME "DirectX 9")
     set(J3D_DIRECTX9 ON) # Set the variable for the header template
     if (NOT JONES3D_QOL_IMPROVEMENTS)
       set(JONES3D_BUILD_SUFFIX "-dx9-lgc") # Add '-dx9-lgc' version suffix when not legacy build
     endif()
 elseif(JONES3D_RENDERER STREQUAL "DirectX6")
-    message(STATUS "Configuring for vanilla DirectX 6 (default)")
+    set(JONES3D_GAPI_NAME "DirectX 6.1c (original)")
     set(J3D_DIRECTX6 ON) # Set the variable for the header template
     set(J3D_COLORKEYSUPPORTED ON)
     if (JONES3D_QOL_IMPROVEMENTS)
@@ -112,4 +130,37 @@ if (JONES3D_BUILD_PROGRAMS)
     add_subdirectory(Programs)
 endif()
 
+if (CMAKE_CONFIGURATION_TYPES)
+    string(REPLACE ";" ", " JONES3D_CONFIGURATION_SUMMARY "${CMAKE_CONFIGURATION_TYPES}")
+else()
+    if (CMAKE_BUILD_TYPE)
+        set(JONES3D_CONFIGURATION_SUMMARY "${CMAKE_BUILD_TYPE}")
+    else()
+        set(JONES3D_CONFIGURATION_SUMMARY "<default>")
+    endif()
+endif()
 
+message(STATUS "")
+message(STATUS "OpenJones3D configuration summary")
+jones3d_print_config_entry("Version" "v${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}${JONES3D_BUILD_SUFFIX}")
+jones3d_print_config_entry("Generator" "${CMAKE_GENERATOR}")
+if (CMAKE_GENERATOR_PLATFORM)
+    jones3d_print_config_entry("Platform" "${CMAKE_GENERATOR_PLATFORM}")
+endif()
+if (CMAKE_CONFIGURATION_TYPES)
+    jones3d_print_config_entry("Configurations" "${JONES3D_CONFIGURATION_SUMMARY}")
+else()
+    jones3d_print_config_entry("Build type" "${JONES3D_CONFIGURATION_SUMMARY}")
+endif()
+jones3d_print_config_entry("Graphics API" "${JONES3D_GAPI_NAME}")
+jones3d_print_config_option("QOL improvements" JONES3D_QOL_IMPROVEMENTS)
+jones3d_print_config_option("Speedrun build" JONES3D_SPEEDRUN_BUILD)
+jones3d_print_config_option("Build programs" JONES3D_BUILD_PROGRAMS)
+jones3d_print_config_option("Post-build copy" JONES3D_ENABLE_POST_BUILD_COPY)
+if (JONES3D_ENABLE_POST_BUILD_COPY)
+    if (JONES3D_POST_BUILD_COPY_DIR)
+        jones3d_print_config_entry("Post-build copy dir" "${JONES3D_POST_BUILD_COPY_DIR}")
+    else()
+        jones3d_print_config_entry("Post-build copy dir" "<not set>")
+    endif()
+endif()

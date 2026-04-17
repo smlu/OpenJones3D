@@ -22,7 +22,6 @@
 #include <std/General/stdUtil.h>
 #include <std/Win95/stdComm.h>
 
-
 void sithDSSThing_InstallHooks(void)
 {
     // Uncomment only lines for functions that have full definition and doesn't call original function (non-thunk functions)
@@ -69,9 +68,7 @@ void sithDSSThing_InstallHooks(void)
 }
 
 void sithDSSThing_ResetGlobals(void)
-{
-
-}
+{}
 
 int J3DAPI sithDSSThing_Pos(const SithThing* pThing, DPID toID, unsigned int dpFlags)
 {
@@ -93,7 +90,7 @@ int J3DAPI sithDSSThing_ProcessMovePos(const SithMessage* pMsg)
     return J3D_TRAMPOLINE_CALL(sithDSSThing_ProcessMovePos, pMsg);
 }
 
-int J3DAPI sithDSSThing_UpdateState(const SithThing* pThing, DPID toID, unsigned int outstream)
+int J3DAPI sithDSSThing_UpdateState(const SithThing* pThing, DPID toID, SithMessageStream outstream)
 {
     return J3D_TRAMPOLINE_CALL(sithDSSThing_UpdateState, pThing, toID, outstream);
 }
@@ -103,7 +100,7 @@ int J3DAPI sithDSSThing_ProcessStateUpdate(const SithMessage* pMsg)
     return J3D_TRAMPOLINE_CALL(sithDSSThing_ProcessStateUpdate, pMsg);
 }
 
-int J3DAPI sithDSSThing_PlaySound(const SithThing* pThing, const rdVector3* pPos, tSoundHandle hSnd, float volume, float pan, SoundPlayFlag playflags, int guid, DPID idTo, unsigned int outstream)
+int J3DAPI sithDSSThing_PlaySound(const SithThing* pThing, const rdVector3* pPos, tSoundHandle hSnd, float volume, float pan, SoundPlayFlag playflags, int guid, DPID idTo, SithMessageStream outstream)
 {
     return J3D_TRAMPOLINE_CALL(sithDSSThing_PlaySound, pThing, pPos, hSnd, volume, pan, playflags, guid, idTo, outstream);
 }
@@ -123,7 +120,7 @@ int J3DAPI sithDSSThing_ProcessPlaySoundMode(const SithMessage* pMsg)
     return J3D_TRAMPOLINE_CALL(sithDSSThing_ProcessPlaySoundMode, pMsg);
 }
 
-int J3DAPI sithDSSThing_PlayKey(const SithThing* pThing, const rdKeyframe* pKey, rdKeyframeFlags flags, int16_t lo, unsigned int trackGUID, DPID idTo, unsigned int outstream)
+int J3DAPI sithDSSThing_PlayKey(const SithThing* pThing, const rdKeyframe* pKey, rdKeyframeFlags flags, int16_t lo, unsigned int trackGUID, DPID idTo, SithMessageStream outstream)
 {
     return J3D_TRAMPOLINE_CALL(sithDSSThing_PlayKey, pThing, pKey, flags, lo, trackGUID, idTo, outstream);
 }
@@ -133,7 +130,7 @@ int J3DAPI sithDSSThing_ProcessPlayKey(const SithMessage* pMsg)
     return J3D_TRAMPOLINE_CALL(sithDSSThing_ProcessPlayKey, pMsg);
 }
 
-int J3DAPI sithDSSThing_PlayKeyMode(const SithThing* pThing, SithPuppetSubMode mode, unsigned int trackGUID, DPID idTo, unsigned int outstream)
+int J3DAPI sithDSSThing_PlayKeyMode(const SithThing* pThing, SithPuppetSubMode mode, unsigned int trackGUID, DPID idTo, SithMessageStream outstream)
 {
     return J3D_TRAMPOLINE_CALL(sithDSSThing_PlayKeyMode, pThing, mode, trackGUID, idTo, outstream);
 }
@@ -153,7 +150,7 @@ int J3DAPI sithDSSThing_ProcessSetModel(const SithMessage* pMsg)
     return J3D_TRAMPOLINE_CALL(sithDSSThing_ProcessSetModel, pMsg);
 }
 
-int J3DAPI sithDSSThing_StopKey(const SithThing* pThing, int trackGUID, float fadeTime, DPID idTo, unsigned int outstream)
+int J3DAPI sithDSSThing_StopKey(const SithThing* pThing, int trackGUID, float fadeTime, DPID idTo, SithMessageStream outstream)
 {
     return J3D_TRAMPOLINE_CALL(sithDSSThing_StopKey, pThing, trackGUID, fadeTime, idTo, outstream);
 }
@@ -163,7 +160,7 @@ int J3DAPI sithDSSThing_ProcessStopKey(const SithMessage* pMsg)
     return J3D_TRAMPOLINE_CALL(sithDSSThing_ProcessStopKey, pMsg);
 }
 
-int J3DAPI sithDSSThing_StopSound(tSoundChannelHandle hChannel, float secFadeTime, DPID idTo, unsigned int outstream)
+int J3DAPI sithDSSThing_StopSound(tSoundChannelHandle hChannel, float secFadeTime, DPID idTo, SithMessageStream outstream)
 {
     return J3D_TRAMPOLINE_CALL(sithDSSThing_StopSound, hChannel, secFadeTime, idTo, outstream);
 }
@@ -173,7 +170,7 @@ int J3DAPI sithDSSThing_ProcessStopSound(const SithMessage* pMsg)
     return J3D_TRAMPOLINE_CALL(sithDSSThing_ProcessStopSound, pMsg);
 }
 
-int J3DAPI sithDSSThing_Fire(const SithThing* pShooter, const SithThing* pProjectileTemplate, const rdVector3* fireDir, const rdVector3* firePos, tSoundHandle hFireSnd, uint16_t puppetSubmode, float extra, int16_t projectileFlags, float sedRapidFireTime, int projectileGUID, DPID idTo, unsigned int outstream)
+int J3DAPI sithDSSThing_Fire(const SithThing* pShooter, const SithThing* pProjectileTemplate, const rdVector3* fireDir, const rdVector3* firePos, tSoundHandle hFireSnd, uint16_t puppetSubmode, float extra, int16_t projectileFlags, float sedRapidFireTime, int projectileGUID, DPID idTo, SithMessageStream outstream)
 {
     return J3D_TRAMPOLINE_CALL(sithDSSThing_Fire, pShooter, pProjectileTemplate, fireDir, firePos, hFireSnd, puppetSubmode, extra, projectileFlags, sedRapidFireTime, projectileGUID, idTo, outstream);
 }
@@ -183,7 +180,7 @@ int J3DAPI sithDSSThing_ProcessFire(const SithMessage* pMsg)
     return J3D_TRAMPOLINE_CALL(sithDSSThing_ProcessFire, pMsg);
 }
 
-int J3DAPI sithDSSThing_Death(const SithThing* pThing, const SithThing* pKiller, char bKillPlayer, DPID to, unsigned int outstream)
+int J3DAPI sithDSSThing_Death(const SithThing* pThing, const SithThing* pKiller, char bKillPlayer, DPID to, SithMessageStream outstream)
 {
     return J3D_TRAMPOLINE_CALL(sithDSSThing_Death, pThing, pKiller, bKillPlayer, to, outstream);
 }
@@ -193,7 +190,7 @@ int J3DAPI sithDSSThing_ProcessDeath(const SithMessage* pMsg)
     return J3D_TRAMPOLINE_CALL(sithDSSThing_ProcessDeath, pMsg);
 }
 
-int J3DAPI sithDSSThing_DamageThing(const SithThing* pVictim, const SithThing* pPurpetrator, float damage, SithDamageType hitType, DPID idTo, unsigned int outstream)
+int J3DAPI sithDSSThing_DamageThing(const SithThing* pVictim, const SithThing* pPurpetrator, float damage, SithDamageType hitType, DPID idTo, SithMessageStream outstream)
 {
     return J3D_TRAMPOLINE_CALL(sithDSSThing_DamageThing, pVictim, pPurpetrator, damage, hitType, idTo, outstream);
 }
@@ -212,19 +209,19 @@ int J3DAPI sithDSSThing_ThingFullDescription(const SithThing* pThing, DPID idTo,
 
     if ( pThing->type == SITH_THING_FREE )
     {
-        SITH_ASSERT(SITHDSS_CURPOS() == 4);
+        SITH_ASSERT(SITHDSS_CURPOS() == 4); // Added: Sanity check
         SITHDSS_ENDOUT;
         return sithMessage_SendMessage(&sithMulti_g_message, idTo, outstream, DPSEND_GUARANTEED);
     }
 
     // Template and identification
-    SITH_ASSERT(SITHDSS_CURPOS() == 4);
+    SITH_ASSERT(SITHDSS_CURPOS() == 4); // Added: Sanity check
     SITHDSS_PUSHINT16(sithTemplate_GetTemplateIndex(pThing->pTemplate));
     SITHDSS_PUSHUINT32(pThing->signature);
     SITHDSS_PUSHINT32(pThing->guid);
 
     // Position and orientation
-    SITH_ASSERT(SITHDSS_CURPOS() == 14);
+    SITH_ASSERT(SITHDSS_CURPOS() == 14); // Added: Sanity check
     SITHDSS_PUSHVEC3(&pThing->pos);
     SITHDSS_PUSHVEC3(&pThing->forceMoveStartPos);
     SITHDSS_PUSHVEC3(&pThing->orient.rvec);
@@ -232,12 +229,12 @@ int J3DAPI sithDSSThing_ThingFullDescription(const SithThing* pThing, DPID idTo,
     SITHDSS_PUSHVEC3(&pThing->orient.uvec);
 
     // Movement and sector
-    SITH_ASSERT(SITHDSS_CURPOS() == 74);
+    SITH_ASSERT(SITHDSS_CURPOS() == 74); // Added: Sanity check
     SITHDSS_PUSHUINT32(pThing->moveStatus);
     SITHDSS_PUSHINT16(sithSector_GetSectorIndex(pThing->pInSector));
 
     // Flags and timers
-    SITH_ASSERT(SITHDSS_CURPOS() == 80);
+    SITH_ASSERT(SITHDSS_CURPOS() == 80); // Added: Sanity check
     SITHDSS_PUSHUINT32(pThing->flags);
     SITHDSS_PUSHUINT32(pThing->msecLifeLeft);
     SITHDSS_PUSHUINT32(pThing->msecTimerTime);
@@ -245,28 +242,28 @@ int J3DAPI sithDSSThing_ThingFullDescription(const SithThing* pThing, DPID idTo,
     SITHDSS_PUSHUINT32(pThing->msecPulseInterval);
 
     // User value and collision
-    SITH_ASSERT(SITHDSS_CURPOS() == 100);
+    SITH_ASSERT(SITHDSS_CURPOS() == 100); // Added: Sanity check
     SITHDSS_PUSHFLOAT(pThing->userval);
     SITHDSS_PUSHUINT16(pThing->collide.type);
     SITHDSS_PUSHFLOAT(pThing->collide.size);
     SITHDSS_PUSHFLOAT(pThing->collide.movesize);
 
     // Light
-    SITH_ASSERT(SITHDSS_CURPOS() == 114);
+    SITH_ASSERT(SITHDSS_CURPOS() == 114); // Added: Sanity check
     SITHDSS_PUSHVEC4(&pThing->light.color);
     SITHDSS_PUSHFLOAT(pThing->light.minRadius);
     SITHDSS_PUSHFLOAT(pThing->light.maxRadius);
 
-    SITH_ASSERT(SITHDSS_CURPOS() == 138);
+    SITH_ASSERT(SITHDSS_CURPOS() == 138); // Added: Sanity check
     SITHDSS_PUSHUINT32(pThing->unknownFlags);
 
     // COG linkage
     if ( (pThing->flags & SITH_TF_COGLINKED) != 0 )
     {
-        SITH_ASSERT(SITHDSS_CURPOS() == 142);
+        SITH_ASSERT(SITHDSS_CURPOS() == 142); // Added: Sanity check
         SITHDSS_PUSHINT16(pThing->pCog ? pThing->pCog->idx : -1);
         SITHDSS_PUSHINT16(pThing->pCaptureCog ? pThing->pCaptureCog->idx : -1);
-        SITH_ASSERT(SITHDSS_CURPOS() == 146);
+        SITH_ASSERT(SITHDSS_CURPOS() == 146); // Added: Sanity check
     }
 
     // Type-specific info
@@ -435,8 +432,16 @@ int J3DAPI sithDSSThing_ThingFullDescription(const SithThing* pThing, DPID idTo,
     SITHDSS_PUSHUINT32(pThing->numSwapEntries);
 
     // 3DO model index and insert offset
-    // TODO: Why is this even necessary?
-    if ( pThing->renderData.data.pModel3 ) // TODO [BUG]: Should not check for pModel3 pointer as other rd primitives can have pointer  assigned.. instead it should check for rd type == model3
+    // TODO: Why is this even necessary. Assuming due to model could be changed at runtime, e.g.: via COG script
+    // Fixed: Added check for render type to be RD_THING_MODEL3. OG was checking only for pModel3 being non-null,
+    //        This was causing serialization corruption when thing had different render type and sithModel_GetModelIndex would return -1 but still write insertOffset.
+    //        Such thing would then deserialize incorrectly, as insertOffset wouldn't be read when model index was -1, causing all subsequent data to be misaligned.
+    //
+    //        For example, a sprite thing would serialize data of 2D vector pThing->renderData.data.pSprite3->face.texVertOffset
+    //        and pThing->renderData.data.pSprite3->face.extraLight.red. But on deserialization, since model index would be -1,
+    //        these values wouldn't be read out as insertOffset vector and pThing->alpha = pThing->renderData.data.pSprite3->face.texVertOffset.x
+    //        causing thing transparency value to be incorrect.
+    if ( pThing->renderData.type == RD_THING_MODEL3 && pThing->renderData.data.pModel3 )
     {
         SITHDSS_PUSHINT16(sithModel_GetModelIndex(pThing->renderData.data.pModel3));
         SITHDSS_PUSHVEC3(&pThing->renderData.data.pModel3->insertOffset);
@@ -478,8 +483,20 @@ int J3DAPI sithDSSThing_ThingFullDescription(const SithThing* pThing, DPID idTo,
         }
     }
 
-    // Heh lol why serialize down here :D ?
+    // Note, serialized here as alpha is new field added to SithThing struct in Jones engine.
     SITHDSS_PUSHFLOAT(pThing->alpha);
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // OpenJones3D extension from here onwards
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    if ( pThing->type == SITH_THING_POLYLINE )
+    {
+        // Added: Serialize polyline new flags field
+        SITHDSS_PUSHINT32(pThing->renderData.data.pPolyline->flags);
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     SITHDSS_ENDOUT;
     return sithMessage_SendMessage(&sithMulti_g_message, idTo, (SithMessageStream)outstream, DPSEND_GUARANTEED);
@@ -804,6 +821,7 @@ int J3DAPI sithDSSThing_ProcessThingFullDescription(const SithMessage* pMsg)
     int16_t modelIdx = SITHDSS_POPINT16();
     if ( modelIdx != -1 )
     {
+        // TODO: just to be sure, maybe add check for renderData type == model3 as well?
         rdModel3* pModel = sithModel_GetModelByIndex(modelIdx);
         if ( pModel && pThing->renderData.data.pModel3 != pModel )
         {
@@ -814,8 +832,7 @@ int J3DAPI sithDSSThing_ProcessThingFullDescription(const SithMessage* pMsg)
     }
 
     // Actor/Player weapon and voice info
-    SithThingType type = pThing->type;
-    if ( type == SITH_THING_ACTOR || type == SITH_THING_PLAYER )
+    if ( pThing->type == SITH_THING_ACTOR || pThing->type == SITH_THING_PLAYER )
     {
         SithActorWeaponInfo* pWeaponInfo = &pThing->thingInfo.actorInfo.weaponInfo;
         SithActorVoiceInfo* pVoiceInfo   = &pThing->thingInfo.actorInfo.voiceInfo;
@@ -852,18 +869,34 @@ int J3DAPI sithDSSThing_ProcessThingFullDescription(const SithMessage* pMsg)
         pThing->alpha = alphaValue;
     }
 
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // OpenJones3D extension from here onwards
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    if ( SITHDSS_CURPOS() != pMsg->length ) // Only new streams will have extra data (savegame files create with oj3D >= v0.4)
+    {
+        if ( pThing->type == SITH_THING_POLYLINE )
+        {
+            // Added: Deserialize polyline new flags field
+            pThing->renderData.data.pPolyline->flags = SITHDSS_POPINT32();
+        }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     SITHDSS_ENDIN;
 
-    // TODO: Wrap in debug build macros when stable
+    // Added: Sanity check to see if all bytes were consumed from the message
+#ifdef J3D_DEBUG
     if ( SITHDSS_CURPOS() != pMsg->length )
     {
         SITHLOG_ERROR("sithDSSThing_ProcessThingFullDescription: Not all data was processed for thing: %s [curpos: %d msglen: %d]\n", pThing->aName, SITHDSS_CURPOS(), pMsg->length);
     }
+#endif
 
     return 1;
 }
 
-int J3DAPI sithDSSThing_PathMove(const SithThing* pThing, int16_t frame, float speed, int moveType, DPID idTO, unsigned int outstream)
+int J3DAPI sithDSSThing_PathMove(const SithThing* pThing, int16_t frame, float speed, int moveType, DPID idTO, SithMessageStream outstream)
 {
     return J3D_TRAMPOLINE_CALL(sithDSSThing_PathMove, pThing, frame, speed, moveType, idTO, outstream);
 }
@@ -873,7 +906,7 @@ int J3DAPI sithDSSThing_ProcessPathMove(const SithMessage* pMsg)
     return J3D_TRAMPOLINE_CALL(sithDSSThing_ProcessPathMove, pMsg);
 }
 
-int J3DAPI sithDSSThing_Attachment(const SithThing* pThing, DPID idTo, unsigned int outstream, unsigned int sendFlags)
+int J3DAPI sithDSSThing_Attachment(const SithThing* pThing, DPID idTo, SithMessageStream outstream, unsigned int sendFlags)
 {
     SITHDSS_STARTOUT(SITHDSS_ATTACHMENT);
     SITHDSS_PUSHINT32(pThing->guid);
@@ -1041,7 +1074,7 @@ int J3DAPI sithDSSThing_ProcessAttachment(const SithMessage* pMsg)
     return 1;
 }
 
-int J3DAPI sithDSSThing_Take(const SithThing* pItem, const SithThing* pThing, unsigned int outstream)
+int J3DAPI sithDSSThing_Take(const SithThing* pItem, const SithThing* pThing, SithMessageStream outstream)
 {
     return J3D_TRAMPOLINE_CALL(sithDSSThing_Take, pItem, pThing, outstream);
 }
@@ -1051,7 +1084,7 @@ int J3DAPI sithDSSThing_ProcessTake(const SithMessage* pMsg)
     return J3D_TRAMPOLINE_CALL(sithDSSThing_ProcessTake, pMsg);
 }
 
-int J3DAPI sithDSSThing_CreateThing(const SithThing* pTemplate, const SithThing* pNewThing, const SithThing* pMarker, const SithSector* pSector, const rdVector3* pos, const rdVector3* pyr, unsigned int outstream, unsigned int sendFlags)
+int J3DAPI sithDSSThing_CreateThing(const SithThing* pTemplate, const SithThing* pNewThing, const SithThing* pMarker, const SithSector* pSector, const rdVector3* pos, const rdVector3* pyr, SithMessageStream outstream, unsigned int sendFlags)
 {
     return J3D_TRAMPOLINE_CALL(sithDSSThing_CreateThing, pTemplate, pNewThing, pMarker, pSector, pos, pyr, outstream, sendFlags);
 }

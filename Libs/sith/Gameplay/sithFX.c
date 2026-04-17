@@ -91,7 +91,7 @@ static SithThing* sithFX_CreateThingFacingUp(const SithThing* pRippleTpl, const 
     }
 
     // Orient the ripple to face upwards
-    pRipple->orient.lvec = *upDir; // Note: OG im most case used zVector3
+    pRipple->orient.lvec = *upDir; // Note: OG in most case used zVector3
     return pRipple;
 }
 
@@ -110,6 +110,38 @@ static void sithFX_RotateSpriteToMovement(SithThing* pSprite, const rdVector3* v
 }
 
 void J3DAPI sithFX_CreatePaddleWaterSplash(SithThing* pThing, const rdVector3* pos);
+
+bool J3DAPI sithFX_GetWaterPosition(SithThing* pThing, rdVector3* waterPos, SithSector* waterSec, rdVector3* waterNormal)
+{
+    SITH_ASSERT(waterPos && waterSec && waterNormal);
+
+    rdVector3 rippleStartPos = *waterPos;
+    rippleStartPos.z = pThing->pos.z;
+
+    SithSector* pStartSec = sithCollision_FindSectorInRadius(pThing->pInSector, &pThing->pos, &rippleStartPos, 0.0f);
+    if ( pStartSec )
+    {
+        rdVector3 endPos = rippleStartPos;
+        rdVector_MultAcc3(&endPos, &RDVECTOR_NEG3(rdroid_g_zVector3), sithPhysics_GetThingHeight(pThing));
+
+        SithSurface* pWaterSurf = sithCollision_FindWaterSurface(pStartSec, &rippleStartPos, &endPos, sithFX_surfaceOffsetZ);
+        if ( pWaterSurf )
+        {
+            waterSec     = pWaterSurf->pSector;
+            *waterNormal = pWaterSurf->face.normal;
+
+            // Assign found position
+            // Note: No need to shift Z for sithFX_surfaceOffsetZ here.
+            // The water surface is found via collision raycast using a search radius;
+            // the returned position is not adjusted by that radius (foundPos + radius
+            // equals the actual water surface height).
+            *waterPos = endPos;
+            return true;
+        }
+    }
+
+    return false;
+}
 
 void sithFX_InstallHooks(void)
 {
@@ -507,8 +539,21 @@ void J3DAPI sithFX_CreateRaftSplatterFX(SithThing* pThing, int bCreateSplash)
         // Altered: Replaced OG code with sithFX_TransformPointToAttachSurface
         sithFX_TransformPointToAttachSurface(&ripplePos, pThing);
 
+        // Fixed: Use surface normal instead of thing uvec.
+        //        Resolves visual glitches where the raft could tilt opposite
+        //        to the water surface, causing ripples to be oriented partly in the air.
+        SithSector* pRippleSec = pThing->pInSector;
+        rdVector3 rippleUpDir  = pThing->attach.pFace->normal;
+
+        // Fixed: Search for the exact water surface at the ripple spawn position and
+        //        assign the resolved position, water sector, and surface normal.
+        //        This prevents visual issues where ripples could be misplaced or
+        //        incorrectly oriented (e.g. embedded in the water surface or spawned
+        //        in the air) due to steep, uneven, or overlapping water surfaces.
+        sithFX_GetWaterPosition(pThing, &ripplePos, pRippleSec, &rippleUpDir);
+
         // Altered: Replaced OG code with sithFX_CreateThingFacingUp
-        SithThing* pRipple = sithFX_CreateThingFacingUp(pSplashTpl, &ripplePos, pThing->pInSector, &pThing->orient.uvec);
+        SithThing* pRipple = sithFX_CreateThingFacingUp(pSplashTpl, &ripplePos, pRippleSec, &rippleUpDir);
         if ( !pRipple )
         {
             SITHLOG_ERROR("Can't make a ripple, no thing space!\n");
@@ -618,7 +663,7 @@ void J3DAPI sithFX_CreateRaftWakeFX(SithThing* pThing)
     // Added: Use ripple effect instead of wake effect for better visuals
 
     SithThing* pRippleTpl = sithTemplate_GetTemplate("+ripples");
-    if ( pRippleTpl )
+    if ( pRippleTpl && pThing->attach.flags )
     {
         // Randomize ripple position a bit
         rdVector3 ripplePos = { 0 };
@@ -628,12 +673,22 @@ void J3DAPI sithFX_CreateRaftWakeFX(SithThing* pThing)
         // Move position slightly forward based on movement direction
         rdVector3 moveNorm;
         rdVector_Normalize3(&moveNorm, &pThing->moveInfo.physics.velocity);
-        rdVector_MultAcc3(&ripplePos, &moveNorm, 0.0423);
+        rdVector_MultAcc3(&ripplePos, &moveNorm, 0.0423f);
 
         // Transform to water surface
         sithFX_TransformPointToAttachSurface(&ripplePos, pThing);
 
-        SithThing* pRipple = sithFX_CreateThingFacingUp(pRippleTpl, &ripplePos, pThing->pInSector, &pThing->orient.uvec);
+        SithSector* pRippleSec = pThing->pInSector;
+        rdVector3 rippleUpDir  = pThing->attach.pFace->normal;
+
+        // Fixed: Search for the exact water surface at the ripple spawn position and
+        //        assign the resolved position, water sector, and surface normal.
+        //        This prevents visual issues where ripples could be misplaced or
+        //        incorrectly oriented (e.g. embedded in the water surface or spawned
+        //        in the air) due to steep, uneven, or overlapping water surfaces.
+        sithFX_GetWaterPosition(pThing, &ripplePos, pRippleSec, &rippleUpDir);
+
+        SithThing* pRipple = sithFX_CreateThingFacingUp(pRippleTpl, &ripplePos, pRippleSec, &rippleUpDir);
         if ( !pRipple )
         {
             SITHLOG_ERROR("Can't make a ripple, no thing space!\n");
@@ -729,7 +784,7 @@ void J3DAPI sithFX_CreateRaftPaddleWaterFX(SithThing* pThing, float secTime)
     float secDeltaTime = sithTime_g_secGameTime - secTime;
     float secDelatLastCreated = sithTime_g_secGameTime - sithFX_secLastCreatedPaddleRipple;
 
-    rdVector3 ripplePos;
+    rdVector3 ripplePos = { 0 };
     switch ( pThing->moveStatus )
     {
         case SITHPLAYERMOVE_RAFT_PADDLE_FORWARD_LEFT:
@@ -763,8 +818,40 @@ void J3DAPI sithFX_CreateRaftPaddleWaterFX(SithThing* pThing, float secTime)
     }
 
     rdMatrix_TransformPoint34Acc(&ripplePos, &pThing->orient);
-    rdVector_Add3Acc(&ripplePos, &pThing->pos);
+    sithFX_TransformPointToAttachSurface(&ripplePos, pThing);
+
+    // Fixed: Clamp ripple Z position to the water surface.
+    //        Prevents ripples from appearing in the air when the raft
+    //        is partially lifted by collisions with solid geometry.
+    //
+    // Note, used as fallback if bellow water surface search function fails
+    if ( (pThing->attach.flags & SITH_ATTACH_SURFACE) != 0 )
+    {
+        ripplePos.z = pThing->attach.attachedFaceFirstVert.z;
+    }
+
     ripplePos.z += sithFX_surfaceOffsetZ; // Altered: Replaced constant 0.001 with sithFX_surfaceOffsetZ
+
+
+    SithSector* pRippleSec = pThing->pInSector;
+    rdVector3 rippleUpDir  = pThing->orient.uvec;
+
+    // Fixed: Use surface normal instead of thing uvec.
+    //        Resolves visual glitches where the raft could tilt opposite
+    //        to the water surface, causing ripples to be oriented partly in the air.
+    //
+    // Note, used as fallback if bellow water surface search function fails
+    if ( pThing->attach.flags )
+    {
+        rippleUpDir = pThing->attach.pFace->normal;
+    }
+
+    // Fixed: Search for the exact water surface at the ripple spawn position and
+    //        assign the resolved position, water sector, and surface normal.
+    //        This prevents visual issues where ripples could be misplaced or
+    //        incorrectly oriented (e.g. embedded in the water surface or spawned
+    //        in the air) due to steep, uneven, or overlapping water surfaces.
+    sithFX_GetWaterPosition(pThing, &ripplePos, pRippleSec, &rippleUpDir);
 
     bool bCreateSplashFx = false;
     if ( secDeltaTime == 0.0f || secDelatLastCreated >= 0.2f )
@@ -798,7 +885,7 @@ void J3DAPI sithFX_CreateRaftPaddleWaterFX(SithThing* pThing, float secTime)
     }
 
     // Altered: Replaced OG code with sithFX_CreateThingFacingUp
-    SithThing* pRipple = sithFX_CreateThingFacingUp(pRippleTbl, &ripplePos, pThing->pInSector, &pThing->orient.uvec);
+    SithThing* pRipple = sithFX_CreateThingFacingUp(pRippleTbl, &ripplePos, pRippleSec, &rippleUpDir);
     if ( !pRipple )
     {
         SITHLOG_ERROR("Can't make a ripple, no thing space!\n", 0);
@@ -860,7 +947,7 @@ void J3DAPI sithFX_CreateRaftInflateWaterFX(SithThing* pThing, float size)
         sithFX_TransformPointToAttachSurface(&pos, pThing);
 
         // Altered: Replaced OG code with sithFX_CreateThingFacingUp
-        SithThing* pRipple =  sithFX_CreateThingFacingUp(pRippleTpl, &pos, pThing->pInSector, &rdroid_g_zVector3);  // Note: don't replace zVector3 with thing uvec as thing is not raft and might not be oriented up
+        SithThing* pRipple = sithFX_CreateThingFacingUp(pRippleTpl, &pos, pThing->pInSector, &rdroid_g_zVector3); // Note: don't replace zVector3 with thing uvec as thing is not raft and might not be oriented up
         if ( !pRipple )
         {
             SITHLOG_ERROR("Can't make a ripple, no thing space!\n");

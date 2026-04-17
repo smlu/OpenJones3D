@@ -132,15 +132,6 @@ foreach(MODULE ${EXTERNAL_MODULES})
     set_target_properties(${MODULE} PROPERTIES FOLDER "Libs/external") # Group all lib modules under "Libs/external" in Visual Studio
 endforeach()
 
-
-# Add Jansson library
-add_library(jansson_interface INTERFACE)
-target_link_libraries(jansson_interface INTERFACE ${JANSSON_LIBRARIES})
-target_include_directories(jansson_interface INTERFACE
-   "${JANSSON_INCLUDE_DIRS}"
-)
-add_library(Jansson ALIAS jansson_interface)
-
 # Disable the problematic warning for MSVC on Jansson target
 if(MSVC)
     target_compile_options(${JANSSON_LIBRARIES} PRIVATE
@@ -148,3 +139,4 @@ if(MSVC)
         /wd4703  # Disable C4703: potentially uninitialized local pointer variable
     )
 endif()
+

@@ -25,17 +25,15 @@ typedef enum eSithRenderThingTraversal
     SITHRENDER_THING_TRAVERSAL_BFS = 1
 } SithRenderThingTraversal;
 
-
-#define SITHRENDER_MAX_VISIBLE_SECTORS       4096 // Altered: Was 128
+#define SITHRENDER_MAX_VISIBLE_SECTORS       J3D_QOL_VALUE(128, 4096) // Altered: Was 128
 #define SITHRENDER_MAX_VISIBLE_THING_SECTORS SITHRENDER_MAX_VISIBLE_SECTORS * 2 // Altered: Was 256
 
 #define SITHRENDER_CULLEDSECTOR_TRAVERSALMODE_DEFAULT J3D_QOL_VALUE(SITHRENDER_THING_TRAVERSAL_BFS, SITHRENDER_THING_TRAVERSAL_LDFS)
-#define SITHRENDER_MAXTHINGCOLLECTDISTANCE_DEFAULT    J3D_QOL_VALUE(16.0f, 8.0f)  // Max distance from each visible sector to collect things to be rendered. Altered: Changed to 16 (160m) form 8 (80m)
-#define SITHRENDER_MAXLIGHTCOLLECTDISTANCE_DEFAULT    J3D_QOL_VALUE(16.0f, 8.0f)  // Max distance from each visible sector to collect emitting lights. 
-                                                                                  // This is the new configurable variable. Originally, light collecting distance was limited to things collecting distance (8.0f) and 
+#define SITHRENDER_MAXTHINGCOLLECTDISTANCE_DEFAULT    J3D_QOL_VALUE(18.0f, 8.0f)  // Max distance from each visible sector to collect things to be rendered. Altered: Changed to 18 (180m) form 8 (80m) as the BFS algo requires longer distance to collect sectors infront
+#define SITHRENDER_MAXLIGHTCOLLECTDISTANCE_DEFAULT    J3D_QOL_VALUE(18.0f, 8.0f)  // Max distance from each visible sector to collect emitting lights.
+                                                                                  // This is the new configurable variable. Originally, light collecting distance was limited to things collecting distance (8.0f) and
                                                                                   // max number of collected things - SITHRENDER_MAX_VISIBLE_THING_SECTORS
-                                                                                 // The new default distance - 60m was determined based on the light flickering issue in Babylon level (court yard)
-
+                                                                                  // The new default distance - 60m was determined based on the light flickering issue in Babylon level (court yard)
 
 #define sithRender_g_fogDensity J3D_DECL_FAR_VAR(sithRender_g_fogDensity, float)
 // extern float sithRender_g_fogDensity ;
@@ -108,7 +106,6 @@ float sithRender_GetMaxLightCollectDistance(void); // New
  * @param distance - Maximum light collection distance.
  */
 void J3DAPI sithRender_SetMaxLightCollectDistance(float distance); // New
-
 
 //!< Renders sithWorld_g_pCurrentWorld from position of sithCamera_g_pCurCamera
 void sithRender_RenderScene(void); // Added from debug

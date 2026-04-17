@@ -63,7 +63,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
 )
 
 set(EXTRA_LIBS
-    Jansson
+    jansson::jansson
 )
 
 if (J3D_DIRECTX6)

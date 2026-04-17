@@ -22,6 +22,7 @@ typedef struct sStdJSON
 static bool stdJSON_bStarted = false;
 
 static json_malloc_t stdJSON_pfJanssonAlloc = NULL;
+static json_realloc_t stdJSON_pfJanssonRealloc = NULL;
 static json_free_t stdJSON_pfJanssonFree = NULL;
 
 // Internal helper functions
@@ -47,6 +48,11 @@ static void* stdJSON_Alloc(size_t size)
     return STDMALLOC(size);
 }
 
+static void* stdJSON_Realloc(void* pData, size_t size)
+{
+    return STDREALLOC(pData, size);
+}
+
 static void stdJSON_FreeMem(void* pData)
 {
     STDFREE(pData);
@@ -68,8 +74,8 @@ bool J3DAPI stdJSON_Startup(void)
     }
 
     // Set custom memory allocators for Jansson
-    json_get_alloc_funcs(&stdJSON_pfJanssonAlloc, &stdJSON_pfJanssonFree);
-    json_set_alloc_funcs(stdJSON_Alloc, stdJSON_FreeMem);
+    json_get_alloc_funcs2(&stdJSON_pfJanssonAlloc, &stdJSON_pfJanssonRealloc, &stdJSON_pfJanssonFree);
+    json_set_alloc_funcs2(stdJSON_Alloc, stdJSON_Realloc, stdJSON_FreeMem);
 
     stdJSON_bStarted = true;
     return true;
@@ -87,7 +93,7 @@ void J3DAPI stdJSON_Shutdown(void)
         return;
     }
 
-    json_set_alloc_funcs(stdJSON_pfJanssonAlloc, stdJSON_pfJanssonFree);
+    json_set_alloc_funcs2(stdJSON_pfJanssonAlloc, stdJSON_pfJanssonRealloc, stdJSON_pfJanssonFree);
     stdJSON_bStarted = false;
 }
 
@@ -107,7 +113,7 @@ StdJSONHandle J3DAPI stdJSON_New(void)
         return NULL;
     }
 
-    memset(hJson, 0, sizeof(StdJSON));
+    STD_ZEROMEM(hJson, sizeof(StdJSON));
     hJson->pRoot = json_object();
     return hJson;
 }
@@ -400,7 +406,7 @@ bool J3DAPI stdJSON_SetRequiredKeys(StdJSONHandle hJson, const char** ppKeys, si
         return false;
     }
 
-    memset(hJson->ppRequiredKeys, 0, arraySize);
+    STD_ZEROMEM(hJson->ppRequiredKeys, arraySize);
 
     // Copy required key strings
     for ( size_t i = 0; i < count; i++ )
@@ -1860,7 +1866,6 @@ bool J3DAPI stdJSON_ArrayClear(StdJSONHandle hArray)
     return true;
 }
 
-
 bool J3DAPI stdJSON_SetObjectArrayElement(StdJSONHandle hJson, const char* pKey, size_t index, StdJSONHandle value)
 {
     if ( !hJson || !value || !value->pRoot || !json_is_object(value->pRoot) )
@@ -1926,7 +1931,6 @@ bool J3DAPI stdJSON_SetBoolArrayElement(StdJSONHandle hJson, const char* pKey, s
     return result;
 }
 
-
 bool J3DAPI stdJSON_SetStringArrayElement(StdJSONHandle hJson, const char* pKey, size_t index, const char* pValue)
 {
     if ( !pValue )
@@ -1988,7 +1992,6 @@ bool J3DAPI stdJSON_GetBoolArrayElement(StdJSONHandle hJson, const char* pKey, s
     }
     return json_is_true(pElement);
 }
-
 
 bool J3DAPI stdJSON_GetStringArrayElement(StdJSONHandle hJson, const char* pKey, size_t index, char* pDstStr, size_t size, const char* pDefaultValue)
 {

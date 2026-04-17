@@ -32,9 +32,9 @@ static inline bool J3DAPI rdVector_IsNAN2(const rdVector2* v); // Added
 static inline bool J3DAPI rdVector_IsNAN3(const rdVector3* v); // Added
 static inline bool J3DAPI rdVector_IsNAN4(const rdVector4* v); // Added
 
-static inline bool J3DAPI rdVector_Equal2(const rdVector2* v1, const rdVector2* v2); // Added
-static inline bool J3DAPI rdVector_Equal3(const rdVector3* v1, const rdVector3* v2); // Added
-static inline bool J3DAPI rdVector_Equal4(const rdVector4* v1, const rdVector4* v2); // Added
+static inline bool J3DAPI rdVector_Equal2(const rdVector2* a, const rdVector2* b); // Added
+static inline bool J3DAPI rdVector_Equal3(const rdVector3* a, const rdVector3* b); // Added
+static inline bool J3DAPI rdVector_Equal4(const rdVector4* a, const rdVector4* b); // Added
 
 static inline void J3DAPI rdVector_Zero2(rdVector2* dest); // Added
 static inline void J3DAPI rdVector_Zero3(rdVector3* dest); // Added
@@ -245,19 +245,19 @@ bool J3DAPI rdVector_IsNAN4(const rdVector4* v)
     return isnan(v->x) || isnan(v->y) || isnan(v->z) || isnan(v->w);
 }
 
-bool J3DAPI rdVector_Equal2(const rdVector2* v1, const rdVector2* v2)
+bool J3DAPI rdVector_Equal2(const rdVector2* a, const rdVector2* b)
 {
-    return STD_EQUALMEM(v1, v2, sizeof(rdVector2));
+    return a->x == b->x && a->y == b->y;
 }
 
-bool J3DAPI rdVector_Equal3(const rdVector3* v1, const rdVector3* v2)
+bool J3DAPI rdVector_Equal3(const rdVector3* a, const rdVector3* b)
 {
-    return STD_EQUALMEM(v1, v2, sizeof(rdVector3));
+    return a->x == b->x && a->y == b->y && a->z == b->z;
 }
 
-bool J3DAPI rdVector_Equal4(const rdVector4* v1, const rdVector4* v2)
+bool J3DAPI rdVector_Equal4(const rdVector4* a, const rdVector4* b)
 {
-    return STD_EQUALMEM(v1, v2, sizeof(rdVector4));
+    return a->x == b->x && a->y == b->y && a->z == b->z && a->w == b->w;
 }
 
 void J3DAPI rdVector_Zero2(rdVector2* dest)

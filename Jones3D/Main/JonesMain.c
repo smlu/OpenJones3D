@@ -1416,7 +1416,7 @@ void JonesMain_TogglePrintFramerate(void)
 //int J3DAPI JonesMain_sub_422443(SithMessage* pMsg)
 //{
 //    STD_ASSERTREL(pMsg);
-//    if ( (sithMain_g_sith_mode.subModeFlags & 8) != 0 )
+//    if ( (sithMain_g_sith_mode.subModeFlags & SITH_SUBMODE_SYNC) != 0 )
 //    {
 //        JonesMain_pMessageData = *(uint8_t**)pMsg->data;
 //    }

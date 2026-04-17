@@ -70,7 +70,6 @@ static_assert(SITHTHING_TYPEMASK(SITH_THING_ACTOR, SITH_THING_PLAYER, SITH_THING
 #define sithThing_curQuetzAttachInfo J3D_DECL_FAR_VAR(sithThing_curQuetzAttachInfo, SithQuetzAttachInfo*)
 #define sithThing_dword_5612B8 J3D_DECL_FAR_VAR(sithThing_dword_5612B8, int)
 
-
 static bool sithThing_bThingStartup = false; // Added: Init to false TODO: rename to bThingStartup
 
 SithThingUnknownFunc sithThing_pfUnknownFunc = NULL; // Fixed: Init to NULL
@@ -302,7 +301,7 @@ void sithThing_InstallHooks(void)
     J3D_HOOKFUNC(sithThing_ValidateThingPointer);
     J3D_HOOKFUNC(sithThing_SyncThing);
     J3D_HOOKFUNC(sithThing_SyncThings);
-    J3D_HOOKFUNC(sithThing_CanSync);
+    J3D_HOOKFUNC(sithThing_CanSyncThing);
     J3D_HOOKFUNC(sithThing_GetThingMeshIndex);
     J3D_HOOKFUNC(sithThing_GetThingJointIndex);
     J3D_HOOKFUNC(sithThing_FreeThingIndex);
@@ -361,7 +360,7 @@ int sithThing_Startup(void)
     {
         stdConfig_SetInt(SITHTHING_CFG_WORLDTHINGS_EXTRACAPACITY, sithThing_bufferExtraCapacity);
     }
-#endif 
+#endif
 
     sithThing_curSignature  = 1;
     sithThing_bThingStartup = true;
@@ -775,7 +774,7 @@ void J3DAPI sithThing_UpdateMove(SithThing* pThing, float secDeltaTime)
             && pThing->moveStatus != SITHPLAYERMOVE_UNKNOWN_83
             && pThing->moveStatus != SITHPLAYERMOVE_JEEP_IMPACT )
         {
-            // Update Jeep move 
+            // Update Jeep move
 
             rdVector3 newPos;
             rdVector_ScaleAdd3(&newPos, &pThing->orient.uvec, 0.14f, &pThing->pos);
@@ -979,7 +978,6 @@ int J3DAPI sithThing_GetThingIndex(const SithThing* pThing)
     return -1;
 }
 
-
 SithThing* J3DAPI sithThing_GetGuidThing(int guid)
 {
     if ( guid < 0 )
@@ -1037,7 +1035,6 @@ float J3DAPI sithThing_DamageThing(SithThing* pThing, const SithThing* pDamageTh
                 {
                     retDamage = retDamage - sithActor_DamageActor(pThing, (SithThing*)pDamageThing, retDamage, hitType);
                 }
-
             } break;
 
             case SITH_THING_WEAPON:
@@ -1237,7 +1234,6 @@ void J3DAPI sithThing_PlayCogDamageSound(SithThing* pThing, SithDamageType hitTy
         // Altered: OG snow was handled via earth sound
         else if ( (pThing->flags & (SITH_TF_SNOW)) != 0 )
         {
-
             hSnd = Sound_GetSoundHandle(SITHWORLD_STATICINDEX(110)); // fol_in_jumpsnow.wav
         }
         else if ( (pThing->flags & SITH_TF_WOOD) != 0 )
@@ -1325,7 +1321,6 @@ void J3DAPI sithThing_InitializeWorldThings(SithWorld* pWorld)
 
 void J3DAPI sithThing_LoadPostProcess(SithWorld* pWorld)
 {
-
     sithThing_numFreeThings = 0;
     pWorld->lastThingIdx    = -1;
 
@@ -1543,13 +1538,12 @@ void J3DAPI sithThing_ExitSector(SithThing* pThing)
     if ( (pThing->pInSector->flags & SITH_SECTOR_COGLINKED) != 0 )
     {
         rdVector3 prevPos = pThing->pos;
-
         if ( (pThing->flags & (SITH_TF_DISABLED | SITH_TF_REMOTE)) == 0 )
         {
             sithCog_SectorSendMessage(pThing->pInSector, pThing, SITHCOG_MSG_EXITED);
         }
 
-        if ( !rdVector_Equal3(&prevPos, &pThing->pos) ) // pos not equal
+        if ( !STD_EQUALMEM(&prevPos, &pThing->pos, sizeof(rdVector3)) ) // TODO: maybe use rdVector_Equal3 to do component wise comparison
         {
             // The position changed, thing has to be in sector
             SITH_ASSERTREL(pThing->pInSector);
@@ -1558,7 +1552,7 @@ void J3DAPI sithThing_ExitSector(SithThing* pThing)
     }
 
     // Not COG linked or the position wasn't changed after sending exited message
-    // Remove thing from sector list 
+    // Remove thing from sector list
 
     if ( pThing->pPrevThingInSector )
     {
@@ -1598,7 +1592,9 @@ void J3DAPI sithThing_EnterSector(SithThing* pThing, SithSector* pNewSector, int
     pNewSector->pFirstThingInSector = pThing;
     pThing->pInSector              = pNewSector;
 
-    if ( (pNewSector->flags & SITH_SECTOR_UNDERWATER) != 0 || (pNewSector->flags & SITH_SECTOR_AETHERIUM) != 0 && pThing->type == SITH_THING_PLAYER )
+    if ( (pNewSector->flags & SITH_SECTOR_UNDERWATER) != 0
+        || (pNewSector->flags & SITH_SECTOR_AETHERIUM) != 0
+        && pThing->type == SITH_THING_PLAYER )
     {
         if ( pThing->attach.flags && (pThing->attach.flags & SITH_ATTACH_NOMOVE) == 0 && pThing->moveType == SITH_MT_PHYSICS )
         {
@@ -1609,12 +1605,11 @@ void J3DAPI sithThing_EnterSector(SithThing* pThing, SithSector* pNewSector, int
         {
             if ( (pNewSector->flags & SITH_SECTOR_AETHERIUM) != 0 )
             {
-                sithInventory_SetSwimmingInventory(pThing, 0);
+                sithInventory_SetSwimmingInventory(pThing, /*bItemsAvailable=*/0);
                 sithPlayer_g_bInAetheriumSector = 1;
                 sithWeapon_DeselectWeapon(pThing);
 
                 pThing->flags &= ~SITH_TF_SHADOW;
-
             }
             else
             {
@@ -1631,7 +1626,7 @@ void J3DAPI sithThing_EnterSector(SithThing* pThing, SithSector* pNewSector, int
     }
     else if ( pThing->type == SITH_THING_PLAYER && sithPlayer_g_bInAetheriumSector == 1 )
     {
-        sithInventory_SetSwimmingInventory(pThing, 1);
+        sithInventory_SetSwimmingInventory(pThing, /*bItemsAvailable=*/1);
         sithPlayer_g_bInAetheriumSector = 0;
         pThing->flags |= SITH_TF_SHADOW;
     }
@@ -1650,7 +1645,7 @@ void J3DAPI sithThing_EnterWater(SithThing* pThing, int bNoSplash)
     #ifdef J3D_QOL_IMPROVEMENTS
         // Change mode only if not dead thing
         if ( (pThing->flags & SITH_TF_DYING) == 0 )
-        #endif 
+        #endif
         {
             sithPuppet_SetMoveMode(pThing, SITHPUPPET_MOVEMODE_SWIM);
         }
@@ -1743,7 +1738,11 @@ void J3DAPI sithThing_ExitWater(SithThing* pThing, int bNoSplash)
         return;
     }
 
-    if ( !bNoSplash && (pThing == sithPlayer_g_pLocalPlayerThing) && (pThing->flags & SITH_TF_SPLASH) != 0 && (pThing->flags & SITH_TF_REMOTE) == 0 && !bFalling )
+    if ( !bNoSplash
+        && (pThing == sithPlayer_g_pLocalPlayerThing)
+        && (pThing->flags & SITH_TF_SPLASH) != 0
+        && (pThing->flags & SITH_TF_REMOTE) == 0
+        && !bFalling )
     {
         if ( sithPlayer_g_pLocalPlayerThing->pCog )
         {
@@ -2060,7 +2059,7 @@ void J3DAPI sithThing_AttachThingToSurface(SithThing* pThing, SithSurface* pSurf
         }
     }
 
-    // Handle attaching to killfloor 
+    // Handle attaching to killfloor
     if ( (pSurface->flags & SITH_SURFACE_KILLFLOOR) != 0 && (pThing->moveInfo.physics.flags & (SITH_PF_JEEP | SITH_PF_RAFT | SITH_PF_MINECAR)) == 0 )
     {
         if ( pThing->type == SITH_THING_WEAPON )
@@ -2754,7 +2753,6 @@ int J3DAPI sithThing_ReadStaticThingsListText(SithWorld* pWorld, int bSkip)
     return 0;
 }
 
-
 int J3DAPI sithThing_WriteStaticThingsListBinary(tFileHandle fh, const SithWorld* pWorld)
 {
     return sithThing_WriteThingsListBinary(fh, pWorld, pWorld->numThings, pWorld->aThings);
@@ -3306,9 +3304,9 @@ void sithThing_SyncThings(void)
     sithThing_numUnsyncedThings = 0;
 }
 
-int J3DAPI sithThing_CanSync(const SithThing* pThing)
+int J3DAPI sithThing_CanSyncThing(const SithThing* pThing)
 {
-    if ( pThing->type == SITH_THING_FREE )
+    if ( pThing->type == SITH_THING_FREE || (pThing->flags & SITH_TF_NOSYNC) != 0 ) // Altered: Added check for SITH_TF_NOSYNC flag
     {
         return 0;
     }
@@ -3318,7 +3316,7 @@ int J3DAPI sithThing_CanSync(const SithThing* pThing)
 
 int J3DAPI sithThing_GetThingMeshIndex(const SithThing* pThing, const char* pMeshName)
 {
-    // Altered: Added check for renderData type
+    // Fixed: Added check for renderData type
     if ( pThing->renderData.type != RD_THING_MODEL3 || !pThing->renderData.data.pModel3 || !pMeshName )
     {
         return -1;
@@ -3337,7 +3335,8 @@ int J3DAPI sithThing_GetThingMeshIndex(const SithThing* pThing, const char* pMes
 
 int J3DAPI sithThing_GetThingJointIndex(const SithThing* pThing, const char* pJointName)
 {
-    if ( !pThing->renderData.data.pModel3 || !pJointName )
+    // Fixed: Added check for renderData type
+    if ( pThing->renderData.type != RD_THING_MODEL3 || !pThing->renderData.data.pModel3 || !pJointName )
     {
         return -1;
     }
@@ -3351,7 +3350,6 @@ int J3DAPI sithThing_GetThingJointIndex(const SithThing* pThing, const char* pJo
     }
 
     return -1;
-
 }
 
 void J3DAPI sithThing_FreeThingIndex(SithWorld* pWorld, size_t thingNum)

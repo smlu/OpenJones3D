@@ -21,11 +21,11 @@ extern "C" {
 /* version */
 
 #define JANSSON_MAJOR_VERSION 2
-#define JANSSON_MINOR_VERSION 14
-#define JANSSON_MICRO_VERSION 1
+#define JANSSON_MINOR_VERSION 15
+#define JANSSON_MICRO_VERSION 0
 
 /* Micro version is omitted if it's 0 */
-#define JANSSON_VERSION "2.14.1"
+#define JANSSON_VERSION "2.15.0"
 
 /* Version as a 3-byte hex number, e.g. 0x010201 == 1.2.1. Use this
    for numeric comparisons, e.g. #if JANSSON_VERSION_HEX >= ... */
@@ -379,14 +379,14 @@ json_t *json_load_callback(json_load_callback_t callback, void *data, size_t fla
 /* encoding */
 
 #define JSON_MAX_INDENT        0x1F
-#define JSON_INDENT(n)         ((n)&JSON_MAX_INDENT)
+#define JSON_INDENT(n)         ((n) & JSON_MAX_INDENT)
 #define JSON_COMPACT           0x20
 #define JSON_ENSURE_ASCII      0x40
 #define JSON_SORT_KEYS         0x80
 #define JSON_PRESERVE_ORDER    0x100
 #define JSON_ENCODE_ANY        0x200
 #define JSON_ESCAPE_SLASH      0x400
-#define JSON_REAL_PRECISION(n) (((n)&0x1F) << 11)
+#define JSON_REAL_PRECISION(n) (((n) & 0x1F) << 11)
 #define JSON_EMBED             0x10000
 
 typedef int (*json_dump_callback_t)(const char *buffer, size_t size, void *data);
@@ -402,10 +402,16 @@ int json_dump_callback(const json_t *json, json_dump_callback_t callback, void *
 /* custom memory allocation */
 
 typedef void *(*json_malloc_t)(size_t);
+typedef void *(*json_realloc_t)(void *, size_t);
 typedef void (*json_free_t)(void *);
 
 void json_set_alloc_funcs(json_malloc_t malloc_fn, json_free_t free_fn);
 void json_get_alloc_funcs(json_malloc_t *malloc_fn, json_free_t *free_fn);
+
+void json_set_alloc_funcs2(json_malloc_t malloc_fn, json_realloc_t realloc_fn,
+                           json_free_t free_fn);
+void json_get_alloc_funcs2(json_malloc_t *malloc_fn, json_realloc_t *realloc_fn,
+                           json_free_t *free_fn);
 
 /* runtime version checking */
 

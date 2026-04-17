@@ -875,7 +875,7 @@ LABEL_61:
                 }
 
                 sithThing_SetSector(pThing, pCollision->pSurfaceCollided->pAdjoin->pAdjoinSector, /*bNotify=*/0);
-                bCollided = !rdVector_Equal3(&curthPos, &pThing->pos);
+                bCollided = !STD_EQUALMEM(&curthPos, &pThing->pos, sizeof(rdVector3)); // TODO: maybe use rdVector_Equal3 to do component wise comparison
             }
             else
             {

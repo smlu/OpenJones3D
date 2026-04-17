@@ -65,7 +65,7 @@ typedef enum eSithThingFlag
     SITH_TF_NOWEAPONCOLLIDE = 0x4,
     SITH_TF_WHIPCLIMB       = 0x8,
     SITH_TF_INVISIBLE       = 0x10,
-    SITH_TF_UNKNOWN_20      = 0x20,
+    SITH_TF_NOSYNC          = 0x20, // Altered: Repurposed flag for marking thing to not be synced to savegame file or over the new
     SITH_TF_STANDON         = 0x40,
     SITH_TF_MOUNTABLE       = 0x80,
     SITH_TF_REMOTE          = 0x100,

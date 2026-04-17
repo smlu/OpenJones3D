@@ -503,7 +503,7 @@ void sithClose(void)
 {
     if ( sith_bStartup && sith_bOpen )
     {
-        if ( (sithMain_g_sith_mode.subModeFlags & 1) != 0 )
+        if ( (sithMain_g_sith_mode.subModeFlags & 0x01) != 0 )
         {
             sithMulti_CloseGame();
         }
@@ -543,7 +543,7 @@ void sithClose(void)
 void sithUpdate(void)
 {
     SITH_ASSERTREL(sithMain_g_sith_mode.masterMode != SITH_MODE_CLOSED);
-    if ( (sithMain_g_sith_mode.subModeFlags & 8) != 0 ) // Game host?
+    if ( (sithMain_g_sith_mode.subModeFlags & SITH_SUBMODE_SYNC) != 0 )
     {
         sithTime_Advance();
         sithMessage_ProcessMessages();
@@ -595,7 +595,7 @@ void sithUpdate(void)
 
 void sithDrawScene(void)
 {
-    if ( (sithMain_g_sith_mode.subModeFlags & 8) == 0 )
+    if ( (sithMain_g_sith_mode.subModeFlags & SITH_SUBMODE_SYNC) == 0 )
     {
         // Render scene
         sithAdvanceRenderTick();
