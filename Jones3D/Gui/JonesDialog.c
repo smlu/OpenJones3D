@@ -487,6 +487,36 @@ int J3DAPI JonesDialog_ShowDialog(LPCSTR lpTemplateName, HWND hWnd, DLGPROC lpDi
         return DialogBoxParam(hInstance, lpTemplateName, hWnd, lpDialogFunc, dwInitParam);
     }
 
+#if defined(J3D_OPENGL)
+    int wasPaused      = JonesMain_IsGamePaused();
+    int controlsActive = stdControl_ControlsActive();
+
+    if ( !wasPaused )
+    {
+        JonesMain_PauseGame();
+    }
+
+    if ( controlsActive && !stdControl_SetActivation(0) )
+    {
+        stdControl_ShowMouseCursor(1);
+    }
+
+    int result = DialogBoxParam(hInstance, lpTemplateName, hWnd, lpDialogFunc, dwInitParam);
+
+    stdControl_SetActivation(controlsActive);
+    if ( controlsActive )
+    {
+        stdControl_ShowMouseCursor(0);
+    }
+
+    if ( !wasPaused )
+    {
+        JonesMain_ResumeGame();
+    }
+
+    return result;
+#else
+
     memset(&data, 0, sizeof(data));
     data.dwSize = sizeof(JonesDialogData);
     data.lpfnPrevHook = (LPOFNHOOKPROC)lpDialogFunc;
@@ -510,6 +540,7 @@ int J3DAPI JonesDialog_ShowDialog(LPCSTR lpTemplateName, HWND hWnd, DLGPROC lpDi
 
     JonesDialog_ResetGameState(&state, bWindowModeSupported);
     return v9;
+#endif
 }
 
 void J3DAPI JonesDialog_SetGameState(JonesDialogGameState* pState, int bWindowModeSupported)
@@ -1374,6 +1405,43 @@ BOOL J3DAPI JonesDialog_ShowFileSelectDialog(LPOPENFILENAMEA pofn, int bOpen)
         return -1;
     }
 
+#if defined(J3D_OPENGL)
+    int wasPaused      = JonesMain_IsGamePaused();
+    int controlsActive = stdControl_ControlsActive();
+
+    if ( !wasPaused )
+    {
+        JonesMain_PauseGame();
+    }
+
+    if ( controlsActive && !stdControl_SetActivation(0) )
+    {
+        stdControl_ShowMouseCursor(1);
+    }
+
+    BOOL bRes;
+    if ( bOpen )
+    {
+        bRes = GetOpenFileName(pofn);
+    }
+    else
+    {
+        bRes = GetSaveFileName(pofn);
+    }
+
+    stdControl_SetActivation(controlsActive);
+    if ( controlsActive )
+    {
+        stdControl_ShowMouseCursor(0);
+    }
+
+    if ( !wasPaused )
+    {
+        JonesMain_ResumeGame();
+    }
+
+    return bRes;
+#else
     if ( !bWindowModeSupported )
     {
         JonesDialogData dlgData = { 0 };
@@ -1404,6 +1472,7 @@ BOOL J3DAPI JonesDialog_ShowFileSelectDialog(LPOPENFILENAMEA pofn, int bOpen)
 
     JonesDialog_ResetGameState(&state, bWindowModeSupported);
     return bRes;
+#endif
 }
 
 UINT_PTR CALLBACK JonesDialog_SubclassFileDialogProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
