@@ -210,7 +210,6 @@ void J3DAPI rdCache_AddAlphaProcFace(size_t numVertices)
     rdCacheProcEntry* pEntry = &rdCache_aAlphaProcFaces[rdCache_numAlphaProcFaces];
     pEntry->numVertices      = numVertices;
 
-#ifndef J3D_OPENGL
     float sz = FLT_MAX; // 3.4028235e38f;
     for ( size_t i = 0; i < numVertices; ++i )
     {
@@ -221,7 +220,7 @@ void J3DAPI rdCache_AddAlphaProcFace(size_t numVertices)
     }
 
     pEntry->distance = sz;
-#endif
+
     rdCache_numUsedAlphaVertices += numVertices;
     ++rdCache_numAlphaProcFaces;
 }
@@ -232,12 +231,10 @@ void J3DAPI rdCache_SendFaceListToHardware(size_t numPolys, rdCacheProcEntry* pC
     int curMatCelNum                  = -1;
     const tStdFadeFactor* pFadeFactor = stdEffect_GetFadeFactor();
 
-#ifndef J3D_OPENGL
     if ( pfSort == rdCache_ProcFaceDistanceCompare )
     {
         qsort(pCurPoly, numPolys, sizeof(rdCacheProcEntry), pfSort);
     }
-#endif
 
 LABEL_4:
     if ( polyNum < numPolys )
@@ -1333,16 +1330,8 @@ void J3DAPI rdCache_AddLegacyDrawCall(tSysTexture* pTex, Std3DRenderState rdflag
     rdPayload* pDrawCall;
     if ( bAlpha )
     {
-        pDrawCall      = rdCache_GetTransparentDrawCall(RD_DRAW_LEGACY);
-        float distance = FLT_MAX; // 3.4028235e38f;
-        for ( size_t i = 0; i < numVerts; ++i )
-        {
-            if ( aVerts[i].sz < distance )
-            {
-                distance = aVerts[i].sz;
-            }
-        }
-        pDrawCall->distance = distance;
+        pDrawCall           = rdCache_GetTransparentDrawCall(RD_DRAW_LEGACY);
+        pDrawCall->distance = RD_CACHE_MAX_TRANSPARENT_DRAW_CALLS - rdCache_numTransparentDrawCalls;
     }
     else
     {
