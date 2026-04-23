@@ -1739,4 +1739,10 @@ void std3D_SetDrawMode(const int mode)
     std3D_currentDrawMode = mode;
 }
 
+void std3D_ToggleLegacyRendering(void)
+{
+    std3D_g_bUseLegacyRendering = !std3D_g_bUseLegacyRendering;
+    stdConfig_SetBool(STD3D_CFG_LEGACYRENDERING, std3D_g_bUseLegacyRendering);
+}
+
 
