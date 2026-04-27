@@ -569,6 +569,18 @@ void J3DAPI std3D_SetRenderState(Std3DRenderState rdflags)
         }
     }
 
+    if ( stdDisplay_g_bMSAAEnabled && (std3D_renderState & STD3D_RS_ALPHAREF_SET) != (rdflags & STD3D_RS_ALPHAREF_SET) )
+    {
+        if ( (rdflags & STD3D_RS_ALPHAREF_SET) )
+        {
+            glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE);
+        }
+        else
+        {
+            glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE);
+        }
+    }
+
 
     if ( (std3D_renderState & STD3D_RS_TEXFILTER_ANISOTROPIC) != (rdflags & STD3D_RS_TEXFILTER_ANISOTROPIC) )
     {
@@ -1615,7 +1627,9 @@ void std3D_DrawGeometryBatch(GeometryBatch* pBatch)
     glUniform1i(std3D_pActiveShader->lightModeLoc, pBatch->lightMode);
     glUniform1f(std3D_pActiveShader->alphaLoc, pBatch->extraLight[3]);
     glUniform1i(std3D_pActiveShader->renderLightsLoc, pBatch->lightMode == 3);
-    glUniform1i(std3D_pActiveShader->alphaCutLoc, (pBatch->rdFlags & STD3D_RS_ALPHAREF_SET) != 0);
+    bool bAlphaCut = (pBatch->rdFlags & STD3D_RS_ALPHAREF_SET) != 0;
+    glUniform1i(std3D_pActiveShader->alphaCutLoc, bAlphaCut);
+    glUniform1i(std3D_pActiveShader->alphaToCoverageLoc, bAlphaCut && stdDisplay_g_bMSAAEnabled);
 
     STD_ASSERTREL(glIsVertexArray(std3D_staticVao));
 
@@ -1649,7 +1663,9 @@ void std3D_DrawModelBatch(ModelBatch* pBatch)
 
     glUniform1i(std3D_pActiveShader->lightModeLoc, pBatch->lightMode);
     glUniform1i(std3D_pActiveShader->renderLightsLoc, pBatch->lightMode == 3);
-    glUniform1i(std3D_pActiveShader->alphaCutLoc, (pBatch->rdFlags & STD3D_RS_ALPHAREF_SET) != 0);
+    bool bAlphaCut = (pBatch->rdFlags & STD3D_RS_ALPHAREF_SET) != 0;
+    glUniform1i(std3D_pActiveShader->alphaCutLoc, bAlphaCut);
+    glUniform1i(std3D_pActiveShader->alphaToCoverageLoc, bAlphaCut && stdDisplay_g_bMSAAEnabled);
 
     glDrawElementsInstanced(GL_TRIANGLES, (GLsizei)pBatch->indexCount, GL_UNSIGNED_INT, (void*)(pBatch->indexOffset * sizeof(GLuint)), pBatch->numberOfInstances);
     std3D_instanceOffset += pBatch->numberOfInstances;

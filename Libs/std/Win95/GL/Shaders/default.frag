@@ -11,6 +11,7 @@ in vec3 vWorldNormal;
 uniform sampler2D sTexture;
 uniform bool bRenderLights = false;
 uniform bool bAlphaCut = false;
+uniform bool bAlphaToCoverage = false;
 
 void main()
 {
@@ -26,21 +27,16 @@ void main()
     // Alpha-to-Coverage smoothing
     float alpha = col.a;
 
-    if (bAlphaCut)
+    if (bAlphaCut && bAlphaToCoverage)
     {
         // Adaptive transition width
-//        float width = fwidth(alpha);
-//        width = max(width, 0.0001);
-//
-//        alpha = (alpha - 0.5f) / width + 0.5;
-//        //alpha = smoothstep(0.5f, 0.5f + width, col.a);
-//        alpha = clamp(alpha, 0.0, 1.0);
-        if (alpha < 0.5f)
-        {
-            discard;
-        }
+        float width = fwidth(alpha);
+        width = max(width, 0.0001);
+
+        alpha = (alpha - 0.5f) / width + 0.5;
+        alpha = clamp(alpha, 0.0, 1.0);
     }
-    else if (alpha < 0.01f)
+    else if ((bAlphaCut && alpha < 0.5f) || alpha < 0.01f)
     {
         discard;
     }
