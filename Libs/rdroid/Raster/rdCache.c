@@ -901,6 +901,12 @@ static void rdCache_AddDrawCall(rdPayload* pDrawCall, rdDrawCallSortBucket* pSor
     pDrawCall->rdFlags = rdCache_GetRenderStateOfDrawCall(pDrawCall);
     pDrawCall->pTex    = rdCache_GetDrawCallTexture(pDrawCall);
 
+    rdVector4* extraLight = &pDrawCall->extraLight;
+    extraLight->red       = STDMATH_CLAMP(extraLight->red, 0.0f, 1.0f);
+    extraLight->green     = STDMATH_CLAMP(extraLight->green, 0.0f, 1.0f);
+    extraLight->blue      = STDMATH_CLAMP(extraLight->blue, 0.0f, 1.0f);
+    extraLight->alpha     = STDMATH_CLAMP(extraLight->alpha, 0.0f, 1.0f);
+
     if ( rdroid_g_curGeometryMode == RD_GEOMETRY_VERTEX || rdroid_g_curGeometryMode == RD_GEOMETRY_WIREFRAME )
     {
         pDrawCall->lightingMode = RD_LIGHTING_NONE;
