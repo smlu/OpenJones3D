@@ -83,8 +83,8 @@ typedef enum eDrawMode
 static LegacyBatch std3D_cachedLegacyBatches[STD3D_MAX_LEGACY_BATCHES];
 static size_t std3D_numCachedLegacyBatches = 0;
 
-static D3DTLVERTEX std3D_pScreenSpaceVertexBuffer[STD3D_MAX_VERTICES_PER_DRAW * sizeof(D3DTLVERTEX)];
-static WORD std3D_pScreenSpaceElementBuffer[STD3D_MAX_INDICES_PER_DRAW * sizeof(GLushort)];
+static D3DTLVERTEX std3D_pScreenSpaceVertexBuffer[STD3D_MAX_VERTICES_PER_DRAW];
+static WORD std3D_pScreenSpaceElementBuffer[STD3D_MAX_INDICES_PER_DRAW];
 static size_t std3D_numScreenSpaceVertices = 0;
 static size_t std3D_numScreenSpaceIndices  = 0;
 
