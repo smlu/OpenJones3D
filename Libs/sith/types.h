@@ -1155,7 +1155,10 @@ typedef enum eSithControlFunction
     SITHCONTROL_GAMMA         = 54,
     SITHCONTROL_RUNFWD        = 55,
     SITHCONTROL_HEALTH        = 56,
-    SITHCONTROL_CHALK         = 57
+    SITHCONTROL_CHALK         = 57,
+#ifdef J3D_OPENGL
+    SITHCONTROL_SWITCHRENDERMODE = 58
+#endif
 } SithControlFunction;
 
 typedef enum eSithCameraState

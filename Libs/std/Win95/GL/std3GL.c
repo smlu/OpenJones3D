@@ -10,6 +10,9 @@
 #include <std/General/stdMemory.h>
 #include <std/General/stdUtil.h>
 
+#include "sith/Devices/sithConsole.h"
+#include "sith/Devices/sithControl.h"
+
 #define STD3D_DEFAULT_MAX_VERTICES 512
 #define STD3D_MAX_VERTICES_PER_DRAW 65536
 #define STD3D_MAX_INDICES_PER_DRAW 131072
@@ -115,6 +118,8 @@ static GLShaderProgram* std3D_pPolyLineShader   = NULL;
 static GLShaderProgram* std3D_pLegacyShader     = NULL;
 static GLShaderProgram* std3D_pActiveShader     = NULL;
 
+static bool std3D_bSwitchRenderMode = false;
+
 static int std3D_InitRenderState(void);
 static int std3D_BuildDeviceList(void);
 
@@ -128,6 +133,9 @@ void std3D_ReleaseScreenSpaceBuffers(void);
 
 bool std3D_InitShaderSystem(void);
 void std3D_ShutdownShaderSystem(void);
+
+void std3D_ToggleLegacyRendering(void);
+
 
 static void std3D_MapScreenSpaceBuffers(void);
 static void std3D_UnmapScreenSpaceBuffers(void);
@@ -234,7 +242,8 @@ static bool std3D_InitSystem(void)
         return false;
     }
 
-    std3D_g_bUseLegacyRendering = stdConfig_GetBool(STD3D_CFG_LEGACYRENDERING, false);
+    std3D_g_bUseLegacyRendering = !stdConfig_GetBool(STD3D_CFG_LEGACYRENDERING, false);
+    stdConfig_SetBool(STD3D_CFG_LEGACYRENDERING, std3D_g_bUseLegacyRendering);
 
     // create 1x1 white texture for solid mode
     std3D_pWhiteTexture          = STDMALLOC(sizeof(tSysTexture));
@@ -447,6 +456,16 @@ size_t std3D_GetNumTextureFormats(void)
 
 int std3D_StartScene(void)
 {
+    const int switchPressed = sithControl_GetKey(SITHCONTROL_SWITCHRENDERMODE, NULL);
+    if ( switchPressed && !std3D_bSwitchRenderMode )
+    {
+        std3D_bSwitchRenderMode = true;
+        std3D_ToggleLegacyRendering();
+    }
+    else if ( !switchPressed )
+    {
+        std3D_bSwitchRenderMode = false;
+    }
     glEnable(GL_DEPTH_TEST);
     glDisable(GL_BLEND);
     //stdShader_UpdateGlobalUniforms();
@@ -1743,6 +1762,10 @@ void std3D_ToggleLegacyRendering(void)
 {
     std3D_g_bUseLegacyRendering = !std3D_g_bUseLegacyRendering;
     stdConfig_SetBool(STD3D_CFG_LEGACYRENDERING, std3D_g_bUseLegacyRendering);
+    float fogFactor = std3D_g_bUseLegacyRendering ? 0.03459f : 1.0f;
+    float fogStart  = std3D_fogStartDepth / fogFactor;
+    float fogEnd    = std3D_fogEndDepth / ((2.0f - std3D_g_fogDensity) * fogFactor);
+    std3D_SetFog(std3D_fogColor[0], std3D_fogColor[1], std3D_fogColor[2], fogStart, fogEnd);
 }
 
 

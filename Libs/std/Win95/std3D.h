@@ -103,7 +103,6 @@ void std3D_DrawQuadBatch(QuadBatch* pBatch);
 void std3D_CacheLegacyBatch(LegacyBatch batch);
 void std3D_DrawLegacyBatches(void);
 void std3D_SetDrawMode(int mode);
-void std3D_ToggleLegacyRendering(void);
 #else
 bool std3D_IsShaderSystemActive(void);
 #endif

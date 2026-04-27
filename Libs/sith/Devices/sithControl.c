@@ -91,6 +91,9 @@ const char* const aFunctionNames[SITHCONTROL_MAXFUNCTIONS + 1] =
     "RUNFWD",
     "HEALTH",
     "CHALK",
+#ifdef J3D_OPENGL
+    "SWITCHRENDERMODE",
+#endif
     "MAXFUNCTIONS"
 };
 
@@ -737,6 +740,9 @@ void sithControl_RegisterControlFunctions(void)
     sithControl_RegisterKeyFunction(SITHCONTROL_SCREENSHOT);
     sithControl_RegisterKeyFunction(SITHCONTROL_CAMERAZOOMIN);
     sithControl_RegisterKeyFunction(SITHCONTROL_CAMERAZOOMOUT);
+#ifdef J3D_OPENGL
+    sithControl_RegisterKeyFunction(SITHCONTROL_SWITCHRENDERMODE);
+#endif
 
     // Note this if scope is removed in release version but we'll keep it
     //if ( (sithMain_g_sith_mode.debugModeFlags & SITHDEBUG_INEDITOR) != 0 )
@@ -803,7 +809,9 @@ void sithControl_RegisterKeyboardBindings(void)
         sithControl_BindControl(SITHCONTROL_SCREENSHOT, DIK_F12, (SithControlBindFlag)0);
         sithControl_BindControl(SITHCONTROL_HEALTH, DIK_H, (SithControlBindFlag)0);
         sithControl_BindControl(SITHCONTROL_CHALK, DIK_K, (SithControlBindFlag)0);
-
+#ifdef J3D_OPENGL
+        sithControl_BindControl(SITHCONTROL_SWITCHRENDERMODE, DIK_F9, (SithControlBindFlag)0);
+#endif
         // Note this if scope is removed in release version but we'll keep it
         if ( (sithMain_g_sith_mode.debugModeFlags & SITHDEBUG_INEDITOR) != 0 )
         {

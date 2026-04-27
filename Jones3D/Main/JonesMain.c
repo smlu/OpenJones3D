@@ -953,17 +953,6 @@ void J3DAPI JonesMain_HandleWMKeydown(HWND hWnd, WPARAM vk, int a3, uint16_t rep
             }
         }
         break;
-#ifdef J3D_OPENGL
-        case VK_F9: //legacy rendering
-        {
-            if ( repreatCount <= 1 && (exkeyflags & KF_REPEAT) == 0 )
-            {
-                std3D_ToggleLegacyRendering();
-                sithWorld_g_pCurrentWorld->state |= SITH_WORLD_STATE_UPDATE_FOG;
-            }
-        }
-        break;
-#endif
     }
 }
 
