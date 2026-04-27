@@ -92,6 +92,7 @@ void stdDisplay_InstallHooks(void);
 void stdDisplay_ResetGlobals(void);
 
 #ifdef J3D_OPENGL
+extern bool stdDisplay_g_bMSAAEnabled;
 void stdDisplay_MirrorYAxis(bool bMirror);
 #endif
 

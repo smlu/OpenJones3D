@@ -76,7 +76,7 @@ static tDisplayDevicePostResetCallback stdDisplay_pfDevicePostResetCallback = NU
 static tDisplayDeviceReleaseCallback stdDisplay_pfDeviceReleaseCallback     = NULL;
 
 // MSAA vars
-static bool stdDisplay_bMSAAEnabled   = false;
+bool stdDisplay_g_bMSAAEnabled        = false;
 static int stdDisplay_msaaSampleCount = 0;
 
 static GLShaderProgram* stdDisplay_fboShader = NULL;
@@ -186,7 +186,7 @@ void stdDisplay_ResetGlobals(void)
 static void stdDisplay_InitMSAASettings(void)
 {
     // Read MSAA settings from registry/config
-    stdDisplay_bMSAAEnabled    = stdConfig_GetBool(STD3D_CFG_MSAAENABLED, true);
+    stdDisplay_g_bMSAAEnabled  = stdConfig_GetBool(STD3D_CFG_MSAAENABLED, true);
     stdDisplay_msaaSampleCount = stdConfig_GetInt(STD3D_CFG_MSAASAMPLES, 16);
 
     // Get max supported sample count from OpenGL
@@ -195,14 +195,14 @@ static void stdDisplay_InitMSAASettings(void)
 
     if ( maxSamples <= 0 )
     {
-        stdDisplay_bMSAAEnabled = false;
+        stdDisplay_g_bMSAAEnabled = false;
     }
     else if ( stdDisplay_msaaSampleCount > maxSamples )
     {
         stdDisplay_msaaSampleCount = maxSamples;
     }
 
-    STDLOG_DEBUG("MSAA Settings: Enabled=%d, Samples=%d\n", stdDisplay_bMSAAEnabled, stdDisplay_msaaSampleCount);
+    STDLOG_DEBUG("MSAA Settings: Enabled=%d, Samples=%d\n", stdDisplay_g_bMSAAEnabled, stdDisplay_msaaSampleCount);
 }
 
 int stdDisplay_Startup(void)
@@ -790,7 +790,7 @@ int J3DAPI stdDisplay_CreateZBuffer(const tSysPixelFormat* pPixelFormat, int bSy
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, surface->depthTex, 0);
 
-    if ( stdDisplay_bMSAAEnabled )
+    if ( stdDisplay_g_bMSAAEnabled )
     {
         glBindFramebuffer(GL_FRAMEBUFFER, surface->msaaFbo);
         glGenRenderbuffers(1, &surface->msaaDepthTex);
@@ -1146,7 +1146,7 @@ int J3DAPI stdDisplay_InitBuffers(const StdVideoMode* pDisplayMode, bool bWindow
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, surface->colorTex, 0);
 
-    if ( stdDisplay_bMSAAEnabled )
+    if ( stdDisplay_g_bMSAAEnabled )
     {
         glGenFramebuffers(1, &surface->msaaFbo);
         glBindFramebuffer(GL_FRAMEBUFFER, surface->msaaFbo);
@@ -1190,7 +1190,7 @@ void stdDisplay_ReleaseBuffers(void) // checked
     surface->colorTex = 0;
     surface->depthTex = 0;
 
-    if ( stdDisplay_bMSAAEnabled )
+    if ( stdDisplay_g_bMSAAEnabled )
     {
         glDeleteFramebuffers(1, &surface->msaaFbo);
         glDeleteRenderbuffers(1, &surface->msaaColorTex);
@@ -1238,7 +1238,7 @@ int stdDisplay_Update(void)
     uint32_t width               = stdDisplay_g_backBuffer.rasterInfo.width;
     uint32_t height              = stdDisplay_g_backBuffer.rasterInfo.height;
 
-    if ( stdDisplay_bMSAAEnabled && !backBufferSurface->skipMSAA )
+    if ( stdDisplay_g_bMSAAEnabled && !backBufferSurface->skipMSAA )
     {
         glBindFramebuffer(GL_READ_FRAMEBUFFER, backBufferSurface->msaaFbo);
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, backBufferSurface->fbo);
@@ -1257,7 +1257,7 @@ int stdDisplay_Update(void)
 
     SDL_GL_SwapWindow(pWindow);
 
-    if ( stdDisplay_bMSAAEnabled )
+    if ( stdDisplay_g_bMSAAEnabled )
     {
         glBindFramebuffer(GL_FRAMEBUFFER, stdDisplay_g_backBuffer.surface.msaaFbo);
     }
