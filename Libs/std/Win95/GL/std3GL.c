@@ -1766,6 +1766,14 @@ void std3D_ToggleLegacyRendering(void)
     float fogStart  = std3D_fogStartDepth / fogFactor;
     float fogEnd    = std3D_fogEndDepth / ((2.0f - std3D_g_fogDensity) * fogFactor);
     std3D_SetFog(std3D_fogColor[0], std3D_fogColor[1], std3D_fogColor[2], fogStart, fogEnd);
+    if ( std3D_g_bUseLegacyRendering )
+    {
+        sithConsole_PrintString("Legacy rendering enabled");
+    }
+    else
+    {
+        sithConsole_PrintString("Legacy rendering disabled");
+    }
 }
 
 
