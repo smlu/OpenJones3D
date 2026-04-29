@@ -1637,6 +1637,16 @@ void sithRender_BuildDynamicLights(void)
                         aVertDynamicLights[vertIdx].red   += pLight->color.red - att;
                         aVertDynamicLights[vertIdx].green += pLight->color.green - att;
                         aVertDynamicLights[vertIdx].blue  += pLight->color.blue - att;
+
+                        // Note the above light calculation is bugged and if a vertex is lit by more than one light source, they can cancel each outher out.
+                        // The following commented code fixes this issue.
+                        // float red   = pLight->color.red - att;
+                        // float green = pLight->color.green - att;
+                        // float blue  = pLight->color.blue - att;
+                        //
+                        // aVertDynamicLights[vertIdx].red   += red > 0.0f ? red : 0.0f;
+                        // aVertDynamicLights[vertIdx].green += green > 0.0f ? green : 0.0f;
+                        // aVertDynamicLights[vertIdx].blue  += blue > 0.0f ? blue : 0.0f;
                     }
 
                     rdMath_ClampVector3Acc((rdVector3*)&aVertDynamicLights[vertIdx], 0.0f, 1.0f);
