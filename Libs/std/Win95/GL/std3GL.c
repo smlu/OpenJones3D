@@ -1704,6 +1704,11 @@ void std3D_DrawQuadBatch(QuadBatch* pBatch)
 
 void std3D_CacheLegacyBatch(const LegacyBatch batch)
 {
+    if ( std3D_numCachedLegacyBatches >= STD3D_MAX_LEGACY_BATCHES )
+    {
+        STDLOG_WARNING("There are not enough legacy batches available to draw that frame. Consider increasing STD3D_MAX_LEGACY_BATCHES.\n");
+        std3D_DrawLegacyBatches();
+    }
     std3D_cachedLegacyBatches[std3D_numCachedLegacyBatches++] = batch;
 }
 
