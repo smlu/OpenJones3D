@@ -124,6 +124,11 @@ void J3DAPI rdCamera_Free(rdCamera* pCamera)
         return;
     }
 
+    if ( pCamera == rdCamera_g_pCurCamera )
+    {
+        rdCamera_g_pCurCamera = NULL;
+    }
+
     rdCamera_FreeEntry(pCamera);
     stdMemory_Free(pCamera);
 }
