@@ -634,8 +634,8 @@ static void stdShader_SetProjection(float out[16])
     if ( !pFrustum )
         return;
 
-    float n = pFrustum->nearPlane;
-    float f = pFrustum->farPlane;
+    float n = 1.0f / rdCamera_g_pCurCamera->invNearClipPlane;
+    float f = 1.0f / rdCamera_g_pCurCamera->invFarClipPlane;
 
     if ( fabsf(f - n) < 1e-4f )
         return;
