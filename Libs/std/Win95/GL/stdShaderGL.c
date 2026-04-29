@@ -574,16 +574,17 @@ GLShaderProgram* stdShader_CompileAndCreate(const char* pName, const char* pVert
 
 static void GetUniformLocations(void)
 {
-    GLShaderProgram* pProgram = stdShader_activeShader;
-    GLuint handle             = pProgram->handle;
-    pProgram->mainTexLoc      = glGetUniformLocation(handle, "sTexture");
-    pProgram->extraLightLoc   = glGetUniformLocation(handle, "cExtraLight");
-    pProgram->vertexSpaceLoc  = glGetUniformLocation(handle, "iVertexSpace");
-    pProgram->lightModeLoc    = glGetUniformLocation(handle, "iLightMode");
-    pProgram->alphaLoc        = glGetUniformLocation(handle, "fAlpha");
-    pProgram->modelMatrixLoc  = glGetUniformLocation(handle, "mModelMatrix");
-    pProgram->alphaCutLoc     = glGetUniformLocation(handle, "bAlphaCut");
-    pProgram->renderLightsLoc = glGetUniformLocation(handle, "bRenderLights");
+    GLShaderProgram* pProgram    = stdShader_activeShader;
+    GLuint handle                = pProgram->handle;
+    pProgram->mainTexLoc         = glGetUniformLocation(handle, "sTexture");
+    pProgram->extraLightLoc      = glGetUniformLocation(handle, "cExtraLight");
+    pProgram->vertexSpaceLoc     = glGetUniformLocation(handle, "iVertexSpace");
+    pProgram->lightModeLoc       = glGetUniformLocation(handle, "iLightMode");
+    pProgram->alphaLoc           = glGetUniformLocation(handle, "fAlpha");
+    pProgram->modelMatrixLoc     = glGetUniformLocation(handle, "mModelMatrix");
+    pProgram->alphaCutLoc        = glGetUniformLocation(handle, "bAlphaCut");
+    pProgram->alphaToCoverageLoc = glGetUniformLocation(handle, "bAlphaToCoverage");
+    pProgram->renderLightsLoc    = glGetUniformLocation(handle, "bRenderLights");
     //Sprite stuff
     pProgram->spritePosLoc    = glGetUniformLocation(handle, "spritePos");
     pProgram->spriteSizeLoc   = glGetUniformLocation(handle, "spriteSize");

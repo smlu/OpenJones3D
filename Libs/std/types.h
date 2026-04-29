@@ -116,6 +116,7 @@ typedef struct sGLShaderProgram
     GLint lightModeLoc;
     GLint modelMatrixLoc;
     GLint alphaCutLoc;
+    GLint alphaToCoverageLoc;
     GLint renderLightsLoc;
 
     //sprite stuff
