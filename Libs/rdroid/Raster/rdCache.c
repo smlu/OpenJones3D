@@ -609,6 +609,9 @@ static uint8_t Std3D_ExtractBatchState(Std3DRenderState rs)
     if ( rs & STD3D_CULL_DISABLED )
         state |= 1 << 6;
 
+    if ( rs & STD3D_RS_ALPHAREF_SET )
+        state |= 1 << 7;
+
     return state;
 }
 
@@ -1031,6 +1034,10 @@ static void rdCache_SetInstanceData(rdPayload* aDrawCalls, rdDrawCallSortBucket*
         float alpha       = header->extraLight.alpha;
         pData->extraLight = D3DRGBA(red, green, blue, alpha);
     }
+    rdCache_numInstances -= numInstances;
+    return numInstances;
+}
+
 static void rdCache_DrawOpaqueDrawCalls(void)
 {
     if ( !rdCache_numOpaqueDrawCalls )
