@@ -940,7 +940,7 @@ static void rdCache_AddDrawCall(rdPayload* pDrawCall, rdDrawCallSortBucket* pSor
     {
         case RD_DRAW_GEOMETRY:
             pSortBucket->key = rdCache_GenerateGeoBatchKey(pDrawCall);
-            break;
+            return;
         case RD_DRAW_MODEL:
             pSortBucket->key = rdCache_GenerateOpaqueModelBatchKey(pDrawCall);
             break;
@@ -957,6 +957,7 @@ static void rdCache_AddDrawCall(rdPayload* pDrawCall, rdDrawCallSortBucket* pSor
         default:
             break;
     }
+    rdCache_numInstances++;
 }
 
 void rdCache_AddOpaqueDrawCall(void)
@@ -976,16 +977,18 @@ void rdCache_AddTransparentDrawCall(void)
     pSortBucket->index = rdCache_numTransparentDrawCalls++;
 }
 
-static void rdCache_SetInstanceData(rdPayload* aDrawCalls, rdDrawCallSortBucket* aSortBuckets, size_t numDrawCalls)
+static size_t rdCache_SetInstanceData(rdPayload* aDrawCalls, rdDrawCallSortBucket* aSortBuckets, size_t numDrawCalls)
 {
-    for ( size_t i = 0; i < numDrawCalls; i++ )
+    size_t numInstances = 0;
+
+    for ( int i = 0; i < numDrawCalls; i++ )
     {
         rdDrawCallSortBucket* pSortBucket = &aSortBuckets[i];
         rdPayload* header                 = &aDrawCalls[pSortBucket->index];
         if ( header->type == RD_DRAW_GEOMETRY || header->type == RD_DRAW_LEGACY )
             continue;
 
-        InstanceData* pData = &rdCache_aInstanceData[rdCache_numInstances++];
+        InstanceData* pData = &rdCache_aInstanceData[numInstances++];
 
         switch ( header->type )
         {
