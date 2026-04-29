@@ -1723,10 +1723,12 @@ void std3D_DrawLegacyBatches(void)
     glBindVertexArray(std3D_screenSpaceVao);
 
     glBindBuffer(GL_ARRAY_BUFFER, std3D_screenSpaceVbo);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, std3D_numScreenSpaceVertices * sizeof(D3DTLVERTEX), std3D_pScreenSpaceVertexBuffer);
+    glBufferData(GL_ARRAY_BUFFER, STD3D_MAX_VERTICES_PER_DRAW * sizeof(D3DTLVERTEX), NULL, GL_STREAM_DRAW);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(std3D_pScreenSpaceVertexBuffer), std3D_pScreenSpaceVertexBuffer);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, std3D_screenSpaceEbo);
-    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, std3D_numScreenSpaceIndices * sizeof(GLushort), std3D_pScreenSpaceElementBuffer);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, STD3D_MAX_INDICES_PER_DRAW * sizeof(GLushort), NULL, GL_STREAM_DRAW);
+    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, sizeof(std3D_pScreenSpaceElementBuffer), std3D_pScreenSpaceElementBuffer);
 
     std3D_numScreenSpaceVertices = 0;
     std3D_numScreenSpaceIndices  = 0;
