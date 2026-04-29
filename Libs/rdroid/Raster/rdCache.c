@@ -1371,6 +1371,15 @@ static size_t rdCache_BatchLegacyDrawCalls(size_t start, rdPayload* aDrawCalls, 
 
 void J3DAPI rdCache_AddLegacyDrawCall(tSysTexture* pTex, Std3DRenderState rdflags, LPD3DTLVERTEX aVerts, size_t numVerts, LPWORD aIndices, size_t numIndices, bool bAlpha)
 {
+    size_t indexOffset = std3D_AddScreenSpaceVertices(aVerts, numVerts, aIndices, numIndices, GL_TRIANGLES);
+
+    if ( indexOffset == -1 )
+    {
+        rdCache_DrawOpaqueDrawCalls();
+        rdCache_DrawTransparentDrawCalls();
+        std3D_DrawLegacyBatches();
+        indexOffset = std3D_AddScreenSpaceVertices(aVerts, numVerts, aIndices, numIndices, GL_TRIANGLES);
+    }
     rdPayload* pDrawCall;
     if ( bAlpha )
     {
@@ -1387,7 +1396,7 @@ void J3DAPI rdCache_AddLegacyDrawCall(tSysTexture* pTex, Std3DRenderState rdflag
     rdLegacyPayload* pPayload = &pDrawCall->legacyPayload;
     pPayload->type            = GL_TRIANGLES;
     pPayload->numIndices      = numIndices;
-    pPayload->indexOffset     = std3D_AddScreenSpaceVertices(aVerts, numVerts, aIndices, numIndices, GL_TRIANGLES);
+    pPayload->indexOffset     = indexOffset;
 
     if ( bAlpha )
     {
@@ -1401,15 +1410,25 @@ void J3DAPI rdCache_AddLegacyDrawCall(tSysTexture* pTex, Std3DRenderState rdflag
 
 void J3DAPI rdCache_AddLineDrawCall(LPD3DTLVERTEX aVerts, size_t numVerts)
 {
+    size_t numIndices  = (numVerts - 1) * 2;
+    size_t indexOffset = std3D_AddScreenSpaceVertices(aVerts, numVerts, NULL, numIndices, GL_LINES);
+    if ( indexOffset == -1 )
+    {
+        rdCache_DrawOpaqueDrawCalls();
+        rdCache_DrawTransparentDrawCalls();
+        std3D_DrawLegacyBatches();
+        indexOffset = std3D_AddScreenSpaceVertices(aVerts, numVerts, NULL, numIndices, GL_LINES);
+    }
+
     rdPayload* pDrawCall = rdCache_GetOpaqueDrawCall(RD_DRAW_LEGACY);
     pDrawCall->pTex      = NULL;
     pDrawCall->rdFlags   = ~(STD3D_RS_FOG_ENABLED | STD3D_RS_UNKNOWN_400 | STD3D_RS_UNKNOWN_200) | STD3D_CULL_DISABLED;
 
     rdLegacyPayload* pPayload = &pDrawCall->legacyPayload;
-    size_t numIndices         = (numVerts - 1) * 2;
-    pPayload->numIndices      = numIndices;
-    pPayload->indexOffset     = std3D_AddScreenSpaceVertices(aVerts, numVerts, NULL, numIndices, GL_LINES);
-    pPayload->type            = GL_LINES;
+
+    pPayload->numIndices  = numIndices;
+    pPayload->indexOffset = indexOffset;
+    pPayload->type        = GL_LINES;
     rdCache_AddOpaqueDrawCall();
 }
 

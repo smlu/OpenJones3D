@@ -1311,7 +1311,8 @@ size_t std3D_AddScreenSpaceVertices(LPD3DTLVERTEX aVertices, size_t numVertices,
 
     if ( std3D_numScreenSpaceVertices + numVertices > STD3D_MAX_VERTICES_PER_DRAW || std3D_numScreenSpaceIndices + numIndices > STD3D_MAX_INDICES_PER_DRAW )
     {
-        std3D_DrawLegacyBatches();
+        STDLOG_ERROR("Too many screen space vertices or indices to draw that frame. Consider Increasing 'STD3D_MAX_VERTICES_PER_DRAW' or 'STD3D_MAX_INDICES_PER_DRAW'!\n");
+        return -1;
     }
 
     size_t baseVertex  = std3D_numScreenSpaceVertices;
