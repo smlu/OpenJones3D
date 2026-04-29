@@ -515,7 +515,7 @@ int J3DAPI rdCache_ProcFaceCompare(const rdCacheProcEntry* pEntry1, const rdCach
 #define RD_CACHE_MAX_OPAQUE_DRAW_CALLS 10000
 #define RD_CACHE_MAX_TRANSPARENT_DRAW_CALLS 5000
 
-#define RD_CACHE_MAX_INSTANCES 3000
+#define RD_CACHE_MAX_INSTANCES 5000
 
 typedef struct srdFaceDrawInfo
 {
