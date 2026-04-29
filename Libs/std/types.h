@@ -587,7 +587,6 @@ typedef struct sVSurface
     GLuint msaaColorTex;
     GLuint msaaDepthTex;
 
-    bool skipMSAA;
 } tVSurface;
 #else
 typedef struct sVSurface

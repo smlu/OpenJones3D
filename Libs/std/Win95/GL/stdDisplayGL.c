@@ -1238,14 +1238,13 @@ int stdDisplay_Update(void)
     uint32_t width               = stdDisplay_g_backBuffer.rasterInfo.width;
     uint32_t height              = stdDisplay_g_backBuffer.rasterInfo.height;
 
-    if ( stdDisplay_g_bMSAAEnabled && !backBufferSurface->skipMSAA )
+    if ( stdDisplay_g_bMSAAEnabled )
     {
         glBindFramebuffer(GL_READ_FRAMEBUFFER, backBufferSurface->msaaFbo);
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, backBufferSurface->fbo);
         glBlitFramebuffer(0, 0, width, height, 0, 0, width, height, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, GL_NEAREST);
     }
 
-    backBufferSurface->skipMSAA = false;
 
     const float* vp = stdDisplay_windowViewport;
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -1479,9 +1478,6 @@ int J3DAPI stdDisplay_LockBackBuffer(void** pSurface, uint32_t* pWidth, uint32_t
         return 1;
     }
 
-    glBindFramebuffer(GL_FRAMEBUFFER, stdDisplay_g_backBuffer.surface.fbo);
-    glReadBuffer(GL_COLOR_ATTACHMENT0);
-
     *pWidth  = stdDisplay_g_backBuffer.rasterInfo.width;
     *pHeight = stdDisplay_g_backBuffer.rasterInfo.height;
     *pPitch  = stdDisplay_g_backBuffer.rasterInfo.rowSize;
@@ -1491,6 +1487,17 @@ int J3DAPI stdDisplay_LockBackBuffer(void** pSurface, uint32_t* pWidth, uint32_t
         *pSurface = stdDisplay_g_backBuffer.pPixels;
         return 0;
     }
+
+    tVSurface* surface = &stdDisplay_g_backBuffer.surface;
+    if ( stdDisplay_g_bMSAAEnabled )
+    {
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, surface->msaaFbo);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, surface->fbo);
+        glBlitFramebuffer(0, 0, *pWidth, *pHeight, 0, 0, *pWidth, *pHeight, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+    }
+
+    glBindFramebuffer(GL_FRAMEBUFFER, surface->fbo);
+    glReadBuffer(GL_COLOR_ATTACHMENT0);
 
     //free already available pixels
     if ( stdDisplay_g_backBuffer.pPixels )
@@ -1521,11 +1528,7 @@ void stdDisplay_UnlockBackBuffer(void)
 {
     //upload written back buffer pixels to back buffer fbo texture
     tVSurface* surface = &stdDisplay_g_backBuffer.surface;
-    if ( stdDisplay_bMSAAEnabled ) //drawing directly on multisampled framebuffer is not possible
-    {
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, surface->fbo);
-        surface->skipMSAA = true;
-    }
+
     stdDisplay_FlipBackBufferPixels();
     stdShader_SetActiveTextureUnit(TU_SCENE);
     glBindTexture(GL_TEXTURE_2D, surface->colorTex);
@@ -1534,6 +1537,19 @@ void stdDisplay_UnlockBackBuffer(void)
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, stdDisplay_g_backBuffer.pPixels);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, GL_ONE);
     stdShader_SetActiveTextureUnit(TU_DEFAULT);
+
+    if ( stdDisplay_g_bMSAAEnabled ) // drawing directly on multisampled framebuffer is not possible
+    {
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, surface->fbo);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, surface->msaaFbo);
+        glBlitFramebuffer(0, 0, width, height, 0, 0, width, height, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+        glBindFramebuffer(GL_FRAMEBUFFER, surface->msaaFbo);
+    }
+    else
+    {
+        glBindFramebuffer(GL_FRAMEBUFFER, surface->fbo);
+    }
+
     stdDisplay_backLockRef--;
 }
 
