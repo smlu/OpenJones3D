@@ -776,8 +776,14 @@ static rdPayload* rdCache_GetDrawCall(rdDrawType type, rdPayload* aDrawCalls, si
 rdPayload* rdCache_GetOpaqueDrawCall(rdDrawType type)
 {
     if ( rdCache_numOpaqueDrawCalls >= RD_CACHE_MAX_OPAQUE_DRAW_CALLS )
+    if ( rdCache_numInstances >= RD_CACHE_MAX_INSTANCES )
     {
         rdCache_Flush();
+        RDLOG_WARNING("rdCache_aInstanceData is too small to render all instances at once for this frame."
+            " Consider increasing 'RD_CACHE_MAX_INSTANCES' for improving instancing.\n");
+        rdCache_DrawOpaqueDrawCalls();
+        rdCache_DrawTransparentDrawCalls();
+    }
     }
     return rdCache_GetDrawCall(type, rdCache_aOpaqueDrawCalls, rdCache_numOpaqueDrawCalls);
 }
@@ -785,8 +791,14 @@ rdPayload* rdCache_GetOpaqueDrawCall(rdDrawType type)
 rdPayload* rdCache_GetTransparentDrawCall(rdDrawType type)
 {
     if ( rdCache_numTransparentDrawCalls >= RD_CACHE_MAX_TRANSPARENT_DRAW_CALLS )
+    if ( rdCache_numInstances >= RD_CACHE_MAX_INSTANCES )
     {
         rdCache_FlushAlpha();
+        RDLOG_WARNING("rdCache_aInstanceData is too small to render all instances at once for this frame."
+            " Consider increasing 'RD_CACHE_MAX_INSTANCES' for improving instancing.\n");
+        rdCache_DrawOpaqueDrawCalls();
+        rdCache_DrawTransparentDrawCalls();
+    }
     }
     return rdCache_GetDrawCall(type, rdCache_aTransparentDrawCalls, rdCache_numTransparentDrawCalls);
 }
