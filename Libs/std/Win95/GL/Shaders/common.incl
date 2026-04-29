@@ -60,7 +60,9 @@ vec3 CalculateLightColor(vec3 worldPos)
         float dist = length(lightDir);
         //float range = step(dist, light.maxRadius);
         float fade = light.maxRadius * 0.5f;
-        float range = 1.0 - smoothstep(fade, light.maxRadius, dist);
+        float innerRange = light.maxRadius * 0.75f;
+        float outerRange = light.maxRadius * 1.25f;
+        float range = 1.0 - smoothstep(innerRange, outerRange, dist);
         float att = dist * 0.8f;
         vec3 contrib = (light.color.rgb - vec3(att)) * range;
         contrib = max(contrib, vec3(0.0));
@@ -70,7 +72,7 @@ vec3 CalculateLightColor(vec3 worldPos)
     return clamp(finalColor, vec3(0.0f), vec3(1.0f));
 }
 
-vec3 CalculateModelLightColor(vec3 worldPos, vec3 worldNormal)
+vec3 CalculateLightColorLegacy(vec3 worldPos)
 {
     vec3 finalColor = vec3(0.0f);
 
@@ -81,15 +83,80 @@ vec3 CalculateModelLightColor(vec3 worldPos, vec3 worldNormal)
         vec3 lightDir = lightPos - worldPos;
 
         float dist = length(lightDir);
-        //float range = step(dist, light.maxRadius);
+        float range = step(dist, light.maxRadius);
         float fade = light.maxRadius * 0.5f;
-        float range = 1.0 - smoothstep(fade, light.maxRadius, dist);
-        lightDir = normalize(lightDir);
-        float dot = dot(worldNormal, lightDir);
+        //float range = 1.0 - smoothstep(fade, light.maxRadius, dist);
         float att = dist * 0.8f;
-        vec3 contrib = (light.color.rgb - vec3(att)) * range * dot;
+        vec3 contrib = (light.color.rgb - vec3(att)) * range;
         contrib = max(contrib, vec3(0.0));
         finalColor += contrib;
+    }
+
+    return clamp(finalColor, vec3(0.0f), vec3(1.0f));
+}
+
+vec3 CalculateModelLightColor(PointLight light, vec3 worldPos, vec3 worldNormal)
+{
+    vec3 lightPos = light.position.xyz;
+    vec3 lightDir = lightPos - worldPos;
+    float dist = length(lightDir);
+    float innerRadius = light.maxRadius * 0.75f;
+    float outerRadius = light.minRadius * 1.25f;
+
+    lightDir = normalize(lightDir);
+    vec3 normal = normalize(worldNormal);
+    float ndotl = max(dot(normal, lightDir), 0.0f);
+
+    // Keep legacy behavior (full light up to maxRadius, zero at minRadius),
+    // but use smooth interpolation in-between to avoid a visible hard ring.
+    float attenuation = 1.0f - smoothstep(innerRadius, outerRadius, dist);
+
+    return light.color.rgb * ndotl * attenuation;
+}
+
+vec3 CalculateModelLighting(vec3 worldPos, vec3 worldNormal)
+{
+    vec3 finalColor = vec3(0.0f);
+
+    for (int i = 0; i < LIGHT_COUNT; i++)
+    {
+        PointLight light = LIGHTS[i];
+        finalColor += CalculateModelLightColor(light, worldPos, worldNormal);
+    }
+
+    return clamp(finalColor, vec3(0.0f), vec3(1.0f));
+}
+
+vec3 CalculateModelLightColorLegacy(PointLight light, vec3 worldPos, vec3 worldNormal)
+{
+    vec3 lightPos = light.position.xyz;
+    vec3 lightDir = lightPos - worldPos;
+
+    float dist = length(lightDir);
+    float maxRange = float(dist < light.maxRadius);
+
+    lightDir = normalize(lightDir);
+    float dot = dot(worldNormal, lightDir);
+    vec3 maxLight = light.color.rgb * maxRange * dot;
+    maxLight = max(maxLight, vec3(0.0));
+
+    float minRange = float(dist > light.maxRadius) * float(dist < light.minRadius);
+    float dRad = light.minRadius - light.maxRadius;
+    float atten = (dist - light.maxRadius) / dRad;
+    vec3 minLight = (light.color.rgb - vec3(atten) * light.color.rgb) * dot * minRange;
+    minLight = max(minLight, vec3(0.0f));
+
+    return maxLight + minLight;
+}
+
+vec3 CalculateModelLightingLegacy(vec3 worldPos, vec3 worldNormal)
+{
+    vec3 finalColor = vec3(0.0f);
+
+    for (int i = 0; i < LIGHT_COUNT; i++)
+    {
+        PointLight light = LIGHTS[i];
+        finalColor += CalculateModelLightColorLegacy(light, worldPos, worldNormal);
     }
 
     return clamp(finalColor, vec3(0.0f), vec3(1.0f));
