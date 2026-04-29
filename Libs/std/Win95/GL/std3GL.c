@@ -99,6 +99,7 @@ static GLuint std3D_staticVao      = 0;
 static GLuint std3D_staticVbo      = 0;
 static GLuint std3D_staticEbo      = 0;
 static GLuint std3D_instanceBuffer = 0;
+static size_t std3D_maxInstances   = 0;
 static size_t std3D_instanceOffset = 0;
 
 static size_t std3D_numDrawCalls   = 0;
@@ -1552,7 +1553,8 @@ void std3D_InitInstanceVBO(const size_t maxInstances)
     {
         glDeleteBuffers(1, &std3D_instanceBuffer);
     }
-
+    
+    std3D_maxInstances = maxInstances;
     glGenBuffers(1, &std3D_instanceBuffer);
     glBindBuffer(GL_ARRAY_BUFFER, std3D_instanceBuffer);
     glBufferData(GL_ARRAY_BUFFER, maxInstances * sizeof(InstanceData), NULL, GL_STREAM_DRAW);
@@ -1565,6 +1567,7 @@ void std3D_UpdateInstanceVBO(const InstanceData* pData, size_t numInstances)
 
     glBindVertexArray(std3D_staticVao);
     glBindBuffer(GL_ARRAY_BUFFER, std3D_instanceBuffer);
+    glBufferData(GL_ARRAY_BUFFER, std3D_maxInstances * sizeof(InstanceData), NULL, GL_DYNAMIC_DRAW);
     glBufferSubData(GL_ARRAY_BUFFER, 0, numInstances * sizeof(InstanceData), pData);
     std3D_instanceOffset = 0;
 }
