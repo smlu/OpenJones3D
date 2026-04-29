@@ -1555,7 +1555,7 @@ void std3D_InitInstanceVBO(const size_t maxInstances)
 
     glGenBuffers(1, &std3D_instanceBuffer);
     glBindBuffer(GL_ARRAY_BUFFER, std3D_instanceBuffer);
-    glBufferData(GL_ARRAY_BUFFER, maxInstances * sizeof(InstanceData), NULL, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, maxInstances * sizeof(InstanceData), NULL, GL_STREAM_DRAW);
 }
 
 void std3D_UpdateInstanceVBO(const InstanceData* pData, size_t numInstances)
