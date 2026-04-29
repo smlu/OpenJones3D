@@ -7989,31 +7989,6 @@ int J3DAPI jonesConfig_InitAdvanceDisplaySettingsDialog(HWND hDlg, int a2, Jones
         CheckDlgButton(hDlg, 1055, stdConfig_GetBool(STD3D_CFG_ANISOTROPICFILTER, true));
     }
 
-#ifdef J3D_OPENGL
-
-    // Added: Adds check box for legacy rendering in OpenGL option
-    y += MulDiv(spacing, dpi, USER_DEFAULT_SCREEN_DPI);
-    int w = MulDiv(120, dpi, USER_DEFAULT_SCREEN_DPI);
-
-    // Create legacy rendering checkbox
-    HWND hCbMSAA = CreateWindow(
-        "Button",
-        "Use Legacy Rendering",
-        WS_CHILD | BS_AUTOCHECKBOX | BS_VCENTER | WS_VISIBLE | WS_GROUP | WS_TABSTOP,
-        x,
-        y,
-        w,
-        h,
-        hDlg,        // Parent window handle
-        (HMENU)1056, // Control ID
-        GetModuleHandle(NULL),
-        NULL // Additional creation config
-    );
-    J3D_UNUSED(hCbMSAA);
-
-    CheckDlgButton(hDlg, 1056, stdConfig_GetBool(STD3D_CFG_LEGACYRENDERING, false));
-#endif
-
 
     // Added: Enable and init HiPoly check button
     HWND hHiPolyBtn = GetDlgItem(hDlg, 1052);
@@ -8206,11 +8181,6 @@ void J3DAPI jonesConfig_AdvanceDisplaySettings_HandleWM_COMMAND(HWND hDlg, int c
                 int bAniso = IsDlgButtonChecked(hDlg, 1055);
                 stdConfig_SetBool(STD3D_CFG_ANISOTROPICFILTER, !!bAniso);
             }
-
-#ifdef J3D_OPENGL
-            int bLegacy = IsDlgButtonChecked(hDlg, 1056);
-            stdConfig_SetBool(STD3D_CFG_LEGACYRENDERING, !!bLegacy);
-#endif
 
             // Close dialog
             EndDialog(hDlg, ctrlID);
