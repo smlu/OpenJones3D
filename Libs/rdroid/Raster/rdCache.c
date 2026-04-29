@@ -550,6 +550,8 @@ static ModelBatch rdCache_modelBatch       = { 0 };
 static QuadBatch rdCache_quadBatch         = { 0 };
 static LegacyBatch rdCache_legacyBatch     = { 0 };
 
+static void rdCache_DrawOpaqueDrawCalls(void);
+static void rdCache_DrawTransparentDrawCalls(void);
 static void rdCache_SendDrawCallsToHardware(rdPayload* aDrawCalls, rdDrawCallSortBucket* aSortBuckets, size_t numDrawCalls);
 static size_t rdCache_BatchGeometryDrawCalls(size_t start, rdPayload* aDrawCalls, rdDrawCallSortBucket* aSortBuckets, size_t numDrawCalls);
 static size_t rdCache_BatchModelDrawCalls(size_t start, rdPayload* aDrawCalls, rdDrawCallSortBucket* aSortBuckets, size_t numDrawCalls);
@@ -1029,6 +1031,25 @@ static void rdCache_SetInstanceData(rdPayload* aDrawCalls, rdDrawCallSortBucket*
         float alpha       = header->extraLight.alpha;
         pData->extraLight = D3DRGBA(red, green, blue, alpha);
     }
+static void rdCache_DrawOpaqueDrawCalls(void)
+{
+    if ( !rdCache_numOpaqueDrawCalls )
+    {
+        return;
+    }
+
+    std3D_SetDrawMode(rdroid_g_curGeometryMode);
+
+    qsort(rdCache_aOpaqueSortBuckets, rdCache_numOpaqueDrawCalls, sizeof(rdDrawCallSortBucket), rdCache_DrawCallOpaqueCompare);
+
+    size_t numInstances = rdCache_SetInstanceData(rdCache_aOpaqueDrawCalls, rdCache_aOpaqueSortBuckets, rdCache_numOpaqueDrawCalls);
+
+    std3D_UpdateInstanceVBO(rdCache_aInstanceData, numInstances);
+
+    rdCache_SendDrawCallsToHardware(rdCache_aOpaqueDrawCalls, rdCache_aOpaqueSortBuckets, rdCache_numOpaqueDrawCalls);
+
+    rdCache_numOpaqueDrawCalls = 0;
+    //rdCache_numInstances       = 0;
 }
 
 void rdCache_Flush(void)
@@ -1050,23 +1071,28 @@ void rdCache_Flush(void)
         rdCache_numUsedVertices = 0;
     }
 
-    if ( !rdCache_numOpaqueDrawCalls )
+    rdCache_DrawOpaqueDrawCalls();
+}
+
+static void rdCache_DrawTransparentDrawCalls(void)
+{
+    if ( !rdCache_numTransparentDrawCalls )
     {
         return;
     }
 
     std3D_SetDrawMode(rdroid_g_curGeometryMode);
 
-    qsort(rdCache_aOpaqueSortBuckets, rdCache_numOpaqueDrawCalls, sizeof(rdDrawCallSortBucket), rdCache_DrawCallOpaqueCompare);
+    qsort(rdCache_aTransparentSortBuckets, rdCache_numTransparentDrawCalls, sizeof(rdDrawCallSortBucket), rdCache_DrawCallDistanceCompare);
 
-    rdCache_SetInstanceData(rdCache_aOpaqueDrawCalls, rdCache_aOpaqueSortBuckets, rdCache_numOpaqueDrawCalls);
+    size_t numInstances = rdCache_SetInstanceData(rdCache_aTransparentDrawCalls, rdCache_aTransparentSortBuckets, rdCache_numTransparentDrawCalls);
 
-    std3D_UpdateInstanceVBO(rdCache_aInstanceData, rdCache_numInstances);
+    std3D_UpdateInstanceVBO(rdCache_aInstanceData, numInstances);
 
-    rdCache_SendDrawCallsToHardware(rdCache_aOpaqueDrawCalls, rdCache_aOpaqueSortBuckets, rdCache_numOpaqueDrawCalls);
+    rdCache_SendDrawCallsToHardware(rdCache_aTransparentDrawCalls, rdCache_aTransparentSortBuckets, rdCache_numTransparentDrawCalls);
 
-    rdCache_numOpaqueDrawCalls = 0;
-    rdCache_numInstances       = 0;
+    rdCache_numTransparentDrawCalls = 0;
+    //rdCache_numInstances            = 0;
 }
 
 void rdCache_FlushAlpha(void)
@@ -1088,23 +1114,7 @@ void rdCache_FlushAlpha(void)
         rdCache_numUsedAlphaVertices = 0;
     }
 
-    if ( !rdCache_numTransparentDrawCalls )
-    {
-        return;
-    }
-
-    std3D_SetDrawMode(rdroid_g_curGeometryMode);
-
-    qsort(rdCache_aTransparentSortBuckets, rdCache_numTransparentDrawCalls, sizeof(rdDrawCallSortBucket), rdCache_DrawCallDistanceCompare);
-
-    rdCache_SetInstanceData(rdCache_aTransparentDrawCalls, rdCache_aTransparentSortBuckets, rdCache_numTransparentDrawCalls);
-
-    std3D_UpdateInstanceVBO(rdCache_aInstanceData, rdCache_numInstances);
-
-    rdCache_SendDrawCallsToHardware(rdCache_aTransparentDrawCalls, rdCache_aTransparentSortBuckets, rdCache_numTransparentDrawCalls);
-
-    rdCache_numTransparentDrawCalls = 0;
-    rdCache_numInstances            = 0;
+    rdCache_DrawTransparentDrawCalls();
 }
 
 static void rdCache_SendDrawCallsToHardware(rdPayload* aDrawCalls, rdDrawCallSortBucket* aSortBuckets, size_t numDrawCalls)
