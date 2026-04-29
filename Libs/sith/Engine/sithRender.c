@@ -45,6 +45,10 @@
 
 #include "std/Win95/stdShader.h"
 
+#ifdef J3D_OPENGL
+#include <sith/Engine/sithRenderVertexWelder.h>
+#endif
+
 typedef struct sSithRenderSectorQueueEntry
 {
     SithSector* pSector;
@@ -374,6 +378,7 @@ static void sithRender_CollectFaces(void)
             pGLVertex->sy           = pVertex->z;
             pGLVertex->sz           = -pVertex->y;
             pGLVertex->rhw          = 1.0f;
+            pGLVertex->specular     = 0;
 
             rdVector2* pTexCoords = &sithWorld_g_pCurrentWorld->aTexVerticies[pFace->aTexVertices[k]];
             pGLVertex->tu         = pTexCoords->x;
@@ -381,9 +386,9 @@ static void sithRender_CollectFaces(void)
 
             //rdVector3* pNormal = &normals[pFace->aVertices[k]];
             rdVector3* pNormal = &pFace->normal;
-            pGLVertex->nx      = pNormal->x;
-            pGLVertex->ny      = pNormal->z;
-            pGLVertex->nz      = -pNormal->y;
+            pGLVertex->nx      = 0;
+            pGLVertex->ny      = 0;
+            pGLVertex->nz      = 0;
 
             rdVector4* intensity = &pSurface->aIntensities[k];
             float red            = intensity->red;
@@ -460,6 +465,7 @@ static void sithRender_CollectFaces(void)
                     pGLVertex->sy           = pVertex->z;
                     pGLVertex->sz           = -pVertex->y;
                     pGLVertex->rhw          = 1.0f;
+                    pGLVertex->specular     = 0;
 
                     rdVector2* pTexCoords = &pMesh->apTexVertices[pFace->aTexVertices[l]];
                     pGLVertex->tu         = pTexCoords->x;
@@ -532,7 +538,17 @@ static void sithRender_CollectFaces(void)
     STD_ASSERTREL(currentVert == numVertices);
     STD_ASSERTREL(currentIndex == numIndices);
 
-    std3D_InitGeometryVBO(vertices, numVertices, indices, numIndices);
+    D3DTLVERTEX* weldedVertices = NULL;
+    size_t numWeldedVertices    = 0;
+    if ( sithRenderVertexWelder_Weld(vertices, numVertices, indices, numIndices, &weldedVertices, &numWeldedVertices) )
+    {
+        std3D_InitGeometryVBO(weldedVertices, numWeldedVertices, indices, numIndices);
+        STDFREE(weldedVertices);
+    }
+    else
+    {
+        std3D_InitGeometryVBO(vertices, numVertices, indices, numIndices);
+    }
 
     STDFREE(aModels);
     STDFREE(vertices);
