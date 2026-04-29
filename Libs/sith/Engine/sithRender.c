@@ -289,10 +289,10 @@ static void sithRender_CollectFaces(void)
                 pFace->num            = 1;
                 rdMaterial* pMaterial = pFace->pMaterial;
                 rdFaceFlags flags     = pFace->flags;
-                // if ( (flags & RD_FF_TEX_TRANSLUCENT) != 0 || pMaterial->formatType == STDCOLOR_FORMAT_RGBA )
-                // {
-                //     continue;
-                // }
+                if ( (flags & RD_FF_TEX_TRANSLUCENT) != 0 || pMaterial->formatType == STDCOLOR_FORMAT_RGBA )
+                {
+                    continue;
+                }
                 rdLightMode lm        = pFace->lightingMode;
                 rdGeometryMode gm     = pFace->geometryMode;
                 size_t f2             = f;
