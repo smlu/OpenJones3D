@@ -38,5 +38,13 @@ void main() {
     vSecLightPos = inSecLightPos;
     vSecLightColor = inSecLightColor;
 
+//    vColor.rgb += CalculateModelLightingLegacy(vWorldPos, vWorldNormal);
+//    PointLight light;
+//    light.maxRadius = vSecLightPos.a;
+//    light.minRadius = vSecLightColor.a;
+//    light.position = vSecLightPos;
+//    light.color = vSecLightColor;
+//    vColor.rgb += CalculateModelLightColorLegacy(light, vWorldPos, vWorldNormal);
+
     gl_Position = VIEWPROJECTION * worldPos;
 }

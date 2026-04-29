@@ -25,6 +25,7 @@ void main() {
     vWorldPos = inPosition.xyz;
     vWorldNormal = inNormal;
     vColor.rgb = CalculateVertexColor(inColor.rgb, cExtraLight, iLightMode);
+    //vColor.rgb += CalculateLightColorLegacy(vWorldPos);
     vColor.a = inColor.a * fAlpha;
 
 
