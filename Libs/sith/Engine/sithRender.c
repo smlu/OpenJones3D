@@ -46,6 +46,7 @@
 typedef struct sSithRenderSectorQueueEntry
 {
     SithSector* pSector;
+    rdClipFrustum* pClipFrustum;
     float distance;
 } SithRenderSectorQueueEntry;
 
@@ -1013,16 +1014,16 @@ void sithRender_BuildVisibleThingSectorListBFS(void)
         SithSector* pSector = sithRender_aVisibleSectors[i];
         for ( SithSurfaceAdjoin* pAdjoin = pSector->pFirstAdjoin; pAdjoin; pAdjoin = pAdjoin->pNextAdjoin )
         {
-            if ( (pAdjoin->flags & SITH_ADJOIN_VISIBLE) != 0 )
+            SithSector* pNextSector = pAdjoin->pAdjoinSector;
+            if ( (pAdjoin->flags & SITH_ADJOIN_VISIBLE) != 0 && pNextSector->renderTick != sithMain_g_curRenderTick )
             {
                 float distance = pAdjoin->distance + pAdjoin->pMirrorAdjoin->distance;
                 if ( distance < maxDistance && sithRender_visitedSectorQueue.tail < STD_ARRAYLEN(sithRender_visitedSectorQueue.aEntries) )
                 {
-                    SithSector* pNextSector   = pAdjoin->pAdjoinSector;
-                    pNextSector->pClipFrustum = pSector->pClipFrustum;
                     sithRender_visitedSectorQueue.aEntries[sithRender_visitedSectorQueue.tail++] = (SithRenderSectorQueueEntry){
-                          .pSector  = pNextSector,
-                          .distance = distance
+                          .pSector      = pNextSector,
+                          .pClipFrustum = pSector->pClipFrustum,
+                          .distance     = distance
                     };
                 }
             }
@@ -1039,6 +1040,7 @@ void sithRender_BuildVisibleThingSectorListBFS(void)
         // Collect things and lights only once per sector
         if ( pCurSector->renderTick != sithMain_g_curRenderTick )
         {
+            pCurSector->pClipFrustum = pEntry->pClipFrustum;
             pCurSector->renderTick = sithMain_g_curRenderTick;
 
             // Collect lights
@@ -1070,10 +1072,10 @@ void sithRender_BuildVisibleThingSectorListBFS(void)
                     float distance = curDistance + pAdjoin->distance + pAdjoin->pMirrorAdjoin->distance;
                     if ( distance < maxDistance && sithRender_visitedSectorQueue.tail < STD_ARRAYLEN(sithRender_visitedSectorQueue.aEntries) )
                     {
-                        pNextSector->pClipFrustum = pCurSector->pClipFrustum;
                         sithRender_visitedSectorQueue.aEntries[sithRender_visitedSectorQueue.tail++] = (SithRenderSectorQueueEntry){
-                           .pSector  = pNextSector,
-                           .distance = distance
+                           .pSector      = pNextSector,
+                           .pClipFrustum = pCurSector->pClipFrustum,
+                           .distance     = distance
                         };
                     }
                 }
