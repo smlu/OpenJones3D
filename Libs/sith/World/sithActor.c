@@ -116,8 +116,7 @@ void J3DAPI sithActor_Update(SithThing* pThing, unsigned int msecDeltaTime)
     {
         if ( (pThing->moveInfo.physics.flags & SITH_PF_ONWATERSURFACE) == 0 && (pThing->pInSector->flags & SITH_SECTOR_UNDERWATER) != 0 )
         {
-
-        #ifdef J3D_DEBUG 
+        #ifdef J3D_DEBUG
             // Note, found in debug version of Indy3D
             if ( (pThing->moveInfo.physics.flags & SITH_PF_RAFT) != 0 )
             {
@@ -139,7 +138,7 @@ void J3DAPI sithActor_Update(SithThing* pThing, unsigned int msecDeltaTime)
 
             if ( pThing->thingInfo.actorInfo.endurance.msecUnderwater > (SITHACTOR_MAX_UNDERWATER_MSEC - 10000) )
             {
-                if ( !SITH_ISFRAMECYCLE(pThing->idx, 16) ) // Not on every 16th frame 
+                if ( !SITH_ISFRAMECYCLE(pThing->idx, 16) ) // Not on every 16th frame
                 {
                     if ( pThing->thingInfo.actorInfo.endurance.msecUnderwater > (SITHACTOR_MAX_UNDERWATER_MSEC / 2) // TODO: ???, verify this if statement
                         && SITH_ISFRAMECYCLE(pThing->idx, 8) ) // On every 8th frame
@@ -178,16 +177,27 @@ void J3DAPI sithActor_Update(SithThing* pThing, unsigned int msecDeltaTime)
             SithThing* pThingMeshAttached = pThing->thingInfo.actorInfo.pThingMeshAttached;
             int nodeNum = pThing->thingInfo.actorInfo.attachMeshNum;// TODO: [BUG] the meshNum and the actual model nodeNum can have different number
 
-            int bSkipBuildingJoints = pThingMeshAttached->renderData.bSkipBuildingJoints;
-            pThingMeshAttached->renderData.bSkipBuildingJoints = 1;
+            // Altered: Validate attached thing type/render type before using its model matrix
+            if ( sithThing_ValidateThingMeshAttach(pThingMeshAttached) )
+            {
+                int bSkipBuildingJoints = pThingMeshAttached->renderData.bSkipBuildingJoints;
+                pThingMeshAttached->renderData.bSkipBuildingJoints = 1;
 
-            rdMatrix34 meshOrient;
-            rdModel3_GetMeshMatrix(&pThingMeshAttached->renderData, &pThingMeshAttached->orient, nodeNum, &meshOrient);
-            pThingMeshAttached->renderData.bSkipBuildingJoints = bSkipBuildingJoints;
+                rdMatrix34 meshOrient;
+                rdModel3_GetMeshMatrix(&pThingMeshAttached->renderData, &pThingMeshAttached->orient, nodeNum, &meshOrient);
+                pThingMeshAttached->renderData.bSkipBuildingJoints = bSkipBuildingJoints;
 
-            pThing->pos    = meshOrient.dvec;
-            pThing->orient = meshOrient;
-            sithThing_SetSector(pThing, pThingMeshAttached->pInSector, 1);
+                pThing->pos    = meshOrient.dvec;
+                pThing->orient = meshOrient;
+                sithThing_SetSector(pThing, pThingMeshAttached->pInSector, 1);
+            }
+            else
+            {
+                // Fixed: Clear attached mesh pointer and attach mesh num if attached thing
+                //        is not valid anymore, to avoid keeping dangling pointer to invalid thing
+                pThing->thingInfo.actorInfo.pThingMeshAttached = NULL;
+                pThing->thingInfo.actorInfo.attachMeshNum      = -1;
+            }
         }
 
         sithVoice_UpdateLipSync(pThing);
@@ -444,7 +454,7 @@ void J3DAPI sithActor_PlayDamageSoundFx(SithThing* pThing, SithDamageType damage
             goto LABEL_43;
         }
 
-        // Damage fx for machete 
+        // Damage fx for machete
         if ( !sithSoundClass_PlayModeRandom(pThing, SITHSOUNDCLASS_HURTMACHETE) )
         {
             tSoundHandle hSnd;

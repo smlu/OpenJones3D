@@ -2587,6 +2587,14 @@ void J3DAPI sithThing_AttachThingToThingMesh(SithThing* pThing, SithThing* pAtta
     }
 }
 
+// Added: Shared validation for thing mesh attach targets
+int J3DAPI sithThing_ValidateThingMeshAttach(const SithThing* pAttachThing)
+{
+    return pAttachThing
+        && pAttachThing->type != SITH_THING_FREE
+        && pAttachThing->renderData.type == RD_THING_MODEL3;
+}
+
 void J3DAPI sithThing_DetachThing(SithThing* pThing)
 {
     SITH_ASSERTREL(sithThing_ValidateThingPointer(sithWorld_g_pCurrentWorld, pThing));

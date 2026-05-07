@@ -64,7 +64,7 @@ int sithSprite_Startup(void)
     {
         stdConfig_SetInt(SITHSPRITE_CFG_WORLDSPRITES_EXTRACAPACITY, sithSprite_staticBufferExtraCapacity);
     }
-#endif 
+#endif
 
     return 0;
 }
@@ -87,7 +87,8 @@ void J3DAPI sithSprite_Update(SithThing* pThing, uint32_t secDeltaTime)
     SithThing* pThingMeshAttached = pThing->thingInfo.spriteInfo.pThingMeshAttached;
     if ( pThingMeshAttached )
     {
-        if ( pThingMeshAttached->type )
+        // Altered: Also validate attached thing render type before using its model matrix
+        if ( sithThing_ValidateThingMeshAttach(pThingMeshAttached) )
         {
             int bSkipBuildingJoints = pThingMeshAttached->renderData.bSkipBuildingJoints;
             pThingMeshAttached->renderData.bSkipBuildingJoints = 1;
@@ -99,6 +100,13 @@ void J3DAPI sithSprite_Update(SithThing* pThing, uint32_t secDeltaTime)
             rdVector_Copy3(&pThing->pos, &meshOrient.dvec);
             rdMatrix_Copy34(&pThing->orient, &pThingMeshAttached->orient);
             sithThing_SetSector(pThing, pThingMeshAttached->pInSector, /*bNotidy*/1);
+        }
+        else
+        {
+            // Fixed: Clear attached mesh pointer and attach mesh num if attached thing
+            //        is not valid anymore, to avoid keeping dangling pointer to invalid thing
+            pThing->thingInfo.spriteInfo.pThingMeshAttached = NULL;
+            pThing->thingInfo.spriteInfo.attachMeshNum      = -1;
         }
     }
 }
@@ -371,7 +379,6 @@ rdSprite3* J3DAPI sithSprite_Load(SithWorld* pWorld, const char* pName)
 
     sithSprite_CacheAdd(pSprite3);
     ++pWorld->numSprites;
-
 
 finish:
     sithWorld_g_pLastLoadedWorld = pLastLoadedWorld;

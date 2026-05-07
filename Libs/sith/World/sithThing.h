@@ -14,7 +14,7 @@ J3D_EXTERN_C_START
 #define SITHTHING_CFG_WORLDTHINGS_EXTRACAPACITY "engine.world.normal.things.extraCapacity"
 
 // Macro generates bitmask from provided thing type
-#define SITHTHING_TYPE2MASK(type) (1 << (type)) 
+#define SITHTHING_TYPE2MASK(type) (1 << (type))
 
 // Type mask helper macros
 #define SITHTHING_TYPEMASK_BIT_OR_1(x) (SITHTHING_TYPE2MASK(x))
@@ -39,7 +39,6 @@ J3D_EXTERN_C_START
 #define SITHTHING_TYPEMASK_BIT_OR_(N, ...) SITHTHING_TYPEMASK_BIT_OR_##N(__VA_ARGS__)
 #define SITHTHING_TYPEMASK_BIT_OR_X(N, ...) SITHTHING_TYPEMASK_BIT_OR_(N, __VA_ARGS__)
 
-
 /*
 * Macro generates thing type bitmask form provided types (SithThingType)
 *
@@ -47,7 +46,6 @@ J3D_EXTERN_C_START
 *    SITHTHING_TYPEMASK(SITH_THING_ACTOR, SITH_THING_PLAYER, ...)
 */
 #define SITHTHING_TYPEMASK(...) SITHTHING_TYPEMASK_BIT_OR_X(SITHTHING_TYPEMASK_BIT_OR_NARG(__VA_ARGS__), __VA_ARGS__)
-
 
 void J3DAPI sithThing_RegisterUnknownFunc(SithThingUnknownFunc pFunc); // Added
 
@@ -102,6 +100,7 @@ void J3DAPI sithThing_AttachThingToThingFace(SithThing* pThing, SithThing* pAtta
 void J3DAPI sithThing_AddThingToAttachedThings(SithThing* pThing, SithThing* pAttachThing);
 void J3DAPI sithThing_AttachThingToThing(SithThing* pThing, SithThing* pAttachThing);
 void J3DAPI sithThing_AttachThingToThingMesh(SithThing* pThing, SithThing* pAttachThing, int meshNum);
+int J3DAPI sithThing_ValidateThingMeshAttach(const SithThing* pAttachThing); // Added
 
 void J3DAPI sithThing_DetachThing(SithThing* pThing);
 void J3DAPI sithThing_DetachAttachedThings(SithThing* pThing);
