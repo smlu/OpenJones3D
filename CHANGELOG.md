@@ -81,6 +81,7 @@
   - Added documentation for game engine architecture (96d4c57)
   - Added documentation for COG scripting language (96d4c57)
   - Added documentation for engine configuration (96d4c57)
+  - Fixed launcher DLL injector to use absolute paths, preserve Windows command-line quoting, load the DLL with `LoadLibraryW`, and clean up process resources on injection failure. (e18b9f5)
 
 ### Engine:
   - Added check for zero size in lip sync data generation to prevent allocation errors (f79736b)
@@ -176,6 +177,12 @@
     while parsing the keyframes section in CND files. This enables modding  
     without modifying original level files and preserves the original CND  
     keyframe behavior when external assets are unavailable.
+  - Fixed stale sprite/actor mesh attachments by validating the attached thing type/render type  
+    before using its model matrix and clearing invalid attach info. (a30aa30)
+  - Fixed DSS savegame block validation in `sithGamesave` to reject oversized blocks before reading into the fixed message buffer (8cf0d99)
+  - Fixed `sithGamesave` save/restore error paths to close files, restore output stream state, and run normal cleanup after failures (8cf0d99)
+  - Fixed `ThingFullDescription` restore in `sithDSSThing` to validate serialized thing types, template indices, path frame counts, swap entry counts, model references, and polyline data before use (6fa2af9)
+  - Fixed puppet DSS restore in `sithDSS` to validate serialized arm modes, move modes, track counts, major modes, and submodes before indexing puppet mode tables (6fa2af9)
 
 ### Graphics:
   - Fixed an issue where active textures used in the current render frame were being removed from the cache prematurely in low VRAM situations (f37ecb7)
