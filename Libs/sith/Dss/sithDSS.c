@@ -16,7 +16,6 @@
 
 #include <std/General/stdUtil.h>
 
-
 #define VANILLACB(callback) ((rdPuppetTrackCallback)(callback##_ADDR))
 
 static const rdPuppetTrackCallback sithDSS_aPuppetCallbacks[7][2] = {
@@ -29,7 +28,7 @@ static const rdPuppetTrackCallback sithDSS_aPuppetCallbacks[7][2] = {
     { &sithWhip_WhipFirePuppetCallback,      VANILLACB(sithWhip_WhipFirePuppetCallback)      }
 };
 
-// TODO: When all functions that are using following callbacks are defined, uncomment below const and remove previous definition above 
+// TODO: When all functions that are using following callbacks are defined, uncomment below const and remove previous definition above
 //static const rdPuppetTrackCallback sithDSS_aPuppetCallbacks[7] = {
 //    &sithPuppet_DefaultCallback,
 //    &sithPlayerControls_PuppetCallback,
@@ -39,7 +38,6 @@ static const rdPuppetTrackCallback sithDSS_aPuppetCallbacks[7][2] = {
 //    &sithWhip_ClimbDismountPuppetCallback,
 //    &sithWhip_WhipFirePuppetCallback
 //};
-
 
 void sithDSS_InstallHooks(void)
 {
@@ -380,11 +378,27 @@ int J3DAPI sithDSS_ProcessPuppetStatus(const SithMessage* pMsg)
     /*uint32_t armMode = *(int16_t*)pCurIn;
     pCurIn += 2;*/
 
+    // Fixed: Reject save/network puppet modes before they reach mode-indexed arrays.
+    if ( armMode >= SITH_PUPPET_NUMARMEDMODES )
+    {
+        SITHLOG_ERROR("DSS::PuppetStatus received invalid armed mode %d.\n", armMode);
+        SITHDSS_ENDIN;
+        return 0;
+    }
+
     sithPuppet_SetArmedMode(pThing, armMode);
 
     SithPuppetMoveMode moveMode = SITHDSS_POPUINT16();
     /*SithPuppetMoveMode moveMode = *(uint16_t*)pCurIn;
     pCurIn += 2;*/
+
+    // Fixed: Reject save/network puppet move modes before sithPuppet_SetMoveMode asserts or indexes with them.
+    if ( moveMode >= SITH_PUPPET_NUMMOVEMODES )
+    {
+        SITHLOG_ERROR("DSS::PuppetStatus received invalid move mode %d.\n", moveMode);
+        SITHDSS_ENDIN;
+        return 0;
+    }
 
     int bControlsDisabled = false;
     if ( pThing->type == SITH_THING_PLAYER || pThing->type == SITH_THING_ACTOR )
@@ -402,6 +416,22 @@ int J3DAPI sithDSS_ProcessPuppetStatus(const SithMessage* pMsg)
     /*size_t trackCount = *(uint16_t*)pCurIn;
     pCurIn += 2;*/
 
+    // Fixed: The stream only writes one entry per puppet track, so larger counts are corrupt.
+    if ( trackCount > STD_ARRAYLEN(pPuppet->aTracks) )
+    {
+        SITHLOG_ERROR("DSS::PuppetStatus received invalid track count %d.\n", (int)trackCount);
+        SITHDSS_ENDIN;
+        return 0;
+    }
+
+    // Fixed: Prevent restored state from indexing outside the puppet mode table.
+    if ( (size_t)pThing->pPuppetState->majorMode >= SITH_PUPPET_MAXMODES )
+    {
+        SITHLOG_ERROR("DSS::PuppetStatus received invalid major mode %d.\n", pThing->pPuppetState->majorMode);
+        SITHDSS_ENDIN;
+        return 0;
+    }
+
     while ( trackCount )
     {
         size_t trackNum = SITHDSS_POPINT32();
@@ -411,6 +441,14 @@ int J3DAPI sithDSS_ProcessPuppetStatus(const SithMessage* pMsg)
         SithPuppetSubMode submode = SITHDSS_POPUINT32();
         /*SithPuppetSubMode submode = *(uint32_t*)pCurIn;
         pCurIn += 4;*/
+
+        // Fixed: Reject corrupt submodes before indexing pPuppetClass->aModes[majorMode][submode].
+        if ( submode >= SITH_PUPPET_NUMSUBMODES )
+        {
+            SITHLOG_ERROR("DSS::PuppetStatus received invalid submode %d.\n", (int)submode);
+            SITHDSS_ENDIN;
+            return 0;
+        }
 
         if ( trackNum < STD_ARRAYLEN(pPuppet->aTracks) && sithPuppet_NewTrack(pThing, &pThing->pPuppetClass->aModes[pThing->pPuppetState->majorMode][submode], trackNum, submode) )
         {

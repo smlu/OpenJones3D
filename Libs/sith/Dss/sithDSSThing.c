@@ -524,6 +524,13 @@ int J3DAPI sithDSSThing_ProcessThingFullDescription(const SithMessage* pMsg)
         return 0;
     }
 
+    SithThingType thingType = SITHDSS_POPUINT16();
+    if ( thingType >= SITH_THING_NUMTYPES ) // Fixed: Reject save-provided thing types before they select unions or initialization paths.
+    {
+        SITHLOG_ERROR("FullDescription received invalid thing type %d for thing id %d.\n", thingType, (int)thingIdx);
+        return 0;
+    }
+
     SithThing* pThing = &pWorld->aThings[thingIdx];
     if ( pThing->type != SITH_THING_FREE )
     {
@@ -536,7 +543,6 @@ int J3DAPI sithDSSThing_ProcessThingFullDescription(const SithMessage* pMsg)
         pWorld->lastThingIdx = thingIdx;
     }
 
-    SithThingType thingType = SITHDSS_POPUINT16();
     if ( thingType == SITH_THING_FREE )
     {
         SITHDSS_ENDIN;
@@ -548,9 +554,10 @@ int J3DAPI sithDSSThing_ProcessThingFullDescription(const SithMessage* pMsg)
 
     // Template and identification
     size_t templateIdx = SITHDSS_POPUINT16(); // Note, don't change type as it will set max unsigned value if negative
-    if ( sithTemplate_GetTemplateByIndex(templateIdx) )
+    SithThing* pTemplate = sithTemplate_GetTemplateByIndex((int)templateIdx); // Fixed: Use template pointer returned by sithTemplate_GetTemplateByIndex
+    if ( pTemplate ) // Fixed: Use the validated template pointer;
     {
-        sithThing_SetThingBasedOn(pThing, &pWorld->aThingTemplates[templateIdx]); // TODO: Use sithTemplate_GetTemplateByIndex instead.
+        sithThing_SetThingBasedOn(pThing, pTemplate); // Fixed: Static template indices are not valid offsets into the current world array, vanilla was: &pWorld->aThingTemplates[templateIdx]
     }
 
     pThing->type      = thingType; // Note, Don't move as SetThingBasedOn may change type
@@ -775,8 +782,21 @@ int J3DAPI sithDSSThing_ProcessThingFullDescription(const SithMessage* pMsg)
         pPath->numFrames  = SITHDSS_POPUINT16();
         if ( pPath->numFrames > 0 )
         {
+            // Fixed: Reject corrupt path frame counts before reading past the DSS payload.
+            const size_t frameDataSize = sizeof(SithPathFrame) * pPath->numFrames;
+            if ( SITHDSS_CURPOS() > pMsg->length || frameDataSize > pMsg->length - SITHDSS_CURPOS() )
+            {
+                SITHLOG_ERROR("FullDescription path frame count %d exceeds remaining message data for thing %s.\n", (int)pPath->numFrames, pThing->aName);
+                return 0;
+            }
+
             pPath->sizeFrames =  pPath->numFrames;
             pPath->aFrames    = (SithPathFrame*)STDMALLOC(sizeof(SithPathFrame) * pPath->numFrames);
+            if ( !pPath->aFrames ) // Fixed: Handle allocation failure before writing restored path frames.
+            {
+                SITHLOG_ERROR("Failed to allocate %d restored path frames for thing %s.\n", (int)pPath->numFrames, pThing->aName);
+                return 0;
+            }
 
             for ( size_t i = 0; i < pPath->numFrames; ++i )
             {
@@ -797,8 +817,22 @@ int J3DAPI sithDSSThing_ProcessThingFullDescription(const SithMessage* pMsg)
     }
 
     int16_t numUsedSwapEntries = SITHDSS_POPINT16();
+    if ( numUsedSwapEntries < -1 ) // Fixed: Reject invalid negative swap counts from corrupt save data.
+    {
+        SITHLOG_ERROR("FullDescription received invalid swap entry count %d for thing %s.\n", numUsedSwapEntries, pThing->aName);
+        return 0;
+    }
+
     if ( numUsedSwapEntries != -1 )
     {
+        // Fixed: Reject corrupt swap-list counts before they drive reads past the DSS payload.
+        const size_t swapEntryDataSize = (sizeof(uint32_t) + sizeof(int32_t) + sizeof(int16_t) + sizeof(int32_t)) * (size_t)numUsedSwapEntries;
+        if ( SITHDSS_CURPOS() > pMsg->length || swapEntryDataSize > pMsg->length - SITHDSS_CURPOS() )
+        {
+            SITHLOG_ERROR("FullDescription swap entry count %d exceeds remaining message data for thing %s.\n", numUsedSwapEntries, pThing->aName);
+            return 0;
+        }
+
         for ( int i = 0; i < numUsedSwapEntries; ++i )
         {
             uint32_t entryNum = SITHDSS_POPUINT32();
@@ -821,11 +855,23 @@ int J3DAPI sithDSSThing_ProcessThingFullDescription(const SithMessage* pMsg)
     int16_t modelIdx = SITHDSS_POPINT16();
     if ( modelIdx != -1 )
     {
-        // TODO: just to be sure, maybe add check for renderData type == model3 as well?
         rdModel3* pModel = sithModel_GetModelByIndex(modelIdx);
+        if ( !pModel ) // Fixed: Reject invalid model indices before dereferencing renderData.data.pModel3.
+        {
+            SITHLOG_ERROR("FullDescription received invalid model index %d for thing %s.\n", modelIdx, pThing->aName);
+            return 0;
+        }
+
         if ( pModel && pThing->renderData.data.pModel3 != pModel )
         {
             sithThing_SetThingModel(pThing, pModel);
+        }
+
+        // Fixed: A non-model render entry cannot receive a restored model insert offset.
+        if ( pThing->renderData.type != RD_THING_MODEL3 || !pThing->renderData.data.pModel3 )
+        {
+            SITHLOG_ERROR("FullDescription model insert offset received for non-model thing %s.\n", pThing->aName);
+            return 0;
         }
 
         SITHDSS_POPVEC3(&pThing->renderData.data.pModel3->insertOffset);
@@ -872,10 +918,16 @@ int J3DAPI sithDSSThing_ProcessThingFullDescription(const SithMessage* pMsg)
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // OpenJones3D extension from here onwards
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    if ( SITHDSS_CURPOS() != pMsg->length ) // Only new streams will have extra data (savegame files create with oj3D >= v0.4)
+    if ( SITHDSS_CURPOS() < pMsg->length ) // Only new streams will have extra data (savegame files create with oj3D >= v0.4)
     {
         if ( pThing->type == SITH_THING_POLYLINE )
         {
+            if ( pMsg->length - SITHDSS_CURPOS() < sizeof(int32_t) || !pThing->renderData.data.pPolyline )
+            {
+                SITHLOG_ERROR("FullDescription polyline extension data is truncated for thing %s.\n", pThing->aName);
+                return 0;
+            }
+
             // Added: Deserialize polyline new flags field
             pThing->renderData.data.pPolyline->flags = SITHDSS_POPINT32();
         }
