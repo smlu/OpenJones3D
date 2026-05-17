@@ -248,7 +248,6 @@ static const SithWorldBinarySectionParser aBinarySectionParsers[17] =
     }
 };
 
-
 void sithWorld_InstallHooks(void)
 {
     J3D_HOOKFUNC(sithWorld_Startup);
@@ -378,7 +377,7 @@ int J3DAPI sithWorld_Load(SithWorld* pWorld, const char* pFilename)
 
     if ( sithWorld_LoadPostProcess(pWorld) )
     {
-        // Post-process error 
+        // Post-process error
         if ( pFilename )
         {
             SITHLOG_ERROR("Post-load processing failed for %s.\n", pFilename);
@@ -842,8 +841,8 @@ void J3DAPI sithWorld_GetMemoryUsage(const SithWorld* pWorld, size_t(*aMemUsed)[
     SITH_ASSERTREL(aMemUsed && aCount);
     SITH_ASSERTREL(pWorld);
 
-    memset(aMemUsed, 0, sizeof(aMemUsed)); static_assert(sizeof(*aMemUsed) == 0x44, "");
-    memset(aCount, 0, sizeof(aCount)); static_assert(sizeof(*aCount) == 0x44, "");
+    memset(aMemUsed, 0, sizeof(*aMemUsed)); static_assert(sizeof(*aMemUsed) == 0x44, "");
+    memset(aCount, 0, sizeof(*aCount)); static_assert(sizeof(*aCount) == 0x44, "");
 
     (*aCount)[0] = pWorld->numMaterials;
     for ( size_t i = 0; i < pWorld->numMaterials; ++i )
@@ -945,7 +944,6 @@ void J3DAPI sithWorld_CalcSurfaceNormals(SithWorld* pWorld)
 {
     for ( size_t surfNum = 0; surfNum < pWorld->numSurfaces; ++surfNum )
     {
-
         rdFace* pFace = &pWorld->aSurfaces[surfNum].face;
         SITH_ASSERTREL(pFace->numVertices > 2);
 
@@ -953,7 +951,6 @@ void J3DAPI sithWorld_CalcSurfaceNormals(SithWorld* pWorld)
         size_t vertNum = 0;
         for ( ; vertNum < pFace->numVertices; ++vertNum )
         {
-
             if ( vertNum == 0 )
             {
                 prevVertNum = pFace->numVertices - 1;
@@ -1061,7 +1058,6 @@ int J3DAPI sithWorld_ValidateWorld(const SithWorld* pWorld)
     {
         SITHLOG_ERROR("Surface resources did not pass validation.\n");
 
-
         return 1;
     }
 
@@ -1151,7 +1147,6 @@ int J3DAPI sithWorld_GetTextSectionParserIndex(const char* aSectionName)
 
 int J3DAPI sithWorld_WriteGeoresourceText(const SithWorld* pWorld)
 {
-
     if ( stdConffile_WriteLine("#### Geomtry Resources Info ####\n")
         || stdConffile_WriteLine("SECTION: GEORESOURCE\n\n")
         || stdConffile_WriteLine("#----- Vertices Subsection -----\n")
@@ -1249,7 +1244,6 @@ int J3DAPI sithWorld_ReadGeoresourceText(SithWorld* pWorld, int bSkip)
     {
         goto alloc_error;
     }
-
 
     for ( size_t i = 0; i < numTexVerts; ++i )
     {
@@ -1523,7 +1517,7 @@ int J3DAPI sithWorld_LoadEntryBinary(SithWorld* pWorld, const char* pFilePath)
 
         Sleep(0); // ??
                   // From win32 docs: A value of zero causes the thread to relinquish the remainder of its time slice to any other thread
-                  //                 that is ready to run. If there are no other threads ready to run, the function returns immediately, and the thread continues execution. 
+                  //                 that is ready to run. If there are no other threads ready to run, the function returns immediately, and the thread continues execution.
 
         if ( aBinarySectionParsers[i].pfRead(fh, pWorld) )
         {
