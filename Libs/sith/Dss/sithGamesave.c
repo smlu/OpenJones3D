@@ -39,7 +39,7 @@
 //static_assert(SITHSAVEGAME_THUMBSIZE == 0x9000, "SITHSAVEGAME_THUMBSIZE must be  0x9000 bytes");
 
 #define SITHSAVEGAME_FILEVERSION  13
-#define SITHSAVEGAME_ENDFILE      0x1000 
+#define SITHSAVEGAME_ENDFILE      0x1000
 
 static int sithGamesave_state;
 
@@ -57,7 +57,6 @@ static int sithGamesave_bThumbnail;
 static HBITMAP sithGamesave_hBmpThumbnail;
 
 static SithGameSaveCallback sithGamesave_pfSaveGameCallback;
-
 
 int J3DAPI sithGamesave_SaveCurrentWorld(SithMessageStream outstream);
 
@@ -470,8 +469,8 @@ int sithGamesave_Process(void)
         // Note, notifying via restoring file is not done as it won't do notification when restoring file is not auto save file
         bError = sithGamesave_RestoreFile(sithGamesave_aCurFilename, /*bNotify*/0);
 
-        // Fixed: Added check for ineditor flag not being set. 
-        //        This fixes restoring savegame that was saved under ineditor flag to not play intro cutscene 
+        // Fixed: Added check for ineditor flag not being set.
+        //        This fixes restoring savegame that was saved under ineditor flag to not play intro cutscene
         if ( (sithMain_g_sith_mode.debugModeFlags & SITHDEBUG_INEDITOR) == 0 )
         {
             if ( sithCog_g_pMasterCog )
@@ -545,7 +544,7 @@ int J3DAPI sithGamesave_RestoreFile(const char* pFilename, int bNotify)
         goto error;
     }
 
-    // Copy game statistics from header 
+    // Copy game statistics from header
     sithGamesave_gameStatistics = header.gameStatistics;
 
     // Copy the state of COG global symbols from header
@@ -610,7 +609,7 @@ int J3DAPI sithGamesave_RestoreFile(const char* pFilename, int bNotify)
     if ( sithWeapon_Restore(fh) )
     {
         SITHLOG_ERROR("RESTORE: sithWeapon_Restore failed!\n");
-        return 1;
+        goto error; // Fixed: Route restore failures through cleanup so the save file and world state are closed consistently.
     }
 
     // Load post process
@@ -633,8 +632,8 @@ int J3DAPI sithGamesave_RestoreFile(const char* pFilename, int bNotify)
     sithTime_SetGameTime(header.msecGameTime);
     SITHLOG_STATUS("RESTORE: returning SUCCESS!\n");
 
-    // Fixed: Added check for ineditor flag not being set. 
-    //        This fixes restoring savegame that was saved under ineditor flag to not play intro cutscene 
+    // Fixed: Added check for ineditor flag not being set.
+    //        This fixes restoring savegame that was saved under ineditor flag to not play intro cutscene
     if ( (sithMain_g_sith_mode.debugModeFlags & SITHDEBUG_INEDITOR) == 0 )
     {
         if ( bNotify == 1 )
@@ -677,6 +676,15 @@ int J3DAPI sithGamesave_ReadBlockTypeLength(uint16_t* pType, uint32_t* pLength)
     else if ( *pType == SITHDSS_UNKNOWN_44 )
     {
         return SITHSAVEGAME_ENDFILE; // end of savegame file section
+    }
+
+    // Fixed: Reject malicious/corrupt save blocks before they can overflow SithMessage::data.
+    if ( *pLength > STD_ARRAYLEN(sithMulti_g_message.data) )
+    {
+        SITHLOG_ERROR("Savegame DSS block type %d length %u exceeds message buffer size %u.\n", *pType, *pLength, (unsigned int)STD_ARRAYLEN(sithMulti_g_message.data));
+        *pType   = SITHDSS_UNKNOWN_44;
+        *pLength = 0;
+        return 1;
     }
 
     return 0; // success
@@ -747,7 +755,7 @@ int J3DAPI sithGamesave_SaveFile(const char* pFilename)
     int bError = stdConffile_Write(&header, sizeof(NdsHeader));
     if ( bError )
     {
-        return 1;
+        goto error;
     }
 
     sithGamesave_aNdsSaveSectionSizes[0] = sizeof(NdsHeader);
@@ -756,28 +764,28 @@ int J3DAPI sithGamesave_SaveFile(const char* pFilename)
     bError = sithGamesave_WriteThumbnail(fh);
     if ( bError )
     {
-        return 1;
+        goto error;
     }
 
     // Save world state to file
     bError = sithGamesave_SaveCurrentWorld(SITHMESSAGE_STREAM_FILE);
     if ( bError )
     {
-        return 1;
+        goto error;
     }
 
     // Write sound mixer state
     bError = sithSoundMixer_GameSave(fh);
     if ( bError )
     {
-        return 1;
+        goto error;
     }
 
     // Write weapon system state to file
     bError = sithWeapon_Save(fh);
     if ( bError )
     {
-        return 1;
+        goto error;
     }
 
     // Writing savegame succeeded
@@ -793,6 +801,12 @@ int J3DAPI sithGamesave_SaveFile(const char* pFilename)
 
     sithMessage_g_outputstream = curStream;
     return 0; // success
+
+error:
+    // Fixed: Restore the previous output stream and close the partially written save file on every failed write path.
+    sithMessage_g_outputstream = curStream;
+    stdConffile_CloseWrite();
+    return 1;
 }
 
 void J3DAPI sithGamesave_SetThumbnailImage(tVBuffer* pVBuffer)
@@ -1128,4 +1142,3 @@ void J3DAPI sithGamesave_SetSaveGameCallback(SithGameSaveCallback pfCallback)
 {
     sithGamesave_pfSaveGameCallback = pfCallback;
 }
-
