@@ -27,6 +27,8 @@ vec2( 0.0,  0.0)  // top-left
 
 out vec2 vTexCoord;
 out vec4 vColor;
+out vec3 vWorldPos;
+out vec3 vWorldNormal;
 
 void main() {
     vec2 corner = quadCorners[gl_VertexID];
@@ -73,4 +75,6 @@ void main() {
     vTexCoord = quadUVs[gl_VertexID]; // UV mapping
     vColor.rgb = CalculateVertexColor(vec3(0), sExtraLight.rgb, iLightMode);
     vColor.a = sExtraLight.a;
+    vWorldPos = vec3(0.0);
+    vWorldNormal = vec3(0.0, 0.0, 1.0);
 }

@@ -6,6 +6,8 @@ layout(location = 10) in vec4 inParticlePos; //w is particle half size
 
 out vec2 vTexCoord;
 out vec4 vColor;
+out vec3 vWorldPos;
+out vec3 vWorldNormal;
 
 const vec2 quadCorners[4] = vec2[](
 vec2(-1.0, -1.0), // bottom-left
@@ -41,4 +43,6 @@ void main()
     vTexCoord = quadUVs[gl_VertexID]; // UV mapping
     vColor.rgb = CalculateVertexColor(vec3(0), inExtraLight.rgb, iLightMode);
     vColor.a = inExtraLight.a;
+    vWorldPos = vec3(0.0);
+    vWorldNormal = vec3(0.0, 0.0, 1.0);
 }

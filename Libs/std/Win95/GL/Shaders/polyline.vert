@@ -11,6 +11,8 @@ layout(location = 11) in vec4 inUV12;
 
 out vec2 vTexCoord;
 out vec4 vColor;
+out vec3 vWorldPos;
+out vec3 vWorldNormal;
 
 
 void main()
@@ -25,4 +27,6 @@ void main()
 
     vColor.rgb = CalculateVertexColor(vec3(0), extraLight.rgb, iLightMode);
     vColor.a = extraLight.a;
+    vWorldPos = vec3(0.0);
+    vWorldNormal = vec3(0.0, 0.0, 1.0);
 }
