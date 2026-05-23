@@ -81,6 +81,11 @@ int J3DAPI rdMaterial_LoadEntry(const char* pFilename, rdMaterial* pMat)
         return 1;
     }
 
+    // Fixed: Track the current cel's mip buffers so partial MAT loads can clean them up on error.
+    tVBuffer** apVBuffers = NULL;
+    size_t numCreatedMipLevels = 0;
+    tVBuffer* pLockedVBuffer = NULL;
+
     rdMatHeader header;
     if ( rdroid_g_pHS->pFileRead(fh, &header, sizeof(rdMatHeader)) != sizeof(rdMatHeader) )
     {
@@ -159,6 +164,10 @@ int J3DAPI rdMaterial_LoadEntry(const char* pFilename, rdMaterial* pMat)
     // Read in cel textures
     for ( size_t i = 0; i < pMat->numCels; ++i )
     {
+        apVBuffers = NULL;
+        numCreatedMipLevels = 0;
+        pLockedVBuffer = NULL;
+
         rdMatTextureHeader texHeader;
         if ( rdroid_g_pHS->pFileRead(fh, &texHeader, sizeof(rdMatTextureHeader)) != sizeof(rdMatTextureHeader) )
         {
@@ -182,7 +191,6 @@ int J3DAPI rdMaterial_LoadEntry(const char* pFilename, rdMaterial* pMat)
         rasterInfo.height = texHeader.height;
         memcpy(&rasterInfo.colorInfo, &header.colorInfo, sizeof(rasterInfo.colorInfo));
 
-        tVBuffer** apVBuffers = NULL;
         if ( texHeader.numMipLevels > 0 ) // Fixed: Replaced with check for numMipLevels > 0, was numMipLevels != 0
         {
             apVBuffers = (tVBuffer**)STDMALLOC(sizeof(tVBuffer*) * texHeader.numMipLevels);
@@ -209,8 +217,10 @@ int J3DAPI rdMaterial_LoadEntry(const char* pFilename, rdMaterial* pMat)
             {
                 goto bad_alloc_error;
             }
+            ++numCreatedMipLevels;
 
             stdDisplay_VBufferLock(apVBuffers[j]);
+            pLockedVBuffer = apVBuffers[j];
             pVBuffer = apVBuffers[j];
             if ( pVBuffer->rasterInfo.size != rdroid_g_pHS->pFileRead(fh, pVBuffer->pPixels, pVBuffer->rasterInfo.size) )
             {
@@ -218,9 +228,17 @@ int J3DAPI rdMaterial_LoadEntry(const char* pFilename, rdMaterial* pMat)
             }
 
             stdDisplay_VBufferUnlock(apVBuffers[j]);
+            pLockedVBuffer = NULL;
             if ( apVBuffers[j]->rasterInfo.colorInfo.colorMode && std3D_GetNumTextureFormats() )
             {
-                apVBuffers[j] = stdDisplay_VBufferConvertColorFormat(&desiredColorFormat, apVBuffers[j], bColorKey, pColorKey);
+                // Fixed: Keep the original VBuffer pointer until conversion succeeds so error cleanup can free it.
+                tVBuffer* pConverted = stdDisplay_VBufferConvertColorFormat(&desiredColorFormat, apVBuffers[j], bColorKey, pColorKey);
+                if ( !pConverted )
+                {
+                    goto bad_alloc_error;
+                }
+
+                apVBuffers[j] = pConverted;
             }
 
             rasterInfo.width  >>= 1; // /2
@@ -234,6 +252,8 @@ int J3DAPI rdMaterial_LoadEntry(const char* pFilename, rdMaterial* pMat)
         }
 
         stdMemory_Free(apVBuffers);
+        apVBuffers = NULL;
+        numCreatedMipLevels = 0;
     }
 
     if ( (header.type & 1) == 0 )
@@ -245,6 +265,25 @@ int J3DAPI rdMaterial_LoadEntry(const char* pFilename, rdMaterial* pMat)
     }
 
 error:
+    // Fixed: Release partially created mip buffers before leaving failed MAT loads.
+    if ( pLockedVBuffer )
+    {
+        stdDisplay_VBufferUnlock(pLockedVBuffer);
+    }
+
+    if ( apVBuffers )
+    {
+        for ( size_t j = 0; j < numCreatedMipLevels; ++j )
+        {
+            if ( apVBuffers[j] )
+            {
+                stdDisplay_VBufferFree(apVBuffers[j]);
+            }
+        }
+
+        stdMemory_Free(apVBuffers);
+    }
+
     if ( fh )
     {
         rdroid_g_pHS->pFileClose(fh);
