@@ -72,7 +72,7 @@ rdMaterial* J3DAPI rdMaterial_Load(const char* pFilename)
 int J3DAPI rdMaterial_LoadEntry(const char* pFilename, rdMaterial* pMat)
 {
     // Clear input mat
-    memset(pMat, 0, sizeof(rdMaterial));
+    STD_ZEROMEM(pMat, sizeof(rdMaterial));
 
     tFileHandle fh = rdroid_g_pHS->pFileOpen(pFilename, "rb");
     if ( !fh )
@@ -119,7 +119,7 @@ int J3DAPI rdMaterial_LoadEntry(const char* pFilename, rdMaterial* pMat)
     // Fixed: Use correct color format type, since it might be different than stored texture format (e.g. RGBA5551 -> RGBA8888; STDCOLOR_FORMAT_RGBA_1BITALPHA -> STDCOLOR_FORMAT_RGBA).
     //        This fixes rendering issue where converted 1-bit alpha texture will still be interpreted as 1-bit alpha texture and
     //        when alpha reaches certain threshold (0xA0 - 0.627 or lower) the polygon becomes invisible (not rendered). See std3D_SetRenderState.
-    // 
+    //
     //        Note: Due to this change all 1-bit alpha textures of 3DO models that were changed to 32bit format will be pushed to alpha buffer of rdCache (see rdModel3_DrawFace).
     //              Since there might be now more alpha polygons to render than in the OG version the rdCahce alpha buffer had to be increased or risking some polygons not being rendered, i.e.: transparent adjoin surfaces.
     //              Example of this issue is intro cutscene of 9 - Olmec Valley level, where river is briefly not rendered due too small alpha buffer size.
@@ -139,6 +139,12 @@ int J3DAPI rdMaterial_LoadEntry(const char* pFilename, rdMaterial* pMat)
     pMat->aTextures = NULL;
     if ( pMat->numCels )
     {
+        // Fixed: Check allocation multiplication before trusting MAT-controlled cel counts.
+        if ( pMat->numCels > (size_t)-1 / sizeof(tSystemTexture) )
+        {
+            goto bad_alloc_error;
+        }
+
         pMat->aTextures = (tSystemTexture*)STDMALLOC(sizeof(tSystemTexture) * pMat->numCels);
         if ( !pMat->aTextures )
         {
@@ -147,7 +153,7 @@ int J3DAPI rdMaterial_LoadEntry(const char* pFilename, rdMaterial* pMat)
             goto error;
         }
 
-        memset(pMat->aTextures, 0, sizeof(tSystemTexture) * pMat->numCels);
+        STD_ZEROMEM(pMat->aTextures, sizeof(tSystemTexture) * pMat->numCels);
     }
 
     // Read in cel textures
@@ -162,26 +168,41 @@ int J3DAPI rdMaterial_LoadEntry(const char* pFilename, rdMaterial* pMat)
         pMat->width  = texHeader.width;
         pMat->height = texHeader.height;
 
+        // Fixed: Reject structurally invalid texture headers before allocating VBuffers or reading pixels.
+        if ( texHeader.width == 0 || texHeader.height == 0
+            || texHeader.numMipLevels == 0
+            || texHeader.numMipLevels > (size_t)-1 / sizeof(tVBuffer*) )
+        {
+            RDLOG_ERROR("Error: Invalid material texture header for '%s'\n", pFilename);
+            goto format_error;
+        }
+
         tRasterInfo rasterInfo;
         rasterInfo.width  = texHeader.width;
         rasterInfo.height = texHeader.height;
         memcpy(&rasterInfo.colorInfo, &header.colorInfo, sizeof(rasterInfo.colorInfo));
 
         tVBuffer** apVBuffers = NULL;
-        if ( texHeader.numMipLevels )
+        if ( texHeader.numMipLevels > 0 ) // Fixed: Replaced with check for numMipLevels > 0, was numMipLevels != 0
         {
-            apVBuffers = (tVBuffer**)STDMALLOC(sizeof(tVBuffer**) * texHeader.numMipLevels);
+            apVBuffers = (tVBuffer**)STDMALLOC(sizeof(tVBuffer*) * texHeader.numMipLevels);
             if ( !apVBuffers )
             {
                 goto bad_alloc_error;
             }
 
-            memset(apVBuffers, 0, sizeof(tVBuffer**) * texHeader.numMipLevels);
+            STD_ZEROMEM(apVBuffers, sizeof(tVBuffer*) * texHeader.numMipLevels);
         }
 
         // Read in cel mipmaps
         for ( size_t j = 0; j < texHeader.numMipLevels; ++j )
         {
+            if ( rasterInfo.width == 0 || rasterInfo.height == 0 )
+            {
+                RDLOG_ERROR("Error: Invalid material mip chain for '%s'\n", pFilename);
+                goto format_error;
+            }
+
             tVBuffer* pVBuffer = stdDisplay_VBufferNew(&rasterInfo, /*bUseVSurface=*/0, /*bUseVideoMemory=*/0);
             apVBuffers[j] = pVBuffer;
             if ( !apVBuffers[j] )
@@ -259,7 +280,7 @@ void J3DAPI rdMaterial_FreeEntry(rdMaterial* pMaterial)
         stdMemory_Free(pMaterial->aTextures);
     }
 
-    memset(pMaterial, 0, sizeof(rdMaterial));
+    STD_ZEROMEM(pMaterial, sizeof(rdMaterial));
 }
 
 int J3DAPI rdMaterial_Write(const char* pFilename, const rdMaterial* pMaterial, tVBuffer*** paTextures, size_t numMipLevels)
