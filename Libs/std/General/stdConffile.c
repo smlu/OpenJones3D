@@ -283,7 +283,8 @@ int stdConffile_ReadLine(void)
             stdUtil_ToLower(pLine);
 
             size_t len = strlen(stdConffile_g_aLine);
-            if ( stdConffile_g_aLine[len - 2] == '\\' )
+            // Fixed: Short non-comment lines can be empty after comment stripping; check length before len - 2/len - 1.
+            if ( len >= 2 && stdConffile_g_aLine[len - 2] == '\\' )
             {
                 nRead = STDCONFFILE_LINESIZE - len;
                 if ( len == STDCONFFILE_LINESIZE )
@@ -296,7 +297,7 @@ int stdConffile_ReadLine(void)
             else
             {
                 bEnd = 1;
-                if ( stdConffile_g_aLine[len - 1] == '\r' || stdConffile_g_aLine[len - 1] == '\n' )
+                if ( len && (stdConffile_g_aLine[len - 1] == '\r' || stdConffile_g_aLine[len - 1] == '\n') )
                 {
                     stdConffile_g_aLine[len - 1] = '\0';
                 }

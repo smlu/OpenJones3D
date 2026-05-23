@@ -77,7 +77,7 @@ void J3DAPI stdFileUtil_DisposeFind(FindFileData* ffData)
 {
     if ( ffData )
     {
-        if ( ffData->nFoundFiles )
+        if ( ffData->nFoundFiles && ffData->handle != INVALID_HANDLE_VALUE )
         {
             FindClose(ffData->handle);
         }
@@ -160,7 +160,15 @@ int J3DAPI stdFileUtil_MkDir(const char* pPath)
 int J3DAPI stdFileUtil_FileExists(const char* pFilename)
 {
     WIN32_FIND_DATAA findFileData;
-    return FindFirstFileA(pFilename, &findFileData) != INVALID_HANDLE_VALUE;
+    HANDLE hFind = FindFirstFileA(pFilename, &findFileData);
+    if ( hFind == INVALID_HANDLE_VALUE )
+    {
+        return 0;
+    }
+
+    // Fixed: FindFirstFileA returns a search handle that must be closed.
+    FindClose(hFind);
+    return 1;
 }
 
 int J3DAPI stdFileUtil_RmDir(const char* pDir)

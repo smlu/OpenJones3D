@@ -70,9 +70,14 @@ void J3DAPI stdFnames_ChangeExt(char* pPath, const char* pExt)
 
 void J3DAPI stdFnames_Concat(char* path1, const char* path2, size_t size)
 {
+    if ( !size )
+    {
+        return;
+    }
 
     size_t len = strnlen_s(path1, size);
-    if ( path1[len - 1] != '\\' && len < size - 1 && *path1 )
+    // Fixed: Empty base paths have no last character to inspect.
+    if ( len > 0 && path1[len - 1] != '\\' && len < size - 1 )
     {
         path1[len] = '\\';
         path1[++len]   = '\0';
