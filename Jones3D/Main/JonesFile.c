@@ -1,4 +1,4 @@
-#include <Jones3D/types.h> // Note, don't move as it requires including windows.h without WIN32_LEAN_AND_MEAN  being defined 
+#include <Jones3D/types.h> // Note, don't move as it requires including windows.h without WIN32_LEAN_AND_MEAN  being defined
 
 #include "JonesFile.h"
 #include <j3dcore/j3dhook.h>
@@ -19,7 +19,7 @@
 #define JF_RES_CD       2
 #define JF_RES_RESOURCE 3 // Added
 
-#define JF_ISVALID_FH(fh) (((fh) >= (1)) ? (((fh) <= (32 - 1)) ? 1 : 0) : 0)
+#define JF_ISVALID_FH(fh) (((fh) >= (1)) ? (((fh) <= JF_MAX_HANDLES) ? 1 : 0) : 0)
 
 bool JonesFile_bStartup = false; // Added: init to false
 bool JonesFile_bOpened  = false; // Added: init to false
@@ -51,7 +51,6 @@ int J3DAPI JonesFile_FileSeek(tFileHandle fh, int offset, int origin);
 size_t J3DAPI JonesFile_FileSize(const char* pFilename);
 int JonesFile_FilePrintf(tFileHandle fh, const char* aFormat, ...);
 
-
 void JonesFile_InstallHooks(void)
 {
     J3D_HOOKFUNC(JonesFile_Startup);
@@ -79,9 +78,7 @@ void JonesFile_InstallHooks(void)
 }
 
 void JonesFile_ResetGlobals(void)
-{
-
-}
+{}
 
 void J3DAPI JonesFile_Startup(tHostServices* pHS)
 {
@@ -105,7 +102,8 @@ void JonesFile_Shutdown(void)
 
 int J3DAPI JonesFile_Open(tHostServices* pEnv, const char* pInstallPath, const char* pPathCD)
 {
-    if ( !JonesFile_bStartup ) {
+    if ( !JonesFile_bStartup )
+    {
         return 1;
     }
 
@@ -126,20 +124,22 @@ int J3DAPI JonesFile_Open(tHostServices* pEnv, const char* pInstallPath, const c
     // 1 - current work dir
     // 2 - CD path
     // 3 - resource dir
-    memset(JonesFile_aResources, 0, sizeof(JonesFile_aResources));
+    STD_ZEROMEM(JonesFile_aResources, sizeof(JonesFile_aResources));
 
-    if ( pInstallPath ) {
+    if ( pInstallPath )
+    {
         JonesFile_SetInstallPath(pInstallPath);
     }
 
-    if ( pPathCD ) {
+    if ( pPathCD )
+    {
         JonesFile_SetCDPath(pPathCD);
     }
 
     // Add path to current working dir
     JonesFile_OpenResource(&JonesFile_aResources[JF_RES_CWD], ".");
 
-    memset(JonesFile_aFileHandles, 0, sizeof(JonesFile_aFileHandles));
+    STD_ZEROMEM(JonesFile_aFileHandles, sizeof(JonesFile_aFileHandles));
 
     JonesFile_bOpened = true;
     return 0;
@@ -168,7 +168,7 @@ void JonesFile_Close(void)
     JonesFile_CloseResource(&JonesFile_aResources[JF_RES_CD]);
     JonesFile_CloseResource(&JonesFile_aResources[JF_RES_CWD]);
     JonesFile_CloseResource(&JonesFile_aResources[JF_RES_RESOURCE]); // Added
-    memset(JonesFile_aResources, 0, sizeof(JonesFile_aResources)); // Added: clear
+    STD_ZEROMEM(JonesFile_aResources, sizeof(JonesFile_aResources)); // Added: clear
     JonesFile_bOpened = false;
 }
 
@@ -193,7 +193,8 @@ int JonesFile_GetCurrentCDNum(void)
 int J3DAPI JonesFile_FileExists(const char* pFilename)
 {
     tFileHandle fh = std_g_pHS->pFileOpen(pFilename, "rb");
-    if ( !fh ) {
+    if ( !fh )
+    {
         return 0;
     }
 
@@ -232,7 +233,6 @@ const char* JonesFile_GetWorkingDirPath(void)
 
 void J3DAPI JonesFile_SetCDPath(const char* pPath)
 {
-
     JonesFile_CloseResource(&JonesFile_aResources[JF_RES_CD]);
     if ( *pPath )
     {
@@ -302,6 +302,13 @@ void J3DAPI JonesFile_OpenResource(JonesResource* pRsource, const char* pPath)
     {
         if ( fileInfo.aName[0] != '.' )
         {
+            // Fixed: JonesResource stores a fixed number of GOB handles.
+            if ( pRsource->numGobFiles >= STD_ARRAYLEN(pRsource->aGobFiles) )
+            {
+                STDLOG_WARNING("Warning: too many GOB files in '%s'. Extra files ignored.\n", pPath);
+                break;
+            }
+
             stdFnames_MakePath(JonesFile_aPathBuf, sizeof(JonesFile_aPathBuf), pPath, fileInfo.aName);
             pRsource->aGobFiles[pRsource->numGobFiles] = stdGob_Load(JonesFile_aPathBuf, /*numFileHandles*/16, /*bMapFile*/0); // TODO: After file mapping is fixed in stdGob enable file mapping here
             if ( !pRsource->aGobFiles[pRsource->numGobFiles] )
@@ -426,7 +433,7 @@ int J3DAPI JonesFile_CloseFile(tFileHandle fh)
         }
     }
 
-    memset(pHandle, 0, sizeof(JonesFileHandle));
+    STD_ZEROMEM(pHandle, sizeof(JonesFileHandle));
     return 0;
 }
 
