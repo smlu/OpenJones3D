@@ -31,7 +31,7 @@ static rdModel3UnloaderFunc pModel3Unloader = NULL;
 static bool bCalcGeoRadius   = false;
 static float maxGeoRadius = 0.0;
 
-// Vars used for drawing model 
+// Vars used for drawing model
 static rdModel3DrawFaceFunc pfDrawFace = &rdModel3_DrawFace;
 
 static const rdThing* pCurThing    = NULL;
@@ -79,8 +79,8 @@ void rdModel3_InstallHooks(void)
 
 void rdModel3_ResetGlobals(void)
 {
-    memset(&rdModel3_g_numDrawnFaces, 0, sizeof(rdModel3_g_numDrawnFaces));
-    memset(&rdModel3_g_numDrawnAlphaFaces, 0, sizeof(rdModel3_g_numDrawnAlphaFaces));
+    STD_ZEROMEM(&rdModel3_g_numDrawnFaces, sizeof(rdModel3_g_numDrawnFaces));
+    STD_ZEROMEM(&rdModel3_g_numDrawnAlphaFaces, sizeof(rdModel3_g_numDrawnAlphaFaces));
 }
 
 rdModel3LoaderFunc J3DAPI rdModel3_RegisterLoader(rdModel3LoaderFunc pfFunc)
@@ -103,7 +103,7 @@ rdModel3UnloaderFunc J3DAPI rdModel3_RegisterUnloader(rdModel3UnloaderFunc pfFun
 
 void J3DAPI rdModel3_NewEntry(rdModel3* pModel3)
 {
-    memset(pModel3, 0, sizeof(rdModel3));
+    STD_ZEROMEM(pModel3, sizeof(rdModel3));
     STD_STRCPY(pModel3->aName, "UNKNOWN");
     pModel3->curGeoNum = 0;
 }
@@ -215,9 +215,9 @@ int J3DAPI rdModel3_LoadEntry(const char* pFilename, rdModel3* pModel3)
         }
     }
     pModel3->numMaterials = numMats; // TODO [BUG]: Note, assigning numMats here makes sure that materials are not getting freed in case of mat load error.
-                                     //             But this might also be cause of bug because from here on in any case of an error the materials are getting freed. 
+                                     //             But this might also be cause of bug because from here on in any case of an error the materials are getting freed.
                                      //             Since materials are cached in sithMaterial module all freed materials will be invalidated in cache.
-                                     //             And any part of the code that is referencing cached materials will access freed pointer! 
+                                     //             And any part of the code that is referencing cached materials will access freed pointer!
 
     if ( stdConffile_ScanLine(" section: %s", std_g_genBuffer, (rsize_t)sizeof(std_g_genBuffer)) != 1 )
     {
@@ -239,6 +239,12 @@ int J3DAPI rdModel3_LoadEntry(const char* pFilename, rdModel3* pModel3)
         goto syntax_error;
     }
 
+    // Fixed: rdModel3 has a fixed-size geoset array, so reject oversized GEOSETS values from .3do files.
+    if ( pModel3->numGeos > STD_ARRAYLEN(pModel3->aGeos) )
+    {
+        goto range_error;
+    }
+
     for ( size_t geoNum = 0; geoNum < pModel3->numGeos; geoNum++ )
     {
         rdModel3GeoSet* pGeo = &pModel3->aGeos[geoNum];
@@ -257,7 +263,7 @@ int J3DAPI rdModel3_LoadEntry(const char* pFilename, rdModel3* pModel3)
             goto syntax_error;
         }
 
-        // TODO: maybe check numMeshes range, if 0 should continue 
+        // TODO: maybe check numMeshes range, if 0 should continue
 
         pGeo->aMeshes = (rdModel3Mesh*)STDMALLOC(sizeof(rdModel3Mesh) * pGeo->numMeshes);
         if ( !pGeo->aMeshes )
@@ -372,7 +378,7 @@ int J3DAPI rdModel3_LoadEntry(const char* pFilename, rdModel3* pModel3)
                     goto alloc_error;
                 }
 
-                memset(pMesh->aLightIntensities, 0, sizeof(rdVector4) * numVerts);
+                STD_ZEROMEM(pMesh->aLightIntensities, sizeof(rdVector4) * numVerts);
             }
 
             for ( size_t vertNum = 0; vertNum < numVerts; ++vertNum )
@@ -517,7 +523,7 @@ int J3DAPI rdModel3_LoadEntry(const char* pFilename, rdModel3* pModel3)
                 rdFace* pFace = &pMesh->aFaces[faceNum];
                 rdFace_NewEntry(pFace);
 
-                // Read face line 
+                // Read face line
                 if ( !stdConffile_ReadLine() )
                 {
                     goto eof_error;
@@ -529,23 +535,38 @@ int J3DAPI rdModel3_LoadEntry(const char* pFilename, rdModel3* pModel3)
                 strtok_r(stdConffile_g_aLine, " \t", &pntok);
 
                 // Parse mat idx
-                int matIdx = atoi(strtok_r(NULL, " \t", &pntok));
-                pFace->pMaterial = (matIdx == -1) ? NULL : pModel3->apMaterials[matIdx]; // TODO: Add bounds check
+                char* pToken = strtok_r(NULL, " \t", &pntok);
+                if ( !pToken ) // Fixed: Check for missing face token before atoi.
+                {
+                    goto syntax_error;
+                }
+
+                int matIdx = atoi(pToken);
+                // Fixed: Validate face material indices before indexing apMaterials.
+                if ( matIdx < -1 || (matIdx >= 0 && (size_t)matIdx >= pModel3->numMaterials) )
+                {
+                    goto range_error;
+                }
+
+                pFace->pMaterial = (matIdx == -1) ? NULL : pModel3->apMaterials[matIdx];
 
                 // Parse faceflags
-                if ( sscanf_s(strtok_r(NULL, " \t", &pntok), "%x", &pFace->flags) != 1 )
+                pToken = strtok_r(NULL, " \t", &pntok);
+                if ( !pToken || sscanf_s(pToken, "%x", &pFace->flags) != 1 ) // Fixed: Check for missing face token before sscanf_s.
                 {
                     goto syntax_error;
                 }
 
                 // Parse geo mode
-                if ( sscanf_s(strtok_r(NULL, " \t", &pntok), "%d", &pFace->geometryMode) != 1 )
+                pToken = strtok_r(NULL, " \t", &pntok);
+                if ( !pToken || sscanf_s(pToken, "%d", &pFace->geometryMode) != 1 ) // Fixed: Check for missing face token before sscanf_s.
                 {
                     goto syntax_error;
                 }
 
                 // Parse light mode
-                if ( sscanf_s(strtok_r(NULL, " \t", &pntok), "%d", &pFace->lightingMode) != 1 )
+                pToken = strtok_r(NULL, " \t", &pntok);
+                if ( !pToken || sscanf_s(pToken, "%d", &pFace->lightingMode) != 1 ) // Fixed: Check for missing face token before sscanf_s.
                 {
                     goto syntax_error;
                 }
@@ -555,7 +576,8 @@ int J3DAPI rdModel3_LoadEntry(const char* pFilename, rdModel3* pModel3)
                     pMesh->someFaceFlags = 1;
                 }
 
-                if ( sscanf_s(strtok_r(NULL, " \t", &pntok), "%d", &texMode) != 1 )
+                pToken = strtok_r(NULL, " \t", &pntok);
+                if ( !pToken || sscanf_s(pToken, "%d", &texMode) != 1 ) // Fixed: Check for missing face token before sscanf_s.
                 { // textMode not used
                     goto syntax_error;
                 }
@@ -565,8 +587,10 @@ int J3DAPI rdModel3_LoadEntry(const char* pFilename, rdModel3* pModel3)
                 {
                     float red, green, blue, alpha = 1.0f;
                     const char* aRGB = strtok_r(NULL, " \t", &pntok);
-                    if ( sscanf_s(aRGB, "(%f/%f/%f/%f)", &red, &green, &blue, &alpha) != 4
-                        && sscanf_s(aRGB, "(%f/%f/%f)", &red, &green, &blue) != 3 )
+                    if ( !aRGB // Fixed: Check for missing RGB token before sscanf_s.
+                        || (sscanf_s(aRGB, "(%f/%f/%f/%f)", &red, &green, &blue, &alpha) != 4
+                            && sscanf_s(aRGB, "(%f/%f/%f)", &red, &green, &blue) != 3)
+                        )
                     {
                         goto syntax_error;
                     }
@@ -576,14 +600,21 @@ int J3DAPI rdModel3_LoadEntry(const char* pFilename, rdModel3* pModel3)
                 else
                 {
                     float li;
-                    if ( sscanf_s(strtok_r(NULL, " \t", &pntok), "%f", &li) != 1 )
+                    pToken = strtok_r(NULL, " \t", &pntok);
+                    if ( !pToken || sscanf_s(pToken, "%f", &li) != 1 ) // Fixed: Check for missing face token before sscanf_s.
                     {
                         goto syntax_error;
                     }
                     rdVector_Set4(&pFace->extraLight, li, li, li, 1.0f);
                 }
 
-                size_t faceVerts = atoi(strtok_r(NULL, " \t", &pntok));
+                pToken = strtok_r(NULL, " \t", &pntok);
+                if ( !pToken ) // Fixed: Check for missing face vertex count token before atoi.
+                {
+                    goto syntax_error;
+                }
+
+                size_t faceVerts = atoi(pToken);
                 if ( !faceVerts )
                 {
                     goto syntax_error;
@@ -595,7 +626,7 @@ int J3DAPI rdModel3_LoadEntry(const char* pFilename, rdModel3* pModel3)
                 }
 
                 pFace->numVertices = faceVerts;
-                pFace->aVertices = (int*)STDMALLOC(sizeof(int*) * faceVerts);
+                pFace->aVertices = (int*)STDMALLOC(sizeof(int) * faceVerts);
                 if ( !pFace->aVertices )
                 {
                     goto alloc_error;
@@ -603,7 +634,7 @@ int J3DAPI rdModel3_LoadEntry(const char* pFilename, rdModel3* pModel3)
 
                 if ( pFace->pMaterial )
                 {
-                    pFace->aTexVertices = (int*)STDMALLOC(sizeof(int*) * faceVerts);
+                    pFace->aTexVertices = (int*)STDMALLOC(sizeof(int) * faceVerts);
                     if ( !pFace->aTexVertices )
                     {
                         goto alloc_error;
@@ -611,35 +642,80 @@ int J3DAPI rdModel3_LoadEntry(const char* pFilename, rdModel3* pModel3)
 
                     for ( size_t vertNum = 0; vertNum < faceVerts; ++vertNum )
                     {
-                        pFace->aVertices[vertNum] = atoi(strtok_r(NULL, " \t,", &pntok)); // Parse vert index
-                        if ( pFace->aVertices[vertNum] > pMesh->numVertices - 1 )
+                        pToken = strtok_r(NULL, " \t,", &pntok);
+                        if ( !pToken ) // Fixed: Check for missing vertex index token before atoi.
                         {
-                            pFace->aVertices[vertNum] = 0;
-                            RDLOG_ERROR("Out of range vertex on mesh %s of model %s!\n", pMesh->name, pModel3->aName);
+                            goto syntax_error;
                         }
 
-                        pFace->aTexVertices[vertNum] = atoi(strtok_r(NULL, " \t,", &pntok)); // Parse UV index;
-                        if ( pFace->aTexVertices[vertNum] > pMesh->numTexVertices - 1 )
+                        int vertIdx = atoi(pToken); // Parse vert index
+                        // Fixed: Added bounds check for parsed vertex index while preserving fallback to 0.
+                        if ( vertIdx < 0 || (size_t)vertIdx >= pMesh->numVertices )
                         {
-                            pFace->aTexVertices[vertNum] = 0;
-                            RDLOG_ERROR("Out of range tex vertex on mesh %s of model %s!\n", pMesh->name, pModel3->aName);
+                            RDLOG_ERROR("Out of range vertex on mesh %s of model %s!\n", pMesh->name, pModel3->aName);
+                            // Fixed: Preserve the original tolerant fallback, but only when vertex 0 exists.
+                            if ( !pMesh->numVertices )
+                            {
+                                goto range_error;
+                            }
+
+                            vertIdx = 0;
                         }
+
+                        pFace->aVertices[vertNum] = vertIdx;
+
+                        pToken = strtok_r(NULL, " \t,", &pntok);
+                        if ( !pToken ) // Fixed: Check for missing texture vertex index token before atoi.
+                        {
+                            goto syntax_error;
+                        }
+
+                        int texVertIdx = atoi(pToken); // Parse UV index;
+                        // Fixed: Added bounds check for parsed texture vertex index while preserving fallback to 0.
+                        if ( texVertIdx < 0 || (size_t)texVertIdx >= pMesh->numTexVertices )
+                        {
+                            RDLOG_ERROR("Out of range tex vertex on mesh %s of model %s!\n", pMesh->name, pModel3->aName);
+                            // Fixed: Preserve the original tolerant fallback, but only when tex vertex 0 exists.
+                            if ( !pMesh->numTexVertices )
+                            {
+                                goto range_error;
+                            }
+
+                            texVertIdx = 0;
+                        }
+
+                        pFace->aTexVertices[vertNum] = texVertIdx;
                     }
                 }
                 else
                 {
                     for ( size_t vertNum = 0; vertNum < faceVerts; ++vertNum )
                     {
-                        pFace->aVertices[vertNum] = atoi(strtok_r(NULL, " \t,", &pntok)); // Parse vert index
-
-                        // Added
-                        if ( pFace->aVertices[vertNum] > pMesh->numVertices - 1 )
+                        pToken = strtok_r(NULL, " \t,", &pntok);
+                        if ( !pToken ) // Fixed: Check for missing vertex index token before atoi.
                         {
-                            pFace->aVertices[vertNum] = 0;
-                            RDLOG_ERROR("Out of range vertex on mesh %s of model %s!\n", pMesh->name, pModel3->aName);
+                            goto syntax_error;
                         }
 
-                        strtok_r(NULL, " \t,", &pntok);// Skip texVertIdx
+                        int vertIdx = atoi(pToken); // Parse vert index
+                        // Fixed: Added bounds check for parsed vertex index while preserving fallback to 0.
+                        if ( vertIdx < 0 || (size_t)vertIdx >= pMesh->numVertices )
+                        {
+                            RDLOG_ERROR("Out of range vertex on mesh %s of model %s!\n", pMesh->name, pModel3->aName);
+                            // Fixed: Preserve the original tolerant fallback, but only when vertex 0 exists.
+                            if ( !pMesh->numVertices )
+                            {
+                                goto range_error;
+                            }
+
+                            vertIdx = 0;
+                        }
+
+                        pFace->aVertices[vertNum] = vertIdx;
+                        if ( !strtok_r(NULL, " \t,", &pntok) )// Fixed: Check skipped texture vertex token exists before continuing.
+                        {
+                            goto syntax_error;
+                        }
                     }
                 }
 
@@ -672,7 +748,6 @@ int J3DAPI rdModel3_LoadEntry(const char* pFilename, rdModel3* pModel3)
             }
         }
     }
-
 
     // Section HIERARCHYDEF
     if ( stdConffile_ScanLine(" section: %s", std_g_genBuffer, (rsize_t)sizeof(std_g_genBuffer)) != 1 )
@@ -733,7 +808,14 @@ int J3DAPI rdModel3_LoadEntry(const char* pFilename, rdModel3* pModel3)
             goto syntax_error;
         }
 
-        // TODO: Add bounds check
+        // Fixed: Validate hierarchy links before converting serialized indices to node pointers.
+        if ( (parentIdx != -1 && (parentIdx < 0 || (size_t)parentIdx >= numNodes))
+            || (childIdx != -1 && (childIdx < 0 || (size_t)childIdx >= numNodes))
+            || (siblingIdx != -1 && (siblingIdx < 0 || (size_t)siblingIdx >= numNodes)) )
+        {
+            goto range_error;
+        }
+
         pNode->pParent  = (parentIdx == -1) ? NULL : &pModel3->aHierarchyNodes[parentIdx];
         pNode->pChild   = (childIdx == -1) ? NULL : &pModel3->aHierarchyNodes[childIdx];
         pNode->pSibling = (siblingIdx == -1) ? NULL : &pModel3->aHierarchyNodes[siblingIdx];
@@ -881,7 +963,7 @@ int J3DAPI rdModel3_Write(const char* pFilename, const rdModel3* pModel, const c
 
             rdroid_g_pHS->pFilePrintf(fh, "\n\n");
 
-            // Write mesh faces 
+            // Write mesh faces
             rdroid_g_pHS->pFilePrintf(fh, "FACES %d\n\n", pMesh->numFaces);
 
             rdroid_g_pHS->pFilePrintf(fh, "#  num:  material:   type:  geo:  light:   tex:  R:  G:  B:  A:  verts:\n");
@@ -1448,7 +1530,6 @@ int J3DAPI rdModel3_SwapMesh(rdModel3* pModel1, unsigned int meshNum1, rdModel3*
     {
         RDLOG_ERROR("Error: SwapMesh for models '%s and %s'.\n", pModel1->aName, pModel2->aName);
         return 1;
-
     }
 
     return 0;
@@ -1598,7 +1679,7 @@ void J3DAPI rdModel3_DrawHNode(const rdModel3GeoSet* prdGeo, const rdModel3HNode
     {
         rdModel3Mesh* pMesh = &prdGeo->aMeshes[pNode->meshIdx];
         // Note the rdModel3K module is buggy and will not be used
-        // 
+        //
         //bool bOpaque = pMesh->meshColor.alpha >= 1.0f;
         //if ( (bOpaque & (pMesh->someFaceFlags == 0) & (uint8_t)rdModel3K_sub_4E2F20()) != 0 )
         //{
@@ -1776,7 +1857,7 @@ void J3DAPI rdModel3_DrawFace(const rdFace* pFace, const rdVector3* aTransformed
     }
 
     // Project vertices to view space and assign to poly
-    // Fyi, grimengine uses either rdPrim3_ClipFace or rdPrim3_NoClipFace because it does manual clipping of polys that are not in clip frustum 
+    // Fyi, grimengine uses either rdPrim3_ClipFace or rdPrim3_NoClipFace because it does manual clipping of polys that are not in clip frustum
     // We expect HW / GPU API will do the clipping for us
     if ( !rdClip_FaceToPlane(rdCamera_g_pCurCamera->pFrustum, pPoly, pFace, aTransformedVertices, pCurMesh->apTexVertices, pCurMesh->aLightIntensities, NULL) )
     {
@@ -1872,7 +1953,6 @@ void J3DAPI rdModel3_BendJointAngle(rdThing* pThing, size_t jointNum, size_t axi
 
     if ( secDeltaTime <= 0.0f )
     {
-
         *axisAngle = angle;
         return;
     }
