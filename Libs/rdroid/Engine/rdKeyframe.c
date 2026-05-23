@@ -20,9 +20,7 @@ void rdKeyframe_InstallHooks(void)
 }
 
 void rdKeyframe_ResetGlobals(void)
-{
-    memset(&rdKeyframe_pKeyframeLoader, 0, sizeof(rdKeyframe_pKeyframeLoader));
-}
+{}
 
 rdKeyframeLoadFunc J3DAPI rdKeyframe_RegisterLoader(rdKeyframeLoadFunc pFunc)
 {
@@ -40,7 +38,7 @@ rdKeyframeUnloadFunc J3DAPI rdKeyframe_RegisterUnloader(rdKeyframeUnloadFunc pFu
 
 void J3DAPI rdKeyframe_NewEntry(rdKeyframe* pKeyframe)
 {
-    memset(pKeyframe, 0, sizeof(rdKeyframe));
+    STD_ZEROMEM(pKeyframe, sizeof(rdKeyframe));
     STD_STRCPY(pKeyframe->aName, "UNKNOWN");
 }
 
@@ -106,7 +104,7 @@ int J3DAPI rdKeyframe_LoadEntry(const char* pFilename, rdKeyframe* pKeyframe)
     }
 
     if ( stdConffile_ScanLine(" joints %d", &pKeyframe->numJoints) != 1
-        || pKeyframe->numJoints > RDPUPPET_MAX_KFNODES ) // Added: bounds check 
+        || pKeyframe->numJoints > RDPUPPET_MAX_KFNODES ) // Added: bounds check
     {
         goto syntax_error;
     }
@@ -119,14 +117,14 @@ int J3DAPI rdKeyframe_LoadEntry(const char* pFilename, rdKeyframe* pKeyframe)
         return 0;
     }
 
-    memset(pKeyframe->aNodes, 0, sizeof(rdKeyframeNode) * pKeyframe->numJoints);
+    STD_ZEROMEM(pKeyframe->aNodes, sizeof(rdKeyframeNode) * pKeyframe->numJoints);
 
     if ( stdConffile_ScanLine(" section: %s", std_g_genBuffer, (rsize_t)sizeof(std_g_genBuffer)) != 1 )
     {
         goto syntax_error;
     }
 
-    if ( strcmp(std_g_genBuffer, "markers") == 0 )
+    if ( streq(std_g_genBuffer, "markers") )
     {
         if ( stdConffile_ScanLine(" markers %d", &pKeyframe->numMarkers) != 1 || pKeyframe->numMarkers > RDKEYFRAME_MAX_MARKERS )
         {
@@ -137,7 +135,8 @@ int J3DAPI rdKeyframe_LoadEntry(const char* pFilename, rdKeyframe* pKeyframe)
         {
             for ( size_t i = 0; i < pKeyframe->numMarkers; i++ )
             {
-                if ( stdConffile_ScanLine("%f %d", &pKeyframe->aMarkerFrames[i], &pKeyframe->aMarkerTypes[i]) != 2 ) {
+                if ( stdConffile_ScanLine("%f %d", &pKeyframe->aMarkerFrames[i], &pKeyframe->aMarkerTypes[i]) != 2 )
+                {
                     goto syntax_error;
                 }
             }
@@ -152,7 +151,7 @@ int J3DAPI rdKeyframe_LoadEntry(const char* pFilename, rdKeyframe* pKeyframe)
 
     size_t numNodes = 0;
     if ( stdConffile_ScanLine(" nodes %d", &numNodes) != 1
-        || numNodes > pKeyframe->numJoints ) // Added: bounds check 
+        || numNodes > pKeyframe->numJoints ) // Added: bounds check
     {
         goto syntax_error;
     }
@@ -165,18 +164,24 @@ int J3DAPI rdKeyframe_LoadEntry(const char* pFilename, rdKeyframe* pKeyframe)
             goto syntax_error;
         }
 
+        // Fixed: The node id is serialized; validate it before indexing aNodes.
+        if ( nnum < 0 || (size_t)nnum >= pKeyframe->numJoints )
+        {
+            goto syntax_error;
+        }
+
         rdKeyframeNode* pNode = &pKeyframe->aNodes[nnum];
         pNode->nodeNum = nnum;
 
         if ( stdConffile_ScanLine(" mesh name %s", pNode->aMeshName, (rsize_t)sizeof(pNode->aMeshName)) != 1 )
         {
-            memset(pNode, 0, sizeof(*pNode)); // Added
+            STD_ZEROMEM(pNode, sizeof(*pNode)); // Added
             goto syntax_error;
         }
 
         if ( stdConffile_ScanLine(" entries %d", &pNode->numEntries) != 1 )
         {
-            memset(pNode, 0, sizeof(*pNode)); // Added
+            STD_ZEROMEM(pNode, sizeof(*pNode)); // Added
             goto syntax_error;
         }
 
@@ -200,7 +205,7 @@ int J3DAPI rdKeyframe_LoadEntry(const char* pFilename, rdKeyframe* pKeyframe)
 
                 if ( rlen != 9 )
                 {
-                    memset(pEntry, 0, sizeof(*pEntry));
+                    STD_ZEROMEM(pEntry, sizeof(*pEntry));
 
                     if ( rlen < 0 )
                     {
@@ -216,7 +221,7 @@ int J3DAPI rdKeyframe_LoadEntry(const char* pFilename, rdKeyframe* pKeyframe)
 
                 if ( stdConffile_ScanLine(" %f %f %f %f %f %f", &pEntry->dpos.x, &pEntry->dpos.y, &pEntry->dpos.z, &pEntry->drot.pitch, &pEntry->drot.yaw, &pEntry->drot.roll) != 6 )
                 {
-                    memset(pEntry, 0, sizeof(*pEntry));
+                    STD_ZEROMEM(pEntry, sizeof(*pEntry));
                     goto syntax_error;
                 }
             }
