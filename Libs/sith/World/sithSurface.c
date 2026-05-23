@@ -754,6 +754,13 @@ int J3DAPI sithSurface_ReadSurfacesListText(SithWorld* pWorld, int bSkip)
         // Adjoin
         pSurf->pAdjoin = NULL;
         int adjIdx = atoi(stdConffile_g_entry.aArgs[curArg++].argValue);
+        // Fixed: .ndy adjoin indices are file data, so reject invalid indices before indexing aAdjoins.
+        if ( adjIdx < -1 || (adjIdx >= 0 && (size_t)adjIdx >= pWorld->numAdjoins) )
+        {
+            SITHLOG_ERROR("Surface adjoin index out of range!\n");
+            goto range_error;
+        }
+
         if ( adjIdx != -1 )
         {
             pSurf->pAdjoin = &pWorld->aAdjoins[adjIdx];
@@ -809,11 +816,26 @@ int J3DAPI sithSurface_ReadSurfacesListText(SithWorld* pWorld, int bSkip)
         // parse vert/tex vert idxs
         for ( size_t j = 0; j < numVerts; ++j )
         {
-            pFace->aVertices[j]    = atoi(stdConffile_g_entry.aArgs[curArg++].argValue);
+            int vertIdx = atoi(stdConffile_g_entry.aArgs[curArg++].argValue);
+            if ( vertIdx < 0 || (size_t)vertIdx >= pWorld->numVertices )
+            {
+                SITHLOG_ERROR("Surface vertex index out of range!\n");
+                goto range_error;
+            }
+
+            pFace->aVertices[j] = vertIdx;
 
             if ( pFace->pMaterial )
             {
-                pFace->aTexVertices[j] = atoi(stdConffile_g_entry.aArgs[curArg++].argValue);
+                int texVertIdx = atoi(stdConffile_g_entry.aArgs[curArg++].argValue);
+                // Fixed: Validate serialized texture vertex indices before storing them on the face.
+                if ( texVertIdx < 0 || (size_t)texVertIdx >= pWorld->numTexVertices )
+                {
+                    SITHLOG_ERROR("Surface texture vertex index out of range!\n");
+                    goto range_error;
+                }
+
+                pFace->aTexVertices[j] = texVertIdx;
             }
             else
             {

@@ -305,6 +305,12 @@ int J3DAPI sithSector_ReadSectorsListText(SithWorld* pWorld, int bSkip)
                 goto syntax_error;
             }
 
+            // Fixed: Reject invalid .ndy sector vertex indices before later world-vertex lookups.
+            if ( vertNum < 0 || (size_t)vertNum >= pWorld->numVertices )
+            {
+                goto range_error;
+            }
+
             pSec->aVertIdxs[j] = vertNum;
         }
 
@@ -322,7 +328,13 @@ int J3DAPI sithSector_ReadSectorsListText(SithWorld* pWorld, int bSkip)
 
         pSec->numSurfaces = numSurfs;
 
-        SithSurface* pSurf = sithSurface_GetSurfaceEx(pWorld, surfIdx);
+        // Fixed: Validate the surface range before assigning pSector through the returned pointer.
+        if ( numSurfs && (surfIdx < 0 || (size_t)surfIdx >= pWorld->numSurfaces || numSurfs > pWorld->numSurfaces - (size_t)surfIdx) )
+        {
+            goto range_error;
+        }
+
+        SithSurface* pSurf = numSurfs ? sithSurface_GetSurfaceEx(pWorld, surfIdx) : NULL;
         pSec->pFirstSurface = pSurf;
 
         for ( size_t j = 0; j < numSurfs; ++j )
@@ -345,6 +357,10 @@ syntax_error:
 
 alloc_error:
     SITHLOG_ERROR("Error: Bad memory allocation for '%s' in '%s'\n", stdConffile_g_aLine, stdConffile_GetFilename());
+    return 1;
+
+range_error:
+    SITHLOG_ERROR("Error: Value out of range for '%s' in '%s'\n", stdConffile_g_aLine, stdConffile_GetFilename());
     return 1;
 }
 
