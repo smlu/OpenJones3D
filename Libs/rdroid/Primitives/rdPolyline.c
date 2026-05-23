@@ -243,11 +243,11 @@ void J3DAPI rdPolyline_DrawFace(const rdThing* pLine, const rdFace* pFace, const
         return;
     }
 
-
     // Added: When UV tile flag set, tile polyline UVs instead of stretch as done by default.
     //        This will make texture to repeat multiple times throughout the polyline.
     //
     //        When UV rotate flag is set, rotate UV for 90 degrees.
+    rdVector2 aUVs[4];
     if ( (pLine->data.pPolyline->flags & (RDPOLYLINE_UVTILE | RDPOLYLINE_UVROTATE)) != 0 )
     {
         rdPolyline* pPolyline = pLine->data.pPolyline;
@@ -268,8 +268,6 @@ void J3DAPI rdPolyline_DrawFace(const rdThing* pLine, const rdFace* pFace, const
                 }
             }
         }
-
-        rdVector2 aUVs[4];
 
         // Check if UVs should be rotated 90 degrees
         if ( pPolyline->flags & RDPOLYLINE_UVROTATE )
@@ -302,7 +300,7 @@ void J3DAPI rdPolyline_DrawFace(const rdThing* pLine, const rdFace* pFace, const
         aTVerts = aUVs;
     }
 
-// Transform verts to screen space and assign to poly
+    // Transform verts to screen space and assign to poly
     if ( !rdClip_FaceToPlane(rdCamera_g_pCurCamera->pFrustum, pPoly, pFace, aVerts, aTVerts, NULL, NULL) )
     {
         // Polyline face is fully outside the camera frustum

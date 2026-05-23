@@ -2044,8 +2044,8 @@ int J3DAPI rdClip_Face3GSOrtho(const rdClipFrustum* pFrustum, rdVector3* aVertic
         }
 
         RD_ASSERTREL(clipindex < STD_ARRAYLEN(rdClip_aWorkVerts));
-        pPrevVert = pCurVert++;
-        pPrevIntens = pPrevIntens++;
+        pPrevVert   = pCurVert++;
+        pPrevIntens = pCurIntens++;
     }
 
     if ( clipindex < 3 )
@@ -2117,7 +2117,6 @@ int J3DAPI rdClip_Face3GSOrtho(const rdClipFrustum* pFrustum, rdVector3* aVertic
     {
         return clipindex;
     }
-
 
     if ( rdClip_pDestVert == aVertices )
     {
@@ -2554,7 +2553,6 @@ int J3DAPI rdClip_Face3GT(const rdClipFrustum* pFrustrum, rdVector3* aVertices, 
 
 int J3DAPI rdClip_Face3GTOrtho(const rdClipFrustum* pFrustum, rdVector3* aVertices, rdVector2* aTexVertices, size_t numVertices)
 {
-
     rdClip_g_faceStatus = 0;
 
     rdClip_pSourceVert = aVertices;
@@ -3730,7 +3728,6 @@ int J3DAPI rdClip_Face3TOrtho(const rdClipFrustum* pFrustum, rdVector3* aVertice
                 memcpy(&rdClip_pDestVert[clipindex], pCurVert, sizeof(rdVector3));
                 memcpy(&rdClip_pDestTVert[clipindex], pCurTVert, sizeof(*rdClip_pDestTVert));
                 memcpy(&rdClip_pDestVertIntensity[clipindex++], pCurIntens, sizeof(*rdClip_pDestVertIntensity));
-
             }
         }
 
@@ -3969,7 +3966,6 @@ int J3DAPI rdClip_QClipFaceT(rdClipFrustum* pFrustrum, const rdPrimit3* pSrc, rd
 
 void J3DAPI rdClip_QClipFaceW(const rdClipFrustum* pFrustrum, const rdPrimit3* pSrc, rdPrimit3* pDst)
 {
-
     for ( size_t i = 0; i < pSrc->numVertices; ++i )
     {
         pDst->aVertices[i] = pSrc->aVertices[pSrc->aVertIdxs[i]];
