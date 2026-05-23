@@ -206,7 +206,8 @@ SithCollisionType J3DAPI sithIntersect_CheckSphereThingIntersection(SithThing* p
     rdMatrix_TransformVector34Acc(&dir, &tmat);
 
     // TODO: [DEAD] following dead code (in if scope) was found in debug version
-    SithCollisionType hitType;
+    // Fixed: Keep hitType initialized even if debug-only collision branches change in the future.
+    SithCollisionType hitType = 0;
     if ( false )
     {
         float heightHitDistance, widthHitDistance;
