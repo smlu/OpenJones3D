@@ -110,7 +110,6 @@ typedef struct sJonesReAssignKeyDialogData
     HWND hAssignKeyDlg;
 } JonesReAssignKeyDialogData;
 
-
 typedef struct sJonesDisplaySettingsVideoMode
 {
     char aResolutionText[256];
@@ -155,8 +154,6 @@ typedef struct sJonesDialogFontScaleMetrics
     int refHeight;
 } JonesDialogSize;
 static_assert(sizeof(JonesDialogSize) == 12, "sizeof(JonesDialogSize) == 12");
-
-
 
 // Module vars
 static int jonesConfig_bStartup = 0; // Fixed: Added init. to 0
@@ -267,7 +264,6 @@ static size_t jonesConfig_maxActionStrLen        = 0u;
 static size_t jonesConfig_maxActionWords         = 0u;
 static size_t jonesConfig_maxActionPaddedStrLen  = 0u; // Fixed: Init to 0
 
-
 static const JonesDialogSize jonesConfig_aDialogSizes[21] =
 {
     { 164, 368, 232 },
@@ -317,7 +313,6 @@ static const char* jonesConfig_apDialogIconFiles[6] =
     "exit.bmp",
     "exitmask.bmp"
 };
-
 
 // Keyboard default keysets
 
@@ -644,7 +639,6 @@ static const char* jonesConfig_aJonesCapControlActionNames[JONESCONTROL_ACTION_N
     "JONES_STR_CAPS_CHALK"
 };
 
-
 // Key control sting names
 static const char* jonesConfig_aControlKeyStrings[223] =
 {
@@ -872,7 +866,6 @@ static const char* jonesConfig_aControlKeyStrings[223] =
     "JONES_STR_APPS",
     NULL
 };
-
 
 int jonesConfig_InitKeySetsPath(void);
 int jonesConfig_InitKeyActions(void);
@@ -1936,7 +1929,7 @@ void J3DAPI jonesConfig_ControlToString(size_t controlId, char* pDest)
                     || controlId >= STDCONTROL_JOYSTICK_FIRTPOVCID && controlId <= STDCONTROL_JOYSTICK_LASTPOVCID && STDCONTROL_JOYSTICK_GETPOVDIRECTIONINDEX(controlId) == STDCONTROL_JOYSTICK_POVDIRRIGHT
                     || controlId >= STDCONTROL_JOYSTICK_FIRTPOVCID && controlId <= STDCONTROL_JOYSTICK_LASTPOVCID && STDCONTROL_JOYSTICK_GETPOVDIRECTIONINDEX(controlId) == STDCONTROL_JOYSTICK_POVDIRDOWN )
                 {
-                    // Joystick POV 
+                    // Joystick POV
                     stdUtil_Format(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, pControlStr, STDCONTROL_JOYSTICK_GETPOVINDEX(controlId) + 1);
                 }
                 else
@@ -2005,7 +1998,6 @@ BOOL CALLBACK jonesConfig_MessageDialogProc(HWND hwnd, UINT uMsg, WPARAM wParam,
         default:
             return FALSE;
     }
-
 }
 
 void J3DAPI jonesConfig_InitMessageDialogIcon(HWND hWnd, JonesMessageDialogData* pData)
@@ -2129,7 +2121,6 @@ int J3DAPI jonesConfig_SetTextControl(HWND hDlg, HWND hTextCtrl, const char* aTe
         int btnX = rectBtn.left - rectDlg.left;
         int btnY = rectBtn.top - rectDlg.top - (frameSize + heightCaption);
 
-
         int textX = rectWnd.left - rectDlg.left;
         int textY = rectWnd.top - rectDlg.top - (frameSize + heightCaption);
 
@@ -2215,11 +2206,11 @@ JonesControlsScheme* jonesConfig_LoadActiveControlScheme(void)
             }
         }
 
-        // Clear keyset config 
+        // Clear keyset config
         // TODO: Should load the default scheme, right?
         STDLOG_WARNING("Failed to load control scheme '%s', reverting to default.\n", aFilePath); // Added: Added log
         stdConfig_SetString(JONESCONFIG_CFG_CONTROLS_CONFIGFILE, "");
-        // Removed: goto error; 
+        // Removed: goto error;
         //         Fall through to load default scheme.
         //         This fixes bug when custom scheme fails to load and default scheme is not loaded either.
     }
@@ -2473,7 +2464,6 @@ int J3DAPI jonesConfig_ParseJoystickControlId(size_t* pArgNum, const StdConffile
 
     if ( controlId == -1 )
     {
-
         char aArgText[256] = { 0 };
         STD_STRCPY(aArgText, pEntry->aArgs[*pArgNum].argName);
 
@@ -3304,7 +3294,7 @@ BOOL CALLBACK jonesConfig_ResetWindowFontCallback(HWND hWnd, LPARAM lparam)
 
 BOOL CALLBACK jonesConfig_SetPositionAndTextCallback(HWND hCtrl, LPARAM lparam)
 {
-    // Function resize control by scale, sets font and 
+    // Function resize control by scale, sets font and
     // replaces all text of control from JONES_STR_* to corresponding text
 
     // Fixed: Check if hCtrl parent is top dialog, otherwise skip control.
@@ -3364,7 +3354,6 @@ BOOL CALLBACK jonesConfig_SetPositionAndTextCallback(HWND hCtrl, LPARAM lparam)
         }
 
         return TRUE;
-
     }
 
     return TRUE;
@@ -4098,7 +4087,6 @@ void J3DAPI jonesConfig_MsgBoxDlg_HandleWM_COMMAND(HWND hWnd, int nResult)
     }
 }
 
-
 int J3DAPI jonesConfig_GetLoadGameFilePath(HWND hWnd, char* pDestNdsPath)
 {
     char aFilterFormatStr[512] = { 0 };
@@ -4281,7 +4269,6 @@ UINT_PTR CALLBACK jonesConfig_LoadGameDialogHookProc(HWND hDlg, UINT uMsg, WPARA
                     LPOPENFILENAME pofn = pOfNotify->lpOFN;
                     if ( pofn->nFileOffset < 0x8000 )
                     {
-
                         char aExtension[128] = { 0 };
                         STD_FORMAT(aExtension, ".%s", pofn->lpstrDefExt);
 
@@ -4446,7 +4433,7 @@ BOOL J3DAPI jonesConfig_LoadGameDialogInit(HWND hDlg, int a2, LPOPENFILENAME pof
     LoadGameDialogData* pData = (LoadGameDialogData*)pofn->lCustData;
 
     RECT btnRect;
-    HWND hButton = GetDlgItem(hDlg, 1120); // load last saved game button 
+    HWND hButton = GetDlgItem(hDlg, 1120); // load last saved game button
     GetWindowRect(hButton, &btnRect);
 
     HWND hThumbnail = GetDlgItem(hDlg, 1163);
@@ -4612,7 +4599,6 @@ INT_PTR CALLBACK jonesConfig_GamePlayOptionsProc(HWND hWnd, UINT uMsg, WPARAM wP
             return 0;
         }
 
-
         jonesConfig_HandleWM_HSCROLL(hWnd, (HWND)lParam, LOWORD(wParam));
 
         HWND hDifSlideer = GetDlgItem(hWnd, 1050);   // Difficulty slider control
@@ -4660,7 +4646,7 @@ INT_PTR CALLBACK jonesConfig_GamePlayOptionsProc(HWND hWnd, UINT uMsg, WPARAM wP
 
     if ( uMsg == WM_INITDIALOG )
     {
-        // Changed: Change the order of initialization, to first init dialog 
+        // Changed: Change the order of initialization, to first init dialog
         //          and then do general dialog init which scales the fonts and inits dialog text
         bProcessed = jonesConfig_GamePlayOptionsInitDlg(hWnd);
         jonesConfig_hFontGamePlayOptionsDlg = jonesConfig_InitDialog(hWnd, NULL, 112);
@@ -5200,7 +5186,6 @@ int J3DAPI jonesConfig_ControlOptions_SetAllDefaultControlSchemes(JonesControlsC
 
 INT_PTR CALLBACK jonesConfig_ControlOptionsDialogProc(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam)
 {
-
     if ( umsg == WM_DESTROY )
     {
         jonesConfig_ResetDialogFont(hwnd, jonesConfig_hFontControlOptions);
@@ -5433,7 +5418,6 @@ void J3DAPI jonesConfig_ControlOptions_HandleWM_COMMAND(HWND hWnd, int ctrlID, L
                 {
                     sithControl_UnbindJoystickAxes();
                 }
-
             } break;
 
             case 2: // Cancel button
@@ -5814,7 +5798,7 @@ JonesControlsScheme* J3DAPI jonesConfig_GetDefaultControlScheme(JonesControlsCon
     }
     else
     {
-        // Keyboard 
+        // Keyboard
         pSchemeName = jonesString_GetString(jonesConfig_aDfltKeySetNames[0]);
     }
 
@@ -5889,7 +5873,6 @@ void J3DAPI jonesConfig_ControlOptions_CreateNewScheme(HWND hDlg, JonesControlsC
 
     if ( !pConfig->aSchemes )
     {
-
         const char* pErrorText = jonesString_GetString("JONES_STR_NO_MEM_SCHEME");
         if ( pErrorText )
         {
@@ -6419,7 +6402,6 @@ void J3DAPI jonesConfig_EditControlScheme_EditAssignment(HWND hDlg, HWND hListCt
             {
                 JONESCONTROL_ACTION_UPDATENUMBINDINGS_CONTROLLER(pScheme->aActions[assignkeyData.actionId], +1);
             }
-
         }
     }
 }
@@ -6515,7 +6497,6 @@ void J3DAPI jonesConfig_EditControlScheme_AddAssignment(HWND hDlg, HWND hListCtr
                 STD_STRCPY(aErrorText, pErrorText);
             }
 
-
             char aActioName[512] = { 0 };
             const char* pActionName = jonesString_GetString(jonesConfig_aJonesCapControlActionNames[data.actionId]);
             if ( pActionName )
@@ -6591,7 +6572,6 @@ void J3DAPI jonesConfig_EditControlScheme_AddAssignment(HWND hDlg, HWND hListCtr
         else // controller list
         {
             JONESCONTROL_ACTION_UPDATENUMBINDINGS_CONTROLLER(pScheme->aActions[data.actionId], +1);
-
         }
 
        /* if ( listID == 1005 )
@@ -7240,7 +7220,7 @@ int J3DAPI jonesConfig_ShowDisplaySettingsDialog(HWND hWnd, StdDisplayEnvironmen
     dlgData.pSettings   = pDSettings;
     dlgData.pDisplayEnv = pDisplayEnv;
 
-    // Save current settings, to restore in case of canceling 
+    // Save current settings, to restore in case of canceling
     float curFogDensity = sithRender_g_fogDensity;
     int curPerLevel     = stdConfig_GetInt(JONESDISPLAY_CFG_GRAPHICS_PERFORMANCELEVEL, 4);
 
@@ -7386,7 +7366,6 @@ int J3DAPI jonesConfig_InitDisplaySettingsDialog(HWND hDlg, int a2, JonesDisplay
             {
                 size_t pos = strlen(aResolutionText);
                 stdUtil_Format(&aResolutionText[pos], STD_ARRAYLEN(aResolutionText) - pos, " (%d Hz)", pDisplayInfo->aModes[i].refreshRate);
-
             }
         }
 
@@ -7445,7 +7424,6 @@ int J3DAPI jonesConfig_InitDisplaySettingsDialog(HWND hDlg, int a2, JonesDisplay
                         default:
                             // TODO: Shall we continue loop or break here?
                             break;
-
                     }
 
                     pData->aVideoModes[videomodeNum].colorDepthFlags |= colorDepthMask;
@@ -7453,7 +7431,7 @@ int J3DAPI jonesConfig_InitDisplaySettingsDialog(HWND hDlg, int a2, JonesDisplay
 
                     if ( ComboBox_FindString(hCBColorDepth, 0, aResolutionText) == -1 )
                     {
-                        selCBColorDepthData = MAKELONG(colorDepthIdx, colorDepthMask);// Packs pixel byte size and 
+                        selCBColorDepthData = MAKELONG(colorDepthIdx, colorDepthMask);// Packs pixel byte size and
                         int index  = ComboBox_AddString(hCBColorDepth, aResolutionText);
                         ComboBox_SetItemData(hCBColorDepth, index, selCBColorDepthData);
                     }
@@ -7624,7 +7602,6 @@ void J3DAPI jonesConfig_DisplaySettings_HandleWM_COMMAND(HWND hWnd, int ctrlID, 
                 return;
         }
 
-
         return;
     }
 
@@ -7632,7 +7609,7 @@ void J3DAPI jonesConfig_DisplaySettings_HandleWM_COMMAND(HWND hWnd, int ctrlID, 
     {
         if ( notifyCode == CBN_SELCHANGE )
         {
-            // Selection of color depth combo box changed, 
+            // Selection of color depth combo box changed,
             // we update aCurColorDepthResolutions for new the color depth
 
             HWND hCBColorDepth = GetDlgItem(hWnd, 1094);
@@ -7737,7 +7714,7 @@ INT_PTR CALLBACK jonesConfig_AdvanceDisplaySettingsDialogProc(HWND hWnd, UINT uM
 
         case WM_INITDIALOG:
         {
-            // Altered: Switched order so InitDialog affects any new items added to dialog 
+            // Altered: Switched order so InitDialog affects any new items added to dialog
             int inited = jonesConfig_InitAdvanceDisplaySettingsDialog(hWnd, wParam, (JonesDisplaySettingsDialogData*)lParam);
             jonesConfig_hFontAdvanceDisplaySettingsDialog = jonesConfig_InitDialog(hWnd, NULL, 148);
 
@@ -7777,7 +7754,7 @@ int J3DAPI jonesConfig_DisplaySettings_Get3DDeviceSupportsBPP(const StdDisplayIn
     J3D_UNUSED(pDisplayInfo);
     J3D_UNUSED(pSettings);
     if ( bpp == 24 || bpp == 32 ) return 1;
-#else 
+#else
 #error "Unsupported 3D API"
 #endif
 
@@ -7800,7 +7777,7 @@ int J3DAPI jonesConfig_InitAdvanceDisplaySettingsDialog(HWND hDlg, int a2, Jones
             STD_FORMAT(aDBEntryText, "%s", pData->pDisplayEnv->aDisplayInfos[i].displayDevice.aDriverName);
             int newItemIdx = ComboBox_AddString(hCB3DeviceCtrl, aDBEntryText);
 
-            ComboBox_SetItemData(hCB3DeviceCtrl, newItemIdx, i); // i is index in aDisplayInfos 
+            ComboBox_SetItemData(hCB3DeviceCtrl, newItemIdx, i); // i is index in aDisplayInfos
 
             if ( i == (size_t)pData->pSettings->displayDeviceNum )
             {
@@ -7916,77 +7893,110 @@ int J3DAPI jonesConfig_InitAdvanceDisplaySettingsDialog(HWND hDlg, int a2, Jones
     int h = MulDiv(14, dpi, USER_DEFAULT_SCREEN_DPI);
 
     // Added: Adds check box for Anti-Aliasing (MSAA) option
+    HWND hCbMSAA = GetDlgItem(hDlg, 1053);
     if ( std3D_IsMSAASupported() )
     {
         int w = MulDiv(120, dpi, USER_DEFAULT_SCREEN_DPI);
 
-        // Create the MSAA checkbox
-        HWND hCbMSAA = CreateWindow(
-            "Button",
-            "Anti-Aliasing (MSAA)",
-            WS_CHILD | BS_AUTOCHECKBOX | BS_VCENTER | WS_VISIBLE | WS_GROUP | WS_TABSTOP,
-            x,
-            y,
-            w,
-            h,
-            hDlg,                  // Parent window handle
-            (HMENU)1053,           // Control ID
-            GetModuleHandle(NULL),
-            NULL                   // Additional creation config
-        );
-        J3D_UNUSED(hCbMSAA);
+        // Fixed: Reuse the dynamically-created checkbox when the dialog is reinitialized.
+        if ( !hCbMSAA )
+        {
+            hCbMSAA = CreateWindow(
+                "Button",
+                "Anti-Aliasing (MSAA)",
+                WS_CHILD | BS_AUTOCHECKBOX | BS_VCENTER | WS_VISIBLE | WS_GROUP | WS_TABSTOP,
+                x,
+                y,
+                w,
+                h,
+                hDlg,                  // Parent window handle
+                (HMENU)1053,           // Control ID
+                GetModuleHandle(NULL),
+                NULL                   // Additional creation config
+            );
+        }
 
+        ShowWindow(hCbMSAA, SW_SHOW);
+        EnableWindow(hCbMSAA, TRUE);
+        SetWindowPos(hCbMSAA, NULL, x, y, w, h, SWP_NOZORDER | SWP_NOREDRAW);
         CheckDlgButton(hDlg, 1053, stdConfig_GetBool(STD3D_CFG_MSAAENABLED, true));
     }
+    else if ( hCbMSAA )
+    {
+        ShowWindow(hCbMSAA, SW_HIDE);
+        EnableWindow(hCbMSAA, FALSE);
+    }
 
-    // Added: Adds check box for Anti-Aliasing (MSAA) option
+    // Added: Adds check box for mipmap auto-gen option
+    HWND hCbMipmapAutoGen = GetDlgItem(hDlg, 1054);
     if ( std3D_IsMipmapAutoGenSupported() )
     {
         y += MulDiv(spacing, dpi, USER_DEFAULT_SCREEN_DPI);
         int w = MulDiv(120, dpi, USER_DEFAULT_SCREEN_DPI);
 
-        // Create new auto gen mipmap checkbox
-        HWND hCbMSAA = CreateWindow(
-            "Button",
-            "Auto Gen. Mipmaps",
-            WS_CHILD | BS_AUTOCHECKBOX | BS_VCENTER | WS_VISIBLE | WS_GROUP | WS_TABSTOP,
-            x,
-            y,
-            w,
-            h,
-            hDlg,                  // Parent window handle
-            (HMENU)1054,           // Control ID
-            GetModuleHandle(NULL),
-            NULL                   // Additional creation config
-        );
-        J3D_UNUSED(hCbMSAA);
+        // Fixed: Reuse the dynamically-created checkbox when the dialog is reinitialized.
+        if ( !hCbMipmapAutoGen )
+        {
+            hCbMipmapAutoGen = CreateWindow(
+                "Button",
+                "Auto Gen. Mipmaps",
+                WS_CHILD | BS_AUTOCHECKBOX | BS_VCENTER | WS_VISIBLE | WS_GROUP | WS_TABSTOP,
+                x,
+                y,
+                w,
+                h,
+                hDlg,                  // Parent window handle
+                (HMENU)1054,           // Control ID
+                GetModuleHandle(NULL),
+                NULL                   // Additional creation config
+            );
+        }
 
+        ShowWindow(hCbMipmapAutoGen, SW_SHOW);
+        EnableWindow(hCbMipmapAutoGen, TRUE);
+        SetWindowPos(hCbMipmapAutoGen, NULL, x, y, w, h, SWP_NOZORDER | SWP_NOREDRAW);
         CheckDlgButton(hDlg, 1054, stdConfig_GetBool(STD3D_CFG_MIPMAPAUTOGEN, true));
     }
+    else if ( hCbMipmapAutoGen )
+    {
+        ShowWindow(hCbMipmapAutoGen, SW_HIDE);
+        EnableWindow(hCbMipmapAutoGen, FALSE);
+    }
 
-     // Added: Adds check box for anisotropic filtering option
+    // Added: Adds check box for anisotropic filtering option
+    HWND hCbAnisotropic = GetDlgItem(hDlg, 1055);
     if ( std3D_IsAnisotropicFilteringSupported() )
     {
         y += MulDiv(spacing, dpi, USER_DEFAULT_SCREEN_DPI);
         int w = MulDiv(120, dpi, USER_DEFAULT_SCREEN_DPI);
 
-        // Create new auto gen mipmap checkbox
-        HWND hCbMSAA = CreateWindow(
-            "Button",
-            "Anisotropic Filtering",
-            WS_CHILD | BS_AUTOCHECKBOX | BS_VCENTER | WS_VISIBLE | WS_GROUP | WS_TABSTOP,
-            x,
-            y,
-            w,
-            h,
-            hDlg,                  // Parent window handle
-            (HMENU)1055,           // Control ID
-            GetModuleHandle(NULL),
-            NULL                   // Additional creation config
-        );
-        J3D_UNUSED(hCbMSAA);
+        // Fixed: Reuse the dynamically-created checkbox when the dialog is reinitialized.
+        if ( !hCbAnisotropic )
+        {
+            hCbAnisotropic = CreateWindow(
+                "Button",
+                "Anisotropic Filtering",
+                WS_CHILD | BS_AUTOCHECKBOX | BS_VCENTER | WS_VISIBLE | WS_GROUP | WS_TABSTOP,
+                x,
+                y,
+                w,
+                h,
+                hDlg,                  // Parent window handle
+                (HMENU)1055,           // Control ID
+                GetModuleHandle(NULL),
+                NULL                   // Additional creation config
+            );
+        }
 
+        ShowWindow(hCbAnisotropic, SW_SHOW);
+        EnableWindow(hCbAnisotropic, TRUE);
+        SetWindowPos(hCbAnisotropic, NULL, x, y, w, h, SWP_NOZORDER | SWP_NOREDRAW);
         CheckDlgButton(hDlg, 1055, stdConfig_GetBool(STD3D_CFG_ANISOTROPICFILTER, true));
+    }
+    else if ( hCbAnisotropic )
+    {
+        ShowWindow(hCbAnisotropic, SW_HIDE);
+        EnableWindow(hCbAnisotropic, FALSE);
     }
 
     // Added: Enable and init HiPoly check button
@@ -8019,7 +8029,6 @@ void J3DAPI jonesConfig_AdvanceDisplaySettings_HandleWM_COMMAND(HWND hDlg, int c
     {
         case 1084: // 3D Devices combo box
         {
-
             if ( notifyCode == CBN_SELCHANGE )
             {
                 HWND hCB3DeviceCtrl = GetDlgItem(hDlg, 1084);
@@ -8037,11 +8046,12 @@ void J3DAPI jonesConfig_AdvanceDisplaySettings_HandleWM_COMMAND(HWND hDlg, int c
         {
             if ( notifyCode == CBN_SELCHANGE )
             {
-                HWND hCB3DeviceCtrl = GetDlgItem(hDlg, 1084);
+                // Fixed: Read the selected rasterizer from the rasterizer combo, not the 3D device combo. OG retrieved ctrlID 1084 which is 3D device combo
+                HWND hCB3DRasterCtrl = GetDlgItem(hDlg, 1085);
                 HWND hDisplaySettingsDlg = GetParent(hDlg);
 
-                int curSelIdx = ComboBox_GetCurSel(hCB3DeviceCtrl);
-                pSettings->device3DNum = ComboBox_GetItemData(hCB3DeviceCtrl, curSelIdx);
+                int curSelIdx = ComboBox_GetCurSel(hCB3DRasterCtrl);
+                pSettings->device3DNum = ComboBox_GetItemData(hCB3DRasterCtrl, curSelIdx);
 
                 jonesConfig_InitAdvanceDisplaySettingsDialog(hDlg, 0, pData);
                 jonesConfig_InitDisplaySettingsDialog(hDisplaySettingsDlg, 0, pData);
@@ -8124,10 +8134,12 @@ void J3DAPI jonesConfig_AdvanceDisplaySettings_HandleWM_COMMAND(HWND hDlg, int c
             sithRender_g_fogDensity = (float)SendMessage(hFogSliderCtrl, TBM_GETPOS, 0, 0);
             pSettings->fogDensity = sithRender_g_fogDensity / 100.0f;
 
-            stdConfig_SetInt(JONESDISPLAY_CFG_GRAPHICS_PERFORMANCELEVEL, jonesConfig_advanceDisplaySettings_perfLevel);
-            jonesConfig_advanceDisplaySettings_perfLevel = 4;
+            // Fixed: Compare the selected performance level against the previously saved value before writing it.
+            int curPerfLevel = stdConfig_GetInt(JONESDISPLAY_CFG_GRAPHICS_PERFORMANCELEVEL, 4);
+            int newPerfLevel = jonesConfig_advanceDisplaySettings_perfLevel;
+            stdConfig_SetInt(JONESDISPLAY_CFG_GRAPHICS_PERFORMANCELEVEL, newPerfLevel);
 
-            if ( JonesMain_HasStarted() && jonesConfig_advanceDisplaySettings_perfLevel != stdConfig_GetInt(JONESDISPLAY_CFG_GRAPHICS_PERFORMANCELEVEL, 4) )
+            if ( JonesMain_HasStarted() && newPerfLevel != curPerfLevel )
             {
                 // Performance changed, show msg box informing that change will take into affect after game restart
                 const char* pMsgText = jonesString_GetString("JONES_STR_PERFORMANCE");
@@ -8139,7 +8151,7 @@ void J3DAPI jonesConfig_AdvanceDisplaySettings_HandleWM_COMMAND(HWND hDlg, int c
             }
 
             pSettings->filter = jonesConfig_advanceDisplaySettings_curFilterMode;
-            //jonesConfig_advanceDisplaySettings_curFilterMode = STD3D_MIPMAPFILTER_TRILINEAR; // Fixed: Removed, as cached filtermode is now set in init function, 
+            //jonesConfig_advanceDisplaySettings_curFilterMode = STD3D_MIPMAPFILTER_TRILINEAR; // Fixed: Removed, as cached filtermode is now set in init function,
             //                                                                                           as the mipmap filter radio boxes might not be changed and then the wrong filter mode would be set here
 
             // Added
@@ -8168,7 +8180,8 @@ void J3DAPI jonesConfig_AdvanceDisplaySettings_HandleWM_COMMAND(HWND hDlg, int c
             }
 
             // Added: Grab mipmap auto gen option
-            if ( std3D_IsMSAASupported() )
+            // Fixed: Gate mipmap auto-gen saving on mipmap auto-gen support, not MSAA support.
+            if ( std3D_IsMipmapAutoGenSupported() )
             {
                 int bAutoGen = IsDlgButtonChecked(hDlg, 1054);
                 stdConfig_SetBool(STD3D_CFG_MIPMAPAUTOGEN, !!bAutoGen);
@@ -8867,7 +8880,6 @@ int J3DAPI jonesConfig_SetStatisticsDialogForLevel(HWND hDlg, int levelNum, int*
     return SetWindowText(hTextDifficultyDrop, aText);
 }
 
-
 void J3DAPI jonesConfig_DrawStatisticDialogIQPoints(HWND hwnd, JonesDialogImageInfo** ppImageInfo, int dlgID, int iqpoints)
 {
     J3D_UNUSED(hwnd);
@@ -8938,7 +8950,6 @@ void J3DAPI jonesConfig_DrawStatisticDialogIQPoints(HWND hwnd, JonesDialogImageI
 
     HBRUSH hBrush = CreateSolidBrush(RGB(255, 255, 255));
     FillRect(pImageInfo->hdcBack, &rc, hBrush);
-
 
     int x = width;
     while ( points >= 0 )
@@ -9411,7 +9422,6 @@ void J3DAPI jonesConfig_StoreDialog_HandleWM_MBUTTONUP(HWND hWnd)
     }
 }
 
-
 BOOL J3DAPI jonesConfig_StoreDialog_HandleWM_MOUSEFIRST(HWND hWnd)
 {
     POINT cursorPos;
@@ -9495,7 +9505,7 @@ void J3DAPI jonesConfig_StoreSetListColumns(HWND hList, const char* pColumnName)
     uint32_t  height, width;
     stdDisplay_GetBackBufferSize(&width, &height);
 
-    // Removed: 
+    // Removed:
   /*float scale = 1.0f;
     if ( (float)height / RD_REF_HEIGHT <= 1.0f )
     {
@@ -9513,7 +9523,6 @@ void J3DAPI jonesConfig_StoreSetListColumns(HWND hList, const char* pColumnName)
     col.pszText  = (LPSTR)jonesString_GetString("JONES_STR_ITEMNAME");
     col.iSubItem = colNum;
     ListView_InsertColumn(hList, colNum++, &col);
-
 
     col.fmt      = LVCFMT_RIGHT;
     col.cx       = pad;
@@ -9604,7 +9613,7 @@ void J3DAPI jonesConfig_AddStoreCartItem(HWND hDlg, tStoreCartState* pCart)
             ListView_GetItem(hItemsList, &lvitem);
 
             int storeItemIdx = HIWORD(lvitem.lParam);//  HIWORD
-            if ( storeItemIdx > -1 ) // Fixed: Added check for bonusMapItemIdx > -1 
+            if ( storeItemIdx > -1 ) // Fixed: Added check for bonusMapItemIdx > -1
             {
                 if ( JonesHud_aStoreItems[storeItemIdx].menuID == JONESHUD_MENU_INVITEM_BONUSMAP )
                 {
@@ -9617,7 +9626,7 @@ void J3DAPI jonesConfig_AddStoreCartItem(HWND hDlg, tStoreCartState* pCart)
 
         if ( pCart->balance >= total )
         {
-            if ( bonusMapItemIdx > -1 && JonesHud_aStoreItems[bonusMapItemIdx].menuID == JONESHUD_MENU_INVITEM_BONUSMAP ) // Fixed: Added check for bonusMapItemIdx > -1 
+            if ( bonusMapItemIdx > -1 && JonesHud_aStoreItems[bonusMapItemIdx].menuID == JONESHUD_MENU_INVITEM_BONUSMAP ) // Fixed: Added check for bonusMapItemIdx > -1
             {
                 const char* pDlgText = jonesString_GetString("JONES_STR_PERU");
                 if ( pDlgText )
@@ -9676,7 +9685,7 @@ void J3DAPI jonesConfig_AddStoreCartItem(HWND hDlg, tStoreCartState* pCart)
         {
             const char* pDlgText = NULL;
             if ( bonusMapItemIdx > -1 && JonesHud_aStoreItems[bonusMapItemIdx].menuID == JONESHUD_MENU_INVITEM_BONUSMAP )
-            { // Fixed: Added check for bonusMapItemIdx > -1 
+            { // Fixed: Added check for bonusMapItemIdx > -1
                 pDlgText = jonesString_GetString("JONES_STR_NOPERU");
             }
             else if ( selectedCount == 1 )
@@ -9762,7 +9771,6 @@ void J3DAPI jonesConfig_StoreDialog_HandleWM_COMMAND(HWND hWnd, WPARAM wParam)
         case 1175: // Clear items
             jonesConfig_ClearStoreCart(hWnd, pCart);
             return;
-
     }
 }
 
@@ -9874,7 +9882,7 @@ int J3DAPI jonesConfig_ShowDialogInsertCD(HWND hWnd, LPARAM dwInitParam)
     GetWindowLongPtr(hWnd, GWL_HINSTANCE); // TODO: ??
     int btnNum = JonesDialog_ShowDialog(MAKEINTRESOURCE(167), hWnd, jonesConfig_DialogInsertCDProc, dwInitParam);
     ShowCursor(0);
-    return btnNum; // 1 - ok or 2 - quit 
+    return btnNum; // 1 - ok or 2 - quit
 }
 
 INT_PTR CALLBACK jonesConfig_DialogInsertCDProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
