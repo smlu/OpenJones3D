@@ -82,6 +82,9 @@
   - Added documentation for COG scripting language (96d4c57)
   - Added documentation for engine configuration (96d4c57)
   - Fixed launcher DLL injector to use absolute paths, preserve Windows command-line quoting, load the DLL with `LoadLibraryW`, and clean up process resources on injection failure. (e18b9f5)
+  - Fixed JonesFile resource bounds handling by accepting the final file handle slot and ignoring extra GOB files beyond the fixed resource array. (dd3aeeb)
+  - Improved GOB cleanup and validation, including failed-load cleanup, shutdown state handling, directory bounds checks, seek/read clamping, and EOF behavior. (245cb3b)
+  - Fixed stdConffile, file/path helper edge cases, including short config lines, empty path concatenation, Win32 find handle cleanup, and file-existence handle leaks. (7532d41)
 
 ### Engine:
   - Added check for zero size in lip sync data generation to prevent allocation errors (f79736b)
@@ -183,6 +186,8 @@
   - Fixed `sithGamesave` save/restore error paths to close files, restore output stream state, and run normal cleanup after failures (8cf0d99)
   - Fixed `ThingFullDescription` restore in `sithDSSThing` to validate serialized thing types, template indices, path frame counts, swap entry counts, model references, and polyline data before use (6fa2af9)
   - Fixed puppet DSS restore in `sithDSS` to validate serialized arm modes, move modes, track counts, major modes, and submodes before indexing puppet mode tables (6fa2af9)
+  - Hardened NDY sector and surface loading by validating serialized sector vertices, surface ranges, adjoins, face vertices, and texture vertices before pointer conversion.  (73819a9)
+  - Initialized Sith intersection hit type defensively before collision result handling. (b4cc752)
 
 ### Graphics:
   - Fixed an issue where active textures used in the current render frame were being removed from the cache prematurely in low VRAM situations (f37ecb7)
@@ -248,6 +253,11 @@
   - Fixed actor head light not to lit when actor has invisible flag set (a589b92)  
     This prevents actor head light from being rendered when the actor is invisible.
   - Added new HD HUD indicator textures [PR #38](https://github.com/smlu/OpenJones3D/pull/38)
+  - Hardened KEY, MAT, and 3DO loading with serialized index checks, texture/mip validation, corrected allocation sizes, and safer face token parsing. (872c3c1, b6132e4, 229f4c2)
+  - Fixed clipped Gouraud face intensity interpolation (OpenJones3D bug) (ed059c7)
+  - Fixed MAT loader error cleanup so failed cel reads, mip validation, or color conversion release partially created mip buffers correctly. (e3a9c15)
+  - Fixed advanced display settings rasterizer selection to read from the rasterizer combo box instead of the 3D device combo box. (8235ece)
+  - Fixed false graphics restart prompts when confirming advanced display settings without changing the performance level. (8235ece)
 
 ### Game play:
   - Fixed bug in `sithPlayer_Update` where force move animation could be stopped when required distance to move was almost zero (127aa92)
