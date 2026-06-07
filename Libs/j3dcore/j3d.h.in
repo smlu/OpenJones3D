@@ -33,6 +33,7 @@
 #endif
 
 #cmakedefine J3D_SPEEDRUN_BUILD
+#cmakedefine J3D_RUNTIME_GUARDS
 
 #cmakedefine J3D_DIRECTX6
 #cmakedefine J3D_DIRECTX9
@@ -88,6 +89,39 @@
 
 #define J3DMIN(a, b) (((a) < (b)) ? (a) : (b))
 #define J3DMAX(a, b) (((a) > (b)) ? (a) : (b))
+
+#ifdef J3D_RUNTIME_GUARDS
+/**
+* @brief Release-build runtime guard helpers.
+*
+* Guard expressions must be side-effect free because they are not evaluated when
+* J3D_RUNTIME_GUARDS is disabled.
+*/
+#   define STD_GUARD(expr, ret) \
+    do { \
+        if ( !(expr) ) { \
+            return (ret); \
+        } \
+    } while ( 0 )
+
+#   define STD_GUARD_VOID(expr) \
+    do { \
+        if ( !(expr) ) { \
+            return; \
+        } \
+    } while ( 0 )
+
+#   define STD_GUARDEX(expr, ...) \
+    do { \
+        if ( !(expr) ) { \
+            __VA_ARGS__ \
+        } \
+    } while ( 0 )
+#else
+#   define STD_GUARD(expr, ret) do { } while ( 0 )
+#   define STD_GUARD_VOID(expr) do { } while ( 0 )
+#   define STD_GUARDEX(expr, ...) do { } while ( 0 )
+#endif
 
 
 /**

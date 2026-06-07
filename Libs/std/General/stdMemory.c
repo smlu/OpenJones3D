@@ -3,6 +3,8 @@
 #include <j3dcore/j3dhook.h>
 #include <std/RTI/symbols.h>
 
+#include <stdint.h>
+
 #define STDMEMORY_HEADERMAGIC    0x12345678
 #define STDMEMORY_UNINIT_PATTERN 0xCC
 #define STDMEMORY_FREE_PATTERN   0xDD
@@ -12,7 +14,6 @@
 
 #define STDMEMORY_GETHEAPALLOCSIZE(size) \
     ((size) + sizeof(tMemoryHeap))
-
 
 //  Memory block & zone related helper macros
 
@@ -74,7 +75,6 @@ static_assert(STDMEMORYBLOCK_ZONE_INITIALBLOCKSIZE == 31736, "STDMEMORYBLOCK_ZON
 
 #define STDMEMORYBLOCK_ZONE_ALLOCSIZE       (STDMEMORYBLOCK_ZONE_INITIALBLOCKSIZE + sizeof(tMemoryBlockHeader))    // Total allocated size when allocating a zone heap data
 static_assert(STDMEMORYBLOCK_ZONE_ALLOCSIZE == 31744, "STDMEMORYBLOCK_ZONE_ALLOCSIZE must be 31744 bytes");
-
 
 // Module vars
 static bool bStartup = false;
@@ -162,6 +162,13 @@ void stdMemory_Close(void)
 
 void* J3DAPI stdMemory_Malloc(size_t size, const char* pFilename, size_t line)
 {
+    // Fixed: Reject allocation/accounting sizes that would overflow the heap header math.
+    if ( size > SIZE_MAX - sizeof(tMemoryHeap)
+        || size > SIZE_MAX - stdMemory_g_curState.totalBytes )
+    {
+        return NULL;
+    }
+
     tMemoryHeap* pHeap = (tMemoryHeap*)std_g_pHS->pMalloc(STDMEMORY_GETHEAPALLOCSIZE(size)); // In stdPlatform module pMalloc is set to stdMemory_BlockMalloc
     if ( !pHeap )
     {
@@ -203,7 +210,9 @@ void* J3DAPI stdMemory_Malloc(size_t size, const char* pFilename, size_t line)
 
 void J3DAPI stdMemory_Free(void* pBytes)
 {
-    // TODO: Add check for NULL pointer
+    // Added: Match free(NULL) behavior in release builds.
+    STD_GUARD_VOID(pBytes);
+
     tMemoryHeader* pHeader = STDMEMORY_GETHEADER(pBytes);
 
     STD_ASSERTREL((pHeader != NULL) && ((uint32_t)pHeader == pHeader->id));
@@ -239,10 +248,22 @@ void* J3DAPI stdMemory_Realloc(void* pBytes, size_t size, const char* pFilename,
         return NULL;
     }
 
+    // Fixed: Reject sizes that would overflow the debug heap header allocation.
+    if ( size > SIZE_MAX - sizeof(tMemoryHeap) )
+    {
+        return NULL;
+    }
+
     tMemoryHeader* pHeader = STDMEMORY_GETHEADER(pBytes);
     STD_ASSERTREL((pHeader != NULL) && ((uint32_t)pHeader == pHeader->id));
 
     size_t curSize = pHeader->size;
+    // Fixed: Avoid total-byte accounting overflow when a reallocation grows.
+    if ( size > curSize && size - curSize > SIZE_MAX - stdMemory_g_curState.totalBytes )
+    {
+        return NULL;
+    }
+
     tMemoryHeap* pHeap = (tMemoryHeap*)std_g_pHS->pRealloc(pHeader, STDMEMORY_GETHEAPALLOCSIZE(size));
     if ( !pHeap )
     {
@@ -290,12 +311,22 @@ void* J3DAPI stdMemory_Realloc(void* pBytes, size_t size, const char* pFilename,
 
 void* J3DAPI stdMemory_BlockMalloc(size_t size)
 {
-    // TODO: Add check for 0 size to avoid pBest == NULL assert
+    // Fixed: Avoid zero-sized zone allocation and null best-block assertions.
+    if ( !size )
+    {
+        return NULL;
+    }
 
     if ( size > STDMEMORYBLOCK_ALLOC_THRESHOLD )
     {
         // Allocate memory normally on heap
         return stdMemory_BlockAlloc(size);
+    }
+
+    // Fixed: Avoid overflow in the 4-byte alignment adjustment.
+    if ( size > SIZE_MAX - 3u )
+    {
+        return NULL;
     }
 
     size = (size + 3) & ~3u; // 4-byte alignment
@@ -426,7 +457,6 @@ void* J3DAPI stdMemory_BlockMalloc(size_t size)
         pCurHeader = STDMEMORYBLOCK_ZONE_NEXTHEADER_ATPOS(pCurHeader, curSize);
     }
 
-
     pBlock->availableMem = (largestFreeSize > sizeof(tMemoryBlockHeader))
         ? STDMEMORYBLOCK_ZONE_CALCDATASIZE(largestFreeSize)
         : 0;
@@ -437,7 +467,8 @@ void* J3DAPI stdMemory_BlockMalloc(size_t size)
 void J3DAPI stdMemory_BlockFree(void* pMemory)
 {
     STD_ASSERTREL(pMemory); // Fixed: Moved this check to the top before extracting header to prevent dereferencing NULL pointer
-                            // TODO: In release build it should probably just return without asserting
+    // Added: Keep release builds from dereferencing NULL block pointers.
+    STD_GUARD_VOID(pMemory);
 
     tMemoryBlockHeader* pHeader = STDMEMORYBLOCK_ZONE_GETHEADER_FROMDATA(pMemory);
 
@@ -546,6 +577,12 @@ void* J3DAPI stdMemory_BlockRealloc(void* pMemory, size_t size)
 
 void* J3DAPI stdMemory_BlockAlloc(size_t size)
 {
+    // Fixed: Reject zero-sized and header-overflowing direct block allocations.
+    if ( !size || size > SIZE_MAX - sizeof(tMemoryBlockHeader) )
+    {
+        return NULL;
+    }
+
     tMemoryBlockHeader* pHeader = (tMemoryBlockHeader*)malloc(STDMEMORYBLOCK_ZONE_CALCBLOCKSIZE(size));
     if ( !pHeader )
     {

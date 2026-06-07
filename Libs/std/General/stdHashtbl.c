@@ -7,6 +7,8 @@
 #include <j3dcore/j3dhook.h>
 #include <std/RTI/symbols.h>
 
+#include <stdint.h>
+
 static size_t stdHashtbl_aPrimeTable[32] = {
     23u,   53u,   79u,   101u,  151u,  211u,  251u,  307u,
     353u,  401u,  457u,  503u,  557u,  601u,  653u,  701u,
@@ -35,29 +37,24 @@ void stdHashtbl_InstallHooks(void)
 }
 
 void stdHashtbl_ResetGlobals(void)
-{
-    /*int stdHashtbl_aPrimeTable_tmp[32] = {
-        23u,   53u,   79u,   101u,  151u,  211u,  251u,  307u,
-        353u,  401u,  457u,  503u,  557u,  601u,  653u,  701u,
-        751u,  809u,  853u,  907u,  953u,  1009u, 1103u, 1201u,
-        1301u, 1409u, 1511u, 1601u, 1709u, 1801u, 1901u, 1999u
-    };
-    memcpy(&stdHashtbl_aPrimeTable, &stdHashtbl_aPrimeTable_tmp, sizeof(stdHashtbl_aPrimeTable));*/
-
-}
+{}
 
 unsigned int J3DAPI CalculateHash(const char* pData, signed int hashSize)
 {
-    signed int hashValue = 0;
+    // Added: Release-build guard for invalid hash inputs.
+    STD_GUARD(pData && hashSize > 0, 0);
+
+    // Fixed: Use unsigned arithmetic for the historical 65599 hash to avoid signed overflow UB.
+    uint32_t hashValue = 0;
     while ( *pData )
     {
-        hashValue = *pData++ + 65599 * hashValue;
+        hashValue = (uint8_t)*pData++ + 65599u * hashValue;
     }
 
-    hashValue = abs(hashValue % hashSize);
-    STD_ASSERTREL(hashValue >= 0);
-    STD_ASSERTREL(hashValue < hashSize);
-    return hashValue;
+    hashValue %= (uint32_t)hashSize;
+    STD_ASSERTREL((int)hashValue >= 0);
+    STD_ASSERTREL(hashValue < (uint32_t)hashSize);
+    return (unsigned int)hashValue;
 }
 
 size_t J3DAPI GetNextPrime(size_t nextPrime)
@@ -106,16 +103,25 @@ tHashTable* J3DAPI stdHashtbl_New(size_t size)
         return NULL;
     }
 
-    memset(pTable, 0, sizeof(tHashTable));
+    STD_ZEROMEM(pTable, sizeof(tHashTable));
 
     pTable->numNodes = GetNextPrime(size);
-    pTable->paNodes = (tLinkListNode*)STDMALLOC(sizeof(tLinkListNode) * pTable->numNodes);
-    if ( !pTable->paNodes )
+    // Fixed: Avoid overflow when allocating the node array.
+    if ( pTable->numNodes > SIZE_MAX / sizeof(tLinkListNode) )
     {
+        STDFREE(pTable);
         return NULL;
     }
 
-    memset(pTable->paNodes, 0, sizeof(tLinkListNode) * pTable->numNodes);
+    pTable->paNodes = (tLinkListNode*)STDMALLOC(sizeof(tLinkListNode) * pTable->numNodes);
+    if ( !pTable->paNodes )
+    {
+        // Fixed: Free the table header if node allocation fails.
+        STDFREE(pTable);
+        return NULL;
+    }
+
+    STD_ZEROMEM(pTable->paNodes, sizeof(tLinkListNode) * pTable->numNodes);
     pTable->pfHashFunc = CalculateHash;
     return pTable;
 }
@@ -133,15 +139,14 @@ size_t J3DAPI stdHashtbl_nextPrime(size_t candidate)
 
 void J3DAPI stdHashtbl_Free(tHashTable* pTable)
 {
-
     STD_ASSERTREL(pTable != NULL);
     for ( size_t i = 0; i < pTable->numNodes; ++i )
     {
         stdHashtbl_FreeListNodes(&pTable->paNodes[i]);
     }
 
-    stdMemory_Free(pTable->paNodes);
-    stdMemory_Free(pTable);
+    STDFREE(pTable->paNodes);
+    STDFREE(pTable);
 }
 
 void J3DAPI stdHashtbl_FreeListNodes(tLinkListNode* pNode)
@@ -150,7 +155,7 @@ void J3DAPI stdHashtbl_FreeListNodes(tLinkListNode* pNode)
     for ( tLinkListNode* pCurNode = pNode->next; pCurNode; pCurNode = pNextNode )
     {
         pNextNode = pCurNode->next;
-        stdMemory_Free(pCurNode);
+        STDFREE(pCurNode);
     }
 }
 
@@ -174,14 +179,14 @@ int J3DAPI stdHashtbl_Add(tHashTable* pTable, const char* pName, void* pData)
             return 0;
         }
 
-        memset(pNode, 0, sizeof(tLinkListNode));
+        STD_ZEROMEM(pNode, sizeof(tLinkListNode));
         pNode->name = pName;
         pNode->data = pData;
         stdLinkList_AddNode(pCur, pNode);
     }
     else
     {
-        memset(&pTable->paNodes[nodeIdx], 0, sizeof(pTable->paNodes[nodeIdx]));
+        STD_ZEROMEM(&pTable->paNodes[nodeIdx], sizeof(pTable->paNodes[nodeIdx]));
         pTable->paNodes[nodeIdx].name = pName;
         pTable->paNodes[nodeIdx].data = pData;
     }
@@ -218,6 +223,15 @@ tLinkListNode* J3DAPI stdHashtbl_FindNode(const tHashTable* pTable, const char* 
         return NULL;
     }
 
+    // Added: guard for invalid find inputs.
+    STD_GUARD(pName && pNodeIdx, NULL);
+
+    // Added: guard for empty table or missing node array.
+    if ( !pTable->paNodes || !pTable->numNodes )
+    {
+        return NULL;
+    }
+
     *pNodeIdx = pTable->pfHashFunc(pName, pTable->numNodes);
     for ( tLinkListNode* pCurNode = &pTable->paNodes[*pNodeIdx]; pCurNode && pCurNode->name; pCurNode = pCurNode->next )
     {
@@ -248,22 +262,22 @@ int J3DAPI stdHashtbl_Remove(tHashTable* pTable, const char* pName)
     {
         if ( pNodeNext )
         {
-            memcpy(&pTable->paNodes[nodeIdx], pNodeNext, sizeof(pTable->paNodes[nodeIdx]));
+            STD_COPYMEM(&pTable->paNodes[nodeIdx], pNodeNext, sizeof(pTable->paNodes[nodeIdx]));
             tLinkListNode* pNext = pTable->paNodes[nodeIdx].next;
             if ( pNext )
             {
                 pNext->prev = &pTable->paNodes[nodeIdx];
             }
-            stdMemory_Free(pNodeNext);
+            STDFREE(pNodeNext);
         }
         else
         {
-            memset(&pTable->paNodes[nodeIdx], 0, sizeof(pTable->paNodes[nodeIdx]));
+            STD_ZEROMEM(&pTable->paNodes[nodeIdx], sizeof(pTable->paNodes[nodeIdx]));
         }
     }
     else
     {
-        stdMemory_Free(pNode);
+        STDFREE(pNode);
     }
 
     return 1;
@@ -272,6 +286,15 @@ int J3DAPI stdHashtbl_Remove(tHashTable* pTable, const char* pName)
 void J3DAPI stdHashtbl_PrintTableDiagnostics(tHashTable* pTable)
 {
     STD_ASSERTREL(pTable != NULL);
+    // Added: Release-build guard before diagnostic division and table walk.
+    STD_GUARD_VOID(pTable);
+
+    // Added: Guard against empty table or missing node array to avoid misleading diagnostics and potential crashes.
+    if ( !pTable->numNodes )
+    {
+        return;
+    }
+
     std_g_pHS->pDebugPrint("\nHASHTABLE Diagnostics\n");
     std_g_pHS->pDebugPrint("---------------------\n");
 
@@ -294,7 +317,7 @@ void J3DAPI stdHashtbl_PrintTableDiagnostics(tHashTable* pTable)
 
     std_g_pHS->pDebugPrint(" Maximum Lookups = %d\n", maxLookup);
     std_g_pHS->pDebugPrint(" Filled Indices = %d/%d (%2.2f%%)\n", usedIndices, pTable->numNodes, (double)usedIndices * 100.0f / (double)pTable->numNodes);
-    std_g_pHS->pDebugPrint(" Average Lookup = %2.2f\n", (double)totalNodes / (double)usedIndices);
+    std_g_pHS->pDebugPrint(" Average Lookup = %2.2f\n", usedIndices ? (double)totalNodes / (double)usedIndices : 0.0);   // Fixed: Avoid divide-by-zero when all hash buckets are empty.
     std_g_pHS->pDebugPrint(" Weighted Lookup = %2.2f\n", (double)totalNodes / (double)pTable->numNodes);
     std_g_pHS->pDebugPrint("---------------------\n");
 }

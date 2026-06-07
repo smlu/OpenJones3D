@@ -52,8 +52,8 @@ void stdConffile_InstallHooks(void)
 
 void stdConffile_ResetGlobals(void)
 {
-    memset(&stdConffile_g_entry, 0, sizeof(stdConffile_g_entry));
-    memset(&stdConffile_g_aLine, 0, sizeof(stdConffile_g_aLine));
+    STD_ZEROMEM(&stdConffile_g_entry, sizeof(stdConffile_g_entry));
+    STD_ZEROMEM(&stdConffile_g_aLine, sizeof(stdConffile_g_aLine));
 }
 
 int J3DAPI stdConffile_Open(const char* pFilename)
@@ -63,7 +63,8 @@ int J3DAPI stdConffile_Open(const char* pFilename)
 
 int J3DAPI stdConffile_OpenWrite(const char* pFilename)
 {
-    if ( writeFile ) {
+    if ( writeFile )
+    {
         return 0;
     }
 
@@ -82,12 +83,25 @@ int J3DAPI stdConffile_OpenWrite(const char* pFilename)
 
 int J3DAPI stdConffile_OpenMode(const char* pFilename, const char* openMode)
 {
-    if ( stdConffile_bOpen ) {
+    // Added: Release-build guard for invalid open requests.
+    STD_GUARD(pFilename && openMode, 0);
+
+    bool bWasOpen = stdConffile_bOpen;
+    if ( bWasOpen )
+    {
+        // Fixed: Prevent include stack overflow before pushing the current file state.
+        if ( stackLevel >= STDCONFFILE_STACKSIZE )
+        {
+            STDLOG_ERROR("Conffile include stack overflow while opening '%s'.\n", pFilename);
+            return 0;
+        }
+
         stdConffile_PushStack();
     }
 
     STD_ASSERTREL(openFile == 0);
-    if ( streq(pFilename, "none") ) {
+    if ( streq(pFilename, "none") )
+    {
         openFile = 0;
     }
     else
@@ -100,7 +114,8 @@ int J3DAPI stdConffile_OpenMode(const char* pFilename, const char* openMode)
         #endif
 
             openFile = 0;
-            if ( stdConffile_bOpen ) {
+            if ( bWasOpen )
+            {
                 stdConffile_PopStack();
             }
 
@@ -109,6 +124,25 @@ int J3DAPI stdConffile_OpenMode(const char* pFilename, const char* openMode)
     }
 
     stdConffile_g_aLine = (char*)STDMALLOC(STDCONFFILE_LINESIZE);
+
+    // Fixed: Handle line-buffer allocation failure and restore the previous file state.
+    if ( !stdConffile_g_aLine )
+    {
+        if ( openFile )
+        {
+            std_g_pHS->pFileClose(openFile);
+            openFile = 0;
+        }
+
+        if ( bWasOpen )
+        {
+            stdConffile_PopStack();
+        }
+
+        STDLOG_ERROR("Conffile '%s' could not allocate line buffer.\n", pFilename);
+        return 0;
+    }
+
     STD_STRCPY(stdConffile_pFilename, pFilename);
 
     stdConffile_linenum = 0;
@@ -125,17 +159,20 @@ void stdConffile_Close(void)
     }
 
     STD_ASSERTREL(stdConffile_g_aLine != NULL);
-    if ( openFile ) {
+    if ( openFile )
+    {
         std_g_pHS->pFileClose(openFile);
     }
 
     openFile = 0;
     stdMemory_Free(stdConffile_g_aLine);
 
-    if ( stackLevel ) {
+    if ( stackLevel )
+    {
         stdConffile_PopStack();
     }
-    else {
+    else
+    {
         stdConffile_bOpen = false;
     }
 }
@@ -168,16 +205,36 @@ int J3DAPI stdConffile_Write(const void* pData, size_t size)
 
 int stdConffile_Printf(const char* pFormat, ...)
 {
-    if ( !writeFile || !pFormat ) {
+    if ( !writeFile || !pFormat )
+    {
         return 1;
     }
 
     va_list args;
     va_start(args, pFormat);
-    size_t nWrite = vsnprintf(printBuffer, sizeof(printBuffer), pFormat, args);
+    int nWrite = vsnprintf(printBuffer, sizeof(printBuffer), pFormat, args);
     va_end(args);
 
-    return std_g_pHS->pFileWrite(writeFile, printBuffer, nWrite) != nWrite;
+    // Fixed: vsnprintf returns a negative int on formatting errors.
+    if ( nWrite < 0 )
+    {
+        return 1;
+    }
+
+    size_t size = (size_t)nWrite;
+    // Fixed: Do not pass a formatted size larger than the fixed print buffer to pFileWrite.
+    if ( size >= sizeof(printBuffer) )
+    {
+        STDLOG_WARNING(
+            "stdConffile_Printf: Truncated formatted output for '%s' from %zu to %zu bytes.\n",
+            stdConffile_aWriteFilename,
+            size,
+            sizeof(printBuffer) - 1u
+        );
+        size = sizeof(printBuffer) - 1;
+    }
+
+    return std_g_pHS->pFileWrite(writeFile, printBuffer, size) != size;
 }
 
 int J3DAPI stdConffile_Read(void* pData, size_t size)
@@ -335,9 +392,23 @@ const char* stdConffile_GetWriteFilename(void)
     return stdConffile_aWriteFilename;
 }
 
+// TODO: refactor to return error code instead of void
 void stdConffile_PushStack(void)
 {
     STD_ASSERTREL(stackLevel < STDCONFFILE_STACKSIZE);
+
+    // Added: Guard against stack overflow before pushing the current file state.
+    STD_GUARDEX(stackLevel < STDCONFFILE_STACKSIZE, {
+         STDLOG_ERROR(
+            "stdConffile_PushStack: cannot save current file '%s' at line %zu; include depth %zu reached max stack size %d.\n",
+            stdConffile_pFilename,
+            stdConffile_linenum,
+            stackLevel,
+            STDCONFFILE_STACKSIZE
+        );
+        return;
+        });
+
     STD_ASSERTREL(strlen(stdConffile_pFilename) < STDCONFFILE_FILENAMESIZE); // TODO: What's up with this check? The len should be guarantied when copying to it.
     stdUtil_StringCopy(aFilenameStack[stackLevel], sizeof(stdConffile_pFilename), stdConffile_pFilename);
 
@@ -349,7 +420,7 @@ void stdConffile_PushStack(void)
 
     apBufferStack[stackLevel] = stdConffile_g_aLine;
 
-    memcpy(&aEntryStack[stackLevel], &stdConffile_g_entry, sizeof(StdConffileEntry));
+    STD_COPYMEM(&aEntryStack[stackLevel], &stdConffile_g_entry, sizeof(StdConffileEntry));
     ++stackLevel;
 }
 
@@ -363,6 +434,6 @@ void stdConffile_PopStack(void)
         openFile = openFileStack[stackLevel];
 
         stdConffile_g_aLine = apBufferStack[stackLevel];
-        memcpy(&stdConffile_g_entry, &aEntryStack[stackLevel], sizeof(stdConffile_g_entry));
+        STD_COPYMEM(&stdConffile_g_entry, &aEntryStack[stackLevel], sizeof(stdConffile_g_entry));
     }
 }

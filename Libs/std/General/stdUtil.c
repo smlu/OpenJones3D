@@ -7,6 +7,8 @@
 
 #include <string.h>
 #include <wchar.h>
+#include <ctype.h>
+#include <stdint.h>
 
 void stdUtil_InstallHooks(void)
 {
@@ -42,6 +44,9 @@ char* J3DAPI stdUtil_StringDuplicate(const char* pSource, tHostServices* pHS)
 
 int stdUtil_Format(char* pStr, size_t size, const char* format, ...)
 {
+    // Added: Release-build guard before passing invalid buffers to vsnprintf_s.
+    STD_GUARD(pStr && size && format, -1);
+
     va_list args;
     va_start(args, format);
     int result = vsnprintf_s(pStr, size, size - 1, format, args); // TODO: make conversion to C11 vsnprintf_s
@@ -51,6 +56,9 @@ int stdUtil_Format(char* pStr, size_t size, const char* format, ...)
 
 int stdUtil_WFormat(wchar_t* pStr, size_t size, const wchar_t* format, ...)
 {
+    // Added: Release-build guard before passing invalid buffers to _vsnwprintf_s.
+    STD_GUARD(pStr && size && format, -1);
+
     va_list args;
     va_start(args, format);
     int result = _vsnwprintf_s(pStr, size, size - 1, format, args); // TODO: make conversion to C11 vsnwprintf_s
@@ -163,22 +171,50 @@ void J3DAPI stdUtil_ToAStringEx(char* pString, const wchar_t* pwString, size_t m
 wchar_t* J3DAPI stdUtil_ToWString(const char* pString)
 {
     STD_ASSERTREL(pString != NULL);
+    // Added: Keep release builds from dereferencing a NULL source string.
+    STD_GUARD(pString, NULL);
 
-    wchar_t* pwString = (wchar_t*)STDMALLOC(sizeof(wchar_t) * strlen(pString) + sizeof(wchar_t)); // Note, extra 2 bytes for storing null
+    size_t len = strlen(pString);
+    // Fixed: Avoid allocation-size overflow when converting to wide characters.
+    if ( len > (SIZE_MAX / sizeof(wchar_t)) - 1u )
+    {
+        return NULL;
+    }
+
+    wchar_t* pwString = (wchar_t*)STDMALLOC(sizeof(wchar_t) * (len + 1u)); // Note, extra 2 bytes for storing null
     STD_ASSERTREL(pwString != NULL);
+    // Added: Keep release builds from dereferencing a failed allocation.
+    if ( !pwString )
+    {
+        return NULL;
+    }
 
-    stdUtil_ToWStringEx(pwString, pString, strlen(pString));
-    pwString[strlen(pString)] = 0;
+    stdUtil_ToWStringEx(pwString, pString, len);
+    pwString[len] = 0;
     return pwString;
 }
 
 char* J3DAPI stdUtil_ToAString(const wchar_t* pwString)
 {
     STD_ASSERTREL(pwString != NULL);
+    // Added: Keep release builds from dereferencing a NULL source string.
+    STD_GUARD(pwString, NULL);
+
     size_t len = wcslen(pwString);
+
+    // Fixed: Avoid allocation-size overflow when converting to narrow characters.
+    if ( len == SIZE_MAX )
+    {
+        return NULL;
+    }
 
     char* pString = (char*)STDMALLOC(len + 1); // Note, extra byte for storing null
     STD_ASSERTREL(pString != NULL);
+    // Added: Keep release builds from dereferencing a failed allocation.
+    if ( !pString )
+    {
+        return NULL;
+    }
 
     stdUtil_ToAStringEx(pString, pwString, len);
     pString[wcslen(pwString)] = 0;
@@ -187,24 +223,35 @@ char* J3DAPI stdUtil_ToAString(const wchar_t* pwString)
 
 void J3DAPI stdUtil_ToLower(char* pStr)
 {
+    // Added: Release-build guard before walking the string.
+    STD_GUARD_VOID(pStr);
+
     for ( char* pCur = pStr; *pCur; ++pCur ) {
-        *pCur = (char)tolower(*pCur);
+        *pCur = (char)tolower((unsigned char)*pCur);
     }
 }
 
 void J3DAPI stdUtil_ToUpper(char* pStr)
 {
+    // Added: Release-build guard before walking the string.
+    STD_GUARD_VOID(pStr);
+
     for ( char* pCur = pStr; *pCur; ++pCur ) {
-        *pCur = (char)toupper(*pCur);
+        *pCur = (char)toupper((unsigned char)*pCur);
     }
 }
 
 int J3DAPI stdUtil_StrCmp(const char* str1, const char* str2)
 {
+    // Added: Release-build guard for NULL strings.
+    STD_GUARDEX(str1 && str2,
+        return str1 == str2 ? 0 : (str1 ? 1 : -1);
+    );
+
     while ( 1 )
     {
-        int c1 = tolower(*str1);
-        int c2 = tolower(*str2);
+        int c1 = tolower((unsigned char)*str1);
+        int c2 = tolower((unsigned char)*str2);
         if ( !c1 && !c2 )
         {
             return 0;

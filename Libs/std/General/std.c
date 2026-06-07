@@ -100,27 +100,31 @@ void J3DAPI stdPrintf(tPrintfFunc pfPrint, const char* pFilePath, unsigned int l
         va_list args;
         va_start(args, format);
 
-        size_t fnIdx = 0;
-        bool bFnFound = false;
-        for ( size_t i = 0; pFilePath[i]; ++i )
+        // Fixed: Build the prefix with a literal format instead of using the file path as a format string.
+        const char* pFilename = pFilePath ? stdFileFromPath(pFilePath) : "";
+        int prefixSize = _snprintf_s(aPrintBuffer, sizeof(aPrintBuffer), sizeof(aPrintBuffer) - 1, "%s(%u): ", pFilename, linenum);
+        if ( prefixSize < 0 )
         {
-            if ( pFilePath[i] == '\\' )
+            prefixSize = (int)strnlen_s(aPrintBuffer, sizeof(aPrintBuffer));
+        }
+
+        size_t offset = (size_t)prefixSize;
+        if ( offset >= sizeof(aPrintBuffer) )
+        {
+            offset = sizeof(aPrintBuffer) - 1;
+            aPrintBuffer[offset] = '\0';
+        }
+
+        // Added: Keep release builds from formatting a NULL message or writing past the buffer.
+        if ( format && offset < sizeof(aPrintBuffer) - 1 )
+        {
+            int msgSize = vsnprintf_s(&aPrintBuffer[offset], sizeof(aPrintBuffer) - offset, sizeof(aPrintBuffer) - offset - 1, format, args);
+            if ( msgSize < 0 )
             {
-                bFnFound = true;
-                fnIdx = i;
+                aPrintBuffer[offset] = '\0';
             }
+            aPrintBuffer[sizeof(aPrintBuffer) - 1] = '\0';
         }
-
-        if ( bFnFound )
-        {
-            ++fnIdx;
-        }
-
-        // Format string: <filename>(linenum): format
-        int fnSize = _snprintf(aPrintBuffer, sizeof(aPrintBuffer), &pFilePath[fnIdx]);
-        size_t remain = sizeof(aPrintBuffer) - fnSize;
-        int nWritten = _snprintf(&aPrintBuffer[fnSize], remain, "(%d): ", linenum);
-        vsnprintf_s(&aPrintBuffer[nWritten + fnSize], STD_ARRAYLEN(aPrintBuffer) - (nWritten + fnSize), remain - nWritten, format, args);
         va_end(args);
 
         // Write to output function
@@ -231,13 +235,21 @@ size_t J3DAPI stdFileSize(const char* pFilePath)
 
 int stdFilePrintf(tFileHandle fh, const char* pFormat, ...)
 {
+    STD_GUARD(fh && pFormat, 1);
+
     va_list args;
     va_start(args, pFormat);
     int size = vsnprintf_s(aFilePrintBuffer, sizeof(aFilePrintBuffer), sizeof(aFilePrintBuffer) - 1, pFormat, args);
     va_end(args);
 
-    stdFileWrite(fh, aFilePrintBuffer, size);
-    return 0;
+    // Fixed: vsnprintf_s returns negative on formatting errors/truncation; never pass that as a byte count.
+    if ( size < 0 )
+    {
+        size_t nWrite = strnlen_s(aFilePrintBuffer, sizeof(aFilePrintBuffer));
+        return !nWrite || stdFileWrite(fh, aFilePrintBuffer, nWrite) != nWrite;
+    }
+
+    return stdFileWrite(fh, aFilePrintBuffer, (size_t)size) != (size_t)size;
 }
 
 int J3DAPI stdFileSeek(tFileHandle fh, int offset, int origin)

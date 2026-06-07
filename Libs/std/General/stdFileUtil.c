@@ -39,6 +39,9 @@ time_t FileTimeToUnixTime(const FILETIME* ft)
 
 FindFileData* J3DAPI stdFileUtil_NewFind(const char* path, int mode, const char* pFilter)
 {
+    // Added: Release-build guard before building a search path.
+    STD_GUARD(path, NULL);
+
     FindFileData* pData = (FindFileData*)STDMALLOC(sizeof(FindFileData));
     if ( !pData )
     {
@@ -61,6 +64,12 @@ FindFileData* J3DAPI stdFileUtil_NewFind(const char* path, int mode, const char*
     if ( mode != 3 )
     {
         return pData;
+    }
+
+    if ( !pFilter )
+    {
+        // Added: Treat a NULL mode-3 filter as the same wildcard used by the default modes.
+        pFilter = "*";
     }
 
     if ( *pFilter == '.' )

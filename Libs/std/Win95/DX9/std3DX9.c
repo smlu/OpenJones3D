@@ -563,7 +563,6 @@ static int std3D_CopyVertexDataToBuffer(const LPD3DTLVERTEX aVerts, size_t numVe
         std3D_ibOffset = 0;
     }
 
-
     // Copy vertices to vertex buffer at current offset
     size_t vbOffsetBytes   = std3D_vbOffset * sizeof(D3DTLVERTEX);
     size_t vbCopySizeBytes = numVerts * sizeof(D3DTLVERTEX);
@@ -901,7 +900,6 @@ void J3DAPI std3D_SetRenderState(Std3DRenderState rdflags)
                 else
                 {
                     IDirect3DDevice9_SetRenderState(std3D_pD3Device, D3DRS_FOGENABLE, TRUE);
-
                 }
             }
             else
@@ -1318,7 +1316,7 @@ void J3DAPI std3D_UpdateFrameCount(tSystemTexture* pTexture)
     std3D_RemoveTextureFromCacheList(pTexture);
     std3D_AddTextureToCacheList(pTexture);
     pTexture->frameNum = std3D_frameCount; // Fixed: Moved frameNum update to the end of the function.
-                                           //        Originally it was updated at the beginning of the function, 
+                                           //        Originally it was updated at the beginning of the function,
                                            //        and the frameNum was immediately invalidated by call to std3D_RemoveTextureFromCacheList.
 }
 
@@ -2360,7 +2358,7 @@ bool std3D_CreateWhiteTexture(void)
         return false;
     }
 
-      // Write white pixel - IMPORTANT: Check your format!
+    // Write white pixel - IMPORTANT: Check your format!
     // D3DFMT_A8R8G8B8 is ARGB order in memory
     uint32_t* pPixel = (uint32_t*)lockedRect.pBits;
     *pPixel = 0xFFFFFFFF;  // A=FF, R=FF, G=FF, B=FF

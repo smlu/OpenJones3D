@@ -6,6 +6,8 @@
 #include <j3dcore/j3dhook.h>
 #include <std/RTI/symbols.h>
 
+#include <limits.h>
+
 // Helper macros for table lookups
 #define SIN_TABLE_SIZE STD_ARRAYLEN(stdMath_aSinTable)
 static_assert(SIN_TABLE_SIZE == 4096, "SIN_TABLE_SIZE == 4096");
@@ -20,6 +22,27 @@ static_assert(TAN_TABLE_SIZE == 4096, "TAN_TABLE_SIZE == 4096");
 #define TAN_TABLE_LAST_IDX (TAN_TABLE_SIZE - 1)
 #define TAN_TABLE_GET(idx) stdMath_aTanTable[(idx) % TAN_TABLE_SIZE]
 #define TAN_TABLE_GET_REVERSE(idx) stdMath_aTanTable[TAN_TABLE_LAST_IDX - ((idx) % TAN_TABLE_SIZE)]
+
+static float stdMath_ClampArcTrigInput(float num)
+{
+    // Added: Preserve NaN inputs while clamping small out-of-range values before sqrt.
+    if ( isnan(num) )
+    {
+        return NAN;
+    }
+
+    if ( num > 1.0f )
+    {
+        return 1.0f;
+    }
+
+    if ( num < -1.0f )
+    {
+        return -1.0f;
+    }
+
+    return num;
+}
 
 void stdMath_InstallHooks(void)
 {
@@ -40,11 +63,29 @@ void stdMath_ResetGlobals(void)
 
 float J3DAPI stdMath_FlexPower(float base, int exponent)
 {
-    float ret = base;
-    for ( int i = 0; i < exponent - 1; ++i )
+    // Fixed: base^0 is 1; the original loop returned base for exponent 0.
+    if ( exponent == 0 )
+    {
+        return 1.0f;
+    }
+
+    // Fixed: Support negative exponents without overflowing INT_MIN.
+    bool bNegativeExponent = exponent < 0;
+    unsigned int count = bNegativeExponent
+        ? (unsigned int)(-(exponent + 1)) + 1u
+        : (unsigned int)exponent;
+
+    float ret = 1.0f;
+    for ( unsigned int i = 0; i < count; ++i )
     {
         ret = ret * base;
     }
+
+    if ( bNegativeExponent )
+    {
+        return ret != 0.0f ? 1.0f / ret : INFINITY;
+    }
+
     return ret;
 }
 
@@ -54,6 +95,12 @@ float stdMath_NormalizeAngle(float angle)
     if ( isnan(angle) )
     {
         return angle;
+    }
+
+    // Fixed: Reject infinities before floor() normalization.
+    if ( isinf(angle) )
+    {
+        return NAN;
     }
 
     // Fixed: Use double to fix float precision errors
@@ -149,7 +196,6 @@ void stdMath_SinCos2(float angle, float* pSinOut, float* pCosOut)
     v6 = a1 - floorf(a1);
     quantized = (int32_t)a1;
 
-
     quantized_plus1 = quantized + 1;
     switch ( v8 )
     {
@@ -216,8 +262,19 @@ void stdMath_SinCos2(float angle, float* pSinOut, float* pCosOut)
 
 void stdMath_SinCos(float angle, float* pSinOut, float* pCosOut)
 {
-    // Added
+    // Added: Guard for optional output pointers.
+    STD_GUARD_VOID(pSinOut != NULL && pCosOut != NULL);
+
+    // Added: Preserve NaN inputs while rejecting them before table-index math.
     if ( isnan(angle) )
+    {
+        *pSinOut = NAN;
+        *pCosOut = NAN;
+        return;
+    }
+
+    // Fixed: Reject infinities before table-index math.
+    if ( isinf(angle) )
     {
         *pSinOut = NAN;
         *pCosOut = NAN;
@@ -311,17 +368,17 @@ void stdMath_SinCos(float angle, float* pSinOut, float* pCosOut)
     *pSinOut = (sinValue - sinLookup) * fracPart + sinLookup;
     *pCosOut = (cosValue - cosLookup) * fracPart + cosLookup;
 
-    // TEST scope remove 
+    // TEST scope remove
 #ifdef J3D_DEBUG
     float sn, css;
-    stdMath_SinCos2(angle, &sn, &css); // TODO: remove 
+    stdMath_SinCos2(angle, &sn, &css); // TODO: remove
     if ( sn != *pSinOut || css != *pCosOut )
     {
-        STDLOG_ERROR("SinCos result differ from original for angle: %.f. sin=%.f osin=%.f cos=%.f ocos=%.f", angle, pSinOut, sn, pCosOut, css);
+        STDLOG_ERROR("SinCos result differ from original for angle: %.f. sin=%.f osin=%.f cos=%.f ocos=%.f", angle, *pSinOut, sn, *pCosOut, css);
     }
     STD_ASSERT(sn == *pSinOut && css == *pCosOut);
 #endif
-// TEST scope remove 
+// TEST scope remove
 }
 
 // TODO: Remove
@@ -406,11 +463,20 @@ float stdMath_Tan2(float a1)
 }
 // TODO: Remove
 
-
-
-
 float J3DAPI stdMath_Tan(float angle)
 {
+    // Added: Preserve the original NaN guard before table-index math.
+    if ( isnan(angle) )
+    {
+        return NAN;
+    }
+
+    // Fixed: Reject infinities before table-index math.
+    if ( isinf(angle) )
+    {
+        return NAN;
+    }
+
     float normAngle = stdMath_NormalizeAngle(angle);
 
     int32_t quadrant = 0;
@@ -486,6 +552,9 @@ float J3DAPI stdMath_Tan(float angle)
 
 float J3DAPI stdMath_ArcSin1(float num)
 {
+    // Fixed: Clamp input before sqrt(1 - x*x) to avoid NaN from tiny overshoots.
+    num = stdMath_ClampArcTrigInput(num);
+
     double asinval;
     double absNum = fabs(num);
     if ( absNum <= M_SQRT1_2 )
@@ -503,6 +572,9 @@ float J3DAPI stdMath_ArcSin1(float num)
 
 float J3DAPI stdMath_ArcSin2(float num)
 {
+    // Fixed: Clamp input before sqrt(1 - x*x) to avoid NaN from tiny overshoots.
+    num = stdMath_ClampArcTrigInput(num);
+
     double asinval;
     double absnum = fabs(num);
     if ( absnum <= M_SQRT1_2 )
@@ -522,6 +594,9 @@ float J3DAPI stdMath_ArcSin2(float num)
 
 float J3DAPI stdMath_ArcSin3(float num)
 {
+    // Fixed: Clamp input before sqrt(1 - x*x) to avoid NaN from tiny overshoots.
+    num = stdMath_ClampArcTrigInput(num);
+
     double asinval = fabs(num);
     if ( asinval <= M_SQRT1_2 )
     {

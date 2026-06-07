@@ -231,6 +231,9 @@ uint32_t J3DAPI stdUtil_CalcChecksum(const uint8_t* pData, size_t dataSize, uint
  */
 inline bool J3DAPI stdUtil_StringCopy(char* pDest, size_t destSize, const char* pSrc)
 {
+    // Added: Release-build guard before calculating destSize - 1.
+    STD_GUARD(pDest && pSrc && destSize, false);
+
     return strncpy_s(pDest, destSize, pSrc, destSize - 1) == 0;
 }
 
@@ -249,6 +252,9 @@ inline bool J3DAPI stdUtil_StringCopy(char* pDest, size_t destSize, const char* 
  */
 inline bool J3DAPI stdUtil_WStringCopy(wchar_t* pDest, size_t destSize, const wchar_t* pSrc)
 {
+    // Added: Release-build guard before calculating destSize - 1.
+    STD_GUARD(pDest && pSrc && destSize, false);
+
     return wcsncpy_s(pDest, destSize, pSrc, destSize - 1) == 0;
 }
 
@@ -268,6 +274,9 @@ inline bool J3DAPI stdUtil_WStringCopy(wchar_t* pDest, size_t destSize, const wc
  */
 inline bool J3DAPI stdUtil_StringNumCopy(char* pDest, size_t destSize, const char* pSrc, size_t num)
 {
+    // Added: Release-build guard before calculating destSize - 1.
+    STD_GUARD(pDest && pSrc && destSize, false);
+
     num = J3DMIN(num, destSize - 1);
     return strncpy_s(pDest, destSize, pSrc, num) == 0;
 }
@@ -288,6 +297,9 @@ inline bool J3DAPI stdUtil_StringNumCopy(char* pDest, size_t destSize, const cha
  */
 inline bool J3DAPI stdUtil_WStringNumCopy(wchar_t* pDest, size_t destSize, const wchar_t* pSrc, size_t num)
 {
+    // Added: Release-build guard before calculating destSize - 1.
+    STD_GUARD(pDest && pSrc && destSize, false);
+
     num = J3DMIN(num, destSize - 1);
     return wcsncpy_s(pDest, destSize, pSrc, num) == 0;
 }
@@ -306,6 +318,9 @@ inline bool J3DAPI stdUtil_WStringNumCopy(wchar_t* pDest, size_t destSize, const
  */
 inline bool J3DAPI stdUtil_StringCat(char* pDst, size_t destSize, const char* pSrc)
 {
+    // Added: Release-build guard before calculating remaining capacity.
+    STD_GUARD(pDst && pSrc && destSize, false);
+
     size_t dstLen = strnlen_s(pDst, destSize);
     if ( dstLen >= destSize )
     {
@@ -330,6 +345,9 @@ inline bool J3DAPI stdUtil_StringCat(char* pDst, size_t destSize, const char* pS
  */
 inline bool J3DAPI stdUtil_StringNumCat(char* pDst, size_t destSize, const char* pSrc, size_t num)
 {
+    // Added: Release-build guard before calculating remaining capacity.
+    STD_GUARD(pDst && pSrc && destSize, false);
+
     size_t dstLen = strnlen_s(pDst, destSize);
     if ( dstLen >= destSize )
     {
