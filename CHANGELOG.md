@@ -206,6 +206,12 @@
   - Fixed puppet DSS restore in `sithDSS` to validate serialized arm modes, move modes, track counts, major modes, and submodes before indexing puppet mode tables (6fa2af9)
   - Hardened NDY sector and surface loading by validating serialized sector vertices, surface ranges, adjoins, face vertices, and texture vertices before pointer conversion.  (73819a9)
   - Initialized Sith intersection hit type defensively before collision result handling. (b4cc752)
+  - Fixed fixed-size path extension handling in `jonesConfig`, `JonesMain`, `sithMain`, and `sithModel`. (9a9deab)  
+    Savegame, static-level, level lookup, autosave, and hi-poly model paths now use bounded extension replacement when adding `.nds`, `.cnd`, `.ndy`, and `.3do` extensions.
+  - Fixed `JonesFile_FileSeek` return value for GOB-backed files. (ec214c1)  
+    `stdGob_FileSeek` returns `1` on success, but the Jones file host service expects `0` on success.
+  - Fixed DSS puppet status restore to bounds-check puppet submodes before indexing the puppet mode table. (3338212)  
+    This prevents malformed or invalid puppet status messages from reading outside `pPuppetClass->aModes`.
 
 ### Graphics:
   - Fixed an issue where active textures used in the current render frame were being removed from the cache prematurely in low VRAM situations (f37ecb7)
