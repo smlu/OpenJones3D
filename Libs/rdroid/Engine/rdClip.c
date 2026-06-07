@@ -3917,7 +3917,7 @@ int J3DAPI rdClip_QClipFaceT(rdClipFrustum* pFrustrum, const rdPrimit3* pSrc, rd
         {
             pDest->aVertices[i] = pSrc->aVertices[pSrc->aVertIdxs[i]];
 
-            pDest->aTexVertices[i], pSrc->aTexVertices[pSrc->aTexVertIdxs[i]];
+            pDest->aTexVertices[i] = pSrc->aTexVertices[pSrc->aTexVertIdxs[i]];
             rdVector_Add2Acc(&pDest->aTexVertices[i], pTVOffset);
 
             rdVector_Add4(&pDest->aVertLights[i], &pSrc->aVertLights[pSrc->aVertIdxs[i]], &pSrc->aVertIntensities[i]);
