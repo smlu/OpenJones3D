@@ -396,7 +396,8 @@ void sithOpenPostProcess(void)
 
         char aFilename[128];
         STD_FORMAT(aFilename, "%s%s", pSaveNamePrefix, pWorldName);
-        stdFnames_ChangeExt(aFilename, "nds");
+        // Fixed: Use bounded extension replacement for the fixed-size path buffer.
+        stdFnames_ChangeExtEx(aFilename, STD_ARRAYLEN(aFilename), "nds");
 
         const char* pSaveGameDir = sithGetSaveGamesDir();
         char aFilepath[128];

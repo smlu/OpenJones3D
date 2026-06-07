@@ -257,17 +257,20 @@ rdModel3* J3DAPI sithModel_Load(const char* pName, int bSkipDefault)
     if ( sithModel_bHiPoly )
     {
         stdFnames_MakePath(aPath, STD_ARRAYLEN(aPath), "hi3do", pName);
-        stdFnames_ChangeExt(aPath, "3do");
+        // Fixed: Use bounded extension replacement for the fixed-size path buffer.
+        stdFnames_ChangeExtEx(aPath, STD_ARRAYLEN(aPath), "3do");
         if ( !stdUtil_FileExists(aPath) )
         {
             stdFnames_MakePath(aPath, STD_ARRAYLEN(aPath), "3do", pName);
-            stdFnames_ChangeExt(aPath, "3do");
+            // Fixed: Use bounded extension replacement for the fixed-size path buffer.
+            stdFnames_ChangeExtEx(aPath, STD_ARRAYLEN(aPath), "3do");
         }
     }
     else
     {
         stdFnames_MakePath(aPath, STD_ARRAYLEN(aPath), "3do", pName);
-        stdFnames_ChangeExt(aPath, "3do");
+        // Fixed: Use bounded extension replacement for the fixed-size path buffer.
+        stdFnames_ChangeExtEx(aPath, STD_ARRAYLEN(aPath), "3do");
     }
 
     pModel = &pWorld->aModels[pWorld->numModels];

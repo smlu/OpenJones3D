@@ -3705,7 +3705,8 @@ int J3DAPI jonesConfig_GetSaveGameFilePath(HWND hWnd, char* pOutFilePath)
         return 2;
     }
 
-    stdFnames_ChangeExt(ofn.lpstrFile, "nds");
+    // Fixed: Use the OPENFILENAME buffer size when adding the savegame extension.
+    stdFnames_ChangeExtEx(ofn.lpstrFile, ofn.nMaxFile, "nds");
     stdUtil_StringCopy(pOutFilePath, JONESCONFIG_GAMESAVE_FILEPATHSIZE, ofn.lpstrFile);
     return 1;
 }
@@ -3832,7 +3833,8 @@ UINT_PTR CALLBACK jonesConfig_SaveGameDialogHookProc(HWND hDlg, UINT uMsg, WPARA
                         const char* pQuickSavePrefix = sithGetQuickSaveFilePrefix();
                         STD_FORMAT(aQuckSaveFilename, "%s.%s", pQuickSavePrefix, pOfNotify->lpOFN->lpstrDefExt);
 
-                        stdFnames_ChangeExt(aFilename, pOfNotify->lpOFN->lpstrDefExt); // Fixed: Added .nds extension to filename here to make sure filename "QUICKSAVE" without ".nds" extension doesn't slip over
+                        // Fixed: Use bounded extension replacement for the fixed-size path buffer.
+                        stdFnames_ChangeExtEx(aFilename, STD_ARRAYLEN(aFilename), pOfNotify->lpOFN->lpstrDefExt); // Fixed: Added .nds extension to filename here to make sure filename "QUICKSAVE" without ".nds" extension doesn't slip over
                         if ( streqi(aFilename, aQuckSaveFilename) )
                         {
                             bValidFile = false;
@@ -3844,7 +3846,8 @@ UINT_PTR CALLBACK jonesConfig_SaveGameDialogHookProc(HWND hDlg, UINT uMsg, WPARA
                         if ( strlen(aPath) )
                         {
                             STD_STRCPY(pData->aFilePath, aFilename);
-                            stdFnames_ChangeExt(pData->aFilePath, pOfNotify->lpOFN->lpstrDefExt);
+                            // Fixed: Use bounded extension replacement for the fixed-size path buffer.
+                            stdFnames_ChangeExtEx(pData->aFilePath, STD_ARRAYLEN(pData->aFilePath), pOfNotify->lpOFN->lpstrDefExt);
 
                             if ( jonesConfig_ShowOverwriteSaveGameDlg(hDlg, pData->aFilePath) == 1 )
                             {
@@ -4176,12 +4179,14 @@ int J3DAPI jonesConfig_GetLoadGameFilePath(HWND hWnd, char* pDestNdsPath)
 
     if ( bHasFilePath )
     {
-        stdFnames_ChangeExt(ofn.lpstrFile, "nds");
+        // Fixed: Use the OPENFILENAME buffer size when adding the savegame extension.
+        stdFnames_ChangeExtEx(ofn.lpstrFile, ofn.nMaxFile, "nds");
         stdUtil_StringCopy(pDestNdsPath, JONESCONFIG_GAMESAVE_FILEPATHSIZE, ofn.lpstrFile);
     }
     else
     {
-        stdFnames_ChangeExt(data.aFilePath, "nds");
+        // Fixed: Use bounded extension replacement for the fixed-size path buffer.
+        stdFnames_ChangeExtEx(data.aFilePath, STD_ARRAYLEN(data.aFilePath), "nds");
         stdUtil_StringCopy(pDestNdsPath, JONESCONFIG_GAMESAVE_FILEPATHSIZE, data.aFilePath);
     }
 
@@ -8448,7 +8453,8 @@ void J3DAPI jonesConfig_LoadGameGetLastSavedGamePath(char* pPath, unsigned int s
             pNdsLevenFilename = sithGetCurrentWorldSaveName();
             pFilePrefix = sithGetAutoSaveFilePrefix();
             STD_FORMAT(aPath, "%s%s", pFilePrefix, pNdsLevenFilename);
-            stdFnames_ChangeExt(aPath, "nds");
+            // Fixed: Use bounded extension replacement for the fixed-size path buffer.
+            stdFnames_ChangeExtEx(aPath, STD_ARRAYLEN(aPath), "nds");
             pSaveGamesDir = sithGetSaveGamesDir();
             SearchPath(pSaveGamesDir, aPath, 0, 128u, pPath, &pFilePart);
         }
@@ -8467,7 +8473,8 @@ int J3DAPI jonesConfig_GameOverDialogInit(HWND hDlg, int a2, GameOverDialogData*
 
         char aFilename[128] = { 0 };
         STD_FORMAT(aFilename, "%s%s", pFilePrefix, pNdsFilename);
-        stdFnames_ChangeExt(aFilename, "nds");
+        // Fixed: Use bounded extension replacement for the fixed-size path buffer.
+        stdFnames_ChangeExtEx(aFilename, STD_ARRAYLEN(aFilename), "nds");
 
         const char* pDirPath = sithGetSaveGamesDir();
         LPSTR pFilePart;

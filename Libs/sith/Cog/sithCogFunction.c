@@ -38,9 +38,7 @@
 #include <std/Win95/stdComm.h>
 #include <stdbool.h>
 
-
 static bool bPrintEnabled = false; // Added
-
 
 void J3DAPI sithCogFunction_EnablePrint(bool bEnable)
 {
@@ -593,7 +591,6 @@ void J3DAPI sithCogFunction_VectorRotate(SithCog* pCog)
 
 void J3DAPI sithCogFunction_VectorTransformToOrient(SithCog* pCog)
 {
-
     rdVector3 vec;
     int bVec = sithCogExec_PopVector(pCog, &vec);
     SithThing* pThing = sithCogExec_PopThing(pCog);
@@ -1494,7 +1491,8 @@ void J3DAPI sithCogFunction_AutoSavegame(SithCog* pCog)
     const char* pPrefix   = sithGetAutoSaveFilePrefix();
     STD_FORMAT(aSavePath, "%s%s", pPrefix, pFilename);
 
-    stdFnames_ChangeExt(aSavePath, "nds");
+    // Fixed: Use bounded extension replacement for the fixed-size path buffer.
+    stdFnames_ChangeExtEx(aSavePath, STD_ARRAYLEN(aSavePath), "nds");
     sithGamesave_Save(aSavePath, /*bOverride=*/1);
 }
 
@@ -2382,6 +2380,4 @@ void sithCogFunction_InstallHooks(void)
 }
 
 void sithCogFunction_ResetGlobals(void)
-{
-
-}
+{}

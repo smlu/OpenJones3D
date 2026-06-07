@@ -646,11 +646,13 @@ int J3DAPI JonesMain_Startup(const char* lpCmdLine)
     // Load Static level
     char aStaticFilename[64];
     STD_STRCPY(aStaticFilename, "Jones3DSTATIC");
-    stdFnames_ChangeExt(aStaticFilename, "cnd");
+    // Fixed: Use bounded extension replacement for the fixed-size path buffer.
+    stdFnames_ChangeExtEx(aStaticFilename, STD_ARRAYLEN(aStaticFilename), "cnd");
 
     if ( sithOpenStatic(aStaticFilename) )
     {
-        stdFnames_ChangeExt(aStaticFilename, "ndy");
+        // Fixed: Use bounded extension replacement for the fixed-size path buffer.
+        stdFnames_ChangeExtEx(aStaticFilename, STD_ARRAYLEN(aStaticFilename), "ndy");
         if ( sithOpenStatic(aStaticFilename) )
         {
             // Error loading static level
@@ -1529,11 +1531,13 @@ int J3DAPI JonesMain_EnsureLevelFileEx(const char* pFilename, bool bFindAll, cha
         const char* pCurExt = stdFnames_FindExt(aPath);
         if ( streqi(pCurExt, "cnd") )
         {
-            stdFnames_ChangeExt(aPath, "ndy");
+            // Fixed: Use bounded extension replacement for the fixed-size path buffer.
+            stdFnames_ChangeExtEx(aPath, STD_ARRAYLEN(aPath), "ndy");
         }
         else
         {
-            stdFnames_ChangeExt(aPath, "cnd");
+            // Fixed: Use bounded extension replacement for the fixed-size path buffer.
+            stdFnames_ChangeExtEx(aPath, STD_ARRAYLEN(aPath), "cnd");
         }
 
         if ( JonesFile_FileExists(aPath) )
@@ -1598,7 +1602,8 @@ int J3DAPI JonesMain_Restore(const char* pNdsFilePath)
     char aQSaveFilename[128] = { 0 };
     STD_FORMAT(aQSaveFilename, "%s%s", pFilePrefix, pSaveName);
 
-    stdFnames_ChangeExt(aQSaveFilename, "nds");
+    // Fixed: Use bounded extension replacement for the fixed-size path buffer.
+    stdFnames_ChangeExtEx(aQSaveFilename, STD_ARRAYLEN(aQSaveFilename), "nds");
 
     // Open load screen
     if ( JonesMain_curLevelNum != 1 || streq(pNdsFilename, aQSaveFilename) )
