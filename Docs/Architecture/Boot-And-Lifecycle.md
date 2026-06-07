@@ -11,6 +11,7 @@ Primary source files:
 - [`Libs/std/General/stdPlatform.c`](../../Libs/std/General/stdPlatform.c)
 - [`Libs/rdroid/Main/rdroid.c`](../../Libs/rdroid/Main/rdroid.c)
 - [`Libs/sith/Main/sithMain.c`](../../Libs/sith/Main/sithMain.c)
+- [`Libs/sith/Dss/sithGamesave.c`](../../Libs/sith/Dss/sithGamesave.c)
 
 ## Process Entry
 
@@ -163,6 +164,14 @@ Finally, [`sithOpenPostProcess()`](../../Libs/sith/Main/sithMain.c#L368) complet
 - resetting FX state
 
 This is the moment the world stops being "loaded data" and becomes an active simulation.
+
+## Savegame Restore Flow
+
+Savegame restore is a world reload followed by DSS state replay, not a direct in-place patch of the currently loaded level.
+
+The restore path reads an `NdsHeader`, requires the current savegame file version (`13` in the current implementation), closes the current world if one is open, and then calls `sithOpenNormal()` for the level filename stored in the header. Only after that fresh level load does it copy header-level state such as game statistics, `global0` through `global15`, and local-player number, then process the serialized DSS blocks from the file.
+
+That ordering matters for COG compatibility: COG scripts have already been parsed and their instance symbol tables already exist before `SITHDSS_COGSTATE` blocks restore the saved symbol values. A mismatch in the parsed COG tables is therefore visible during DSS replay, even if the later camera, thing, or cutscene code is where the bad value first causes a runtime error.
 
 ## The Outer Frame Loop
 

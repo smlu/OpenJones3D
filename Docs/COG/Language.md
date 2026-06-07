@@ -251,6 +251,16 @@ If the message name does not exist in the global symbol table, parsing fails.
 
 Even though the language is case-insensitive, consistent naming still helps readability. A practical convention is PascalCase for verbs and camelCase for variables.
 
+### Parser State And Save Compatibility
+
+Name resolution is part of the saved-state contract. If an identifier is missing from the global table, the parser creates a local float symbol for it; if the same identifier exists globally, no local symbol is created. That means the global symbol table can change the script-local symbol count and symbol order even when the script text is unchanged.
+
+The risky case is not simply "a new function exists." It is when an existing retail script already contains an identifier that retail did not know about, and a later build registers that same name globally. For example, if a retail script such as `INF_Introscene.cog` contained an undefined `DebugPrint` identifier, the retail parser would create a local float placeholder named `debugprint`. If a later OpenJones3D build registers `debugprint` as a real global host function, that placeholder is no longer created. Every local symbol after that point moves one slot earlier.
+
+Each loaded cog instance duplicates the parsed script symbol table. Savegame COG state later restores symbol values by the current table order and count, not by symbol name. A table-layout mismatch can therefore shift the DSS value stream and turn otherwise valid saved integers into wrong references.
+
+Message declarations are also global-table dependent. `message <name>` looks up the message name globally, fails if it is not registered, and then creates the script-local label used by the handler table.
+
 ## Literals And Expressions
 
 The current grammar supports:
@@ -320,6 +330,8 @@ Every loaded cog instance has:
 
 Script files are loaded from `cog\<name>`. Each runtime cog instance duplicates the script's symbol table, so placement values, message params, heap contents, and suspended execution state belong to the instance rather than the shared script definition.
 
+The transient VM operand stack is not part of the normal script source model. Savegame COG state preserves suspended execution fields and symbol values, but the reliable identity of those values comes from reparsing the same script into the same symbol table layout before the DSS state is applied.
+
 ## Placement, Linking, And Save Data
 
 Placed world cogs store only their non-`local` symbol refs in placement/save data.
@@ -327,6 +339,8 @@ Placed world cogs store only their non-`local` symbol refs in placement/save dat
 - non-`local` refs are read from placement text/binary and re-resolved when the world opens
 - `local` refs stay inside the duplicated runtime symbol table and are not restored from world placement data
 - only non-class cogs are written to the world cog-placement/save lists
+
+Full savegame restore is stricter than ordinary placement loading. `SITHDSS_COGSTATE` serializes each cog's current local symbol types followed by their values in table order. It does not include the symbol names, so the parsed script table must match the table that existed when the save was written.
 
 For linked `thing`, `sector`, and `surface` refs:
 

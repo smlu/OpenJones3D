@@ -57,6 +57,8 @@ The current world is the active gameplay level. It contains the current sectors,
 
 This split is important architecturally because many APIs must be explicit about which resource namespace they are addressing. Static-world indices are commonly masked or tagged differently from current-world indices so the engine can tell them apart.
 
+The static-resource tag is the high bit used by helpers such as `SITHWORLD_STATICINDEX()`. For COG lookups, [`sithCog_GetCogByIndex()`](../../Libs/sith/Cog/sithCog.c#L1285) tests that bit to choose the static world and then clears it before indexing the world's cog array. Script-facing [`GetCogByIndex()`](../COG/Functions-System.md#getcogbyindex) always applies that static tag before lookup, so it targets static cogs rather than current-level cogs.
+
 ## Text NDY Loading Versus Binary CND Loading
 
 [`sithWorld_Load()`](../../Libs/sith/World/sithWorld.c#L351) accepts either text or binary worlds:

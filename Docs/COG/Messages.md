@@ -24,6 +24,8 @@ OpenJones3D registers 47 numeric message ids plus one extra alias:
 - `activate`
 - `activated` (alias of `activate`)
 
+`message <name>` declarations resolve through the global COG symbol table during parsing. If a message name is not registered globally, the parser rejects that handler declaration instead of creating an unknown local symbol.
+
 ## Message Table
 
 | Id | Name | Notes |

@@ -246,6 +246,25 @@ This path serializes:
 
 For thing references it sends GUIDs rather than transient indices, then resolves them back to live indices on the receiving side. That is crucial because thing indices are only stable within a local world instance.
 
+The destination cog field in this replicated-message form is only 16 bits. A null destination is written as `-1`, which becomes `0xFFFF` on the wire. Because static resource indices also use the high bit, that value is also the encoded form of static cog index `32767`; normal resource counts stay far below that, but the boundary is worth remembering when debugging signed/unsigned cog references.
+
+### Savegame COG State Blocks
+
+Savegames reuse the DSS/file-message path for world state. COG state is carried by `SITHDSS_COGSTATE`, handled by [`sithDSSCog_SyncCogState()`](../../Libs/sith/Dss/sithDSSCog.c#L155) and [`sithDSSCog_ProcessCogState()`](../../Libs/sith/Dss/sithDSSCog.c#L249).
+
+The COG state block stores:
+
+- 32-bit cog index
+- status and flags
+- suspended execution context when the cog is waiting or sleeping
+- pulse and timer fields when the corresponding flags are set
+- one type byte for each symbol in the current cog instance symbol table
+- one value payload for each symbol in the same table order
+
+The important constraint is that symbol values are restored positionally. The block does not carry symbol names or a symbol count from the saved file; the loader uses the currently parsed cog's `numUsedSymbols` to decide how many type bytes and values to consume. If the current parser produces a different local symbol table than the original executable did, every following value in the block can be read at the wrong offset.
+
+One practical diagnostic is a reference index that looks byte-shifted. For example, values such as `16896` (`0x4200`) or `17408` (`0x4400`) can be consistent with a valid small thing index being read one byte out of phase from the DSS value stream.
+
 ## How The Systems Fit Together
 
 The simplest way to think about the overall event architecture is:

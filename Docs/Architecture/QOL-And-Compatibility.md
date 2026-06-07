@@ -74,6 +74,16 @@ The following are some of the most important architecture-level or runtime-level
 | SW mixer falloff default | linear | logarithmic under `QOL` |
 | CND external materials/keyframes | disabled by default | enabled by default under `QOL` |
 
+## COG Parser Compatibility
+
+COG host-function and message registration is compatibility-sensitive. The global COG symbol table is used while scripts are parsed, not only when bytecode calls a host function at runtime.
+
+If a source identifier is not found globally or locally, the parser creates a new local float symbol. If a later build registers that same name globally, the local placeholder is no longer created. For fresh play this may be harmless, but for savegame restore it can change the local symbol-table layout that `SITHDSS_COGSTATE` expects.
+
+As a concrete example, suppose a retail-era INF script contains an undefined `DebugPrint` identifier. Retail treats it as an unknown name and gives the script a local float placeholder. If a newer build registers `debugprint` globally, the same source now binds to the global function symbol instead. That removes one local slot from the parsed script table, so an old savegame can replay its COG symbol values into the wrong symbols.
+
+This is one of the places where a small scripting extension can have a larger compatibility effect than it first appears to have. The savegame issue usually surfaces later as invalid object references or cutscene/camera failures, while the root cause may be the earlier parse result.
+
 ## BFS Versus Legacy DFS-Like Sector Collection
 
 This is one of the most important render-architecture changes.

@@ -351,6 +351,8 @@ Returns:
 Notes:
 - This verb looks up cogs in the static resource set rather than the current level world.
 - In practice this means the lookup targets the static `Jones3DStatic` resources such as `jones3dStatic.cnd` / `jones3dStatic.ndy`.
+- The script argument is an integer, but the wrapper tags it with the static-resource index bit before calling the engine lookup helper.
+- The replicated DSS COG-message path stores the destination cog field in 16 bits. `0xFFFF` is therefore ambiguous at the serialization boundary: it is the 16-bit form of `-1`, but it also decodes as static index `32767` if enough static cogs exist. COG state synchronization uses a 32-bit cog index.
 
 
 #### SendMessage
@@ -1004,6 +1006,8 @@ Returns:
 - Model reference returned by the engine.
 
 ### Printing And Debugging
+
+The print/debug helpers below are registered as ordinary global COG symbols in the current implementation. Some are diagnostic by intent, but parser name resolution treats them the same way as gameplay-facing host functions.
 
 
 #### EnablePrint
@@ -2005,6 +2009,7 @@ Parameters:
 
 Notes:
 - When used on the cinema camera while position interpolation is active, the wrapper snaps the camera position to the previous primary focus before switching focus.
+- Invalid camera or thing references are rejected before the camera is updated. During savegame debugging, very large or byte-shifted thing indices reported here are usually evidence of corrupted upstream COG state rather than a camera-specific failure.
 
 
 #### GetPrimaryFocus

@@ -40,6 +40,7 @@ The host-function pages list each registered verb together with a PascalCase scr
 - COG source is effectively case-insensitive in the current implementation: the config reader lowercases script lines and the lexer lowercases identifiers before lookup.
 - COG function calls are written in normal source order, but the runtime pops arguments from right to left.
 - Both current-world cogs and static-world cogs participate in broadcast processing.
+- Parsed symbol-table layout is savegame-sensitive. Savegame COG state restores values positionally, so global symbol-table differences can change whether an identifier becomes a local placeholder and can make old COG state deserialize into the wrong symbols.
 
 ## Registered Host-Function Groups
 

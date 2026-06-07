@@ -5,7 +5,9 @@ This page documents three subsystems that interact heavily with the simulation b
 Primary source files:
 
 - [`Libs/sith/Cog/sithCog.c`](../../Libs/sith/Cog/sithCog.c)
+- [`Libs/sith/Cog/sithCogParse.c`](../../Libs/sith/Cog/sithCogParse.c)
 - [`Libs/sith/Cog/sithCogExec.c`](../../Libs/sith/Cog/sithCogExec.c)
+- [`Libs/sith/Dss/sithDSSCog.c`](../../Libs/sith/Dss/sithDSSCog.c)
 - [`Libs/sith/AI/sithAI.c`](../../Libs/sith/AI/sithAI.c)
 - [`Libs/sith/AI/sithAIAwareness.c`](../../Libs/sith/AI/sithAIAwareness.c)
 - [`Libs/sith/AI/sithAIClass.c`](../../Libs/sith/AI/sithAIClass.c)
@@ -48,6 +50,19 @@ That means there are two separate lifetimes:
 
 - engine-wide COG runtime state
 - world-specific cog instance state
+
+## Symbol Tables And Parse-Time Binding
+
+The global COG symbol table is created during `sithCog_Startup()` and filled by the Sith/Jones function and message registration paths. COG scripts then parse against two namespaces:
+
+- the script-local table built from the `symbols` section and any auto-created identifiers
+- the global table containing message names, `global0` through `global15`, and host functions
+
+If a code identifier is missing from both tables, the parser creates a new local float symbol with value `0.0`. If the name exists globally, the script references the global symbol instead. This makes the global table part of the parse result, not just a runtime function registry.
+
+After a script is parsed, each `SithCog` instance duplicates that script symbol table. Runtime state such as local variables, message params, suspended execution fields, and heap values then belongs to the instance.
+
+Savegame COG restore depends on that duplicated table having the same shape as it had when the save was written. DSS COG state stores symbol types and values in table order, so a different parse result can corrupt later values even though the bytecode still executes.
 
 ## COG Dispatch Model
 
