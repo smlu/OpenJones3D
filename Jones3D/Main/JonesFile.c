@@ -445,10 +445,8 @@ size_t J3DAPI JonesFile_FileRead(tFileHandle fh, void* pDst, size_t size)
     {
         return JonesFile_pHS->pFileRead(pHandle->hFile, pDst, size);
     }
-    else
-    {
-        return stdGob_FileRead(pHandle->pGobFileHandle, pDst, size);
-    }
+
+    return stdGob_FileRead(pHandle->pGobFileHandle, pDst, size);
 }
 
 size_t J3DAPI JonesFile_FileWrite(tFileHandle fh, const void* pData, size_t size)
@@ -472,10 +470,8 @@ char* J3DAPI JonesFile_FileGets(tFileHandle fh, char* pStr, size_t size)
     {
         return JonesFile_pHS->pFileGets(pHandle->hFile, pStr, size);
     }
-    else
-    {
-        return (char*)stdGob_FileGets(pHandle->pGobFileHandle, pStr, size);
-    }
+
+    return (char*)stdGob_FileGets(pHandle->pGobFileHandle, pStr, size);
 }
 
 int J3DAPI JonesFile_FileEOF(tFileHandle fh)
@@ -486,10 +482,8 @@ int J3DAPI JonesFile_FileEOF(tFileHandle fh)
     {
         return JonesFile_pHS->pFileEOF(pHandle->hFile);
     }
-    else
-    {
-        return stdGob_FileEOF(pHandle->pGobFileHandle);
-    }
+
+    return stdGob_FileEOF(pHandle->pGobFileHandle);
 }
 
 int J3DAPI JonesFile_FileTell(tFileHandle fh)
@@ -500,10 +494,8 @@ int J3DAPI JonesFile_FileTell(tFileHandle fh)
     {
         return JonesFile_pHS->pFileTell(pHandle->hFile);
     }
-    else
-    {
-        return stdGob_FileTell(pHandle->pGobFileHandle);
-    }
+
+    return stdGob_FileTell(pHandle->pGobFileHandle);
 }
 
 int J3DAPI JonesFile_FileSeek(tFileHandle fh, int offset, int origin)
@@ -514,10 +506,9 @@ int J3DAPI JonesFile_FileSeek(tFileHandle fh, int offset, int origin)
     {
         return JonesFile_pHS->pFileSeek(pHandle->hFile, offset, origin);
     }
-    else
-    {
-        return stdGob_FileSeek(pHandle->pGobFileHandle, offset, origin);
-    }
+
+    // Seeking in Gob file
+    return stdGob_FileSeek(pHandle->pGobFileHandle, offset, origin) != 1; // Fixed: stdGob_FileSeek returns 1 on success, but FileSeek is expected to return 0 on success
 }
 
 size_t J3DAPI JonesFile_FileSize(const char* pFilename)
