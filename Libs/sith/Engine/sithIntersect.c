@@ -89,7 +89,6 @@ SithCollisionType J3DAPI sithIntersect_CheckFaceVerticesIntersection(const rdVec
     return sithIntersect_CheckSphereFaceHitVerticesIntersection(startPos, radius, pFace, aVertices, hitmask, pHitPos);
 }
 
-
 SithCollisionType J3DAPI sithIntersect_CheckSphereThingIntersection(SithThing* pThing, const rdVector3* startPos, const rdVector3* moveNorm, float moveDist, float radius, SithThing* pCheck, int colflags, float* pHitDistance, rdModel3Mesh** ppHitMesh, rdFace** ppHitFace, rdVector3* hitNorm)
 {
     SITH_ASSERTREL(pCheck->collide.type != SITH_COLLIDE_NONE);
@@ -417,7 +416,7 @@ int J3DAPI sithIntersect_TestSphereFaceHit(const rdVector3* startPos, float radi
     for ( size_t vertNum = 0; vertNum < pFace->numVertices; ++vertNum )
     {
         rdVector2 edge;
-        edge.x = -*(&aVertices[pFace->aVertices[vertNum]].x + axis1); // Get n-th component of vertex, i.e. x, y or z 
+        edge.x = -*(&aVertices[pFace->aVertices[vertNum]].x + axis1); // Get n-th component of vertex, i.e. x, y or z
         edge.y = -*(&aVertices[pFace->aVertices[vertNum]].x + axis2); // Get n-th component of vertex, i.e. x, y or z
 
         rdVector2 nedge;

@@ -40,9 +40,7 @@ typedef struct sSithCommandMatInfo
     size_t memUsage;
 } SithCommandMatInfo;
 
-
 static char aCipherTextBuf[256] = { 0 }; // Added: Init to 0
-
 
 int J3DAPI sithCommand_DebugMode(const SithConsoleCommand* pFunc, const char* pArg)
 {
@@ -177,8 +175,8 @@ int J3DAPI sithCommand_Fixme(const SithConsoleCommand* pFunc, const char* pArg)
     }
 
 #ifndef J3D_SPEEDRUN_BUILD
-    // Fixed: Fixes missing floorstick flag, 
-    //        stopping correctly all currently played forcemove tracks, 
+    // Fixed: Fixes missing floorstick flag,
+    //        stopping correctly all currently played forcemove tracks,
     //        and detaches thing from any attached surface/object
     pThing->moveInfo.physics.flags |= SITH_PF_FLOORSTICK;
     if ( pThing->thingInfo.actorInfo.bForceMovePlay )
@@ -1029,7 +1027,6 @@ int J3DAPI sithCommand_MatList(const SithConsoleCommand* pFunc, const char* pArg
             size_t idx = pSurf->face.pMaterial - pWorld->aMaterials;
             ++aMatInfo[idx].surfCount;
         }
-
     }
 
     for ( size_t i = 0; i < pWorld->numMaterials; ++i )

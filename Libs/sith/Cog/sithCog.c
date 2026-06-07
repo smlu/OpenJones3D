@@ -46,7 +46,6 @@
 #define SITHCOG_MAXSCRIPTS       256u
 #define SITHCOG_SYMVALUESTRLEN   64
 
-
 static bool sithCog_bCogStartup = false; // Altered: Init to false
 static bool sithCog_bCogOpen    = false; // Altered: Init to false
 
@@ -659,7 +658,6 @@ int J3DAPI sithCog_WriteCogsListText(const SithWorld* pWorld)
 
 void J3DAPI sithCog_GetSymbolRefInitializer(const SithWorld* pWorld, const SithCog* pCog, int symIdx, char* pOutString)
 {
-
     SithCogSymbol* pSymbol = &pCog->pSymbolTable->aSymbols[pCog->pScript->aSymRefs[symIdx].symbolId];
     int objectIdx = pSymbol->value.val.intValue;
     int refIdx    = objectIdx;
@@ -735,7 +733,6 @@ void J3DAPI sithCog_GetSymbolRefInitializer(const SithWorld* pWorld, const SithC
                 SITHLOG_ERROR("Invalid sound initializer '%s' in COG '%s'\n", pSymbol->pName, pCog->aName);
                 stdUtil_Format(pOutString, SITHCOG_SYMVALUESTRLEN, "%s", pSymbol->pName);
             }
-
         } break;
 
         case SITHCOG_SYM_REF_COG:
@@ -772,7 +769,6 @@ void J3DAPI sithCog_GetSymbolRefInitializer(const SithWorld* pWorld, const SithC
             {
                 stdUtil_Format(pOutString, SITHCOG_SYMVALUESTRLEN, "%d", numCogs);
             }
-
         } break;
 
         case SITHCOG_SYM_REF_MATERIAL:
@@ -2050,7 +2046,6 @@ int J3DAPI sithCog_CogStatus(const SithConsoleCommand* pFunc, const char* pArg)
 {
     J3D_UNUSED(pFunc);
 
-
     SithWorld* pWorld = sithWorld_g_pCurrentWorld;
     size_t index;
     SithCog* pCog;
@@ -2069,7 +2064,6 @@ int J3DAPI sithCog_CogStatus(const SithConsoleCommand* pFunc, const char* pArg)
 
     for ( size_t i = 0; i < pCog->pSymbolTable->numUsedSymbols; i++ )
     {
-
         SithCogSymbol* pSymbol = &pCog->pSymbolTable->aSymbols[i];
         if ( pSymbol->pName )
         {

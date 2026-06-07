@@ -93,10 +93,8 @@ static int sithWeapon_playerWhipHolsterSwapRefNum;
 static int sithWeapon_playerPistolHolsterSwapRefNum;
 static int sithWeapon_playerBackHolsterSwapRefNum;
 
-
 static SithControlFunction sithWeapon_bufferedWaponKeyId;
 static SithWeaponActorKilledCallback sithWeapon_pfActorKilledCallback;
-
 
 SithThing* J3DAPI sithWeapon_WeaponFire(SithThing* pShooter, const SithThing* pProjectileTemplate, const rdVector3* pFireDir, rdVector3* pFirePos, tSoundHandle hFireSnd, SithPuppetSubMode submode, float extra, SithFireProjectileFlags projectileFlags, float secDeltaTime);
 SithThing* J3DAPI sithWeapon_WeaponFireProjectile(SithThing* pShooter, const SithThing* pProjectileTemplate, const rdVector3* pFireDir, rdVector3* pFirePos, tSoundHandle hFireSnd, SithPuppetSubMode submode, float extra, SithFireProjectileFlags flags, float secDeltaTime);
@@ -477,7 +475,7 @@ void J3DAPI sithWeapon_HandleImpact(SithThing* pWeapon)
                     && sithWeapon_bGenBloodSplatter
                     && sithWeapon_GenBloodSplatterEx(pVictim) )
                 {
-                    // Altered: Replaced with new sithWeapon_GenBloodSplatterEx 
+                    // Altered: Replaced with new sithWeapon_GenBloodSplatterEx
                     //          and added fallback logic if function call fails
                     sithThing_DestroyThing(pWeapon);
                 }
@@ -804,7 +802,6 @@ void J3DAPI sithWeapon_DamageWeapon(SithThing* pThing, const SithThing* pPurpetr
 
 int J3DAPI sithWeapon_ThingCollisionHandler(SithThing* pWeapon, SithThing* pThing, SithCollision* pCollision, int a5)
 {
-
     if ( (pThing->flags & SITH_TF_NOWEAPONCOLLIDE) != 0 )
     {
         return 0;
@@ -978,7 +975,7 @@ int J3DAPI sithWeapon_ThingCollisionHandler(SithThing* pWeapon, SithThing* pThin
                 && sithWeapon_GenBloodSplatterEx(pThing) )
 
             {
-                // Altered: Replaced with new sithWeapon_GenBloodSplatterEx 
+                // Altered: Replaced with new sithWeapon_GenBloodSplatterEx
                 //          and added fallback logic if function call fails
                 sithThing_DestroyThing(pWeapon);
             }
@@ -1059,7 +1056,6 @@ int J3DAPI sithWeapon_ThingCollisionHandler(SithThing* pWeapon, SithThing* pThin
 int J3DAPI sithWeapon_SurfaceCollisionHandler(SithThing* pThing, SithSurface* pSurf, SithCollision* pStack)
 {
     SITH_ASSERTREL(pThing->type == SITH_THING_WEAPON);
-
 
     if ( pThing->moveType != SITH_MT_PHYSICS )
     {
@@ -1348,7 +1344,6 @@ int J3DAPI sithWeapon_ProcessWeaponControls(SithThing* pThing, float secDeltaTim
             return 0;
         }
 
-
         sithControl_GetKey(SITHCONTROL_WEAPONTOGGLE, &keyState);
         if ( keyState )
         {
@@ -1555,7 +1550,6 @@ int J3DAPI sithWeapon_ProcessWeaponControls(SithThing* pThing, float secDeltaTim
         return 0;
     }
 
-
     return bKeyProcessed;
 }
 
@@ -1647,7 +1641,7 @@ int J3DAPI sithWeapon_GetAimOrient(rdMatrix34* pOutOrient, SithThing* pShooter, 
         float curDot  = -1.0f;
         for ( size_t i = 0; i < numThings; ++i )
         {
-            if ( aTarget[i] && aTarget[i] != pShooter && (aTarget[i]->thingInfo.actorInfo.flags & SITH_AF_NOTARGET) == 0 ) // Fixed: Added check for aTarget[i] != NULL 
+            if ( aTarget[i] && aTarget[i] != pShooter && (aTarget[i]->thingInfo.actorInfo.flags & SITH_AF_NOTARGET) == 0 ) // Fixed: Added check for aTarget[i] != NULL
             {
                 if ( sithCollision_CheckThingLOS(pShooter, aTarget[i], 0) )
                 {
@@ -1655,7 +1649,6 @@ int J3DAPI sithWeapon_GetAimOrient(rdMatrix34* pOutOrient, SithThing* pShooter, 
                     rdVector_Sub3(&toDargetDir, &aTarget[i]->pos, &pShooter->pos);
                     if ( rdVector_Len3(&toDargetDir) > 0.0f )
                     {
-
                         rdVector3 curDir = pOutOrient->lvec;
                         rdVector_Normalize3Acc(&toDargetDir);
                         rdVector_Normalize3Acc(&curDir);
@@ -1678,7 +1671,6 @@ int J3DAPI sithWeapon_GetAimOrient(rdMatrix34* pOutOrient, SithThing* pShooter, 
         }
 
         return 0;
-
     }
 
     SithThing* pTarget = sithPlayerControls_GetTargetThing();
@@ -1877,7 +1869,6 @@ int J3DAPI sithWeapon_SelectPreviousWeapon(SithThing* pThing)
         }
     }
 
-
     int weaponId = sithInventory_FindPreviousTypeID(pThing, curWeaponID, SITHINVENTORY_TYPE_PLAYERWEAPON);
     if ( weaponId == -1 )
     {
@@ -1994,8 +1985,8 @@ void J3DAPI sithWeapon_SendMessageAim(SithThing* pThing, int bAim)
 
     if ( pThing->type == SITH_THING_PLAYER )
     {
-        // Fixed: Added sithPlayer_g_pLocalPlayerThing null check. 
-        // This is just quick & dirty fix for sithWeapon_IsLocalPlayerUnableToUseWeapon, 
+        // Fixed: Added sithPlayer_g_pLocalPlayerThing null check.
+        // This is just quick & dirty fix for sithWeapon_IsLocalPlayerUnableToUseWeapon,
         // required when system is closing and indy is still aiming with the whip at whippable thing
         if ( !sithWeapon_IsMountingWeapon(pThing) && sithPlayer_g_pLocalPlayerThing && !sithWeapon_IsLocalPlayerUnableToUseWeapon() )
         {
@@ -2153,7 +2144,7 @@ static bool J3DAPI sithWeapon_GenBloodSplatterEx(SithThing* pHitThing)
         }
 
     #if defined(J3D_DEBUG) || !defined(J3D_QOL_IMPROVEMENTS) // Altered: debug check
-        SITHLOG_STATUS("Blood splort attached to mesh number %d.\n", meshIdx);
+        SITHLOG_DEBUG("Blood splort attached to mesh number %d.\n", meshIdx); // Altered log level to debug from status
     #endif
     }
 
@@ -2438,32 +2429,32 @@ void J3DAPI sithWeapon_CreateWeaponFireFx(SithThing* pThing, rdVector3* pos)
     switch ( pThing->thingInfo.actorInfo.weaponInfo.curWeaponID )
     {
         case SITHWEAPON_PISTOL:
-            pHandModel = sithModel_GetModelByIndex(SITHWORLD_STATICINDEX(83)); // weap_revolver_fire.3do
+            pHandModel = sithModel_GetModelByIndex(SITHWORLD_STATICINDEX(83u)); // weap_revolver_fire.3do
             break;
 
         case SITHWEAPON_TOKAREV:
         case SITHWEAPON_COMTOKAREV:
-            pHandModel = sithModel_GetModelByIndex(SITHWORLD_STATICINDEX(85)); // weap_tokarev_fire.3do
+            pHandModel = sithModel_GetModelByIndex(SITHWORLD_STATICINDEX(85u)); // weap_tokarev_fire.3do
             break;
 
         case SITHWEAPON_MAUSER:
         case SITHWEAPON_COMMAUSER:
-            pHandModel = sithModel_GetModelByIndex(SITHWORLD_STATICINDEX(81)); // weap_mauser_fire.3do
+            pHandModel = sithModel_GetModelByIndex(SITHWORLD_STATICINDEX(81u)); // weap_mauser_fire.3do
             break;
 
         case SITHWEAPON_SIMONOV:
         case SITHWEAPON_COMSIMONOV:
-            pHandModel = sithModel_GetModelByIndex(SITHWORLD_STATICINDEX(84)); // weap_simonov_fire.3do
+            pHandModel = sithModel_GetModelByIndex(SITHWORLD_STATICINDEX(84u)); // weap_simonov_fire.3do
             break;
 
         case SITHWEAPON_SUBMACHINE:
         case SITHWEAPON_COMSUBMACHINE:
-            pHandModel = sithModel_GetModelByIndex(SITHWORLD_STATICINDEX(82)); // weap_ppsh41_fire.3do
+            pHandModel = sithModel_GetModelByIndex(SITHWORLD_STATICINDEX(82u)); // weap_ppsh41_fire.3do
             break;
 
         case SITHWEAPON_SHOTGUN:
         case SITHWEAPON_COMSHOTGUN:
-            pHandModel = sithModel_GetModelByIndex(SITHWORLD_STATICINDEX(86)); // weap_toz34_fire.3do
+            pHandModel = sithModel_GetModelByIndex(SITHWORLD_STATICINDEX(86u)); // weap_toz34_fire.3do
             break;
 
         default:
@@ -2493,7 +2484,7 @@ void J3DAPI sithWeapon_CreateWeaponFireFx(SithThing* pThing, rdVector3* pos)
                     pFlash->light.color.green = 0.5f;
                     pFlash->light.color.blue  = 0.5f;
                     pFlash->light.color.alpha = 0.2f; // Fixed: Assign alpha/range for the flesh effect to appear.
-                                                      //        OG didn't assign alpha range value and the flash light wasn't visible 
+                                                      //        OG didn't assign alpha range value and the flash light wasn't visible
 
                     pFlash->light.minRadius   = 0.2f;
                     pFlash->light.maxRadius   = 0.40000001f;

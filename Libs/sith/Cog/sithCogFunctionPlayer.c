@@ -367,7 +367,6 @@ void J3DAPI sithCogFunctionPlayer_GetPlayerNum(SithCog* pCog)
         STDLOG_ERROR("Cog %s: Invalid player in GetPlayerNum.\n", pCog->aName);
         sithCogExec_PushInt(pCog, -1);
         return;
-
     }
 
     sithCogExec_PushInt(pCog, playerNum);

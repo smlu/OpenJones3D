@@ -528,7 +528,6 @@ void J3DAPI sithCogFunctionThing_PlayForceMoveMode(SithCog* pCog)
     }
 
     sithCogExec_PushInt(pCog, trackNum);
-
 }
 
 void J3DAPI sithCogFunctionThing_SetMoveMode(SithCog* pCog)
@@ -780,7 +779,6 @@ void J3DAPI sithCogFunctionThing_SetHealth(SithCog* pCog)
 
     if ( pThing )
     {
-
         if ( pThing->type == SITH_THING_ACTOR || pThing->type == SITH_THING_PLAYER )
         {
             pThing->thingInfo.actorInfo.health = health;
@@ -886,7 +884,6 @@ void J3DAPI sithCogFunctionThing_SkipToFrame(SithCog* pCog)
 
     if ( !pThing || pThing->moveType != SITH_MT_PATH || frame >= pThing->moveInfo.pathMovement.numFrames )
     {
-
         STDLOG_ERROR("Cog %s: Illegal params in MoveToFrame call from COG.\n", pCog->aName);
         return;
     }
@@ -1144,7 +1141,6 @@ void J3DAPI sithCogFunctionThing_MakeCamera2LikeCamera1(SithCog* pCog)
     {
         STDLOG_ERROR("Cog %s: pos thing %s endpoint not in valid sector in MakeCamera2LikeCamera1() call.\n", pCog->aName); // Fixed: Fixed typo "Cog &s"
 
-
         sithCogExec_PushInt(pCog, 0);
         return;
     }
@@ -1222,7 +1218,7 @@ void J3DAPI sithCogFunctionThing_SetCameraLookInterp(SithCog* pCog)
 }
 
 // Function enables/disables dolly mode for specified camera.
-// 
+//
 // Dolly mode: when camera primary focus is changed the camera will interpolate move to the new focused thing instead of teleport to it.
 void J3DAPI sithCogFunctionThing_SetCameraPosInterp(SithCog* pCog)
 {
@@ -1406,7 +1402,6 @@ void J3DAPI sithCogFunctionThing_ThingLight(SithCog* pCog)
     }
     else
     {
-
         sithAnimate_StartThingLightAnim(pThing, &color, litupTime, (SithAnimateFlags)0);
     }
 }
@@ -1790,7 +1785,6 @@ void J3DAPI sithCogFunctionThing_SetThingPos(SithCog* pCog)
         STDLOG_ERROR("Cog %s: Bad parameters in SetThingPos()\n", pCog->aName); // Added
         sithCogExec_PushInt(pCog, 0);
         return;
-
     }
 
     pThing->pos = newPos;
@@ -2801,7 +2795,6 @@ void J3DAPI sithCogFunctionThing_SetThingMesh(SithCog* pCog)
     }
 }
 
-
 void J3DAPI sithCogFunctionThing_RestoreThingMesh(SithCog* pCog)
 {
     const int  refnum = sithCogExec_PopInt(pCog);
@@ -3047,7 +3040,6 @@ void J3DAPI sithCogFunctionThing_SetThingType(SithCog* pCog)
     {
         STDLOG_ERROR("Cog %s: Invalid thing type %d in SetThingType.\n", pCog->aName, type);
         return;
-
     }
 
     pThing->type = type;
@@ -3108,7 +3100,6 @@ void J3DAPI sithCogFunctionThing_FirstThingInSector(SithCog* pCog)
     SithThing* pFirstThing = pSector->pFirstThingInSector;
     sithCogExec_PushInt(pCog, pFirstThing ? pFirstThing->idx : -1);
 }
-
 
 void J3DAPI sithCogFunctionThing_NextThingInSector(SithCog* pCog)
 {
@@ -3181,7 +3172,6 @@ void J3DAPI sithCogFunctionThing_PathMovePause(SithCog* pCog)
         STDLOG_ERROR("Cog %s: Bad parameters in PathMovePause().\n", pCog->aName); // Added: Error log
         sithCogExec_PushInt(pCog, -1);
         return;
-
     }
 
     SITH_ASSERTREL(sithThing_ValidateThingPointer(sithWorld_g_pCurrentWorld, pThing));
@@ -3196,7 +3186,7 @@ void J3DAPI sithCogFunctionThing_SetHeadLightIntensity(SithCog* pCog)
     int bVec          = sithCogExec_PopVector(pCog, &color);
     SithThing* pThing = sithCogExec_PopThing(pCog);
 
-    if ( !pThing || ((pThing->type != SITH_THING_ACTOR) && (pThing->type != SITH_THING_PLAYER)) || !bVec ) // Fixed: Added check for bVec   
+    if ( !pThing || ((pThing->type != SITH_THING_ACTOR) && (pThing->type != SITH_THING_PLAYER)) || !bVec ) // Fixed: Added check for bVec
     {
         STDLOG_ERROR("Cog %s: Bad parameters in SetHeadLightIntensity().\n", pCog->aName); // Added: Error log
         sithCogExec_PushVector(pCog, &(const rdVector3){ -1.0f, -1.0f, -1.0f });
@@ -3648,7 +3638,7 @@ int J3DAPI sithCogFunctionThing_SetThingHeadOrientation(SithThing* pThing, const
 
     if ( pThing->type != SITH_THING_ACTOR && pThing->type != SITH_THING_PLAYER )
     {
-        STDLOG_ERROR("Illegal attempt to set thing %s head orientation: thing is not an actor.\n", pThing->aName); // Fixed: Bad var 'Cog %s:' in format 
+        STDLOG_ERROR("Illegal attempt to set thing %s head orientation: thing is not an actor.\n", pThing->aName); // Fixed: Bad var 'Cog %s:' in format
         return 0;
     }
 
@@ -4432,7 +4422,6 @@ void J3DAPI sithCogFunctionThing_SetThingPosEx(SithCog* pCog)
 
     if ( pThing->moveType == SITH_MT_PHYSICS && (pThing->moveInfo.physics.flags & SITH_PF_FLOORSTICK) != 0 )
     {
-
         sithPhysics_FindFloor(pThing, /*bNoThingStateUpdate=*/1);
     }
 
@@ -4591,7 +4580,6 @@ void J3DAPI sithCogFunctionThing_SetJointAngle(SithCog* pCog)
         STDLOG_ERROR("Cog %s: Thing %s has no model in SetJointAngle.\n", pCog->aName, pThing->aName); // Added: Error log
         return;
     }
-
 
     if ( !pThing->renderData.apTweakedAngles )
     {

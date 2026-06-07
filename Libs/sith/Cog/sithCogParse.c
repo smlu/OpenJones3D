@@ -475,7 +475,6 @@ SithCogSymbol* J3DAPI sithCogParse_GetSymbolByID(const SithCogSymbolTable* pTabl
 
 uint32_t J3DAPI sithCogParse_GetSymbolLabel(size_t symbolId)
 {
-
     SithCogSymbol* pSymbol = sithCogParse_GetSymbolByID(pCurrentSymbols, symbolId);
     SITH_ASSERTREL(pSymbol);
     return pSymbol->label;
@@ -622,7 +621,6 @@ SithCogSyntaxNode* sithCogParse_GetNextNode(void)
     STD_ZEROMEM(pNode, sizeof(SithCogSyntaxNode));
     return pNode;
 }
-
 
 void sithCogParse_ResetTreeNodes(void)
 {
@@ -1030,7 +1028,6 @@ int J3DAPI sithCogParse_ParseMessage(SithCogScript* pScript)
     pScript->aHandlers[pScript->numHandlers++].label = pSymbol->label;
     return 1;
 }
-
 
 void J3DAPI sithCogParse_ResolveMessageHandlers(SithCogScript* pScript)
 {

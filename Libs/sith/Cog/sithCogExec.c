@@ -17,7 +17,6 @@
 
 #include <math.h>
 
-
 void sithCogExec_InstallHooks(void)
 {
     J3D_HOOKFUNC(sithCogExec_Execute);
@@ -312,7 +311,7 @@ SithCog* J3DAPI sithCogExec_PopCog(SithCog* pCog)
     SithWorld* pWorld = sithWorld_g_pCurrentWorld;
     if ( SITHWORLD_IS_STATICINDEX(index) )
     {
-        SITH_ASSERTREL(sithWorld_g_pStaticWorld); // Added: Added null check like in other cases 
+        SITH_ASSERTREL(sithWorld_g_pStaticWorld); // Added: Added null check like in other cases
         pWorld = sithWorld_g_pStaticWorld;
         index  = SITHWORLD_FROM_STATICINDEX(index);
     }
@@ -609,7 +608,6 @@ void J3DAPI sithCogExec_PushInt(SithCog* pCog, int val)
     sithCogExec_PushStack(pCog, &value);
 }
 
-
 void J3DAPI sithCogExec_PushFlex(SithCog* pCog, float value)
 {
     SithCogSymbolValue val;
@@ -677,7 +675,6 @@ void J3DAPI sithCogExec_PopCallstack(SithCog* pCog)
         pCog->status          = pCog->callstack[pCog->callDepth].execStatus;
         pCog->statusParams[0] = pCog->callstack[pCog->callDepth].statusParam;
         pCog->execMsgType     = pCog->callstack[pCog->callDepth].execMsgType;
-
     }
     else
     {
