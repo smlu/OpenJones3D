@@ -18,7 +18,8 @@ J3D_EXTERN_C_START
 #define SITHMESSAGE_NUMTYPES             65u
 #define SITHMESSAGE_SENDTOJOINEDPLAYERS ((DPID)-1)
 
-#define SITHCOGSCRIPT_MAXSYMREFS  256u
+#define SITHCOGSCRIPT_MAXMSGHANDLERS  32u
+#define SITHCOGSCRIPT_MAXSYMREFS      256u
 
 #define SITHCOGEXEC_CALLSTACKSIZE 4u
 #define SITHCOGEXEC_STACKSIZE     256u
@@ -1328,7 +1329,7 @@ typedef enum sSithMinecarControlsLeanState
 {
     SITHMINECARCONTROLS_LEAN_NONE  = 0,     // Not leaning
     SITHMINECARCONTROLS_LEAN_RIGHT = 1,     // Leaning right
-    SITHMINECARCONTROLS_LEAN_LEFT  = 2      // Leaning left  
+    SITHMINECARCONTROLS_LEAN_LEFT  = 2      // Leaning left
 } SithMinecarControlsLeanState;
 
 typedef enum sSithMinecarControlsMoveState
@@ -1873,7 +1874,6 @@ typedef struct sSithFairyDustUserBlock
 } SithFairyDustUserBlock;
 static_assert(sizeof(SithFairyDustUserBlock) == 24, "sizeof(SithFairyDustUserBlock) == 24");
 
-
 typedef union sSithUserBlockUnion
 {
     SithMineCarUserBlock* pMinecar;
@@ -1951,7 +1951,6 @@ typedef union sSithActorEndurance
     unsigned int raftLeakDamage;
 } SithActorEndurance;
 static_assert(sizeof(SithActorEndurance) == 4, "sizeof(SithActorEndurance) == 4");
-
 
 typedef struct sVGradiantColor
 {
@@ -2180,7 +2179,7 @@ typedef struct sSithCogScript
     size_t codeSize;
     SithCogSymbolTable* pSymbolTable;
     size_t numHandlers;
-    SithCogScriptMsgHandler aHandlers[32];
+    SithCogScriptMsgHandler aHandlers[SITHCOGSCRIPT_MAXMSGHANDLERS];
     SithCogSymbolRef aSymRefs[SITHCOGSCRIPT_MAXSYMREFS];
     size_t numSymbolRefs;
 } SithCogScript;
@@ -3129,7 +3128,6 @@ typedef struct sSithRaftControlsState
     float secUnboardTime;
 } SithRaftControlsState;
 static_assert(sizeof(SithRaftControlsState) == 52, "sizeof(SithRaftControlsState) == 52");
-
 
 typedef struct sSithMode
 {
