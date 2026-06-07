@@ -435,22 +435,13 @@ int J3DAPI sithDSS_ProcessPuppetStatus(const SithMessage* pMsg)
     while ( trackCount )
     {
         size_t trackNum = SITHDSS_POPINT32();
-        /*size_t trackNum = *(int32_t*)pCurIn;
-        pCurIn += 4;*/
-
         SithPuppetSubMode submode = SITHDSS_POPUINT32();
-        /*SithPuppetSubMode submode = *(uint32_t*)pCurIn;
-        pCurIn += 4;*/
 
-        // Fixed: Reject corrupt submodes before indexing pPuppetClass->aModes[majorMode][submode].
-        if ( submode >= SITH_PUPPET_NUMSUBMODES )
-        {
-            SITHLOG_ERROR("DSS::PuppetStatus received invalid submode %d.\n", (int)submode);
-            SITHDSS_ENDIN;
-            return 0;
-        }
-
-        if ( trackNum < STD_ARRAYLEN(pPuppet->aTracks) && sithPuppet_NewTrack(pThing, &pThing->pPuppetClass->aModes[pThing->pPuppetState->majorMode][submode], trackNum, submode) )
+        // Note: trackNum == STD_ARRAYLEN(pPuppet->aTracks) && submode == SITH_PUPPET_NUMSUBMODES is used to mark null track,
+        //       so these values are valid but indicate no track rather than a real track index or submode.
+        if ( trackNum < STD_ARRAYLEN(pPuppet->aTracks)
+            && submode < SITH_PUPPET_NUMSUBMODES // Fixed: Added submode bounds check to prevent indexing outside the mode table
+            && sithPuppet_NewTrack(pThing, &pThing->pPuppetClass->aModes[pThing->pPuppetState->majorMode][submode], trackNum, submode) )
         {
             SITHDSS_ENDIN;
             return 0;

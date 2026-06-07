@@ -29,7 +29,7 @@ int J3DAPI sithDSSCog_SendMessage(const SithCog* pCog, SithCogMsgType msgType, S
     if ( pCog )
     {
         SITHDSS_PUSHINT16(pCog->idx);
-        //*(uint16_t*)&sithMulti_g_message.data[4] = 
+        //*(uint16_t*)&sithMulti_g_message.data[4] =
     }
     else
     {
@@ -67,7 +67,7 @@ int J3DAPI sithDSSCog_SendMessage(const SithCog* pCog, SithCogMsgType msgType, S
         //*(uint32_t*)&sithMulti_g_message.data[12] = srcIdx;
     }
 
-    SITHDSS_PUSHUINT16((uint8_t)msgType);
+    SITHDSS_PUSHUINT16((uint8_t)msgType); // TODO: Why is msgType cast to uint8_t and then pushed as uint16_t?
     SITHDSS_PUSHINT32(param0);
     SITHDSS_PUSHINT32(param1);
     SITHDSS_PUSHINT32(param2);
@@ -100,7 +100,7 @@ int J3DAPI sithDSSCog_ProcessMessage(const SithMessage* pMsg)
     SITHDSS_STARTIN(pMsg);
 
     int linkId    = SITHDSS_POPINT32(); //*(uint32_t*)pMsg->data;
-    SithCog* pCog = sithCog_GetCogByIndex(SITHDSS_POPINT16()); //sithCog_GetCogByIndex(*(uint16_t*)&pMsg->data[4]);
+    SithCog* pCog = sithCog_GetCogByIndex(SITHDSS_POPUINT16()); // Deserialize as unsigned to avoid sign-extension issues
 
     SithCogSymbolRefType senderType = SITHDSS_POPUINT8(); //pMsg->data[6];
     SithCogSymbolRefType srcType    = SITHDSS_POPUINT8(); //pMsg->data[7];
@@ -132,6 +132,8 @@ int J3DAPI sithDSSCog_ProcessMessage(const SithMessage* pMsg)
     int param2 = SITHDSS_POPINT32(); //*(uint32_t*)&pMsg->data[26];
     int param3 = SITHDSS_POPINT32(); //*(uint32_t*)&pMsg->data[30];
 
+    SITHDSS_ENDIN;
+
     if ( pCog )
     {
         SithThing* pSenderThing;
@@ -143,11 +145,10 @@ int J3DAPI sithDSSCog_ProcessMessage(const SithMessage* pMsg)
 
         return 1;
     }
-    else
-    {
-        sithCog_BroadcastMessageEx(msgType, senderType, senderIdx, srcType, srcIdx, param0, param1, param2, param3);
-        return 1;
-    }
+
+    // If the message isn't for a specific cog, broadcast it to all cogs
+    sithCog_BroadcastMessageEx(msgType, senderType, senderIdx, srcType, srcIdx, param0, param1, param2, param3);
+    return 1;
 }
 
 int J3DAPI sithDSSCog_SyncCogState(const SithCog* pCog, DPID idTO, SithMessageStream outstream)
@@ -174,6 +175,7 @@ int J3DAPI sithDSSCog_SyncCogState(const SithCog* pCog, DPID idTO, SithMessageSt
         SITHDSS_PUSHINT32(pCog->senderType);
         SITHDSS_PUSHINT32(pCog->sourceIdx);
         SITHDSS_PUSHINT32(pCog->sourceType);
+        SITH_ASSERT(SITHDSS_CURPOS() == 44);
 
         //*(uint32_t*)pCurOut = pCog->statusParams[0];
         //*(uint32_t*)&sithMulti_g_message.data[16] = pCog->statusParams[1];
@@ -252,6 +254,7 @@ int J3DAPI sithDSSCog_ProcessCogState(const SithMessage* pMsg)
     SithCog* pCog = sithCog_GetCogByIndex(SITHDSS_POPINT32()); // sithCog_GetCogByIndex(*(uint32_t*)pMsg->data);
     if ( !pCog )
     {
+        SITHDSS_ENDIN;
         return 0;
     }
 
@@ -270,6 +273,7 @@ int J3DAPI sithDSSCog_ProcessCogState(const SithMessage* pMsg)
         pCog->sourceIdx       = SITHDSS_POPINT32();  //*(uint32_t*)&pMsg->data[36];
         pCog->sourceType      = SITHDSS_POPINT32();  //*(uint32_t*)&pMsg->data[40];
         //pCurIn = &pMsg->data[44];
+        SITH_ASSERT(SITHDSS_CURPOS() == 44);
     }
 
     if ( (pCog->flags & SITHCOG_PULSE_SET) != 0 )
@@ -315,5 +319,6 @@ int J3DAPI sithDSSCog_ProcessCogState(const SithMessage* pMsg)
         }
     }
 
+    SITHDSS_ENDIN;
     return 1;
 }

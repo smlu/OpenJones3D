@@ -199,6 +199,7 @@ int J3DAPI sithDSSThing_ProcessDamage(const SithMessage* pMsg)
 {
     return J3D_TRAMPOLINE_CALL(sithDSSThing_ProcessDamage, pMsg);
 }
+
 int J3DAPI sithDSSThing_ThingFullDescription(const SithThing* pThing, DPID idTo, SithMessageStream outstream)
 {
     SITHDSS_STARTOUT(SITHDSS_THINGFULLDESC);
@@ -333,7 +334,7 @@ int J3DAPI sithDSSThing_ThingFullDescription(const SithThing* pThing, DPID idTo,
             if ( streq(pThing->aName, "+plcogend") )
             {
                 SITHDSS_PUSHINT16(sithThing_GetThingIndex(pThing->pParent));
-                pPolyline->face.extraLight.alpha = pThing->alpha; // TODO: Is this a but? Why set alpha here?
+                pPolyline->face.extraLight.alpha = pThing->alpha; // TODO: Is this a bug? Why set alpha here?
             }
 
             char aMatName[64] = { 0 }; // Fixed: Inited to 0
@@ -604,10 +605,10 @@ int J3DAPI sithDSSThing_ProcessThingFullDescription(const SithMessage* pMsg)
     // COG linkage
     if ( (pThing->flags & SITH_TF_COGLINKED) != 0 )
     {
-        int cogIdx   = SITHDSS_POPINT16();
+        int cogIdx   = SITHDSS_POPUINT16(); // Deserialize as unsigned to avoid sign-extension issues
         pThing->pCog = sithCog_GetCogByIndex(cogIdx);
 
-        cogIdx = SITHDSS_POPINT16();
+        cogIdx = SITHDSS_POPUINT16(); // Deserialize as unsigned to avoid sign-extension issues
         pThing->pCaptureCog = sithCog_GetCogByIndex(cogIdx);
     }
 
@@ -837,7 +838,7 @@ int J3DAPI sithDSSThing_ProcessThingFullDescription(const SithMessage* pMsg)
         {
             uint32_t entryNum = SITHDSS_POPUINT32();
             int meshNum       = SITHDSS_POPINT32();
-            uint16_t modelIdx = SITHDSS_POPINT16();
+            uint16_t modelIdx = SITHDSS_POPINT16(); // Note, don't change type as it will set max unsigned value if negative, but sithModel_GetModelByIndex will handle out of range indices and return null.
             rdModel3* pModel  = sithModel_GetModelByIndex(modelIdx);
             int meshNumSrc    = SITHDSS_POPINT32();
 
@@ -855,7 +856,7 @@ int J3DAPI sithDSSThing_ProcessThingFullDescription(const SithMessage* pMsg)
     int16_t modelIdx = SITHDSS_POPINT16();
     if ( modelIdx != -1 )
     {
-        rdModel3* pModel = sithModel_GetModelByIndex(modelIdx);
+        rdModel3* pModel = sithModel_GetModelByIndex((uint16_t)modelIdx); // Note: cast to uint16_t to match type expected by sithModel_GetModelByIndex and avoid sign-extension issues with negative values.
         if ( !pModel ) // Fixed: Reject invalid model indices before dereferencing renderData.data.pModel3.
         {
             SITHLOG_ERROR("FullDescription received invalid model index %d for thing %s.\n", modelIdx, pThing->aName);
@@ -905,7 +906,7 @@ int J3DAPI sithDSSThing_ProcessThingFullDescription(const SithMessage* pMsg)
         {
             static_assert(STD_ARRAYLEN(pVoiceInfo->voiceHeadInfo.apSoundHeadModels) == 4, "Array length mismatch");
             modelIdx = SITHDSS_POPINT16();
-            pVoiceInfo->voiceHeadInfo.apSoundHeadModels[i] = sithModel_GetModelByIndex(modelIdx);
+            pVoiceInfo->voiceHeadInfo.apSoundHeadModels[i] = sithModel_GetModelByIndex((uint16_t)modelIdx); // Note: cast to uint16_t to match type expected by sithModel_GetModelByIndex and avoid sign-extension issues with negative values.
         }
     }
 
@@ -941,7 +942,7 @@ int J3DAPI sithDSSThing_ProcessThingFullDescription(const SithMessage* pMsg)
 #ifdef J3D_DEBUG
     if ( SITHDSS_CURPOS() != pMsg->length )
     {
-        SITHLOG_ERROR("sithDSSThing_ProcessThingFullDescription: Not all data was processed for thing: %s [curpos: %d msglen: %d]\n", pThing->aName, SITHDSS_CURPOS(), pMsg->length);
+        SITHLOG_WARNING("sithDSSThing_ProcessThingFullDescription: Not all data was processed for thing: %s [curpos: %d msglen: %d]\n", pThing->aName, SITHDSS_CURPOS(), pMsg->length);
     }
 #endif
 
