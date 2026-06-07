@@ -85,6 +85,24 @@
   - Fixed JonesFile resource bounds handling by accepting the final file handle slot and ignoring extra GOB files beyond the fixed resource array. (dd3aeeb)
   - Improved GOB cleanup and validation, including failed-load cleanup, shutdown state handling, directory bounds checks, seek/read clamping, and EOF behavior. (245cb3b)
   - Fixed stdConffile, file/path helper edge cases, including short config lines, empty path concatenation, Win32 find handle cleanup, and file-existence handle leaks. (7532d41)
+  - Added optional runtime guard macros for release-build safety checks in std modules. (4ebf236)  
+    This adds a `JONES3D_RUNTIME_GUARDS` CMake option and marks non-QOL guarded builds as `legacy-hardened`.
+  - Added bounded `stdFnames_ChangeExtEx` helper and updated `stdFnames_ChangeExt` to use it while preserving the original ABI. (4ebf236)
+  - Fixed std print/file formatting helpers to reject invalid inputs (4ebf236)  
+    This avoid path format-string misuse, and avoid writing negative or oversized formatted byte counts after truncation.
+  - Fixed BMP load/save validation in `stdBmp` (4ebf236)  
+    This includes row padding, image-size bounds, header-size checks, `bfOffBits` seeking, VBuffer lock handling, and partial-load cleanup.
+  - Fixed `stdConffile` error paths and include handling (4ebf236)  
+    This includes stack overflow reporting, failed-open stack restore, line-buffer allocation cleanup, and formatted write truncation warnings.
+  - Fixed GOB resource loading and file-handle validation in `stdGob` (4ebf236)  
+    This includes unsupported mmap fallback, directory bounds checks, failed-load cleanup, invalid seek/read rejection, and handle state cleanup.
+  - Fixed missing allocation-failure and size-overflow checks across std modules. (4ebf236)  
+    This adds validation for buffer sizes, element-count multiplication, file/image sizes,  
+    handle arrays, hash-table storage, string conversion buffers, conffile line buffers,  
+    circular buffers, and GOB directory data, while cleaning up partially-created resources  
+    on failure.
+  - Fixed `stdMath` edge cases for power, angle normalization, trigonometry, and arcsine helpers. (4ebf236)  
+    This fixes zero and negative exponent handling in `stdMath_FlexPower`, rejects NaN/infinity before lookup-table indexing in angle/trig functions, preserves explicit NaN handling, and clamps arcsine inputs to avoid domain errors from small floating-point overshoots.
 
 ### Engine:
   - Added check for zero size in lip sync data generation to prevent allocation errors (f79736b)

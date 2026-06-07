@@ -151,11 +151,14 @@ void J3DAPI stdJSON_FreeEntry(StdJSONHandle hJson)
 
     if ( hJson->pRoot )
     {
+    #ifdef J3D_DEBUG
+        size_t rootRefcount = hJson->pRoot->refcount;
+    #endif
         json_decref(hJson->pRoot);
     #ifdef J3D_DEBUG
-        if ( !hJson->pParent && hJson && *((uintptr_t*)hJson->pRoot) != (uintptr_t)STDMEMORY_FREEDPTR )
+        if ( !hJson->pParent && rootRefcount > 1 )
         {
-            STDLOG_WARNING("stdJSON_FreeEntry: !!! POSSIBLE MEMORY LEAK ... JSON root was not deleted and refcount is %zu. Possibly undeleted child handle is holding it's reference !!!\n", hJson->pRoot->refcount);
+            STDLOG_WARNING("stdJSON_FreeEntry: JSON root still has %zu external reference(s). Possibly undeleted child handle is holding a reference.\n", rootRefcount - 1);
         }
     #endif
         hJson->pRoot = NULL;
@@ -507,9 +510,6 @@ bool J3DAPI stdJSON_LoadEntry(const char* pFilePath, StdJSONHandle hJson)
         return false;
     }
 
-    // Free any allocated data in handle
-    stdJSON_FreeEntry(hJson);
-
     // Get file size
     size_t fileSize = std_g_pHS->pFileSize(pFilePath);
     if ( fileSize == 0 )
@@ -566,18 +566,21 @@ bool J3DAPI stdJSON_LoadEntry(const char* pFilePath, StdJSONHandle hJson)
 
     // Copy file path
     size_t pathSize = strlen(pFilePath) + 1;
-    hJson->pFilePath = (char*)STDMALLOC(pathSize);
-    if ( !hJson->pFilePath )
+    char* pNewFilePath = (char*)STDMALLOC(pathSize);
+    if ( !pNewFilePath )
     {
         json_decref(pRoot);
         STDLOG_ERROR("stdJSON_LoadEntry: File path allocation failed.\n");
         return false;
     }
 
-    stdUtil_StringCopy(hJson->pFilePath, pathSize, pFilePath);
+    stdUtil_StringCopy(pNewFilePath, pathSize, pFilePath);
 
+    // Replace the handle only after the new document has been fully loaded.
+    stdJSON_FreeEntry(hJson);
     hJson->pRoot           = pRoot;
     hJson->pParent         = NULL;
+    hJson->pFilePath       = pNewFilePath;
     hJson->bAutoSave       = false;
     hJson->bModified       = false;
     hJson->ppRequiredKeys  = NULL;
@@ -626,9 +629,6 @@ StdJSONHandle J3DAPI stdJSON_LoadEntryFromString(const char* pJsonString, StdJSO
     STD_ASSERT(hJson != NULL);
     STD_ASSERT(pJsonString != NULL);
 
-    // Free any existing data in handle
-    stdJSON_FreeEntry(hJson);
-
     json_error_t error;
     json_t* pRoot = json_loads(pJsonString, 0, &error);
     if ( !pRoot )
@@ -644,6 +644,8 @@ StdJSONHandle J3DAPI stdJSON_LoadEntryFromString(const char* pJsonString, StdJSO
         return NULL;
     }
 
+    // Replace the handle only after the new JSON string has parsed successfully.
+    stdJSON_FreeEntry(hJson);
     hJson->pRoot           = pRoot;
     hJson->pParent         = NULL;
     hJson->pFilePath       = NULL;
@@ -1873,11 +1875,10 @@ bool J3DAPI stdJSON_SetObjectArrayElement(StdJSONHandle hJson, const char* pKey,
         return false;
     }
 
-    json_incref(value->pRoot); // Increase ref count as stdJSON_SetArrayValue might decref on failure
+    json_incref(value->pRoot); // Give the array its own reference to steal.
     bool result = stdJSON_SetArrayValue(hJson, pKey, index, value->pRoot);
     if ( result )
     {
-        json_decref(value->pRoot); // Decrease ref count as function succeeded
         stdJSON_AutoSave(hJson);
     }
     return result;
