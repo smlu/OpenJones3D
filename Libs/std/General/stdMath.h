@@ -35,7 +35,7 @@ static_assert(STDMATH_RADIANSF(90.0) == 1.57079632f, "");
 #define STDMATH_CIRCLE_CIRCUMF(radius) (3.1415901f * (radius) * 2.0f)
 
 float J3DAPI stdMath_FlexPower(float base, int exponent);
-inline float stdMath_ClipNearZero(float val); // Added
+static inline float stdMath_ClipNearZero(float val); // Added
 
 float J3DAPI stdMath_NormalizeAngle(float angle);
 float J3DAPI stdMath_NormalizeAngleAcute(float angle);
@@ -74,7 +74,7 @@ float J3DAPI stdMath_Dist3D1(float x, float y, float z);
  */
 float stdMath_SmoothDamp(float current, float target, float rate, float deltaTime); // New
 
-inline float stdMath_ClipNearZero(float val)
+float stdMath_ClipNearZero(float val)
 {
     if ( fabsf(val) <= STDMATH_ZERO_EPSILON )
     {

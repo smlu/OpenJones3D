@@ -222,7 +222,7 @@ int J3DAPI stdGob_LoadEntry(Gob* pGob, const char* pFilename, int numFileHandles
 
     pGob->pDirHash = stdHashtbl_New(1024u);
     STD_ASSERTREL(pGob->pDirHash);
-    // Added: Keep release builds from using a NULL directory hash.
+    // Added: Handle directory-hash allocation failure before populating it.
     if ( !pGob->pDirHash )
     {
         STDLOG_ERROR("Error allocating memory for directory hash.\n");
@@ -341,11 +341,7 @@ GobFileHandle* J3DAPI stdGob_FileOpen(Gob* pGob, const char* aName)
     STD_ASSERTREL(aName);
     // Added: Release-build guard before using the Gob directory and handle array.
     STD_GUARD(pGob && aName, NULL);
-
-    if ( !pGob->pDirHash || !pGob->aHandles || pGob->numHandles <= 0 )
-    {
-        return NULL;
-    }
+    STD_GUARD(pGob->pDirHash && pGob->aHandles && pGob->numHandles > 0, NULL);
 
     STD_STRCPY(stdGob_aEntryNameBuff, aName);
     stdUtil_ToLower(stdGob_aEntryNameBuff);
@@ -391,10 +387,7 @@ void J3DAPI stdGob_FileClose(GobFileHandle* pHandle)
 
     STD_ASSERTREL(pHandle->bUsed);
     // Added: Release-build guard for invalid or already-closed Gob handles.
-    if ( !pHandle->bUsed )
-    {
-        return;
-    }
+    STD_GUARD_VOID(pHandle->bUsed);
 
     pGob = pHandle->pGob;
     pHandle->bUsed = 0;
@@ -414,10 +407,7 @@ int J3DAPI stdGob_FileSeek(GobFileHandle* pHandle, int offset, int origin)
     STD_GUARD(pHandle, 0);  // Added: Guard before using handle internals.
 
     // Added: Validate the Gob handle's entry and parent Gob before seeking, as they are required for bounds checking and seek offset calculation.
-    if ( !pHandle->pEntry || !pHandle->pGob )
-    {
-        return 0;
-    }
+    STD_GUARD(pHandle->pEntry && pHandle->pGob, 0);
 
     long long newOffset;
     switch ( origin )
@@ -465,10 +455,7 @@ int J3DAPI stdGob_FileEOF(GobFileHandle* pHandle)
     STD_GUARD(pHandle, 1); // Added: guard for invalid Gob handles.
 
     // Added: Validate the Gob handle's entry before checking EOF, as it is required for bounds checking.
-    if ( !pHandle->pEntry )
-    {
-        return 1;
-    }
+    STD_GUARD(pHandle->pEntry, 1);
 
     return pHandle->offset >= pHandle->pEntry->size;
 }
@@ -479,10 +466,7 @@ size_t J3DAPI stdGob_FileRead(GobFileHandle* pHandle, void* data, const size_t s
     STD_GUARD(pHandle && data && size, 0);
 
     // Added: Validate the Gob handle's entry and parent Gob before reading, as they are required for bounds checking and seek offset calculation.
-    if ( !pHandle->pEntry || !pHandle->pGob )
-    {
-        return 0;
-    }
+    STD_GUARD(pHandle->pEntry && pHandle->pGob, 0);
 
     // Fixed: Reject invalid offsets before calculating remaining bytes.
     if ( pHandle->offset < 0 || pHandle->pEntry->size < 0 || pHandle->offset > pHandle->pEntry->size )
@@ -520,10 +504,7 @@ const char* J3DAPI stdGob_FileGets(GobFileHandle* pGobFileHandle, char* pStr, si
     STD_GUARD(pGobFileHandle && pStr && size, NULL);
 
     // Added: Validate the Gob handle's entry and parent Gob before reading, as they are required for bounds checking and seek offset calculation.
-    if ( !pGobFileHandle->pEntry || !pGobFileHandle->pGob )
-    {
-        return NULL;
-    }
+    STD_GUARD(pGobFileHandle->pEntry && pGobFileHandle->pGob, NULL);
 
     // Fixed: Reject invalid offsets before calculating remaining bytes.
     if ( pGobFileHandle->offset < 0 || pGobFileHandle->pEntry->size < 0 || pGobFileHandle->offset >= pGobFileHandle->pEntry->size )
