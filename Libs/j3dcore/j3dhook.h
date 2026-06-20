@@ -3,7 +3,7 @@
 #define JONES3D_HOOK_H
 #include <stdint.h>
 #include <stdio.h>
-#include "j3d.h"
+#include <j3dcore/j3d.h>
 
 /**
 * @brief Macro calls a function at a far address.
