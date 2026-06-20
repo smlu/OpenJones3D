@@ -25,7 +25,8 @@ void J3DAPI stdLinkList_AddNode(tLinkListNode* pCur, tLinkListNode* pNodeToAdd)
     pNodeToAdd->next     = pCur->next;
     pCur->next           = pNodeToAdd;
     if ( pNext ) {
-        pCur->next->prev = pNodeToAdd;
+        // Fixed: Relink the original successor back to the inserted node.
+        pNext->prev = pNodeToAdd;
     }
 }
 
