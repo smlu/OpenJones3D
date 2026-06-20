@@ -285,7 +285,7 @@ void J3DAPI sithPhysics_Startup(void)
 
 #else
     sithPhysics_bJeepExhaust = false;
-#endif 
+#endif
 }
 
 void J3DAPI sithPhysics_FindFloor(SithThing* pThing, int bNoSurfaceImpactUpdate)
@@ -339,7 +339,6 @@ void J3DAPI sithPhysics_FindFloor(SithThing* pThing, int bNoSurfaceImpactUpdate)
     {
         searchFlags |= 0x02;// no adjoint touch?
         moveNorm = RDVECTOR_NEG3(pThing->orient.uvec);
-
     }
     else if ( (physflags & SITH_PF_RAFT) != 0 )
     {
@@ -633,7 +632,6 @@ void J3DAPI sithPhysics_UpdateThing(SithThing* pThing, float secDeltaTime)
         if ( pThing->type == SITH_THING_PLAYER || (pThing->pInSector->flags & SITH_SECTOR_AETHERIUM) == 0 )
         {
             sithPhysics_UpdateUnderwaterThingPhysics(pThing, secDeltaTime);
-
         }
         else
         {
@@ -1556,7 +1554,7 @@ void J3DAPI sithPhysics_UpdateAttachedThingPhysics(SithThing* pThing, float secD
 
     //
     // Update velocity
-    // Updated velocity is then used by sithThing_UpdateMove to actually move the thing 
+    // Updated velocity is then used by sithThing_UpdateMove to actually move the thing
     //
     rdVector_Add3Acc(&pPhysics->velocity, &thrustDelta);
 
@@ -2235,7 +2233,6 @@ void J3DAPI sithPhysics_UpdateMineCarFx(SithThing* pThing, SithMineCarFxState* p
             }*/
 
             sithPhysics_PowerOffMineCar(pThing);
-
         }
         else
         {
@@ -2723,13 +2720,11 @@ void J3DAPI sithPhysics_PowerOnMineCar(SithThing* pThing)
 {
     // Play motor run sound fx. The sound has to be repeatedly played as cog script might stop it.
     // Note the indymine.snd flags this mode as play thing once so it's ok to call it multiple times
-    sithSoundClass_PlayModeFirstEx(pThing, SITHSOUNDCLASS_LWALKMETAL, sithPhysics_mineCarEngineVolume); // sol_minecar_motor_run.wav. 
+    sithSoundClass_PlayModeFirstEx(pThing, SITHSOUNDCLASS_LWALKMETAL, sithPhysics_mineCarEngineVolume); // sol_minecar_motor_run.wav.
 
     SithMineCarState* pCarState = &pThing->userblock.pMinecar->state;
     if ( !pCarState->bEngineRunning ) // Added
     {
-
-
         if ( !pCarState->pEngineAnim && pCarState->bEngineAnim )
         {
             rdMaterial* pEngineMat = sithMaterial_Load("minecar_a_ngenfrnt.mat");
@@ -2840,7 +2835,7 @@ void J3DAPI sithPhysics_UpdateRaftPhysics(SithThing* pThing, float secDeltaTime)
     // Calculate corner normals and new look direction
     //
     rdVector3 newLookDir = { 0 };
-    rdVector3 cornerNormals[STD_ARRAYLEN(cornerOffsets)]; // front-right, front-left, back-left, back-right 
+    rdVector3 cornerNormals[STD_ARRAYLEN(cornerOffsets)]; // front-right, front-left, back-left, back-right
     for ( size_t i = 0; i < STD_ARRAYLEN(cornerPos); i++ )
     {
         int nextIdx = (i + 1) % STD_ARRAYLEN(cornerPos);
@@ -2894,7 +2889,7 @@ void J3DAPI sithPhysics_UpdateRaftPhysics(SithThing* pThing, float secDeltaTime)
         // Update front raft twist angle
         if ( raftFrontIdx != -1 )
         {
-            // Use back right corner normal and remove right vector component 
+            // Use back right corner normal and remove right vector component
             rdVector3 backNormalProjected;
             rdMath_ProjectPointOntoPlaneNormalized(&backNormalProjected, &cornerNormals[3], &pThing->orient.rvec, &rdroid_g_zeroVector3);
 
@@ -2946,7 +2941,6 @@ void J3DAPI sithPhysics_UpdateRaftPhysics(SithThing* pThing, float secDeltaTime)
         rdMatrix_Normalize34(&pThing->orient);
     }
 
-
     // Clamp attachment scale
     floorAttachScale = STDMATH_CLAMP(floorAttachScale, 0.25f, 1.0f);
 
@@ -2960,7 +2954,7 @@ void J3DAPI sithPhysics_UpdateRaftPhysics(SithThing* pThing, float secDeltaTime)
             // Skip applying drag if force was applied in current frame
             pPhysics->flags &= ~SITH_PF_FORCEAPPLIED;
         }
-        // Apply surf drag with static drag if no thrust 
+        // Apply surf drag with static drag if no thrust
         else if ( rdVector_IsZero3(&pPhysics->thrust)
             && (pThing->pInSector->flags & SITH_SECTOR_USETHRUST) == 0
             && floorAttachScale > 0.80000001f )
@@ -3055,7 +3049,7 @@ void J3DAPI sithPhysics_UpdateRaftPhysics(SithThing* pThing, float secDeltaTime)
     float speed = rdVector_Len3(&pPhysics->velocity);
     rdVector_Scale3(&pPhysics->velocity, &surfaceVelocity, speed);
 
-    // 
+    //
     // Remove velocity into surface if moving into it
     //
     if ( !rdVector_IsZero3(&pPhysics->velocity) )

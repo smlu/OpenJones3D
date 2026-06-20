@@ -640,7 +640,7 @@ int J3DAPI sithPlayerControls_Process(SithThing* pPlayerThing, float secDeltaTim
         return 0;
     }
 
-    // 
+    //
     // Process movement based on physics flags and move status
     //
 
@@ -1089,7 +1089,6 @@ void J3DAPI sithPlayerControls_ProcessClimbMove(SithThing* pThing, float secDelt
     // Nullify velocity
     rdVector_Zero3(&pThing->moveInfo.physics.velocity);
 
-
     // Note, sithPlayerControls_climbPupTrackNum is never set to puppet track num.
     // Must be a leftover from an earlier implementation.
 
@@ -1329,7 +1328,6 @@ void J3DAPI sithPlayerControls_ProcessJewelFlyMove(SithThing* pThing, float secD
     if ( sithControl_GetKey(SITHCONTROL_TURNRIGHT, &bPressed) )
     {
         pPhysics->angularVelocity.yaw = sithPlayerControls_CalculateAngularVelocity(pActor, -1.0f, -1.0f, 1.0f);
-
     }
     else if ( sithControl_GetKey(SITHCONTROL_TURNLEFT, &bPressed) )
     {
@@ -1590,7 +1588,7 @@ void J3DAPI sithPlayerControls_ProcessHUDControls(SithThing* pThing, float secDe
 
     //
     // Handle health pack use control
-    // 
+    //
     if ( !sithPlayerControls_bHealthKeyActive
         && sithControl_GetKey(SITHCONTROL_HEALTH, &bPressed) )
     {
@@ -1813,7 +1811,7 @@ void J3DAPI sithPlayerControls_ProcessFallingMove(SithThing* pThing, float secDe
     }
 
     //
-    // If falling not too fast, check for a ledge to grab
+    // If not falling too fast, check for a ledge to grab
     //
     if ( rdVector_Len3(&pPhysics->velocity) < 1.1f )
     {
@@ -2068,7 +2066,6 @@ void J3DAPI sithPlayerControls_ProcessSwimMove(SithThing* pThing, float secDelta
             if ( sithPlayerControls_secSwimBoostTimer == 0.0f && bBoostJustPrezzed )
             {
                 sithPlayerControls_secSwimBoostTimer = 3.0f;
-
             }
             else if ( sithPlayerControls_secSwimBoostTimer > 0.0f && bBoootPressed )
             {
@@ -2188,7 +2185,6 @@ void J3DAPI sithPlayerControls_ProcessSwimMove(SithThing* pThing, float secDelta
         pPhysics->thrust.z = 0.0f;
     }
 
-
     //
     // Process forward/backward pitch control
     //
@@ -2197,7 +2193,6 @@ void J3DAPI sithPlayerControls_ProcessSwimMove(SithThing* pThing, float secDelta
 
     if ( sithControl_GetKey(SITHCONTROL_FORWARD, NULL) )
     {
-
         if ( (pThing->moveInfo.physics.flags & SITH_PF_ONWATERSURFACE) != 0 )
         {
             // On water surface move forward
@@ -2250,7 +2245,6 @@ void J3DAPI sithPlayerControls_ProcessSwimMove(SithThing* pThing, float secDelta
     //
     if ( sithControl_GetKey(SITHCONTROL_TURNRIGHT, NULL) )
     {
-
         if ( (pThing->moveInfo.physics.flags & SITH_PF_ONWATERSURFACE) != 0 )
         {
             pPhysics->angularVelocity.yaw = sithPlayerControls_CalculateAngularVelocity(pActor, -1.0f, -1.0f, 1.0f);
@@ -3056,9 +3050,9 @@ SithSurface* J3DAPI sithPlayerControls_FindClimbSurface(SithThing* pThing, const
         if ( (pCollision->type & SITHCOLLISION_WORLD) != 0 )
         {
             if ( pCollision->pSurfaceCollided
-                // Fixed: Added check for found surf != attachedSurf 
+                // Fixed: Added check for found surf != attachedSurf
                 //        This resolves not do left or right climb move animation as it will stick indy right back onto current surface.
-                //        Note, up/dowm climb doesn't suffer from this issue because sithPlayerActions_CenterOnClimbSurface centers thing on climb surf only in XY dir. 
+                //        Note, up/dowm climb doesn't suffer from this issue because sithPlayerActions_CenterOnClimbSurface centers thing on climb surf only in XY dir.
                 && ((climbDir == 1 || climbDir == 2) || pCollision->pSurfaceCollided != pThing->attach.attachedToStructure.pSurfaceAttached)
                 && (pCollision->pSurfaceCollided->flags & SITH_SURFACE_CLIMBABLE) != 0 )
             {
@@ -3221,7 +3215,7 @@ int J3DAPI sithPlayerControls_BoardVehicle(SithThing* pThing, int bNoBoardAnim)
 
     // Altered: Moved check here.
     //          OG this check was within minecar or jeep if scope,
-    //          right after the code that checks player to vehicle enter position dot 
+    //          right after the code that checks player to vehicle enter position dot
     if ( !bHaveVehiclePlayer )
     {
         return 0;
@@ -3260,7 +3254,7 @@ int J3DAPI sithPlayerControls_BoardVehicle(SithThing* pThing, int bNoBoardAnim)
             return 0;
         }
 
-        // 
+        //
         // All checks passed, now board jeep
         //
         sithPlayerControls_pBoardedVehicleThing = pVehicleThing;
@@ -3333,7 +3327,7 @@ int J3DAPI sithPlayerControls_BoardVehicle(SithThing* pThing, int bNoBoardAnim)
         if ( (int32_t)pVehicleThing->userval != -1 )
         {
             char aGasCanModel[84];
-            sprintf_s(aGasCanModel, STD_ARRAYLEN(aGasCanModel), "gascan_%s", pVehicleThing->renderData.data.pModel3->aName);
+            STD_FORMAT(aGasCanModel, "gascan_%s", pVehicleThing->renderData.data.pModel3->aName); // Altered: Replaced sprintf with STD_FORMAT
             rdModel3* pModel = sithModel_GetModel(aGasCanModel);
 
             int meshIndex      = sithModel_GetMeshIndex(pModel, "jeep_body");
@@ -3582,7 +3576,7 @@ void J3DAPI sithPlayerControls_ExitVehicle(SithThing* pVehiclePlayerThing)
         SITHLOG_ERROR("This is really bad, trying to exit vehicle to non-existent sector..\n");
     }
 
-    // Exit vehicle sector and 
+    // Exit vehicle sector and
     bool bDiffSec           = pVehicleExitSec != pVehiclePlayerThing->pInSector;
     size_t vehiclePlayerNum = sithPlayer_g_playerNum;
     SithSector* pVehicleSec = pVehiclePlayerThing->pInSector;
@@ -3818,7 +3812,6 @@ void J3DAPI sithPlayerControls_ResetAimJointsEx(SithThing* pThing, float secDelt
         // Altered: Added smooth interpolation
         //pThing->renderData.apTweakedAngles[jointIdx] = zeroPYR;
         sithPlayerControls_BendAimJoint(pThing, jointIdx, &rdroid_g_zeroVector3, secDeltaTime);
-
     }
 
     jointIdx = sithThing_GetThingJointIndex(pThing, "intorso");
