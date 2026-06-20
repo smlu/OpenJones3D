@@ -1,4 +1,3 @@
-
 #include <j3dcore/j3dhook.h>
 #include <std/RTI/symbols.h>
 
@@ -8,11 +7,15 @@
 #include "stdStrTable.h"
 #include "stdUtil.h"
 
+#include <errno.h>
+#include <limits.h>
+
 static wchar_t stdStrTable_aBuffer[64] = { 0 };
+
+static void stdStrTable_FreeData(tStringTable* pStrTable);
 
 void stdStrTable_InstallHooks(void)
 {
-
     J3D_HOOKFUNC(stdStrTable_Load);
     J3D_HOOKFUNC(stdStrTable_ParseLiteral);
     J3D_HOOKFUNC(stdStrTable_Free);
@@ -22,19 +25,10 @@ void stdStrTable_InstallHooks(void)
 }
 
 void stdStrTable_ResetGlobals(void)
-{
-    //memset(&stdStrTable_aBuffer, 0, sizeof(stdStrTable_aBuffer));
-}
+{}
 
 int J3DAPI stdStrTable_Load(tStringTable* pStrTable, const char* pFilename)
 {
-    tFileHandle fh;
-    tHashTable* pTbl;
-    char* pCur;
-    char* pKey;
-    int bSuccess;
-    char* pValBegin;
-    char* pValEnd;
     char aLine[276] = { 0 };
     char aBuf[256]  = { 0 };
 
@@ -46,8 +40,10 @@ int J3DAPI stdStrTable_Load(tStringTable* pStrTable, const char* pFilename)
     pStrTable->pData    = NULL;
     pStrTable->pHashtbl = NULL;
     pStrTable->magic    = 0;
-    fh = std_g_pHS->pFileOpen(pFilename, "rt");
-    if ( !fh ) {
+
+    tFileHandle fh = std_g_pHS->pFileOpen(pFilename, "rt");
+    if ( !fh )
+    {
         return 0;
     }
 
@@ -55,68 +51,146 @@ int J3DAPI stdStrTable_Load(tStringTable* pStrTable, const char* pFilename)
     if ( !stdStrTable_ReadLine(fh, aLine, sizeof(aLine) - 1) || sscanf_s(aLine, "MSGS %d", &numMsgs) != 1 )
     {
         std_g_pHS->pFileClose(fh);
-        std_g_pHS->pErrorPrint("Bad 'MSG n' line in string table file '%s'\n", pFilename);
+        STDLOG_ERROR("Bad 'MSGS n' line in string table file '%s'\n", pFilename);
         return 0;
     }
 
-    pStrTable->nMsgs = numMsgs;
-
-    tStringTableNode* aData = (tStringTableNode*)STDMALLOC(sizeof(tStringTableNode) * numMsgs);
-    pStrTable->pData = aData;
-    if ( !aData ) {
-        STDLOG_FATAL("Out of memory--cannot load string table");
+    // Fixed: Reject invalid message counts before calculating allocation sizes.
+    if ( numMsgs < 0 || (size_t)numMsgs > SIZE_MAX / sizeof(tStringTableNode) )
+    {
+        std_g_pHS->pFileClose(fh);
+        STDLOG_ERROR("Invalid message count in string table file '%s'.\n", pFilename);
+        return 0;
     }
 
-    memset(pStrTable->pData, 0, sizeof(tStringTableNode) * numMsgs);
+    size_t hashSize = (size_t)numMsgs + (size_t)numMsgs / 2u;
+    if ( hashSize > INT_MAX )
+    {
+        std_g_pHS->pFileClose(fh);
+        STDLOG_ERROR("Message count is too large in string table file '%s'.\n", pFilename);
+        return 0;
+    }
 
-    pTbl = stdHashtbl_New((int32_t)((double)numMsgs * 1.5f));
-    pStrTable->pHashtbl = pTbl;
-    if ( !pTbl ) {
-        STDLOG_FATAL("Out of memory--cannot load string table");
+    pStrTable->nMsgs = (uint32_t)numMsgs;
+
+    int bSuccess = 0;
+
+    if ( numMsgs )
+    {
+        pStrTable->pData = (tStringTableNode*)STDMALLOC(sizeof(tStringTableNode) * (size_t)numMsgs);
+        if ( !pStrTable->pData )
+        {
+            // Altered: Preserve the original allocation diagnostic before asserting and cleaning up the partial table.
+            STDLOG_ERROR("Out of memory--cannot load string table");
+            STD_ASSERTREL(pStrTable->pData != NULL);
+            goto cleanup;
+        }
+
+        STD_ZEROMEM(pStrTable->pData, sizeof(tStringTableNode) * (size_t)numMsgs);
+    }
+
+    pStrTable->pHashtbl = stdHashtbl_New(hashSize);
+    if ( !pStrTable->pHashtbl )
+    {
+        // Altered: Preserve the original allocation diagnostic before asserting and cleaning up the partial table.
+        STDLOG_ERROR("Out of memory--cannot load string table");
+        STD_ASSERTREL(pStrTable->pHashtbl != NULL);
+        goto cleanup;
     }
 
     bSuccess = 1;
+
+    tStringTableNode* aData = pStrTable->pData;
     for ( int i = 0; bSuccess && (i < numMsgs); i++ )
     {
         bSuccess = stdStrTable_ReadLine(fh, aLine, sizeof(aLine) - 1);
-        if ( strncmpi(aLine, "end", 3u) == 0 ) // hit end
+        if ( bSuccess && strncmpi(aLine, "end", 3u) == 0 ) // hit end
         {
             bSuccess = 0;
             pStrTable->nMsgs = i;
-            std_g_pHS->pErrorPrint("Premature 'END' found after only %d lines in '%s'.  Check number in 'MSG xxx' header.\n", i, pFilename);
+            STDLOG_ERROR("Premature 'END' found after only %d lines in '%s'.  Check number in 'MSGS xxx' header.\n", i, pFilename);
         }
 
         if ( bSuccess )
         {
-            pCur = stdUtil_ParseLiteral(aLine, aBuf, sizeof(aBuf));
-            if ( pCur )
+            char* pCur = stdUtil_ParseLiteral(aLine, aBuf, sizeof(aBuf));
+            if ( pCur && aBuf[0] )
             {
-                pKey = (char*)STDMALLOC(strlen(aBuf) + 1);
-                stdUtil_StringCopy(pKey, strlen(aBuf) + 1, aBuf);
+                size_t keySize = strlen(aBuf) + 1u;
+                char* pKey = (char*)STDMALLOC(keySize);
+                if ( !pKey )
+                {
+                    STDLOG_FATAL("Out of memory--cannot load string table");
+                    bSuccess = 0;
+                    break;
+                }
+
+                stdUtil_StringCopy(pKey, keySize, aBuf);
                 aData[i].pKey = pKey;
 
                 pCur = stdUtil_StringSplit(pCur, aBuf, sizeof(aBuf), " \t");
                 if ( pCur )
                 {
-                    aData[i].unknown = atoi(aBuf);
-
-                    stdStrTable_ParseLiteral(pCur, &pValBegin, &pValEnd);
-                    memset(aBuf, 0, sizeof(aBuf));
-                    stdUtil_StringNumCopy(aBuf, sizeof(aBuf), pValBegin, (pValEnd - pValBegin));
-                    aData[i].value = stdUtil_ToWString(aBuf);
-
-                    if ( !stdHashtbl_Add(pStrTable->pHashtbl, aData[i].pKey, &aData[i]) )
+                    errno = 0;
+                    char* pNumberEnd;
+                    long numericValue = strtol(aBuf, &pNumberEnd, 10);
+                    // Fixed: Reject malformed or overflowing decimal numeric fields instead of silently accepting them as zero.
+                    if ( errno == ERANGE || pNumberEnd == aBuf || *pNumberEnd || numericValue < INT_MIN || numericValue > INT_MAX )
                     {
-                        STDLOG_ERROR("The key '%s' is in the string table '%s' more than once.\n   >>>%s\n", aData[i].pKey, pFilename, aLine);
+                        bSuccess = 0;
+                        STDLOG_ERROR("Cannot understand this line in string table '%s'.\n   >>> %s\n", pFilename, aLine);
+                        continue;
+                    }
+
+                    aData[i].unknown = (int)numericValue;
+
+                    char* pValBegin;
+                    char* pValEnd;
+                    stdStrTable_ParseLiteral(pCur, &pValBegin, &pValEnd);
+                    // Fixed: Require valid quoted value bounds before copying to the temp buffer and assigning aData[i].value.
+                    if ( pValBegin && pValEnd )
+                    {
+                        memset(aBuf, 0, sizeof(aBuf));
+                        stdUtil_StringNumCopy(aBuf, sizeof(aBuf), pValBegin, (pValEnd - pValBegin));
+                        aData[i].value = stdUtil_ToWString(aBuf);
+                        if ( !aData[i].value )
+                        {
+                            STDLOG_FATAL("Out of memory--cannot load string table");
+                            bSuccess = 0;
+                            break;
+                        }
+
+                        if ( !stdHashtbl_Add(pStrTable->pHashtbl, aData[i].pKey, &aData[i]) )
+                        {
+                            // Fixed: A duplicate key or hash-node allocation failure makes the table incomplete.
+                            bSuccess = 0;
+                            if ( stdHashtbl_Find(pStrTable->pHashtbl, aData[i].pKey) )
+                            {
+                                STDLOG_ERROR("The key '%s' is in the string table '%s' more than once.\n   >>>%s\n", aData[i].pKey, pFilename, aLine);
+                            }
+                            else
+                            {
+                                STDLOG_FATAL("Out of memory--cannot load string table");
+                            }
+                        }
+                    }
+                    else
+                    {
+                        bSuccess = 0;
+                        STDLOG_ERROR("Cannot understand this line in string table '%s'.\n   >>> %s\n", pFilename, aLine);
                     }
                 }
                 else
                 {
+                    // Fixed: Treat malformed entry lines as load failures, not logged successes.
+                    bSuccess = 0;
                     STDLOG_ERROR("Cannot understand this line in string table '%s'.\n   >>> %s\n", pFilename, aLine);
                 }
             }
             else
             {
+                // Fixed: Treat malformed entry lines as load failures, not logged successes.
+                bSuccess = 0;
                 STDLOG_ERROR("Cannot understand this line in string table '%s'.\n   >>> %s\n", pFilename, aLine);
             }
         }
@@ -127,15 +201,27 @@ int J3DAPI stdStrTable_Load(tStringTable* pStrTable, const char* pFilename)
         aLine[0] = 0;
         stdStrTable_ReadLine(fh, aLine, STD_ARRAYLEN(aLine) - 1);
         const char* ptok = strtok(aLine, " \t\n\r");
-        if ( !streqi(ptok, "end") )
+        // Fixed: Missing trailing END can leave no token at EOF; reject it instead of dereferencing NULL.
+        if ( !ptok || !streqi(ptok, "end") )
         {
             bSuccess = 0;
-            std_g_pHS->pErrorPrint("'END' not found in '%s'.  Enlarge number in 'MSG xxx' header.\n", pFilename);
+            STDLOG_ERROR("'END' not found in '%s'.  Enlarge number in 'MSGS xxx' header.\n", pFilename);
         }
     }
 
-    pStrTable->magic = 'sTbl';
+    if ( bSuccess )
+    {
+        pStrTable->magic = 'sTbl';
+    }
+
+cleanup:
     std_g_pHS->pFileClose(fh);
+    // Fixed: Release every partial allocation when parsing or allocation fails.
+    if ( !bSuccess )
+    {
+        stdStrTable_FreeData(pStrTable);
+    }
+
     return bSuccess;
 }
 
@@ -143,7 +229,17 @@ char* J3DAPI stdStrTable_ParseLiteral(const char* pStr, char** ppBegin, char** p
 {
     char* pCur;
 
-    pCur = strchr(pStr, '"') + 1;
+    *ppBegin = NULL;
+    *ppEnd = NULL;
+
+    pCur = strchr(pStr, '"');
+    // Fixed: Reject strings with no opening quote instead of forming a pointer from NULL.
+    if ( !pCur )
+    {
+        return NULL;
+    }
+
+    pCur = pCur + 1;
     *ppBegin = pCur;
     while ( pCur )
     {
@@ -165,36 +261,49 @@ char* J3DAPI stdStrTable_ParseLiteral(const char* pStr, char** ppBegin, char** p
 
 void J3DAPI stdStrTable_Free(tStringTable* pStrTable)
 {
-    int nMsgs;
-    tStringTableNode* aData;
-
     STD_ASSERTREL(pStrTable != NULL);
+    // Added: Keep guard-enabled builds from dereferencing a NULL table after preserving the original assertion.
+    STD_GUARD_VOID(pStrTable != NULL);
 
     if ( pStrTable->magic == 'sTbl' )
     {
-        nMsgs = pStrTable->nMsgs;
-        aData = pStrTable->pData;
+        stdStrTable_FreeData(pStrTable);
+    }
+}
 
-        pStrTable->magic = 0;
-        pStrTable->nMsgs = 0;
-        pStrTable->pData = NULL;
-        stdHashtbl_Free(pStrTable->pHashtbl);
+// Added: Shared cleanup for complete tables and partially loaded table data.
+static void stdStrTable_FreeData(tStringTable* pStrTable)
+{
+    uint32_t nMsgs          = pStrTable->nMsgs;
+    tStringTableNode* aData = pStrTable->pData;
+    tHashTable* pHashtbl    = pStrTable->pHashtbl;
 
-        if ( aData )
+    pStrTable->magic    = 0;
+    pStrTable->nMsgs    = 0;
+    pStrTable->pData    = NULL;
+    pStrTable->pHashtbl = NULL;
+
+    if ( pHashtbl )
+    {
+        stdHashtbl_Free(pHashtbl);
+    }
+
+    if ( aData )
+    {
+        for ( uint32_t i = 0; i < nMsgs; ++i )
         {
-            for ( int i = 0; i < nMsgs; ++i )
+            if ( aData[i].value )
             {
-                if ( aData[i].value ) {
-                    stdMemory_Free(aData[i].value);
-                }
-
-                if ( aData[i].pKey ) {
-                    stdMemory_Free((void*)aData[i].pKey);
-                }
+                STDFREE(aData[i].value);
             }
 
-            stdMemory_Free(aData);
+            if ( aData[i].pKey )
+            {
+                STDFREE((void*)aData[i].pKey);
+            }
         }
+
+        STDFREE(aData);
     }
 }
 
@@ -228,29 +337,40 @@ wchar_t* J3DAPI stdStrTable_GetValueOrKey(const tStringTable* pStrTable, const c
 
 int J3DAPI stdStrTable_ReadLine(tFileHandle fh, char* pStr, int size)
 {
+    char* pReadStr = NULL;
     bool bFinish = false;
     while ( !bFinish )
     {
-        char* pReadStr = std_g_pHS->pFileGets(fh, pStr, size);
+        pReadStr = std_g_pHS->pFileGets(fh, pStr, size);
+        // Fixed: Stop before scanning stale line contents after EOF or a read failure.
+        if ( !pReadStr )
+        {
+            break;
+        }
+
         if ( pReadStr != NULL && strchr(pStr, '\n') == NULL ) // Added: Added check for no data read from file
         {
             char aBuf[64] = { 0 };
-            do {
-                pReadStr = std_g_pHS->pFileGets(fh, aBuf, sizeof(aBuf));
-            } while ( pReadStr != NULL && strchr(aBuf, '\n') == NULL ); // Fixed: Added check for no data read from file. This fixes potential infinitive loop bug when there is no line break at the end of the file
+            char* pDiscardedLine;
+            do
+            {
+                pDiscardedLine = std_g_pHS->pFileGets(fh, aBuf, sizeof(aBuf));
+            } while ( pDiscardedLine != NULL && strchr(aBuf, '\n') == NULL ); // Fixed: Added check for no data read from file. This fixes potential infinitive loop bug when there is no line break at the end of the file
         }
 
         // Skip spaces
         char* pch = pStr;
-        for ( ; isspace(*pch); ++pch ) {
+        for ( ; isspace((unsigned char)*pch); ++pch )
+        {
             ;
         }
 
-        if ( pReadStr == NULL || (*pch != '#' && *pch && *pch != '\r' && *pch != '\n') ) // Fixed: Added check for no data read from file to prevent potential infinitive loop bug
+        if ( *pch != '#' && *pch && *pch != '\r' && *pch != '\n' )
         {
             bFinish = true;
         }
     };
 
-    return 1;
+    // Fixed: Report EOF/read failure so callers cannot parse stale line contents.
+    return pReadStr != NULL;
 }
