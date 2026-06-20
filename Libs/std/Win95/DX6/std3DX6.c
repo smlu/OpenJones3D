@@ -338,11 +338,17 @@ int std3D_Startup(void)
     if ( ddres != DD_OK )
     {
         STDLOG_ERROR("Error %s when enumerating D3D devices.\n", std3D_D3DGetStatus(ddres));
+        // Fixed: Release the Direct3D interface when device enumeration fails during startup.
+        IDirect3D3_Release(std3D_pDirect3D);
+        std3D_pDirect3D = NULL;
         return 0;
     }
 
     if ( std3D_numDevices == 0 )
     {
+        // Fixed: Release the Direct3D interface when startup finds no usable devices.
+        IDirect3D3_Release(std3D_pDirect3D);
+        std3D_pDirect3D = NULL;
         return 0;
     }
 
@@ -409,9 +415,10 @@ int J3DAPI std3D_Open(size_t deviceNum)
 
     std3D_curDevice  = deviceNum;
     std3D_pCurDevice = &std3D_aDevices[deviceNum];
+    // Fixed: Route failures after device selection through cleanup so a partial open can be retried safely.
     if ( !std3D_pCurDevice->hasZBuffer )
     {
-        return 0;
+        goto error;
     }
 
     DDPIXELFORMAT pixelFormat = { 0 };
@@ -419,7 +426,7 @@ int J3DAPI std3D_Open(size_t deviceNum)
     if ( stdDisplay_CreateZBuffer(&pixelFormat, std3D_pCurDevice->bHAL == 0) )
     {
         STDLOG_ERROR("Error creating Z buffer.\n");
-        return 0;
+        goto error;
     }
 
     // Init palette
@@ -443,7 +450,7 @@ int J3DAPI std3D_Open(size_t deviceNum)
     if ( dres != DD_OK )
     {
         STDLOG_ERROR("Error %s creating palette.\n", std3D_D3DGetStatus(dres));
-        return 0;
+        goto error;
     }
 
     dres = IDirect3D3_CreateDevice(
@@ -457,7 +464,7 @@ int J3DAPI std3D_Open(size_t deviceNum)
     if ( dres != D3D_OK )
     {
         STDLOG_ERROR("Error %s creating Direct3D device.\n", std3D_D3DGetStatus(dres));
-        return 0;
+        goto error;
     }
 
     std3D_numTextureFormats    = 0;
@@ -466,19 +473,19 @@ int J3DAPI std3D_Open(size_t deviceNum)
     if ( dres != D3D_OK )
     {
         STDLOG_ERROR("Error %s when enumerating D3D device texture formats.\n", std3D_D3DGetStatus(dres));
-        return 0;
+        goto error;
     }
 
     if ( !std3D_numTextureFormats || !std3D_bHasRGBTextureFormat )
     {
         STDLOG_ERROR("Error: no 16 texture formats found.\n");
-        return 0;
+        goto error;
     }
 
     if ( !std3D_CreateViewport() )
     {
         STDLOG_ERROR("Error creating viewport.\n");
-        return 0;
+        goto error;
     }
 
     std3D_g_maxVertices = std3D_pCurDevice->maxVertexCount;
@@ -523,13 +530,13 @@ int J3DAPI std3D_Open(size_t deviceNum)
     if ( !std3D_InitRenderState() )
     {
         STDLOG_ERROR("Error initializing render state.\n");
-        return 0;
+        goto error;
     }
 
     if ( stdDisplay_GetTextureMemory(&std3D_pCurDevice->totalMemory, &std3D_pCurDevice->availableMemory) )
     {
         // Since we failed to get texture memory info indicate that opening failed
-        return 0;
+        goto error;
     }
 
     size_t memFree  = 0;
@@ -541,6 +548,10 @@ int J3DAPI std3D_Open(size_t deviceNum)
 
     std3D_bOpen = true;
     return 1;
+
+error:
+    std3D_Close();
+    return 0;
 }
 
 void std3D_Close(void)
@@ -650,7 +661,8 @@ void J3DAPI std3D_DrawRenderList(tSysTexture* pTex, Std3DRenderState rdflags, LP
 
     std3D_SetRenderState(rdflags);
 
-    if ( pTex != std3D_pD3DTex )
+    // Fixed: EndScene clears the cached texture pointer without unbinding the device texture, so untextured draws must bind NULL explicitly.
+    if ( pTex != std3D_pD3DTex || !pTex )
     {
         d3dres = IDirect3DDevice3_SetTexture(std3D_pD3Device, 0, pTex);
         if ( d3dres != D3D_OK )
@@ -837,7 +849,8 @@ void J3DAPI std3D_SetRenderState(Std3DRenderState rdflags)
                 {
                     IDirect3DDevice3_SetTextureStageState(std3D_pD3Device, 0, D3DTSS_MAGFILTER, D3DTFG_ANISOTROPIC);
                 }
-                else if ( (std3D_pCurDevice->d3dDesc.dpcTriCaps.dwTextureFilterCaps & D3DPTFILTERCAPS_MAGFPOINT) != 0 )
+                // Fixed: Linear magnification support, not point support, gates the linear fallback.
+                else if ( (std3D_pCurDevice->d3dDesc.dpcTriCaps.dwTextureFilterCaps & D3DPTFILTERCAPS_MAGFLINEAR) != 0 )
                 {
                     IDirect3DDevice3_SetTextureStageState(std3D_pD3Device, 0, D3DTSS_MAGFILTER, D3DTFG_LINEAR);
                 }
@@ -848,16 +861,30 @@ void J3DAPI std3D_SetRenderState(Std3DRenderState rdflags)
 
                 IDirect3DDevice3_SetTextureStageState(std3D_pD3Device, 0, D3DTSS_MINFILTER, D3DTFN_ANISOTROPIC);
             }
-            else if ( ((rdflags & STD3D_RS_TEXFILTER_BILINEAR) != 0 || !std3D_pCurDevice->bAnisotropicFilteringSupported)
-                && (std3D_pCurDevice->d3dDesc.dpcTriCaps.dwTextureFilterCaps & D3DPTFILTERCAPS_MAGFLINEAR) != 0 )
+            else
             {
-                IDirect3DDevice3_SetTextureStageState(std3D_pD3Device, 0, D3DTSS_MAGFILTER, D3DTFG_LINEAR);
-                IDirect3DDevice3_SetTextureStageState(std3D_pD3Device, 0, D3DTSS_MINFILTER, D3DTFN_LINEAR);
-            }
-            else if ( (std3D_pCurDevice->d3dDesc.dpcTriCaps.dwTextureFilterCaps & D3DPTFILTERCAPS_MAGFPOINT) != 0 )
-            {
-                IDirect3DDevice3_SetTextureStageState(std3D_pD3Device, 0, D3DTSS_MAGFILTER, D3DTFG_POINT);
-                IDirect3DDevice3_SetTextureStageState(std3D_pD3Device, 0, D3DTSS_MINFILTER, D3DTFN_POINT);
+                DWORD filterCaps  = std3D_pCurDevice->d3dDesc.dpcTriCaps.dwTextureFilterCaps;
+                bool bUseLinear   = (rdflags & STD3D_RS_TEXFILTER_BILINEAR) != 0
+                    || !std3D_pCurDevice->bAnisotropicFilteringSupported;
+
+                // Fixed: Select magnification and minification fallbacks from their respective capability bits.
+                if ( bUseLinear && (filterCaps & D3DPTFILTERCAPS_MAGFLINEAR) != 0 )
+                {
+                    IDirect3DDevice3_SetTextureStageState(std3D_pD3Device, 0, D3DTSS_MAGFILTER, D3DTFG_LINEAR);
+                }
+                else if ( (filterCaps & D3DPTFILTERCAPS_MAGFPOINT) != 0 )
+                {
+                    IDirect3DDevice3_SetTextureStageState(std3D_pD3Device, 0, D3DTSS_MAGFILTER, D3DTFG_POINT);
+                }
+
+                if ( bUseLinear && (filterCaps & D3DPTFILTERCAPS_MINFLINEAR) != 0 )
+                {
+                    IDirect3DDevice3_SetTextureStageState(std3D_pD3Device, 0, D3DTSS_MINFILTER, D3DTFN_LINEAR);
+                }
+                else if ( (filterCaps & D3DPTFILTERCAPS_MINFPOINT) != 0 )
+                {
+                    IDirect3DDevice3_SetTextureStageState(std3D_pD3Device, 0, D3DTSS_MINFILTER, D3DTFN_POINT);
+                }
             }
         }
         else
@@ -865,15 +892,25 @@ void J3DAPI std3D_SetRenderState(Std3DRenderState rdflags)
 
             if ( (std3D_renderState & STD3D_RS_TEXFILTER_BILINEAR) != (rdflags & STD3D_RS_TEXFILTER_BILINEAR) )
             {
-                if ( (rdflags & STD3D_RS_TEXFILTER_BILINEAR) != 0
-                    && (std3D_pCurDevice->d3dDesc.dpcTriCaps.dwTextureFilterCaps & D3DPTFILTERCAPS_MAGFLINEAR) != 0 )
+                DWORD filterCaps = std3D_pCurDevice->d3dDesc.dpcTriCaps.dwTextureFilterCaps;
+                bool bUseLinear  = (rdflags & STD3D_RS_TEXFILTER_BILINEAR) != 0;
+
+                // Fixed: Select magnification and minification filters from their respective capability bits.
+                if ( bUseLinear && (filterCaps & D3DPTFILTERCAPS_MAGFLINEAR) != 0 )
                 {
                     IDirect3DDevice3_SetTextureStageState(std3D_pD3Device, 0, D3DTSS_MAGFILTER, D3DTFG_LINEAR);
-                    IDirect3DDevice3_SetTextureStageState(std3D_pD3Device, 0, D3DTSS_MINFILTER, D3DTFN_LINEAR);
                 }
-                else if ( (std3D_pCurDevice->d3dDesc.dpcTriCaps.dwTextureFilterCaps & D3DPTFILTERCAPS_MAGFPOINT) != 0 )
+                else if ( (filterCaps & D3DPTFILTERCAPS_MAGFPOINT) != 0 )
                 {
                     IDirect3DDevice3_SetTextureStageState(std3D_pD3Device, 0, D3DTSS_MAGFILTER, D3DTFG_POINT);
+                }
+
+                if ( bUseLinear && (filterCaps & D3DPTFILTERCAPS_MINFLINEAR) != 0 )
+                {
+                    IDirect3DDevice3_SetTextureStageState(std3D_pD3Device, 0, D3DTSS_MINFILTER, D3DTFN_LINEAR);
+                }
+                else if ( (filterCaps & D3DPTFILTERCAPS_MINFPOINT) != 0 )
+                {
                     IDirect3DDevice3_SetTextureStageState(std3D_pD3Device, 0, D3DTSS_MINFILTER, D3DTFN_POINT);
                 }
             }
@@ -896,11 +933,19 @@ void J3DAPI std3D_SetRenderState(Std3DRenderState rdflags)
 
 void J3DAPI std3D_AllocSystemTexture(tSystemTexture* pTexture, tVBuffer** apVBuffers, size_t numMipLevels, StdColorFormatType formatType)
 {
-    LPDIRECTDRAWSURFACE4 pSrcSurf    = NULL;
-    LPDIRECTDRAWSURFACE4 pSrcSurfTmp = NULL;
+    LPDIRECTDRAWSURFACE4 pSrcRoot  = NULL;
+    LPDIRECTDRAWSURFACE4 pSrcLevel = NULL;
+    LPDIRECTDRAWSURFACE4 pDstRoot  = NULL;
+    LPDIRECTDRAWSURFACE4 pDstLevel = NULL;
+    LPDIRECT3DTEXTURE2 pTex        = NULL;
+    LPDIRECT3DTEXTURE2 pTmpTex     = NULL;
+    tVBuffer* pLockedVBuffer       = NULL;
+    bool bSurfaceLocked            = false;
+    bool bVBufferLocked            = false;
+
     STD_ZEROMEM(pTexture, sizeof(tSystemTexture));
 
-    if ( !std3D_numTextureFormats )
+    if ( !std3D_numTextureFormats || !apVBuffers || !numMipLevels )
     {
         return;
     }
@@ -945,7 +990,6 @@ void J3DAPI std3D_AllocSystemTexture(tSystemTexture* pTexture, tVBuffer** apVBuf
     ddsdSrc.dwMipMapCount   = 0;
     ddsdSrc.ddpfPixelFormat = ddpixfmt;
 
-    pSrcSurf = NULL;
     if ( std3D_mipmapFilter )
     {
         ddsdSrc.dwFlags        |= DDSD_MIPMAPCOUNT;
@@ -953,103 +997,139 @@ void J3DAPI std3D_AllocSystemTexture(tSystemTexture* pTexture, tVBuffer** apVBuf
         ddsdSrc.dwMipMapCount  = numMipLevels;
     }
 
-    DDSURFACEDESC2 ddsdSrcTmp = ddsdSrc; // TODO: it might be copied within the scope where ddsdSrcTmp is used
-
-    HRESULT ddres = IDirectDraw4_CreateSurface(std3D_lpDD, &ddsdSrc, &pSrcSurf, NULL);
+    DDSURFACEDESC2 ddsdSrcTmp = ddsdSrc;
+    HRESULT ddres = IDirectDraw4_CreateSurface(std3D_lpDD, &ddsdSrc, &pSrcRoot, NULL);
     if ( ddres != DD_OK )
     {
         STDLOG_ERROR("Error %s when creating the DirectDraw source surface.\n", std3D_D3DGetStatus(ddres));
         goto error;
     }
 
-    LPDIRECT3DTEXTURE2 pTex = NULL;
-    ddres = IDirectDrawSurface4_QueryInterface(pSrcSurf, &IID_IDirect3DTexture2, &pTex);
+    ddres = IDirectDrawSurface4_QueryInterface(pSrcRoot, &IID_IDirect3DTexture2, &pTex);
     if ( ddres != DD_OK )
     {
         STDLOG_ERROR("Error %s creating Direct3D source texture.\n", std3D_D3DGetStatus(ddres));
         goto error;
     }
 
+    pSrcLevel = pSrcRoot;
     for ( size_t mmNum = 0; mmNum < numMipLevels; ++mmNum )
     {
         DDSURFACEDESC2 ddsdMipMap;
         STD_ZEROMEM(&ddsdMipMap, sizeof(ddsdMipMap));
         ddsdMipMap.dwSize = sizeof(DDSURFACEDESC2);
-        ddres = IDirectDrawSurface4_Lock(pSrcSurf, NULL, &ddsdMipMap, DDLOCK_WAIT, NULL);
+        ddres = IDirectDrawSurface4_Lock(pSrcLevel, NULL, &ddsdMipMap, DDLOCK_WAIT, NULL);
         if ( ddres != DD_OK )
         {
             STDLOG_ERROR("Error %s when locking the DDSurface source buffer.\n", std3D_D3DGetStatus(ddres));
             goto error;
         }
+        bSurfaceLocked = true;
 
-        // Copy pixels from input VBuffer mipmap to surface
+        // Fixed: Copy only bytes available in both rows; a DirectDraw pitch can be wider than the source VBuffer row.
         tColorMode colorMode = apVBuffers[mmNum]->rasterInfo.colorInfo.colorMode;
-        if ( colorMode )
+        if ( colorMode > STDCOLOR_PAL && colorMode <= STDCOLOR_RGBA )
         {
-            if ( colorMode > STDCOLOR_PAL && colorMode <= STDCOLOR_RGBA )
+            pLockedVBuffer = apVBuffers[mmNum];
+            if ( !stdDisplay_VBufferLock(pLockedVBuffer) )
             {
-                stdDisplay_VBufferLock(apVBuffers[mmNum]);
-                for ( size_t row = 0; row < ddsdMipMap.dwHeight; ++row )
-                {
-                    void* pSrcPixels  = &apVBuffers[mmNum]->pPixels[apVBuffers[mmNum]->rasterInfo.rowSize * row];
-                    void* pDestPexels = (uint8_t*)ddsdMipMap.lpSurface + row * ddsdMipMap.lPitch;
-                    memcpy(pDestPexels, pSrcPixels, ddsdMipMap.lPitch); // Fixed: Fixed copying row from source. Originally was fixed to copy 16bpp row.
-                }
-                stdDisplay_VBufferUnlock(apVBuffers[mmNum]);
+                STDLOG_ERROR("Error locking source VBuffer mip level %zu.\n", mmNum);
+                goto error;
             }
+            bVBufferLocked = true;
+
+            size_t destPitch = ddsdMipMap.lPitch < 0
+                ? (size_t)-ddsdMipMap.lPitch
+                : (size_t)ddsdMipMap.lPitch;
+            size_t copySize = pLockedVBuffer->rasterInfo.rowSize < destPitch
+                ? pLockedVBuffer->rasterInfo.rowSize
+                : destPitch;
+
+            for ( size_t row = 0; row < ddsdMipMap.dwHeight; ++row )
+            {
+                // Fixed: lPitch is the signed byte distance to the next row, including for bottom-up surfaces.
+                uint8_t* pDestPixels = (uint8_t*)ddsdMipMap.lpSurface + (ptrdiff_t)row * ddsdMipMap.lPitch;
+                memset(pDestPixels, 0, destPitch);
+
+                if ( row < pLockedVBuffer->rasterInfo.height )
+                {
+                    const uint8_t* pSrcPixels = &pLockedVBuffer->pPixels[pLockedVBuffer->rasterInfo.rowSize * row];
+                    memcpy(pDestPixels, pSrcPixels, copySize);
+                }
+            }
+
+            stdDisplay_VBufferUnlock(pLockedVBuffer);
+            pLockedVBuffer = NULL;
+            bVBufferLocked = false;
         }
         else
         {
             STDLOG_ERROR("Can't use paletized textures.\n");
         }
 
-        ddres = IDirectDrawSurface4_Unlock(pSrcSurf, NULL);
+        ddres = IDirectDrawSurface4_Unlock(pSrcLevel, NULL);
         if ( ddres != DD_OK )
         {
             STDLOG_ERROR("Error %s when unlocking the DDSurface source buffer.\n", std3D_D3DGetStatus(ddres));
             goto error;
         }
+        bSurfaceLocked = false;
 
         if ( mmNum < numMipLevels - 1 )
         {
             DDSCAPS2 ddscaps = { 0 };
             ddscaps.dwCaps = DDSCAPS_MIPMAP | DDSCAPS_TEXTURE;
-            ddres = IDirectDrawSurface4_GetAttachedSurface(pSrcSurf, &ddscaps, &pSrcSurf);
+
+            LPDIRECTDRAWSURFACE4 pNextLevel = NULL;
+            ddres = IDirectDrawSurface4_GetAttachedSurface(pSrcLevel, &ddscaps, &pNextLevel);
             if ( ddres != DD_OK )
             {
                 STDLOG_ERROR("Error %s when getting next DDSurface source buffer.\n", std3D_D3DGetStatus(ddres));
                 goto error;
             }
+
+            // Fixed: GetAttachedSurface adds a reference; release each traversed non-root level.
+            if ( pSrcLevel != pSrcRoot )
+            {
+                IDirectDrawSurface4_Release(pSrcLevel);
+            }
+            pSrcLevel = pNextLevel;
         }
     }
 
-    // If current texture size differs from input texture size
-    // Create new texture with correct size and copy over current texture
+    if ( pSrcLevel != pSrcRoot )
+    {
+        IDirectDrawSurface4_Release(pSrcLevel);
+    }
+    pSrcLevel = NULL;
+
     if ( texWidth != pVBuffer->rasterInfo.width || texHeight != pVBuffer->rasterInfo.height )
     {
         ddsdSrcTmp.dwWidth  = texWidth;
         ddsdSrcTmp.dwHeight = texHeight;
-        ddres = IDirectDraw4_CreateSurface(std3D_lpDD, (LPDDSURFACEDESC2)&ddsdSrcTmp, &pSrcSurfTmp, NULL);
+        ddres = IDirectDraw4_CreateSurface(std3D_lpDD, &ddsdSrcTmp, &pDstRoot, NULL);
         if ( ddres != DD_OK )
         {
-            STDLOG_ERROR("Error %s when creating the DirectDraw source surface.\n", std3D_D3DGetStatus(ddres));
+            STDLOG_ERROR("Error %s when creating the resized DirectDraw texture surface.\n", std3D_D3DGetStatus(ddres));
             goto error;
         }
 
-        LPDIRECT3DTEXTURE2 pTmpTex = NULL;
-        ddres = IDirectDrawSurface4_QueryInterface(pSrcSurfTmp, &IID_IDirect3DTexture2, &pTmpTex);
+        ddres = IDirectDrawSurface4_QueryInterface(pDstRoot, &IID_IDirect3DTexture2, &pTmpTex);
         if ( ddres != DD_OK )
         {
-            STDLOG_ERROR("Error %s creating Direct3D source texture.\n", std3D_D3DGetStatus(ddres));
+            STDLOG_ERROR("Error %s creating resized Direct3D texture.\n", std3D_D3DGetStatus(ddres));
             goto error;
         }
 
+        // Fixed: Traverse source and destination mip chains together so each destination level receives its matching source level.
+        pSrcLevel = pSrcRoot;
+        pDstLevel = pDstRoot;
         for ( size_t mmNum = 0; mmNum < numMipLevels; ++mmNum )
         {
-            ddres = IDirectDrawSurface4_Blt(pSrcSurfTmp, NULL, pSrcSurf, NULL, DDBLT_WAIT, NULL);
+            ddres = IDirectDrawSurface4_Blt(pDstLevel, NULL, pSrcLevel, NULL, DDBLT_WAIT, NULL);
             if ( ddres != DD_OK )
             {
-                STDLOG_ERROR("Error %s when creating the DirectDraw source surface.\n", std3D_D3DGetStatus(ddres));
+                STDLOG_ERROR("Error %s when resizing DirectDraw texture mip level %zu.\n", std3D_D3DGetStatus(ddres), mmNum);
                 goto error;
             }
 
@@ -1057,28 +1137,67 @@ void J3DAPI std3D_AllocSystemTexture(tSystemTexture* pTexture, tVBuffer** apVBuf
             {
                 DDSCAPS2 ddscaps = { 0 };
                 ddscaps.dwCaps = DDSCAPS_MIPMAP | DDSCAPS_TEXTURE;
-                ddres = IDirectDrawSurface4_GetAttachedSurface(pSrcSurfTmp, &ddscaps, &pSrcSurfTmp);
+
+                LPDIRECTDRAWSURFACE4 pNextSrcLevel = NULL;
+                ddres = IDirectDrawSurface4_GetAttachedSurface(pSrcLevel, &ddscaps, &pNextSrcLevel);
                 if ( ddres != DD_OK )
                 {
-                    STDLOG_ERROR("Error %s when getting next DDSurface source buffer.\n", std3D_D3DGetStatus(ddres));
+                    STDLOG_ERROR("Error %s when getting the next source mip level.\n", std3D_D3DGetStatus(ddres));
                     goto error;
                 }
+
+                LPDIRECTDRAWSURFACE4 pNextDstLevel = NULL;
+                ddres = IDirectDrawSurface4_GetAttachedSurface(pDstLevel, &ddscaps, &pNextDstLevel);
+                if ( ddres != DD_OK )
+                {
+                    IDirectDrawSurface4_Release(pNextSrcLevel);
+                    STDLOG_ERROR("Error %s when getting the next destination mip level.\n", std3D_D3DGetStatus(ddres));
+                    goto error;
+                }
+
+                if ( pSrcLevel != pSrcRoot )
+                {
+                    IDirectDrawSurface4_Release(pSrcLevel);
+                }
+                if ( pDstLevel != pDstRoot )
+                {
+                    IDirectDrawSurface4_Release(pDstLevel);
+                }
+
+                pSrcLevel = pNextSrcLevel;
+                pDstLevel = pNextDstLevel;
             }
         }
 
-        if ( pSrcSurfTmp )
+        if ( pSrcLevel != pSrcRoot )
         {
-            IDirectDrawSurface4_Release(pSrcSurfTmp);
+            IDirectDrawSurface4_Release(pSrcLevel);
         }
+        pSrcLevel = NULL;
+
+        if ( pDstLevel != pDstRoot )
+        {
+            IDirectDrawSurface4_Release(pDstLevel);
+        }
+        pDstLevel = NULL;
 
         IDirect3DTexture2_Release(pTex);
+        pTex = NULL;
         ddsdSrc = ddsdSrcTmp;
         pTex    = pTmpTex;
+        pTmpTex = NULL;
     }
 
-    if ( pSrcSurf )
+    if ( pSrcRoot )
     {
-        IDirectDrawSurface4_Release(pSrcSurf);
+        IDirectDrawSurface4_Release(pSrcRoot);
+        pSrcRoot = NULL;
+    }
+
+    if ( pDstRoot )
+    {
+        IDirectDrawSurface4_Release(pDstRoot);
+        pDstRoot = NULL;
     }
 
     pTexture->desc           = ddsdSrc;
@@ -1087,9 +1206,44 @@ void J3DAPI std3D_AllocSystemTexture(tSystemTexture* pTexture, tVBuffer** apVBuf
     return;
 
 error:
-    if ( pSrcSurf )
+    if ( bVBufferLocked && pLockedVBuffer )
     {
-        IDirectDrawSurface4_Release(pSrcSurf);
+        stdDisplay_VBufferUnlock(pLockedVBuffer);
+    }
+
+    if ( bSurfaceLocked && pSrcLevel )
+    {
+        IDirectDrawSurface4_Unlock(pSrcLevel, NULL);
+    }
+
+    if ( pSrcLevel && pSrcLevel != pSrcRoot )
+    {
+        IDirectDrawSurface4_Release(pSrcLevel);
+    }
+
+    if ( pDstLevel && pDstLevel != pDstRoot )
+    {
+        IDirectDrawSurface4_Release(pDstLevel);
+    }
+
+    if ( pTex )
+    {
+        IDirect3DTexture2_Release(pTex);
+    }
+
+    if ( pTmpTex )
+    {
+        IDirect3DTexture2_Release(pTmpTex);
+    }
+
+    if ( pSrcRoot )
+    {
+        IDirectDrawSurface4_Release(pSrcRoot);
+    }
+
+    if ( pDstRoot )
+    {
+        IDirectDrawSurface4_Release(pDstRoot);
     }
 
     STDLOG_ERROR("Done error exit from std3D_AllocSystemTexture.\n");
@@ -1290,6 +1444,8 @@ void J3DAPI std3D_ResetTextureCache()
         }
     }
 
+    // Fixed: Mirror the explicit device unbind in the cached texture pointer.
+    std3D_pD3DTex = NULL;
     std3D_frameCount = 1;
 }
 
@@ -1419,8 +1575,9 @@ int std3D_InitRenderState(void)
 
 #ifdef J3D_QOL_IMPROVEMENTS
     // Added: Add anisotropic tex filtering
-    if ( (std3D_pCurDevice->d3dDesc.dpcTriCaps.dwTextureFilterCaps & D3DPTFILTERCAPS_MINFANISOTROPIC) != 0 )
+    if ( std3D_pCurDevice->bAnisotropicFilteringSupported )
     {
+        DWORD filterCaps = std3D_pCurDevice->d3dDesc.dpcTriCaps.dwTextureFilterCaps;
         if ( (std3D_pCurDevice->d3dDesc.dpcTriCaps.dwTextureFilterCaps & D3DPTFILTERCAPS_MAGFANISOTROPIC) != 0 )
         {
             if ( IDirect3DDevice3_SetTextureStageState(std3D_pD3Device, 0, D3DTSS_MAGFILTER, D3DTFG_ANISOTROPIC) != D3D_OK )
@@ -1428,9 +1585,17 @@ int std3D_InitRenderState(void)
                 return 0;
             }
         }
-        else
+        // Fixed: Fall back only to a magnification filter reported by the Direct3D device.
+        else if ( (filterCaps & D3DPTFILTERCAPS_MAGFLINEAR) != 0 )
         {
             if ( IDirect3DDevice3_SetTextureStageState(std3D_pD3Device, 0, D3DTSS_MAGFILTER, D3DTFG_LINEAR) != D3D_OK )
+            {
+                return 0;
+            }
+        }
+        else if ( (filterCaps & D3DPTFILTERCAPS_MAGFPOINT) != 0 )
+        {
+            if ( IDirect3DDevice3_SetTextureStageState(std3D_pD3Device, 0, D3DTSS_MAGFILTER, D3DTFG_POINT) != D3D_OK )
             {
                 return 0;
             }
@@ -1445,32 +1610,48 @@ int std3D_InitRenderState(void)
     }
     else
     #endif // J3D_QOL_IMPROVEMENTS
-        if ( (std3D_pCurDevice->d3dDesc.dpcTriCaps.dwTextureFilterCaps & D3DPTFILTERCAPS_MAGFLINEAR) != 0 )
+    {
+        DWORD filterCaps = std3D_pCurDevice->d3dDesc.dpcTriCaps.dwTextureFilterCaps;
+        bool bLinearFiltering = false;
+
+        // Fixed: Initialize magnification and minification filters from their independent capability bits.
+        if ( (filterCaps & D3DPTFILTERCAPS_MAGFLINEAR) != 0 )
         {
             if ( IDirect3DDevice3_SetTextureStageState(std3D_pD3Device, 0, D3DTSS_MAGFILTER, D3DTFG_LINEAR) != D3D_OK )
             {
                 return 0;
             }
-
-            if ( IDirect3DDevice3_SetTextureStageState(std3D_pD3Device, 0, D3DTSS_MINFILTER, D3DTFN_LINEAR) != D3D_OK )
-            {
-                return 0;
-            }
-
-            std3D_renderState |= STD3D_RS_TEXFILTER_BILINEAR;
+            bLinearFiltering = true;
         }
-        else if ( (std3D_pCurDevice->d3dDesc.dpcTriCaps.dwTextureFilterCaps & D3DPTFILTERCAPS_MAGFPOINT) != 0 )
+        else if ( (filterCaps & D3DPTFILTERCAPS_MAGFPOINT) != 0 )
         {
             if ( IDirect3DDevice3_SetTextureStageState(std3D_pD3Device, 0, D3DTSS_MAGFILTER, D3DTFG_POINT) != D3D_OK )
             {
                 return 0;
             }
+        }
 
+        if ( (filterCaps & D3DPTFILTERCAPS_MINFLINEAR) != 0 )
+        {
+            if ( IDirect3DDevice3_SetTextureStageState(std3D_pD3Device, 0, D3DTSS_MINFILTER, D3DTFN_LINEAR) != D3D_OK )
+            {
+                return 0;
+            }
+            bLinearFiltering = true;
+        }
+        else if ( (filterCaps & D3DPTFILTERCAPS_MINFPOINT) != 0 )
+        {
             if ( IDirect3DDevice3_SetTextureStageState(std3D_pD3Device, 0, D3DTSS_MINFILTER, D3DTFN_POINT) != D3D_OK )
             {
                 return 0;
             }
         }
+
+        if ( bLinearFiltering )
+        {
+            std3D_renderState |= STD3D_RS_TEXFILTER_BILINEAR;
+        }
+    }
 
     if ( IDirect3DDevice3_SetRenderState(std3D_pD3Device, D3DRENDERSTATE_SUBPIXEL, TRUE) != D3D_OK )
     {
@@ -1860,7 +2041,8 @@ HRESULT CALLBACK std3D_EnumZBufferFormatsCallback(LPDDPIXELFORMAT lpDDPixFmt, DD
         return 0;
     }
 
-    if ( lpDDPixFmt->dwFlags == DDPF_ZBUFFER
+    // Fixed: A usable Z format may also expose stencil or other compatible pixel-format flags.
+    if ( (lpDDPixFmt->dwFlags & DDPF_ZBUFFER) != 0
         && lpDDPixFmt->dwZBufferBitDepth >= 16 // TODO: try make it 32 bit
         && lpContext->dwZBufferBitDepth > lpDDPixFmt->dwZBufferBitDepth )
     {
@@ -1945,7 +2127,10 @@ HRESULT CALLBACK std3D_D3DEnumDevicesCallback(GUID* lpGuid, LPSTR lpDeviceDescri
     pD3DDriver->bSqareOnlyTexture              = (pD3DDriver->d3dDesc.dpcTriCaps.dwTextureCaps & D3DPTEXTURECAPS_SQUAREONLY) != 0;
     pD3DDriver->bAlphaTextureSupported         = (pD3DDriver->d3dDesc.dpcTriCaps.dwTextureCaps & D3DPTEXTURECAPS_ALPHA) != 0;
     pD3DDriver->bColorkeyTextureSupported      = (pD3DDriver->d3dDesc.dpcTriCaps.dwTextureCaps & D3DPTEXTURECAPS_TRANSPARENCY) != 0;
-    pD3DDriver->bAnisotropicFilteringSupported = (pD3DDriver->d3dDesc.dpcTriCaps.dwRasterCaps & D3DPRASTERCAPS_ANISOTROPY) != 0; // Added
+    // Added: Detect the caps and usable level required by the optional anisotropic filtering feature.
+    pD3DDriver->bAnisotropicFilteringSupported = (pD3DDriver->d3dDesc.dpcTriCaps.dwRasterCaps & D3DPRASTERCAPS_ANISOTROPY) != 0
+        && (pD3DDriver->d3dDesc.dpcTriCaps.dwTextureFilterCaps & D3DPTFILTERCAPS_MINFANISOTROPIC) != 0
+        && pD3DDriver->d3dDesc.dwMaxAnisotropy > 1;
     pD3DDriver->bMipmapAutoGenSupported        = false; // Added
 
     pD3DDriver->bStippledShadeSupported =
@@ -1990,7 +2175,8 @@ HRESULT CALLBACK std3D_D3DEnumDevicesCallback(GUID* lpGuid, LPSTR lpDeviceDescri
 HRESULT CALLBACK std3D_EnumTextureFormatsCallback(LPDDPIXELFORMAT lpDDPixFmt, LPVOID lpContext)
 {
     J3D_UNUSED(lpContext);
-    if ( std3D_numTextureFormats >= sizeof(std3D_aTextureFormats) )
+    // Fixed: Compare the format count with the number of entries, not the array's byte size.
+    if ( std3D_numTextureFormats >= STD_ARRAYLEN(std3D_aTextureFormats) )
     {
         return 0;
     }
@@ -2311,7 +2497,8 @@ bool std3D_IsShaderSystemActive(void)
 
 bool std3D_IsAnisotropicFilteringSupported(void)
 {
-    return false;
+    // Added: Report anisotropic filtering support discovered from the active Direct3D 6 device.
+    return std3D_pCurDevice && std3D_pCurDevice->bAnisotropicFilteringSupported;
 }
 
 bool std3D_IsMipmapAutoGenSupported(void)

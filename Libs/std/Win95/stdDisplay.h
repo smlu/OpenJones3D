@@ -7,7 +7,7 @@
 J3D_EXTERN_C_START
 
 typedef void (*tDisplayDevicePreResetCallback)(tSysDevice3D*);
-typedef void (*tDisplayDevicePostResetCallback)(tSysDevice3D*);
+typedef bool (*tDisplayDevicePostResetCallback)(tSysDevice3D*);
 typedef void (*tDisplayDeviceReleaseCallback)(tSysDevice3D*);
 
 extern tVBuffer stdDisplay_g_frontBuffer;
@@ -22,6 +22,7 @@ void stdDisplay_Close(void);
 
 #ifdef J3D_DIRECTX9
 LPDIRECT3D9 stdDisplay_GetDirect3D(void);
+size_t stdDisplay_GetAdapterNum(size_t deviceNum);
 #endif
 
 tSysDisplayDevice* stdDisplay_GetSystemDevice(void); // Can be retrieved after display system is opened
@@ -53,6 +54,7 @@ int J3DAPI stdDisplay_GetCurrentVideoMode(StdVideoMode* pDisplayMode);  // Copie
 tVBuffer* J3DAPI stdDisplay_VBufferNew(const tRasterInfo* pRasterInfo, int bUseVSurface, int bUseVideoMemory); //bUseVSurface - creates surface in system surface, otherwise in app memory is allocated
 void J3DAPI stdDisplay_VBufferFree(tVBuffer* pVBuffer);
 int J3DAPI stdDisplay_VBufferLock(tVBuffer* pVBuffer);
+int stdDisplay_VBufferLockReadOnly(tVBuffer* pVBuffer); // Added
 int J3DAPI stdDisplay_VBufferUnlock(tVBuffer* pVBuffer);
 int J3DAPI stdDisplay_VBufferFill(tVBuffer* pVBuffer, uint32_t dwFillColor, const StdRect* pRect);
 tVBuffer* J3DAPI stdDisplay_VBufferConvertColorFormat(const ColorInfo* pDesiredColorFormat, tVBuffer* pSrc, int bColorKey, LPDDCOLORKEY pColorKey);
@@ -81,6 +83,7 @@ int stdDisplay_CanRenderWindowed(void);
 int stdDisplay_IsFullscreen(void);
 
 int J3DAPI stdDisplay_LockBackBuffer(void** ppSurface, uint32_t* pWidth, uint32_t* pHeight, int32_t* pPitch);
+int stdDisplay_LockBackBufferReadOnly(void** ppSurface, uint32_t* pWidth, uint32_t* pHeight, int32_t* pPitch); // Added
 void stdDisplay_UnlockBackBuffer(void);
 
 uint32_t J3DAPI stdDisplay_EncodeFromRGB565(uint16_t pixel);

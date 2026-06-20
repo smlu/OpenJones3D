@@ -57,7 +57,12 @@ typedef D3DFORMAT tSysPixelFormat;
 typedef D3DSURFACE_DESC tSysSurfaceDesc;
 typedef IDirect3DSurface9 tSysSurface;
 typedef IDirect3DTexture9 tSysTexture;
-typedef void* LPDDCOLORKEY;
+// Added: Keep shared color-key conversion code buildable in DX9 without including DirectDraw.
+typedef struct sDDColorKey
+{
+    DWORD dwColorSpaceLowValue;
+    DWORD dwColorSpaceHighValue;
+} DDCOLORKEY, *LPDDCOLORKEY;
 
 typedef struct sD3DTLVERTEX
 {
@@ -534,6 +539,7 @@ typedef struct sDevice3D
     int unknown217;
     bool bAnisotropicFilteringSupported; // Added
     bool bMipmapAutoGenSupported; // Added
+    bool bMSAASupported; // Added
 } Device3D;
 //static_assert(sizeof(Device3D) == 872, "sizeof(Device3D) == 872");
 

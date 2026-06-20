@@ -1,6 +1,7 @@
 #include <std/Win95/std3D.h>
 #include <std/Win95/stdDisplay.h>
 #include <std/Win95/stdShader.h>
+#include <std/Win95/DX9/stdShaderDX9.h>
 
 #include <j3dcore/j3dhook.h>
 #include <std/General/std.h>
@@ -38,6 +39,7 @@ static Std3DMipmapFilterType std3D_mipmapFilter = -1;
 
 static bool std3D_bRenderFog          = true;
 static bool std3D_bFogTable           = false;
+static bool std3D_bHasStencilBuffer   = false;
 static float std3D_fogDepthFactor     = 0.0f;
 static float std3D_fogStartDepth      = 0.0f;
 static float std3D_fogEndDepth        = 0.0f;
@@ -49,6 +51,7 @@ static Device3D* std3D_pCurDevice   = NULL;
 
 static size_t std3D_numDevices      = 0;
 static Device3D std3D_aDevices[4]   = { 0 };
+static size_t std3D_aAdapterNums[STD_ARRAYLEN(std3D_aDevices)] = { 0 };
 
 static size_t std3D_numCachedTextures       = 0;
 static tSystemTexture* std3D_pFirstTexCache = NULL;
@@ -61,6 +64,7 @@ static size_t std3D_RGBAKeyTextureFormat;
 static bool std3D_bHasRGBTextureFormat           = false;
 static size_t std3D_numTextureFormats            = 0;
 static StdTextureFormat std3D_aTextureFormats[8] = { 0 };
+static const D3DFORMAT std3D_aDepthFormats[] = { D3DFMT_D24S8, D3DFMT_D24X4S4, D3DFMT_D24X8, D3DFMT_D32, D3DFMT_D15S1, D3DFMT_D16 };
 
 static const DXStatus std3D_aD3DStatusTbl[30] =
 {
@@ -111,7 +115,8 @@ static size_t std3D_ibOffset     = 0;
 static IDirect3DIndexBuffer9* std3D_pIndexBuffer = NULL;
 
 // Shader system state
-static bool std3D_bShadersActive = true;
+static bool std3D_bShadersActive    = false;
+static bool std3D_bShaderSystemOpen = false;
 static StdShaderHandle std3D_defaultShader    = STDSHADER_INVALIDHANDLE;
 static StdShaderHandle std3D_defaultShaderWf  = STDSHADER_INVALIDHANDLE;
 static StdShaderHandle std3D_activeShader     = STDSHADER_INVALIDHANDLE;
@@ -128,6 +133,10 @@ static void J3DAPI std3D_RemoveTextureFromCacheList(tSystemTexture* pCacheTextur
 static int J3DAPI std3D_PurgeTextureCache(size_t size);
 
 static bool J3DAPI std3D_SetTexture(LPDIRECT3DTEXTURE9 pTex);
+static bool std3D_CanAutoGenMipmaps(D3DFORMAT format);
+static bool std3D_FindZBufferFormat(UINT adapter, D3DFORMAT adapterFormat, D3DFORMAT renderTargetFormat, D3DFORMAT* pDepthFormat);
+static bool std3D_DepthFormatHasStencil(D3DFORMAT format);
+static void std3D_ResetTextureCacheInternal(bool bReleaseOnly);
 
 bool std3D_InitVertexBuffers(void);
 void std3D_ReleaseVertexBuffers(void);
@@ -191,6 +200,7 @@ int std3D_Startup(void)
     STD_ASSERTREL(bStartup == false);
     STD_ZEROMEM(std3D_aTextureFormats, sizeof(std3D_aTextureFormats));
     STD_ZEROMEM(std3D_aDevices, sizeof(std3D_aDevices));
+    STD_ZEROMEM(std3D_aAdapterNums, sizeof(std3D_aAdapterNums));
 
     std3D_pDirect3D = stdDisplay_GetDirect3D();
     if ( !std3D_pDirect3D )
@@ -208,11 +218,15 @@ int std3D_Startup(void)
     if ( !std3D_BuildDeviceList() )
     {
         STDLOG_ERROR("Error building device list.\n");
+        stdShader_Shutdown();
+        std3D_pDirect3D = NULL;
         return 0;
     }
 
     if ( std3D_numDevices == 0 )
     {
+        stdShader_Shutdown();
+        std3D_pDirect3D = NULL;
         return 0;
     }
 
@@ -262,18 +276,19 @@ const Device3D* std3D_GetAllDevices(void)
 static bool std3D_InitSystem(void)
 {
     tSysPixelFormat pixelFormat = { 0 };
-    if ( std3D_GetZBufferFormat(&pixelFormat) )
+    std3D_bHasStencilBuffer = false;
+    if ( !std3D_GetZBufferFormat(&pixelFormat) )
     {
-        if ( stdDisplay_CreateZBuffer(&pixelFormat, std3D_pCurDevice->bHAL == 0) )
-        {
-            STDLOG_ERROR("Error creating Z buffer.\n");
-            return false;
-        }
+        STDLOG_ERROR("No compatible D3D9 depth-buffer format was found.\n");
+        return false;
     }
-    else
+
+    if ( stdDisplay_CreateZBuffer(&pixelFormat, std3D_pCurDevice->bHAL == 0) )
     {
-        STDLOG_WARNING("Warning: No stencil Z buffer format found, using default without stencil.\n");
+        STDLOG_ERROR("Error creating Z buffer.\n");
+        return false;
     }
+    std3D_bHasStencilBuffer = std3D_DepthFormatHasStencil(pixelFormat);
 
     // Get autogen support
     std3D_bAutoGenMipmap = stdConfig_GetBool(STD3D_CFG_MIPMAPAUTOGEN, true);
@@ -284,10 +299,13 @@ static bool std3D_InitSystem(void)
     }
 
     std3D_bAnisotropicFilter = stdConfig_GetBool(STD3D_CFG_ANISOTROPICFILTER, true);
-    if ( std3D_bAnisotropicFilter && !std3D_pCurDevice->bAnisotropicFilteringSupported )
+    if ( std3D_bAnisotropicFilter
+        && (!std3D_pCurDevice->bAnisotropicFilteringSupported
+            || (std3D_pCurDevice->d3dDesc.TextureFilterCaps & D3DPTFILTERCAPS_MINFANISOTROPIC) == 0) )
     {
         STDLOG_WARNING("Warning: Anisotropic filtering disabled, no device support!\n");
-        std3D_bAutoGenMipmap = false;
+        // Disable anisotropic filtering state here; mipmap autogen is independent.
+        std3D_bAnisotropicFilter = false;
     }
 
     // Initialize texture formats
@@ -349,33 +367,62 @@ static bool std3D_InitSystem(void)
     return true;
 }
 
-static void std3D_ReleaseSystemResources(void)
+static void std3D_ReleaseSystemResources(bool bReleaseOnly)
 {
-    std3D_ResetTextureCache();
+    std3D_ResetTextureCacheInternal(bReleaseOnly);
+
+    if ( std3D_pD3Device && !bReleaseOnly )
+    {
+        // Remove device-held resource bindings before releasing their application references.
+        if ( std3D_bShaderSystemOpen )
+        {
+            for ( DWORD sampler = 0; sampler < STDSHADERDX9_MAX_PS_SAMPLERS; ++sampler )
+            {
+                IDirect3DDevice9_SetTexture(std3D_pD3Device, sampler, NULL);
+            }
+
+            for ( DWORD sampler = 0; sampler < STDSHADERDX9_MAX_VS_SAMPLERS; ++sampler )
+            {
+                IDirect3DDevice9_SetTexture(std3D_pD3Device, D3DVERTEXTEXTURESAMPLER0 + sampler, NULL);
+            }
+        }
+
+        IDirect3DDevice9_SetVertexShader(std3D_pD3Device, NULL);
+        IDirect3DDevice9_SetPixelShader(std3D_pD3Device, NULL);
+        IDirect3DDevice9_SetVertexDeclaration(std3D_pD3Device, NULL);
+        IDirect3DDevice9_SetStreamSource(std3D_pD3Device, 0, NULL, 0, 0);
+        IDirect3DDevice9_SetIndices(std3D_pD3Device, NULL);
+    }
+
     std3D_ShutdownShaderSystem();
     std3D_ReleaseVertexBuffers();
 }
 
 static void std3D_OnDisplayDeviceReset(tSysDevice3D* pDevice)
 {
-    J3D_UNUSED(pDevice);
     // Release any cached texture before device is changed
     STDLOG_DEBUG("Received display device to be reset signal. Releasing system resources...\n");
-    std3D_ReleaseSystemResources();
+    std3D_ReleaseSystemResources(FAILED(IDirect3DDevice9_TestCooperativeLevel(pDevice)));
 }
 
-static void std3D_OnDisplayDevicePostReset(tSysDevice3D* pDevice)
+static bool std3D_OnDisplayDevicePostReset(tSysDevice3D* pDevice)
 {
     STDLOG_DEBUG("Received display device reset signal. Re-initializing the system...\n");
     std3D_pD3Device = pDevice;
-    std3D_InitSystem();
+    if ( !std3D_InitSystem() )
+    {
+        std3D_ReleaseSystemResources(false);
+        return false;
+    }
+
+    return true;
 }
 
 static void std3D_OnDisplayDeviceRelease(tSysDevice3D* pDevice)
 {
-    J3D_UNUSED(pDevice);
     STDLOG_DEBUG("Received signal that display device is about to be released. Releasing system resources...\n");
-    std3D_ReleaseSystemResources();
+    std3D_ReleaseSystemResources(FAILED(IDirect3DDevice9_TestCooperativeLevel(pDevice)));
+    std3D_pD3Device = NULL;
 }
 
 int J3DAPI std3D_Open(size_t deviceNum)
@@ -420,7 +467,13 @@ int J3DAPI std3D_Open(size_t deviceNum)
     if ( !std3D_InitSystem() )
     {
         STDLOG_ERROR("Failed to initialize system, closing...\n");
-        std3D_Close();
+        stdDisplay_RegisterDevicePreResetCallback(NULL);
+        stdDisplay_RegisterDevicePostResetCallback(NULL);
+        stdDisplay_RegisterDeviceReleaseCallback(NULL);
+        std3D_ReleaseSystemResources(false);
+        std3D_pD3Device  = NULL;
+        std3D_pCurDevice = NULL;
+        std3D_curDevice  = 0;
         return 0;
     }
 
@@ -448,13 +501,15 @@ void std3D_Close(void)
     stdDisplay_RegisterDevicePostResetCallback(NULL);
     stdDisplay_RegisterDeviceReleaseCallback(NULL);
 
-    std3D_ReleaseSystemResources();
+    std3D_ReleaseSystemResources(false);
 
     std3D_mipmapFilter         = -1;
     std3D_numTextureFormats    = 0;
     std3D_curDevice            = 0;
+    std3D_pD3Device            = NULL;
     std3D_pCurDevice           = NULL;
     std3D_bHasRGBTextureFormat = false;
+    std3D_bHasStencilBuffer    = false;
     std3D_bOpen                = false;
 }
 
@@ -620,14 +675,29 @@ static bool J3DAPI std3D_SetTexture(LPDIRECT3DTEXTURE9 pTex)
 
 int std3D_DrawIndexedPrimitive(D3DPRIMITIVETYPE type, LPD3DTLVERTEX aVerts, size_t numVerts, LPWORD aIndices, size_t numIndices)
 {
-     // Copy vertices to buffers
+    // DrawPrimitiveUP and DrawIndexedPrimitiveUP clear stream zero, so bind dynamic buffers at each buffered draw.
+    HRESULT hr = IDirect3DDevice9_SetStreamSource(std3D_pD3Device, 0, std3D_pVertexBuffer, 0, sizeof(D3DTLVERTEX));
+    if ( FAILED(hr) )
+    {
+        STDLOG_ERROR("SetStreamSource failed: %s\n", std3D_D3DGetStatus(hr));
+        return 0;
+    }
+
+    hr = IDirect3DDevice9_SetIndices(std3D_pD3Device, std3D_pIndexBuffer);
+    if ( FAILED(hr) )
+    {
+        STDLOG_ERROR("SetIndices failed: %s\n", std3D_D3DGetStatus(hr));
+        return 0;
+    }
+
+    // Copy vertices to buffers
     if ( !std3D_CopyVertexDataToBuffer(aVerts, numVerts, aIndices, numIndices) )
     {
         return 0;
     }
 
     // Draw
-    HRESULT hr = IDirect3DDevice9_DrawIndexedPrimitive(
+    hr = IDirect3DDevice9_DrawIndexedPrimitive(
         std3D_pD3Device,
         type,
         (INT)std3D_vbOffset,
@@ -650,20 +720,59 @@ int std3D_DrawIndexedPrimitive(D3DPRIMITIVETYPE type, LPD3DTLVERTEX aVerts, size
     return 1;
 }
 
+static size_t std3D_GetPrimitiveCount(D3DPRIMITIVETYPE type, size_t numVerts)
+{
+    switch ( type )
+    {
+        case D3DPT_POINTLIST:
+            return numVerts;
+
+        case D3DPT_LINELIST:
+            return numVerts / 2u;
+
+        case D3DPT_LINESTRIP:
+            return numVerts > 1u ? numVerts - 1u : 0u;
+
+        case D3DPT_TRIANGLELIST:
+            return numVerts / 3u;
+
+        case D3DPT_TRIANGLESTRIP:
+        case D3DPT_TRIANGLEFAN:
+            return numVerts > 2u ? numVerts - 2u : 0u;
+
+        default:
+            return 0u;
+    }
+}
+
 int std3D_DrawPrimitive(D3DPRIMITIVETYPE type, LPD3DTLVERTEX aVerts, size_t numVerts)
 {
-     // Copy vertices to buffers
+    size_t primitiveCount = std3D_GetPrimitiveCount(type, numVerts);
+    if ( !primitiveCount )
+    {
+        return 1;
+    }
+
+    // DrawPrimitiveUP and DrawIndexedPrimitiveUP clear stream zero, so bind the dynamic stream again.
+    HRESULT hr = IDirect3DDevice9_SetStreamSource(std3D_pD3Device, 0, std3D_pVertexBuffer, 0, sizeof(D3DTLVERTEX));
+    if ( FAILED(hr) )
+    {
+        STDLOG_ERROR("SetStreamSource failed: %s\n", std3D_D3DGetStatus(hr));
+        return 0;
+    }
+
+    // Copy vertices to buffers
     if ( !std3D_CopyVertexDataToBuffer(aVerts, numVerts, NULL, 0) )
     {
         return 0;
     }
 
     // Draw
-    HRESULT hr = IDirect3DDevice9_DrawPrimitive(
+    hr = IDirect3DDevice9_DrawPrimitive(
         std3D_pD3Device,
         type,
         (UINT)std3D_vbOffset,
-        numVerts - 1
+        (UINT)primitiveCount
     );
 
     if ( FAILED(hr) )
@@ -712,7 +821,8 @@ void J3DAPI std3D_DrawRenderList(tSysTexture* pTex, Std3DRenderState rdflags, LP
     std3D_SetRenderState(rdflags);
 
     // Set texture
-    if ( pTex != std3D_pD3DTex )
+    // EndScene clears the cached texture pointer without unbinding the device texture, so untextured draws must bind NULL explicitly.
+    if ( pTex != std3D_pD3DTex || !pTex )
     {
         std3D_SetTexture(pTex);
     }
@@ -827,7 +937,7 @@ void J3DAPI std3D_DrawPointList(LPD3DTLVERTEX aVerts, size_t numVerts)
 
     if ( std3D_bUseBuffers )
     {
-        if ( !std3D_DrawPrimitive(D3DPT_LINESTRIP, aVerts, numVerts) )
+        if ( !std3D_DrawPrimitive(D3DPT_POINTLIST, aVerts, numVerts) )
         {
              // draw failed
         }
@@ -924,7 +1034,7 @@ void J3DAPI std3D_SetRenderState(Std3DRenderState rdflags)
                 {
                     IDirect3DDevice9_SetSamplerState(std3D_pD3Device, 0, D3DSAMP_MAGFILTER, D3DTEXF_ANISOTROPIC);
                 }
-                else if ( (std3D_pCurDevice->d3dDesc.TextureFilterCaps & D3DPTFILTERCAPS_MAGFPOINT) != 0 )
+                else if ( (std3D_pCurDevice->d3dDesc.TextureFilterCaps & D3DPTFILTERCAPS_MAGFLINEAR) != 0 )
                 {
                     IDirect3DDevice9_SetSamplerState(std3D_pD3Device, 0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
                 }
@@ -935,28 +1045,50 @@ void J3DAPI std3D_SetRenderState(Std3DRenderState rdflags)
 
                 IDirect3DDevice9_SetSamplerState(std3D_pD3Device, 0, D3DSAMP_MINFILTER, D3DTEXF_ANISOTROPIC);
             }
-            else if ( ((rdflags & STD3D_RS_TEXFILTER_BILINEAR) != 0 || !std3D_bAnisotropicFilter)
-                && (std3D_pCurDevice->d3dDesc.TextureFilterCaps & D3DPTFILTERCAPS_MAGFLINEAR) != 0 )
+            else
             {
-                IDirect3DDevice9_SetSamplerState(std3D_pD3Device, 0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
-                IDirect3DDevice9_SetSamplerState(std3D_pD3Device, 0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
-            }
-            else if ( (std3D_pCurDevice->d3dDesc.TextureFilterCaps & D3DPTFILTERCAPS_MAGFPOINT) != 0 )
-            {
-                IDirect3DDevice9_SetSamplerState(std3D_pD3Device, 0, D3DSAMP_MAGFILTER, D3DTEXF_POINT);
-                IDirect3DDevice9_SetSamplerState(std3D_pD3Device, 0, D3DSAMP_MINFILTER, D3DTEXF_POINT);
+                DWORD filterCaps = std3D_pCurDevice->d3dDesc.TextureFilterCaps;
+                bool bUseLinear  = (rdflags & STD3D_RS_TEXFILTER_BILINEAR) != 0 || !std3D_bAnisotropicFilter;
+
+                if ( bUseLinear && (filterCaps & D3DPTFILTERCAPS_MAGFLINEAR) != 0 )
+                {
+                    IDirect3DDevice9_SetSamplerState(std3D_pD3Device, 0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
+                }
+                else if ( (filterCaps & D3DPTFILTERCAPS_MAGFPOINT) != 0 )
+                {
+                    IDirect3DDevice9_SetSamplerState(std3D_pD3Device, 0, D3DSAMP_MAGFILTER, D3DTEXF_POINT);
+                }
+
+                if ( bUseLinear && (filterCaps & D3DPTFILTERCAPS_MINFLINEAR) != 0 )
+                {
+                    IDirect3DDevice9_SetSamplerState(std3D_pD3Device, 0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
+                }
+                else if ( (filterCaps & D3DPTFILTERCAPS_MINFPOINT) != 0 )
+                {
+                    IDirect3DDevice9_SetSamplerState(std3D_pD3Device, 0, D3DSAMP_MINFILTER, D3DTEXF_POINT);
+                }
             }
         }
         else if ( (std3D_renderState & STD3D_RS_TEXFILTER_BILINEAR) != (rdflags & STD3D_RS_TEXFILTER_BILINEAR) )
         {
-            if ( (rdflags & STD3D_RS_TEXFILTER_BILINEAR) != 0 )
+            DWORD filterCaps = std3D_pCurDevice->d3dDesc.TextureFilterCaps;
+            bool bUseLinear  = (rdflags & STD3D_RS_TEXFILTER_BILINEAR) != 0;
+
+            if ( bUseLinear && (filterCaps & D3DPTFILTERCAPS_MAGFLINEAR) != 0 )
             {
                 IDirect3DDevice9_SetSamplerState(std3D_pD3Device, 0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
-                IDirect3DDevice9_SetSamplerState(std3D_pD3Device, 0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
             }
-            else if ( (std3D_pCurDevice->d3dDesc.TextureFilterCaps & D3DPTFILTERCAPS_MAGFPOINT) != 0 )
+            else if ( (filterCaps & D3DPTFILTERCAPS_MAGFPOINT) != 0 )
             {
                 IDirect3DDevice9_SetSamplerState(std3D_pD3Device, 0, D3DSAMP_MAGFILTER, D3DTEXF_POINT);
+            }
+
+            if ( bUseLinear && (filterCaps & D3DPTFILTERCAPS_MINFLINEAR) != 0 )
+            {
+                IDirect3DDevice9_SetSamplerState(std3D_pD3Device, 0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
+            }
+            else if ( (filterCaps & D3DPTFILTERCAPS_MINFPOINT) != 0 )
+            {
                 IDirect3DDevice9_SetSamplerState(std3D_pD3Device, 0, D3DSAMP_MINFILTER, D3DTEXF_POINT);
             }
         }
@@ -1120,6 +1252,34 @@ void J3DAPI std3D_ClearSystemTexture(tSystemTexture* pTex)
     STD_ZEROMEM(pTex, sizeof(tSystemTexture));
 }
 
+static bool std3D_CanAutoGenMipmaps(D3DFORMAT format)
+{
+    if ( !std3D_pDirect3D
+        || !std3D_pCurDevice
+        || !std3D_pCurDevice->bMipmapAutoGenSupported )
+    {
+        return false;
+    }
+
+    size_t adapterNum = std3D_aAdapterNums[std3D_curDevice];
+    D3DDISPLAYMODE adapterMode = { 0 };
+    if ( FAILED(IDirect3D9_GetAdapterDisplayMode(std3D_pDirect3D, (UINT)adapterNum, &adapterMode)) )
+    {
+        return false;
+    }
+
+    HRESULT hr = IDirect3D9_CheckDeviceFormat(
+        std3D_pDirect3D,
+        (UINT)adapterNum,
+        D3DDEVTYPE_HAL,
+        adapterMode.Format,
+        D3DUSAGE_AUTOGENMIPMAP,
+        D3DRTYPE_TEXTURE,
+        format
+    );
+    return hr == D3D_OK;
+}
+
 void J3DAPI std3D_AddToTextureCache(tSystemTexture* pCacheTexture, StdColorFormatType format)
 {
     J3D_UNUSED(format);
@@ -1139,14 +1299,15 @@ void J3DAPI std3D_AddToTextureCache(tSystemTexture* pCacheTexture, StdColorForma
         std3D_PurgeTextureCache(pCacheTexture->textureSize);
     }
 
-    const size_t numMipmaps = std3D_bAutoGenMipmap ? 1 : pCacheTexture->numMipLevels;
-    const DWORD usage       = std3D_bAutoGenMipmap ? D3DUSAGE_AUTOGENMIPMAP : 0;
+    const bool bAutoGen     = std3D_bAutoGenMipmap && std3D_CanAutoGenMipmaps(pCacheTexture->format);
+    const size_t numMipmaps = bAutoGen ? 1 : pCacheTexture->numMipLevels;
+    const DWORD usage       = bAutoGen ? D3DUSAGE_AUTOGENMIPMAP : 0;
 
     HRESULT d3dres = IDirect3DDevice9_CreateTexture(
         std3D_pD3Device,
         pCacheTexture->apMipmaps[0]->rasterInfo.width,
         pCacheTexture->apMipmaps[0]->rasterInfo.height,
-        std3D_bAutoGenMipmap ? 0 : numMipmaps,
+        bAutoGen ? 0 : (UINT)numMipmaps,
         usage,
         pCacheTexture->format,
         D3DPOOL_MANAGED, // IMPORTANT: Must be managed video/system memory to copy pixel data to
@@ -1167,7 +1328,7 @@ void J3DAPI std3D_AddToTextureCache(tSystemTexture* pCacheTexture, StdColorForma
             std3D_pD3Device,
             pCacheTexture->apMipmaps[0]->rasterInfo.width,
             pCacheTexture->apMipmaps[0]->rasterInfo.height,
-            std3D_bAutoGenMipmap ? 0 : numMipmaps,
+            bAutoGen ? 0 : (UINT)numMipmaps,
             usage,
             pCacheTexture->format,
             D3DPOOL_MANAGED, // IMPORTANT: Must be managed video/system memory to copy pixel data to
@@ -1185,7 +1346,7 @@ void J3DAPI std3D_AddToTextureCache(tSystemTexture* pCacheTexture, StdColorForma
     // Copy from device-independent texture to video memory using direct pixel access and LOD 0 texture only
     for ( uint32_t mmNum = 0; mmNum < numMipmaps; ++mmNum )
     {
-        if ( !stdDisplay_VBufferLock(pCacheTexture->apMipmaps[mmNum]) )
+        if ( !stdDisplay_VBufferLockReadOnly(pCacheTexture->apMipmaps[mmNum]) )
         {
             STDLOG_ERROR("Failed to lock source texture level %d.\n", mmNum);
             goto error;
@@ -1207,7 +1368,7 @@ void J3DAPI std3D_AddToTextureCache(tSystemTexture* pCacheTexture, StdColorForma
             }
 
             // Re-lock source
-            if ( !stdDisplay_VBufferLock(pCacheTexture->apMipmaps[mmNum]) )
+            if ( !stdDisplay_VBufferLockReadOnly(pCacheTexture->apMipmaps[mmNum]) )
             {
                 STDLOG_ERROR("Failed re-locking source texture level %d.\n", mmNum);
                 goto error;
@@ -1226,14 +1387,32 @@ void J3DAPI std3D_AddToTextureCache(tSystemTexture* pCacheTexture, StdColorForma
 
         // Get mip level dimensions
         D3DSURFACE_DESC desc = { 0 };
-        IDirect3DTexture9_GetLevelDesc(pD3DTex, mmNum, &desc);
+        d3dres = IDirect3DTexture9_GetLevelDesc(pD3DTex, mmNum, &desc);
+        if ( d3dres != D3D_OK )
+        {
+            IDirect3DTexture9_UnlockRect(pD3DTex, mmNum);
+            stdDisplay_VBufferUnlock(pCacheTexture->apMipmaps[mmNum]);
+            STDLOG_ERROR("Error %s getting destination texture level %d description.\n", std3D_D3DGetStatus(d3dres), mmNum);
+            goto error;
+        }
+
+        if ( desc.Height > pCacheTexture->apMipmaps[mmNum]->rasterInfo.height )
+        {
+            IDirect3DTexture9_UnlockRect(pD3DTex, mmNum);
+            stdDisplay_VBufferUnlock(pCacheTexture->apMipmaps[mmNum]);
+            STDLOG_ERROR("Source texture level %d is shorter than its destination.\n", mmNum);
+            goto error;
+        }
 
         // Copy pixel data row by row
+        size_t destRowSize = destRect.Pitch >= 0
+            ? (size_t)destRect.Pitch
+            : (size_t)(-(int64_t)destRect.Pitch);
         for ( uint32_t row = 0; row < desc.Height; ++row )
         {
             void* pSrcPixels  = pCacheTexture->apMipmaps[mmNum]->pPixels + row * pCacheTexture->apMipmaps[mmNum]->rasterInfo.rowSize;
-            void* pDestPixels = (uint8_t*)destRect.pBits + row * destRect.Pitch;
-            size_t rowBytes   = J3DMIN(pCacheTexture->apMipmaps[mmNum]->rasterInfo.rowSize, destRect.Pitch);
+            void* pDestPixels = (uint8_t*)destRect.pBits + (ptrdiff_t)row * destRect.Pitch;
+            size_t rowBytes   = J3DMIN(pCacheTexture->apMipmaps[mmNum]->rasterInfo.rowSize, destRowSize);
             STD_COPYMEM(pDestPixels, pSrcPixels, rowBytes);
         }
 
@@ -1245,6 +1424,11 @@ void J3DAPI std3D_AddToTextureCache(tSystemTexture* pCacheTexture, StdColorForma
             STDLOG_ERROR("Error %s unlocking destination texture level %d.\n", std3D_D3DGetStatus(d3dres), mmNum);
             goto error;
         }
+    }
+
+    if ( bAutoGen )
+    {
+        IDirect3DTexture9_GenerateMipSubLevels(pD3DTex);
     }
 
     // Success
@@ -1276,11 +1460,18 @@ size_t J3DAPI std3D_GetMipMapCount(const tSystemTexture* pTexture)
 
 void std3D_ResetTextureCache(void)
 {
+    std3D_ResetTextureCacheInternal(false);
+}
+
+static void std3D_ResetTextureCacheInternal(bool bReleaseOnly)
+{
     STDLOG_DEBUG("Clearing texture cache....\n");
-    if ( std3D_pD3Device )
+    if ( std3D_pD3Device && !bReleaseOnly )
     {
-        std3D_SetTexture(NULL);
+        // Bypass the solid-mode white-texture substitution while clearing device state.
+        IDirect3DDevice9_SetTexture(std3D_pD3Device, 0, NULL);
     }
+    std3D_pD3DTex = NULL;
 
     tSystemTexture* pCurTex = std3D_pFirstTexCache;
     while ( pCurTex )
@@ -1315,9 +1506,8 @@ void J3DAPI std3D_UpdateFrameCount(tSystemTexture* pTexture)
 {
     std3D_RemoveTextureFromCacheList(pTexture);
     std3D_AddTextureToCacheList(pTexture);
-    pTexture->frameNum = std3D_frameCount; // Fixed: Moved frameNum update to the end of the function.
-                                           //        Originally it was updated at the beginning of the function,
-                                           //        and the frameNum was immediately invalidated by call to std3D_RemoveTextureFromCacheList.
+    // Update frameNum after relinking the texture cache entry.
+    pTexture->frameNum = std3D_frameCount;
 }
 
 size_t J3DAPI std3D_FindClosestFormat(const ColorInfo* pMatch)
@@ -1371,7 +1561,6 @@ size_t J3DAPI std3D_FindClosestFormat(const ColorInfo* pMatch)
                 }
             }
         }
-
         if ( matchLevel > bestMatchLevel )
         {
             closestMatch   = i;
@@ -1434,7 +1623,9 @@ int std3D_InitRenderState(void)
         }
     }
 
-    if ( (std3D_pCurDevice->d3dDesc.TextureFilterCaps & D3DPTFILTERCAPS_MINFANISOTROPIC) != 0 )
+    // Select the initial sampler state from the anisotropic filtering config.
+    if ( std3D_bAnisotropicFilter
+        && (std3D_pCurDevice->d3dDesc.TextureFilterCaps & D3DPTFILTERCAPS_MINFANISOTROPIC) != 0 )
     {
         if ( (std3D_pCurDevice->d3dDesc.TextureFilterCaps & D3DPTFILTERCAPS_MAGFANISOTROPIC) != 0 )
         {
@@ -1443,12 +1634,23 @@ int std3D_InitRenderState(void)
                 return 0;
             }
         }
-        else
+        else if ( (std3D_pCurDevice->d3dDesc.TextureFilterCaps & D3DPTFILTERCAPS_MAGFLINEAR) != 0 )
         {
             if ( IDirect3DDevice9_SetSamplerState(std3D_pD3Device, 0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR) != D3D_OK )
             {
                 return 0;
             }
+        }
+        else if ( (std3D_pCurDevice->d3dDesc.TextureFilterCaps & D3DPTFILTERCAPS_MAGFPOINT) != 0 )
+        {
+            if ( IDirect3DDevice9_SetSamplerState(std3D_pD3Device, 0, D3DSAMP_MAGFILTER, D3DTEXF_POINT) != D3D_OK )
+            {
+                return 0;
+            }
+        }
+        else
+        {
+            return 0;
         }
 
         if ( IDirect3DDevice9_SetSamplerState(std3D_pD3Device, 0, D3DSAMP_MINFILTER, D3DTEXF_ANISOTROPIC) != D3D_OK )
@@ -1458,30 +1660,46 @@ int std3D_InitRenderState(void)
 
         std3D_renderState |= STD3D_RS_TEXFILTER_ANISOTROPIC;
     }
-    else if ( (std3D_pCurDevice->d3dDesc.TextureFilterCaps & D3DPTFILTERCAPS_MAGFLINEAR) != 0 )
+    else
     {
-        if ( IDirect3DDevice9_SetSamplerState(std3D_pD3Device, 0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR) != D3D_OK )
+        DWORD filterCaps      = std3D_pCurDevice->d3dDesc.TextureFilterCaps;
+        bool bLinearFiltering = false;
+
+        if ( (filterCaps & D3DPTFILTERCAPS_MAGFLINEAR) != 0 )
         {
-            return 0;
+            if ( IDirect3DDevice9_SetSamplerState(std3D_pD3Device, 0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR) != D3D_OK )
+            {
+                return 0;
+            }
+            bLinearFiltering = true;
+        }
+        else if ( (filterCaps & D3DPTFILTERCAPS_MAGFPOINT) != 0 )
+        {
+            if ( IDirect3DDevice9_SetSamplerState(std3D_pD3Device, 0, D3DSAMP_MAGFILTER, D3DTEXF_POINT) != D3D_OK )
+            {
+                return 0;
+            }
         }
 
-        if ( IDirect3DDevice9_SetSamplerState(std3D_pD3Device, 0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR) != D3D_OK )
+        if ( (filterCaps & D3DPTFILTERCAPS_MINFLINEAR) != 0 )
         {
-            return 0;
+            if ( IDirect3DDevice9_SetSamplerState(std3D_pD3Device, 0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR) != D3D_OK )
+            {
+                return 0;
+            }
+            bLinearFiltering = true;
+        }
+        else if ( (filterCaps & D3DPTFILTERCAPS_MINFPOINT) != 0 )
+        {
+            if ( IDirect3DDevice9_SetSamplerState(std3D_pD3Device, 0, D3DSAMP_MINFILTER, D3DTEXF_POINT) != D3D_OK )
+            {
+                return 0;
+            }
         }
 
-        std3D_renderState |= STD3D_RS_TEXFILTER_BILINEAR;
-    }
-    else if ( (std3D_pCurDevice->d3dDesc.TextureFilterCaps & D3DPTFILTERCAPS_MAGFPOINT) != 0 )
-    {
-        if ( IDirect3DDevice9_SetSamplerState(std3D_pD3Device, 0, D3DSAMP_MAGFILTER, D3DTEXF_POINT) != D3D_OK )
+        if ( bLinearFiltering )
         {
-            return 0;
-        }
-
-        if ( IDirect3DDevice9_SetSamplerState(std3D_pD3Device, 0, D3DSAMP_MINFILTER, D3DTEXF_POINT) != D3D_OK )
-        {
-            return 0;
+            std3D_renderState |= STD3D_RS_TEXFILTER_BILINEAR;
         }
     }
 
@@ -1787,11 +2005,17 @@ void std3D_ClearZBuffer(void)
 {
     if ( std3D_pD3Device )
     {
+        DWORD clearFlags = D3DCLEAR_ZBUFFER;
+        if ( std3D_bHasStencilBuffer )
+        {
+            clearFlags |= D3DCLEAR_STENCIL;
+        }
+
         HRESULT d3dres = IDirect3DDevice9_Clear(
             std3D_pD3Device,
             1,
             &std3D_activeRect,
-            D3DCLEAR_ZBUFFER | D3DCLEAR_STENCIL, // TODO: Add D3DCLEAR_TARGET when enabled
+            clearFlags, // TODO: Add D3DCLEAR_TARGET when enabled
             0,    // Color (black)
             1.0f, // Z value
             0     // Stencil value
@@ -1830,13 +2054,18 @@ int std3D_CreateViewport(void)
     std3D_activeRect.x2 = viewport.Width;
     std3D_activeRect.y2 = viewport.Height;
 
-    // Clear the back buffer, Z-buffer, and stencil buffer
-    // DirectX 9 uses Clear() on the device instead of viewport Clear2()
+    DWORD clearFlags = D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER;
+    if ( std3D_bHasStencilBuffer )
+    {
+        clearFlags |= D3DCLEAR_STENCIL;
+    }
+
+    // DirectX 9 uses Clear() on the device instead of viewport Clear2().
     d3dres = IDirect3DDevice9_Clear(
         std3D_pD3Device,
         0,                      // Count (0 = clear entire viewport)
         NULL,                   // pRects (NULL = clear entire viewport)
-        D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER | D3DCLEAR_STENCIL,
+        clearFlags,
         0x00000000,            // Color (black)
         1.0f,                  // Z value
         0                      // Stencil value
@@ -1853,101 +2082,175 @@ int std3D_CreateViewport(void)
 
 static bool J3DAPI std3D_GetZBufferFormat(tSysPixelFormat* pPixelFormat)
 {
-    if ( !std3D_pD3Device || !pPixelFormat )
+    if ( !std3D_pD3Device || !std3D_pCurDevice || !pPixelFormat )
     {
         return false;
     }
 
-    // Check supported Z-buffer formats
-    D3DFORMAT aFormats[] = {
-        D3DFMT_D24S8,     // 24-bit depth, 8-bit stencil
-    };
-
-    for ( size_t i = 0; i < STD_ARRAYLEN(aFormats); i++ )
+    UINT adapter = (UINT)std3D_aAdapterNums[std3D_curDevice];
+    D3DDISPLAYMODE adapterMode = { 0 };
+    if ( FAILED(IDirect3D9_GetAdapterDisplayMode(std3D_pDirect3D, adapter, &adapterMode)) )
     {
-        HRESULT hr = IDirect3D9_CheckDeviceFormat(std3D_pDirect3D, D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, stdDisplay_g_backBuffer.surface.desc.Format, D3DUSAGE_DEPTHSTENCIL, D3DRTYPE_SURFACE, aFormats[i]);
+        return false;
+    }
+
+    return std3D_FindZBufferFormat(
+        adapter,
+        adapterMode.Format,
+        stdDisplay_g_backBuffer.surface.desc.Format,
+        pPixelFormat
+    );
+}
+
+static bool std3D_FindZBufferFormat(UINT adapter, D3DFORMAT adapterFormat, D3DFORMAT renderTargetFormat, D3DFORMAT* pDepthFormat)
+{
+    if ( !std3D_pDirect3D || !pDepthFormat )
+    {
+        return false;
+    }
+
+    for ( size_t i = 0u; i < STD_ARRAYLEN(std3D_aDepthFormats); ++i )
+    {
+        D3DFORMAT depthFormat = std3D_aDepthFormats[i];
+        HRESULT hr = IDirect3D9_CheckDeviceFormat(
+            std3D_pDirect3D,
+            adapter,
+            D3DDEVTYPE_HAL,
+            adapterFormat,
+            D3DUSAGE_DEPTHSTENCIL,
+            D3DRTYPE_SURFACE,
+            depthFormat
+        );
+        if ( FAILED(hr) )
+        {
+            continue;
+        }
+
+        hr = IDirect3D9_CheckDepthStencilMatch(
+            std3D_pDirect3D,
+            adapter,
+            D3DDEVTYPE_HAL,
+            adapterFormat,
+            renderTargetFormat,
+            depthFormat
+        );
         if ( SUCCEEDED(hr) )
         {
-            *pPixelFormat = aFormats[i];
+            *pDepthFormat = depthFormat;
             return true;
         }
     }
 
-    return false; // No suitable Z-buffer format found
+    return false;
+}
+
+static bool std3D_DepthFormatHasStencil(D3DFORMAT format)
+{
+    return format == D3DFMT_D24S8
+        || format == D3DFMT_D24X4S4
+        || format == D3DFMT_D15S1;
 }
 
 static int std3D_BuildDeviceList(void)
 {
     std3D_numDevices = 0;
 
-    // Get display devices from stdDisplay module
-    size_t numDisplayDevices = stdDisplay_GetNumDevices();
-    if ( numDisplayDevices == 0 )
+    StdDisplayDevice displayDevice = { 0 };
+    if ( !stdDisplay_IsOpen() || stdDisplay_GetCurrentDevice(&displayDevice) )
     {
         return 0;
     }
 
-    for ( size_t i = 0; i < numDisplayDevices && std3D_numDevices < STD_ARRAYLEN(std3D_aDevices); ++i )
+    if ( !std3D_bFindAllD3Devices && !displayDevice.bHAL )
     {
-        StdDisplayDevice displayDevice = { 0 };
-        if ( stdDisplay_GetDevice(i, &displayDevice) )
-        {
-            continue;
-        }
-
-        // Skip non-HAL devices if not finding all devices
-        if ( !std3D_bFindAllD3Devices && !displayDevice.bHAL )
-        {
-            continue;
-        }
-
-        Device3D* pD3DDriver = &std3D_aDevices[std3D_numDevices];
-        ZeroMemory(pD3DDriver, sizeof(Device3D));
-
-        STD_STRCPY(pD3DDriver->deviceDescription, displayDevice.aDeviceName);
-        STD_STRCPY(pD3DDriver->deviceName, displayDevice.aDriverName);
-
-        pD3DDriver->bHAL                           = displayDevice.bHAL;
-        pD3DDriver->d3dDesc                        = displayDevice.caps;
-        pD3DDriver->bTexturePerspectiveSupported   = TRUE; // Always supported in DX9
-        pD3DDriver->hasZBuffer                     = TRUE; // Always supported in DX9
-        pD3DDriver->bSqareOnlyTexture              = (displayDevice.caps.TextureCaps & D3DPTEXTURECAPS_SQUAREONLY) != 0;
-        pD3DDriver->bAlphaTextureSupported         = (displayDevice.caps.TextureCaps & D3DPTEXTURECAPS_ALPHA) != 0;
-        pD3DDriver->bColorkeyTextureSupported      = TRUE; // Always supported in DX9
-        pD3DDriver->bStippledShadeSupported        = FALSE; // Not commonly used in DX9
-        pD3DDriver->minTexWidth                    = 1;
-        pD3DDriver->minTexHeight                   = 1;
-        pD3DDriver->maxTexWidth                    = displayDevice.caps.MaxTextureWidth;
-        pD3DDriver->maxTexHeight                   = displayDevice.caps.MaxTextureHeight;
-        pD3DDriver->bAnisotropicFilteringSupported = (displayDevice.caps.RasterCaps & D3DPRASTERCAPS_ANISOTROPY) != 0;
-        pD3DDriver->bMipmapAutoGenSupported        = (displayDevice.caps.Caps2 & D3DCAPS2_CANAUTOGENMIPMAP) != 0;
-
-        pD3DDriver->bAlphaBlendSupported           = (displayDevice.caps.SrcBlendCaps & D3DPBLENDCAPS_SRCALPHA) != 0
-            && (displayDevice.caps.DestBlendCaps & D3DPBLENDCAPS_INVSRCALPHA) != 0;
-
-        pD3DDriver->maxVertexCount = displayDevice.caps.MaxVertexIndex;
-        if ( pD3DDriver->maxVertexCount == 0 )
-        {
-            pD3DDriver->maxVertexCount = 65535; // Reasonable default
-        }
-
-        pD3DDriver->totalMemory     = displayDevice.totalVideoMemory;
-        pD3DDriver->availableMemory = displayDevice.freeVideoMemory;
-
-        // TODO: proly no point to make log here since same info can be logged in stdDisplay
-        STDLOG_STATUS("Found |%s|%s|%s|%s| D3D Device\n",
-            pD3DDriver->hasZBuffer ? "Z" : "Non-Z",
-            pD3DDriver->bAlphaTextureSupported ? "Alpha" : "No Alpha",
-            pD3DDriver->bStippledShadeSupported ? "Stippled" : "Blend",
-            pD3DDriver->bColorkeyTextureSupported ? "Colorkey" : "No Colorkey"
-        );
-
-        STDLOG_STATUS("Description: %s [%s]\n", pD3DDriver->deviceName, pD3DDriver->deviceDescription);
-
-        ++std3D_numDevices;
+        return 0;
     }
 
-    return std3D_numDevices > 0;
+    UINT adapter = displayDevice.caps.AdapterOrdinal;
+    D3DDISPLAYMODE adapterMode = { 0 };
+    if ( FAILED(IDirect3D9_GetAdapterDisplayMode(std3D_pDirect3D, adapter, &adapterMode)) )
+    {
+        return 0;
+    }
+
+    D3DFORMAT renderTargetFormat = stdDisplay_g_backBuffer.surface.desc.Format != D3DFMT_UNKNOWN
+        ? stdDisplay_g_backBuffer.surface.desc.Format
+        : adapterMode.Format;
+    D3DFORMAT depthFormat        = D3DFMT_UNKNOWN;
+    bool bHasZBuffer = std3D_FindZBufferFormat(adapter, adapterMode.Format, renderTargetFormat, &depthFormat);
+
+    Device3D* pD3DDriver = &std3D_aDevices[0];
+    ZeroMemory(pD3DDriver, sizeof(*pD3DDriver));
+
+    STD_STRCPY(pD3DDriver->deviceDescription, displayDevice.aDeviceName);
+    STD_STRCPY(pD3DDriver->deviceName, displayDevice.aDriverName);
+
+    pD3DDriver->bHAL                           = displayDevice.bHAL;
+    pD3DDriver->d3dDesc                        = displayDevice.caps;
+    pD3DDriver->bTexturePerspectiveSupported   = TRUE;
+    pD3DDriver->hasZBuffer                     = bHasZBuffer;
+    pD3DDriver->bSqareOnlyTexture              = (displayDevice.caps.TextureCaps & D3DPTEXTURECAPS_SQUAREONLY) != 0;
+    pD3DDriver->bAlphaTextureSupported         = (displayDevice.caps.TextureCaps & D3DPTEXTURECAPS_ALPHA) != 0;
+    pD3DDriver->bColorkeyTextureSupported      = TRUE;
+    pD3DDriver->bStippledShadeSupported        = FALSE;
+    pD3DDriver->minTexWidth                    = 1;
+    pD3DDriver->minTexHeight                   = 1;
+    pD3DDriver->maxTexWidth                    = displayDevice.caps.MaxTextureWidth;
+    pD3DDriver->maxTexHeight                   = displayDevice.caps.MaxTextureHeight;
+    pD3DDriver->bAnisotropicFilteringSupported = (displayDevice.caps.RasterCaps & D3DPRASTERCAPS_ANISOTROPY) != 0
+        && (displayDevice.caps.TextureFilterCaps & D3DPTFILTERCAPS_MINFANISOTROPIC) != 0
+        && displayDevice.caps.MaxAnisotropy > 1;
+    pD3DDriver->bMipmapAutoGenSupported        = (displayDevice.caps.Caps2 & D3DCAPS2_CANAUTOGENMIPMAP) != 0;
+
+    DWORD colorQualityLevels = 0u;
+    DWORD depthQualityLevels = 0u;
+    BOOL bWindowed = stdDisplay_IsFullscreen() ? FALSE : TRUE;
+    pD3DDriver->bMSAASupported = bHasZBuffer
+        && SUCCEEDED(IDirect3D9_CheckDeviceMultiSampleType(
+            std3D_pDirect3D,
+            adapter,
+            D3DDEVTYPE_HAL,
+            renderTargetFormat,
+            bWindowed,
+            D3DMULTISAMPLE_2_SAMPLES,
+            &colorQualityLevels
+        ))
+        && SUCCEEDED(IDirect3D9_CheckDeviceMultiSampleType(
+            std3D_pDirect3D,
+            adapter,
+            D3DDEVTYPE_HAL,
+            depthFormat,
+            bWindowed,
+            D3DMULTISAMPLE_2_SAMPLES,
+            &depthQualityLevels
+        ))
+        && colorQualityLevels > 0u
+        && depthQualityLevels > 0u;
+
+    pD3DDriver->bAlphaBlendSupported = (displayDevice.caps.SrcBlendCaps & D3DPBLENDCAPS_SRCALPHA) != 0
+        && (displayDevice.caps.DestBlendCaps & D3DPBLENDCAPS_INVSRCALPHA) != 0;
+
+    pD3DDriver->maxVertexCount = displayDevice.caps.MaxVertexIndex;
+    if ( pD3DDriver->maxVertexCount == 0u )
+    {
+        pD3DDriver->maxVertexCount = 65535u;
+    }
+
+    pD3DDriver->totalMemory     = displayDevice.totalVideoMemory;
+    pD3DDriver->availableMemory = displayDevice.freeVideoMemory;
+
+    std3D_aAdapterNums[0] = adapter;
+    std3D_numDevices      = 1u;
+
+    STDLOG_STATUS("Found |%s|%s|%s|%s| D3D Device\n",
+        pD3DDriver->hasZBuffer ? "Z" : "Non-Z",
+        pD3DDriver->bAlphaTextureSupported ? "Alpha" : "No Alpha",
+        pD3DDriver->bStippledShadeSupported ? "Stippled" : "Blend",
+        pD3DDriver->bColorkeyTextureSupported ? "Colorkey" : "No Colorkey"
+    );
+    STDLOG_STATUS("Description: %s [%s]\n", pD3DDriver->deviceName, pD3DDriver->deviceDescription);
+
+    return 1;
 }
 
 static void std3D_InitTextureFormats(void)
@@ -1972,7 +2275,8 @@ static void std3D_InitTextureFormats(void)
     for ( size_t i = 0; i < STD_ARRAYLEN(formats) && std3D_numTextureFormats < STD_ARRAYLEN(std3D_aTextureFormats); ++i )
     {
         // Check if format is supported
-        if ( IDirect3D9_CheckDeviceFormat(std3D_pDirect3D, std3D_curDevice, D3DDEVTYPE_HAL, stdDisplay_g_backBuffer.surface.desc.Format, 0, D3DRTYPE_TEXTURE, formats[i]) == D3D_OK )
+        size_t adapterNum = std3D_aAdapterNums[std3D_curDevice];
+        if ( IDirect3D9_CheckDeviceFormat(std3D_pDirect3D, (UINT)adapterNum, D3DDEVTYPE_HAL, stdDisplay_g_backBuffer.surface.desc.Format, 0, D3DRTYPE_TEXTURE, formats[i]) == D3D_OK )
         {
             StdTextureFormat* pTexFormat = &std3D_aTextureFormats[std3D_numTextureFormats];
             STD_ZEROMEM(pTexFormat, sizeof(StdTextureFormat));
@@ -2327,16 +2631,16 @@ void std3D_ReleaseVertexBuffers(void)
 
 bool std3D_CreateWhiteTexture(void)
 {
-    // Create 1x1 texture
-    tSysPixelFormat format =  std3D_aTextureFormats[std3D_RGBATextureFormat].ddPixelFmt;
+    // A managed static fallback remains lockable without requiring dynamic-texture support.
+    const StdTextureFormat* pFormat = &std3D_aTextureFormats[std3D_RGBATextureFormat];
     HRESULT hr = IDirect3DDevice9_CreateTexture(
         std3D_pD3Device,
-        1,                          // width
-        1,                          // height
-        1,                          // mip levels
-        D3DUSAGE_DYNAMIC,           // usage
-        format,
-        D3DPOOL_DEFAULT,            // GPU pool
+        1,
+        1,
+        1,
+        0,
+        pFormat->ddPixelFmt,
+        D3DPOOL_MANAGED,
         &std3D_pWhiteTexture,
         NULL
     );
@@ -2347,7 +2651,15 @@ bool std3D_CreateWhiteTexture(void)
         return false;
     }
 
-    // Lock and fill with white
+    size_t pixelSize = pFormat->ci.bpp / 8u;
+    if ( !pixelSize || pixelSize > sizeof(uint32_t) )
+    {
+        STDLOG_ERROR("Unsupported white texture pixel size: %zu bytes.\n", pixelSize);
+        IDirect3DTexture9_Release(std3D_pWhiteTexture);
+        std3D_pWhiteTexture = NULL;
+        return false;
+    }
+
     D3DLOCKED_RECT lockedRect = { 0 };
     hr = IDirect3DTexture9_LockRect(std3D_pWhiteTexture, 0, &lockedRect, NULL, 0);
     if ( hr != D3D_OK )
@@ -2358,18 +2670,23 @@ bool std3D_CreateWhiteTexture(void)
         return false;
     }
 
-    // Write white pixel - IMPORTANT: Check your format!
-    // D3DFMT_A8R8G8B8 is ARGB order in memory
-    uint32_t* pPixel = (uint32_t*)lockedRect.pBits;
-    *pPixel = 0xFFFFFFFF;  // A=FF, R=FF, G=FF, B=FF
-    IDirect3DTexture9_UnlockRect(std3D_pWhiteTexture, 0);
+    memset(lockedRect.pBits, 0xFF, pixelSize);
+    hr = IDirect3DTexture9_UnlockRect(std3D_pWhiteTexture, 0);
+    if ( hr != D3D_OK )
+    {
+        STDLOG_ERROR("Failed to unlock white texture: 0x%08X\n", hr);
+        IDirect3DTexture9_Release(std3D_pWhiteTexture);
+        std3D_pWhiteTexture = NULL;
+        return false;
+    }
 
     return true;
 }
 
 bool std3D_InitShaderSystem(void)
 {
-    std3D_bShadersActive = false;
+    std3D_bShadersActive    = false;
+    std3D_bShaderSystemOpen = false;
 
     if ( std3D_pCurDevice->d3dDesc.PixelShaderVersion < D3DPS_VERSION(3, 0) ||
         std3D_pCurDevice->d3dDesc.VertexShaderVersion < D3DVS_VERSION(3, 0) )
@@ -2388,25 +2705,27 @@ bool std3D_InitShaderSystem(void)
     {
         return false;
     }
+    std3D_bShaderSystemOpen = true;
 
     // Create default shader
     std3D_defaultShader = stdShader_Create("std_default", std_default_vs, std_default_ps);
     if ( !std3D_defaultShader )
     {
         STDLOG_ERROR("Failed to create default shader\n");
-        return false;
+        goto error;
     }
 
-    std3D_defaultShaderWf = stdShader_Create("std_default", std_default_vs, std_default_wf_ps);
-    if ( !std3D_defaultShader )
+    // Use a distinct shader-table name for the wireframe default shader.
+    std3D_defaultShaderWf = stdShader_Create("std_default_wf", std_default_vs, std_default_wf_ps);
+    if ( !std3D_defaultShaderWf )
     {
         STDLOG_ERROR("Failed to create default wf shader\n");
-        return false;
+        goto error;
     }
 
     if ( !stdShader_RegisterShaderParam(std3D_defaultShaderWf, "g_wireframeColor", STDSHADER_TYPE_PIXEL, STDSHADER_PARAM_VECTOR4, /*registerIndex=*/0) )
     {
-        return false;
+        goto error;
     }
 
     StdShaderParamValue val;
@@ -2417,37 +2736,36 @@ bool std3D_InitShaderSystem(void)
     val.value.vector[3] = 1.0f; // Alpha
     if ( !stdShader_SetShaderParam(std3D_defaultShaderWf, "g_wireframeColor", STDSHADER_TYPE_PIXEL, &val) )
     {
-        return false;
+        goto error;
     }
 
     if ( !std3D_CreateWhiteTexture() )
     {
         STDLOG_ERROR("Failed to create white texture for shader\n");
-        return false;
+        goto error;
     }
 
     std3D_bShadersActive = true;
     return true;
+
+error:
+    std3D_ShutdownShaderSystem();
+    return false;
 }
 
 void std3D_ShutdownShaderSystem(void)
 {
-    if ( !std3D_bShadersActive )
-    {
-        return;
-    }
-
-    if ( std3D_defaultShader )
+    if ( std3D_bShaderSystemOpen && std3D_defaultShader )
     {
         stdShader_Free(std3D_defaultShader);
-        std3D_defaultShader = STDSHADER_INVALIDHANDLE;
     }
+    std3D_defaultShader = STDSHADER_INVALIDHANDLE;
 
-    if ( std3D_defaultShaderWf )
+    if ( std3D_bShaderSystemOpen && std3D_defaultShaderWf )
     {
         stdShader_Free(std3D_defaultShaderWf);
-        std3D_defaultShaderWf = STDSHADER_INVALIDHANDLE;
     }
+    std3D_defaultShaderWf = STDSHADER_INVALIDHANDLE;
 
     std3D_activeShader = STDSHADER_INVALIDHANDLE; // Important, reset active shader to STDSHADER_INVALIDHANDLE to avoid dangling handle on next system init
 
@@ -2457,9 +2775,13 @@ void std3D_ShutdownShaderSystem(void)
         std3D_pWhiteTexture = NULL;
     }
 
-    stdShader_Close();
+    if ( std3D_bShaderSystemOpen )
+    {
+        stdShader_Close();
+    }
 
-    std3D_bShadersActive = false;
+    std3D_bShadersActive    = false;
+    std3D_bShaderSystemOpen = false;
 }
 
 tSysDevice3D* std3D_GetD3DDevice(void)
@@ -2474,15 +2796,15 @@ bool J3DAPI std3D_IsShaderSystemActive(void)
 
 bool std3D_IsAnisotropicFilteringSupported(void)
 {
-    return true;
+    return std3D_pCurDevice && std3D_pCurDevice->bAnisotropicFilteringSupported;
 }
 
 bool std3D_IsMipmapAutoGenSupported(void)
 {
-    return true;
+    return std3D_pCurDevice && std3D_pCurDevice->bMipmapAutoGenSupported;
 }
 
 bool std3D_IsMSAASupported(void)
 {
-    return true;
+    return std3D_pCurDevice && std3D_pCurDevice->bMSAASupported;
 }
