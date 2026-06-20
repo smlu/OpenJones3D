@@ -1,6 +1,6 @@
 #ifndef JONESLEVEL_H
 #define JONESLEVEL_H
-#include <Libs/j3dcore/j3d.h>
+#include <j3dcore/j3d.h>
 #include <Jones3D/types.h>
 
 #include <stdbool.h>
