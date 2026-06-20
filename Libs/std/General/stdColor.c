@@ -197,12 +197,17 @@ uint32_t J3DAPI stdColor_ScaleColorComponent(uint32_t cc, int srcBPP, int deltaB
     if ( deltaBPP <= 0 ) // Upscale
     {
         // Fixed: Fixed scaling to get correct value from lower bpp.
-        //        Original was calculated only "cc >> -deltaBPP" which resulted in dimmer colors
-        int dsrcBPP = srcBPP + deltaBPP;
-        return (cc << -deltaBPP)
-            | (dsrcBPP >= 0
-                ? (cc >> dsrcBPP)
-                : (cc * ((1 << -deltaBPP) - 1))); // Note: works for 1 bit, but might fail for 2 bit & 3 bit
+        //        Original was calculated only "cc >> -deltaBPP", which resulted in dimmer colors.
+        // Fixed: Repeat source bits across the destination width, including 1-, 2-, and 3-bit channels.
+        int destBPP     = srcBPP - deltaBPP;
+        uint32_t result = 0;
+        for ( int remainingBPP = destBPP; remainingBPP > 0; remainingBPP -= srcBPP )
+        {
+            int copyBPP = remainingBPP < srcBPP ? remainingBPP : srcBPP;
+            result = (result << copyBPP) | (cc >> (srcBPP - copyBPP));
+        }
+
+        return result;
     }
 
     // Downscale
@@ -473,18 +478,18 @@ void stdColor_DecodeRGB(uint32_t encoded, const ColorInfo* ci, uint8_t* r, uint8
     // Scale back to 8-bit range if needed
     if ( ci->redBPP < 8 )
     {
-// Scale up to fill 8 bits by replicating the MSBs
-        redVal = (redVal << (8 - ci->redBPP)) | (redVal >> (2 * ci->redBPP - 8));
+        // Fixed: Use the shared bit-replication path so sub-4-bit channels cannot shift by a negative count.
+        redVal = stdColor_ScaleColorComponent(redVal, ci->redBPP, (int)ci->redBPP - 8);
     }
 
     if ( ci->greenBPP < 8 )
     {
-        greenVal = (greenVal << (8 - ci->greenBPP)) | (greenVal >> (2 * ci->greenBPP - 8));
+        greenVal = stdColor_ScaleColorComponent(greenVal, ci->greenBPP, (int)ci->greenBPP - 8);
     }
 
     if ( ci->blueBPP < 8 )
     {
-        blueVal = (blueVal << (8 - ci->blueBPP)) | (blueVal >> (2 * ci->blueBPP - 8));
+        blueVal = stdColor_ScaleColorComponent(blueVal, ci->blueBPP, (int)ci->blueBPP - 8);
     }
 
     // Store the results
@@ -519,7 +524,8 @@ void stdColor_DecodeRGBA(uint32_t encoded, const ColorInfo* ci, uint8_t* r, uint
         // Scale back to 8-bit range if needed
         if ( ci->alphaBPP < 8 )
         {
-            alphaVal = (alphaVal << (8 - ci->alphaBPP)) | (alphaVal >> (2 * ci->alphaBPP - 8));
+            // Fixed: Expand low-bit alpha through the same defined bit-replication path as RGB.
+            alphaVal = stdColor_ScaleColorComponent(alphaVal, ci->alphaBPP, (int)ci->alphaBPP - 8);
         }
 
         *a = (uint8_t)alphaVal;

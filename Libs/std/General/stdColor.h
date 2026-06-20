@@ -307,6 +307,15 @@ inline void stdColor_CalcColorBits(uint32_t bitmask, uint32_t* cbpp, int32_t* po
         return;
     }
 
+    // Fixed: An empty mask has no first set bit and would otherwise loop forever.
+    if ( !bitmask )
+    {
+        *cbpp          = 0;
+        *posShift      = 0;
+        *posShiftRight = 0;
+        return;
+    }
+
     int bits = 0;
     uint32_t curBitmask = bitmask;
     for ( ; (curBitmask & 1) == 0; curBitmask >>= 1 )

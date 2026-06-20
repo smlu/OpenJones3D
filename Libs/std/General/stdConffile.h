@@ -80,7 +80,8 @@ void stdConffile_ResetGlobals(void);
  */
 inline int stdConffile_ScanLine(const char* pFormat, ...)
 {
-    if ( !stdConffile_ReadLine() ) {
+    if ( !stdConffile_ReadLine() )
+    {
         return -1;
     }
 

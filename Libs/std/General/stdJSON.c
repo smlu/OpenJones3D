@@ -69,7 +69,6 @@ bool J3DAPI stdJSON_Startup(void)
 
     if ( !std_g_pHS )
     {
-        STDLOG_ERROR("stdJSON_Startup: Host services not available.\n");
         return false;
     }
 

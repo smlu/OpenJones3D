@@ -64,7 +64,7 @@ void J3DAPI stdStartup(tHostServices* pHS)
         // TODO: Should probably do success check
         stdMemory_Startup();
         stdMemory_Open();
-        stdJSON_Startup(); // Added in 1.4
+        stdJSON_Startup(); // Added in 0.4
 
         // TODO: Remove when all round and rand float functions are replaced && updated
         // TODO: consider setting FE_DOWNWARD for round functions (lrintf); i.e.: fesetround(FE_DOWNWARD) to mimic same behavior as OG
@@ -118,17 +118,15 @@ void J3DAPI stdPrintf(tPrintfFunc pfPrint, const char* pFilePath, unsigned int l
         // Added: Keep release builds from formatting a NULL message or writing past the buffer.
         if ( format && offset < sizeof(aPrintBuffer) - 1 )
         {
-            int msgSize = vsnprintf_s(&aPrintBuffer[offset], sizeof(aPrintBuffer) - offset, sizeof(aPrintBuffer) - offset - 1, format, args);
-            if ( msgSize < 0 )
-            {
-                aPrintBuffer[offset] = '\0';
-            }
+            // Fixed: Preserve any safely truncated message text produced by the secure formatter.
+            vsnprintf_s(&aPrintBuffer[offset], sizeof(aPrintBuffer) - offset, sizeof(aPrintBuffer) - offset - 1, format, args);
             aPrintBuffer[sizeof(aPrintBuffer) - 1] = '\0';
         }
         va_end(args);
 
         // Write to output function
-        pfPrint(aPrintBuffer);
+        // Fixed: Pass formatted output as data so '%' in text, such as a file path containing "%s", cannot become a callback directive.
+        pfPrint("%s", aPrintBuffer);
     }
 }
 

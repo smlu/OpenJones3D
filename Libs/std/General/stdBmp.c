@@ -71,6 +71,10 @@ int J3DAPI stdBmp_WriteVBuffer(const char* pFilename, tVBuffer* pVBuffer)
         return 1;
     }
 
+    // Added: Software VBuffer locks only update ref counts, so reject missing RAM before opening the output file.
+    STD_ASSERT(pVBuffer->type != VBUFFER_SOFTWARE || pVBuffer->pPixels);
+    STD_GUARD(pVBuffer->type != VBUFFER_SOFTWARE || pVBuffer->pPixels, 1);
+
     fileHeader.bfType      = BMP_TYPE;
     fileHeader.bfOffBits   = sizeof(fileHeader) + sizeof(infoHeader);
     fileHeader.bfSize      = fileHeader.bfOffBits + (DWORD)imageSize;
