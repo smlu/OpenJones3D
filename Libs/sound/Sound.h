@@ -1,6 +1,7 @@
 #ifndef SOUND_SOUND_H
 #define SOUND_SOUND_H
 #include <j3dcore/j3d.h>
+#include <sound/AudioLib.h>
 #include <sound/types.h>
 #include <sound/RTI/addresses.h>
 
@@ -13,6 +14,11 @@ J3D_EXTERN_C_START
 #define SOUND_INVALISOUNDINFOINDEX  0u
 
 #define SOUND_ALLTHINGSOUNDHANDLE   0u // Handle for all thing sounds, used in functions to modify thing sounds, e.g. Sound_SetVolumeThing
+
+// Added: Describe the four-level subset of AudioLib's seven-bit mouth coordinates returned by Sound_GenerateLipSync.
+#define SOUND_LIPSYNC_MOUTH_LEVELS     4u
+#define SOUND_LIPSYNC_MOUTH_LEVEL_STEP (AUDIOLIB_LIPSYNC_MOUTH_POSITION_COUNT / SOUND_LIPSYNC_MOUTH_LEVELS)
+#define SOUND_LIPSYNC_GETMOUTHLEVEL(mouthPosition) ((mouthPosition) / SOUND_LIPSYNC_MOUTH_LEVEL_STEP)
 
 int J3DAPI Sound_Initialize(tHostServices* pHS);
 void Sound_Uninitialize(void);

@@ -45,7 +45,7 @@ static bool sithVoice_bOpen    = false; // Added: Init to 0
 static bool sithVoice_bShowText;
 static bool sithVoice_bThingHasSwapHead;
 
-static int sithVoice_dword_52B9A8  = 50; // this is some offset when calculating head pos from lypsync data
+static int sithVoice_msecLipSyncOffset = 50; // lip-sync time lookup offset in milliseconds
 
 static int sithVoice_curHeadHeight;
 static int sithVoice_lastHeadHeight = -1;
@@ -60,6 +60,16 @@ static size_t sithVoice_numSubtitleInfos;
 static SithVoiceSubtitleInfo sithVoice_aSubtitleInfos[25];
 
 static rdFont* sithVoice_pTextFont;
+
+#   define SITHVOICE_STOP_CHANNEL(hChannel) \
+        Sound_StopChannel((hChannel))
+#   define SITHVOICE_GENERATE_LIP_SYNC(hChannel, pMouthPosX, pMouthPosY, msecLipSyncOffset) \
+        Sound_GenerateLipSync((hChannel), (pMouthPosX), (pMouthPosY), (msecLipSyncOffset))
+#   define SITHVOICE_ADD_SWAP_ENTRY(pThing, meshNum, pSrcModel, meshNumSrc) \
+        sithThing_AddSwapEntry((pThing), (meshNum), (pSrcModel), (meshNumSrc))
+#   define SITHVOICE_REMOVE_SWAP_ENTRY(pThing, refNum) \
+        sithThing_RemoveSwapEntry((pThing), (refNum))
+#   define SITHVOICE_SEC_GAME_TIME sithTime_g_secGameTime
 
 void J3DAPI sithVoice_PlayVoice(SithCog* pCog);
 void J3DAPI sithVoice_SetThingVoiceHeads(SithCog* pCog);
@@ -144,7 +154,7 @@ int sithVoice_Open(void)
         return 0;
     }
 
-    memset(sithVoice_aSubtitleInfos, 0, sizeof(sithVoice_aSubtitleInfos));
+    STD_ZEROMEM(sithVoice_aSubtitleInfos, sizeof(sithVoice_aSubtitleInfos));
     sithVoice_curSubtitleDrawIndex = 0;
     sithVoice_numSubtitleInfos   = 0;
 
@@ -168,10 +178,10 @@ void sithVoice_Close(void)
         sithVoice_pTextFont = NULL;
     }
 
-    memset(sithVoice_aSubtitleInfos, 0, sizeof(sithVoice_aSubtitleInfos));
+    STD_ZEROMEM(sithVoice_aSubtitleInfos, sizeof(sithVoice_aSubtitleInfos));
     sithVoice_curSubtitleDrawIndex = 0;
-    sithVoice_numSubtitleInfos   = 0;
-    sithVoice_bOpen = false;
+    sithVoice_numSubtitleInfos     = 0;
+    sithVoice_bOpen                = false;
 }
 
 int J3DAPI sithVoice_RegisterCogFunctions(SithCogSymbolTable* pTable)
@@ -237,33 +247,40 @@ int J3DAPI sithVoice_PlayThingVoice(SithThing* pThing, tSoundHandle hSnd, float 
     sithVoice_sameHeadHightCounter = 0;
 
     // Play thing voice line
-    pVoiceInfo->hSndChannel = sithSoundMixer_PlaySound(hSnd, volume, 0.0f, SOUNDPLAY_PLAYONCE | SOUNDPLAY_THING_POS);;
-    return pVoiceInfo->hSndChannel == 0;
+    pVoiceInfo->hSndChannel = sithSoundMixer_PlaySound(hSnd, volume, 0.0f, SOUNDPLAY_PLAYONCE | SOUNDPLAY_THING_POS);
+    return pVoiceInfo->hSndChannel == SOUND_INVALIDHANDLE;
 }
 
 void J3DAPI sithVoice_UpdateLipSync(SithThing* pThing)
 {
     SITH_ASSERTREL((pThing->type == SITH_THING_PLAYER) || (pThing->type == SITH_THING_ACTOR));
+    STD_GUARD_VOID((pThing->type == SITH_THING_PLAYER) || (pThing->type == SITH_THING_ACTOR)); // Added: Guard to prevent handling non-actor/player things
 
     SithActorVoiceInfo* pVoiceInfo = &pThing->thingInfo.actorInfo.voiceInfo;
-    if ( pVoiceInfo->hSndChannel )
+    if ( pVoiceInfo->hSndChannel != SOUND_INVALIDHANDLE )
     {
         if ( (pThing->flags & (SITH_TF_DYING | SITH_TF_DESTROYED)) != 0 )
         {
-            Sound_StopChannel(pVoiceInfo->hSndChannel);
+            SITHVOICE_STOP_CHANNEL(pVoiceInfo->hSndChannel);
         }
 
         uint8_t mouthPosX, mouthPosY;
-        int bSyncData = Sound_GenerateLipSync(pVoiceInfo->hSndChannel, &mouthPosX, &mouthPosY, sithVoice_dword_52B9A8);
+        int bSyncData = SITHVOICE_GENERATE_LIP_SYNC(pVoiceInfo->hSndChannel, &mouthPosX, &mouthPosY, sithVoice_msecLipSyncOffset);
         if ( bSyncData )
         {
-            if ( sithVoice_secNextHeadSwapTime < (double)sithTime_g_secGameTime )
+            if ( sithVoice_secNextHeadSwapTime < (double)SITHVOICE_SEC_GAME_TIME )
             {
-                sithVoice_curHeadHeight = sithVoice_aVoiceHeadHeights[mouthPosY / 32][mouthPosX / 32];// >> 5 = / 32
+                // Note: Sound returns four levels from each seven-bit AudioLib mouth coordinate. The shipped COG setup
+                //       repeats each row value across all X columns, so mouth Y alone selects the M, A, AM, or O head.
+                size_t mouthYLevel = SOUND_LIPSYNC_GETMOUTHLEVEL(mouthPosY);
+                size_t mouthXLevel = SOUND_LIPSYNC_GETMOUTHLEVEL(mouthPosX);
+                sithVoice_curHeadHeight = sithVoice_aVoiceHeadHeights[mouthYLevel][mouthXLevel];
                 if ( sithVoice_curHeadHeight == sithVoice_lastHeadHeight )
                 {
                     if ( ++sithVoice_sameHeadHightCounter >= 2 )
                     {
+                        // Note: Repeated nonzero poses are varied deterministically. Head 0 represents the closed-mouth
+                        //       M pose and is intentionally left unchanged so quiet or sustained M sounds keep closed lips.
                         switch ( sithVoice_curHeadHeight )
                         {
                             case 1:
@@ -293,16 +310,16 @@ void J3DAPI sithVoice_UpdateLipSync(SithThing* pThing)
                 sithVoice_lastHeadHeight = sithVoice_curHeadHeight;
                 if ( pVoiceInfo->voiceHeadInfo.apSoundHeadModels[sithVoice_curHeadHeight] )
                 {
-                    int refNum = sithThing_AddSwapEntry(pThing, pVoiceInfo->voiceHeadInfo.headMeshNum, pVoiceInfo->voiceHeadInfo.apSoundHeadModels[sithVoice_curHeadHeight], 0);
+                    int refNum = SITHVOICE_ADD_SWAP_ENTRY(pThing, pVoiceInfo->voiceHeadInfo.headMeshNum, pVoiceInfo->voiceHeadInfo.apSoundHeadModels[sithVoice_curHeadHeight], 0);
                     pVoiceInfo->voiceHeadInfo.headSwapRefNum = refNum;
                 }
                 else if ( pVoiceInfo->voiceHeadInfo.headSwapRefNum != -1 )
                 {
-                    sithThing_RemoveSwapEntry(pThing, pVoiceInfo->voiceHeadInfo.headSwapRefNum);
+                    SITHVOICE_REMOVE_SWAP_ENTRY(pThing, pVoiceInfo->voiceHeadInfo.headSwapRefNum);
                     pVoiceInfo->voiceHeadInfo.headSwapRefNum = -1;
                 }
 
-                sithVoice_secNextHeadSwapTime = sithTime_g_secGameTime + sithVoice_secHeadSwapInterval;
+                sithVoice_secNextHeadSwapTime = SITHVOICE_SEC_GAME_TIME + sithVoice_secHeadSwapInterval;
             }
         }
         else
@@ -312,17 +329,17 @@ void J3DAPI sithVoice_UpdateLipSync(SithThing* pThing)
                 if ( sithVoice_bThingHasSwapHead && pVoiceInfo->voiceHeadInfo.apSoundHeadModels[0] ) // TODO: Note that sithVoice_bThingHasSwapHead might be set for other thing than the one passed to this function
                 {
                     sithVoice_bThingHasSwapHead = false;
-                    sithThing_AddSwapEntry(pThing, pVoiceInfo->voiceHeadInfo.headMeshNum, pVoiceInfo->voiceHeadInfo.apSoundHeadModels[0], 0);
+                    SITHVOICE_ADD_SWAP_ENTRY(pThing, pVoiceInfo->voiceHeadInfo.headMeshNum, pVoiceInfo->voiceHeadInfo.apSoundHeadModels[0], 0);
                 }
                 else
                 {
-                    sithThing_RemoveSwapEntry(pThing, pVoiceInfo->voiceHeadInfo.headSwapRefNum);
+                    SITHVOICE_REMOVE_SWAP_ENTRY(pThing, pVoiceInfo->voiceHeadInfo.headSwapRefNum);
                 }
 
                 pVoiceInfo->voiceHeadInfo.headSwapRefNum = -1;
             }
 
-            pVoiceInfo->hSndChannel = 0;
+            pVoiceInfo->hSndChannel = SOUND_INVALIDHANDLE;
             sithVoice_secNextHeadSwapTime = 0.0f;
         }
     }
@@ -379,7 +396,6 @@ void J3DAPI sithVoice_PlayVoice(SithCog* pCog)
 
     sithCogExec_PushInt(pCog, guid);
 }
-
 
 void J3DAPI sithVoice_SetThingVoiceHeads(SithCog* pCog)
 {
@@ -447,7 +463,7 @@ void J3DAPI sithVoice_SetThingVoiceColor(SithCog* pCog)
 
 void J3DAPI sithVoice_SetVoiceParams(SithCog* pCog)
 {
-    sithVoice_dword_52B9A8 = sithCogExec_PopInt(pCog);
+    sithVoice_msecLipSyncOffset = sithCogExec_PopInt(pCog);
     sithVoice_secHeadSwapInterval = sithCogExec_PopFlex(pCog);
 }
 
@@ -487,7 +503,7 @@ void J3DAPI sithVoice_AddSubtitle(unsigned int msecSoundLen, const char* pSoundF
                 }
 
                 STD_STRCAT(aVoiceLines, aCurVoiceLine);
-                memset(aCurVoiceLine, 0, sizeof(aCurVoiceLine));
+                STD_ZEROMEM(aCurVoiceLine, sizeof(aCurVoiceLine));
 
                 --sithVoice_numSubtitleInfos;
             }
@@ -645,7 +661,7 @@ void J3DAPI sithVoice_RemoveSoundSubtitle(tSoundChannelHandle hSound)
             {
                 // Note: don't clear aSubtitleText or the list will get corrupted
                 //       and draw function won't render anything
-                memset(sithVoice_aSubtitleInfos[i].aSoundFilename, 0, sizeof(sithVoice_aSubtitleInfos[i].aSoundFilename));
+                STD_ZEROMEM(sithVoice_aSubtitleInfos[i].aSoundFilename, sizeof(sithVoice_aSubtitleInfos[i].aSoundFilename));
                 sithVoice_aSubtitleInfos[i].msecStartTime   = 0;
             }
             sithVoice_aSubtitleInfos[i].msecEndTime     = curTime;
@@ -658,7 +674,7 @@ void sithVoice_PurgeDrawnSubtitles(void)
 {
     unsigned int curTime = stdPlatform_GetTimeMsec();
 
-    memset(sithVoice_aSubtitleInfos, 0, sizeof(SithVoiceSubtitleInfo) * sithVoice_curSubtitleDrawIndex);
+    STD_ZEROMEM(sithVoice_aSubtitleInfos, sizeof(SithVoiceSubtitleInfo) * sithVoice_curSubtitleDrawIndex);
     sithVoice_numSubtitleInfos = 0;
 
     // Copy range from sithVoice_curSubtitleDrawIndex to end of array to the beginning of the array
@@ -695,7 +711,7 @@ void sithVoice_PurgeDrawnSubtitles(void)
     //        In addition this introduced a bug where entry at index would be cleared and nothing would be then drawn to the screen (due to check in sithVoice_Draw)
     if ( sithVoice_numSubtitleInfos < STD_ARRAYLEN(sithVoice_aSubtitleInfos) ) // Also added this check to prevent out of bounds access
     {
-        memset(&sithVoice_aSubtitleInfos[sithVoice_numSubtitleInfos], 0, sizeof(SithVoiceSubtitleInfo) * (STD_ARRAYLEN(sithVoice_aSubtitleInfos) - sithVoice_numSubtitleInfos));
+        STD_ZEROMEM(&sithVoice_aSubtitleInfos[sithVoice_numSubtitleInfos], sizeof(SithVoiceSubtitleInfo) * (STD_ARRAYLEN(sithVoice_aSubtitleInfos) - sithVoice_numSubtitleInfos));
     }
 
     sithVoice_curSubtitleDrawIndex = 0;
@@ -791,8 +807,8 @@ int J3DAPI sithVoice_SyncVoiceState(DPID idTo, unsigned int outstream)
     //*(float*)pCurOut = sithVoice_secHeadSwapInterval;
     // pCurOut += 4;
 
-    SITHDSS_PUSHINT32(sithVoice_dword_52B9A8);
-    //*(uint32_t*)pCurOut = sithVoice_dword_52B9A8;
+    SITHDSS_PUSHINT32(sithVoice_msecLipSyncOffset);
+    //*(uint32_t*)pCurOut = sithVoice_msecLipSyncOffset;
 
     SITHDSS_ENDOUT;
     //sithMulti_g_message.type = SITHDSS_VOICESTATE;
@@ -823,8 +839,8 @@ int J3DAPI sithVoice_ProcessVoiceState(const SithMessage* pMsg)
     sithVoice_secHeadSwapInterval = SITHDSS_POPFLOAT();
     //sithVoice_secHeadSwapInterval = *(float*)pCurIn;
 
-    sithVoice_dword_52B9A8 = SITHDSS_POPUINT32();
-    //sithVoice_dword_52B9A8 = *((uint32_t*)pCurIn + 1);
+    sithVoice_msecLipSyncOffset = SITHDSS_POPUINT32();
+    //sithVoice_msecLipSyncOffset = *((uint32_t*)pCurIn + 1);
 
     SITHDSS_ENDIN;
     return 1;
