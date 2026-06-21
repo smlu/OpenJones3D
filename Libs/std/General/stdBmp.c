@@ -126,7 +126,8 @@ int J3DAPI stdBmp_WriteVBuffer(const char* pFilename, tVBuffer* pVBuffer)
 
     int res = 0;
     // Fixed: Avoid reading pixels from an unlocked VBuffer.
-    if ( !stdDisplay_VBufferLock(pVBuffer) )
+    // Altered: Lock screenshots read-only so a DX9 MSAA readback is not mistaken for a CPU-rendered frame.
+    if ( !stdDisplay_VBufferLockReadOnly(pVBuffer) )
     {
         STDFREE(pRow);
         std_g_pHS->pFileClose(fh);
