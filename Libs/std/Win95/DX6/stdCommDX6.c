@@ -129,10 +129,12 @@ int32_t J3DAPI stdComm_Receive(DPID* pSender, void* pData, size_t* pLength)
     STD_ASSERTREL(pData && pLength && pSender);
 
     HRESULT hr;
-    DPID idTo;
+    DPID idTo = 0; // Fixed: Keep error logging deterministic if DirectPlay fails before writing the recipient id.
     while ( 1 )
     {
-        hr = IDirectPlayX_Receive(pDirectPlay, pSender, &idTo, DPRECEIVE_ALL, pData, pLength);
+        DWORD length = *pLength > UINT32_MAX ? UINT32_MAX : (DWORD)*pLength; // Fixed: DirectPlay receives a DWORD byte count, not a size_t pointer.
+        hr = IDirectPlayX_Receive(pDirectPlay, pSender, &idTo, DPRECEIVE_ALL, pData, &length);
+        *pLength = length;
         if ( hr < DP_OK ) {
             break;
         }
@@ -208,7 +210,7 @@ HRESULT J3DAPI stdComm_CreateGame(const StdCommGame* pSettings)
     }
 
     bGameHost = true;
-    bGameHost = true;
+    bGameActive = true; // Fixed: Mark newly created host sessions active instead of writing the host flag twice.
     return 0; // success
 }
 
@@ -421,7 +423,7 @@ DPID J3DAPI stdComm_CreatePlayer(const wchar_t* pPlayerName)
     dpname.dwFlags       = 0;
     dpname.lpszLongName  = 0;
 
-    DPID id;
+    DPID id = 0; // Fixed: Return a deterministic invalid player id when DirectPlay fails.
     HRESULT hr = IDirectPlayX_CreatePlayer(pDirectPlay, &id, &dpname, NULL, NULL, 0, 0);
     if ( hr >= DP_OK ) {
         return id;
