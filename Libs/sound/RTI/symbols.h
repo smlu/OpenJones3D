@@ -45,7 +45,7 @@
 #define AudioLib_ResetCompressor_TYPE void (J3DAPI*)(tAudioCompressorState*)
 #define AudioLib_Uncompress_TYPE void (J3DAPI*)(tAudioCompressorState*, uint8_t*, const uint8_t*, unsigned int)
 #define AudioLib_GetMouthPosition_TYPE int (J3DAPI*)(uint8_t*, int, uint8_t*, uint8_t*)
-#define AudioLib_GenerateLipSyncBlock_TYPE int (J3DAPI*)(uint8_t*, const uint8_t*, unsigned int, char, char, int, int, int, int, int)
+#define AudioLib_GenerateLipSyncBlock_TYPE int (J3DAPI*)(uint8_t*, const uint8_t*, uint32_t, int8_t, int8_t, uint32_t, uint32_t, uint32_t, int, uint32_t)
 #define AudioLib_CompressBlock_TYPE int (J3DAPI*)(tAudioCompressorState*, uint8_t*, int16_t*, int, unsigned int, int, int)
 #define AudioLib_UncompressBlock_TYPE void (J3DAPI*)(tAudioCompressorState*, uint8_t*, const uint8_t*, int, unsigned int, int)
 #define AudioLib_WVSMCompressBlock_TYPE int (J3DAPI*)(uint8_t*, const uint8_t*, int, FILE*)

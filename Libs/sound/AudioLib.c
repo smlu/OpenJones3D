@@ -1,6 +1,41 @@
 #include "AudioLib.h"
+#include <j3dcore/j3d.h>
 #include <j3dcore/j3dhook.h>
 #include <sound/RTI/symbols.h>
+#include <std/General/stdUtil.h>
+#include <limits.h>
+
+#define AUDIOLIB_LIPSYNC_MAGIC                       "SYNC"
+#define AUDIOLIB_LIPSYNC_MAGIC_LENGTH                ((int)sizeof(AUDIOLIB_LIPSYNC_MAGIC) - 1)
+#define AUDIOLIB_LIPSYNC_HEADER_SIZE                 (AUDIOLIB_LIPSYNC_MAGIC_LENGTH + (int)sizeof(uint32_t))
+#define AUDIOLIB_LIPSYNC_ENTRY_SIZE                  ((int)sizeof(uint32_t))
+#define AUDIOLIB_BITS_PER_BYTE                       CHAR_BIT
+#define AUDIOLIB_LIPSYNC_SAMPLE_SIZE                 ((int)sizeof(int16_t))
+#define AUDIOLIB_LIPSYNC_BITS_PER_SAMPLE             (AUDIOLIB_LIPSYNC_SAMPLE_SIZE * AUDIOLIB_BITS_PER_BYTE)
+#define AUDIOLIB_LIPSYNC_NUM_CHANNELS                1
+#define AUDIOLIB_LIPSYNC_MOUTH_X_SHIFT               AUDIOLIB_BITS_PER_BYTE
+#define AUDIOLIB_LIPSYNC_TIME_SHIFT                  12u
+#define AUDIOLIB_LIPSYNC_TIME_SCALE                  (1u << AUDIOLIB_LIPSYNC_TIME_SHIFT)
+#define AUDIOLIB_LIPSYNC_TIME_UNITS_PER_SECOND       (AUDIOLIB_LIPSYNC_TIME_SCALE * 1000u) // 4096 fixed-point lip-sync time units per millisecond, scaled to one second.
+#define AUDIOLIB_LIPSYNC_TIME_MASK                   0xFFFF0000u
+#define AUDIOLIB_LIPSYNC_MSEC_OVERFLOW_MASK          0xFFF00000u
+#define AUDIOLIB_LIPSYNC_MOUTH_MASK                  0x7Fu
+#define AUDIOLIB_LIPSYNC_MASK_BIT                    1u
+#define AUDIOLIB_LIPSYNC_MOUTH_MAX                   127
+#define AUDIOLIB_LIPSYNC_PERCENT_SCALE               100
+#define AUDIOLIB_LIPSYNC_ROLLING_MAX_COUNT           15
+#define AUDIOLIB_LIPSYNC_ROLLING_MIN_DIVISOR         4
+#define AUDIOLIB_LIPSYNC_MOUTH_DECAY_STEP            16
+#define AUDIOLIB_LIPSYNC_MOUTH_X_DECAY_MIN           47
+#define AUDIOLIB_LIPSYNC_MOUTH_Y_DECAY_MIN           15
+#define AUDIOLIB_LIPSYNC_QUIET_THRESHOLD             25
+#define AUDIOLIB_LIPSYNC_NEUTRAL_MOUTH_X             37
+#define AUDIOLIB_LIPSYNC_MOUTH_X_SCALE               50
+#define AUDIOLIB_LIPSYNC_MOUTH_Y_SCALE               60
+#define AUDIOLIB_LIPSYNC_ZERO_CROSSING_BIAS          1u
+#define AUDIOLIB_LIPSYNC_TRANSIENT_THRESHOLD_PERCENT 30
+
+#define AUDIOLIB_PACK_LIPSYNC_ENTRY(timeKey, mouthX, mouthY) (((uint32_t)(mouthY) & AUDIOLIB_LIPSYNC_MOUTH_MASK) | (((uint32_t)(mouthX) & AUDIOLIB_LIPSYNC_MOUTH_MASK) << 8) | ((timeKey) & AUDIOLIB_LIPSYNC_TIME_MASK))
 
 #define AudioLib_aStepTable J3D_DECL_FAR_ARRAYVAR(AudioLib_aStepTable, const int16_t(*)[89])
 #define AudioLib_aStepBits J3D_DECL_FAR_ARRAYVAR(AudioLib_aStepBits, const uint8_t(*)[89])
@@ -17,10 +52,10 @@ void AudioLib_InstallHooks(void)
     // J3D_HOOKFUNC(AudioLib_Compress);
     // J3D_HOOKFUNC(AudioLib_ResetCompressor);
     // J3D_HOOKFUNC(AudioLib_Uncompress);
-    // J3D_HOOKFUNC(AudioLib_GetMouthPosition);
-    // J3D_HOOKFUNC(AudioLib_GenerateLipSyncBlock);
-    // J3D_HOOKFUNC(AudioLib_CompressBlock);
-    // J3D_HOOKFUNC(AudioLib_UncompressBlock);
+    J3D_HOOKFUNC(AudioLib_GetMouthPosition);
+    J3D_HOOKFUNC(AudioLib_GenerateLipSyncBlock);
+   // J3D_HOOKFUNC(AudioLib_CompressBlock);
+   // J3D_HOOKFUNC(AudioLib_UncompressBlock);
     J3D_HOOKFUNC(AudioLib_WVSMCompressBlock);
     // J3D_HOOKFUNC(AudioLib_WVSMUncompressBlock);
 }
@@ -251,14 +286,436 @@ void J3DAPI AudioLib_Uncompress(tAudioCompressorState* pCompressorState, uint8_t
     J3D_TRAMPOLINE_CALL(AudioLib_Uncompress, pCompressorState, pOutSndData, pCompressedData, size);
 }
 
-int J3DAPI AudioLib_GetMouthPosition(uint8_t* pData, int a2, uint8_t* pMouthPosX, uint8_t* pMouthPosY)
+//int J3DAPI AudioLib_GetMouthPosition(uint8_t* pData, int a2, uint8_t* pMouthPosX, uint8_t* pMouthPosY)
+//{
+//    return J3D_TRAMPOLINE_CALL(AudioLib_GetMouthPosition, pData, a2, pMouthPosX, pMouthPosY);
+//}
+//
+//int J3DAPI AudioLib_GenerateLipSyncBlock(uint8_t* pOutData, const uint8_t* pSndData, uint32_t a3, int8_t a4, int8_t a5, uint32_t sampleRate, uint32_t bitsPerSample, uint32_t numChannels, int a9, uint32_t sndDataSize)
+//{
+//    return J3D_TRAMPOLINE_CALL(AudioLib_GenerateLipSyncBlock, pOutData, pSndData, a3, a4, a5, sampleRate, bitsPerSample, numChannels, a9, sndDataSize);
+//}
+
+// Added helper functions for readability; original code used direct little-endian casts.
+// Reads a 32-bit little-endian value from the lip-sync block.
+static inline uint32_t AudioLib_ReadU32LE(const uint8_t* pData)
 {
-    return J3D_TRAMPOLINE_CALL(AudioLib_GetMouthPosition, pData, a2, pMouthPosX, pMouthPosY);
+    return (uint32_t)pData[0]
+        | ((uint32_t)pData[1] << AUDIOLIB_BITS_PER_BYTE)
+        | ((uint32_t)pData[2] << (AUDIOLIB_BITS_PER_BYTE * 2))
+        | ((uint32_t)pData[3] << (AUDIOLIB_BITS_PER_BYTE * 3));
 }
 
-int J3DAPI AudioLib_GenerateLipSyncBlock(uint8_t* pOutData, const uint8_t* pSndData, unsigned int a3, char a4, char a5, int sampleRate, int bitsPerSample, int numChannels, int a9, int sndDataSize)
+// Writes a 32-bit little-endian value to the lip-sync block.
+static inline void AudioLib_WriteU32LE(uint8_t* pData, uint32_t value)
 {
-    return J3D_TRAMPOLINE_CALL(AudioLib_GenerateLipSyncBlock, pOutData, pSndData, a3, a4, a5, sampleRate, bitsPerSample, numChannels, a9, sndDataSize);
+    pData[0] = (uint8_t)value;
+    pData[1] = (uint8_t)(value >> AUDIOLIB_BITS_PER_BYTE);
+    pData[2] = (uint8_t)(value >> (AUDIOLIB_BITS_PER_BYTE * 2));
+    pData[3] = (uint8_t)(value >> (AUDIOLIB_BITS_PER_BYTE * 3));
+}
+
+// Reads a signed 16-bit little-endian PCM sample.
+static inline int16_t AudioLib_ReadS16LE(const uint8_t* pData)
+{
+    uint16_t value = (uint16_t)pData[0] | ((uint16_t)pData[1] << AUDIOLIB_BITS_PER_BYTE);
+    return (int16_t)value;
+}
+
+// Matches the original abs() use on 16-bit PCM samples.
+static inline int AudioLib_AbsS16(int16_t value)
+{
+    return value < 0 ? -(int)value : (int)value;
+}
+
+int J3DAPI AudioLib_GetMouthPosition(uint8_t* pLipSyncData, int msecTime, uint8_t* pMouthPosX, uint8_t* pMouthPosY)
+{
+    uint8_t mouthX = 0;
+    uint8_t mouthY = 0;
+    int result = 0;
+
+    if ( memeq(pLipSyncData, AUDIOLIB_LIPSYNC_MAGIC, AUDIOLIB_LIPSYNC_MAGIC_LENGTH) )
+    {
+        int numEntries = (int)AudioLib_ReadU32LE(pLipSyncData + AUDIOLIB_LIPSYNC_MAGIC_LENGTH);
+        const uint8_t* pEntries = pLipSyncData + AUDIOLIB_LIPSYNC_HEADER_SIZE;
+
+        if ( (msecTime & AUDIOLIB_LIPSYNC_MSEC_OVERFLOW_MASK) != 0 )
+        {
+            result = 1;
+        }
+        else
+        {
+            uint32_t targetTimeKey = ((uint32_t)msecTime << AUDIOLIB_LIPSYNC_TIME_SHIFT) & AUDIOLIB_LIPSYNC_TIME_MASK;
+            int first = 0;
+            int last = numEntries - 1;
+            int entryIndex = 0;
+            // TODO: [BUG] Reject zero-entry blocks; the original reads before the entry array when numEntries is zero.
+            uint32_t lastEntry = AudioLib_ReadU32LE(pEntries + AUDIOLIB_LIPSYNC_ENTRY_SIZE * numEntries - AUDIOLIB_LIPSYNC_ENTRY_SIZE);
+
+            // TODO: [BUG] An exact final timestamp selects the preceding entry; only a later timestamp selects the last entry.
+            if ( targetTimeKey > lastEntry )
+            {
+                entryIndex = last;
+                targetTimeKey = 0;
+            }
+
+            while ( targetTimeKey != 0 )
+            {
+                int middle;
+                uint32_t entry;
+
+                if ( first + 1 >= last )
+                {
+                    entryIndex = first + (last - first) / 2;
+                    break;
+                }
+
+                middle = first + (last - first) / 2;
+                entry = AudioLib_ReadU32LE(pEntries + AUDIOLIB_LIPSYNC_ENTRY_SIZE * middle);
+
+                if ( targetTimeKey == (entry & AUDIOLIB_LIPSYNC_TIME_MASK) )
+                {
+                    entryIndex = middle;
+                    break;
+                }
+
+                if ( targetTimeKey <= entry )
+                {
+                    last = middle;
+                }
+                else
+                {
+                    first = middle;
+                }
+            }
+
+            uint32_t entry = AudioLib_ReadU32LE(pEntries + AUDIOLIB_LIPSYNC_ENTRY_SIZE * entryIndex);
+            mouthX = (uint8_t)((entry >> AUDIOLIB_LIPSYNC_MOUTH_X_SHIFT) & AUDIOLIB_LIPSYNC_MOUTH_MASK);
+            mouthY = (uint8_t)(entry & AUDIOLIB_LIPSYNC_MOUTH_MASK);
+        }
+    }
+    else
+    {
+        result = 1;
+    }
+
+    if ( pMouthPosX )
+    {
+        *pMouthPosX = mouthX;
+    }
+
+    if ( pMouthPosY )
+    {
+        *pMouthPosY = mouthY;
+    }
+
+    return result;
+}
+
+// Added: Calculate the worst-case generated block size so checked callers can allocate safely.
+size_t J3DAPI AudioLib_GetLipSyncBlockMaxSize(uint32_t analysisRateHz, uint32_t sampleRate, uint32_t bitsPerSample, uint32_t numChannels, uint32_t sndDataSize)
+{
+    if ( analysisRateHz == 0u
+        || analysisRateHz > AUDIOLIB_LIPSYNC_TIME_UNITS_PER_SECOND
+        || sampleRate == 0u
+        || sampleRate > (uint32_t)INT_MAX / AUDIOLIB_LIPSYNC_SAMPLE_SIZE
+        || bitsPerSample != AUDIOLIB_LIPSYNC_BITS_PER_SAMPLE
+        || numChannels != AUDIOLIB_LIPSYNC_NUM_CHANNELS
+        || sndDataSize < (uint32_t)AUDIOLIB_LIPSYNC_SAMPLE_SIZE
+        || sndDataSize % AUDIOLIB_LIPSYNC_SAMPLE_SIZE != 0
+        || (size_t)sampleRate > SIZE_MAX / AUDIOLIB_LIPSYNC_SAMPLE_SIZE )
+    {
+        return 0;
+    }
+
+    size_t bytesPerAnalysisFrame = (size_t)AUDIOLIB_LIPSYNC_SAMPLE_SIZE * (size_t)sampleRate / analysisRateHz;
+    if ( bytesPerAnalysisFrame < AUDIOLIB_LIPSYNC_SAMPLE_SIZE
+        || bytesPerAnalysisFrame / AUDIOLIB_LIPSYNC_SAMPLE_SIZE > INT_MAX / ((int)INT16_MAX + 1)
+        || (size_t)sndDataSize > (size_t)INT_MAX - bytesPerAnalysisFrame )
+    {
+        return 0;
+    }
+
+    size_t maxZeroCrossings = (size_t)sndDataSize / (AUDIOLIB_LIPSYNC_SAMPLE_SIZE * 2u);
+    if ( maxZeroCrossings > 0 && bytesPerAnalysisFrame > (size_t)INT_MAX / maxZeroCrossings )
+    {
+        return 0;
+    }
+
+    size_t numFrames = (size_t)sndDataSize / bytesPerAnalysisFrame;
+    if ( numFrames > (SIZE_MAX - AUDIOLIB_LIPSYNC_HEADER_SIZE) / AUDIOLIB_LIPSYNC_ENTRY_SIZE - 1u )
+    {
+        return 0;
+    }
+
+    size_t maxBlockSize = AUDIOLIB_LIPSYNC_HEADER_SIZE + (numFrames + 1u) * AUDIOLIB_LIPSYNC_ENTRY_SIZE;
+    return maxBlockSize <= INT_MAX ? maxBlockSize : 0;
+}
+
+// Added: Reject missing or undersized buffers before entering the original unchecked generator.
+int J3DAPI AudioLib_GenerateLipSyncBlockEx(uint8_t* pOutData, size_t outDataSize, const uint8_t* pSndData, size_t sndDataCapacity, uint32_t analysisRateHz, int8_t mouthXLevels, int8_t mouthYLevels, uint32_t sampleRate, uint32_t bitsPerSample, uint32_t numChannels, int bCrossSample, uint32_t sndDataSize)
+{
+    size_t maxBlockSize          = AudioLib_GetLipSyncBlockMaxSize(analysisRateHz, sampleRate, bitsPerSample, numChannels, sndDataSize);
+    size_t bytesPerAnalysisFrame = maxBlockSize != 0 ? (size_t)AUDIOLIB_LIPSYNC_SAMPLE_SIZE * (size_t)sampleRate / analysisRateHz : 0;
+    size_t inputPadding          = (bCrossSample != 0) + (bytesPerAnalysisFrame % AUDIOLIB_LIPSYNC_SAMPLE_SIZE != 0);
+    size_t requiredSndDataSize   = sndDataSize > 0u && (size_t)sndDataSize <= SIZE_MAX - inputPadding ? (size_t)sndDataSize + inputPadding : 0;
+
+    if ( !pOutData
+        || !pSndData
+        || maxBlockSize == 0
+        || outDataSize < maxBlockSize
+        || requiredSndDataSize == 0
+        || sndDataCapacity < requiredSndDataSize )
+    {
+        return 0;
+    }
+
+    return AudioLib_GenerateLipSyncBlock(
+        pOutData,
+        pSndData,
+        analysisRateHz,
+        mouthXLevels,
+        mouthYLevels,
+        sampleRate,
+        bitsPerSample,
+        numChannels,
+        bCrossSample,
+        sndDataSize
+    );
+}
+
+// Altered: Use explicit signed-byte mouth levels and unsigned audio metadata and counters.
+int J3DAPI AudioLib_GenerateLipSyncBlock(uint8_t* pOutData, const uint8_t* pSndData, uint32_t analysisRateHz, int8_t mouthXLevels, int8_t mouthYLevels, uint32_t sampleRate, uint32_t bitsPerSample, uint32_t numChannels, int bCrossSample, uint32_t sndDataSize)
+{
+    uint8_t* pCurOut = pOutData;
+    char aDebugBuffer[200];
+    int aRollingMax[AUDIOLIB_LIPSYNC_ROLLING_MAX_COUNT];
+    int rollingMaxIndex = 0;
+    int maxAmplitude = 0;
+    unsigned int absAmplitude = 0;
+    int totalZeroCrossings = 0;
+    int previousMouthX = -1;
+    int previousMouthY = -1;
+    int previousRawMouthX = 0;
+    int previousRawMouthY = 0;
+    int mouthXMask = 0;
+    int mouthYMask = 0;
+    uint32_t bytesPerAnalysisFrame;
+    unsigned int zeroCrossingsPerFrame;
+    uint32_t timeStep;
+    uint32_t timeKey = 0;
+    uint32_t processedBytes = 0;
+    uint8_t mouthXLevelsMinusOne;
+    uint8_t mouthYLevelsMinusOne;
+
+    if ( !sndDataSize )
+    {
+        return 0;
+    }
+
+    if ( !pSndData || bitsPerSample != AUDIOLIB_LIPSYNC_BITS_PER_SAMPLE || numChannels != AUDIOLIB_LIPSYNC_NUM_CHANNELS )
+    {
+        return 0;
+    }
+
+    if ( bCrossSample )
+    {
+        ++pSndData;
+    }
+
+    strcpy_s((char*)pOutData, sizeof(AUDIOLIB_LIPSYNC_MAGIC), AUDIOLIB_LIPSYNC_MAGIC);
+    pCurOut += AUDIOLIB_LIPSYNC_HEADER_SIZE;
+
+    mouthXLevelsMinusOne = (uint8_t)(mouthXLevels - 1);
+    mouthYLevelsMinusOne = (uint8_t)(mouthYLevels - 1);
+    for ( int i = 0; i < (int)AUDIOLIB_LIPSYNC_MOUTH_POSITION_BITS; ++i )
+    {
+        mouthXMask *= 2;
+        mouthYMask *= 2;
+
+        if ( mouthXLevelsMinusOne )
+        {
+            mouthXMask |= AUDIOLIB_LIPSYNC_MASK_BIT;
+        }
+
+        if ( mouthYLevelsMinusOne )
+        {
+            mouthYMask |= AUDIOLIB_LIPSYNC_MASK_BIT;
+        }
+
+        mouthXLevelsMinusOne >>= 1;
+        mouthYLevelsMinusOne >>= 1;
+    }
+
+    // TODO: [BUG] Validate the rate and complete sample/frame sizes; the original can divide by zero, stall, or read past odd boundaries.
+    timeStep = AUDIOLIB_LIPSYNC_TIME_UNITS_PER_SECOND / analysisRateHz;
+
+    for ( uint32_t byteOffset = AUDIOLIB_LIPSYNC_SAMPLE_SIZE; byteOffset < sndDataSize; byteOffset += AUDIOLIB_LIPSYNC_SAMPLE_SIZE )
+    {
+        int16_t previousSample = AudioLib_ReadS16LE(pSndData + byteOffset - AUDIOLIB_LIPSYNC_SAMPLE_SIZE);
+        int16_t sample = AudioLib_ReadS16LE(pSndData + byteOffset);
+        int absSample = AudioLib_AbsS16(sample);
+
+        if ( sample >= 0 && previousSample < 0 )
+        {
+            ++totalZeroCrossings;
+        }
+
+        if ( absSample > maxAmplitude )
+        {
+            maxAmplitude = absSample;
+        }
+
+        absAmplitude += (unsigned int)absSample;
+    }
+
+    /*
+     * The original formats "MaxAmp: %d  Avg: %d" into a local buffer here, but
+     * the text is never used. Keep the average computation documented instead.
+     */
+    absAmplitude /= (unsigned int)sndDataSize / (unsigned int)AUDIOLIB_LIPSYNC_SAMPLE_SIZE;
+    sprintf_s(aDebugBuffer, STD_ARRAYLEN(aDebugBuffer), "MaxAmp: %d  Avg: %d", maxAmplitude, absAmplitude); // Altered: Replaced sprintf with sprintf_s for safety
+
+    for ( size_t i = 0; i < STD_ARRAYLEN(aRollingMax); ++i )
+    {
+        aRollingMax[i] = maxAmplitude;
+    }
+
+    bytesPerAnalysisFrame = AUDIOLIB_LIPSYNC_SAMPLE_SIZE * sampleRate / analysisRateHz;
+    zeroCrossingsPerFrame = bytesPerAnalysisFrame * (uint32_t)totalZeroCrossings / sndDataSize;
+
+    while ( processedBytes + bytesPerAnalysisFrame <= sndDataSize )
+    {
+        int frameMaxAmplitude = 0;
+        int frameZeroCrossings = 0;
+        int frameAbsSum = 0;
+        int frameAvgAmplitude;
+        int rollingMaxSum = 0;
+        int rollingAvgMax;
+        int rawMouthX;
+        int rawMouthY;
+        int mouthXPercent;
+        int mouthYPercent;
+        int mouthX;
+        int mouthY;
+
+        for ( uint32_t byteOffset = AUDIOLIB_LIPSYNC_SAMPLE_SIZE; byteOffset < bytesPerAnalysisFrame; byteOffset += AUDIOLIB_LIPSYNC_SAMPLE_SIZE )
+        {
+            int16_t previousSample = AudioLib_ReadS16LE(pSndData + byteOffset - AUDIOLIB_LIPSYNC_SAMPLE_SIZE);
+            int16_t sample = AudioLib_ReadS16LE(pSndData + byteOffset);
+            int absSample = AudioLib_AbsS16(sample);
+
+            if ( sample >= 0 && previousSample < 0 )
+            {
+                ++frameZeroCrossings;
+            }
+
+            if ( absSample > frameMaxAmplitude )
+            {
+                frameMaxAmplitude = absSample;
+            }
+
+            frameAbsSum += absSample;
+        }
+
+        frameAvgAmplitude = frameAbsSum / (int)(bytesPerAnalysisFrame / AUDIOLIB_LIPSYNC_SAMPLE_SIZE);
+
+        for ( int i = rollingMaxIndex; i < rollingMaxIndex + (int)STD_ARRAYLEN(aRollingMax); ++i )
+        {
+            rollingMaxSum += aRollingMax[i % (int)STD_ARRAYLEN(aRollingMax)];
+        }
+
+        rollingAvgMax = rollingMaxSum / (int)STD_ARRAYLEN(aRollingMax);
+        if ( rollingAvgMax == 0 )
+        {
+            rollingAvgMax = 1;
+        }
+
+        if ( rollingAvgMax < maxAmplitude / AUDIOLIB_LIPSYNC_ROLLING_MIN_DIVISOR )
+        {
+            rollingAvgMax = maxAmplitude / AUDIOLIB_LIPSYNC_ROLLING_MIN_DIVISOR;
+        }
+
+        aRollingMax[rollingMaxIndex] = frameMaxAmplitude;
+        rollingMaxIndex = (rollingMaxIndex + 1) % (int)STD_ARRAYLEN(aRollingMax);
+
+        rawMouthY = AUDIOLIB_LIPSYNC_MOUTH_Y_SCALE * frameMaxAmplitude / rollingAvgMax;
+        rawMouthX = AUDIOLIB_LIPSYNC_MOUTH_X_SCALE * frameZeroCrossings / (int)(zeroCrossingsPerFrame + AUDIOLIB_LIPSYNC_ZERO_CROSSING_BIAS);
+
+        if ( rawMouthY < AUDIOLIB_LIPSYNC_QUIET_THRESHOLD )
+        {
+            rawMouthX = (AUDIOLIB_LIPSYNC_NEUTRAL_MOUTH_X * (AUDIOLIB_LIPSYNC_QUIET_THRESHOLD - rawMouthY) + rawMouthX * rawMouthY) / AUDIOLIB_LIPSYNC_QUIET_THRESHOLD;
+        }
+
+        if ( rawMouthX >= AUDIOLIB_LIPSYNC_PERCENT_SCALE )
+        {
+            mouthXPercent = AUDIOLIB_LIPSYNC_PERCENT_SCALE;
+        }
+        else
+        {
+            mouthXPercent = rawMouthX;
+        }
+
+        rawMouthX = AUDIOLIB_LIPSYNC_MOUTH_MAX * mouthXPercent / AUDIOLIB_LIPSYNC_PERCENT_SCALE;
+        if ( rawMouthY >= AUDIOLIB_LIPSYNC_PERCENT_SCALE )
+        {
+            mouthYPercent = AUDIOLIB_LIPSYNC_PERCENT_SCALE;
+        }
+        else
+        {
+            mouthYPercent = rawMouthY;
+        }
+
+        rawMouthY = AUDIOLIB_LIPSYNC_MOUTH_MAX * mouthYPercent / AUDIOLIB_LIPSYNC_PERCENT_SCALE;
+
+        if ( frameAvgAmplitude < AUDIOLIB_LIPSYNC_TRANSIENT_THRESHOLD_PERCENT * frameMaxAmplitude / AUDIOLIB_LIPSYNC_PERCENT_SCALE )
+        {
+            if ( previousRawMouthX <= AUDIOLIB_LIPSYNC_MOUTH_X_DECAY_MIN )
+            {
+                rawMouthX = 0;
+            }
+            else
+            {
+                rawMouthX = previousRawMouthX - AUDIOLIB_LIPSYNC_MOUTH_DECAY_STEP;
+            }
+
+            if ( previousRawMouthY <= AUDIOLIB_LIPSYNC_MOUTH_Y_DECAY_MIN )
+            {
+                rawMouthY = 0;
+            }
+            else
+            {
+                rawMouthY = previousRawMouthY - AUDIOLIB_LIPSYNC_MOUTH_DECAY_STEP;
+            }
+        }
+
+        previousRawMouthX = rawMouthX;
+        previousRawMouthY = rawMouthY;
+
+        mouthX = rawMouthX & mouthXMask;
+        mouthY = rawMouthY & mouthYMask;
+
+        if ( mouthX != previousMouthX || mouthY != previousMouthY )
+        {
+            AudioLib_WriteU32LE(pCurOut, AUDIOLIB_PACK_LIPSYNC_ENTRY(timeKey, mouthX, mouthY));
+            pCurOut += AUDIOLIB_LIPSYNC_ENTRY_SIZE;
+            previousMouthX = mouthX;
+            previousMouthY = mouthY;
+        }
+
+        timeKey += timeStep;
+        processedBytes += bytesPerAnalysisFrame;
+        pSndData += bytesPerAnalysisFrame;
+    }
+
+    AudioLib_WriteU32LE(pCurOut, timeKey & AUDIOLIB_LIPSYNC_TIME_MASK);
+    pCurOut += AUDIOLIB_LIPSYNC_ENTRY_SIZE;
+
+    {
+        int numEntries = (int)(((pCurOut - pOutData) / AUDIOLIB_LIPSYNC_ENTRY_SIZE) - (AUDIOLIB_LIPSYNC_HEADER_SIZE / AUDIOLIB_LIPSYNC_ENTRY_SIZE));
+        AudioLib_WriteU32LE(pOutData + AUDIOLIB_LIPSYNC_MAGIC_LENGTH, numEntries);
+        return AUDIOLIB_LIPSYNC_ENTRY_SIZE * numEntries + AUDIOLIB_LIPSYNC_HEADER_SIZE;
+    }
 }
 
 // ADPCM compression
@@ -351,7 +808,7 @@ int J3DAPI AudioLib_WVSMCompressBlock(uint8_t* pOutBuffer, const uint8_t* pInBuf
 
         // Note in debug version of Indy3D.exe the loop is the same only the loop range is different.
         // In debug version the loop range is defined as counter = 0; while(counter < size_1) {... counter += 2; }
-        // This change still causes the rightBits or leftBits to be rad out of bounds, 
+        // This change still causes the rightBits or leftBits to be rad out of bounds,
         // so the change must be somewhere else in order for the debug version to run normally
         do
         {
