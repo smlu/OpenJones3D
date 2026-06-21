@@ -11,6 +11,8 @@
 #include <std/General/stdMath.h>
 #include <std/General/stdUtil.h>
 
+#include <limits.h>
+
 // General module constants
 #define SOUND_INIT_SOUNDINFO_BUFFERSIZE 16
 
@@ -21,6 +23,11 @@
 
 // Sound playback constants
 #define SOUND_MAXCREATERETRIES 4
+
+// Lip-sync constants
+#define SOUND_LIPSYNC_ANALYSIS_RATE_HZ    60u
+#define SOUND_LIPSYNC_END_MARGIN_MSEC     25u
+#define SOUND_MILLISECONDS_PER_SECOND     1000u
 
 // Sound load constants and macros
 #define SOUND_LOADSTATICIDXMASK 0x12344321 // Mask for static sound index
@@ -72,7 +79,6 @@ typedef enum eSoundModuleState
     SOUNDSTATE_STARTUP     = 2,
     SOUNDSTATE_OPEN        = 3,
 } SoundModuleState;
-
 
 // Note don't change the int types of vars that are being serialized on save/restore
 
@@ -157,6 +163,10 @@ tFileHandle J3DAPI Sound_MemFileReset();
 void J3DAPI Sound_MemFileFree(void);
 
 void Sound_StopAllNonStaticSounds(void);
+
+static size_t Sound_GetLipSyncCurrentPosition(tSysSoundBuffer* pSoundBuffer);
+static void Sound_ResetLipSyncCompressor(tAudioCompressorState* pCompressorState);
+static void Sound_UncompressLipSyncData(tAudioCompressorState* pCompressorState, uint8_t* pOutSndData, const uint8_t* pCompressedData, unsigned int size);
 
 int J3DAPI Sound_ExportBank(tFileHandle fh, size_t bankNum);
 int J3DAPI Sound_ImportBank(tFileHandle fh, size_t bankNum);
@@ -251,6 +261,21 @@ static void Sound_Release(tSoundChannel* pChannel) // Added
 
 void Sound_ResetGlobals(void)
 {}
+
+static size_t Sound_GetLipSyncCurrentPosition(tSysSoundBuffer* pSoundBuffer)
+{
+    return SoundDriver_GetCurrentPosition(pSoundBuffer);
+}
+
+static void Sound_ResetLipSyncCompressor(tAudioCompressorState* pCompressorState)
+{
+    AudioLib_ResetCompressor(pCompressorState);
+}
+
+static void Sound_UncompressLipSyncData(tAudioCompressorState* pCompressorState, uint8_t* pOutSndData, const uint8_t* pCompressedData, unsigned int size)
+{
+    AudioLib_Uncompress(pCompressorState, pOutSndData, pCompressedData, size);
+}
 
 int J3DAPI Sound_Initialize(tHostServices* pHS)
 {
@@ -424,7 +449,7 @@ int J3DAPI Sound_Save(tFileHandle fh)
             break;
         }
 
-        // TODO: Save also 2D sounds 
+        // TODO: Save also 2D sounds
         if ( pCurChannel->handle != SOUND_INVALIDHANDLE
             && ((pCurChannel->flags & (SOUND_CHANNEL_LOOP | SOUND_CHANNEL_PLAYING)) == (SOUND_CHANNEL_LOOP | SOUND_CHANNEL_PLAYING)
                 || (pCurChannel->flags & SOUND_CHANNEL_FAR) != 0)
@@ -811,7 +836,7 @@ int J3DAPI Sound_Restore(tFileHandle fh)
         }
     }
 
-    // Read handle entropy and fades. 
+    // Read handle entropy and fades.
     if ( Sound_pHS->pFileRead(fh, &Sound_handleEntropy, sizeof(uint32_t)) != sizeof(uint32_t) )
     {
         return 0;
@@ -819,7 +844,7 @@ int J3DAPI Sound_Restore(tFileHandle fh)
 
     // Fixed: Added check to ensure Sound_handleEntropy is never smaller than the max entropy value.
     //        This prevents possible sound handle collisions when loading or playing new sounds.
-    //        Especially the case where playing sounds get switched due to handle collisions, 
+    //        Especially the case where playing sounds get switched due to handle collisions,
     //        e.g.: When firing a gun and due to handle collision the sound of colliding handle is played instead of the gun sound.
     //              And when the colliding sound is looping, it'll be play indefinitely at player's position.
     if ( Sound_handleEntropy < maxEntropy )
@@ -829,7 +854,7 @@ int J3DAPI Sound_Restore(tFileHandle fh)
     }
 
     // Read fades
-    // Note, what's the point to read fades to system in case system is not opened? 
+    // Note, what's the point to read fades to system in case system is not opened?
     return Sound_pHS->pFileRead(fh, Sound_aFades, sizeof(Sound_aFades)) == sizeof(Sound_aFades);
 }
 
@@ -1146,7 +1171,7 @@ tSoundHandle J3DAPI Sound_Load(const char* pFilepath, uint32_t* sndIdx)
 
     if ( pSndInfo->bCompressed || Sound_bNoSoundCompression )
     {
-        // Compressed Sound data read 
+        // Compressed Sound data read
 
         pSndInfo->dataOffset = Sound_GetFreeCache(pSndInfo->bankNum, pSndInfo->dataSize);
         if ( !pSndInfo->dataOffset )
@@ -1178,7 +1203,6 @@ tSoundHandle J3DAPI Sound_Load(const char* pFilepath, uint32_t* sndIdx)
 
         ++soundbank_aNumSounds[bankNum];
         return pSndInfo->hSnd;
-
     }
     else
     {
@@ -1685,7 +1709,7 @@ tSoundChannelHandle J3DAPI Sound_Play(tSoundHandle hSnd, float volume, float pan
             // Added: Log error message
             SOUNDLOG_ERROR("Sound_Play: Couldn't create sound buffer after %d retries.\n", SOUND_MAXCREATERETRIES);
 
-            // Couldn't create sound buffer 
+            // Couldn't create sound buffer
             pChannel->handle  = SOUND_INVALIDHANDLE;
             pChannel->hSnd    = SOUND_INVALIDHANDLE;
             pChannel->thingId = 0;
@@ -2531,7 +2555,118 @@ void J3DAPI Sound_Update(const rdVector3* pPos, const rdVector3* pVelocity, cons
     }
 }
 
-int J3DAPI Sound_GenerateLipSync(tSoundChannelHandle hChannel, uint8_t* pMouthPosX, uint8_t* pMouthPosY, int a4)
+// Added: Build and commit cached lip-sync data only after every allocation and generation step succeeds.
+static int Sound_CacheLipSyncData(SoundInfo* pSndInfo, uint8_t* pSoundCache, size_t soundCacheCapacity, const char* pFilename)
+{
+    const tAudioCompressedData* pCompressedData = NULL;
+    const uint8_t* pSndData                     = NULL;
+
+    uint8_t* pAllocatedSndData = NULL;
+    uint32_t sndDataSize;
+
+    if ( pSndInfo->bCompressed )
+    {
+        pCompressedData = (const tAudioCompressedData*)&pSoundCache[pSndInfo->dataOffset];
+        sndDataSize      = pCompressedData->uncompressedSize;
+    }
+    else
+    {
+        sndDataSize = pSndInfo->dataSize;
+        pSndData    = &pSoundCache[pSndInfo->dataOffset];
+    }
+
+    size_t lipSyncCapacity = AudioLib_GetLipSyncBlockMaxSize(
+        SOUND_LIPSYNC_ANALYSIS_RATE_HZ,
+        pSndInfo->sampleRate,
+        pSndInfo->sempleBitSize,
+        pSndInfo->numChannels,
+        sndDataSize
+    );
+    if ( lipSyncCapacity == 0 )
+    {
+        SOUNDLOG_ERROR("Sound_GenerateLipSync: Unsupported lip-sync generation parameters for %s\n", pFilename);
+        return 0;
+    }
+
+    size_t sndDataCapacity;
+    if ( pSndInfo->bCompressed )
+    {
+        // Fixed: The original allocated only sndDataSize bytes although AudioLib starts reading at pSndData + 1.
+        //        A 16-bit read can reach one byte past the data, or two when an analysis frame has an odd byte length.
+        sndDataCapacity = (size_t)sndDataSize + sizeof(int16_t);
+
+        // Fixed: Check the temporary decompression allocation before resetting or using the output buffer.
+        pAllocatedSndData = (uint8_t*)Sound_pHS->pMalloc(sndDataCapacity);
+        if ( !pAllocatedSndData )
+        {
+            SOUNDLOG_ERROR("Sound_GenerateLipSync: Couldn't allocate decompression buffer for %s\n", pFilename);
+            return 0;
+        }
+
+        // Fixed: Initialize the decompression buffer so a short decode cannot feed indeterminate bytes to lip-sync generation.
+        STD_ZEROMEM(pAllocatedSndData, sndDataCapacity);
+
+        tAudioCompressorState compressor;
+        Sound_ResetLipSyncCompressor(&compressor);
+        Sound_UncompressLipSyncData(&compressor, pAllocatedSndData, pCompressedData->compressedData, (unsigned int)sndDataSize);
+        pSndData = pAllocatedSndData;
+    }
+    else
+    {
+        sndDataCapacity = soundCacheCapacity - pSndInfo->dataOffset;
+    }
+
+    // Fixed: Replace the original fixed 8192-byte stack scratch buffer with a checked worst-case allocation.
+    //        The 8-byte header, one 4-byte change entry per 60 Hz frame, and one terminal entry limited
+    //        the old buffer to 2045 changing frames, or about 34.1 seconds in the worst case. Audio with
+    //        repeated mouth states could be longer, but highly variable audio could overrun the unchecked
+    //        buffer. The stack scratch avoided a temporary output allocation and allowed an exact-sized
+    //        persistent copy after successful generation; this path allocates the checked capacity directly.
+    uint8_t* pGeneratedData = (uint8_t*)Sound_pHS->pMalloc(lipSyncCapacity);
+    if ( !pGeneratedData )
+    {
+        SOUNDLOG_ERROR("Sound_GenerateLipSync: Couldn't allocate lip-sync data for %s\n", pFilename);
+        if ( pAllocatedSndData )
+        {
+            Sound_pHS->pFree(pAllocatedSndData);
+        }
+
+        return 0;
+    }
+
+    int generatedSize = AudioLib_GenerateLipSyncBlockEx(
+        pGeneratedData,
+        lipSyncCapacity,
+        pSndData,
+        sndDataCapacity,
+        SOUND_LIPSYNC_ANALYSIS_RATE_HZ,
+        SOUND_LIPSYNC_MOUTH_LEVELS,
+        SOUND_LIPSYNC_MOUTH_LEVELS,
+        pSndInfo->sampleRate,
+        pSndInfo->sempleBitSize,
+        pSndInfo->numChannels,
+        /*bCrossSample=*/1,
+        sndDataSize
+    );
+
+    if ( pAllocatedSndData )
+    {
+        Sound_pHS->pFree(pAllocatedSndData);
+    }
+
+    if ( generatedSize == 0 )
+    {
+        SOUNDLOG_ERROR("Sound_GenerateLipSync: Failed to generate lip-sync data for %s\n", pFilename);
+        Sound_pHS->pFree(pGeneratedData);
+        return 0;
+    }
+
+    // Fixed: Publish the cache pointer only after a complete block has been generated.
+    pSndInfo->pLipSyncData = pGeneratedData;
+    return 1;
+}
+
+int J3DAPI Sound_GenerateLipSync(tSoundChannelHandle hChannel, uint8_t* pMouthPosX, uint8_t* pMouthPosY, int msecLipSyncOffset)
 {
     tSoundChannel* pChannel = Sound_GetChannel(hChannel);
     if ( !pChannel )
@@ -2540,94 +2675,58 @@ int J3DAPI Sound_GenerateLipSync(tSoundChannelHandle hChannel, uint8_t* pMouthPo
     }
 
     SoundInfo* pSndInfo = Sound_GetSoundInfo(pChannel->hSnd);
-    if ( !pSndInfo || !pSndInfo->sampleRate || pSndInfo->sempleBitSize != 8 && pSndInfo->sempleBitSize != 16 )
+    // Fixed: Preserve the original sound/sample-rate checks and match the generator's actual 16-bit mono PCM contract.
+    if ( !pSndInfo
+        || pSndInfo->sampleRate == 0
+        || pSndInfo->sempleBitSize != 16
+        || pSndInfo->numChannels != 1 )
     {
         goto error;
     }
 
-    if ( !pSndInfo->numChannels || pSndInfo->numChannels > 2 )
-    {
-        goto error;
-    }
+    // TODO: [BUG] Validate loaded and imported sound-bank metadata before exposing its offsets and sizes to runtime paths.
+    uint8_t* pSoundCache = soundbank_apSoundCache[pSndInfo->bankNum];
 
     if ( !pSndInfo->pLipSyncData )
     {
-        bool bAllocated = false;
         if ( Sound_bNoLipSync )
         {
             goto error;
         }
 
-        SOUNDLOG_DEBUG("Sound_GenerateLipSync: Generating lip sync for file %s\n", &soundbank_apSoundCache[pSndInfo->bankNum][pSndInfo->filePathOffset]);
-
-        size_t sndDataSize;
-        uint8_t* pSndData;
-        if ( pSndInfo->bCompressed )
+        const char* pFilename       = (const char*)&pSoundCache[pSndInfo->filePathOffset];
+        size_t soundCacheCapacity   = soundbank_aCacheSizes[pSndInfo->bankNum];
+        SOUNDLOG_DEBUG("Sound_GenerateLipSync: Generating lip sync for file %s\n", pFilename);
+        if ( !Sound_CacheLipSyncData(pSndInfo, pSoundCache, soundCacheCapacity, pFilename) )
         {
-            tAudioCompressedData* pCompressedData = ((tAudioCompressedData*)&soundbank_apSoundCache[pSndInfo->bankNum][pSndInfo->dataOffset]);
-            sndDataSize = pCompressedData->uncompressedSize; // decompressed data size is first 4 bytes
-            pSndData    = (uint8_t*)Sound_pHS->pMalloc(sndDataSize);
-            bAllocated  = true;
-
-            tAudioCompressorState compressor;
-            AudioLib_ResetCompressor(&compressor);
-            AudioLib_Uncompress(&compressor, pSndData, pCompressedData->compressedData, sndDataSize);
-        }
-        else
-        {
-            pSndData    = &soundbank_apSoundCache[pSndInfo->bankNum][pSndInfo->dataOffset];
-            sndDataSize = pSndInfo->dataSize;
-        }
-
-        uint8_t aBuffer[8192];
-        int genDataSize = AudioLib_GenerateLipSyncBlock(
-            aBuffer,
-            pSndData,
-            60u,
-            4,
-            4,
-            pSndInfo->sampleRate,
-            pSndInfo->sempleBitSize,
-            pSndInfo->numChannels,
-            1,
-            sndDataSize
-        );
-
-        if ( bAllocated )
-        {
-            Sound_pHS->pFree(pSndData);
-        }
-
-        // Fixed: Check if generated data size is valid to avoid heap allocation errors
-        if ( genDataSize == 0 )
-        {
-            SOUNDLOG_ERROR("Sound_GenerateLipSync: Failed to generate lip sync data for sound %s\n", &soundbank_apSoundCache[pSndInfo->bankNum][pSndInfo->filePathOffset]);
             goto error;
         }
+    }
 
-        pSndInfo->pLipSyncData = (uint8_t*)Sound_pHS->pMalloc(genDataSize);
-        if ( pSndInfo->pLipSyncData )
+    size_t dataSize = pSndInfo->dataSize;
+    if ( pSndInfo->bCompressed )
+    {
+        dataSize = ((const tAudioCompressedData*)&pSoundCache[pSndInfo->dataOffset])->uncompressedSize;
+    }
+
+    // Fixed: Use wide intermediates for playback-window and millisecond calculations.
+    uint64_t bytesPerSecond = (uint64_t)pSndInfo->sampleRate * (pSndInfo->sempleBitSize >> 3) * pSndInfo->numChannels;
+    size_t ampSize          = (size_t)(bytesPerSecond * SOUND_LIPSYNC_END_MARGIN_MSEC / SOUND_MILLISECONDS_PER_SECOND);
+    size_t curPos           = Sound_GetLipSyncCurrentPosition(pChannel->pDSoundBuffer);
+
+    int msecLipSyncTime = -1;
+    // Altered: Express the original end-of-data check without overflowing ampSize + curPos.
+    if ( curPos < dataSize && ampSize < dataSize - curPos )
+    {
+        uint64_t channelMsec = SOUND_MILLISECONDS_PER_SECOND * (uint64_t)curPos / bytesPerSecond;
+        int64_t adjustedMsec = (int64_t)msecLipSyncOffset + (int64_t)channelMsec;
+        if ( adjustedMsec >= INT_MIN && adjustedMsec <= INT_MAX )
         {
-            memcpy(pSndInfo->pLipSyncData, aBuffer, genDataSize);
+            msecLipSyncTime = (int)adjustedMsec;
         }
     }
 
-    size_t curPos = SoundDriver_GetCurrentPosition(pChannel->pDSoundBuffer);
-    size_t ampSize = pSndInfo->sampleRate * (pSndInfo->sempleBitSize >> 3) * 25 * pSndInfo->numChannels / 1000; // Note: constant 25 is from AudioLib_GenerateLipSynchBlock
-
-    size_t  dataSize = pSndInfo->dataSize;
-    if ( pSndInfo->bCompressed )
-    {
-        dataSize = ((tAudioCompressedData*)&soundbank_apSoundCache[pSndInfo->bankNum][pSndInfo->dataOffset])->uncompressedSize; // decompressed data size is first 4 bytes
-    }
-
-    int a2 = -1;
-    if ( (ampSize + curPos) < dataSize )
-    {
-        a2 = a4 + 1000 * curPos / (pSndInfo->sampleRate * (pSndInfo->sempleBitSize >> 3) * pSndInfo->numChannels);
-    }
-
-    if ( !AudioLib_GetMouthPosition(pSndInfo->pLipSyncData, a2, pMouthPosX, pMouthPosY) )
+    if ( !AudioLib_GetMouthPosition(pSndInfo->pLipSyncData, msecLipSyncTime, pMouthPosX, pMouthPosY) )
     {
         return 1; // success
     }
@@ -2661,7 +2760,6 @@ size_t J3DAPI Sound_GetAllInstanceInfo(SoundInstanceInfo* pCurInstance, size_t s
 
         if ( pCurChannel->handle != SOUND_INVALIDHANDLE )
         {
-
             if ( numSounds >= sizeInstances )
             {
                 SOUNDLOG_ERROR("Sound_GetAllInstanceInfo: Return value not big enough!\n");
