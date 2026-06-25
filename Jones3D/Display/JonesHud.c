@@ -98,8 +98,8 @@ static int JonesHud_bRestoreGameStatistics;
 static int JonesHud_bItemActivated;
 static int JonesHud_bExitActivated;
 
-static float JonesHud_menuItemScale          = 0.6f;
-static float JonesHud_menuItemTextPosY       = J3D_QOL_VALUE(-13.0f, 70.0f);
+static float JonesHud_menuItemScale          = 0.75f;
+static float JonesHud_menuItemTextPosY       = J3D_QOL_VALUE(-18.0f, 70.0f);
 static float JonesHud_menuItemTextSize       = J3D_QOL_VALUE(11.0f, 14.0f);
 static float JonesHud_menuItemMoveDurationMs = 250u;
 
@@ -117,7 +117,8 @@ static int JonesHud_msecMenuCloseSlideDuration      = 50;
 
 static char JonesHud_aSlectedNdsFilePath[JONESCONFIG_GAMESAVE_FILEPATHSIZE];
 
-static const float JonesHud_invMenuDefaultZ = -0.102f;
+// Original constant was -0.102f but this centers the item posiition with the health indicator better
+static const float JonesHud_invMenuDefaultZ = -0.104f;
 static float JonesHud_invMenuMinZ           = 0.0f;
 static float JonesHud_invMenuMaxZ           = 0.0f;
 
@@ -1453,11 +1454,8 @@ void J3DAPI JonesHud_UpdateHUDLayout(uint32_t width, uint32_t height)
     JonesHud_flt_554FE4 = 16.0f * JonesHud_heightAspectRatioScale;
     JonesHud_flt_554FE0 = 16.0f * JonesHud_widthAspectRatioScale;
 
-    // Fixed: Adjusted inventory menu position for wide screen resolutions. OG: invMenuBottomOffset was set to invMenuDefaultOffset
-    float adjustedAspect = (RD_REF_APECTRATIO / (width / height));
-    float adjustedZ      = JonesHud_invMenuDefaultZ * adjustedAspect;
-    float offset         = -0.09f * (1 - adjustedAspect); // Add a small offset to move it slightly up
-    JonesHud_invMenuMinZ = adjustedZ + offset;
+    // No need to adjust inventory height based on aspect ratio anymore
+    JonesHud_invMenuMinZ = JonesHud_invMenuDefaultZ;
 }
 
 void JonesHud_MenuOpen(void)
