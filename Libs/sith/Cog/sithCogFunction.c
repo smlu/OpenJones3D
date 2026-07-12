@@ -2132,8 +2132,6 @@ int J3DAPI sithCogFunction_RegisterFunctions(SithCogSymbolTable* pTable)
         || sithCog_RegisterFunction(pTable, sithCogFunction_LoadTemplate, "loadtemplate")
         || sithCog_RegisterFunction(pTable, sithCogFunction_LoadKeyframe, "loadkeyframe")
         || sithCog_RegisterFunction(pTable, sithCogFunction_LoadModel, "loadmodel")
-        || sithCog_RegisterFunction(pTable, EnablePrint, "enableprint")
-        || sithCog_RegisterFunction(pTable, IsPrintEnabled, "isprintenabled")
         || sithCog_RegisterFunction(pTable, sithCogFunction_Print, "print")
         || sithCog_RegisterFunction(pTable, sithCogFunction_PrintInt, "printint")
         || sithCog_RegisterFunction(pTable, sithCogFunction_PrintFlex, "printflex")
@@ -2233,13 +2231,28 @@ int J3DAPI sithCogFunction_RegisterFunctions(SithCogSymbolTable* pTable)
         || sithCog_RegisterFunction(pTable, sithCogFunction_Cos, "cos")
         || sithCog_RegisterFunction(pTable, sithCogFunction_ArcTan, "arctan")
         || sithCog_RegisterFunction(pTable, sithCogFunction_GetPerformanceLevel, "getperformancelevel")
-        || sithCog_RegisterFunction(pTable, sithCogFunction_IsLevelName, "islevelname")
-        || sithCog_RegisterFunction(pTable, sithCogFunction_DebugPrint, "debugprint") // Added: From debug version
-        || sithCog_RegisterFunction(pTable, sithCogFunction_DebugFlex, "debugflex")   // Added: From debug version
-        || sithCog_RegisterFunction(pTable, sithCogFunction_DebugInt, "debugint")     // Added: From debug version
-        || sithCog_RegisterFunction(pTable, sithCogFunction_DebugVector, "debugvector") // Added
-        || sithCog_RegisterFunction(pTable, sithCogFunction_DebugLocalSymbols, "debuglocalsymbols") // Added: From debug version
-        || sithCog_RegisterFunction(pTable, sithCogFunction_DebugWaitForKey, "debugwaitforkey"); // Added: From debug version
+        || sithCog_RegisterFunction(pTable, sithCogFunction_IsLevelName, "islevelname");
+
+    // Added: From debug version
+
+    // Removed as it requires new versioning system to avoid issues with existing retail savegames.
+    // Retail's sithCogParse creates local float symbols for unresolved script identifiers.
+    // If a newly registered global function matches such an identifier, reparsing the
+    // script no longer creates that local slot, changing the local symbol count/order.
+    // sithGamesave reloads the level's scripts before replaying saved DSS state.
+    // sithDSSCog restores symbol types/values positionally using the rebuilt symbol count,
+    // so the mismatch can misalign the saved data and corrupt restored COG references.
+
+    //|| sithCog_RegisterFunction(pTable, sithCogFunction_DebugPrint, "debugprint") // Added: From debug version
+    //|| sithCog_RegisterFunction(pTable, sithCogFunction_DebugFlex, "debugflex")   // Added: From debug version
+    //|| sithCog_RegisterFunction(pTable, sithCogFunction_DebugInt, "debugint")     // Added: From debug version
+    //|| sithCog_RegisterFunction(pTable, sithCogFunction_DebugVector, "debugvector") // Added
+    //|| sithCog_RegisterFunction(pTable, sithCogFunction_DebugLocalSymbols, "debuglocalsymbols") // Added: From debug version
+    //|| sithCog_RegisterFunction(pTable, sithCogFunction_DebugWaitForKey, "debugwaitforkey") // Added: From debug version
+
+    //// New functions
+    //|| sithCog_RegisterFunction(pTable, EnablePrint, "enableprint")
+    //|| sithCog_RegisterFunction(pTable, IsPrintEnabled, "isprintenabled");
 }
 
 void sithCogFunction_InstallHooks(void)
