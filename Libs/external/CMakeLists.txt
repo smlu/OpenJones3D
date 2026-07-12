@@ -21,7 +21,8 @@ set(JANSSON_WITHOUT_TESTS ON)
 set(JANSSON_EXAMPLES OFF)
 
 if (MSVC)
-    set(JANSSON_STATIC_CRT ON )
+    # The root CMAKE_MSVC_RUNTIME_LIBRARY setting owns CRT selection for every target.
+    set(JANSSON_STATIC_CRT OFF)
 endif ()
 
 foreach(MODULE ${EXTERNAL_MODULES})

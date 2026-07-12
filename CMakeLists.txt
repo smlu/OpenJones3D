@@ -1,4 +1,6 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.15)
+
+cmake_policy(SET CMP0091 NEW)
 
 project(OpenJones3D VERSION 0.4.0)
 
@@ -92,8 +94,10 @@ configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/LIBS/j3dcore/j3d.h"
 )
 
-# Set global property for MSVC runtime library (CMake 3.15+)
-set(CMAKE_MSVC_RUNTIME_LIBRARY "$<$<CONFIG:Release>:MultiThreaded>$<$<CONFIG:MinSizeRel>:MultiThreaded>")
+# Use the static CRT for optimized configurations and the debug DLL CRT for Debug.
+set(CMAKE_MSVC_RUNTIME_LIBRARY
+    "$<$<CONFIG:Debug>:MultiThreadedDebugDLL>$<$<CONFIG:Release>:MultiThreaded>$<$<CONFIG:RelWithDebInfo>:MultiThreaded>$<$<CONFIG:MinSizeRel>:MultiThreaded>"
+)
 
 if (MSVC)
     # Clion IDE can't read the preprocessor macro below and needs special treatment
