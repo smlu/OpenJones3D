@@ -11,6 +11,13 @@ set(EXTERNAL_MODULES
     jansson
 )
 
+if (JONES3D_BUILD_TESTS)
+    set(EXTERNAL_MODULES
+        ${EXTERNAL_MODULES}
+        unity
+    )
+endif()
+
 # Add external modules
 
 # Set Jansson config
@@ -25,6 +32,10 @@ if (MSVC)
     set(JANSSON_STATIC_CRT OFF)
 endif ()
 
+if (JONES3D_BUILD_TESTS)
+    set(UNITY_EXTENSION_FIXTURE ON CACHE BOOL "Compiles Unity with the fixture extension." FORCE)
+endif()
+
 foreach(MODULE ${EXTERNAL_MODULES})
     add_subdirectory(${MODULE})
     set_target_properties(${MODULE} PROPERTIES FOLDER "Libs/external") # Group all lib modules under "Libs/external" in Visual Studio
@@ -36,5 +47,10 @@ if(MSVC)
         /wd4146  # Disable C4146: unary minus operator applied to unsigned type
         /wd4703  # Disable C4703: potentially uninitialized local pointer variable
     )
-endif()
 
+    if (TARGET unity)
+        target_compile_options(unity PRIVATE
+            /wd5045 # Disable C5045: Spectre mitigation notice in vendored Unity code
+        )
+    endif()
+endif()

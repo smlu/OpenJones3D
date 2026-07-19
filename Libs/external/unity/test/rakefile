@@ -1,0 +1,185 @@
+# =========================================================================
+#   Unity - A Test Framework for C
+#   ThrowTheSwitch.org
+#   Copyright (c) 2007-26 Mike Karlesky, Mark VanderVoord, & Greg Williams
+#   SPDX-License-Identifier: MIT
+# =========================================================================
+
+$verbose = false
+$extra_paths = []
+
+require 'rake'
+require 'rake/clean'
+require_relative 'rakefile_helper'
+
+TEMP_DIRS = [
+	File.join(__dir__, 'build'),
+	File.join(__dir__, 'sandbox')
+]
+
+TEMP_DIRS.each do |dir|
+  directory(dir)
+  CLOBBER.include(dir)
+end
+
+task :prepare_for_tests => TEMP_DIRS
+
+include RakefileHelpers
+
+# Load proper GCC as defult configuration
+DEFAULT_CONFIG_FILE = 'gcc.yml'
+$unity_test_config_file = DEFAULT_CONFIG_FILE
+
+############# ALL THE SELF-TESTS WE CAN PERFORM
+namespace :test do
+  desc "Build and test Unity"
+  task :all => [:clean, :prepare_for_tests, 'test:scripts', 'test:unit', :style, 'test:fixture', 'test:memory', 'test:summary']
+  task :ci => [:clean, :prepare_for_tests, 'test:scripts', 'test:unit', :style, 'test:make', 'test:fixture', 'test:memory', 'test:examples', 'test:summary']
+
+  desc "Test unity with its own unit tests"
+  task :unit => [:config_toolchain, :prepare_for_tests] do
+    run_tests unit_test_files
+  end
+
+  namespace :unit do
+    unit_test_files.each do |f|
+      desc "test this unit only"
+      task File.basename(f,'.c').sub('test_unity_','') => [:config_toolchain, :prepare_for_tests] do
+        run_tests [f]
+      end
+    end
+  end
+
+  desc "Test unity's helper scripts"
+  task :scripts => [:config_toolchain, :prepare_for_tests] do
+    begin
+      Dir['tests/test_*.rb'].each do |scriptfile|
+        require "./"+scriptfile
+      end
+    ensure
+      total    = $generate_test_runner_tests    || 0
+      failures = $generate_test_runner_failures || 0
+      result   = "#{total} Tests #{failures} Failures 0 Ignored\n"
+      result  += failures > 0 ? "FAILED\n" : "OK\n"
+      save_test_results('scripts', result)
+    end
+  end
+
+  desc "Test unity triggered from make"
+  task :make => [:config_toolchain, :prepare_for_tests] do
+    run_make_tests()
+  end
+
+  desc "Test unity fixture addon"
+  task :fixture => [:config_toolchain, :prepare_for_tests] do
+    test_fixtures()
+  end
+
+  desc "Test unity memory addon"
+  task :memory => [:config_toolchain, :prepare_for_tests] do
+    test_memory()
+  end
+
+  desc "Test unity examples"
+  task :examples => [:config_toolchain, :prepare_for_tests] do
+    run_examples
+  end
+
+  desc "Run all rspecs"
+  task :spec => [:config_toolchain, :prepare_for_tests] do
+    output = execute("rspec spec/**/*_spec.rb", true)
+    rspec_ok = $?.exitstatus.zero?
+    report output
+    total = failures = pending = 0
+    if output =~ /(\d+) examples?, (\d+) failures?(?:, (\d+) pending)?/
+      total    = Regexp.last_match(1).to_i
+      failures = Regexp.last_match(2).to_i
+      pending  = (Regexp.last_match(3) || 0).to_i
+    end
+    result   = "#{total} Tests #{failures} Failures #{pending} Ignored\n"
+    result  += rspec_ok ? "OK\n" : "FAILED\n"
+    save_test_results('spec', result)
+    raise "Command failed." unless rspec_ok
+  end
+
+  desc "Generate test summary"
+  task :summary do
+    report_summary
+  end
+end
+
+###################### Shorthand for many common tasks
+task :ci => ['test:ci']
+task :all => ['test:all']
+task :default => [:clobber, :all]
+
+desc "Load configuration"
+task :config, :config_file do |t, args|
+  $unity_test_config_file = args[:config_file]
+end
+
+task :config_toolchain do 
+  configure_toolchain($unity_test_config_file)
+end
+
+task :no_color do
+  $colour_output = false
+end
+
+task :verbose do
+  $verbose = true
+end
+
+################### CODING STYLE VALIDATION
+namespace :style do
+  desc "Check style"
+  task :check do
+    report "\nVERIFYING RUBY STYLE"
+    report execute("rubocop ../auto ../examples ../extras --config .rubocop.yml", true)
+    report "Styling Ruby:PASS"
+  end
+
+  namespace :check do
+    Dir['../**/*.rb'].each do |f|
+      filename = File.basename(f, '.rb')
+      #desc "Check Style of #{filename}"
+      task filename.to_sym => ['style:clean'] do
+        report execute("rubocop #{f} --color --config .rubocop.yml", true)
+        report "Style Checked for #{f}"
+      end
+    end
+  end
+
+  desc "Fix Style of all C Code"
+  task :c do
+    run_astyle("../src/*.* ../extras/fixture/src/*.*")
+  end
+
+  namespace :c do
+    Dir['../{src,extras/**}/*.{c,h}'].each do |f|
+      filename = File.basename(f)[0..-3]
+      #desc "Check Style of #{filename}"
+      task filename.to_sym do
+        run_astyle f
+      end
+    end
+  end
+
+  desc "Attempt to Autocorrect style"
+  task :auto  => ['style:clean'] do
+    execute("rubocop ../auto ../examples ../extras --auto-correct --config .rubocop.yml")
+    report "Autocorrected What We Could."
+  end
+
+  desc "Update style todo list"
+  task :todo  => ['style:clean'] do
+    execute("rubocop ../auto ../examples ../extras --auto-gen-config --config .rubocop.yml")
+    report "Updated Style TODO List."
+  end
+
+  task :clean do
+    File.delete(".rubocop_todo.yml") if File.exist?(".rubocop_todo.yml")
+  end
+end
+
+task :style => ['style:check']
