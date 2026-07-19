@@ -64,6 +64,10 @@ if (JONES3D_RUNTIME_GUARDS)
     set(J3D_RUNTIME_GUARDS ON)
 endif()
 
+if (JONES3D_BUILD_TESTS)
+    enable_testing()
+endif()
+
 if(JONES3D_USE_DIRECTX9)
     set(JONES3D_GAPI_NAME "DirectX 9")
     set(J3D_DIRECTX9 ON) # Set the variable for the header template
@@ -89,11 +93,14 @@ else()
     endif()
 endif()
 
-# Configure the version header file
+# Keep configuration-specific headers in the build tree so DX6 and DX9 builds can coexist.
+set(JONES3D_GENERATED_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
+file(MAKE_DIRECTORY "${JONES3D_GENERATED_INCLUDE_DIR}/j3dcore")
 configure_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/LIBS/j3dcore/j3d.h.in"
-    "${CMAKE_CURRENT_SOURCE_DIR}/LIBS/j3dcore/j3d.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Libs/j3dcore/j3d.h.in"
+    "${JONES3D_GENERATED_INCLUDE_DIR}/j3dcore/j3d.h"
 )
+include_directories(BEFORE "${JONES3D_GENERATED_INCLUDE_DIR}")
 
 # Use the static CRT for optimized configurations and the debug DLL CRT for Debug.
 set(CMAKE_MSVC_RUNTIME_LIBRARY

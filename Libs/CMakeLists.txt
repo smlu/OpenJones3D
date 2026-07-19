@@ -22,6 +22,36 @@ add_library(${PROJECT_NAME} INTERFACE)
 add_subdirectory(j3dcore)
 target_link_libraries(${PROJECT_NAME} INTERFACE j3dcore)
 
+if (JONES3D_BUILD_TESTS)
+    add_library(j3dTestSupport STATIC
+        j3dcore/Tests/j3dTest.c
+        j3dcore/Tests/j3dTest.h
+    )
+
+    target_include_directories(j3dTestSupport PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}
+    )
+
+    target_link_libraries(j3dTestSupport PUBLIC
+        unity
+    )
+
+    if (J3D_DIRECTX6)
+        target_link_libraries(j3dTestSupport PUBLIC
+            DirectX61c
+        )
+    endif()
+
+    set_target_properties(j3dTestSupport PROPERTIES
+        FOLDER "Tests/Libs/j3dcore"
+    )
+
+    source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR}/j3dcore/Tests FILES
+        j3dcore/Tests/j3dTest.c
+        j3dcore/Tests/j3dTest.h
+    )
+endif()
+
 # Then add other modules
 foreach(MODULE ${LIB_MODULES})
     if(NOT ${MODULE} STREQUAL "j3dcore")
