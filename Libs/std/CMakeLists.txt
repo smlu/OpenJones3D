@@ -6,6 +6,7 @@ file(GLOB_RECURSE HEADERS *.h)
 macro(remove_dx9_files)
     # Remove DX9 files.
     list(FILTER SOURCES EXCLUDE REGEX ".*DX9\\.c$")
+    list(FILTER HEADERS EXCLUDE REGEX ".*DX9\\.h$")
 
     set(SHADERS "")
     set(SHADER_INCLUDES "")
@@ -17,8 +18,9 @@ macro(remove_dx6_files)
 endmacro()
 
 macro(remove_gl_files)
-    # Remove DX6 files.
+    # Remove GL files.
     list(FILTER SOURCES EXCLUDE REGEX ".*GL\\.c$")
+    list(FILTER HEADERS EXCLUDE REGEX ".*GL\\.h$")
     list(FILTER HEADERS EXCLUDE REGEX "stdGLSLShaders.h")
 endmacro()
 
