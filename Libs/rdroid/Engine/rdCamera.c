@@ -15,6 +15,7 @@
 #include <std/Win95/stdDisplay.h>
 
 #include "rdroid/Raster/rdCache.h"
+#include "rdroid/Raster/rdShader.h"
 #include "std/Win95/stdShader.h"
 
 bool rdCamera_dword_5E10E8 = false;
@@ -160,7 +161,7 @@ void J3DAPI rdCamera_SetCurrent(rdCamera* pCamera)
             rdCache_Flush();
             rdCache_FlushAlpha();
             rdCamera_g_pCurCamera = pCamera;
-            stdShader_UpdateGlobalUniforms();
+            rdShader_UpdateCameraData();
         }
 #else
         if ( rdCamera_g_pCurCamera != pCamera )

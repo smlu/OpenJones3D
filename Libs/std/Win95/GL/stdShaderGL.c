@@ -1,9 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <rdroid/types.h>
-#include <rdroid/Engine/rdCamera.h>
-#include <sith/Gameplay/sithTime.h>
 
 
 #include <std/General/std.h>
@@ -12,12 +9,10 @@
 #include <std/Win95/stdShader.h>
 #include <std/Win95/GL/Shaders/stdGLSLShaders.h>
 
-#include "std/General/stdEffect.h"
-#include "std/Win95/std3D.h"
-#include "std/Win95/stdDisplay.h"
+#include <std/General/stdEffect.h>
+#include <std/Win95/GL/stdShaderBlockGL.h>
 
 #define MAX_SHADER_PROGRAMS 64
-#define MAX_SHADER_LIGHTS 64
 
 static bool stdShader_bStartup = false;
 static bool stdShader_bOpen    = false;
@@ -26,7 +21,6 @@ static tHashTable* stdShader_pTable = NULL;
 
 static size_t stdShader_maxVsParams = 0;
 
-
 static GLShaderProgram stdShader_ShaderPrograms[MAX_SHADER_PROGRAMS];
 static size_t stdShader_shaderCount = 0;
 
@@ -34,103 +28,18 @@ static GLTextureUnit stdShader_activeTextureUnit = 0;
 
 static GLShaderProgram* stdShader_activeShader = NULL;
 
-typedef struct sCameraDataGPU
+typedef struct sStdShaderUbo
 {
-    float view[16];
-    float inverseView[16];
-    float projection[16];
-    float inverseProjection[16];
-    float viewProjection[16];
-    float farPlane;
-    float nearPlane;
-    float focalLength;
-    float time; // vec4
-} CameraDataGPU;
+    GLuint ubo;
+    const StdShaderBlockDesc* pDesc;
+} StdShaderUbo;
 
-typedef struct sFadeFactorGPU
-{
-    float fadeFactor;
-    float _pad[2];
-} FadeFactorGPU;
+static StdShaderUbo stdShader_aUbo[STDSHADERBLOCK_COUNT];
 
-static CameraDataGPU cameraData = { 0 };
-static GLuint cameraDataUBO     = 0;
-static GLuint viewPortUBO       = 0;
-
-
-typedef struct
-{
-    PointLightGPU lights[MAX_SHADER_LIGHTS];
-    int lightCount;
-    int pad[3]; // std140 padding auf 16 Byte
-} PointLightsUBO;
-
-static PointLightsUBO stdShader_pointLights = { 0 };
-static GLuint stdShader_pointLightUBO       = 0;
-static FadeFactorGPU stdShader_fadeFactor   = { 0 };
-static GLuint stdShader_fadeFactorUBO       = 0;
-
-typedef struct sFogDataGPU
-{
-    float bEnabled;
-    float start;
-    float end;
-    float depth;
-    float color[3];
-    float _pad;
-} FogDataGPU;
-
-static FogDataGPU stdShader_fogData = { 0 };
-static GLuint stdShader_fogDataUBO  = 0;
+static StdShaderBlockFadeFactor stdShader_fadeFactor = { 0 };
+static StdShaderBlockFogData stdShader_fogData       = { 0 };
 
 static void GetUniformLocations(void);
-
-static void stdShader_MulMat4(const float a[16], const float b[16], float out[16])
-{
-    float r[16];
-
-    for ( int col = 0; col < 4; ++col )
-    {
-        for ( int row = 0; row < 4; ++row )
-        {
-            r[col * 4 + row] =
-                a[0 * 4 + row] * b[col * 4 + 0] +
-                a[1 * 4 + row] * b[col * 4 + 1] +
-                a[2 * 4 + row] * b[col * 4 + 2] +
-                a[3 * 4 + row] * b[col * 4 + 3];
-        }
-    }
-
-    memcpy(out, r, sizeof(float) * 16);
-}
-
-void stdShader_ConvertToMat4(const rdMatrix34* pMat, float out[16])
-{
-    // In JonesEngine z is up and +y id forward
-    // So for OpenGL Y <-> Z and Z <-> -Y
-    out[0] = pMat->rvec.x;
-    out[1] = pMat->rvec.z;
-    out[2] = -pMat->rvec.y;
-    out[3] = 0.0f;
-
-    // up vector
-    out[4] = pMat->uvec.x;
-    out[5] = pMat->uvec.z;
-    out[6] = -pMat->uvec.y;
-    out[7] = 0.0f;
-
-    // forward vector
-    out[8]  = -pMat->lvec.x;
-    out[9]  = -pMat->lvec.z;
-    out[10] = pMat->lvec.y;
-    out[11] = 0.0f;
-
-    // position
-    out[12] = pMat->dvec.x;
-    out[13] = pMat->dvec.z;
-    out[14] = -pMat->dvec.y;
-    out[15] = 1.0f;
-}
 
 void stdShader_ResetShader(GLShaderProgram* shaderProgram)
 {
@@ -157,54 +66,19 @@ void stdShader_ResetAllShaders(void)
 
 static void stdShader_InitUniformBuffers(void)
 {
-    const float unitMatrix[16] = {
-        1.0f, 0.0f, 0.0f, 0.0f,
-        0.0f, 1.0f, 0.0f, 0.0f,
-        0.0f, 0.0f, 1.0f, 0.0f,
-        0.0f, 0.0f, 0.0f, 1.0f
-    };
+    for ( size_t i = 0; i < STDSHADERBLOCK_COUNT; i++ )
+    {
+        const StdShaderBlockDesc* desc = &stdShaderBlock_g_aBlockDesc[i];
+        StdShaderUbo* pUbo             = &stdShader_aUbo[i];
+        pUbo->pDesc                    = desc;
 
-    memcpy(&cameraData.view, unitMatrix, sizeof(unitMatrix));
-    memcpy(&cameraData.inverseView, unitMatrix, sizeof(unitMatrix));
-    memcpy(&cameraData.projection, unitMatrix, sizeof(unitMatrix));
-    memcpy(&cameraData.inverseProjection, unitMatrix, sizeof(unitMatrix));
-    memcpy(&cameraData.viewProjection, unitMatrix, sizeof(unitMatrix));
-    memcpy(&cameraData.view, unitMatrix, sizeof(unitMatrix));
-    cameraData.nearPlane   = 0;
-    cameraData.farPlane    = 0;
-    cameraData.focalLength = 5.0f;
-    cameraData.time        = 0;
-    glGenBuffers(1, &cameraDataUBO);
-    glBindBuffer(GL_UNIFORM_BUFFER, cameraDataUBO);
-    glBufferData(GL_UNIFORM_BUFFER, sizeof(CameraDataGPU), &cameraData, GL_DYNAMIC_DRAW);
-    glBindBuffer(GL_UNIFORM_BUFFER, 0);
-    glBindBufferBase(GL_UNIFORM_BUFFER, 0, cameraDataUBO);
-
-    glGenBuffers(1, &viewPortUBO);
-    glBindBuffer(GL_UNIFORM_BUFFER, viewPortUBO);
-    glBufferData(GL_UNIFORM_BUFFER, sizeof(StdShaderViewport), NULL, GL_DYNAMIC_DRAW);
-    glBindBuffer(GL_UNIFORM_BUFFER, 0);
-    glBindBufferBase(GL_UNIFORM_BUFFER, 1, viewPortUBO);
-
-    glGenBuffers(1, &stdShader_pointLightUBO);
-    glBindBuffer(GL_UNIFORM_BUFFER, stdShader_pointLightUBO);
-    glBufferData(GL_UNIFORM_BUFFER, sizeof(PointLightsUBO), NULL, GL_DYNAMIC_DRAW);
-    glBindBuffer(GL_UNIFORM_BUFFER, 0);
-    glBindBufferBase(GL_UNIFORM_BUFFER, 2, stdShader_pointLightUBO);
+        glGenBuffers(1, &pUbo->ubo);
+        glBindBuffer(GL_UNIFORM_BUFFER, pUbo->ubo);
+        glBufferData(GL_UNIFORM_BUFFER, (GLsizeiptr)desc->size, desc->initialData, GL_DYNAMIC_DRAW);
+        glBindBufferBase(GL_UNIFORM_BUFFER, desc->bindingPoint, pUbo->ubo);
+    }
 
     stdShader_fadeFactor.fadeFactor = 1.0f;
-    glGenBuffers(1, &stdShader_fadeFactorUBO);
-    glBindBuffer(GL_UNIFORM_BUFFER, stdShader_fadeFactorUBO);
-    glBufferData(GL_UNIFORM_BUFFER, sizeof(FadeFactorGPU), &stdShader_fadeFactor, GL_DYNAMIC_DRAW);
-    glBindBuffer(GL_UNIFORM_BUFFER, 0);
-    glBindBufferBase(GL_UNIFORM_BUFFER, 4, stdShader_fadeFactorUBO);
-
-    memset(&stdShader_fogData, 0, sizeof(FogDataGPU));
-    glGenBuffers(1, &stdShader_fogDataUBO);
-    glBindBuffer(GL_UNIFORM_BUFFER, stdShader_fogDataUBO);
-    glBufferData(GL_UNIFORM_BUFFER, sizeof(FogDataGPU), &stdShader_fogData, GL_DYNAMIC_DRAW);
-    glBindBuffer(GL_UNIFORM_BUFFER, 0);
-    glBindBufferBase(GL_UNIFORM_BUFFER, 5, stdShader_fogDataUBO);
 }
 
 bool J3DAPI stdShader_Startup(void)
@@ -222,7 +96,6 @@ bool J3DAPI stdShader_Startup(void)
         return false;
     }
 
-    memset(&cameraData, 0, sizeof(CameraDataGPU));
     stdShader_ResetAllShaders();
     stdShader_bStartup = true;
     stdShader_InitUniformBuffers();
@@ -237,7 +110,6 @@ void stdShader_Shutdown(void)
         return;
     }
 
-    memset(&cameraData, 0, sizeof(CameraDataGPU));
     stdShader_ResetAllShaders();
     stdHashtbl_Free(stdShader_pTable);
     stdShader_pTable = NULL;
@@ -279,39 +151,20 @@ void stdShader_Close(void)
 
 bool J3DAPI stdShader_SetViewport(const StdShaderViewport vp)
 {
-    glBindBuffer(GL_UNIFORM_BUFFER, viewPortUBO);
-    glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(StdShaderViewport), vp);
-    // for ( size_t i = 0; i < MAX_SHADER_PROGRAMS; i++ )
-    // {
-    //     GLShaderProgram* shaderProgram = &stdShader_ShaderPrograms[i];
-    //     if ( shaderProgram->handle > 0 )
-    //     {
-    //         glUseProgram(shaderProgram->handle);
-    //         int loc = glGetUniformLocation(shaderProgram->handle, "viewPort");
-    //
-    //         if ( loc == -1 )
-    //         {
-    //             continue;
-    //         }
-    //         glUniform4f(loc, vp[0], vp[1], vp[2], vp[3]);
-    //     }
-    // }
+    stdShader_UpdateUniformBufferObject(STDSHADERBLOCK_VIEWPORT, vp);
     return true;
 }
 
 bool J3DAPI stdShader_SetFog(bool enable, float start, float end, float depthFactor, const StdShaderVector color)
 {
-    FogDataGPU* data = &stdShader_fogData;
-    data->bEnabled   = enable ? 1.0f : 0.0f;
-    data->start      = start;
-    data->end        = end;
-    data->depth      = depthFactor;
+    StdShaderBlockFogData* data = &stdShader_fogData;
+    data->bEnabled              = enable ? 1.0f : 0.0f;
+    data->start                 = start;
+    data->end                   = end;
+    data->depth                 = depthFactor;
     memcpy(&data->color, color, sizeof(StdShaderVector));
 
-    glBindBuffer(GL_UNIFORM_BUFFER, stdShader_fogDataUBO);
-    glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(FogDataGPU), data);
-    // glUniform4f(glGetUniformLocation(stdShader_activeShader->handle, "vFogParams"), start, end, depthDactor, enable ? 1.0f : 0.0f);
-    // glUniform3f(glGetUniformLocation(stdShader_activeShader->handle, "vFogColor"), color[0], color[1], color[2]);
+    stdShader_UpdateUniformBufferObject(STDSHADERBLOCK_FOGDATA, &stdShader_fogData);
 
     return true;
 }
@@ -319,13 +172,6 @@ bool J3DAPI stdShader_SetFog(bool enable, float start, float end, float depthFac
 bool stdShader_DisableFog(void)
 {
     stdShader_SetFog(false, 0.0f, 0.0f, 0.0f, stdShader_fogData.color);
-    // //stdShader_fogData.bEnabled = 0.0f;
-    // float off = 0.0f;
-    // glBindBuffer(GL_UNIFORM_BUFFER, stdShader_fogDataUBO);
-    // glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(float), &off);
-    // // float fogParams[4] = { 0 }; // Disable fog
-    // // glUniform4fv(glGetUniformLocation(stdShader_activeShader->handle, "vFogParams"), 1, fogParams);
-
     return true;
 }
 
@@ -540,34 +386,14 @@ GLShaderProgram* stdShader_CompileAndCreate(const char* pName, const char* pVert
     GetUniformLocations();
     stdShader_SetActiveShader(pOld);
 
-    GLuint blockIndex = glGetUniformBlockIndex(pProgram->handle, "CameraData");
-    if ( blockIndex != GL_INVALID_INDEX )
+    GLuint blockIndex = GL_INVALID_INDEX;
+    for ( size_t i = 0; i < STDSHADERBLOCK_COUNT; i++ )
     {
-        glUniformBlockBinding(pProgram->handle, blockIndex, 0);
-    }
-
-    blockIndex = glGetUniformBlockIndex(pProgram->handle, "ViewportData");
-    if ( blockIndex != GL_INVALID_INDEX )
-    {
-        glUniformBlockBinding(pProgram->handle, blockIndex, 1);
-    }
-
-    blockIndex = glGetUniformBlockIndex(pProgram->handle, "PointLightsData");
-    if ( blockIndex != GL_INVALID_INDEX )
-    {
-        glUniformBlockBinding(pProgram->handle, blockIndex, 2);
-    }
-
-    blockIndex = glGetUniformBlockIndex(pProgram->handle, "FadeFactorData");
-    if ( blockIndex != GL_INVALID_INDEX )
-    {
-        glUniformBlockBinding(pProgram->handle, blockIndex, 4);
-    }
-
-    blockIndex = glGetUniformBlockIndex(pProgram->handle, "FogData");
-    if ( blockIndex != GL_INVALID_INDEX )
-    {
-        glUniformBlockBinding(pProgram->handle, blockIndex, 5);
+        blockIndex = glGetUniformBlockIndex(pProgram->handle, stdShader_aUbo[i].pDesc->glslName);
+        if ( blockIndex != GL_INVALID_INDEX )
+        {
+            glUniformBlockBinding(pProgram->handle, blockIndex, stdShader_aUbo[i].pDesc->bindingPoint);
+        }
     }
     return pProgram;
 }
@@ -628,86 +454,6 @@ void stdShader_SetActiveTextureUnit(const GLTextureUnit unit)
     stdShader_activeTextureUnit = unit;
 }
 
-static void stdShader_SetProjection(float out[16])
-{
-    rdClipFrustum* pFrustum = rdCamera_g_pCurCamera->pFrustum;
-    if ( !pFrustum )
-        return;
-
-    float n = 1.0f / rdCamera_g_pCurCamera->invNearClipPlane;
-    float f = 1.0f / rdCamera_g_pCurCamera->invFarClipPlane;
-
-    if ( fabsf(f - n) < 1e-4f )
-        return;
-
-    float hwidth  = (rdCamera_g_pCurCamera->pCanvas->rect.right - rdCamera_g_pCurCamera->pCanvas->rect.left) / 2.0f;
-    float hheight = (rdCamera_g_pCurCamera->pCanvas->rect.bottom - rdCamera_g_pCurCamera->pCanvas->rect.top) / 2.0f;
-
-    float fx = rdCamera_g_pCurCamera->focalLength / hwidth;
-    float fy = rdCamera_g_pCurCamera->focalLength / hheight;
-
-    float proj[16] = {
-        fx, 0, 0, 0,
-        0, fy, 0, 0,
-        0, 0, (f + n) / (n - f), -1,
-        0, 0, (2.0f * f * n) / (n - f), 0
-    };
-
-    memcpy(out, proj, sizeof(proj));
-}
-
-static void stdShader_SetInverseProjection(float out[16])
-{
-    rdClipFrustum* pFrustum = rdCamera_g_pCurCamera->pFrustum;
-    if ( !pFrustum )
-        return;
-
-    float n = pFrustum->nearPlane;
-    float f = pFrustum->farPlane;
-
-    if ( fabsf(f - n) < 1e-4f )
-        return;
-
-    float hwidth  = (rdCamera_g_pCurCamera->pCanvas->rect.right - rdCamera_g_pCurCamera->pCanvas->rect.left) / 2.0f;
-    float hheight = (rdCamera_g_pCurCamera->pCanvas->rect.bottom - rdCamera_g_pCurCamera->pCanvas->rect.top) / 2.0f;
-
-    float fx = rdCamera_g_pCurCamera->focalLength / hwidth;
-    float fy = rdCamera_g_pCurCamera->focalLength / hheight;
-
-    float invProj[16] = {
-        1.0f / fx, 0, 0, 0,
-        0, 1.0f / fy, 0, 0,
-        0, 0, 0, (n - f) / (2.0f * f * n),
-        0, 0, -1, (f + n) / (2.0f * f * n)
-    };
-
-    memcpy(out, invProj, sizeof(invProj));
-}
-
-
-void stdShader_UpdateGlobalUniforms(void)
-{
-    rdCamera* cam = rdCamera_g_pCurCamera;
-
-    if ( cam == NULL || cam->pCanvas == NULL || cam->pFrustum == NULL )
-    {
-        return;
-    }
-    rdMatrix34* view = &cam->viewMatrix;
-    stdShader_ConvertToMat4(view, cameraData.view);
-    stdShader_ConvertToMat4(&rdCamera_g_camMatrix, cameraData.inverseView);
-    stdShader_SetProjection(cameraData.projection);
-    stdShader_SetInverseProjection(cameraData.inverseProjection);
-    stdShader_MulMat4(cameraData.projection, cameraData.view, cameraData.viewProjection);
-    cameraData.nearPlane   = cam->pFrustum->nearPlane;
-    cameraData.farPlane    = cam->pFrustum->farPlane;
-    cameraData.focalLength = cam->focalLength * cam->aspectRatio;
-    cameraData.time += sithTime_g_frameTimeFlex;
-
-    glBindBuffer(GL_UNIFORM_BUFFER, cameraDataUBO);
-    glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(CameraDataGPU), &cameraData);
-}
-
 GLShaderProgram* stdShader_GetShader(const char* pName)
 {
     STD_ASSERT(pName); //Only in debug
@@ -726,38 +472,15 @@ GLShaderProgram* stdShader_GetShader(const char* pName)
     return pShader;
 }
 
-void stdShader_SetShaderLights(void)
-{
-    rdCamera* cam = rdCamera_g_pCurCamera;
-
-    if ( cam == NULL )
-    {
-        return;
-    }
-    int lightCount = cam->numLights;
-    for ( int i = 0; i < lightCount; i++ )
-    {
-        rdLight* pLight    = cam->aLights[i];
-        rdVector3 lightPos = cam->aLightPositions[pLight->num];
-
-        PointLightGPU* pShaderLight = &stdShader_pointLights.lights[i];
-        memcpy(&pShaderLight->color, &pLight->color, sizeof(rdVector4));
-        pShaderLight->position[0] = lightPos.x;
-        pShaderLight->position[1] = lightPos.z;
-        pShaderLight->position[2] = -lightPos.y;
-        pShaderLight->maxRadius   = pLight->maxRadius;
-        pShaderLight->minRadius   = pLight->minRadius;
-    }
-    stdShader_pointLights.lightCount = lightCount;
-
-    glBindBuffer(GL_UNIFORM_BUFFER, stdShader_pointLightUBO);
-    glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(PointLightsUBO), &stdShader_pointLights);
-}
-
 void stdShader_UpdateFadeFactor(void)
 {
     const tStdFadeFactor* fadeFactor = stdEffect_GetFadeFactor();
     stdShader_fadeFactor.fadeFactor  = fadeFactor->bEnabled ? fadeFactor->factor : 1.0f;
-    glBindBuffer(GL_UNIFORM_BUFFER, stdShader_fadeFactorUBO);
-    glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(FadeFactorGPU), &stdShader_fadeFactor);
+    stdShader_UpdateUniformBufferObject(STDSHADERBLOCK_FADEFACTOR, &stdShader_fadeFactor);
+}
+
+void stdShader_UpdateUniformBufferObject(const StdShaderBlockId id, const void* data)
+{
+    glBindBuffer(GL_UNIFORM_BUFFER, stdShader_aUbo[id].ubo);
+    glBufferSubData(GL_UNIFORM_BUFFER, 0, (GLsizeiptr)stdShader_aUbo[id].pDesc->size, data);
 }

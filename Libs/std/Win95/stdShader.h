@@ -7,7 +7,9 @@
 #include <std/types.h>
 #include <std/General/stdHashtbl.h>
 
-#include "rdroid/types.h"
+#if defined(J3D_OPENGL)
+#include <std/Win95/GL/stdShaderBlockGL.h>
+#endif
 
 J3D_EXTERN_C_START
 
@@ -98,8 +100,8 @@ void stdShader_SetActiveTextureUnit(GLTextureUnit unit);
 void stdShader_UpdateGlobalUniforms(void);
 void stdShader_SetShaderLights(void);
 GLShaderProgram* stdShader_GetShader(const char* pName); // Get shader handle by name
-void stdShader_ConvertToMat4(const rdMatrix34* pMat, float out[16]);
 void stdShader_UpdateFadeFactor(void);
+void stdShader_UpdateUniformBufferObject(StdShaderBlockId id, const void* data);
 #else
 bool J3DAPI stdShader_SetActiveShader(StdShaderHandle sh);                                                                         // Apply shader to device
 StdShaderHandle J3DAPI stdShader_CompileAndCreate(const char* pName, const char* pVertexShaderCode, const char* pPixelShaderCode); // Compile shader from source code and create new shader

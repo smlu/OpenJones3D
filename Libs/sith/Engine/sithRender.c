@@ -47,6 +47,7 @@
 
 #ifdef J3D_OPENGL
 #include <sith/Engine/sithRenderVertexWelder.h>
+#include "rdroid/Raster/rdShader.h"
 #endif
 
 typedef struct sSithRenderSectorQueueEntry
@@ -763,7 +764,11 @@ void sithRender_Draw(void)
     }
 
     // Set projection
+#ifdef J3D_OPENGL
+    rdShader_UpdateCameraData();
+#else
     std3D_SetProjection(sithCamera_g_pCurCamera->rdCamera.fov, sithCamera_g_pCurCamera->rdCamera.pFrustum->nearPlane, sithCamera_g_pCurCamera->rdCamera.pFrustum->farPlane);
+#endif
 
     // Now draw everything
     sithRender_RenderSectors();
@@ -1585,7 +1590,7 @@ void sithRender_BuildDynamicLights(void)
 #ifdef J3D_OPENGL
     if ( !std3D_g_bUseLegacyRendering )
     {
-        stdShader_SetShaderLights();
+        rdShader_SetShaderLights();
         return;
     }
 #endif

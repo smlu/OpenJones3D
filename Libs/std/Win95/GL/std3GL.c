@@ -169,7 +169,7 @@ void std3D_InstallHooks(void)
     //J3D_HOOKFUNC(std3D_FindClosestFormat);
     J3D_HOOKFUNC(std3D_InitRenderState);
     J3D_HOOKFUNC(std3D_SetMipmapFilter);
-    J3D_HOOKFUNC(std3D_SetProjection);
+    //J3D_HOOKFUNC(std3D_SetProjection);
     J3D_HOOKFUNC(std3D_EnableFog);
     J3D_HOOKFUNC(std3D_SetFog);
     J3D_HOOKFUNC(std3D_ClearZBuffer);
@@ -893,12 +893,6 @@ int J3DAPI std3D_SetMipmapFilter(Std3DMipmapFilterType filter)
 {
     std3D_mipmapFilter = filter;
     return 0;
-}
-
-int J3DAPI std3D_SetProjection(float fov, float nearPlane, float farPlane) // This is currently not needed since projection is not done in shader
-{
-    stdShader_UpdateGlobalUniforms();
-    return 1;
 }
 
 void J3DAPI std3D_EnableFog(int bEnabled, float density)

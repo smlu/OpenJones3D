@@ -14,6 +14,10 @@
 #include "std/General/stdMemory.h"
 #include "std/Win95/stdShader.h"
 
+#ifdef J3D_OPENGL
+#include "rdShader.h"
+#endif
+
 #define RDCACHE_VERTBUFFERSIZE RDCACHE_MAXVERTICES * RDCACHE_MAXFACEVERTICES
 
 static size_t rdCache_numProcFaces              = 0;
@@ -994,7 +998,7 @@ static size_t rdCache_SetInstanceData(rdPayload* aDrawCalls, rdDrawCallSortBucke
         {
             case RD_DRAW_MODEL:
                 rdModelFacePayload* pModelData = &header->modelFacePayload;
-                stdShader_ConvertToMat4(pModelData->modelMatrix, pData->modelMatrix);
+                rdShader_ConvertToMat4(pModelData->modelMatrix, pData->modelMatrix);
                 pData->secLightPos[0] = pModelData->lightPosition.x;
                 pData->secLightPos[1] = pModelData->lightPosition.z;
                 pData->secLightPos[2] = -pModelData->lightPosition.y;
@@ -1008,7 +1012,7 @@ static size_t rdCache_SetInstanceData(rdPayload* aDrawCalls, rdDrawCallSortBucke
             case RD_DRAW_SPRITE:
                 rdSpritePayload* pSpriteData = &header->spritePayload;
 
-                stdShader_ConvertToMat4(&pSpriteData->modelMatrix, pData->modelMatrix);
+                rdShader_ConvertToMat4(&pSpriteData->modelMatrix, pData->modelMatrix);
 
                 pData->spriteOffset[0] = pSpriteData->spriteOffset.x;
                 pData->spriteOffset[1] = pSpriteData->spriteOffset.z;

@@ -247,15 +247,6 @@ typedef enum eStd3DRenderState
 
 #define MAX_BATCHES 4096
 
-typedef struct sPointLightGPU
-{
-    float position[4]; // xyz + pad
-    float color[4];    // rgba
-    float minRadius;
-    float maxRadius;
-    float pad[2]; // std140 padding
-} PointLightGPU;
-
 typedef struct sGeometryBatch
 {
     GLsizei indexCounts[MAX_BATCHES];
