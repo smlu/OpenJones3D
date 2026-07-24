@@ -1,6 +1,7 @@
 function(embed_shaders SHADER_DIR OUTPUT_FILE)
     # Location of python script
     set(EMBED_SCRIPT "${SHADER_DIR}/embed_shaders.py")
+    find_package(Python3 COMPONENTS Interpreter REQUIRED)
 
     if(NOT EXISTS "${EMBED_SCRIPT}")
         message(FATAL_ERROR "embed_shaders.py could nor be found in ${SHADER_DIR}")
