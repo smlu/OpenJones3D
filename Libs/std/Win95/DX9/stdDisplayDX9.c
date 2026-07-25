@@ -54,9 +54,10 @@ static LPDIRECT3DSURFACE9 stdDisplay_pFrontLockSurf = NULL; // temp lockable fro
 static tVSurface stdDisplay_zBuffer;
 
 static const D3DFORMAT stdDisplay_aSupportedFormats[] = { D3DFMT_R5G6B5, D3DFMT_X8R8G8B8 };
-static const D3DFORMAT stdDisplay_aDepthFormats[] = { D3DFMT_D24S8, D3DFMT_D24X4S4, D3DFMT_D24X8, D3DFMT_D32, D3DFMT_D15S1, D3DFMT_D16 };
-static StdVideoMode* stdDisplay_pCurVideoMode   = NULL;
-static StdVideoMode stdDisplay_primaryVideoMode = { 0 };
+static const D3DFORMAT stdDisplay_aDepthFormats[]     = { D3DFMT_D24S8, D3DFMT_D24X4S4, D3DFMT_D24X8, D3DFMT_D32, D3DFMT_D15S1, D3DFMT_D16 };
+static StdVideoMode* stdDisplay_pCurVideoMode         = NULL;
+static StdVideoMode stdDisplay_primaryVideoMode       = { 0 };
+static StdVideoMode stdDisplay_fullscreenVideoMode    = { 0 };
 
 static size_t stdDisplay_numVideoModes          = 0;
 static StdVideoMode stdDisplay_aVideoModes[512] = { 0 };
@@ -255,6 +256,7 @@ static bool stdDisplay_FindDepthFormat(UINT adapter, D3DFORMAT adapterFormat, D3
             D3DRTYPE_SURFACE,
             depthFormat
         );
+
         if ( FAILED(hr) )
         {
             continue;
@@ -268,6 +270,7 @@ static bool stdDisplay_FindDepthFormat(UINT adapter, D3DFORMAT adapterFormat, D3
             renderTargetFormat,
             depthFormat
         );
+
         if ( SUCCEEDED(hr) )
         {
             *pDepthFormat = depthFormat;
@@ -595,9 +598,11 @@ int J3DAPI stdDisplay_SetMode(size_t modeNum, int bFullscreen, size_t numBackBuf
 
     if ( bFullscreen )
     {
-        stdDisplay_pCurVideoMode = &stdDisplay_aVideoModes[modeNum];
+        // Fixed: Preserve enumerated modes when Direct3D adjusts the created surface format.
+        stdDisplay_fullscreenVideoMode = stdDisplay_aVideoModes[modeNum];
+        stdDisplay_pCurVideoMode       = &stdDisplay_fullscreenVideoMode;
         HWND hwnd = stdWin95_GetWindow();
-        if ( !stdDisplay_SetFullscreenMode(hwnd, &stdDisplay_aVideoModes[modeNum], numBackBuffers) )
+        if ( !stdDisplay_SetFullscreenMode(hwnd, stdDisplay_pCurVideoMode, numBackBuffers) )
         {
             stdDisplay_pCurVideoMode = NULL;
             return 1;
