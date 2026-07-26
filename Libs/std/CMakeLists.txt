@@ -3,6 +3,9 @@ project(std C)
 file(GLOB_RECURSE SOURCES *.c)
 file(GLOB_RECURSE HEADERS *.h)
 
+list(FILTER SOURCES EXCLUDE REGEX ".*/Tests/.*")
+list(FILTER HEADERS EXCLUDE REGEX ".*/Tests/.*")
+
 # Remove DirectX 6/9 specific files based on the build option
 if(J3D_DIRECTX6)
   # Remove DX9 files.
@@ -97,3 +100,7 @@ target_link_options(${PROJECT_NAME} INTERFACE "/SAFESEH:NO") # due to DirectX 6.
 
 # Organize source files in Visual Studio
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCES} ${HEADERS} ${SHADERS} ${SHADER_INCLUDES} ${GENERATED_HEADERS})
+
+if (JONES3D_BUILD_TESTS)
+    add_subdirectory(Tests)
+endif()

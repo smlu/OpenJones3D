@@ -236,6 +236,13 @@ void stdDisplay_ResetGlobals(void)
     stdDisplay_bPresentationBufferDirty = false;
 }
 
+#ifdef J3D_TEST
+// Added: Expose a copy of the retained parameters so reset tests can detect API output mutations.
+void stdDisplay_TestGetPresentParameters(D3DPRESENT_PARAMETERS* pParams)
+{
+    *pParams = stdDisplay_presentParams;
+}
+#endif
 
 static bool stdDisplay_FindDepthFormat(UINT adapter, D3DFORMAT adapterFormat, D3DFORMAT renderTargetFormat, D3DFORMAT* pDepthFormat)
 {

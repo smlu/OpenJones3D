@@ -1,2 +1,11 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+*.bmp binary
+*.gob binary
+
+# Whitespace in these parser fixtures is intentional test data.
+Libs/std/General/Tests/tv/stdConffile/read_args.cfg whitespace=-blank-at-eol,-space-before-tab
+Libs/std/General/Tests/tv/stdConffile/read_lines.cfg whitespace=-blank-at-eol,-space-before-tab
+Libs/std/General/Tests/tv/stdConffile/whitespace_only.cfg whitespace=-blank-at-eol,-space-before-tab
+Libs/std/General/Tests/tv/stdStrTable/long_lines.tbl whitespace=-blank-at-eol

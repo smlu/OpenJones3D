@@ -1,0 +1,34 @@
+std3D UV grid texture test vectors
+==================================
+
+Sources:
+https://github.com/mrdoob/three.js/blob/dev/examples/textures/uv_grid_directx.jpg
+https://github.com/mrdoob/three.js/blob/dev/examples/textures/uv_grid_opengl.jpg
+
+The BMPs in this directory tree are conversions of the Three.js
+uv_grid_directx.jpg and uv_grid_opengl.jpg example textures for std3D
+texture-mapping tests. The DX9 and OpenGL BMPs are 512x512; the DX6 BMP is
+256x256 for devices that report the original 256 texture limit.
+
+License:
+MIT License
+
+Copyright (c) 2010-2026 three.js authors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

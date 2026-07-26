@@ -92,5 +92,9 @@ uint32_t J3DAPI stdDisplay_EncodeFromRGB565(uint16_t pixel);
 void stdDisplay_InstallHooks(void);
 void stdDisplay_ResetGlobals(void);
 
+#if defined(J3D_TEST) && defined(J3D_DIRECTX9)
+void stdDisplay_TestGetPresentParameters(D3DPRESENT_PARAMETERS* pParams);
+#endif
+
 J3D_EXTERN_C_END
 #endif // STD_STDDISPLAY_H

@@ -12,8 +12,11 @@
 
 J3D_EXTERN_C_START
 
-#define rdroid_g_identMatrix34 J3D_DECL_FAR_VAR(rdroid_g_identMatrix34, const rdMatrix34)
-// extern const rdMatrix34 rdroid_g_identMatrix34 ;
+#if defined(J3D_LOCAL_RDROID_RTI)
+extern const rdMatrix34 rdroid_g_identMatrix34;
+#else
+#   define rdroid_g_identMatrix34 J3D_DECL_FAR_VAR(rdroid_g_identMatrix34, const rdMatrix34)
+#endif
 
 static inline void J3DAPI rdMatrix_Identity34(rdMatrix34* mat); // Added
 static inline  void J3DAPI rdMatrix_Copy34(rdMatrix34* dest, const rdMatrix34* src);

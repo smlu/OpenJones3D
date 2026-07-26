@@ -13,9 +13,22 @@ static char aPrintBuffer[2048]     = { 0 };
 static char aFilePrintBuffer[2048] = { 0 };
 static bool bStdStartup = false;
 
-#define word_183962C J3D_DECL_FAR_VAR(word_183962C, int16_t)
-#define word_1839630 J3D_DECL_FAR_VAR(word_1839630, int16_t)
-#define word_183962E J3D_DECL_FAR_VAR(word_183962E, int16_t)
+#ifdef J3D_LOCAL_RTI
+const char std_g_aEmptyString[8] = "";
+char std_g_genBuffer[2048]       = { 0 };
+tHostServices* std_g_pHS         = NULL;
+#endif
+
+// Keep those vars as hosted globals to preserve the original engine's FPU rounding control flags in Indy3D.exe.
+#ifdef J3D_LOCAL_RTI
+static int16_t word_183962C;
+static int16_t word_1839630;
+static int16_t word_183962E;
+#else
+#   define word_183962C J3D_DECL_FAR_VAR(word_183962C, int16_t)
+#   define word_1839630 J3D_DECL_FAR_VAR(word_1839630, int16_t)
+#   define word_183962E J3D_DECL_FAR_VAR(word_183962E, int16_t)
+#endif
 
 void std_InstallHooks(void)
 {
@@ -46,11 +59,11 @@ void std_InstallHooks(void)
 
 void std_ResetGlobals(void)
 {
+#ifndef J3D_LOCAL_RTI
     memset((char*)&std_g_aEmptyString, 0, sizeof(std_g_aEmptyString));
-    //memset(&aPrintBuffer, 0, sizeof(aPrintBuffer));
-    //memset(&bStdStartup, 0, sizeof(bStdStartup));
     memset(&std_g_genBuffer, 0, sizeof(std_g_genBuffer));
     memset(&std_g_pHS, 0, sizeof(std_g_pHS));
+#endif
 }
 
 void J3DAPI stdStartup(tHostServices* pHS)

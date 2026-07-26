@@ -1,0 +1,19 @@
+{
+  "name": "indy",
+  "stats": {
+    "health": 80
+  },
+  "keep": 1,
+  "group": {
+    "a": 1,
+    "b": 2
+  },
+  "array": [1, 2],
+  "object": {
+    "name": "indy"
+  },
+  "source": [7, 8],
+  "replacement": {
+    "name": "sophia"
+  }
+}

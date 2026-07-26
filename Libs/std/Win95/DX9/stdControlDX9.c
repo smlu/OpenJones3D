@@ -1775,6 +1775,162 @@ int J3DAPI stdControl_IsGamePad(int joyNum)
         : GET_DIDEVICE_TYPE(stdControl_aJoystickDevices[joyNum].dinstance.dwDevType) == DI8DEVTYPE_GAMEPAD;
 }
 
+#if defined(J3D_TEST)
+void stdControl_TestResetInputState(void)
+{
+    STD_ZEROMEM(stdControl_aKeyboardState, sizeof(stdControl_aKeyboardState));
+    STD_ZEROMEM(stdControl_aKeyIdleTimes, sizeof(stdControl_aKeyIdleTimes));
+    STD_ZEROMEM(stdControl_aKeyInfo, sizeof(stdControl_aKeyInfo));
+    STD_ZEROMEM(stdControl_aKeyPressed, sizeof(stdControl_aKeyPressed));
+    STD_ZEROMEM(stdControl_aAxes, sizeof(stdControl_aAxes));
+    STD_ZEROMEM(stdControl_aAxisStates, sizeof(stdControl_aAxisStates));
+    STD_ZEROMEM(stdControl_aXInputDevices, sizeof(stdControl_aXInputDevices));
+
+    stdControl_mousePos.x               = 0;
+    stdControl_mousePos.y               = 0;
+    stdControl_bReadMouse               = false;
+    stdControl_bReadJoysticks           = false;
+    stdControl_bReadXInput              = false;
+    stdControl_bMouseSensitivityEnabled = false;
+    stdControl_bControlsIdle            = false;
+    stdControl_bControlsActive          = false;
+    stdControl_curReadTime              = 0u;
+    stdControl_lastReadTime             = 0u;
+    stdControl_readDeltaTime            = 0u;
+    stdControl_mouseXRange              = 0.0f;
+    stdControl_mouseYRange              = 0.0f;
+    stdControl_numXInputDevices         = 0u;
+    stdControl_lastXInputCheck          = 0u;
+    sithControl_secFPS                  = 0.0f;
+    sithControl_msecFPS                 = 0.0f;
+}
+
+void stdControl_TestBeginRead(uint32_t currentReadTime, uint32_t lastReadTime)
+{
+    stdControl_bControlsIdle = true;
+    STD_ZEROMEM(stdControl_aKeyIdleTimes, sizeof(stdControl_aKeyIdleTimes));
+    STD_ZEROMEM(stdControl_aKeyPressed, sizeof(stdControl_aKeyPressed));
+
+    stdControl_lastReadTime = lastReadTime;
+    stdControl_UpdateReadTiming(currentReadTime);
+}
+
+void stdControl_TestSetControlsActive(bool bActive)
+{
+    stdControl_bControlsActive = bActive;
+}
+
+void stdControl_TestSetAxisState(size_t axis, int value)
+{
+    size_t aid = STDCONTROL_GETAID(axis);
+    if ( aid < STDCONTROL_MAX_AXES )
+    {
+        stdControl_aAxisStates[aid] = value;
+    }
+}
+
+int stdControl_TestGetAxisState(size_t axis)
+{
+    size_t aid = STDCONTROL_GETAID(axis);
+    return aid < STDCONTROL_MAX_AXES ? stdControl_aAxisStates[aid] : 0;
+}
+
+bool stdControl_TestGetAxis(size_t axis, StdControlAxis* pAxis)
+{
+    size_t aid = STDCONTROL_GETAID(axis);
+    if ( aid >= STDCONTROL_MAX_AXES || !pAxis )
+    {
+        return false;
+    }
+
+    *pAxis = stdControl_aAxes[aid];
+    return true;
+}
+
+uint32_t stdControl_TestGetReadDeltaTime(void)
+{
+    return stdControl_readDeltaTime;
+}
+
+float stdControl_TestGetSecFPS(void)
+{
+    return sithControl_secFPS;
+}
+
+void stdControl_TestApplyKeyboardState(const uint8_t* aKeyState, size_t numKeys)
+{
+    if ( aKeyState )
+    {
+        stdControl_ApplyKeyboardState(aKeyState, numKeys);
+    }
+}
+
+void stdControl_TestApplyJoystickState(size_t joyNum, const DIJOYSTATE* pState, size_t numPovs)
+{
+    stdControl_ApplyJoystickState(joyNum, pState, numPovs);
+}
+
+void stdControl_TestApplyMouseState(const DIMOUSESTATE* pState, bool bApplyButtons)
+{
+    if ( !pState )
+    {
+        return;
+    }
+
+    stdControl_ApplyMouseAxisState(pState);
+    if ( bApplyButtons )
+    {
+        stdControl_ApplyMouseButtonState(pState);
+    }
+}
+
+bool stdControl_TestIsXInputJoystickIndex(int joyNum, size_t numDirectInputDevices)
+{
+    return stdControl_IsXInputJoystickIndex(joyNum, numDirectInputDevices);
+}
+
+bool stdControl_TestRegisterXInputDevice(DWORD userIndex, const XINPUT_STATE* pState, const XINPUT_CAPABILITIES* pCaps)
+{
+    if ( userIndex >= XUSER_MAX_COUNT || !pState || !pCaps || pCaps->Type != XINPUT_DEVTYPE_GAMEPAD
+        || stdControl_FindXInputDevice(userIndex) >= 0 )
+    {
+        return false;
+    }
+
+    return stdControl_AddXInputDevice(userIndex, pState, pCaps);
+}
+
+bool stdControl_TestApplyXInputState(size_t deviceIndex, const XINPUT_STATE* pState)
+{
+    if ( deviceIndex >= stdControl_numXInputDevices || !pState )
+    {
+        return false;
+    }
+
+    stdControl_ApplyXInputState(deviceIndex, pState);
+    stdControl_aXInputDevices[deviceIndex].state      = *pState;
+    stdControl_aXInputDevices[deviceIndex].bConnected = true;
+    return true;
+}
+
+bool stdControl_TestDisconnectXInputDevice(size_t deviceIndex)
+{
+    if ( deviceIndex >= stdControl_numXInputDevices )
+    {
+        return false;
+    }
+
+    stdControl_ClearXInputState(deviceIndex);
+    stdControl_aXInputDevices[deviceIndex].bConnected = false;
+    return true;
+}
+
+bool stdControl_TestIsXInputDeviceConnected(size_t deviceIndex)
+{
+    return deviceIndex < stdControl_numXInputDevices && stdControl_aXInputDevices[deviceIndex].bConnected;
+}
+#endif
+
 void J3DAPI stdControl_SetMouseSensitivity(float xSensitivity, float ySensitivity)
 {
     if ( (stdControl_aAxes[STDCONTROL_AID_MOUSE_X].flags & STDCONTROL_AXIS_REGISTERED) != 0 )

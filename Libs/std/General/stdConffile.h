@@ -27,12 +27,13 @@ typedef struct sStdConffileEntry
 } StdConffileEntry;
 static_assert(sizeof(StdConffileEntry) == 4100, "sizeof(StdConffileEntry) == 4100");
 
-
-#define stdConffile_g_entry J3D_DECL_FAR_VAR(stdConffile_g_entry, StdConffileEntry)
-// extern StdConffileEntry stdConffile_g_entry;
-
-#define stdConffile_g_aLine J3D_DECL_FAR_VAR(stdConffile_g_aLine, char*)
-// extern char *stdConffile_g_aLine;
+#ifdef J3D_LOCAL_RTI
+extern StdConffileEntry stdConffile_g_entry;
+extern char* stdConffile_g_aLine;
+#else
+#   define stdConffile_g_entry J3D_DECL_FAR_VAR(stdConffile_g_entry, StdConffileEntry)
+#   define stdConffile_g_aLine J3D_DECL_FAR_VAR(stdConffile_g_aLine, char*)
+#endif
 
 int J3DAPI stdConffile_Open(const char* pFilename);
 int J3DAPI stdConffile_OpenWrite(const char* pFilename);

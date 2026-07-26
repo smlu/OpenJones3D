@@ -18,7 +18,7 @@ set(CMAKE_POLICY_DEFAULT_CMP0077 NEW) # option() honors normal variables (variab
 function(jones3d_print_config_entry label value)
     set(jones3d_dot_fill "........................................")
     string(LENGTH "${label}" label_len)
-    math(EXPR pad_len "28 - ${label_len}")
+    math(EXPR pad_len "32 - ${label_len}")
     if (pad_len LESS 1)
         set(pad_len 1)
     endif()
@@ -37,9 +37,11 @@ endfunction()
 
 option(JONES3D_BUILD_PROGRAMS "Build programs" ON)
 option(JONES3D_BUILD_TESTS "Build tests" ON)
+option(JONES3D_BUILD_SYSTEM_TESTS "Build system/device tests" ON)
+option(JONES3D_BUILD_DISRUPTIVE_SYSTEM_TESTS "Build opt-in system tests that can switch fullscreen modes or disrupt devices" OFF)
 option(JONES3D_QOL_IMPROVEMENTS "Enable quality-of-life improvements" ON)
 option(JONES3D_SPEEDRUN_BUILD "Enable vanilla bugs and glitches used in speedruns" OFF)
-option(JONES3D_RUNTIME_GUARDS "Enable runtime safety guards for hardened release behavior" ON)
+option(JONES3D_RUNTIME_GUARDS "Enable runtime safety guards for hardened release behavior" OFF)
 
 # --- GAPI options ---
 # Add an option to enable DirectX 9 support. Default is ON.
@@ -66,6 +68,12 @@ endif()
 
 if (JONES3D_BUILD_TESTS)
     enable_testing()
+else()
+    set(JONES3D_BUILD_SYSTEM_TESTS OFF)
+endif()
+
+if (NOT JONES3D_BUILD_SYSTEM_TESTS)
+    set(JONES3D_BUILD_DISRUPTIVE_SYSTEM_TESTS OFF)
 endif()
 
 if(JONES3D_USE_DIRECTX9)
@@ -172,6 +180,8 @@ jones3d_print_config_option("Runtime guards" JONES3D_RUNTIME_GUARDS)
 jones3d_print_config_option("Speedrun build" JONES3D_SPEEDRUN_BUILD)
 jones3d_print_config_option("Build programs" JONES3D_BUILD_PROGRAMS)
 jones3d_print_config_option("Build tests" JONES3D_BUILD_TESTS)
+jones3d_print_config_option("Build system tests" JONES3D_BUILD_SYSTEM_TESTS)
+jones3d_print_config_option("Build disruptive system tests" JONES3D_BUILD_DISRUPTIVE_SYSTEM_TESTS)
 jones3d_print_config_option("Post-build copy" JONES3D_ENABLE_POST_BUILD_COPY)
 if (JONES3D_ENABLE_POST_BUILD_COPY)
     if (JONES3D_POST_BUILD_COPY_DIR)
