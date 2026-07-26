@@ -94,8 +94,9 @@
     This includes row padding, image-size bounds, header-size checks, `bfOffBits` seeking, VBuffer lock handling, and partial-load cleanup.
   - Fixed `stdConffile` error paths and include handling (4ebf236)  
     This includes stack overflow reporting, failed-open stack restore, line-buffer allocation cleanup, and formatted write truncation warnings.
-  - Fixed GOB resource loading and file-handle validation in `stdGob` (4ebf236)  
+  - Fixed GOB resource loading and file-handle validation in `stdGob` (4ebf236,5c1935e)
     This includes unsupported mmap fallback, directory bounds checks, failed-load cleanup, invalid seek/read rejection, and handle state cleanup.
+    Directory and file-handle state checks use `JONES3D_RUNTIME_GUARDS`.
   - Fixed missing allocation-failure and size-overflow checks across std modules. (4ebf236)  
     This adds validation for buffer sizes, element-count multiplication, file/image sizes,  
     handle arrays, hash-table storage, string conversion buffers, conffile line buffers,  
@@ -103,6 +104,23 @@
     on failure.
   - Fixed `stdMath` edge cases for power, angle normalization, trigonometry, and arcsine helpers. (4ebf236)  
     This fixes zero and negative exponent handling in `stdMath_FlexPower`, rejects NaN/infinity before lookup-table indexing in angle/trig functions, preserves explicit NaN handling, and clamps arcsine inputs to avoid domain errors from small floating-point overshoots.
+  - Fixed `stdPrintf` to preserve safely truncated messages and pass formatted output as data, preventing percent characters in file paths or messages from being reinterpreted as format directives. (f5d6320)
+  - Fixed `stdFnames_ChangeExtEx` to validate path termination before scanning for an extension, preventing reads beyond unterminated fixed-size buffers. (f5d6320)
+  - Fixed `stdFileUtil_FindNext` to count only successful search results, allowing a failed initial search to be retried safely. (f5d6320)
+  - Fixed `stdJSON_Startup` to return failure when host services are unavailable without attempting to log through a null host-services pointer. (f5d6320)
+  - Added an optional runtime guard for missing file-search result storage and made path concatenation and hash-table state checks follow the runtime-guard setting. (f5d6320)
+  - Fixed `stdLinkList_AddNode` to update the successor node's `prev` pointer after insertion, preventing the inserted node's `prev` pointer from pointing to itself. (29e97f2)
+  - Fixed string-table validation, EOF handling, and partial-load cleanup in `stdStrTable`. (1b7cb2d)
+    The loader validates message counts, decimal fields, quoted values, duplicate keys, and the trailing `END` marker, and releases partially loaded data after parsing or allocation failures.
+  - Added implementations of `AudioLib_GenerateLipSyncBlock` and `AudioLib_GetMouthPosition`, preserving the original lip-sync timeline and cross-sample decoding behavior. (0facac9)
+  - Added capacity-aware lip-sync generation helpers to calculate worst-case output sizes and validate input/output buffer capacities. (0facac9)
+  - Added implementations of `sithThing_WriteThingsListBinary` and `sithThing_ReadThingsListBinary` for world things and templates, preserving the original binary record layout and block ordering. (92660f2)
+  - Fixed MSVC incremental-link PDB collisions by giving the executable a separate debug-symbol database from the DLL. (db582ba)
+  - Added Unity 2.7.0 test framework dependency. (3b79a5e)
+  - Added j3dcore macro tests and shared test support. (eb8bba0)
+  - Added std unit tests and DirectX 6/9 system tests, including external BMP vectors and optional fullscreen tests. (db582ba)
+  - Fixed constant wide-string array detection and DX6 DirectPlay session-descriptor allocation failure handling and cleanup. (db582ba)
+  - Changed the JONES3D_RUNTIME_GUARDS CMake option to be disabled by default. (db582ba)
 
 ### Engine:
   - Added check for zero size in lip sync data generation to prevent allocation errors (f79736b)
@@ -212,6 +230,23 @@
     `stdGob_FileSeek` returns `1` on success, but the Jones file host service expects `0` on success.
   - Fixed DSS puppet status restore to bounds-check puppet submodes before indexing the puppet mode table. (3338212)  
     This prevents malformed or invalid puppet status messages from reading outside `pPuppetClass->aModes`.
+  - Fixed joystick button and POV classification macros in `stdControl` to respect the interleaved control-ID ranges of each joystick. (a8be92d)
+  - Fixed DX6 input timing to avoid division by zero when consecutive reads occur within the same millisecond tick. (a8be92d)
+  - Fixed DX6 axis and key validation by stripping axis flags before table lookup, rejecting malformed key events and invalid joystick indices, and adding optional runtime guards for key reads and axis registration. (a8be92d)
+  - Fixed DX6 mouse Y-axis registration to use its own configured range instead of the X-axis range. (a8be92d)
+  - Fixed DX6 control initialization and polling error paths to release DirectInput after failed device enumeration, skip uninitialized input devices, and continue polling other joysticks after a device error. (a8be92d)
+  - Fixed DX6 mouse buffer-overflow recovery to use immediate button data only after a successful state read, and preserved separate read and reacquisition errors in diagnostics. (a8be92d)
+  - Added optional runtime validation of actor/player thing types before updating voice lip sync. (4e4b5aa)
+  - Fixed lip-sync output buffer overflow in `Sound_GenerateLipSync` by replacing the fixed 8192-byte stack buffer with a checked worst-case heap allocation. Highly variable audio could exceed the old buffer after about 34.1 seconds at 60 Hz; repeated mouth states could allow longer audio. (e472b74)
+  - Fixed compressed lip-sync generation to reserve and initialize PCM padding for cross-sample decoding and odd-length analysis frames, preventing reads past the temporary decompression buffer. (e472b74)
+  - Fixed lip-sync allocation-failure handling and cleanup, publishing cached data only after successful generation and returning neutral mouth coordinates on failure. (e472b74)
+  - Fixed overflow-prone playback-time and end-of-audio calculations in `Sound_GenerateLipSync` while preserving the original 25-millisecond end margin. (e472b74)
+  - Fixed DX6 DirectPlay host-session creation to mark successful sessions active instead of setting the host flag twice. (f657a7c)
+  - Fixed uninitialized DirectPlay recipient and player IDs being used after failed receive or player-creation calls. (f657a7c)
+  - Corrected DX6 DirectPlay receive-length handling to use a `DWORD` API value while preserving the `size_t` caller interface. (f657a7c)
+  - [QOL] Increased the maximum thing capacity from 2,304 to 16,384 while retaining the original 2,304 limit when QOL improvements are disabled. (92660f2)
+  - Removed registration of the additional COG functions `DebugPrint`, `DebugFlex`, `DebugInt`, `DebugVector`, `DebugLocalSymbols`, `DebugWaitForKey`, `EnablePrint`, and `IsPrintEnabled`, introduced in v0.3, to preserve retail savegame compatibility. (3f2fdc7)
+    This preserves the script-local symbol counts and ordering used by positional COG state restoration.
 
 ### Graphics:
   - Fixed an issue where active textures used in the current render frame were being removed from the cache prematurely in low VRAM situations (f37ecb7)
@@ -282,6 +317,23 @@
   - Fixed MAT loader error cleanup so failed cel reads, mip validation, or color conversion release partially created mip buffers correctly. (e3a9c15)
   - Fixed advanced display settings rasterizer selection to read from the rasterizer combo box instead of the 3D device combo box. (8235ece)
   - Fixed false graphics restart prompts when confirming advanced display settings without changing the performance level. (8235ece)
+  - Fixed low-bit RGB and alpha expansion in `stdColor`, including 1-, 2-, and 3-bit channels, by repeating source bits without negative shift counts while preserving existing RGB565 upscale results. (f5d6320)
+  - Fixed `stdColor_CalcColorBits` to return zeroed fields for empty masks instead of looping indefinitely. (f5d6320)
+  - Added a debug assertion and optional runtime guard for BMP export of software VBuffers without pixel memory. (f5d6320)
+  - Fixed DX6 graphics startup and failed-open cleanup to release partially initialized Direct3D and DirectDraw resources, and stopped treating COM reference counts returned by `Release` as HRESULTs. (4faef7c)
+  - Fixed DX6 display device bounds and mode lifecycle handling, including fullscreen failure cleanup, desktop restoration before leaving exclusive mode, and correct windowed-mode failure reporting. (4faef7c)
+  - Fixed DX6 VBuffer allocation cleanup, Z-buffer replacement and attachment cleanup, and back-buffer and clipper reference leaks. (4faef7c)
+  - Corrected DX6 software pixel fills to repeat complete 16-bit and 32-bit pixel values, matching the original DWORD-fill semantics instead of repeating a single byte. (4faef7c)
+  - Fixed nested DX6 hardware VBuffer locks to hold one DirectDraw surface lock until the final unlock and clear the transient pixel pointer afterward. (4faef7c)
+  - Fixed DX6 back-buffer device-context retrieval to return the context only when DirectDraw reports success. (4faef7c)
+  - Fixed DX6 texture uploads to respect source row sizes and signed surface pitch, resize matching source and destination mip levels, and release locks and COM references on failure. (4faef7c)
+  - Fixed DX6 untextured draws to explicitly unbind the previous texture and keep the cached texture pointer consistent with device state. (4faef7c)
+  - Fixed DX6 texture-filter selection to check magnification and minification capabilities independently. (4faef7c)
+  - Fixed DX6 depth-format enumeration to accept compatible combined pixel-format flags and texture-format enumeration to bound the count by array entries rather than bytes. (4faef7c)
+  - Added read-only DX6 back-buffer access for readback without requesting write-only DirectDraw locks. (4faef7c)
+  - [QOL] Improved DX6 RGB565 component expansion using bit replication while preserving the original conversion when QOL is disabled. (4faef7c)
+  - [QOL] Updated DX6 anisotropic filtering detection and reporting to require matching filter capabilities and a usable anisotropy level. (4faef7c)
+  - Fixed DX9 fullscreen mode setup overwriting advertised video modes when the runtime promotes the created surface format, preserving the available modes for later selections. (ec573c8)
 
 ### Game play:
   - Fixed bug in `sithPlayer_Update` where force move animation could be stopped when required distance to move was almost zero (127aa92)
