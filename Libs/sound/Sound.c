@@ -144,6 +144,12 @@ static uint8_t* Sound_pMemfileBuf;
 static size_t Sound_memfileSize;
 static size_t Sound_memfilePos;
 
+#if defined(J3D_TEST)
+static int Sound_test_bCurrentPositionSet;
+static size_t Sound_test_currentPosition;
+static SoundTestUncompressFunc Sound_test_pfUncompress;
+#endif
+
 tSoundHandle Sound_GenerateSoundHandle(void);
 tSoundChannelHandle Sound_GenerateChannelHandle(void);
 uint32_t Sound_GetEntropyFromHandle(tSoundHandleType handle, bool bChannelHandle); // Added
@@ -262,20 +268,104 @@ static void Sound_Release(tSoundChannel* pChannel) // Added
 void Sound_ResetGlobals(void)
 {}
 
+// Added: Keep external audio-driver dependencies replaceable in deterministic unit tests.
 static size_t Sound_GetLipSyncCurrentPosition(tSysSoundBuffer* pSoundBuffer)
 {
+#if defined(J3D_TEST)
+    if ( Sound_test_bCurrentPositionSet )
+    {
+        return Sound_test_currentPosition;
+    }
+#endif
+
     return SoundDriver_GetCurrentPosition(pSoundBuffer);
 }
 
 static void Sound_ResetLipSyncCompressor(tAudioCompressorState* pCompressorState)
 {
+#if defined(J3D_TEST)
+    if ( Sound_test_pfUncompress )
+    {
+        STD_ZEROMEM(pCompressorState, sizeof(*pCompressorState));
+        return;
+    }
+#endif
+
     AudioLib_ResetCompressor(pCompressorState);
 }
 
 static void Sound_UncompressLipSyncData(tAudioCompressorState* pCompressorState, uint8_t* pOutSndData, const uint8_t* pCompressedData, unsigned int size)
 {
+#if defined(J3D_TEST)
+    if ( Sound_test_pfUncompress )
+    {
+        Sound_test_pfUncompress(pCompressorState, pOutSndData, pCompressedData, size);
+        return;
+    }
+#endif
+
     AudioLib_Uncompress(pCompressorState, pOutSndData, pCompressedData, size);
 }
+
+#if defined(J3D_TEST)
+void Sound_TestResetLipSyncState(void)
+{
+    Sound_state                    = SOUNDSTATE_NONE;
+    Sound_pHS                      = NULL;
+    Sound_bNoLipSync               = 0;
+    Sound_apChannels               = NULL;
+    Sound_numChannels              = 0;
+    Sound_sizeChannels             = 0;
+    Sound_test_bCurrentPositionSet = 0;
+    Sound_test_currentPosition     = 0;
+    Sound_test_pfUncompress        = NULL;
+
+    STD_ZEROMEM(soundbank_apSoundCache, sizeof(soundbank_apSoundCache));
+    STD_ZEROMEM(soundbank_aCacheSizes, sizeof(soundbank_aCacheSizes));
+    STD_ZEROMEM(soundbank_aUsedCacheSizes, sizeof(soundbank_aUsedCacheSizes));
+    STD_ZEROMEM(soundbank_apSoundInfos, sizeof(soundbank_apSoundInfos));
+    STD_ZEROMEM(soundbank_aNumSounds, sizeof(soundbank_aNumSounds));
+    STD_ZEROMEM(soundbank_aSizeSounds, sizeof(soundbank_aSizeSounds));
+}
+
+void Sound_TestSetChannels(tSoundChannel* pChannels, size_t numChannels)
+{
+    Sound_apChannels   = pChannels;
+    Sound_numChannels  = numChannels;
+    Sound_sizeChannels = numChannels;
+}
+
+void Sound_TestSetSoundBank(size_t bankNum, SoundInfo* pSoundInfos, size_t numSounds, uint8_t* pSoundCache, size_t cacheSize)
+{
+    if ( bankNum >= SOUNDBANK_NUMBANKS )
+    {
+        return;
+    }
+
+    soundbank_apSoundInfos[bankNum]    = pSoundInfos;
+    soundbank_aNumSounds[bankNum]      = numSounds;
+    soundbank_aSizeSounds[bankNum]     = numSounds;
+    soundbank_apSoundCache[bankNum]    = pSoundCache;
+    soundbank_aCacheSizes[bankNum]     = cacheSize;
+    soundbank_aUsedCacheSizes[bankNum] = cacheSize;
+}
+
+void Sound_TestSetNoLipSync(int bNoLipSync)
+{
+    Sound_bNoLipSync = bNoLipSync != 0;
+}
+
+void Sound_TestSetCurrentPosition(size_t position)
+{
+    Sound_test_bCurrentPositionSet = 1;
+    Sound_test_currentPosition     = position;
+}
+
+void Sound_TestSetUncompressFunc(SoundTestUncompressFunc pfUncompress)
+{
+    Sound_test_pfUncompress = pfUncompress;
+}
+#endif
 
 int J3DAPI Sound_Initialize(tHostServices* pHS)
 {
