@@ -228,7 +228,7 @@ startup and a stable module-level CTest entry.
 | `stdSystemTests` | `std.System` | Win95 windows and DirectX devices | Available |
 | `stdDisruptiveSystemTests` | `std.DisruptiveSystem` | Opt-in fullscreen/device changes | Available |
 | `soundTests` | `sound` | Deterministic lip-sync generation and lookup | Available |
-| `sithTests` | `sith` | Deterministic gameplay-layer behavior | Planned |
+| `sithTests` | `sith` | World thing/template I/O and voice lip-sync | Available |
 
 Name CTest entries after the owning module when the executable covers that whole module, such as `std`. When an executable covers only a subarea, use the owning module first and a short area name second, separated by a dot, such as `j3dcore.Macros`. Use labels that match the owning module, such as `j3dcore`, `std`, `rdroid`, `sith`, `sound`, or `Jones3D`.
 
@@ -816,9 +816,8 @@ outside CI because they require local devices or can disturb the desktop.
 
 ### 🧩 Additional Module Commands
 
-The `soundTests` target is available. The `sithTests` commands below apply once
-that planned integration is committed. A full build includes each integrated
-target; use the matching target and CTest entry for a focused rebuild and run:
+The `soundTests` and `sithTests` targets are available and included in a full
+build. Use the matching target and CTest entry for a focused rebuild and run:
 
 ```bat
 cmake --build build\codex\dx9-win32 --config Debug --target soundTests
@@ -830,9 +829,8 @@ ctest --test-dir build\codex\dx9-win32 -C Debug --output-on-failure -R "^sith$"
 These focused commands supplement the validation selected under
 [Backend Validation Scope](#backend-validation-scope).
 
-The following `AudioLib` and `Sound` fixture descriptions cover the available
-`soundTests` target. The `sith` fixtures remain planned until their targets and
-tests are committed.
+The fixture descriptions below cover the available `soundTests` and
+`sithTests` targets.
 
 <a name="audiolib-fixtures"></a>
 

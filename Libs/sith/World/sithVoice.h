@@ -32,6 +32,39 @@ int J3DAPI sithVoice_ProcessVoiceState(const SithMessage* pMsg);
 
 const rdFont* sithVoice_GetTextFont(void);
 
+#if defined(J3D_TEST)
+typedef struct SithVoiceTestState
+{
+    int bLipSyncData;
+    uint8_t mouthPosX;
+    uint8_t mouthPosY;
+    float secGameTime;
+    int addSwapResult;
+    size_t numStopCalls;
+    size_t numAddSwapCalls;
+    size_t numRemoveSwapCalls;
+    tSoundChannelHandle hLastStoppedChannel;
+    SithThing* pLastSwapThing;
+    rdModel3* pLastAddedModel;
+    int lastAddedMeshNum;
+    int lastAddedSrcMeshNum;
+    int lastRemovedRefNum;
+    int bThingHasSwapHead;
+    int curHeadSlot;
+    int lastHeadSlot;
+    size_t sameHeadCounter;
+    float secNextHeadSwapTime;
+} SithVoiceTestState;
+
+void sithVoice_TestResetState(void);
+void sithVoice_TestSetLipSyncResult(int bLipSyncData, uint8_t mouthPosX, uint8_t mouthPosY);
+void sithVoice_TestSetGameTime(float secGameTime);
+void sithVoice_TestSetHeadTableEntry(size_t mouthYLevel, size_t mouthXLevel, uint8_t headSlot);
+void sithVoice_TestSetSelectionState(int lastHeadSlot, size_t sameHeadCounter, float secNextHeadSwapTime);
+void sithVoice_TestSetThingHasSwapHead(int bThingHasSwapHead);
+void sithVoice_TestGetState(SithVoiceTestState* pState);
+#endif
+
 // Helper hooking functions
 void sithVoice_InstallHooks(void);
 void sithVoice_ResetGlobals(void);

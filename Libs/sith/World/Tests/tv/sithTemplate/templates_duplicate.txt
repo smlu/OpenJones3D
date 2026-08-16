@@ -1,0 +1,4 @@
+world templates 2
+tpl_duplicate none type=camera size=0.5
+tpl_duplicate none type=ghost size=1.0
+end

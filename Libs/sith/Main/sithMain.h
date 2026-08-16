@@ -55,8 +55,11 @@ J3D_EXTERN_C_START
 #define SITH_CFG_GAMEPLAY_DIFFICULTY  "gameplay.difficulty"
 
 
-#define sith_g_pHS J3D_DECL_FAR_VAR(sith_g_pHS, tHostServices*)
-// extern tHostServices *sith_g_pHS;
+#if defined(J3D_LOCAL_SITH_RTI)
+extern tHostServices* sith_g_pHS;
+#else
+#   define sith_g_pHS J3D_DECL_FAR_VAR(sith_g_pHS, tHostServices*)
+#endif
 
 // TODO: Rename all to be prefixed only by 'sith'
 

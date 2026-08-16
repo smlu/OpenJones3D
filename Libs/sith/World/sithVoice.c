@@ -61,6 +61,54 @@ static SithVoiceSubtitleInfo sithVoice_aSubtitleInfos[25];
 
 static rdFont* sithVoice_pTextFont;
 
+#if defined(J3D_TEST)
+static SithVoiceTestState sithVoice_testState;
+
+static void J3DAPI sithVoice_TestStopChannel(tSoundChannelHandle hChannel)
+{
+    ++sithVoice_testState.numStopCalls;
+    sithVoice_testState.hLastStoppedChannel = hChannel;
+}
+
+static int J3DAPI sithVoice_TestGenerateLipSync(tSoundChannelHandle hChannel, uint8_t* pMouthPosX, uint8_t* pMouthPosY, int msecLipSyncOffset)
+{
+    J3D_UNUSED(hChannel);
+    J3D_UNUSED(msecLipSyncOffset);
+
+    *pMouthPosX = sithVoice_testState.mouthPosX;
+    *pMouthPosY = sithVoice_testState.mouthPosY;
+    return sithVoice_testState.bLipSyncData;
+}
+
+static int J3DAPI sithVoice_TestAddSwapEntry(SithThing* pThing, int meshNum, rdModel3* pSrcModel, int meshNumSrc)
+{
+    ++sithVoice_testState.numAddSwapCalls;
+    sithVoice_testState.pLastSwapThing       = pThing;
+    sithVoice_testState.pLastAddedModel      = pSrcModel;
+    sithVoice_testState.lastAddedMeshNum     = meshNum;
+    sithVoice_testState.lastAddedSrcMeshNum  = meshNumSrc;
+    return sithVoice_testState.addSwapResult;
+}
+
+static int J3DAPI sithVoice_TestRemoveSwapEntry(SithThing* pThing, int refNum)
+{
+    ++sithVoice_testState.numRemoveSwapCalls;
+    sithVoice_testState.pLastSwapThing    = pThing;
+    sithVoice_testState.lastRemovedRefNum = refNum;
+    return 0;
+}
+
+// Added: Test seams expand to the original calls in non-test builds.
+#   define SITHVOICE_STOP_CHANNEL(hChannel) \
+        sithVoice_TestStopChannel((hChannel))
+#   define SITHVOICE_GENERATE_LIP_SYNC(hChannel, pMouthPosX, pMouthPosY, msecLipSyncOffset) \
+        sithVoice_TestGenerateLipSync((hChannel), (pMouthPosX), (pMouthPosY), (msecLipSyncOffset))
+#   define SITHVOICE_ADD_SWAP_ENTRY(pThing, meshNum, pSrcModel, meshNumSrc) \
+        sithVoice_TestAddSwapEntry((pThing), (meshNum), (pSrcModel), (meshNumSrc))
+#   define SITHVOICE_REMOVE_SWAP_ENTRY(pThing, refNum) \
+        sithVoice_TestRemoveSwapEntry((pThing), (refNum))
+#   define SITHVOICE_SEC_GAME_TIME sithVoice_testState.secGameTime
+#else
 #   define SITHVOICE_STOP_CHANNEL(hChannel) \
         Sound_StopChannel((hChannel))
 #   define SITHVOICE_GENERATE_LIP_SYNC(hChannel, pMouthPosX, pMouthPosY, msecLipSyncOffset) \
@@ -70,6 +118,7 @@ static rdFont* sithVoice_pTextFont;
 #   define SITHVOICE_REMOVE_SWAP_ENTRY(pThing, refNum) \
         sithThing_RemoveSwapEntry((pThing), (refNum))
 #   define SITHVOICE_SEC_GAME_TIME sithTime_g_secGameTime
+#endif
 
 void J3DAPI sithVoice_PlayVoice(SithCog* pCog);
 void J3DAPI sithVoice_SetThingVoiceHeads(SithCog* pCog);
@@ -80,6 +129,70 @@ void J3DAPI sithVoice_SetVoiceParams(SithCog* pCog);
 void J3DAPI sithVoice_AddSubtitle(unsigned int msecSoundLen, const char* pVoiceSoundFileName, const char* pVoiceSubtitles, VGradiantColor* pVoiceSubtitleColor);
 void J3DAPI sithVoice_RemoveSoundSubtitle(tSoundChannelHandle hSound); // Added
 void sithVoice_PurgeDrawnSubtitles(void);
+
+#if defined(J3D_TEST)
+void sithVoice_TestResetState(void)
+{
+    sithVoice_bThingHasSwapHead     = false;
+    sithVoice_msecLipSyncOffset     = 50;
+    sithVoice_curHeadHeight         = 0;
+    sithVoice_lastHeadHeight        = -1;
+    sithVoice_sameHeadHightCounter  = 0;
+    sithVoice_secHeadSwapInterval   = 0.1f;
+    sithVoice_secNextHeadSwapTime   = 0.0f;
+    STD_ZEROMEM(sithVoice_aVoiceHeadHeights, sizeof(sithVoice_aVoiceHeadHeights));
+
+    STD_ZEROMEM(&sithVoice_testState, sizeof(sithVoice_testState));
+    sithVoice_testState.addSwapResult       = 101;
+    sithVoice_testState.lastAddedMeshNum    = -1;
+    sithVoice_testState.lastAddedSrcMeshNum = -1;
+    sithVoice_testState.lastRemovedRefNum   = -1;
+}
+
+void sithVoice_TestSetLipSyncResult(int bLipSyncData, uint8_t mouthPosX, uint8_t mouthPosY)
+{
+    sithVoice_testState.bLipSyncData = bLipSyncData;
+    sithVoice_testState.mouthPosX    = mouthPosX;
+    sithVoice_testState.mouthPosY    = mouthPosY;
+}
+
+void sithVoice_TestSetGameTime(float secGameTime)
+{
+    sithVoice_testState.secGameTime = secGameTime;
+}
+
+void sithVoice_TestSetHeadTableEntry(size_t mouthYLevel, size_t mouthXLevel, uint8_t headSlot)
+{
+    SITH_ASSERTREL(mouthYLevel < STD_ARRAYLEN(sithVoice_aVoiceHeadHeights));
+    SITH_ASSERTREL(mouthXLevel < STD_ARRAYLEN(sithVoice_aVoiceHeadHeights[mouthYLevel]));
+    SITH_ASSERTREL(headSlot < STD_ARRAYLEN(sithVoice_aVoiceHeadHeights));
+
+    sithVoice_aVoiceHeadHeights[mouthYLevel][mouthXLevel] = headSlot;
+}
+
+void sithVoice_TestSetSelectionState(int lastHeadSlot, size_t sameHeadCounter, float secNextHeadSwapTime)
+{
+    sithVoice_lastHeadHeight        = lastHeadSlot;
+    sithVoice_sameHeadHightCounter  = sameHeadCounter;
+    sithVoice_secNextHeadSwapTime   = secNextHeadSwapTime;
+}
+
+void sithVoice_TestSetThingHasSwapHead(int bThingHasSwapHead)
+{
+    sithVoice_bThingHasSwapHead = bThingHasSwapHead != 0;
+}
+
+void sithVoice_TestGetState(SithVoiceTestState* pState)
+{
+    *pState = sithVoice_testState;
+
+    pState->bThingHasSwapHead     = sithVoice_bThingHasSwapHead;
+    pState->curHeadSlot           = sithVoice_curHeadHeight;
+    pState->lastHeadSlot          = sithVoice_lastHeadHeight;
+    pState->sameHeadCounter       = sithVoice_sameHeadHightCounter;
+    pState->secNextHeadSwapTime   = sithVoice_secNextHeadSwapTime;
+}
+#endif
 
 void sithVoice_InstallHooks(void)
 {
