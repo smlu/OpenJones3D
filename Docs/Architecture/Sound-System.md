@@ -15,6 +15,7 @@ Primary source files:
 - [`Libs/sith/World/sithSoundClass.c`](../../Libs/sith/World/sithSoundClass.c)
 - [`Libs/sith/World/sithVoice.c`](../../Libs/sith/World/sithVoice.c)
 - [`Libs/sound/Sound.c`](../../Libs/sound/Sound.c)
+- [`Libs/sound/AudioLib.c`](../../Libs/sound/AudioLib.c)
 - [`Libs/sound/DriverDX9.c`](../../Libs/sound/DriverDX9.c)
 - [`Libs/sound/DriverDX6.c`](../../Libs/sound/DriverDX6.c)
 
@@ -282,18 +283,18 @@ This is one of the most important architectural cross-links in the engine:
 
 ## Voice, Lip Sync, And Subtitles
 
-The voice layer is implemented in [`sithVoice.c`](../../Libs/sith/World/sithVoice.c#L101).
+The voice layer is implemented in [`sithVoice.c`](../../Libs/sith/World/sithVoice.c).
 
 Important entry points are:
 
-- [`sithVoice_PlayThingVoice()`](../../Libs/sith/World/sithVoice.c#L186)
-- [`sithVoice_UpdateLipSync()`](../../Libs/sith/World/sithVoice.c#L244)
-- [`sithVoice_AddSubtitle()`](../../Libs/sith/World/sithVoice.c#L466)
-- [`sithVoice_Draw()`](../../Libs/sith/World/sithVoice.c#L704)
+- [`sithVoice_PlayThingVoice()`](../../Libs/sith/World/sithVoice.c)
+- [`sithVoice_UpdateLipSync()`](../../Libs/sith/World/sithVoice.c)
+- [`sithVoice_AddSubtitle()`](../../Libs/sith/World/sithVoice.c)
+- [`sithVoice_Draw()`](../../Libs/sith/World/sithVoice.c)
 
 ### Voice Playback
 
-[`sithVoice_PlayThingVoice()`](../../Libs/sith/World/sithVoice.c#L186) plays a sound through the same mixer/channel system as ordinary world audio, but it additionally:
+[`sithVoice_PlayThingVoice()`](../../Libs/sith/World/sithVoice.c) plays a sound through the same mixer/channel system as ordinary world audio, but it additionally:
 
 - tracks the voice channel handle in the actor/player voice info
 - resets lip-sync state
@@ -304,19 +305,68 @@ Voice is therefore a specialization layered on the same core audio path, not a s
 
 ### Lip Sync
 
-Lip-sync samples come from [`Sound_GenerateLipSync()`](../../Libs/sound/Sound.c#L2534), which can lazily build mouth-position data for a sound.
+In short, the lip-sync system analyzes 16-bit mono PCM at 60 analysis frames per second. It converts amplitude and zero-crossing activity into two quantized mouth coordinates, stores only coordinate changes in a compact `SYNC` timeline, and looks up that timeline while the voice sound plays. `sithVoice` then maps the coordinates through a 4 x 4 table to one of four replacement head models authored as the M-sound, A-sound, AM-sound, and O-sound mouth poses. The shipped scripts configure every column in a row identically, so the game ultimately selects these models from mouth Y alone.
 
-[`sithVoice_UpdateLipSync()`](../../Libs/sith/World/sithVoice.c#L244) then uses that data to:
+This is a crude waveform-driven viseme selector rather than speech or phoneme recognition. Mouth Y primarily follows normalized amplitude and acts as a coarse openness value. Mouth X follows positive-going zero-crossing density and could supply a rough spectral cue through a different 4 x 4 table, but the game's table configuration ignores it.
 
-- choose a current mouth/open-head variant
-- swap meshes on the speaking thing
-- remove the swap when playback finishes
+Here, "lip sync" names the complete generation and playback process, while "mouth X/Y" names the two abstract mouth-shape coordinates stored in that data. They are not geometric positions of individual lips. This distinction is reflected in names such as `AUDIOLIB_LIPSYNC_MOUTH_POSITION_COUNT`: the lip-sync timeline carries mouth-position values.
 
-So lip sync is not phoneme-driven skeletal animation. It is a mesh/head-swap system sitting on top of sound amplitude analysis.
+#### Timeline Generation
+
+[`Sound_GenerateLipSync()`](../../Libs/sound/Sound.c) generates and caches the timeline lazily the first time a playing sound needs lip sync. Compressed sound data is first expanded into temporary PCM. The generator accepts only 16-bit, single-channel PCM; failures leave no partial cache entry and return neutral mouth coordinates.
+
+[`AudioLib_GenerateLipSyncBlock()`](../../Libs/sound/AudioLib.c) retains the recovered algorithm:
+
+1. Scan adjacent sample pairs across the waveform, beginning with the second analyzed sample, to find the maximum absolute amplitude and total number of negative-to-nonnegative zero crossings.
+2. Divide the PCM into complete analysis frames using `2 * sampleRate / analysisRateHz` bytes per frame. Sound requests an analysis rate of 60 Hz.
+3. For each frame, measure peak amplitude, average absolute amplitude, and positive-going zero crossings. The first sample is used only as the predecessor of the second sample, its amplitude is not included, and the pair spanning two adjacent frames is never examined.
+4. Compare the frame peak with a 15-frame rolling average of recent peaks. The rolling value is kept at least one quarter of the whole-wave peak so quiet sections do not become disproportionately large.
+5. Derive raw mouth Y from the frame peak and raw mouth X from the frame's zero-crossing count relative to the whole-wave rate. Together these features choose a coarse viseme-like state; quiet frames blend X toward the recovered neutral value of 37.
+6. Clamp each raw coordinate to 100 percent, scale it into the 7-bit range 0 through 127, and apply the recovered transient decay when average frame amplitude is less than 30 percent of its peak.
+7. Quantize both coordinates to the requested number of levels. Sound requests four levels, producing values 0, 32, 64, or 96 for each axis. [`SOUND_LIPSYNC_GETMOUTHLEVEL()`](../../Libs/sound/Sound.h) converts those values back to table levels `0` through `3`.
+8. Emit an entry only when either quantized coordinate changes, then append a final timestamped entry with both coordinates zero.
+
+The resulting little-endian block contains the four-byte `SYNC` signature, a 32-bit entry count, and packed 32-bit entries. Time advances by `4096000 / analysisRateHz`, where 4096 fixed-point units represent one millisecond. Each entry stores the upper 16 bits of that time key, mouth X in bits 8 through 14, and mouth Y in bits 0 through 6. [`AudioLib_GetMouthPosition()`](../../Libs/sound/AudioLib.c) binary-searches these entries for a playback time.
+
+The reconstructed Sound path uses capacity-aware helpers to validate the PCM source range and allocate a worst-case output buffer instead of relying on the original fixed 8192-byte stack buffer. That original buffer could hold the worst case for 2045 analysis frames, or about 34.1 seconds at 60 Hz, but this was not a hard duration limit: an entry is written only when the quantized mouth state changes, so less variable audio could be much longer. Conversely, the unchecked generator had no output-capacity parameter and would overrun the stack buffer rather than report that it was full.
+
+The fixed stack scratch was likely an efficiency and allocation-simplicity choice: the generated `SYNC` output required no temporary heap allocation, and Sound allocated the exact persistent block only after generation succeeded and revealed its encoded size. Compressed PCM still required a separate temporary decompression buffer. This rationale is inferred from the recovered ownership flow; no original source comment states it explicitly.
+
+#### Legacy Cross-Sample Decoding
+
+The original `Sound_GenerateLipSync()` call enables `bCrossSample`, and `AudioLib_GenerateLipSyncBlock()` responds by advancing the PCM pointer by exactly one byte before reading 16-bit samples. Both the uncompressed and decompressed paths pass a pointer to the first PCM byte, so this does not skip a known header. It is a one-byte shift, not a one-sample shift. Given adjacent little-endian source samples `{lowN, highN}` and `{lowNPlus1, highNPlus1}`, the reconstructed word contains `{highN, lowNPlus1}`, or `int16_t((lowNPlus1 << 8) | highN)`: the current sample's high byte becomes the synthetic word's low byte, while the adjacent sample's low byte becomes its high byte.
+
+This cross-splicing creates a synthetic sample sequence rather than averaging or interpolating the adjacent samples. The next sample's low byte supplies the sign and coarse magnitude bits of the synthetic value, while the current sample's high byte supplies its low-order magnitude bits. The resulting value can therefore differ sharply in sign and amplitude from either source sample. The generator measures peak and average absolute amplitude plus positive-going zero crossings from this synthetic sequence, so cross-sample decoding can alter both generated mouth coordinates. No rationale for this behavior is visible in the recovered code; OpenJones3D preserves it for output compatibility.
+
+The generator accepts only 16-bit mono PCM, so cross-sample decoding operates entirely within one channel's byte stream. It neither combines channels nor selects only high- or low-amplitude samples.
+
+The inspected game voice files use 11025 Hz PCM, producing an integer-truncated analysis-frame stride of 367 bytes. Because this stride is odd, each new frame starts on the opposite byte of a 16-bit sample. Enabling cross-sample decoding therefore makes frame zero start on a high byte, frame one on a correctly aligned low byte, and so on; disabling it reverses that parity. The game configures a 250-millisecond lookup offset and 0.15-second head-swap interval. At an ideal 60 Hz cadence, the first lookup is 15 analysis frames ahead and later lookups advance by nine frames, alternating frame parity. `AudioLib_GetMouthPosition()` also quantizes time to 16-millisecond keys and the timeline stores only state changes, so a lookup can retain a state emitted by an earlier frame. The runtime settings therefore do not support interpreting the flag as a fixed alignment-phase selector. The initial whole-wave normalization scan remains shifted throughout and interprets promoted low-order sample bytes, making the resulting timeline materially different from an aligned analysis.
+
+The cross-sample read also explains the temporary-buffer padding. A shifted 16-bit read can need one byte beyond the declared PCM data. If `2 * sampleRate / analysisRateHz` is odd, the final frame can require a second byte. The checked API therefore requires up to two readable padding bytes; the temporary decompression path allocates and zeroes both. It still passes the original unpadded `sndDataSize` to the algorithm.
+
+#### Playback And Voice-Head Mapping
+
+During playback, [`Sound_GenerateLipSync()`](../../Libs/sound/Sound.c) converts the sound buffer's current byte position to milliseconds, adds the configured lip-sync lookup offset, and asks `AudioLib_GetMouthPosition()` for the current pair. The compiled fallback values are a 50-millisecond lookup offset and 0.1-second head-swap interval. `actor_indy.cog` replaces them game-wide with `SetVoiceParams(0.15, 250)`, producing a 250-millisecond look-ahead and updates no more often than every 0.15 seconds. A lookup beyond the final generated entry returns its neutral zero state, so the mouth can close approximately one look-ahead interval before playback ends. Sound stops requesting active mouth data during the final 25 milliseconds.
+
+[`sithVoice_UpdateLipSync()`](../../Libs/sith/World/sithVoice.c) uses `SOUND_LIPSYNC_GETMOUTHLEVEL()` for both coordinates, then indexes the global 4 x 4 voice-head table as `[mouthYLevel][mouthXLevel]`. X support is therefore present in the runtime; `actor_indy.cog` neutralizes it by configuring rows `0` through `3` as `{0,0,0,0}` through `{3,3,3,3}`. Mouth Y consequently selects one of the four talking-head slots assigned by [`SetThingVoiceHeads()`](../COG/Functions-Voice.md#setthingvoiceheads). The legacy API calls these table values head "heights," but they are model-slot indices rather than geometric measurements. Their filenames establish the M-sound, A-sound, AM-sound, and O-sound ordering. Most normal actor setups leave the M-sound slot empty so the base head supplies the closed-lip state; cinematic and costume-specific setups may provide an explicit M-sound model or alternate base head. To prevent a static pose, the voice layer substitutes every third consecutive selection of the same nonzero head: A-sound becomes O-sound, AM-sound becomes M-sound, and O-sound becomes A-sound. The resulting model is installed as a swap entry on the configured head mesh. When playback or lip-sync lookup ends, the voice layer removes or restores the voice-head swap and clears the channel state.
+
+Inspection of the authored 3DO head sets supports those filename meanings. The M-sound variants commonly omit mouth-interior vertices present in the open poses. In Sophia's four-pose set, the A-sound model has the greatest lower-lip/jaw displacement, AM is intermediate, and O is less open but has the narrowest mouth corners. These are authored approximations of a closed M pose, a wide A pose, an intermediate AM pose, and a rounded O pose; the runtime waveform analysis does not recognize those phonemes directly.
+
+The table and timing parameters are global, while target meshes, head-model slots, subtitle colors, and active channel handles belong to individual actor/player voice records. The COG-facing contract and parameter meanings are documented in [Voice Host Functions](../COG/Functions-Voice.md).
+
+#### Current Voice-Lifecycle Risks
+
+The recovered ownership is only partly per speaker. The lookup table and configured timing values are intentionally global, but the current head slot, previous head slot, repetition counter, next-swap deadline, and `sithVoice_bThingHasSwapHead` are global as well. Consequently, overlapping speakers can affect one another's update timing and repeated-pose substitution. The existing-head flag can also be consumed while cleaning up a different speaker. Starting a new tracked voice resets part of this state, but `sithVoice_Open()` and `sithVoice_Close()` do not reset the previous-head state or next-swap deadline.
+
+This creates a specific savegame hazard. Restore closes and reopens the Sith world, then restores the saved game time only near the end. The global next-swap deadline is neither serialized by `sithVoice_SyncVoiceState()` nor reset by open/close, so loading an earlier point in the timeline can leave a deadline in the future and suppress head updates until restored time catches up.
+
+Active voice playback has a separate restore mismatch. Actor/player DSS state serializes `SithActorVoiceInfo::hSndChannel`, but `Sound_Save()` currently writes only 3D looping or far channels. `sithVoice_PlayThingVoice()` uses the generic `Sound_Play()` path for a 2D one-shot, so its channel is not present in the Sound save section. The actor can therefore restore a stale channel handle; the next lip-sync lookup cannot resolve it and clears the tracked voice/head state. This is the strongest code-level explanation for a voice head remaining neutral after loading a save during dialogue.
+
+Window deactivation is another possible desynchronization path. `JonesMain_OnAppActivate()` switches processing to window events but does not call the explicit `JonesMain_PauseGame()`/`Sound_Pause()` path. Game-time and head updates stop while backend playback behavior is left to the active sound-buffer/focus state, with no resynchronization step on activation. This can leave the audio cursor ahead of the voice-head state or let the line finish before updates resume.
 
 ### Subtitles
 
-[`sithVoice_AddSubtitle()`](../../Libs/sith/World/sithVoice.c#L466) creates wrapped subtitle entries with start/end/display timing, while [`sithVoice_Draw()`](../../Libs/sith/World/sithVoice.c#L704) renders the currently valid lines each frame.
+[`sithVoice_AddSubtitle()`](../../Libs/sith/World/sithVoice.c) creates wrapped subtitle entries with start/end/display timing, while [`sithVoice_Draw()`](../../Libs/sith/World/sithVoice.c) renders the currently valid lines each frame.
 
 Subtitles are therefore a voice-layer feature, not a generic HUD text system.
 

@@ -121,6 +121,8 @@
   - Added std unit tests and DirectX 6/9 system tests, including external BMP vectors and optional fullscreen tests. (db582ba)
   - Fixed constant wide-string array detection and DX6 DirectPlay session-descriptor allocation failure handling and cleanup. (db582ba)
   - Changed the JONES3D_RUNTIME_GUARDS CMake option to be disabled by default. (db582ba)
+  - Added AudioLib and Sound lip-sync unit tests covering generation, lookup, caching, playback offsets, and allocation failures. (19d570c)
+  - Added sithThing, sithTemplate, and sithVoice unit tests, including retail-generated binary vectors and allocation/I/O failure coverage. (aa4e510)
 
 ### Engine:
   - Added check for zero size in lip sync data generation to prevent allocation errors (f79736b)

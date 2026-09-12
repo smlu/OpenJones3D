@@ -248,9 +248,13 @@ That reduces coupling between gameplay logic and exact sound asset selection.
 
 - voice playback state
 - subtitle/voice draw integration
+- per-actor/player swap-head models and subtitle colors
+- a global 4 x 4 mouth-coordinate-to-head lookup table and lip-sync timing parameters
 - lip-sync updates for actors/players
 
 Voice is therefore not a separate audio engine. It is a specialized gameplay subsystem layered on the same lower sound foundations.
+
+See [Voice Host Functions](../COG/Functions-Voice.md) for the COG parameter contracts and [Sound System](Sound-System.md#voice-lip-sync-and-subtitles) for the waveform analysis, compact timeline, and playback mapping.
 
 ## Important QOL Audio Changes
 
