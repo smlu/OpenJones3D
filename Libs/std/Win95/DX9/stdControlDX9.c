@@ -1708,7 +1708,8 @@ int J3DAPI stdControl_IsGamePad(int joyNum)
         return 0;
     }
 
-    return joyNum > stdControl_numJoystickDevices
+    // Fixed: >= instead of >. XInput devices start at index stdControl_numJoystickDevices (see stdControl_GetJoysticDescription)
+    return joyNum >= (int)stdControl_numJoystickDevices
         ? stdControl_aXInputDevices[joyNum - stdControl_numJoystickDevices].bIsGamepad
         : GET_DIDEVICE_TYPE(stdControl_aJoystickDevices[joyNum].dinstance.dwDevType) == DI8DEVTYPE_GAMEPAD;
 }
