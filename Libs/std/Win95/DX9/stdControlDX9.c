@@ -1822,11 +1822,8 @@ void stdControl_ReadXInput(void)
                 STDLOG_STATUS("XInput device %d reconnected\n", pDevice->userIndex);
             }
 
-            if ( pDevice->state.dwPacketNumber == state.dwPacketNumber )
-            {
-                // No change in state
-                continue;
-            }
+            // Fixed: Don't skip the device when dwPacketNumber is unchanged. stdControl_ReadControls clears all axis
+            //        states every frame, so skipping made a stick that is held still read 0 on every frame but one.
 
             // Calculate joystick slot (after DirectInput joysticks)
             size_t joySlot = stdControl_numJoystickDevices + deviceIndex;
