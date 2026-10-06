@@ -1708,7 +1708,8 @@ int J3DAPI stdControl_IsGamePad(int joyNum)
         return 0;
     }
 
-    return joyNum > stdControl_numJoystickDevices
+    // Fixed: >= instead of >. XInput devices start at index stdControl_numJoystickDevices (see stdControl_GetJoysticDescription)
+    return joyNum >= (int)stdControl_numJoystickDevices
         ? stdControl_aXInputDevices[joyNum - stdControl_numJoystickDevices].bIsGamepad
         : GET_DIDEVICE_TYPE(stdControl_aJoystickDevices[joyNum].dinstance.dwDevType) == DI8DEVTYPE_GAMEPAD;
 }
@@ -1777,13 +1778,15 @@ void stdControl_InitXInput(void)
                 // Register axes using existing joystick slot system
                 size_t gamepadSlot = stdControl_numJoystickDevices + stdControl_numXInputDevices; // TODO: when gamepad dedicated slots are added, use those instead
 
+                // Fixed: Register stick axes without a dead zone. stdControl_ReadXInput already applies the XInput dead
+                //        zone and rescales; a second one in stdControl_ReadAxis (not rescaled) ignored ~42% of stick travel.
                 // Left stick
-                stdControl_RegisterAxis(STDCONTROL_GET_JOYSTICK_AXIS_X(gamepadSlot), -32768, 32767, pDevice->leftStickDeadZone);
-                stdControl_RegisterAxis(STDCONTROL_GET_JOYSTICK_AXIS_Y(gamepadSlot), -32768, 32767, pDevice->leftStickDeadZone);
+                stdControl_RegisterAxis(STDCONTROL_GET_JOYSTICK_AXIS_X(gamepadSlot), -32768, 32767, 0.0f);
+                stdControl_RegisterAxis(STDCONTROL_GET_JOYSTICK_AXIS_Y(gamepadSlot), -32768, 32767, 0.0f);
 
                 // Right stick
-                stdControl_RegisterAxis(STDCONTROL_GET_JOYSTICK_AXIS_RX(gamepadSlot), -32768, 32767, pDevice->rightStickDeadZone);
-                stdControl_RegisterAxis(STDCONTROL_GET_JOYSTICK_AXIS_RY(gamepadSlot), -32768, 32767, pDevice->rightStickDeadZone);
+                stdControl_RegisterAxis(STDCONTROL_GET_JOYSTICK_AXIS_RX(gamepadSlot), -32768, 32767, 0.0f);
+                stdControl_RegisterAxis(STDCONTROL_GET_JOYSTICK_AXIS_RY(gamepadSlot), -32768, 32767, 0.0f);
 
                 // Triggers
                 stdControl_RegisterAxis(STDCONTROL_GET_JOYSTICK_AXIS_Z(gamepadSlot), 0, 255, pDevice->triggerThreshold);
@@ -1822,11 +1825,8 @@ void stdControl_ReadXInput(void)
                 STDLOG_STATUS("XInput device %d reconnected\n", pDevice->userIndex);
             }
 
-            if ( pDevice->state.dwPacketNumber == state.dwPacketNumber )
-            {
-                // No change in state
-                continue;
-            }
+            // Fixed: Don't skip the device when dwPacketNumber is unchanged. stdControl_ReadControls clears all axis
+            //        states every frame, so skipping made a stick that is held still read 0 on every frame but one.
 
             // Calculate joystick slot (after DirectInput joysticks)
             size_t joySlot = stdControl_numJoystickDevices + deviceIndex;
@@ -1846,11 +1846,13 @@ void stdControl_ReadXInput(void)
             float deadzonedRightY = stdControl_ApplyXInputDeadzone(rightY, pDevice->rightStickDeadZone);
 
             // Set axis states using existing joystick slot system
+            // Fixed: Negate Y. XInput thumb Y is positive up, while joystick axes (DirectInput) are positive down,
+            //        which is what the bindings expect (e.g. move forward = Y negative).
             stdControl_aAxisStates[STDCONTROL_GET_JOYSTICK_AXIS_X(joySlot)] = (int)deadzonedLeftX;
-            stdControl_aAxisStates[STDCONTROL_GET_JOYSTICK_AXIS_Y(joySlot)] = (int)deadzonedLeftY;
+            stdControl_aAxisStates[STDCONTROL_GET_JOYSTICK_AXIS_Y(joySlot)] = (int)-deadzonedLeftY;
 
             stdControl_aAxisStates[STDCONTROL_GET_JOYSTICK_AXIS_RX(joySlot)] = (int)deadzonedRightX;
-            stdControl_aAxisStates[STDCONTROL_GET_JOYSTICK_AXIS_RY(joySlot)] = (int)deadzonedRightY;
+            stdControl_aAxisStates[STDCONTROL_GET_JOYSTICK_AXIS_RY(joySlot)] = (int)-deadzonedRightY;
 
             // Read triggers
             BYTE leftTrigger  = state.Gamepad.bLeftTrigger;
