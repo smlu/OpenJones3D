@@ -1843,11 +1843,13 @@ void stdControl_ReadXInput(void)
             float deadzonedRightY = stdControl_ApplyXInputDeadzone(rightY, pDevice->rightStickDeadZone);
 
             // Set axis states using existing joystick slot system
+            // Fixed: Negate Y. XInput thumb Y is positive up, while joystick axes (DirectInput) are positive down,
+            //        which is what the bindings expect (e.g. move forward = Y negative).
             stdControl_aAxisStates[STDCONTROL_GET_JOYSTICK_AXIS_X(joySlot)] = (int)deadzonedLeftX;
-            stdControl_aAxisStates[STDCONTROL_GET_JOYSTICK_AXIS_Y(joySlot)] = (int)deadzonedLeftY;
+            stdControl_aAxisStates[STDCONTROL_GET_JOYSTICK_AXIS_Y(joySlot)] = (int)-deadzonedLeftY;
 
             stdControl_aAxisStates[STDCONTROL_GET_JOYSTICK_AXIS_RX(joySlot)] = (int)deadzonedRightX;
-            stdControl_aAxisStates[STDCONTROL_GET_JOYSTICK_AXIS_RY(joySlot)] = (int)deadzonedRightY;
+            stdControl_aAxisStates[STDCONTROL_GET_JOYSTICK_AXIS_RY(joySlot)] = (int)-deadzonedRightY;
 
             // Read triggers
             BYTE leftTrigger  = state.Gamepad.bLeftTrigger;
