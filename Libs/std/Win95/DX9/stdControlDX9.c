@@ -1777,13 +1777,15 @@ void stdControl_InitXInput(void)
                 // Register axes using existing joystick slot system
                 size_t gamepadSlot = stdControl_numJoystickDevices + stdControl_numXInputDevices; // TODO: when gamepad dedicated slots are added, use those instead
 
+                // Fixed: Register stick axes without a dead zone. stdControl_ReadXInput already applies the XInput dead
+                //        zone and rescales; a second one in stdControl_ReadAxis (not rescaled) ignored ~42% of stick travel.
                 // Left stick
-                stdControl_RegisterAxis(STDCONTROL_GET_JOYSTICK_AXIS_X(gamepadSlot), -32768, 32767, pDevice->leftStickDeadZone);
-                stdControl_RegisterAxis(STDCONTROL_GET_JOYSTICK_AXIS_Y(gamepadSlot), -32768, 32767, pDevice->leftStickDeadZone);
+                stdControl_RegisterAxis(STDCONTROL_GET_JOYSTICK_AXIS_X(gamepadSlot), -32768, 32767, 0.0f);
+                stdControl_RegisterAxis(STDCONTROL_GET_JOYSTICK_AXIS_Y(gamepadSlot), -32768, 32767, 0.0f);
 
                 // Right stick
-                stdControl_RegisterAxis(STDCONTROL_GET_JOYSTICK_AXIS_RX(gamepadSlot), -32768, 32767, pDevice->rightStickDeadZone);
-                stdControl_RegisterAxis(STDCONTROL_GET_JOYSTICK_AXIS_RY(gamepadSlot), -32768, 32767, pDevice->rightStickDeadZone);
+                stdControl_RegisterAxis(STDCONTROL_GET_JOYSTICK_AXIS_RX(gamepadSlot), -32768, 32767, 0.0f);
+                stdControl_RegisterAxis(STDCONTROL_GET_JOYSTICK_AXIS_RY(gamepadSlot), -32768, 32767, 0.0f);
 
                 // Triggers
                 stdControl_RegisterAxis(STDCONTROL_GET_JOYSTICK_AXIS_Z(gamepadSlot), 0, 255, pDevice->triggerThreshold);
