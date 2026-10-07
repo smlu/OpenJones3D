@@ -340,8 +340,7 @@ static_assert(sizeof(CndThingSectionCounts) == 44, "sizeof(CndThingSectionCounts
 // Copies a resource name into a CND name field (at most 63 characters, always terminated)
 static void sithThing_CopyCndName(char* pDest, const char* pName)
 {
-    strncpy(pDest, pName, 63);
-    pDest[63] = '\0';
+    stdUtil_StringCopy(pDest, 64, pName);
 }
 
 // The inverse of sithThing_ReadThingsListBinary: writes numThings CndThingInfo records, the section counts and the
@@ -804,8 +803,7 @@ int J3DAPI sithThing_ReadThingsListBinary(tFileHandle fh, SithWorld* pWorld, siz
             sithThing_EnterSector(pThing, pSector, /*bNoWaterSplash=*/1, /*bNoNotify=*/1);
         }
 
-        strncpy(pThing->aName, pInfo->aName, STD_ARRAYLEN(pThing->aName) - 1);
-        pThing->aName[STD_ARRAYLEN(pThing->aName) - 1] = '\0';
+        STD_STRCPY(pThing->aName, pInfo->aName);
 
         pThing->flags            = pInfo->flags & ~SITH_TF_SEEN;
         pThing->type             = pInfo->type;
@@ -1009,8 +1007,7 @@ int J3DAPI sithThing_ReadThingsListBinary(tFileHandle fh, SithWorld* pWorld, siz
                 pExplInfo->spriteEnd      = pExplosion->spriteEndPos;
                 if ( pExplosion->aSpriteTemplateName[0] )
                 {
-                    strncpy(pExplInfo->aSpriteTemplateName, pExplosion->aSpriteTemplateName, STD_ARRAYLEN(pExplInfo->aSpriteTemplateName) - 1);
-                    pExplInfo->aSpriteTemplateName[STD_ARRAYLEN(pExplInfo->aSpriteTemplateName) - 1] = '\0';
+                    STD_STRCPY(pExplInfo->aSpriteTemplateName, pExplosion->aSpriteTemplateName);
                 }
                 for ( size_t j = 0; j < STD_ARRAYLEN(pExplInfo->apDebries); j++ )
                 {
