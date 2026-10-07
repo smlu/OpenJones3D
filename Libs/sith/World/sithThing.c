@@ -3,6 +3,7 @@
 
 #include <rdroid/Engine/rdPuppet.h>
 #include <rdroid/Engine/rdThing.h>
+#include <rdroid/Math/rdMath.h>
 #include <rdroid/Math/rdMatrix.h>
 #include <rdroid/Math/rdVector.h>
 #include <rdroid/Primitives/rdModel3.h>
@@ -35,6 +36,7 @@
 #include <sith/World/sithActor.h>
 #include <sith/World/sithExplosion.h>
 #include <sith/World/sithItem.h>
+#include <sith/World/sithMaterial.h>
 #include <sith/World/sithModel.h>
 #include <sith/World/sithSector.h>
 #include <sith/World/sithSoundClass.h>
@@ -292,8 +294,8 @@ void sithThing_InstallHooks(void)
     J3D_HOOKFUNC(sithThing_WriteStaticThingsListBinary);
     J3D_HOOKFUNC(sithThing_ReadStaticThingsListBinary);
 
-    // J3D_HOOKFUNC(sithThing_WriteThingsListBinary);
-    // J3D_HOOKFUNC(sithThing_ReadThingsListBinary);
+    J3D_HOOKFUNC(sithThing_WriteThingsListBinary);
+    J3D_HOOKFUNC(sithThing_ReadThingsListBinary);
 
     J3D_HOOKFUNC(sithThing_ParseArg);
     J3D_HOOKFUNC(sithThing_ParseThingArg);
@@ -308,7 +310,7 @@ void sithThing_InstallHooks(void)
     J3D_HOOKFUNC(sithThing_GetFreeThingIndex);
     J3D_HOOKFUNC(sithThing_ParseThingPlacement);
     J3D_HOOKFUNC(sithThing_CreateQuetzUserBlock);
-    //J3D_HOOKFUNC(sithThing_UpdateQuetzUserBlock);
+    J3D_HOOKFUNC(sithThing_UpdateQuetzUserBlock);
 }
 
 void sithThing_ResetGlobals(void)
@@ -318,19 +320,955 @@ void sithThing_ResetGlobals(void)
     STD_ZEROMEM(&sithThing_dword_5612B8, sizeof(sithThing_dword_5612B8));
 }
 
-int J3DAPI sithThing_WriteThingsListBinary(tFileHandle fh, const SithWorld* pWorld, size_t numThings, const SithThing* aThings)
+// Counts of the per-type sections that follow the thing records in a CND file (fixed width: on-disk data)
+typedef struct sCndThingSectionCounts
 {
-    return J3D_TRAMPOLINE_CALL(sithThing_WriteThingsListBinary, fh, pWorld, numThings, aThings);
+    uint32_t numPhysics;
+    uint32_t numPathFrameCounts;
+    uint32_t numPathFrames;
+    uint32_t numActors;
+    uint32_t numWeapons;
+    uint32_t numExplosions;
+    uint32_t numItems;
+    uint32_t numParticles;
+    uint32_t numHintValues;
+    uint32_t numAIControls;
+    uint32_t numAIFrames;
+} CndThingSectionCounts;
+static_assert(sizeof(CndThingSectionCounts) == 44, "sizeof(CndThingSectionCounts) == 44");
+
+// Copies a resource name into a CND name field (at most 63 characters, always terminated)
+static void sithThing_CopyCndName(char* pDest, const char* pName)
+{
+    stdUtil_StringCopy(pDest, 64, pName);
 }
 
+// The inverse of sithThing_ReadThingsListBinary: writes numThings CndThingInfo records, the section counts and the
+// sections. Resources a thing shares with its template (model, puppet, cog, weapon explosion) are left out, so the
+// reader keeps the template's. Returns 0 on success.
+int J3DAPI sithThing_WriteThingsListBinary(tFileHandle fh, const SithWorld* pWorld, size_t numThings, const SithThing* aThings)
+{
+
+    int result = 1;
+    CndThingSectionCounts counts = { 0 };
+    CndThingInfo* aInfos           = NULL;
+    CndPhysicsInfo* aPhysics       = NULL;
+    uint32_t* aPathFrameCounts     = NULL;
+    SithPathFrame* aPathFrames     = NULL;
+    CndActorInfo* aActors          = NULL;
+    CndWeaponInfo* aWeapons        = NULL;
+    CndExplosionInfo* aExplosions  = NULL;
+    CndItemInfo* aItems            = NULL;
+    float* aHintValues             = NULL;
+    CndParticleInfo* aParticles    = NULL;
+    CndAIControlInfo* aAIControls  = NULL;
+    rdVector3* aAIFrames           = NULL;
+
+    size_t sizeInfos = sizeof(CndThingInfo) * numThings;
+    aInfos = (CndThingInfo*)STDMALLOC(sizeInfos);
+    if ( !aInfos )
+    {
+        goto done;
+    }
+    memset(aInfos, 0, sizeInfos);
+
+    // Count the section entries
+    for ( size_t i = 0; i < numThings; i++ )
+    {
+        const SithThing* pThing = &aThings[i];
+        if ( pThing->moveType == SITH_MT_PHYSICS )
+        {
+            counts.numPhysics++;
+        }
+        else if ( pThing->moveType == SITH_MT_PATH )
+        {
+            counts.numPathFrameCounts++;
+            counts.numPathFrames += pThing->moveInfo.pathMovement.numFrames;
+        }
+
+        switch ( pThing->type )
+        {
+            case SITH_THING_ACTOR:
+            case SITH_THING_PLAYER:
+                counts.numActors++;
+                break;
+            case SITH_THING_WEAPON:
+                counts.numWeapons++;
+                break;
+            case SITH_THING_ITEM:
+                counts.numItems++;
+                break;
+            case SITH_THING_EXPLOSION:
+                counts.numExplosions++;
+                break;
+            case SITH_THING_PARTICLE:
+                counts.numParticles++;
+                break;
+            case SITH_THING_HINT:
+                counts.numHintValues++;
+                break;
+            default:
+                break;
+        }
+
+        if ( pThing->controlType == SITH_CT_AI )
+        {
+            counts.numAIControls++;
+            const SithAIControlBlock* pLocal = pThing->controlInfo.aiControl.pLocal;
+            if ( pLocal && pLocal->numFrames )
+            {
+                counts.numAIFrames += pLocal->numFrames;
+            }
+        }
+    }
+
+    // Sections, zeroed, in the original's order
+    #define SITHTHING_ALLOC_SECTION(ptr, count) \
+        ptr = STDMALLOC(sizeof(*ptr) * (count)); \
+        if ( !ptr ) goto done; \
+        memset(ptr, 0, sizeof(*ptr) * (count))
+
+    SITHTHING_ALLOC_SECTION(aPhysics, counts.numPhysics);
+    SITHTHING_ALLOC_SECTION(aPathFrameCounts, counts.numPathFrameCounts);
+    SITHTHING_ALLOC_SECTION(aPathFrames, counts.numPathFrames);
+    SITHTHING_ALLOC_SECTION(aActors, counts.numActors);
+    SITHTHING_ALLOC_SECTION(aWeapons, counts.numWeapons);
+    SITHTHING_ALLOC_SECTION(aExplosions, counts.numExplosions);
+    SITHTHING_ALLOC_SECTION(aItems, counts.numItems);
+    SITHTHING_ALLOC_SECTION(aHintValues, counts.numHintValues);
+    SITHTHING_ALLOC_SECTION(aParticles, counts.numParticles);
+    SITHTHING_ALLOC_SECTION(aAIControls, counts.numAIControls);
+    SITHTHING_ALLOC_SECTION(aAIFrames, counts.numAIFrames);
+    #undef SITHTHING_ALLOC_SECTION
+
+    CndPhysicsInfo* pPhysics       = aPhysics;
+    uint32_t* pPathFrameCount      = aPathFrameCounts;
+    SithPathFrame* pPathFrames     = aPathFrames;
+    CndActorInfo* pActor           = aActors;
+    CndWeaponInfo* pWeapon         = aWeapons;
+    CndExplosionInfo* pExplosion   = aExplosions;
+    CndItemInfo* pItem             = aItems;
+    float* pHintValue              = aHintValues;
+    CndParticleInfo* pParticle     = aParticles;
+    CndAIControlInfo* pAIControl   = aAIControls;
+    rdVector3* pAIFrames           = aAIFrames;
+
+    for ( size_t i = 0; i < numThings; i++ )
+    {
+        const SithThing* pThing    = &aThings[i];
+        const SithThing* pTemplate = pThing->pTemplate;
+        CndThingInfo* pInfo        = &aInfos[i];
+
+        rdVector3 pyr;
+        rdMatrix_ExtractAngles34(&pThing->orient, &pyr);
+
+        if ( pTemplate )
+        {
+            sithThing_CopyCndName(pInfo->aBaseTemplateName, pTemplate->aName);
+        }
+        sithThing_CopyCndName(pInfo->aName, pThing->aName);
+
+        pInfo->pos          = pThing->pos;
+        pInfo->pyr          = pyr;
+        pInfo->sectorNum    = sithSector_GetSectorIndexEx(pWorld, pThing->pInSector);
+        pInfo->flags        = pThing->flags & ~SITH_TF_SEEN;
+        pInfo->type         = pThing->type;
+        pInfo->moveType     = pThing->moveType;
+        pInfo->controlType  = pThing->controlType;
+        pInfo->light.color     = pThing->light.color;
+        pInfo->light.emitColor = pThing->light.emitColor;
+        pInfo->msecLifeLeft = pThing->msecLifeLeft;
+        pInfo->collide      = pThing->collide;
+        pInfo->rdThingType  = pThing->renderData.type;
+        pInfo->perfLevel    = pThing->perfLevel;
+
+        // Resource names; a model, puppet or cog shared with the template is left out
+        switch ( pThing->renderData.type )
+        {
+            case RD_THING_MODEL3:
+                if ( !pTemplate || pThing->renderData.data.pModel3 != pTemplate->renderData.data.pModel3 )
+                {
+                    sithThing_CopyCndName(pInfo->aRdFilename, pThing->renderData.data.pModel3->aName);
+                }
+                break;
+            case RD_THING_SPRITE3:
+                sithThing_CopyCndName(pInfo->aRdFilename, pThing->renderData.data.pSprite3->aName);
+                break;
+            case RD_THING_PARTICLE:
+                sithThing_CopyCndName(pInfo->aRdFilename, pThing->renderData.data.pParticle->aName);
+                break;
+            default:
+                break;
+        }
+
+        if ( pThing->pPuppetClass && (!pTemplate || pThing->pPuppetClass != pTemplate->pPuppetClass) )
+        {
+            sithThing_CopyCndName(pInfo->aPupFilename, pThing->pPuppetClass->aName);
+        }
+
+        if ( pThing->pSoundClass )
+        {
+            sithThing_CopyCndName(pInfo->aSndFilename, pThing->pSoundClass->aName);
+        }
+
+        if ( pThing->pCreateThingTemplate )
+        {
+            sithThing_CopyCndName(pInfo->aCreateThingTemplateName, pThing->pCreateThingTemplate->aName);
+        }
+
+        if ( pThing->pCog && (!pTemplate || pThing->pCog != pTemplate->pCog) )
+        {
+            sithThing_CopyCndName(pInfo->aCogFilename, pThing->pCog->pScript->aName);
+        }
+
+        // movement
+        if ( pThing->moveType == SITH_MT_PHYSICS )
+        {
+            const SithPhysicsInfo* pPhys  = &pThing->moveInfo.physics;
+            pPhysics->flags               = pPhys->flags;
+            pPhysics->mass                = pPhys->mass;
+            pPhysics->height              = pPhys->height;
+            pPhysics->airDrag             = pPhys->airDrag;
+            pPhysics->surfaceDrag         = pPhys->surfDrag;
+            pPhysics->staticDrag          = pPhys->staticDrag;
+            pPhysics->angularVelocity     = pPhys->angularVelocity;
+            pPhysics->velocity            = pPhys->velocity;
+            pPhysics->maxRotationVelocity = pPhys->maxRotationVelocity;
+            pPhysics->maxVelocity         = pPhys->maxVelocity;
+            pPhysics->orientSpeed         = pPhys->orientSpeed;
+            pPhysics->buoyancy            = pPhys->buoyancy;
+            pPhysics++;
+        }
+        else if ( pThing->moveType == SITH_MT_PATH )
+        {
+            const SithPathMoveInfo* pPath = &pThing->moveInfo.pathMovement;
+            *pPathFrameCount = pPath->numFrames;
+            if ( pPath->numFrames )
+            {
+                memcpy(pPathFrames, pPath->aFrames, sizeof(SithPathFrame) * pPath->numFrames);
+                pPathFrames += pPath->numFrames;
+            }
+            pPathFrameCount++;
+        }
+
+        // type-specific info
+        switch ( pThing->type )
+        {
+            case SITH_THING_ACTOR:
+            case SITH_THING_PLAYER:
+            {
+                const SithActorInfo* pActorInfo = &pThing->thingInfo.actorInfo;
+                pActor->flags     = pActorInfo->flags;
+                pActor->health    = pActorInfo->health;
+                pActor->maxHealth = pActorInfo->maxHealth;
+                if ( pActorInfo->pWeaponTemplate )
+                {
+                    sithThing_CopyCndName(pActor->aWeaponTemplateName, pActorInfo->pWeaponTemplate->aName);
+                }
+                pActor->maxThrust       = pActorInfo->maxThrust;
+                pActor->maxRotVelocity  = pActorInfo->maxRotVelocity;
+                pActor->maxHeadVelocity = pActorInfo->maxHeadVelocity;
+                pActor->maxHeadYaw      = pActorInfo->maxHeadYaw;
+                pActor->jumpSpeed       = pActorInfo->jumpSpeed;
+                pActor->eyeOffset       = pActorInfo->eyeOffset;
+                pActor->minHeadPitch    = pActorInfo->minHeadPitch;
+                pActor->maxHeadPitch    = pActorInfo->maxHeadPitch;
+                pActor->fireOffset      = pActorInfo->fireOffset;
+                pActor->lightOffset     = pActorInfo->lightOffset;
+                pActor->headLightColor  = pActorInfo->headLightIntensity;
+                memcpy(&pActor->voiceColor, &pActorInfo->voiceInfo, sizeof(pActor->voiceColor));
+                if ( pActorInfo->pExplodeTemplate )
+                {
+                    sithThing_CopyCndName(pActor->aExplodeTemplateName, pActorInfo->pExplodeTemplate->aName);
+                }
+                pActor++;
+            } break;
+
+            case SITH_THING_WEAPON:
+            {
+                const SithWeaponInfo* pWeaponInfo = &pThing->thingInfo.weaponInfo;
+                pWeapon->flags = pWeaponInfo->flags;
+                if ( pWeaponInfo->pExplosionTemplate
+                    && (!pTemplate || pWeaponInfo->pExplosionTemplate != pTemplate->thingInfo.weaponInfo.pExplosionTemplate) )
+                {
+                    sithThing_CopyCndName(pWeapon->aExplosionTemplateName, pWeaponInfo->pExplosionTemplate->aName);
+                }
+                pWeapon->damage     = pWeaponInfo->damage;
+                pWeapon->minDamage  = pWeaponInfo->minDamage;
+                pWeapon->rate       = pWeaponInfo->rate;
+                pWeapon->damageType = pWeaponInfo->damageType;
+                pWeapon->range      = pWeaponInfo->range;
+                pWeapon->force      = pWeaponInfo->force;
+                pWeapon++;
+            } break;
+
+            case SITH_THING_ITEM:
+                pItem->flags              = pThing->thingInfo.itemInfo.flags;
+                pItem->secRespawnInterval = pThing->thingInfo.itemInfo.secRespawnInterval;
+                pItem++;
+                break;
+
+            case SITH_THING_EXPLOSION:
+            {
+                const SithExplosionInfo* pExplInfo = &pThing->thingInfo.explosionInfo;
+                pExplosion->flags          = pExplInfo->flags;
+                pExplosion->damage         = pExplInfo->damage;
+                pExplosion->damageType     = pExplInfo->damageType;
+                pExplosion->range          = pExplInfo->range;
+                pExplosion->force          = pExplInfo->force;
+                pExplosion->msecBlastTime  = pExplInfo->msecBlastTime;
+                pExplosion->msecBabyTime   = pExplInfo->msecBabyTime;
+                pExplosion->msecFadeTime   = pExplInfo->msecFadeTime;
+                pExplosion->msecExpandTime = pExplInfo->msecExpandTime;
+                pExplosion->maxLight       = pExplInfo->maxLight;
+                pExplosion->spriteStartPos = pExplInfo->spriteStart;
+                pExplosion->spriteEndPos   = pExplInfo->spriteEnd;
+                sithThing_CopyCndName(pExplosion->aSpriteTemplateName, pExplInfo->aSpriteTemplateName);
+                for ( size_t j = 0; j < STD_ARRAYLEN(pExplInfo->apDebries); j++ )
+                {
+                    if ( pExplInfo->apDebries[j] )
+                    {
+                        sithThing_CopyCndName(pExplosion->aDebrisTemplateNames[j], pExplInfo->apDebries[j]->aName);
+                    }
+                }
+                pExplosion++;
+            } break;
+
+            case SITH_THING_PARTICLE:
+            {
+                const SithParticleInfo* pPartInfo = &pThing->thingInfo.particleInfo;
+                pParticle->flags        = pPartInfo->flags;
+                pParticle->growthSpeed  = pPartInfo->growthSpeed;
+                pParticle->minRadius    = pPartInfo->minRadius;
+                pParticle->maxRadius    = pPartInfo->maxRadius;
+                pParticle->size         = pPartInfo->size;
+                pParticle->timeoutRate  = pPartInfo->timeoutRate;
+                pParticle->numParticles = pPartInfo->numParticles;
+                pParticle->pitchRange   = pPartInfo->pitchRange;
+                pParticle->yawRange     = pPartInfo->yawRange;
+                if ( pPartInfo->pMaterial )
+                {
+                    sithThing_CopyCndName(pParticle->aMaterialName, pPartInfo->pMaterial->aName);
+                }
+                pParticle++;
+            } break;
+
+            case SITH_THING_HINT:
+                *pHintValue++ = pThing->userval;
+                break;
+
+            default:
+                break;
+        }
+
+        // AI
+        if ( pThing->controlType == SITH_CT_AI )
+        {
+            const SithAIControlInfo* pAI = &pThing->controlInfo.aiControl;
+            if ( pAI->pClass )
+            {
+                sithThing_CopyCndName(pAIControl->aFileName, pAI->pClass->aName);
+            }
+
+            if ( pAI->pLocal && pAI->pLocal->numFrames )
+            {
+                pAIControl->numFrames = pAI->pLocal->numFrames;
+                memcpy(pAIFrames, pAI->pLocal->aFrames, sizeof(rdVector3) * pAI->pLocal->numFrames);
+                pAIFrames += pAI->pLocal->numFrames;
+            }
+            pAIControl++;
+        }
+    }
+
+    #define SITHTHING_WRITE_SECTION(ptr, count) (sith_g_pHS->pFileWrite(fh, ptr, sizeof(*ptr) * (count)) == sizeof(*ptr) * (count))
+    if ( SITHTHING_WRITE_SECTION(aInfos, numThings) && SITHTHING_WRITE_SECTION(&counts, 1)
+        && SITHTHING_WRITE_SECTION(aPhysics, counts.numPhysics) && SITHTHING_WRITE_SECTION(aPathFrameCounts, counts.numPathFrameCounts)
+        && SITHTHING_WRITE_SECTION(aPathFrames, counts.numPathFrames) && SITHTHING_WRITE_SECTION(aActors, counts.numActors)
+        && SITHTHING_WRITE_SECTION(aWeapons, counts.numWeapons) && SITHTHING_WRITE_SECTION(aExplosions, counts.numExplosions)
+        && SITHTHING_WRITE_SECTION(aItems, counts.numItems) && SITHTHING_WRITE_SECTION(aHintValues, counts.numHintValues)
+        && SITHTHING_WRITE_SECTION(aParticles, counts.numParticles) && SITHTHING_WRITE_SECTION(aAIControls, counts.numAIControls)
+        && SITHTHING_WRITE_SECTION(aAIFrames, counts.numAIFrames) )
+    {
+        result = 0;
+    }
+    #undef SITHTHING_WRITE_SECTION
+
+done:
+    // freed in the original's order
+    if ( aAIFrames ) STDFREE(aAIFrames);
+    if ( aAIControls ) STDFREE(aAIControls);
+    if ( aParticles ) STDFREE(aParticles);
+    if ( aHintValues ) STDFREE(aHintValues);
+    if ( aItems ) STDFREE(aItems);
+    if ( aExplosions ) STDFREE(aExplosions);
+    if ( aWeapons ) STDFREE(aWeapons);
+    if ( aActors ) STDFREE(aActors);
+    if ( aPhysics ) STDFREE(aPhysics);
+    if ( aPathFrames ) STDFREE(aPathFrames);
+    if ( aPathFrameCounts ) STDFREE(aPathFrameCounts);
+    if ( aInfos ) STDFREE(aInfos);
+    return result;
+}
+
+// Reads the things (or templates) of a CND file: numThings CndThingInfo records, the section counts, then one array per
+// section (physics, path frame counts, path frames, actors, weapons, explosions, items, hint values, particles, AI
+// controls, AI frames); each thing takes the next entries of the sections that apply to it. The buffers are allocated
+// and freed in the original's order (the heap layout after level load stays the same). Returns 0 on success.
 int J3DAPI sithThing_ReadThingsListBinary(tFileHandle fh, SithWorld* pWorld, size_t numThings, SithThing* aThings, void (J3DAPI* pfInitThingFunc)(SithThing*))
 {
-    return J3D_TRAMPOLINE_CALL(sithThing_ReadThingsListBinary, fh, pWorld, numThings, aThings, pfInitThingFunc);
+
+    int result = 1;
+    CndThingSectionCounts counts;
+    CndThingInfo* aInfos           = NULL;
+    CndPhysicsInfo* aPhysics       = NULL;
+    uint32_t* aPathFrameCounts     = NULL;
+    SithPathFrame* aPathFrames     = NULL;
+    CndActorInfo* aActors          = NULL;
+    CndWeaponInfo* aWeapons        = NULL;
+    CndExplosionInfo* aExplosions  = NULL;
+    CndItemInfo* aItems            = NULL;
+    float* aHintValues             = NULL;
+    CndParticleInfo* aParticles    = NULL;
+    CndAIControlInfo* aAIControls  = NULL;
+    rdVector3* aAIFrames           = NULL;
+
+    size_t sizeInfos = sizeof(CndThingInfo) * numThings;
+    aInfos = (CndThingInfo*)STDMALLOC(sizeInfos);
+    if ( !aInfos || sith_g_pHS->pFileRead(fh, aInfos, sizeInfos) != sizeInfos
+        || sith_g_pHS->pFileRead(fh, &counts, sizeof(counts)) != sizeof(counts) )
+    {
+        goto done;
+    }
+
+    #define SITHTHING_ALLOC_SECTION(ptr, count, bZero) \
+        ptr = STDMALLOC(sizeof(*ptr) * (count)); \
+        if ( !ptr ) goto done; \
+        if ( bZero ) memset(ptr, 0, sizeof(*ptr) * (count))
+
+    SITHTHING_ALLOC_SECTION(aPhysics, counts.numPhysics, true);
+    SITHTHING_ALLOC_SECTION(aPathFrameCounts, counts.numPathFrameCounts, false);
+    SITHTHING_ALLOC_SECTION(aPathFrames, counts.numPathFrames, false);
+    SITHTHING_ALLOC_SECTION(aActors, counts.numActors, false);
+    SITHTHING_ALLOC_SECTION(aWeapons, counts.numWeapons, false);
+    SITHTHING_ALLOC_SECTION(aExplosions, counts.numExplosions, false);
+    SITHTHING_ALLOC_SECTION(aItems, counts.numItems, true);
+    SITHTHING_ALLOC_SECTION(aHintValues, counts.numHintValues, false);
+    SITHTHING_ALLOC_SECTION(aParticles, counts.numParticles, true);
+    SITHTHING_ALLOC_SECTION(aAIControls, counts.numAIControls, true);
+    SITHTHING_ALLOC_SECTION(aAIFrames, counts.numAIFrames, true);
+    #undef SITHTHING_ALLOC_SECTION
+
+    #define SITHTHING_READ_SECTION(ptr, count) (sith_g_pHS->pFileRead(fh, ptr, sizeof(*ptr) * (count)) == sizeof(*ptr) * (count))
+    if ( !SITHTHING_READ_SECTION(aPhysics, counts.numPhysics) || !SITHTHING_READ_SECTION(aPathFrameCounts, counts.numPathFrameCounts)
+        || !SITHTHING_READ_SECTION(aPathFrames, counts.numPathFrames) || !SITHTHING_READ_SECTION(aActors, counts.numActors)
+        || !SITHTHING_READ_SECTION(aWeapons, counts.numWeapons) || !SITHTHING_READ_SECTION(aExplosions, counts.numExplosions)
+        || !SITHTHING_READ_SECTION(aItems, counts.numItems) || !SITHTHING_READ_SECTION(aHintValues, counts.numHintValues)
+        || !SITHTHING_READ_SECTION(aParticles, counts.numParticles) || !SITHTHING_READ_SECTION(aAIControls, counts.numAIControls)
+        || !SITHTHING_READ_SECTION(aAIFrames, counts.numAIFrames) )
+    {
+        goto done;
+    }
+    #undef SITHTHING_READ_SECTION
+
+    const CndPhysicsInfo* pPhysics       = aPhysics;
+    const uint32_t* pPathFrameCount      = aPathFrameCounts;
+    const SithPathFrame* pPathFrames     = aPathFrames;
+    const CndActorInfo* pActor           = aActors;
+    const CndWeaponInfo* pWeapon         = aWeapons;
+    const CndExplosionInfo* pExplosion   = aExplosions;
+    const CndItemInfo* pItem             = aItems;
+    const float* pHintValue              = aHintValues;
+    const CndParticleInfo* pParticle     = aParticles;
+    const CndAIControlInfo* pAIControl   = aAIControls;
+    const rdVector3* pAIFrames           = aAIFrames;
+
+    for ( size_t i = 0; i < numThings; i++ )
+    {
+        const CndThingInfo* pInfo = &aInfos[i];
+        SithThing* pThing         = &aThings[i];
+
+        SithThing* pBaseTemplate = sithTemplate_GetTemplate(pInfo->aBaseTemplateName);
+        if ( pBaseTemplate )
+        {
+            sithThing_SetThingBasedOn(pThing, pBaseTemplate);
+        }
+
+        rdMatrix34 orient;
+        rdMatrix_BuildRotate34(&orient, &pInfo->pyr);
+        sithThing_SetPositionAndOrient(pThing, &pInfo->pos, &orient);
+
+        SithSector* pSector = sithSector_GetSectorEx(pWorld, pInfo->sectorNum);
+        if ( pSector )
+        {
+            sithThing_EnterSector(pThing, pSector, /*bNoWaterSplash=*/1, /*bNoNotify=*/1);
+        }
+
+        STD_STRCPY(pThing->aName, pInfo->aName);
+
+        pThing->flags            = pInfo->flags & ~SITH_TF_SEEN;
+        pThing->type             = pInfo->type;
+        pThing->moveType         = pInfo->moveType;
+        pThing->controlType      = pInfo->controlType;
+        pThing->light.color      = pInfo->light.color;
+        pThing->light.emitColor  = pInfo->light.emitColor;
+        pThing->light.maxRadius  = pInfo->light.color.alpha; // the CND light's alpha is its radius
+        pThing->light.minRadius  = pInfo->light.color.alpha;
+        pThing->msecLifeLeft     = pInfo->msecLifeLeft;
+        pThing->collide          = pInfo->collide;
+        pThing->perfLevel        = pInfo->perfLevel;
+
+        if ( !pfInitThingFunc )
+        {
+            sithThing_Initialize(pWorld, pThing, /*bFindFloor=*/1);
+        }
+
+        // render data
+        if ( pInfo->aRdFilename[0] )
+        {
+            switch ( pInfo->rdThingType )
+            {
+                case RD_THING_MODEL3:
+                {
+                    rdModel3* pModel = sithModel_Load(pInfo->aRdFilename, /*bSkipDefault=*/0);
+                    if ( !pModel )
+                    {
+                        SITHLOG_ERROR("Could not load model '%s'.\n", pInfo->aRdFilename);
+                    }
+                    else
+                    {
+                        rdThing_FreeEntry(&pThing->renderData);
+                        rdThing_SetModel3(&pThing->renderData, pModel);
+                    }
+                } break;
+
+                case RD_THING_SPRITE3:
+                {
+                    rdSprite3* pSprite = sithSprite_Load(pWorld, pInfo->aRdFilename);
+                    if ( !pSprite )
+                    {
+                        SITHLOG_ERROR("Could not create sprite %s.\n", pInfo->aRdFilename);
+                    }
+                    else
+                    {
+                        rdThing_FreeEntry(&pThing->renderData);
+                        rdThing_SetSprite3(&pThing->renderData, pSprite);
+                    }
+                } break;
+
+                case RD_THING_PARTICLE:
+                {
+                    rdParticle* pParticleCloud = sithParticle_Load(pWorld, pInfo->aRdFilename);
+                    if ( !pParticleCloud )
+                    {
+                        SITHLOG_ERROR("Could not load particle '%s'.\n", pInfo->aRdFilename);
+                    }
+                    else
+                    {
+                        rdThing_FreeEntry(&pThing->renderData);
+                        rdThing_SetParticleCloud(&pThing->renderData, pParticleCloud);
+                    }
+                } break;
+
+                default:
+                    break;
+            }
+        }
+
+        if ( pInfo->aPupFilename[0] )
+        {
+            pThing->pPuppetClass = sithPuppet_LoadPuppetClass(pInfo->aPupFilename);
+            if ( !pThing->pPuppetClass && !pThing->renderData.pPuppet )
+            {
+                goto done;
+            }
+        }
+
+        pThing->pSoundClass          = sithSoundClass_Load(pWorld, pInfo->aSndFilename);
+        pThing->pCreateThingTemplate = sithTemplate_GetTemplate(pInfo->aCreateThingTemplateName);
+
+        if ( pInfo->aCogFilename[0] )
+        {
+            pThing->pCog = sithCog_Load(pWorld, pInfo->aCogFilename);
+            if ( pThing->pCog )
+            {
+                pThing->pCog->flags |= SITHCOG_CLASS | SITHCOG_LOCAL;
+                pThing->flags       |= SITH_TF_COGLINKED;
+            }
+        }
+
+        // movement
+        if ( pThing->moveType == SITH_MT_PHYSICS )
+        {
+            SithPhysicsInfo* pPhys      = &pThing->moveInfo.physics;
+            pPhys->flags                = pPhysics->flags;
+            pPhys->mass                 = pPhysics->mass;
+            pPhys->height               = pPhysics->height;
+            pPhys->airDrag              = pPhysics->airDrag;
+            pPhys->surfDrag             = pPhysics->surfaceDrag;
+            pPhys->staticDrag           = pPhysics->staticDrag;
+            pPhys->angularVelocity      = pPhysics->angularVelocity;
+            pPhys->velocity             = pPhysics->velocity;
+            pPhys->maxRotationVelocity  = pPhysics->maxRotationVelocity;
+            pPhys->maxVelocity          = pPhysics->maxVelocity;
+            pPhys->orientSpeed          = pPhysics->orientSpeed;
+            pPhys->buoyancy             = pPhysics->buoyancy;
+            pPhysics++;
+        }
+        else if ( pThing->moveType == SITH_MT_PATH )
+        {
+            size_t numFrames = *pPathFrameCount;
+            if ( numFrames )
+            {
+                SithPathMoveInfo* pPath = &pThing->moveInfo.pathMovement;
+                pPath->aFrames = (SithPathFrame*)STDMALLOC(sizeof(SithPathFrame) * numFrames);
+                if ( !pPath->aFrames )
+                {
+                    goto done;
+                }
+                pPath->sizeFrames = numFrames;
+                pPath->numFrames  = numFrames;
+                memcpy(pPath->aFrames, pPathFrames, sizeof(SithPathFrame) * numFrames);
+                pPathFrames += numFrames;
+            }
+            pPathFrameCount++;
+        }
+
+        // type-specific info
+        switch ( pThing->type )
+        {
+            case SITH_THING_ACTOR:
+            case SITH_THING_PLAYER:
+            {
+                SithActorInfo* pActorInfo = &pThing->thingInfo.actorInfo;
+                pActorInfo->flags     = pActor->flags;
+                pActorInfo->health    = pActor->health;
+                pActorInfo->maxHealth = pActor->maxHealth;
+                if ( pActor->aWeaponTemplateName[0] )
+                {
+                    pActorInfo->pWeaponTemplate = sithTemplate_GetTemplate(pActor->aWeaponTemplateName);
+                }
+                pActorInfo->maxThrust          = pActor->maxThrust;
+                pActorInfo->maxRotVelocity     = pActor->maxRotVelocity;
+                pActorInfo->maxHeadVelocity    = pActor->maxHeadVelocity;
+                pActorInfo->maxHeadYaw         = pActor->maxHeadYaw;
+                pActorInfo->jumpSpeed          = pActor->jumpSpeed;
+                pActorInfo->eyeOffset          = pActor->eyeOffset;
+                pActorInfo->minHeadPitch       = pActor->minHeadPitch;
+                pActorInfo->maxHeadPitch       = pActor->maxHeadPitch;
+                pActorInfo->fireOffset         = pActor->fireOffset;
+                pActorInfo->lightOffset        = pActor->lightOffset;
+                pActorInfo->headLightIntensity = pActor->headLightColor;
+                static_assert(sizeof(pActorInfo->voiceInfo) >= sizeof(pActor->voiceColor), "voice info");
+                memcpy(&pActorInfo->voiceInfo, &pActor->voiceColor, sizeof(pActor->voiceColor));
+                if ( pActor->aExplodeTemplateName[0] )
+                {
+                    pActorInfo->pExplodeTemplate = sithTemplate_GetTemplate(pActor->aExplodeTemplateName);
+                }
+                pActor++;
+            } break;
+
+            case SITH_THING_WEAPON:
+            {
+                SithWeaponInfo* pWeaponInfo = &pThing->thingInfo.weaponInfo;
+                pWeaponInfo->flags = pWeapon->flags;
+                if ( pWeapon->aExplosionTemplateName[0] )
+                {
+                    pWeaponInfo->pExplosionTemplate = sithTemplate_GetTemplate(pWeapon->aExplosionTemplateName);
+                }
+                pWeaponInfo->damage     = pWeapon->damage;
+                pWeaponInfo->minDamage  = pWeapon->minDamage;
+                pWeaponInfo->rate       = pWeapon->rate;
+                pWeaponInfo->damageType = pWeapon->damageType;
+                pWeaponInfo->range      = pWeapon->range;
+                pWeaponInfo->force      = pWeapon->force;
+                pWeapon++;
+            } break;
+
+            case SITH_THING_ITEM:
+                pThing->thingInfo.itemInfo.flags              = pItem->flags;
+                pThing->thingInfo.itemInfo.secRespawnInterval = pItem->secRespawnInterval;
+                pItem++;
+                break;
+
+            case SITH_THING_EXPLOSION:
+            {
+                SithExplosionInfo* pExplInfo = &pThing->thingInfo.explosionInfo;
+                pExplInfo->flags          = pExplosion->flags;
+                pExplInfo->damage         = pExplosion->damage;
+                pExplInfo->damageType     = pExplosion->damageType;
+                pExplInfo->range          = pExplosion->range;
+                pExplInfo->force          = pExplosion->force;
+                pExplInfo->msecBlastTime  = pExplosion->msecBlastTime;
+                pExplInfo->msecBabyTime   = pExplosion->msecBabyTime;
+                pExplInfo->msecFadeTime   = pExplosion->msecFadeTime;
+                pExplInfo->msecExpandTime = pExplosion->msecExpandTime;
+                pExplInfo->maxLight       = pExplosion->maxLight;
+                pExplInfo->spriteStart    = pExplosion->spriteStartPos;
+                pExplInfo->spriteEnd      = pExplosion->spriteEndPos;
+                if ( pExplosion->aSpriteTemplateName[0] )
+                {
+                    STD_STRCPY(pExplInfo->aSpriteTemplateName, pExplosion->aSpriteTemplateName);
+                }
+                for ( size_t j = 0; j < STD_ARRAYLEN(pExplInfo->apDebries); j++ )
+                {
+                    if ( pExplosion->aDebrisTemplateNames[j][0] )
+                    {
+                        pExplInfo->apDebries[j] = sithTemplate_GetTemplate(pExplosion->aDebrisTemplateNames[j]);
+                    }
+                }
+                pExplosion++;
+            } break;
+
+            case SITH_THING_PARTICLE:
+            {
+                SithParticleInfo* pPartInfo = &pThing->thingInfo.particleInfo;
+                pPartInfo->flags        = pParticle->flags;
+                pPartInfo->growthSpeed  = pParticle->growthSpeed;
+                pPartInfo->minRadius    = pParticle->minRadius;
+                pPartInfo->maxRadius    = pParticle->maxRadius;
+                pPartInfo->size         = pParticle->size;
+                pPartInfo->timeoutRate  = pParticle->timeoutRate;
+                pPartInfo->numParticles = pParticle->numParticles;
+                pPartInfo->pitchRange   = pParticle->pitchRange;
+                pPartInfo->yawRange     = pParticle->yawRange;
+                if ( pParticle->aMaterialName[0] )
+                {
+                    pPartInfo->pMaterial = sithMaterial_Load(pParticle->aMaterialName);
+                }
+                pParticle++;
+            } break;
+
+            case SITH_THING_HINT:
+                pThing->userval = *pHintValue++;
+                break;
+
+            default:
+                break;
+        }
+
+        // AI
+        if ( pThing->controlType == SITH_CT_AI )
+        {
+            SithAIControlInfo* pAI = &pThing->controlInfo.aiControl;
+            if ( pAIControl->aFileName[0] )
+            {
+                pAI->pClass = sithAIClass_Load(pWorld, pAIControl->aFileName);
+                if ( pAI->pLocal && pAI->pClass )
+                {
+                    pAI->pLocal->pClass       = pAI->pClass;
+                    pAI->pLocal->numInstincts = pAI->pClass->numInstincts;
+                }
+            }
+
+            if ( pAIControl->numFrames )
+            {
+                if ( sithAI_AllocAIFrames(pAI->pLocal, pAIControl->numFrames) )
+                {
+                    goto done;
+                }
+                memcpy(pAI->pLocal->aFrames, pAIFrames, sizeof(rdVector3) * pAIControl->numFrames);
+                pAI->pLocal->numFrames = pAIControl->numFrames;
+                pAIFrames += pAIControl->numFrames;
+            }
+            pAIControl++;
+        }
+
+        if ( pfInitThingFunc )
+        {
+            pfInitThingFunc(pThing);
+        }
+    }
+
+    result = 0;
+
+done:
+    // freed in the original's order
+    if ( aAIFrames ) STDFREE(aAIFrames);
+    if ( aAIControls ) STDFREE(aAIControls);
+    if ( aParticles ) STDFREE(aParticles);
+    if ( aHintValues ) STDFREE(aHintValues);
+    if ( aItems ) STDFREE(aItems);
+    if ( aExplosions ) STDFREE(aExplosions);
+    if ( aWeapons ) STDFREE(aWeapons);
+    if ( aActors ) STDFREE(aActors);
+    if ( aPhysics ) STDFREE(aPhysics);
+    if ( aPathFrames ) STDFREE(aPathFrames);
+    if ( aPathFrameCounts ) STDFREE(aPathFrameCounts);
+    if ( aInfos ) STDFREE(aInfos);
+    return result;
 }
 
 void J3DAPI sithThing_UpdateQuetzUserBlock(SithThing* pThing)
 {
-    J3D_TRAMPOLINE_CALL(sithThing_UpdateQuetzUserBlock, pThing);
+
+    if ( !sithThing_CreateQuetzUserBlock(pThing) )
+    {
+        return;
+    }
+
+    // The tail follows by the distance the head moved forward this frame.
+    // Note: The dot product is written out to keep the original's summation order.
+    rdVector3 moveDir;
+    rdVector_Normalize3(&moveDir, &pThing->moveInfo.physics.velocity);
+    float fwdDot  = (pThing->orient.lvec.y * moveDir.y + pThing->orient.lvec.z * moveDir.z) + pThing->orient.lvec.x * moveDir.x;
+    float advance = pThing->distanceMoved * STDMATH_CLAMP(fwdDot, 0.0f, 1.0f);
+
+    sithThing_prevQuetzAttachInfo = NULL;
+    sithThing_curQuetzAttachInfo  = pThing->userblock.pQuetz->aAttachInfos;
+
+    size_t attachNum     = 0;
+    int bBendDirChanged  = 0;
+    int bSameBendDir     = 0;
+    float firstBendAngle = 0.0f;
+    float sumBendAngle   = 0.0f;
+
+    SithThing* pPrevThing = pThing;
+    for ( SithThing* pSegment = pThing->pAttachedThing; pSegment; pSegment = pSegment->pNextAttachedThing )
+    {
+        if ( (pSegment->attach.flags & SITH_ATTACH_TAIL) == 0 )
+        {
+            continue;
+        }
+
+        SithQuetzAttachInfo* pInfo = sithThing_curQuetzAttachInfo;
+        pInfo->unknown10 = pInfo->unknown10 - advance;
+        float blend = STDMATH_CLAMP(pInfo->unknown10 / pInfo->unknown9, 0.0f, 1.0f);
+
+        // Segment orientation: blend between the previous and the next segment direction
+        rdVector3 offset = { 0.0f, pInfo->unknown0, 0.0f };
+        rdVector3 prevOffset;
+        rdMatrix_TransformVector34(&prevOffset, &offset, &pPrevThing->orient);
+        prevOffset.z = pInfo->unknown1 + prevOffset.z;
+
+        float prevWeight = 1.0f - blend;
+        rdVector3 lookDir;
+        lookDir.x = pInfo->vecDirection.x * prevWeight + pInfo->vecDirectionNextAttach.x * blend;
+        lookDir.y = pInfo->vecDirection.y * prevWeight + pInfo->vecDirectionNextAttach.y * blend;
+        lookDir.z = pInfo->vecDirection.z * prevWeight + pInfo->vecDirectionNextAttach.z * blend;
+        rdVector_Normalize3Acc(&lookDir);
+
+        // Note: BuildFromLook34 doesn't set the translation; the original copies its uninitialized local matrix into
+        //       the segment's orient, here the translation is zeroed.
+        rdMatrix34 orient;
+        rdVector_Zero3(&orient.dvec);
+        rdMatrix_BuildFromLook34(&orient, &lookDir);
+        rdMatrix_PreRotate34(&orient, &pInfo->vecUnknown11);
+        rdMatrix_Copy34(&pSegment->orient, &orient);
+
+        // Segment position: offset from the previous segment
+        offset.y = pInfo->unknown2;
+        rdVector3 segOffset;
+        rdMatrix_TransformVector34(&segOffset, &offset, &pSegment->orient);
+
+        rdVector3 newPos;
+        newPos.x = (segOffset.x + prevOffset.x) + pPrevThing->pos.x;
+        newPos.y = (segOffset.y + prevOffset.y) + pPrevThing->pos.y;
+        newPos.z = (segOffset.z + prevOffset.z) + pPrevThing->pos.z;
+
+        rdVector3 moveDelta;
+        rdVector_Sub3(&moveDelta, &newPos, &pSegment->pos);
+        rdVector_Scale3(&pSegment->moveInfo.physics.velocity, &moveDelta, sithTime_g_fps);
+        pSegment->moveInfo.physics.deltaVelocity = moveDelta;
+        pSegment->moveDir = moveDelta;
+
+        float moveDist = rdVector_Normalize3Acc(&moveDelta);
+        if ( moveDist != 0.0f )
+        {
+            // Move with the segment lifted along its up axis
+            rdVector3 liftedPos;
+            rdVector_ScaleAdd3(&liftedPos, &pSegment->orient.uvec, pInfo->unknown14, &pSegment->pos);
+            SithSector* pSector = sithCollision_FindSectorInRadius(pSegment->pInSector, &pSegment->pos, &liftedPos, 0.0f);
+            pSegment->pos = liftedPos;
+            sithThing_SetSector(pSegment, pSector, /*bNotify=*/1);
+
+            sithCollision_MoveThing(pSegment, &moveDelta, moveDist, 0x4);
+
+            pInfo = sithThing_curQuetzAttachInfo; // The original reads the global after the move
+            rdVector_ScaleAdd3(&liftedPos, &pSegment->orient.uvec, -pInfo->unknown14, &pSegment->pos);
+            pSector = sithCollision_FindSectorInRadius(pSegment->pInSector, &pSegment->pos, &liftedPos, 0.0f);
+            pSegment->pos = liftedPos;
+            sithThing_SetSector(pSegment, pSector, /*bNotify=*/1);
+            pInfo = sithThing_curQuetzAttachInfo;
+        }
+
+        // Restart the blend from the current directions
+        if ( blend <= 0.3f || (!sithThing_prevQuetzAttachInfo && pThing->userblock.pQuetz->unknown391) || bBendDirChanged )
+        {
+            pThing->userblock.pQuetz->unknown391 = 0;
+
+            float prevAngle = rdMath_DeltaAngleNormalized(&pInfo->vecDirection, &pInfo->vecDirectionNextAttach, &rdroid_g_zVector3);
+
+            pInfo->vecDirection   = pPrevThing->orient.lvec;
+            pInfo->vecDirection.z = 0.0f;
+            rdVector_Normalize3Acc(&pInfo->vecDirection);
+
+            pInfo->vecDirectionNextAttach   = pSegment->orient.lvec;
+            pInfo->vecDirectionNextAttach.z = 0.0f;
+            rdVector_Normalize3Acc(&pInfo->vecDirectionNextAttach);
+
+            float newAngle  = rdMath_DeltaAngleNormalized(&pInfo->vecDirection, &pInfo->vecDirectionNextAttach, &rdroid_g_zVector3);
+            bBendDirChanged = (prevAngle < 0.0f ? -1 : 1) != (newAngle < 0.0f ? -1 : 1);
+
+            float sinAngle, cosAngle;
+            if ( sithThing_prevQuetzAttachInfo )
+            {
+                stdMath_SinCos(sithThing_prevQuetzAttachInfo->vecUnknown11.pitch, &sinAngle, &cosAngle);
+                pInfo->unknown9 = cosAngle * fabsf(pInfo->unknown2);
+            }
+            else
+            {
+                pInfo->unknown9 = fabsf(pInfo->unknown0);
+            }
+
+            stdMath_SinCos(pInfo->vecUnknown11.pitch, &sinAngle, &cosAngle);
+            pInfo->unknown9 = cosAngle * fabsf(pInfo->unknown2) + pInfo->unknown9;
+
+            if ( sithThing_dword_5612B8 )
+            {
+                pInfo->unknown9 = ((float)attachNum * 0.07f + 1.0f) * pInfo->unknown9;
+            }
+
+            pInfo->unknown10 = pInfo->unknown9;
+        }
+
+        // Track if all segments bend to the same side
+        rdVector3 prevDirXY = { pPrevThing->orient.lvec.x, pPrevThing->orient.lvec.y, 0.0f };
+        rdVector_Normalize3Acc(&prevDirXY);
+        rdVector3 segDirXY = { pSegment->orient.lvec.x, pSegment->orient.lvec.y, 0.0f };
+        rdVector_Normalize3Acc(&segDirXY);
+
+        float bendAngle = rdMath_DeltaAngleNormalized(&prevDirXY, &segDirXY, &rdroid_g_zVector3);
+        if ( !sithThing_prevQuetzAttachInfo )
+        {
+            firstBendAngle = bendAngle;
+            sumBendAngle   = bendAngle;
+            bSameBendDir   = 1;
+        }
+        else
+        {
+            sumBendAngle = sumBendAngle + bendAngle;
+            if ( (firstBendAngle < 0.0f ? -1 : 1) != (bendAngle < 0.0f ? -1 : 1) )
+            {
+                bSameBendDir = 0;
+            }
+        }
+
+        sithThing_prevQuetzAttachInfo = sithThing_curQuetzAttachInfo;
+        sithThing_curQuetzAttachInfo++;
+        attachNum++;
+        pPrevThing = pSegment;
+    }
+
+    // Tail coiled to one side
+    sithThing_dword_5612B8 = 0;
+    if ( bSameBendDir )
+    {
+        float avgBendAngle = fabsf(sumBendAngle / (float)pThing->userblock.pQuetz->numAttachInfos);
+        if ( avgBendAngle > 25.0f )
+        {
+            sithThing_dword_5612B8 = 1;
+        }
+    }
 }
 
 int sithThing_Startup(void)
@@ -3195,7 +4133,7 @@ int J3DAPI sithThing_ParseThingArg(const StdConffileArg* pArg, SithWorld* pWorld
     }
 
 syntax_error:
-    SITHLOG_ERROR("Bad argument %s=%s, line %d in %s.\n", pArg->argName, pArg->argValue, stdConffile_GetFilename(), stdConffile_GetLineNumber());
+    SITHLOG_ERROR("Bad argument %s=%s, line %d in %s.\n", pArg->argName, pArg->argValue, stdConffile_GetLineNumber(), stdConffile_GetFilename()); // Fixed: arguments were swapped
     return SITHTHING_PARSEARG_BADSYNTAX;
 }
 
