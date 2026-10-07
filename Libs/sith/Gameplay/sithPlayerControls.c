@@ -1328,12 +1328,12 @@ void J3DAPI sithPlayerControls_ProcessJewelFlyMove(SithThing* pThing, float secD
     // Process turn keys
     if ( sithControl_GetKey(SITHCONTROL_TURNRIGHT, &bPressed) )
     {
-        pPhysics->angularVelocity.yaw = sithPlayerControls_CalculateAngularVelocity(pActor, -1.0f, -1.0f, 1.0f);
+        pPhysics->angularVelocity.yaw = sithPlayerControls_CalculateAngularVelocity(pActor, -1.0f, -1.0f, 1.0f * secDeltaTime);
 
     }
     else if ( sithControl_GetKey(SITHCONTROL_TURNLEFT, &bPressed) )
     {
-        pPhysics->angularVelocity.yaw = sithPlayerControls_CalculateAngularVelocity(pActor, 1.0f, 1.0f, 1.0f);
+        pPhysics->angularVelocity.yaw = sithPlayerControls_CalculateAngularVelocity(pActor, 1.0f, 1.0f, 1.0f * secDeltaTime);
     }
     else
     {
@@ -1451,11 +1451,11 @@ void J3DAPI sithPlayerControls_ProcessFlyMove(SithThing* pThing, float secDeltaT
 
         if ( sithControl_GetKey(SITHCONTROL_TURNRIGHT, NULL) )
         {
-            pPhysics->angularVelocity.yaw = sithPlayerControls_CalculateAngularVelocity(pActor, -1.0f, -1.0f, 1.0f);
+            pPhysics->angularVelocity.yaw = sithPlayerControls_CalculateAngularVelocity(pActor, -1.0f, -1.0f, 1.0f * secDeltaTime);
         }
         else if ( sithControl_GetKey(SITHCONTROL_TURNLEFT, NULL) )
         {
-            pPhysics->angularVelocity.yaw = sithPlayerControls_CalculateAngularVelocity(pActor, 1.0f, 1.0f, 1.0f);
+            pPhysics->angularVelocity.yaw = sithPlayerControls_CalculateAngularVelocity(pActor, 1.0f, 1.0f, 1.0f * secDeltaTime);
         }
         else
         {
@@ -1505,11 +1505,11 @@ void J3DAPI sithPlayerControls_ProcessFlyMove(SithThing* pThing, float secDeltaT
 
             if ( sithControl_GetKey(SITHCONTROL_TURNRIGHT, NULL) )
             {
-                pPhysics->angularVelocity.yaw = sithPlayerControls_CalculateAngularVelocity(pActor, -1.0f, -1.0f, speedMultiplier);
+                pPhysics->angularVelocity.yaw = sithPlayerControls_CalculateAngularVelocity(pActor, -1.0f, -1.0f, speedMultiplier * secDeltaTime);
             }
             else if ( sithControl_GetKey(SITHCONTROL_TURNLEFT, NULL) )
             {
-                pPhysics->angularVelocity.yaw = sithPlayerControls_CalculateAngularVelocity(pActor, 1.0f, 1.0f, speedMultiplier);
+                pPhysics->angularVelocity.yaw = sithPlayerControls_CalculateAngularVelocity(pActor, 1.0f, 1.0f, speedMultiplier * secDeltaTime);
             }
             else
             {
@@ -1882,12 +1882,12 @@ void J3DAPI sithPlayerControls_ProcessFallingMove(SithThing* pThing, float secDe
 
         if ( sithControl_GetKey(SITHCONTROL_TURNRIGHT, NULL) )
         {
-            pPhysics->angularVelocity.yaw = sithPlayerControls_CalculateAngularVelocity(pActor, -1.0f, -1.0f, 1.0f);
+            pPhysics->angularVelocity.yaw = sithPlayerControls_CalculateAngularVelocity(pActor, -1.0f, -1.0f, 1.0f * secDeltaTime);
             pPhysics->angularVelocity.yaw /= 2.0f;
         }
         else if ( sithControl_GetKey(SITHCONTROL_TURNLEFT, NULL) )
         {
-            pPhysics->angularVelocity.yaw = sithPlayerControls_CalculateAngularVelocity(pActor, 1.0f, 1.0f, 1.0f);
+            pPhysics->angularVelocity.yaw = sithPlayerControls_CalculateAngularVelocity(pActor, 1.0f, 1.0f, 1.0f * secDeltaTime);
             pPhysics->angularVelocity.yaw /= 2.0f;
         }
         else
@@ -2253,7 +2253,7 @@ void J3DAPI sithPlayerControls_ProcessSwimMove(SithThing* pThing, float secDelta
 
         if ( (pThing->moveInfo.physics.flags & SITH_PF_ONWATERSURFACE) != 0 )
         {
-            pPhysics->angularVelocity.yaw = sithPlayerControls_CalculateAngularVelocity(pActor, -1.0f, -1.0f, 1.0f);
+            pPhysics->angularVelocity.yaw = sithPlayerControls_CalculateAngularVelocity(pActor, -1.0f, -1.0f, 1.0f * secDeltaTime);
         }
         else
         {
@@ -2267,7 +2267,7 @@ void J3DAPI sithPlayerControls_ProcessSwimMove(SithThing* pThing, float secDelta
     {
         if ( (pThing->moveInfo.physics.flags & SITH_PF_ONWATERSURFACE) != 0 )
         {
-            pPhysics->angularVelocity.yaw = sithPlayerControls_CalculateAngularVelocity(pActor, 1.0f, 1.0f, 1.0f);
+            pPhysics->angularVelocity.yaw = sithPlayerControls_CalculateAngularVelocity(pActor, 1.0f, 1.0f, 1.0f * secDeltaTime);
         }
         else
         {
@@ -4383,7 +4383,7 @@ void J3DAPI sithPlayerControls_ProcessStillMove(SithThing* pThing, float secDelt
             }
             else
             {
-                pPhysics->angularVelocity.yaw = sithPlayerControls_CalculateAngularVelocity(pActor, -1.0f, -1.0f, moveFactor);
+                pPhysics->angularVelocity.yaw = sithPlayerControls_CalculateAngularVelocity(pActor, -1.0f, -1.0f, moveFactor * secDeltaTime);
 
                 // Turn faster if run key held
                 if ( sithControl_GetKey(SITHCONTROL_ACT1, NULL) )
@@ -4419,7 +4419,7 @@ void J3DAPI sithPlayerControls_ProcessStillMove(SithThing* pThing, float secDelt
             }
             else
             {
-                pPhysics->angularVelocity.yaw = sithPlayerControls_CalculateAngularVelocity(pActor, 1.0f, 1.0f, moveFactor);
+                pPhysics->angularVelocity.yaw = sithPlayerControls_CalculateAngularVelocity(pActor, 1.0f, 1.0f, moveFactor * secDeltaTime);
 
                 // Turn faster if run key held
                 if ( sithControl_GetKey(SITHCONTROL_ACT1, NULL) )
@@ -4774,7 +4774,7 @@ void J3DAPI sithPlayerControls_ProcessWalkMove(SithThing* pThing, float secDelta
     {
         if ( !pThing->thingInfo.actorInfo.bForceMovePlay )
         {
-            pPhysics->angularVelocity.yaw = sithPlayerControls_CalculateAngularVelocity(pActor, -1.0f, -1.0f, moveFactor);
+            pPhysics->angularVelocity.yaw = sithPlayerControls_CalculateAngularVelocity(pActor, -1.0f, -1.0f, moveFactor * secDeltaTime);
             bMoving = true;
         }
     }
@@ -4785,7 +4785,7 @@ void J3DAPI sithPlayerControls_ProcessWalkMove(SithThing* pThing, float secDelta
     {
         if ( !pThing->thingInfo.actorInfo.bForceMovePlay )
         {
-            pPhysics->angularVelocity.yaw = sithPlayerControls_CalculateAngularVelocity(pActor, 1.0f, 1.0f, moveFactor);
+            pPhysics->angularVelocity.yaw = sithPlayerControls_CalculateAngularVelocity(pActor, 1.0f, 1.0f, moveFactor * secDeltaTime);
             bMoving = true;
         }
     }
@@ -4964,12 +4964,12 @@ void J3DAPI sithPlayerControls_ProcessRunMove(SithThing* pThing, float secDeltaT
     //
     if ( sithControl_GetKey(SITHCONTROL_TURNRIGHT, NULL) )
     {
-        pPhysics->angularVelocity.yaw = sithPlayerControls_CalculateAngularVelocity(pActor, -1.0f, -1.0f, moveFactor);
+        pPhysics->angularVelocity.yaw = sithPlayerControls_CalculateAngularVelocity(pActor, -1.0f, -1.0f, moveFactor * secDeltaTime);
         bMoving = true;
     }
     else if ( sithControl_GetKey(SITHCONTROL_TURNLEFT, NULL) )
     {
-        pPhysics->angularVelocity.yaw = sithPlayerControls_CalculateAngularVelocity(pActor, 1.0f, 1.0f, moveFactor);
+        pPhysics->angularVelocity.yaw = sithPlayerControls_CalculateAngularVelocity(pActor, 1.0f, 1.0f, moveFactor * secDeltaTime);
         bMoving = true;
     }
     else
@@ -5073,14 +5073,14 @@ void J3DAPI sithPlayerControls_ProcessCrawlMove(SithThing* pThing, float secDelt
     //
     if ( sithControl_GetKey(SITHCONTROL_TURNRIGHT, NULL) )
     {
-        pPhysics->angularVelocity.yaw = sithPlayerControls_CalculateAngularVelocity(pActor, -0.5f, -0.5f, moveFactor);
+        pPhysics->angularVelocity.yaw = sithPlayerControls_CalculateAngularVelocity(pActor, -0.5f, -0.5f, moveFactor * secDeltaTime);
     }
     //
     // Handle crawl turn left key
     //
     else if ( sithControl_GetKey(SITHCONTROL_TURNLEFT, NULL) )
     {
-        pPhysics->angularVelocity.yaw = sithPlayerControls_CalculateAngularVelocity(pActor, 0.5f, 0.5f, moveFactor);
+        pPhysics->angularVelocity.yaw = sithPlayerControls_CalculateAngularVelocity(pActor, 0.5f, 0.5f, moveFactor * secDeltaTime);
     }
     else
     {
