@@ -15,28 +15,35 @@ jobs:
       fail-fast: false
 
       matrix:
-        os: [windows-latest]
-        build_type: [Release]
-        #c_compiler: [gcc, clang, cl]
-        c_compiler: [cl]
-        qol_improvements: [ON, OFF]
         include:
-          - os: windows-latest
+          - os: windows-2025-vs2026
             c_compiler: cl
             cpp_compiler: cl
-          # - os: ubuntu-latest
-          #   c_compiler: gcc
-          #   cpp_compiler: g++
-          # - os: ubuntu-latest
-          #   c_compiler: clang
-          #   cpp_compiler: clang++
-        exclude:
-          - os: windows-latest
-            c_compiler: gcc
-          - os: windows-latest
-            c_compiler: clang
-          # - os: ubuntu-latest
-          #   c_compiler: cl
+            build_type: Release
+            qol_improvements: "ON"
+            runtime_guards: "OFF"
+            profile: release-qol
+          - os: windows-2025-vs2026
+            c_compiler: cl
+            cpp_compiler: cl
+            build_type: Release
+            qol_improvements: "OFF"
+            runtime_guards: "ON"
+            profile: legacy-hardened
+          - os: windows-2025-vs2026
+            c_compiler: cl
+            cpp_compiler: cl
+            build_type: Release
+            qol_improvements: "OFF"
+            runtime_guards: "OFF"
+            profile: legacy
+          - os: windows-2025-vs2026
+            c_compiler: cl
+            cpp_compiler: cl
+            build_type: Debug
+            qol_improvements: "ON"
+            runtime_guards: "OFF"
+            profile: debug-qol
 
     steps:
     - uses: actions/checkout@v4
@@ -47,44 +54,50 @@ jobs:
       run: |
         echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
 
-    - name: Install DirectX 9 SDK (June 2010)
-      run: |
-        choco install directx-sdk -y
-    
     - name: Setup MSVC
       uses: ilammy/msvc-dev-cmd@v1
       with:
         arch: x86
     
-    - name: Get DirectX 9 SDK Paths
-      id: dx9_path
+    # Direct3D 9 headers, import libraries and FXC come from the preinstalled Windows SDK.
+    - name: Configure CMake (${{ matrix.profile }})
       shell: pwsh
       run: |
-        $DX_SDK_ROOT = "C:\Program Files (x86)\Microsoft DirectX 9.0c SDK"
-        $DX_INCLUDE = "$DX_SDK_ROOT\Include"
-        $DX_LIB = "$DX_SDK_ROOT\Lib\x86"
-        
-        Write-Host "DirectX 9 SDK Root: $DX_SDK_ROOT"
-        Write-Host "DirectX Include: $DX_INCLUDE"
-        Write-Host "DirectX Lib: $DX_LIB"
-        
-        echo "DX_INCLUDE=$DX_INCLUDE" >> $env:GITHUB_OUTPUT
-        echo "DX_LIB=$DX_LIB" >> $env:GITHUB_OUTPUT
-
-    - name: Configure CMake (QOL ${{ matrix.qol_improvements }})
-      shell: pwsh
-      run: |
-        cmake -B "${{ steps.strings.outputs.build-output-dir }}" `
+        cmake -G "Visual Studio 18 2026" -B "${{ steps.strings.outputs.build-output-dir }}" `
           -A Win32 `
           -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }} `
           -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} `
           -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} `
-          -DCMAKE_CXX_FLAGS="/I `"${{ steps.dx9_path.outputs.DX_INCLUDE }}`"" `
-          -DCMAKE_EXE_LINKER_FLAGS="/LIBPATH:`"${{ steps.dx9_path.outputs.DX_LIB }}`"" `
           -DJONES3D_USE_DIRECTX9=ON `
           -DJONES3D_QOL_IMPROVEMENTS=${{ matrix.qol_improvements }} `
+          -DJONES3D_RUNTIME_GUARDS=${{ matrix.runtime_guards }} `
+          -DJONES3D_BUILD_TESTS=ON `
+          -DJONES3D_BUILD_SYSTEM_TESTS=OFF `
           -DJONES3D_ENABLE_POST_BUILD_COPY=OFF `
           -S "${{ github.workspace }}"
 
     - name: Build
       run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
+
+    - name: Record test build revision
+      shell: pwsh
+      run: |
+        $sourceSha = git rev-parse HEAD
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        @{
+          source_sha = $sourceSha.Trim()
+          source_dir = $env:GITHUB_WORKSPACE
+          build_dir = "${{ steps.strings.outputs.build-output-dir }}"
+          profile = "${{ matrix.profile }}"
+          configuration = "${{ matrix.build_type }}"
+        } | ConvertTo-Json | Set-Content -Encoding utf8 `
+          "${{ steps.strings.outputs.build-output-dir }}/ci-test-build.json"
+
+    - name: Upload test build
+      uses: actions/upload-artifact@v4
+      with:
+        name: dx9-${{ matrix.os }}-${{ matrix.profile }}
+        path: ${{ steps.strings.outputs.build-output-dir }}
+        retention-days: 7
+        if-no-files-found: error
+        overwrite: true

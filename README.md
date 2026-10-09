@@ -8,7 +8,9 @@
 
 [![License: AGPL v3](https://img.shields.io/badge/license-AGPL%20v3-0f766e?style=flat-square)](LICENSE)
 [![DX9 Build](https://img.shields.io/github/actions/workflow/status/smlu/OpenJones3D/build-dx9.yml?style=flat-square&label=DX9%20Build)](https://github.com/smlu/OpenJones3D/actions/workflows/build-dx9.yml)
+[![DX9 Tests](https://img.shields.io/github/actions/workflow/status/smlu/OpenJones3D/test-dx9.yml?style=flat-square&label=DX9%20Tests)](https://github.com/smlu/OpenJones3D/actions/workflows/test-dx9.yml)
 [![DX6 Build](https://img.shields.io/github/actions/workflow/status/smlu/OpenJones3D/build-dx6.yml?style=flat-square&label=DX6%20Build)](https://github.com/smlu/OpenJones3D/actions/workflows/build-dx6.yml)
+[![DX6 Tests](https://img.shields.io/github/actions/workflow/status/smlu/OpenJones3D/test-dx6.yml?style=flat-square&label=DX6%20Tests)](https://github.com/smlu/OpenJones3D/actions/workflows/test-dx6.yml)
 
 </div>
 

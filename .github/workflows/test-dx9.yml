@@ -1,0 +1,110 @@
+# CTest workflow for DirectX 9
+name: DirectX 9 Tests
+
+on:
+  workflow_run:
+    workflows: [ "DirectX 9 Build" ]
+    types: [ completed ]
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  test:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: windows-2025-vs2026
+    timeout-minutes: 15
+
+    strategy:
+      fail-fast: false
+
+      matrix:
+        include:
+          - build_type: Release
+            profile: release-qol
+          - build_type: Release
+            profile: legacy-hardened
+          - build_type: Release
+            profile: legacy
+          - build_type: Debug
+            profile: debug-qol
+
+    steps:
+    - name: Download test build
+      uses: actions/download-artifact@v4
+      with:
+        name: dx9-windows-2025-vs2026-${{ matrix.profile }}
+        path: ${{ runner.temp }}/dx9-test-build
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        run-id: ${{ github.event.workflow_run.id }}
+
+    - name: Verify test build metadata
+      id: test_build
+      shell: pwsh
+      working-directory: ${{ runner.temp }}
+      run: |
+        $artifactDir = "${{ runner.temp }}/dx9-test-build"
+        $metadata = Get-Content "$artifactDir/ci-test-build.json" -Raw | ConvertFrom-Json
+        if ($metadata.source_sha -notmatch '^[0-9a-f]{40}$') {
+          throw "The test artifact has no valid source revision."
+        }
+        if ($metadata.profile -ne "${{ matrix.profile }}" -or
+            $metadata.configuration -ne "${{ matrix.build_type }}") {
+          throw "The test artifact does not match the requested profile/configuration."
+        }
+        # CTest registrations and fixture paths refer to the original workspace.
+        $sourceDir = [IO.Path]::GetFullPath($env:GITHUB_WORKSPACE)
+        $buildDir = [IO.Path]::GetFullPath("$sourceDir/build")
+        if ([IO.Path]::GetFullPath($metadata.source_dir) -ne $sourceDir -or
+            [IO.Path]::GetFullPath($metadata.build_dir) -ne $buildDir) {
+          throw "The build and test runners use different workspace paths."
+        }
+        "source-sha=$($metadata.source_sha)" >> $env:GITHUB_OUTPUT
+
+    - uses: actions/checkout@v4
+      with:
+        ref: ${{ steps.test_build.outputs.source-sha }}
+        persist-credentials: false
+
+    - name: Restore test build
+      shell: pwsh
+      run: |
+        Move-Item "${{ runner.temp }}/dx9-test-build" "$env:GITHUB_WORKSPACE/build"
+
+    - name: Setup MSVC
+      uses: ilammy/msvc-dev-cmd@v1
+      with:
+        arch: x86
+
+    - name: Run tests
+      shell: pwsh
+      run: |
+        $buildDir = "$env:GITHUB_WORKSPACE/build"
+        $testRegex = '^(j3dcore\.Macros|std|sound|sith)$'
+        $listing = ctest --test-dir $buildDir -C ${{ matrix.build_type }} `
+          -R $testRegex --show-only=json-v1
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        $actual = @(($listing | ConvertFrom-Json).tests | ForEach-Object { $_.name })
+        foreach ($expected in @('j3dcore.Macros', 'std', 'sound', 'sith')) {
+          if ($actual -notcontains $expected) {
+            throw "Required CTest suite '$expected' was not discovered."
+          }
+        }
+        ctest --test-dir $buildDir -C ${{ matrix.build_type }} `
+          --output-on-failure --no-tests=error --timeout 180 `
+          --output-junit "$buildDir/test-results.xml" -R $testRegex
+        exit $LASTEXITCODE
+
+    - name: Upload test results
+      if: ${{ always() }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: dx9-test-results-${{ matrix.profile }}
+        path: |
+          ${{ github.workspace }}/build/test-results.xml
+          ${{ github.workspace }}/build/Testing/Temporary/LastTest.log
+          ${{ github.workspace }}/build/Testing/Temporary/LastTestsFailed.log
+        if-no-files-found: ignore
+        retention-days: 7
+        overwrite: true

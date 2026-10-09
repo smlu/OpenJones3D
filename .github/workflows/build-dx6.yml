@@ -15,14 +15,35 @@ jobs:
       fail-fast: false
 
       matrix:
-        os: [windows-latest]
-        build_type: [Release]
-        c_compiler: [cl]
-        qol_improvements: [ON, OFF]
         include:
-          - os: windows-latest
+          - os: windows-2025-vs2026
             c_compiler: cl
             cpp_compiler: cl
+            build_type: Release
+            qol_improvements: "ON"
+            runtime_guards: "OFF"
+            profile: release-qol
+          - os: windows-2025-vs2026
+            c_compiler: cl
+            cpp_compiler: cl
+            build_type: Release
+            qol_improvements: "OFF"
+            runtime_guards: "ON"
+            profile: legacy-hardened
+          - os: windows-2025-vs2026
+            c_compiler: cl
+            cpp_compiler: cl
+            build_type: Release
+            qol_improvements: "OFF"
+            runtime_guards: "OFF"
+            profile: legacy
+          - os: windows-2025-vs2026
+            c_compiler: cl
+            cpp_compiler: cl
+            build_type: Debug
+            qol_improvements: "ON"
+            runtime_guards: "OFF"
+            profile: debug-qol
 
     steps:
     - uses: actions/checkout@v4
@@ -58,6 +79,7 @@ jobs:
         # Extract using 7-Zip (pre-installed on GitHub runners)
         Write-Host "Extracting DirectX 6.1 SDK with 7-Zip..."
         & "C:\Program Files\7-Zip\7z.exe" x $sdkExe -o"$extractPath" -y
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
         
         Write-Host "`nExtracted directory structure:"
         Get-ChildItem -Path $extractPath -Recurse -Depth 2 | Format-Table FullName
@@ -126,21 +148,44 @@ jobs:
         echo "DX_INCLUDE=$DX_INCLUDE" >> $env:GITHUB_OUTPUT
         echo "DX_LIB=$DX_LIB" >> $env:GITHUB_OUTPUT
 
-    - name: Install Ninja
-      run: choco install ninja -y
-
-    - name: Configure CMake (QOL ${{ matrix.qol_improvements }})
+    - name: Configure CMake (${{ matrix.profile }})
       shell: pwsh
       run: |
-        cmake -B "${{ steps.strings.outputs.build-output-dir }}" `
+        cmake -G "Visual Studio 18 2026" -B "${{ steps.strings.outputs.build-output-dir }}" `
           -A Win32 `
           -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }} `
           -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} `
           -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} `
           -DJONES3D_USE_DIRECTX9=OFF `
           -DJONES3D_QOL_IMPROVEMENTS=${{ matrix.qol_improvements }} `
+          -DJONES3D_RUNTIME_GUARDS=${{ matrix.runtime_guards }} `
+          -DJONES3D_BUILD_TESTS=ON `
+          -DJONES3D_BUILD_SYSTEM_TESTS=OFF `
           -DJONES3D_ENABLE_POST_BUILD_COPY=OFF `
           -S "${{ github.workspace }}"
 
     - name: Build
       run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
+
+    - name: Record test build revision
+      shell: pwsh
+      run: |
+        $sourceSha = git rev-parse HEAD
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        @{
+          source_sha = $sourceSha.Trim()
+          source_dir = $env:GITHUB_WORKSPACE
+          build_dir = "${{ steps.strings.outputs.build-output-dir }}"
+          profile = "${{ matrix.profile }}"
+          configuration = "${{ matrix.build_type }}"
+        } | ConvertTo-Json | Set-Content -Encoding utf8 `
+          "${{ steps.strings.outputs.build-output-dir }}/ci-test-build.json"
+
+    - name: Upload test build
+      uses: actions/upload-artifact@v4
+      with:
+        name: dx6-${{ matrix.os }}-${{ matrix.profile }}
+        path: ${{ steps.strings.outputs.build-output-dir }}
+        retention-days: 7
+        if-no-files-found: error
+        overwrite: true

@@ -21,6 +21,7 @@ LLM agents should follow the same workflow and coverage requirements below.
 - [🧭 Test Scope](#test-scope)
 - [📦 Original-Engine I/O Test Vectors](#original-engine-io-test-vectors)
 - [▶️ Running Tests](#running-tests)
+    - [🤖 CI Profiles](#ci-profiles)
     - [🔎 Intermittent Failures](#intermittent-failures)
     - [⏱️ Timeouts And Shared Devices](#timeouts-and-shared-devices)
 - [🖼️ Visual System Tests](#visual-system-tests)
@@ -504,9 +505,9 @@ so an existing CMake cache does not silently select a different profile.
 
 ### 🛠️ MSVC Unit Builds
 
-Run these examples from the repository root in `cmd.exe` or a Visual Studio 2022
-Developer Command Prompt. They use MSVC Win32 and the Visual Studio 2022 generator,
-which requires CMake 3.21 or newer. Use subdirectories under `build/codex` for
+Run these examples from the repository root in `cmd.exe` or a Visual Studio 2026
+Developer Command Prompt. They use MSVC Win32 and the Visual Studio 2026 generator,
+which requires CMake 4.2 or newer. Use subdirectories under `build/codex` for
 local alternate configurations.
 
 Use both sets of commands when required by
@@ -521,7 +522,7 @@ module entries are present. Zero discovered tests do not validate a change.
 DX9, Debug and Release:
 
 ```bat
-cmake -S . -B build\codex\dx9-win32 -G "Visual Studio 17 2022" -A Win32 ^
+cmake -S . -B build\codex\dx9-win32 -G "Visual Studio 18 2026" -A Win32 ^
   -DJONES3D_USE_DIRECTX9=ON -DJONES3D_BUILD_PROGRAMS=OFF ^
   -DJONES3D_BUILD_TESTS=ON -DJONES3D_BUILD_SYSTEM_TESTS=ON ^
   -DJONES3D_QOL_IMPROVEMENTS=ON -DJONES3D_RUNTIME_GUARDS=OFF
@@ -536,7 +537,7 @@ ctest --test-dir build\codex\dx9-win32 -C Release --output-on-failure -L unit
 DX6, Debug and Release:
 
 ```bat
-cmake -S . -B build\codex\dx6-win32 -G "Visual Studio 17 2022" -A Win32 ^
+cmake -S . -B build\codex\dx6-win32 -G "Visual Studio 18 2026" -A Win32 ^
   -DJONES3D_USE_DIRECTX9=OFF -DJONES3D_BUILD_PROGRAMS=OFF ^
   -DJONES3D_BUILD_TESTS=ON -DJONES3D_BUILD_SYSTEM_TESTS=ON ^
   -DJONES3D_QOL_IMPROVEMENTS=ON -DJONES3D_RUNTIME_GUARDS=OFF
@@ -558,7 +559,7 @@ When changing guard behavior, exercise the guard-enabled branch in a separate
 legacy-hardened tree:
 
 ```bat
-cmake -S . -B build\codex\dx9-legacy-hardened-win32 -G "Visual Studio 17 2022" -A Win32 ^
+cmake -S . -B build\codex\dx9-legacy-hardened-win32 -G "Visual Studio 18 2026" -A Win32 ^
   -DJONES3D_USE_DIRECTX9=ON -DJONES3D_BUILD_PROGRAMS=OFF ^
   -DJONES3D_BUILD_TESTS=ON -DJONES3D_BUILD_SYSTEM_TESTS=OFF ^
   -DJONES3D_QOL_IMPROVEMENTS=OFF -DJONES3D_RUNTIME_GUARDS=ON
@@ -598,7 +599,7 @@ Use separate build directories for local disruptive coverage. Run on a desktop
 where fullscreen changes and input focus changes can be exercised.
 
 ```bat
-cmake -S . -B build\codex\dx9-win32-disruptive -G "Visual Studio 17 2022" -A Win32 ^
+cmake -S . -B build\codex\dx9-win32-disruptive -G "Visual Studio 18 2026" -A Win32 ^
   -DJONES3D_USE_DIRECTX9=ON -DJONES3D_BUILD_PROGRAMS=OFF ^
   -DJONES3D_BUILD_TESTS=ON -DJONES3D_BUILD_SYSTEM_TESTS=ON ^
   -DJONES3D_BUILD_DISRUPTIVE_SYSTEM_TESTS=ON
@@ -607,7 +608,7 @@ ctest --test-dir build\codex\dx9-win32-disruptive -C Debug --output-on-failure -
 ```
 
 ```bat
-cmake -S . -B build\codex\dx6-win32-disruptive -G "Visual Studio 17 2022" -A Win32 ^
+cmake -S . -B build\codex\dx6-win32-disruptive -G "Visual Studio 18 2026" -A Win32 ^
   -DJONES3D_USE_DIRECTX9=OFF -DJONES3D_BUILD_PROGRAMS=OFF ^
   -DJONES3D_BUILD_TESTS=ON -DJONES3D_BUILD_SYSTEM_TESTS=ON ^
   -DJONES3D_BUILD_DISRUPTIVE_SYSTEM_TESTS=ON
@@ -618,6 +619,43 @@ ctest --test-dir build\codex\dx6-win32-disruptive -C Debug --output-on-failure -
 Also build and run Release when changing disruptive tests or their production
 paths. Keep disruptive failures, ignores, and unexecuted scenarios explicit in
 the report; a unit-suite pass does not resolve them.
+
+<a name="ci-profiles"></a>
+
+### 🤖 CI Profiles
+
+Both backends use MSVC Win32 on the `windows-2025-vs2026` runner with
+the `Visual Studio 18 2026` CMake generator. The runner includes Visual Studio
+2026 and the Windows SDK. DX9 uses the SDK's Direct3D headers, import libraries,
+and FXC shader compiler; no separate legacy DirectX SDK installation is needed.
+DX6 still downloads the archived DirectX 6.1 SDK because it needs legacy APIs.
+
+The CI test integration uses four profiles for both backends:
+
+| Profile | Configuration | QOL | Runtime guards |
+| --- | --- | --- | --- |
+| `release-qol` | Release | ON | OFF |
+| `legacy-hardened` | Release | OFF | ON |
+| `legacy` | Release | OFF | OFF |
+| `debug-qol` | Debug | ON | OFF |
+
+Each profile enables `JONES3D_BUILD_TESTS` and disables
+`JONES3D_BUILD_SYSTEM_TESTS`. The MSVC Win32 build workflow uploads its build tree
+with the exact checked-out source revision and configuration. The follow-up test
+workflow checks out that revision, restores the build at its original workspace
+path, requires all four suites (`j3dcore.Macros`, `std`, `sound`, and `sith`),
+and runs them with finite timeouts. Test failures and missing suites fail the job;
+JUnit results and CTest logs are uploaded even when tests fail.
+
+The test workflows use `workflow_run` and start after a successful matching build.
+GitHub requires these workflow files to exist on the repository's default branch
+before this trigger can run. These are separate follow-up runs, so they do not
+attach test checks to the built PR revision automatically. See
+[GitHub's workflow_run documentation](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#workflow_run).
+
+These profiles check debug assertions, optimization-sensitive behavior, and
+opt-in guard rejection paths. System and disruptive tests remain outside CI
+because they require local devices or can disturb the desktop.
 
 <a name="intermittent-failures"></a>
 
@@ -791,26 +829,6 @@ is complete. At that point, evaluate a separate MSVC Win32 sanitizer profile and
 validate its compiler/linker compatibility and test results before making it a
 required check. The current validation workflow does not require a sanitizer
 build. See [Microsoft's AddressSanitizer guidance](https://learn.microsoft.com/en-us/cpp/sanitizers/asan).
-
-<a name="ci-profiles"></a>
-
-### 🤖 CI Profiles
-
-The planned CI test integration uses four profiles for both backends:
-
-| Profile | Configuration | QOL | Runtime guards |
-| --- | --- | --- | --- |
-| `release-qol` | Release | ON | OFF |
-| `legacy-hardened` | Release | OFF | ON |
-| `legacy` | Release | OFF | OFF |
-| `debug-qol` | Debug | ON | OFF |
-
-Each profile should enable `JONES3D_BUILD_TESTS` and disable
-`JONES3D_BUILD_SYSTEM_TESTS`. The planned build workflow uploads its build tree
-as a test artifact; the follow-up test workflow runs `j3dcore.Macros`, `std`,
-`sound`, and `sith`. These profiles check debug assertions, optimization-sensitive
-behavior, and opt-in guard rejection paths. System and disruptive tests remain
-outside CI because they require local devices or can disturb the desktop.
 
 <a name="additional-module-commands"></a>
 
