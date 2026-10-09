@@ -1,6 +1,8 @@
 #include "sithPhysics.h"
 #include <j3dcore/j3dhook.h>
 
+#include <float.h>
+
 #include <rdroid/Math/rdMath.h>
 #include <rdroid/Math/rdMatrix.h>
 #include <rdroid/Math/rdVector.h>
@@ -9,6 +11,7 @@
 #include <sith/AI/sithAIAwareness.h>
 #include <sith/Cog/sithCog.h>
 
+#include <sith/Devices/sithConsole.h>
 #include <sith/Devices/sithControl.h>
 
 #include <sith/Engine/sithAnimate.h>
@@ -24,6 +27,7 @@
 #include <sith/Gameplay/sithPlayerControls.h>
 #include <sith/Gameplay/sithTime.h>
 
+#include <sith/World/sithActor.h>
 #include <sith/World/sithMaterial.h>
 #include <sith/World/sithSoundClass.h>
 #include <sith/World/sithTemplate.h>
@@ -118,6 +122,72 @@ static float sithPhysics_trackTruckMinSndVolume   = 0.5f;
 static float sithPhysics_trackTruckMaxSndVolume   = 1.0f;
 static float sithPhysics_trackTruckMaxSpeed       = 1.0f;
 
+// Jeep physics and fx vars
+static float sithPhysics_jeepWheelProbeHeight       = 0.2f;
+static float sithPhysics_jeepWheelContactDist       = 0.0024999999f;
+static float sithPhysics_jeepSteepWheelLiftScale    = 1.0f;
+static float sithPhysics_jeepSteepWheelSlideScale   = 1.2f;
+static float sithPhysics_jeepWheelDropSpeed         = 0.2f;
+static float sithPhysics_jeepWheelSlideSpeed        = 1.1f;
+static float sithPhysics_jeepWallImpactScale        = 1.0f;
+static float sithPhysics_jeepWallImpactNormalZ      = 0.69999999f;
+static float sithPhysics_jeepHardLandingImpact      = -0.2f;
+static float sithPhysics_jeepSteepTurnScale         = 40000.0f;
+static float sithPhysics_jeepPushOffSpeed           = 0.1f;
+static float sithPhysics_jeepDriveSndMinSpeed       = 0.5f;
+static float sithPhysics_jeepAirSndMinPitch         = 1.0f;
+static float sithPhysics_jeepEngineStartSndVolume   = 0.1f;
+static float sithPhysics_jeepAirSndMaxPitch         = 2.5999999f;
+static float sithPhysics_jeepAirSndPitchRate        = 3.5f;
+static float sithPhysics_jeepGear2MinSpeed          = 1.0f;
+static float sithPhysics_jeepGear1MinSndVolume      = 0.60000002f;
+static float sithPhysics_jeepGear2MinSndVolume      = 0.69999999f;
+static float sithPhysics_jeepGear1MaxSndVolume      = 0.89999998f;
+static float sithPhysics_jeepGear2MaxSndVolume      = 1.0f;
+static float sithPhysics_jeepGear1MinSndPitch       = 1.0f;
+static float sithPhysics_jeepGear2MinSndPitch       = 1.3f;
+static float sithPhysics_jeepGear1MaxSndPitch       = 1.8f;
+static float sithPhysics_jeepGear2MaxSndPitch       = 2.0f;
+static float sithPhysics_jeepDriveMinSndVolume      = 0.15000001f;
+static float sithPhysics_jeepDriveSndVolumePerSpeed = 0.28f;
+static float sithPhysics_jeepSlideMaxHeadingDot     = 0.93000001f;
+static float sithPhysics_jeepSlideMinHeadingDot     = -0.89999998f;
+static float sithPhysics_jeepRollSndPitch           = 1.3f;
+static float sithPhysics_jeepRollSndVolume          = 1.0f;
+static float sithPhysics_jeepSlideSndVolumeScale    = 2.0f;
+static float sithPhysics_jeepDriveSndFadeTime       = 0.60000002f;
+static float sithPhysics_jeepBumpMinSpeed           = 0.5f;
+static float sithPhysics_jeepBumpChancePerSpeed     = 0.5f;
+static float sithPhysics_jeepBumpCompressionDist    = -0.0099999998f;
+static float sithPhysics_jeepBumpMinSndVolume       = 0.050000001f;
+static float sithPhysics_jeepBumpSndVolumePerSpeed  = 0.64999998f;
+static float sithPhysics_jeepSkidMaxHeadingDot      = 0.99699998f;
+static float sithPhysics_jeepSkidMinSpeed           = 1.1f;
+static float sithPhysics_jeepFallDeathVelocity      = -1.65f;
+static float sithPhysics_jeepRolloverTurnSpeed      = 0.30000001f;
+static float sithPhysics_jeepRolloverEndDot         = 0.0049999999f;
+static float sithPhysics_jeepRolloverLift           = 2.0f;
+static float sithPhysics_jeepRolloverSideTilt       = 0.86000001f;
+static float sithPhysics_jeepRolloverMinUpZ         = 0.050000001f;
+static float sithPhysics_jeepRolloverMoveSize       = 0.02f;
+static float sithPhysics_jeepTurnRateOverMaxSpeed   = 1.0f;
+static float sithPhysics_jeepTurnRateAtMaxSpeed     = 50.0f;
+static float sithPhysics_jeepTurnRate               = 140.0f;
+static float sithPhysics_jeepTurnRateMinSpeed       = 0.85000002f;
+static float sithPhysics_jeepAirDrag                = 0.60000002f;
+static float sithPhysics_jeepSteepSlopeDot          = 0.69459999f;
+static float sithPhysics_jeepSteepestSlopeDot       = 0.5f;
+static float sithPhysics_jeepSlopeDot               = 0.92699999f;
+static float sithPhysics_jeepSlopeAccel             = 2.0f;
+static float sithPhysics_jeepSlopeMaxBrake          = 2.5f;
+static float sithPhysics_jeepSlopeAccelScale        = 1.25f;
+static float sithPhysics_jeepSlopeMinScale          = 0.60000002f;
+static float sithPhysics_jeepSlopeMaxScale          = 1.0f;
+static float sithPhysics_jeepSlopeThrustKeep        = 0.69999999f;
+static float sithPhysics_jeepAirGravity             = 2.2f;
+static float sithPhysics_jeepAirGravityFastUp       = 1.7f;
+static float sithPhysics_jeepCrashGravity           = 1.0f;
+
 //
 // MineCar physics vars
 //
@@ -180,19 +250,50 @@ void J3DAPI sithPhysics_ApplyWaterThrust(SithThing* pThing, const rdVector3* pWa
 
 void J3DAPI sithPhysics_GetThingAttachNormalAndDistance(const SithThing* pThing, rdVector3* pAttachNormal, float* pDistToAttach, float* pScale); // Added: from debug
 
+// Track face vertex position relative to the move direction
+#define SITHPHYSICS_TRACKVERT_LEFT  0x1
+#define SITHPHYSICS_TRACKVERT_RIGHT 0x2
+#define SITHPHYSICS_TRACKVERT_FRONT 0x4
+#define SITHPHYSICS_TRACKVERT_BACK  0x8
+
+// Geometry of a track face (a rail segment) relative to the move direction, filled by sithPhysics_ProcessTrackFace
+typedef struct sSithTrackFaceData
+{
+    rdVector3 aVertices[4];      // Face corners; vertices on a straight edge are skipped
+    float aVertFwdDists[4];      // Corner distance from the centroid along the move direction
+    float aVertRightDists[4];    // Corner distance from the centroid along the right direction
+    uint32_t aVertFlags[4];      // SITHPHYSICS_TRACKVERT_* flags of each corner
+    rdVector3 aEdgeDirs[4];      // Normalized edge directions (4 corners only)
+    float aEdgeFwdDots[4];
+    float aEdgeRightDots[4];
+    uint32_t nVertices;
+    rdVector3 frontLeft;
+    rdVector3 frontRight;
+    rdVector3 backLeft;
+    rdVector3 backRight;
+    rdVector3 frontCenter;       // Middle of the front edge
+    rdVector3 backCenter;        // Middle of the back edge
+    rdVector3 center;
+    rdVector3 centroid;          // Average of the corners
+    rdVector3 dir;               // Track direction, from the back edge to the front edge
+    rdVector3 right;             // dir x up
+    float distToFront;           // Distance of the position to the front edge along dir
+    float distFromBack;          // Distance of the position from the back edge along dir
+} SithTrackFaceData;
+static_assert(sizeof(SithTrackFaceData) == 0x134, "sizeof(SithTrackFaceData) == 0x134");
+
 // MineCar track physics helpers
-void J3DAPI sithPhysics_ProcessMineCarTrackMove(SithThing* pThing, float secDeltaTime, float a3, rdVector3* a4);
-int J3DAPI sithPhysics_ProcessTrackFace(SithThing* pThing, rdFace* pFace, rdVector3* a3, rdVector3* a4, rdVector3* a5, void* pData);
+void J3DAPI sithPhysics_ProcessMineCarTrackMove(SithThing* pThing, float secDeltaTime, float speed, rdVector3* pDeltaPos);
+int J3DAPI sithPhysics_ProcessTrackFace(SithThing* pThing, rdFace* pFace, rdVector3* pMoveDir, rdVector3* pRightDir, rdVector3* pPos, SithTrackFaceData* pData);
 int J3DAPI sithPhysics_CheckForPointOnTrack(SithThing* pThing, const rdVector3* pPoint, rdFace** ppFoundFace, int bUpdateState, const rdFace* pPrevFace);
-int J3DAPI sithPhysics_sub_487EC0(SithThing* pThing, void* pData, float* secDeltaTime, rdVector3* a4, rdVector3* a5, float a6);
+void J3DAPI sithPhysics_sub_487EC0(SithThing* pThing, SithTrackFaceData* pData, float* pSecDeltaTime, rdVector3* pStartPos, rdVector3* pNewPos, float speed);
 
 // Jeep physics
-int J3DAPI sithPhysics_Jeep_sub_4892E0(SithThing* pThing, void* a2, float secDeltaTime);
-// function might check for jeep surface and thing face collision
-void J3DAPI sithPhysics_sub_48A970(SithThing* pThing, void* a2, const rdVector3* a3);
-int J3DAPI sithPhysics_sub_48AD20(SithThing* pThing, void* a2, rdVector3* a3, float secDeltaTime);
-void J3DAPI sithPhysics_Jeep_sub_48B4D0(SithThing* pThing, float* a2);
-void J3DAPI sithPhysics_UpdateJeepFx(SithThing* pThing, SithVehicleEngineFxState* pFxState, float a3);
+int J3DAPI sithPhysics_Jeep_sub_4892E0(SithThing* pThing, SithJeepState* pState, float secDeltaTime); // Updates the wheels
+void J3DAPI sithPhysics_sub_48A970(SithThing* pThing, SithJeepWheelState* pWheel, const rdVector3* pWheelPos); // Probes the ground below a wheel
+void J3DAPI sithPhysics_sub_48AD20(SithThing* pThing, SithJeepState* pState, rdVector3* pGroundNormal, float secDeltaTime); // Ground normal and wall turning
+void J3DAPI sithPhysics_Jeep_sub_48B4D0(SithThing* pThing, SithJeepState* pState); // Inits the jeep dimensions
+void J3DAPI sithPhysics_UpdateJeepFx(SithThing* pThing, SithVehicleEngineFxState* pFxState, float secDeltaTime);
 
 void sithPhysics_InstallHooks(void)
 {
@@ -234,17 +335,17 @@ void sithPhysics_InstallHooks(void)
     J3D_HOOKFUNC(sithPhysics_UpdateRaftPhysics);
     J3D_HOOKFUNC(sithPhysics_CheckWaterSurfaceAtPos);
     J3D_HOOKFUNC(sithPhysics_ApplyWaterThrust);
-    // J3D_HOOKFUNC(sithPhysics_ProcessMineCarTrackMove);
-    // J3D_HOOKFUNC(sithPhysics_ProcessTrackFace);
+    J3D_HOOKFUNC(sithPhysics_ProcessMineCarTrackMove);
+    J3D_HOOKFUNC(sithPhysics_ProcessTrackFace);
     J3D_HOOKFUNC(sithPhysics_CheckForPointOnTrack);
-    // J3D_HOOKFUNC(sithPhysics_sub_487EC0);
-    // J3D_HOOKFUNC(sithPhysics_UpdateJeepPhysics);
-    // J3D_HOOKFUNC(sithPhysics_Jeep_sub_4892E0);
-    // J3D_HOOKFUNC(sithPhysics_sub_48A970);
-    // J3D_HOOKFUNC(sithPhysics_sub_48AD20);
-    // J3D_HOOKFUNC(sithPhysics_CreateJeepUserBlock);
-    // J3D_HOOKFUNC(sithPhysics_Jeep_sub_48B4D0);
-    // J3D_HOOKFUNC(sithPhysics_UpdateJeepFx);
+    J3D_HOOKFUNC(sithPhysics_sub_487EC0);
+    J3D_HOOKFUNC(sithPhysics_UpdateJeepPhysics);
+    J3D_HOOKFUNC(sithPhysics_Jeep_sub_4892E0);
+    J3D_HOOKFUNC(sithPhysics_sub_48A970);
+    J3D_HOOKFUNC(sithPhysics_sub_48AD20);
+    J3D_HOOKFUNC(sithPhysics_CreateJeepUserBlock);
+    J3D_HOOKFUNC(sithPhysics_Jeep_sub_48B4D0);
+    J3D_HOOKFUNC(sithPhysics_UpdateJeepFx);
 }
 
 void sithPhysics_ResetGlobals(void)
@@ -3267,14 +3368,653 @@ void J3DAPI sithPhysics_ApplyWaterThrust(SithThing* pThing, const rdVector3* pWa
     rdVector_MultAcc3(pThrust, &surfaceThrust, secDeltaTime);
 }
 
-void J3DAPI sithPhysics_ProcessMineCarTrackMove(SithThing* pThing, float secDeltaTime, float a3, rdVector3* a4)
+// Note: Some dot products below are written out instead of using rdVector_Dot3 to keep the original's summation order.
+void J3DAPI sithPhysics_ProcessMineCarTrackMove(SithThing* pThing, float secDeltaTime, float speed, rdVector3* pDeltaPos)
 {
-    J3D_TRAMPOLINE_CALL(sithPhysics_ProcessMineCarTrackMove, pThing, secDeltaTime, a3, a4);
+    if ( !pThing->attach.pFace )
+    {
+        return;
+    }
+
+    SithPhysicsInfo* pPhysics = &pThing->moveInfo.physics;
+    SithMineCarState* pState  = &pThing->userblock.pMinecar->state;
+
+    // The car moves along the track with its bottom
+    rdVector3 startPos = pThing->pos;
+    startPos.z         = startPos.z - sithPhysics_GetThingHeight(pThing);
+
+    rdFace* pFace       = pThing->attach.pFace;
+    float remainingTime = secDeltaTime;
+    rdVector3 curPos    = startPos;
+
+    // Move direction; when standing still the car faces forward, or backward when thrusting in reverse
+    int bReverse = 0;
+    rdVector3 moveDir, rightDir;
+    if ( rdVector_IsZero3(&pPhysics->velocity) )
+    {
+        rdVector_Normalize3(&moveDir, &pThing->orient.lvec);
+        rdVector_Normalize3(&rightDir, &pThing->orient.rvec);
+        if ( pPhysics->thrust.y < 0.0f )
+        {
+            rdVector_Neg3Acc(&moveDir);
+            rdVector_Neg3Acc(&rightDir);
+            bReverse = 1;
+        }
+    }
+    else
+    {
+        rdVector_Normalize3(&moveDir, &pPhysics->velocity);
+        rdVector_Cross3(&rightDir, &moveDir, &pThing->orient.uvec);
+        float headingDot = (pThing->orient.lvec.y * pPhysics->velocity.y + pThing->orient.lvec.z * pPhysics->velocity.z)
+            + pPhysics->velocity.x * pThing->orient.lvec.x;
+        if ( headingDot < 0.0f )
+        {
+            bReverse = 1;
+        }
+    }
+
+    // Move along the track faces until the move distance for this frame is used up
+    // Note: The face data buffers are zeroed; in the original they're uninitialized, which only shows for faces
+    //       with corners missing.
+    SithTrackFaceData faceData = { 0 };
+    rdVector3 newPos;
+    bool bDone = false;
+    while ( !bDone )
+    {
+        if ( !sithPhysics_ProcessTrackFace(pThing, pFace, &moveDir, &rightDir, &curPos, &faceData) )
+        {
+            SITHLOG_ERROR("Couldn't process track face during move.\n");
+            goto stop_move;
+        }
+
+        sithPhysics_sub_487EC0(pThing, &faceData, &remainingTime, &curPos, &newPos, speed);
+        if ( remainingTime == 0.0f )
+        {
+            bDone = true;
+        }
+        else
+        {
+            // Reached the front edge of the face; remember the face direction (backwards) and the travel direction
+            // in the otherwise unused rotThrust and buoyancy fields, then continue on the next face.
+            rdVector_Scale3(&pPhysics->rotThrust, &faceData.dir, -1.0f);
+            pPhysics->buoyancy = bReverse ? -1.0f : 1.0f;
+
+            curPos = newPos;
+            rdVector_MultAcc3(&newPos, &faceData.dir, 0.01f);
+            if ( !sithPhysics_CheckForPointOnTrack(pThing, &newPos, &pFace, 1, pFace) )
+            {
+                SITHLOG_ERROR("Couldn't find track face ahead of current face during move.\n");
+                goto stop_move;
+            }
+
+            moveDir  = faceData.dir;
+            rightDir = faceData.right;
+        }
+    }
+
+    rdVector_Sub3(&moveDir, &newPos, &curPos);
+    moveDir.x = stdMath_ClipNearZero(moveDir.x);
+    moveDir.y = stdMath_ClipNearZero(moveDir.y);
+    moveDir.z = stdMath_ClipNearZero(moveDir.z);
+    rdVector_Normalize3Acc(&moveDir);
+
+    rdVector_Sub3(pDeltaPos, &newPos, &startPos);
+    pDeltaPos->x = stdMath_ClipNearZero(pDeltaPos->x);
+    pDeltaPos->y = stdMath_ClipNearZero(pDeltaPos->y);
+    pDeltaPos->z = stdMath_ClipNearZero(pDeltaPos->z);
+
+    rdVector_Scale3(&pPhysics->velocity, &moveDir, speed);
+
+    //
+    // Orientation: blend the face direction with the direction of the neighbouring face
+    // when close to the face edge, so the car turns smoothly through curves.
+    //
+    bool bBlend = true;
+
+    float distToFront = -rdMath_DistancePointToPlane(&newPos, &faceData.dir, &faceData.frontCenter);
+    if ( distToFront < 0.0f )
+    {
+        distToFront = 0.0f;
+    }
+
+    float distFromBack = rdMath_DistancePointToPlane(&newPos, &faceData.dir, &faceData.backCenter);
+    if ( distFromBack < 0.0f )
+    {
+        distFromBack = 0.0f;
+    }
+
+    float faceLength = rdMath_DistancePointToPlane(&faceData.frontCenter, &faceData.dir, &faceData.backCenter);
+
+    SithTrackFaceData nearFaceData = { 0 };
+    rdFace* pNearFace;
+    rdVector3 probePos;
+    rdVector3 lookDir;
+    if ( distToFront <= distFromBack )
+    {
+        // In the front half of the face; blend with the face ahead
+        rdVector_ScaleAdd3(&probePos, &faceData.dir, 0.025f, &faceData.frontCenter);
+        if ( !sithPhysics_CheckForPointOnTrack(pThing, &probePos, &pNearFace, 0, pFace) )
+        {
+            SITHLOG_ERROR("Couldn't find track face ahead during orientation.\n");
+            goto stop_move;
+        }
+
+        if ( !sithPhysics_ProcessTrackFace(pThing, pNearFace, &faceData.dir, &faceData.right, &probePos, &nearFaceData) )
+        {
+            SITHLOG_ERROR("Couldn't process track face ahead during orientation.\n");
+            goto stop_move;
+        }
+
+        if ( faceLength > pState->unknown9 )
+        {
+            if ( pState->unknown10 * 0.5f < distToFront )
+            {
+                bBlend = false;
+            }
+            else
+            {
+                faceLength = pState->unknown10;
+            }
+        }
+
+        if ( bBlend )
+        {
+            float t = STDMATH_CLAMP(distToFront / faceLength + 0.5f, 0.0f, 1.0f);
+            lookDir.x = faceData.dir.x * t + (1.0f - t) * nearFaceData.dir.x;
+            lookDir.y = faceData.dir.y * t + (1.0f - t) * nearFaceData.dir.y;
+            lookDir.z = faceData.dir.z * t + (1.0f - t) * nearFaceData.dir.z;
+            rdVector_Normalize3Acc(&lookDir);
+        }
+        else
+        {
+            lookDir = faceData.dir;
+        }
+    }
+    else
+    {
+        // In the back half of the face; blend with the face behind.
+        // The stored previous face direction is only valid if it was recorded travelling the same way.
+        rdVector3 prevDir;
+        if ( (bReverse && pPhysics->buoyancy < 0.0f) || (!bReverse && pPhysics->buoyancy > 0.0f) )
+        {
+            prevDir = pPhysics->rotThrust;
+        }
+        else
+        {
+            rdVector3 backDir, backRightDir;
+            rdVector_Scale3(&backDir, &faceData.dir, -1.0f);
+            rdVector_Scale3(&backRightDir, &faceData.right, -1.0f);
+            rdVector_ScaleAdd3(&probePos, &backDir, 0.025f, &faceData.backCenter);
+            if ( !sithPhysics_CheckForPointOnTrack(pThing, &probePos, &pNearFace, 0, pFace) )
+            {
+                SITHLOG_ERROR("Couldn't find track behind during orientation.\n");
+                goto stop_move;
+            }
+
+            if ( !sithPhysics_ProcessTrackFace(pThing, pNearFace, &backDir, &backRightDir, &probePos, &nearFaceData) )
+            {
+                SITHLOG_ERROR("Couldn't process track face behind during orientation.\n");
+                goto stop_move;
+            }
+
+            prevDir = nearFaceData.dir;
+        }
+
+        // Long faces only blend near the edge
+        if ( faceLength > pState->unknown9 )
+        {
+            if ( pState->unknown10 * 0.5f < distFromBack )
+            {
+                bBlend = false;
+            }
+            else
+            {
+                faceLength = pState->unknown10;
+            }
+        }
+
+        if ( bBlend )
+        {
+            // prevDir points backward
+            float t = STDMATH_CLAMP(distFromBack / faceLength + 0.5f, 0.0f, 1.0f);
+            lookDir.x = faceData.dir.x * t + -(1.0f - t) * prevDir.x;
+            lookDir.y = faceData.dir.y * t + -(1.0f - t) * prevDir.y;
+            lookDir.z = faceData.dir.z * t + -(1.0f - t) * prevDir.z;
+            rdVector_Normalize3Acc(&lookDir);
+        }
+        else
+        {
+            lookDir = faceData.dir;
+        }
+    }
+
+    if ( bReverse )
+    {
+        rdVector_Neg3Acc(&lookDir);
+    }
+
+    // Yaw in the horizontal plane
+    rdVector3 curDirXY  = { pThing->orient.lvec.x, pThing->orient.lvec.y, 0.0f };
+    rdVector3 lookDirXY = { lookDir.x, lookDir.y, 0.0f };
+    rdVector_Normalize3Acc(&lookDirXY);
+    rdVector_Normalize3Acc(&curDirXY);
+    float yawDelta = rdMath_DeltaAngleNormalized(&curDirXY, &lookDirXY, &rdroid_g_zVector3);
+
+    // Pitch in the vertical plane of the move direction
+    rdVector3 curPitchDir  = { rdVector_Len3(&curDirXY), 0.0f, pThing->orient.lvec.z };
+    rdVector3 lookPitchDir = { rdVector_Len3(&lookDirXY), 0.0f, lookDir.z };
+    rdVector_Normalize3Acc(&curPitchDir);
+    rdVector_Normalize3Acc(&lookPitchDir);
+
+    const rdVector3 pitchAxis = { 0.0f, 1.0f, 0.0f };
+    float pitchDelta = rdMath_DeltaAngleNormalized(&lookPitchDir, &curPitchDir, &pitchAxis);
+
+    pPhysics->angularVelocity.yaw   = yawDelta / secDeltaTime;
+    pPhysics->angularVelocity.pitch = pitchDelta / secDeltaTime;
+
+    // Turn state; 1-2 turning left, 3-4 turning right, 5 leaving a turn
+    switch ( pState->maybeMoveSate )
+    {
+        case 0:
+            if ( pPhysics->angularVelocity.yaw > 20.0f )
+            {
+                pState->maybeMoveSate = 1;
+            }
+            else if ( pPhysics->angularVelocity.yaw < -20.0f )
+            {
+                pState->maybeMoveSate = 3;
+            }
+            break;
+
+        case 1:
+            pState->maybeMoveSate = 2;
+            break;
+
+        case 2:
+            if ( pPhysics->angularVelocity.yaw < 20.0f )
+            {
+                pState->maybeMoveSate = 5;
+            }
+            break;
+
+        case 3:
+            pState->maybeMoveSate = 4;
+            break;
+
+        case 4:
+            if ( pPhysics->angularVelocity.yaw > -20.0f )
+            {
+                pState->maybeMoveSate = 5;
+            }
+            break;
+
+        case 5:
+            pState->maybeMoveSate = 0;
+            break;
+
+        default:
+            pState->maybeMoveSate = 0;
+            break;
+    }
+
+    return;
+
+stop_move:
+    rdVector_Zero3(&pPhysics->angularVelocity);
+    rdVector_Zero3(&pPhysics->velocity);
+    rdVector_Zero3(&pPhysics->thrust);
+    rdVector_Zero3(pDeltaPos);
 }
 
-int J3DAPI sithPhysics_ProcessTrackFace(SithThing* pThing, rdFace* pFace, rdVector3* a3, rdVector3* a4, rdVector3* a5, void* pData)
+int J3DAPI sithPhysics_ProcessTrackFace(SithThing* pThing, rdFace* pFace, rdVector3* pMoveDir, rdVector3* pRightDir, rdVector3* pPos, SithTrackFaceData* pData)
 {
-    return J3D_TRAMPOLINE_CALL(sithPhysics_ProcessTrackFace, pThing, pFace, a3, a4, a5, pData);
+
+    rdVector3 fwdDir   = *pMoveDir;
+    rdVector3 rightDir = *pRightDir;
+
+    for ( size_t i = 0; i < 4; i++ )
+    {
+        pData->aVertFwdDists[i]   = 0.0f;
+        pData->aVertRightDists[i] = 0.0f;
+        pData->aVertFlags[i]      = 0;
+    }
+
+    pData->nVertices = 0;
+    rdVector_Zero3(&pData->centroid);
+
+    // Collect the face corners, skipping vertices that lie on a straight edge
+    for ( size_t i = 0; i < pFace->numVertices; i++ )
+    {
+        int prevIdx = (int)i - 1;
+        if ( prevIdx < 0 )
+        {
+            prevIdx = (int)pFace->numVertices - 1;
+        }
+
+        size_t nextIdx = (i + 1) % pFace->numVertices;
+
+        const rdVector3* aWorldVerts = sithWorld_g_pCurrentWorld->aVertices;
+        rdVector3 toNext, fromPrev;
+        rdVector_Sub3(&toNext, &aWorldVerts[pFace->aVertices[nextIdx]], &aWorldVerts[pFace->aVertices[i]]);
+        rdVector_Sub3(&fromPrev, &aWorldVerts[pFace->aVertices[i]], &aWorldVerts[pFace->aVertices[prevIdx]]);
+        rdVector_Normalize3Acc(&toNext);
+        rdVector_Normalize3Acc(&fromPrev);
+
+        float angle = rdMath_DeltaAngleNormalized(&toNext, &fromPrev, &pFace->normal);
+        angle = stdMath_NormalizeAngle(angle);
+        if ( angle >= 5.0f && angle <= 355.0f )
+        {
+            if ( pData->nVertices > 3 )
+            {
+                SITHLOG_ERROR("Too many vertices on track face.\n");
+                return 0;
+            }
+
+            pData->aVertices[pData->nVertices] = aWorldVerts[pFace->aVertices[i]];
+            rdVector_Add3Acc(&pData->centroid, &pData->aVertices[pData->nVertices]);
+            pData->nVertices++;
+        }
+    }
+
+    SITH_ASSERTREL(( pData->nVertices == 3 ) || ( pData->nVertices == 4 ));
+    rdVector_Scale3Acc(&pData->centroid, 1.0f / (float)pData->nVertices);
+
+    if ( pData->nVertices == 4 )
+    {
+        // Use the face edges for the forward and right directions
+        for ( size_t i = 0; i < pData->nVertices; i++ )
+        {
+            rdVector3* pEdge = &pData->aEdgeDirs[i];
+            rdVector_Sub3(pEdge, &pData->aVertices[(i + 1) % pData->nVertices], &pData->aVertices[i]);
+            rdVector_Normalize3Acc(pEdge);
+
+            pData->aEdgeFwdDots[i]   = (pEdge->x * pMoveDir->x + pEdge->z * pMoveDir->z) + pEdge->y * pMoveDir->y;
+            pData->aEdgeRightDots[i] = (pEdge->x * pRightDir->x + pEdge->z * pRightDir->z) + pEdge->y * pRightDir->y;
+        }
+
+        // Sum the two edges running along the track and the two edges running across it, all pointing the same way
+        rdVector3 alongDir  = { 0.0f, 0.0f, 0.0f };
+        rdVector3 acrossDir = { 0.0f, 0.0f, 0.0f };
+        if ( fabsf(pData->aEdgeFwdDots[0]) <= fabsf(pData->aEdgeFwdDots[1]) )
+        {
+            rdVector_MultAcc3(&alongDir, &pData->aEdgeDirs[1], pData->aEdgeFwdDots[1] < 0.0f ? -1.0f : 1.0f);
+            rdVector_MultAcc3(&alongDir, &pData->aEdgeDirs[3], pData->aEdgeFwdDots[3] < 0.0f ? -1.0f : 1.0f);
+            rdVector_MultAcc3(&acrossDir, &pData->aEdgeDirs[0], pData->aEdgeRightDots[0] < 0.0f ? -1.0f : 1.0f);
+            rdVector_MultAcc3(&acrossDir, &pData->aEdgeDirs[2], pData->aEdgeRightDots[2] < 0.0f ? -1.0f : 1.0f);
+        }
+        else
+        {
+            rdVector_MultAcc3(&alongDir, &pData->aEdgeDirs[0], pData->aEdgeFwdDots[0] < 0.0f ? -1.0f : 1.0f);
+            rdVector_MultAcc3(&alongDir, &pData->aEdgeDirs[2], pData->aEdgeFwdDots[2] < 0.0f ? -1.0f : 1.0f);
+            rdVector_MultAcc3(&acrossDir, &pData->aEdgeDirs[1], pData->aEdgeRightDots[1] < 0.0f ? -1.0f : 1.0f);
+            rdVector_MultAcc3(&acrossDir, &pData->aEdgeDirs[3], pData->aEdgeRightDots[3] < 0.0f ? -1.0f : 1.0f);
+        }
+
+        rdVector_Normalize3Acc(&alongDir);
+        rdVector_Normalize3Acc(&acrossDir);
+        rdVector_Cross3(&fwdDir, &rdroid_g_zVector3, &acrossDir);
+        rdVector_Cross3(&rightDir, &alongDir, &rdroid_g_zVector3);
+    }
+
+    // Classify the corners as front/back and left/right of the centroid
+    for ( size_t i = 0; i < pData->nVertices; i++ )
+    {
+        rdVector3 offset;
+        rdVector_Sub3(&offset, &pData->aVertices[i], &pData->centroid);
+        pData->aVertFwdDists[i]   = (offset.y * fwdDir.y + offset.z * fwdDir.z) + offset.x * fwdDir.x;
+        pData->aVertRightDists[i] = (offset.y * rightDir.y + offset.z * rightDir.z) + offset.x * rightDir.x;
+    }
+
+    for ( size_t i = 0; i < pData->nVertices; i++ )
+    {
+        pData->aVertFlags[i] |= pData->aVertRightDists[i] > 0.0f ? SITHPHYSICS_TRACKVERT_RIGHT : SITHPHYSICS_TRACKVERT_LEFT;
+        pData->aVertFlags[i] |= pData->aVertFwdDists[i] > 0.0f ? SITHPHYSICS_TRACKVERT_FRONT : SITHPHYSICS_TRACKVERT_BACK;
+    }
+
+    // Note: The original's index arrays hold 2 entries and the counts are only asserted, so a third entry overruns into
+    //       unused locals; here the arrays are sized for all 4 corners.
+    uint32_t aFrontRights[4], aFrontLefts[4], aBackRights[4], aBackLefts[4];
+    size_t nFrontRights = 0, nFrontLefts = 0, nBackRights = 0, nBackLefts = 0;
+    for ( uint32_t i = 0; i < pData->nVertices; i++ )
+    {
+        uint32_t flags = pData->aVertFlags[i];
+        if ( (flags & SITHPHYSICS_TRACKVERT_FRONT) != 0 && (flags & SITHPHYSICS_TRACKVERT_RIGHT) != 0 )
+        {
+            SITH_ASSERTREL(nFrontRights < 2);
+            aFrontRights[nFrontRights++] = i;
+        }
+        else if ( (flags & SITHPHYSICS_TRACKVERT_FRONT) != 0 && (flags & SITHPHYSICS_TRACKVERT_LEFT) != 0 )
+        {
+            SITH_ASSERTREL(nFrontLefts < 2);
+            aFrontLefts[nFrontLefts++] = i;
+        }
+        else if ( (flags & SITHPHYSICS_TRACKVERT_BACK) != 0 && (flags & SITHPHYSICS_TRACKVERT_RIGHT) != 0 )
+        {
+            SITH_ASSERTREL(nBackRights < 2);
+            aBackRights[nBackRights++] = i;
+        }
+        else if ( (flags & SITHPHYSICS_TRACKVERT_BACK) != 0 && (flags & SITHPHYSICS_TRACKVERT_LEFT) != 0 )
+        {
+            SITH_ASSERTREL(nBackLefts < 2);
+            aBackLefts[nBackLefts++] = i;
+        }
+    }
+
+    // Two corners in the same quadrant: move one of them to an empty neighbouring quadrant.
+    // Note: The counts are not updated after a reassignment.
+    if ( nFrontRights == 2 )
+    {
+        if ( nFrontLefts == 0 )
+        {
+            if ( fabsf(pData->aVertRightDists[aFrontRights[1]]) <= fabsf(pData->aVertRightDists[aFrontRights[0]]) )
+            {
+                pData->aVertFlags[aFrontRights[1]] = SITHPHYSICS_TRACKVERT_FRONT | SITHPHYSICS_TRACKVERT_LEFT;
+            }
+            else
+            {
+                pData->aVertFlags[aFrontRights[0]] = SITHPHYSICS_TRACKVERT_FRONT | SITHPHYSICS_TRACKVERT_LEFT;
+            }
+        }
+        else if ( nBackRights == 0 )
+        {
+            if ( fabsf(pData->aVertFwdDists[aFrontRights[1]]) <= fabsf(pData->aVertFwdDists[aFrontRights[0]]) )
+            {
+                pData->aVertFlags[aFrontRights[1]] = SITHPHYSICS_TRACKVERT_BACK | SITHPHYSICS_TRACKVERT_RIGHT;
+            }
+            else
+            {
+                pData->aVertFlags[aFrontRights[0]] = SITHPHYSICS_TRACKVERT_BACK | SITHPHYSICS_TRACKVERT_RIGHT;
+            }
+        }
+        else
+        {
+            SITH_ASSERTREL(0);
+        }
+    }
+    else if ( nFrontLefts == 2 )
+    {
+        if ( nFrontRights == 0 )
+        {
+            if ( fabsf(pData->aVertRightDists[aFrontLefts[1]]) <= fabsf(pData->aVertRightDists[aFrontLefts[0]]) )
+            {
+                pData->aVertFlags[aFrontLefts[1]] = SITHPHYSICS_TRACKVERT_FRONT | SITHPHYSICS_TRACKVERT_RIGHT;
+            }
+            else
+            {
+                pData->aVertFlags[aFrontLefts[0]] = SITHPHYSICS_TRACKVERT_FRONT | SITHPHYSICS_TRACKVERT_RIGHT;
+            }
+        }
+        else if ( nBackLefts == 0 )
+        {
+            if ( fabsf(pData->aVertFwdDists[aFrontLefts[1]]) <= fabsf(pData->aVertFwdDists[aFrontLefts[0]]) )
+            {
+                pData->aVertFlags[aFrontLefts[1]] = SITHPHYSICS_TRACKVERT_BACK | SITHPHYSICS_TRACKVERT_LEFT;
+            }
+            else
+            {
+                pData->aVertFlags[aFrontLefts[0]] = SITHPHYSICS_TRACKVERT_BACK | SITHPHYSICS_TRACKVERT_LEFT;
+            }
+        }
+        else
+        {
+            SITH_ASSERTREL(0);
+        }
+    }
+
+    if ( nBackRights == 2 )
+    {
+        if ( nBackLefts == 0 )
+        {
+            if ( fabsf(pData->aVertRightDists[aBackRights[1]]) <= fabsf(pData->aVertRightDists[aBackRights[0]]) )
+            {
+                pData->aVertFlags[aBackRights[1]] = SITHPHYSICS_TRACKVERT_BACK | SITHPHYSICS_TRACKVERT_LEFT;
+            }
+            else
+            {
+                pData->aVertFlags[aBackRights[0]] = SITHPHYSICS_TRACKVERT_BACK | SITHPHYSICS_TRACKVERT_LEFT;
+            }
+        }
+        else if ( nFrontRights == 0 )
+        {
+            if ( fabsf(pData->aVertFwdDists[aBackRights[1]]) <= fabsf(pData->aVertFwdDists[aBackRights[0]]) )
+            {
+                pData->aVertFlags[aBackRights[1]] = SITHPHYSICS_TRACKVERT_FRONT | SITHPHYSICS_TRACKVERT_RIGHT;
+            }
+            else
+            {
+                pData->aVertFlags[aBackRights[0]] = SITHPHYSICS_TRACKVERT_FRONT | SITHPHYSICS_TRACKVERT_RIGHT;
+            }
+        }
+        else
+        {
+            SITH_ASSERTREL(0);
+        }
+    }
+    else if ( nBackLefts == 2 )
+    {
+        if ( nBackRights == 0 )
+        {
+            if ( fabsf(pData->aVertRightDists[aBackLefts[1]]) <= fabsf(pData->aVertRightDists[aBackLefts[0]]) )
+            {
+                pData->aVertFlags[aBackLefts[1]] = SITHPHYSICS_TRACKVERT_BACK | SITHPHYSICS_TRACKVERT_RIGHT;
+            }
+            else
+            {
+                pData->aVertFlags[aBackLefts[0]] = SITHPHYSICS_TRACKVERT_BACK | SITHPHYSICS_TRACKVERT_RIGHT;
+            }
+        }
+        else if ( nFrontLefts == 0 )
+        {
+            if ( fabsf(pData->aVertFwdDists[aBackLefts[1]]) <= fabsf(pData->aVertFwdDists[aBackLefts[0]]) )
+            {
+                pData->aVertFlags[aBackLefts[1]] = SITHPHYSICS_TRACKVERT_FRONT | SITHPHYSICS_TRACKVERT_LEFT;
+            }
+            else
+            {
+                pData->aVertFlags[aBackLefts[0]] = SITHPHYSICS_TRACKVERT_FRONT | SITHPHYSICS_TRACKVERT_LEFT;
+            }
+        }
+        else
+        {
+            SITH_ASSERTREL(0);
+        }
+    }
+
+    for ( size_t i = 0; i < pData->nVertices; i++ )
+    {
+        uint32_t flags = pData->aVertFlags[i];
+        if ( (flags & SITHPHYSICS_TRACKVERT_FRONT) != 0 && (flags & SITHPHYSICS_TRACKVERT_RIGHT) != 0 )
+        {
+            pData->frontRight = pData->aVertices[i];
+        }
+        else if ( (flags & SITHPHYSICS_TRACKVERT_FRONT) != 0 && (flags & SITHPHYSICS_TRACKVERT_LEFT) != 0 )
+        {
+            pData->frontLeft = pData->aVertices[i];
+        }
+        else if ( (flags & SITHPHYSICS_TRACKVERT_BACK) != 0 && (flags & SITHPHYSICS_TRACKVERT_RIGHT) != 0 )
+        {
+            pData->backRight = pData->aVertices[i];
+        }
+        else if ( (flags & SITHPHYSICS_TRACKVERT_BACK) != 0 && (flags & SITHPHYSICS_TRACKVERT_LEFT) != 0 )
+        {
+            pData->backLeft = pData->aVertices[i];
+        }
+    }
+
+    // A triangle has one corner missing; duplicate the corner on the same side
+    if ( pData->nVertices == 3 )
+    {
+        if ( nBackLefts == 0 )
+        {
+            pData->backLeft = pData->frontLeft;
+        }
+        else if ( nFrontLefts == 0 )
+        {
+            pData->frontLeft = pData->backLeft;
+        }
+        else if ( nBackRights == 0 )
+        {
+            pData->backRight = pData->frontRight;
+        }
+        else if ( nFrontRights == 0 )
+        {
+            pData->frontRight = pData->backRight;
+        }
+    }
+
+    pData->backCenter.x  = (pData->backLeft.x + pData->backRight.x) * 0.5f;
+    pData->backCenter.y  = (pData->backLeft.y + pData->backRight.y) * 0.5f;
+    pData->backCenter.z  = (pData->backLeft.z + pData->backRight.z) * 0.5f;
+    pData->frontCenter.x = (pData->frontLeft.x + pData->frontRight.x) * 0.5f;
+    pData->frontCenter.y = (pData->frontLeft.y + pData->frontRight.y) * 0.5f;
+    pData->frontCenter.z = (pData->frontLeft.z + pData->frontRight.z) * 0.5f;
+
+    if ( pData->nVertices == 3 )
+    {
+        // If there's no track ahead of the front edge, the triangle points backward along a side edge;
+        // use the middle of the side edge that isn't collapsed as the front.
+        rdVector3 probeDir;
+        rdVector_Sub3(&probeDir, &pData->frontCenter, &pData->backCenter);
+        rdVector_Normalize3Acc(&probeDir);
+        rdVector_Scale3Acc(&probeDir, 0.025f);
+
+        rdVector3 probePos;
+        rdVector_Add3(&probePos, &probeDir, &pData->frontCenter);
+
+        rdFace* pAheadFace;
+        if ( !sithPhysics_CheckForPointOnTrack(pThing, &probePos, &pAheadFace, 0, pFace) )
+        {
+            rdVector3 leftEdge;
+            rdVector_Sub3(&leftEdge, &pData->backLeft, &pData->frontLeft);
+            if ( rdVector_IsZero3(&leftEdge) )
+            {
+                pData->frontCenter.x = (pData->backRight.x + pData->frontRight.x) * 0.5f;
+                pData->frontCenter.y = (pData->backRight.y + pData->frontRight.y) * 0.5f;
+                pData->frontCenter.z = (pData->backRight.z + pData->frontRight.z) * 0.5f;
+            }
+            else
+            {
+                pData->frontCenter.x = (pData->backLeft.x + pData->frontLeft.x) * 0.5f;
+                pData->frontCenter.y = (pData->backLeft.y + pData->frontLeft.y) * 0.5f;
+                pData->frontCenter.z = (pData->backLeft.z + pData->frontLeft.z) * 0.5f;
+            }
+        }
+    }
+
+    pData->center.x = (pData->frontCenter.x + pData->backCenter.x) * 0.5f;
+    pData->center.y = (pData->frontCenter.y + pData->backCenter.y) * 0.5f;
+    pData->center.z = (pData->frontCenter.z + pData->backCenter.z) * 0.5f;
+
+    rdVector_Sub3(&pData->dir, &pData->frontCenter, &pData->backCenter);
+    rdVector_Normalize3Acc(&pData->dir);
+
+    rdVector_Cross3(&pData->right, &pData->dir, &rdroid_g_zVector3);
+    rdVector_Normalize3Acc(&pData->right);
+
+    pData->distToFront  = -rdMath_DistancePointToPlane(pPos, &pData->dir, &pData->frontCenter);
+    pData->distFromBack = ((pPos->x - pData->backCenter.x) * pData->dir.x + (pPos->z - pData->backCenter.z) * pData->dir.z)
+        + (pPos->y - pData->backCenter.y) * pData->dir.y;
+    return 1;
 }
 
 int J3DAPI sithPhysics_CheckForPointOnTrack(SithThing* pThing, const rdVector3* pPoint, rdFace** ppFoundFace, int bUpdateState, const rdFace* pPrevFace)
@@ -3372,43 +4112,1140 @@ void J3DAPI sithPhysics_FreeUserBlockEntry(SithThing* pThing)
     }
 }
 
-int J3DAPI sithPhysics_sub_487EC0(SithThing* pThing, void* pData, float* secDeltaTime, rdVector3* a4, rdVector3* a5, float a6)
+void J3DAPI sithPhysics_sub_487EC0(SithThing* pThing, SithTrackFaceData* pData, float* pSecDeltaTime, rdVector3* pStartPos, rdVector3* pNewPos, float speed)
 {
-    return J3D_TRAMPOLINE_CALL(sithPhysics_sub_487EC0, pThing, pData, secDeltaTime, a4, a5, a6);
+    (void)pThing;
+    (void)pStartPos;
+
+    float moveDist  = speed * *pSecDeltaTime;
+    float overshoot = moveDist - pData->distToFront;
+    if ( overshoot <= 0.0f )
+    {
+        // Move ends on this face
+        rdVector_ScaleAdd3(pNewPos, &pData->dir, overshoot, &pData->frontCenter);
+        *pSecDeltaTime = 0.0f;
+        return;
+    }
+
+    // Move to the front edge and keep the time left for the next face
+    *pNewPos       = pData->frontCenter;
+    *pSecDeltaTime = *pSecDeltaTime - (pData->distToFront / moveDist) * *pSecDeltaTime;
 }
 
 void J3DAPI sithPhysics_UpdateJeepPhysics(SithThing* pThing, float secDeltaTime)
 {
-    J3D_TRAMPOLINE_CALL(sithPhysics_UpdateJeepPhysics, pThing, secDeltaTime);
+    SithPhysicsInfo* pPhysics = &pThing->moveInfo.physics;
+    float scale               = 1.0f; // Note: Scales drag and thrust; always 1
+    float groundUpDot         = 1.0f;
+
+    if ( pThing->moveStatus == SITHPLAYERMOVE_JEEP_BOARDING || pThing->moveStatus == SITHPLAYERMOVE_JEEP_UNBOARDING )
+    {
+        return;
+    }
+
+    if ( !sithPhysics_CreateJeepUserBlock(pThing) )
+    {
+        return;
+    }
+
+    SithJeepState* pState = &pThing->userblock.pJeep->state;
+    rdVector3 thrustDelta;
+    rdVector_Zero3(&thrustDelta);
+
+    pPhysics->flags &= ~SITH_PF_UNKNOWN_200000;
+    pState->bSkidding = 0;
+
+    // Velocity direction relative to the heading scales the thrust; a jeep moving fast sideways skids
+    float moveScale = 1.0f;
+    if ( !rdVector_IsZero3(&pPhysics->velocity)
+        && pThing->moveStatus != SITHPLAYERMOVE_UNKNOWN_82
+        && pThing->moveStatus != SITHPLAYERMOVE_UNKNOWN_83 )
+    {
+        // Velocity direction in the jeep's ground plane
+        rdVector3 moveDir;
+        rdVector_Normalize3(&moveDir, &pPhysics->velocity);
+        float upDot = rdVector_Dot3(&pThing->orient.uvec, &moveDir);
+        rdVector_MultAcc3(&moveDir, &pThing->orient.uvec, -upDot);
+        rdVector_Normalize3Acc(&moveDir);
+
+        moveScale = STDMATH_CLAMP(fabsf(rdVector_Dot3(&pThing->orient.lvec, &moveDir)), 0.5f, 1.0f);
+        if ( moveScale < sithPhysics_jeepSkidMaxHeadingDot && rdVector_Len3(&pPhysics->velocity) > sithPhysics_jeepSkidMinSpeed )
+        {
+            pState->bSkidding = 1;
+        }
+    }
+
+    // Wheels and ground
+    // Note: Initialized here; the original leaves the ground normal uninitialized when the wheels aren't updated,
+    //       but then it's only compared against zero.
+    rdVector3 groundNormal = { 0.0f, 0.0f, 0.0f };
+    if ( pThing->moveStatus != SITHPLAYERMOVE_UNKNOWN_83
+        && pThing->moveStatus != SITHPLAYERMOVE_UNKNOWN_84
+        && pThing->moveStatus != SITHPLAYERMOVE_JEEP_IMPACT )
+    {
+        sithPhysics_Jeep_sub_4892E0(pThing, pState, secDeltaTime);
+        sithPhysics_sub_48AD20(pThing, pState, &groundNormal, secDeltaTime);
+
+        if ( !pState->bAllWheelsGrounded ) // Note: the flag is set when no wheel has ground contact
+        {
+            pThing->moveStatus = SITHPLAYERMOVE_JEEP_IDLE;
+
+            // Hard landing
+            if ( pPhysics->velocity.z < sithPhysics_jeepFallDeathVelocity )
+            {
+                // Found in debug version
+            #ifdef J3D_DEBUG
+                if ( (pThing->thingInfo.actorInfo.flags & SITH_AF_INVULNERABLE) != 0 )
+                {
+                    char aText[256];
+                    STD_FORMAT(aText, "Falling Death Tire %f.", pPhysics->velocity.z);
+                    sithConsole_PrintString(aText);
+                }
+            #endif
+
+                if ( (pThing->thingInfo.actorInfo.flags & SITH_AF_INVULNERABLE) == 0 )
+                {
+                    pThing->moveStatus = SITHPLAYERMOVE_JEEP_IMPACT;
+                    sithActor_KillActor(pThing, pThing, SITH_DAMAGE_IMPACT);
+                }
+            }
+        }
+        else
+        {
+            pThing->moveStatus = SITHPLAYERMOVE_UNKNOWN_82; // airborne
+        }
+    }
+
+    if ( rdVector_IsZero3(&groundNormal) )
+    {
+        groundNormal = rdroid_g_zVector3;
+    }
+
+    if ( pThing->moveStatus == SITHPLAYERMOVE_JEEP_IDLE )
+    {
+        sithPhysics_SetThingLook(pThing, &groundNormal, pPhysics->orientSpeed * secDeltaTime);
+    }
+    else if ( pThing->moveStatus == SITHPLAYERMOVE_UNKNOWN_83 )
+    {
+        // Rolling over; crash once upside down
+        rdVector_MultAcc3(&pPhysics->velocity, &pThing->orient.uvec, sithPhysics_jeepRolloverLift * secDeltaTime);
+
+        rdVector3 downDir = RDVECTOR_NEG3(rdroid_g_zVector3);
+        sithPhysics_SetThingLook(pThing, &downDir, sithPhysics_jeepRolloverTurnSpeed * secDeltaTime);
+        if ( fabsf(1.0f - rdVector_Dot3(&pThing->orient.uvec, &downDir)) < sithPhysics_jeepRolloverEndDot )
+        {
+            pThing->moveStatus = SITHPLAYERMOVE_JEEP_IMPACT;
+            sithActor_KillActor(pThing, pThing, SITH_DAMAGE_IMPACT);
+        }
+    }
+
+    // Start rolling over when tilted too far sideways or upside down
+    if ( pThing->moveStatus != SITHPLAYERMOVE_UNKNOWN_83
+        && pThing->moveStatus != SITHPLAYERMOVE_UNKNOWN_84
+        && pThing->moveStatus != SITHPLAYERMOVE_JEEP_IMPACT )
+    {
+        float sideTilt = fabsf(rdVector_Dot3(&pThing->orient.rvec, &rdroid_g_zVector3));
+        if ( sideTilt > sithPhysics_jeepRolloverSideTilt || pThing->orient.uvec.z <= sithPhysics_jeepRolloverMinUpZ )
+        {
+            // Found in debug version
+        #ifdef J3D_DEBUG
+            if ( (pThing->thingInfo.actorInfo.flags & SITH_AF_INVULNERABLE) != 0 )
+            {
+                char aText[256];
+                STD_FORMAT(aText, "Rollover Death.");
+                sithConsole_PrintString(aText);
+            }
+        #endif
+
+            if ( (pThing->thingInfo.actorInfo.flags & SITH_AF_INVULNERABLE) == 0 )
+            {
+                pThing->moveStatus       = SITHPLAYERMOVE_UNKNOWN_83;
+                pThing->collide.movesize = sithPhysics_jeepRolloverMoveSize;
+                rdVector_Zero3(&pPhysics->rotThrust);
+                rdVector_Zero3(&pPhysics->thrust);
+            }
+        }
+    }
+
+    //
+    // Turning
+    //
+    if ( (pPhysics->flags & SITH_PF_USEANGULARTHRUST) != 0 && pThing->moveStatus != SITHPLAYERMOVE_UNKNOWN_82 )
+    {
+        if ( !rdVector_IsZero3(&pPhysics->angularVelocity) )
+        {
+            sithPhysics_ApplyDrag(&pPhysics->angularVelocity, pPhysics->surfDrag, 0.0f, secDeltaTime);
+        }
+
+        pPhysics->angularVelocity.yaw = pPhysics->rotThrust.yaw * secDeltaTime + pPhysics->angularVelocity.yaw;
+
+        const float maxRotVel = pPhysics->maxRotationVelocity;
+        pPhysics->angularVelocity.pitch = STDMATH_CLAMP(pPhysics->angularVelocity.pitch, -maxRotVel, maxRotVel);
+        pPhysics->angularVelocity.yaw   = STDMATH_CLAMP(pPhysics->angularVelocity.yaw, -maxRotVel, maxRotVel);
+        pPhysics->angularVelocity.roll  = STDMATH_CLAMP(pPhysics->angularVelocity.roll, -maxRotVel, maxRotVel);
+
+        pPhysics->angularVelocity.pitch = stdMath_ClipNearZero(pPhysics->angularVelocity.pitch);
+        pPhysics->angularVelocity.yaw   = stdMath_ClipNearZero(pPhysics->angularVelocity.yaw);
+        pPhysics->angularVelocity.roll  = stdMath_ClipNearZero(pPhysics->angularVelocity.roll);
+    }
+
+    if ( pPhysics->angularVelocity.yaw != 0.0f )
+    {
+        rdVector3 rotDelta;
+        rdVector_Scale3(&rotDelta, &pPhysics->angularVelocity, secDeltaTime);
+
+        rdMatrix34 rotMat;
+        rdMatrix_BuildRotate34(&rotMat, &rotDelta);
+        sithCollision_RotateThing(pThing, &rotMat);
+
+        if ( !pState->bSkidding
+            && pThing->moveStatus != SITHPLAYERMOVE_UNKNOWN_82
+            && pThing->moveStatus != SITHPLAYERMOVE_UNKNOWN_83 )
+        {
+            // The wheels grip: turn the velocity with the jeep, at a turn rate decreasing with speed
+            float speed = rdVector_Len3(&pPhysics->velocity);
+            float maxTurnRate;
+            if ( speed <= sithPhysics_jeepTurnRateMinSpeed )
+            {
+                maxTurnRate = sithPhysics_jeepTurnRate * 2.0f;
+            }
+            else
+            {
+                float speedOffset, speedRange, startRate, endRate;
+                if ( speed <= pPhysics->maxVelocity )
+                {
+                    // Note: The speed isn't offset by the min speed the range starts at
+                    endRate     = sithPhysics_jeepTurnRateAtMaxSpeed;
+                    startRate   = sithPhysics_jeepTurnRate;
+                    speedOffset = 0.0f;
+                    speedRange  = pPhysics->maxVelocity - sithPhysics_jeepTurnRateMinSpeed;
+                }
+                else
+                {
+                    endRate     = sithPhysics_jeepTurnRateOverMaxSpeed;
+                    startRate   = sithPhysics_jeepTurnRateAtMaxSpeed;
+                    speedOffset = pPhysics->maxVelocity;
+                    speedRange  = 2.0f - pPhysics->maxVelocity;
+                }
+
+                float rangeSpeed = STDMATH_CLAMP(speed - speedOffset, 0.0f, speedRange);
+                maxTurnRate = ((endRate - startRate) / speedRange) * rangeSpeed + startRate;
+            }
+
+            maxTurnRate = maxTurnRate * secDeltaTime;
+            rotDelta.pitch = STDMATH_CLAMP(rotDelta.pitch, -maxTurnRate, maxTurnRate);
+            rotDelta.yaw   = STDMATH_CLAMP(rotDelta.yaw, -maxTurnRate, maxTurnRate);
+            rotDelta.roll  = STDMATH_CLAMP(rotDelta.roll, -maxTurnRate, maxTurnRate);
+
+            rdMatrix_BuildRotate34(&rotMat, &rotDelta);
+            rdMatrix_TransformVector34Acc(&pPhysics->velocity, &rotMat);
+        }
+
+        rdMatrix_Normalize34(&pThing->orient);
+    }
+
+    //
+    // Drag and thrust
+    //
+    scale = STDMATH_CLAMP(scale, 0.25f, 1.0f);
+    if ( !rdVector_IsZero3(&pPhysics->velocity) && pPhysics->surfDrag != 0.0f )
+    {
+        if ( (pPhysics->flags & SITH_PF_FORCEAPPLIED) != 0 )
+        {
+            pPhysics->flags &= ~SITH_PF_FORCEAPPLIED;
+        }
+        else if ( pThing->moveStatus == SITHPLAYERMOVE_UNKNOWN_82 )
+        {
+            sithPhysics_ApplyDrag(&pPhysics->velocity, sithPhysics_jeepAirDrag * scale, 0.0f, secDeltaTime);
+        }
+        else if ( rdVector_IsZero3(&pPhysics->thrust) )
+        {
+            sithPhysics_ApplyDrag(&pPhysics->velocity, pPhysics->surfDrag * scale, pPhysics->staticDrag * scale, secDeltaTime);
+        }
+        else
+        {
+            sithPhysics_ApplyDrag(&pPhysics->velocity, pPhysics->surfDrag * scale, 0.0f, secDeltaTime);
+        }
+    }
+
+    if ( (pPhysics->flags & SITH_PF_USETHRUST) != 0
+        && !rdVector_IsZero3(&pPhysics->thrust)
+        && pThing->moveStatus != SITHPLAYERMOVE_UNKNOWN_82
+        && pThing->moveStatus != SITHPLAYERMOVE_UNKNOWN_83
+        && pThing->moveStatus != SITHPLAYERMOVE_UNKNOWN_84
+        && pThing->moveStatus != SITHPLAYERMOVE_JEEP_IMPACT )
+    {
+        float thrustScale = secDeltaTime * scale * moveScale;
+
+        // Forward thrust follows the ground (upVector holds the forward direction along the ground)
+        rdVector3 fwdThrust;
+        rdVector_Scale3(&fwdThrust, &pState->upVector, pPhysics->thrust.y);
+
+        rdVector3 sideThrust = { pPhysics->thrust.x, 0.0f, pPhysics->thrust.z };
+        if ( !rdVector_IsZero3(&sideThrust) )
+        {
+            rdMatrix_TransformVector34Acc(&sideThrust, &pThing->orient);
+        }
+
+        thrustDelta.x = stdMath_ClipNearZero((fwdThrust.x + sideThrust.x) * thrustScale);
+        thrustDelta.y = stdMath_ClipNearZero((fwdThrust.y + sideThrust.y) * thrustScale);
+        thrustDelta.z = stdMath_ClipNearZero((fwdThrust.z + sideThrust.z) * thrustScale);
+    }
+
+    if ( pThing->moveStatus == SITHPLAYERMOVE_JEEP_IDLE )
+    {
+        groundUpDot = rdVector_Dot3(&groundNormal, &rdroid_g_zVector3);
+        if ( groundUpDot < sithPhysics_jeepSlopeDot )
+        {
+            // On a slope
+            rdVector3 slopeSide, downhillDir;
+            rdVector_Cross3(&slopeSide, &groundNormal, &rdroid_g_zVector3);
+            rdVector_Cross3(&downhillDir, &groundNormal, &slopeSide);
+            rdVector_Normalize3Acc(&downhillDir);
+
+            if ( groundUpDot < sithPhysics_jeepSteepSlopeDot )
+            {
+                // Steep slope: slide down, thrust weakens
+                const float slopeRange = sithPhysics_jeepSteepSlopeDot - sithPhysics_jeepSteepestSlopeDot;
+                const float steepness  = sithPhysics_jeepSteepSlopeDot - groundUpDot;
+
+                float thrustKeep = steepness * ((sithPhysics_flt_585410 - sithPhysics_jeepSlopeThrustKeep) / slopeRange) + sithPhysics_jeepSlopeThrustKeep;
+                thrustKeep = STDMATH_CLAMP(thrustKeep, sithPhysics_jeepSlopeMinScale, sithPhysics_jeepSlopeMaxScale);
+
+                float slideSpeed = steepness * ((sithPhysics_jeepSlopeMaxScale - sithPhysics_jeepSlopeMinScale) / slopeRange) + sithPhysics_jeepSlopeMinScale;
+                slideSpeed = STDMATH_CLAMP(slideSpeed, sithPhysics_jeepSlopeMinScale, sithPhysics_jeepSlopeMaxScale);
+                slideSpeed = slideSpeed * secDeltaTime;
+
+                thrustDelta.x = downhillDir.x * slideSpeed + thrustDelta.x * thrustKeep;
+                thrustDelta.y = downhillDir.y * slideSpeed + thrustDelta.y * thrustKeep;
+                thrustDelta.z = downhillDir.z * slideSpeed + thrustDelta.z * thrustKeep;
+            }
+
+            // Driving up/down the slope: accelerate along the heading
+            float fwdSpeed   = stdMath_ClipNearZero(rdVector_Dot3(&pThing->orient.lvec, &pPhysics->velocity));
+            float slopeDot   = stdMath_ClipNearZero(rdVector_Dot3(&pThing->orient.lvec, &downhillDir));
+            fwdSpeed         = stdMath_ClipNearZero(fwdSpeed * slopeDot);
+            float slopeAccel = 0.0f;
+            if ( pPhysics->thrust.y != 0.0f && fwdSpeed != 0.0f )
+            {
+                if ( fwdSpeed > 0.0f )
+                {
+                    slopeAccel = sithPhysics_jeepSlopeAccel;
+                }
+                else if ( fwdSpeed < 0.0f )
+                {
+                    slopeAccel = -(fwdSpeed / secDeltaTime);
+                    if ( slopeAccel > sithPhysics_jeepSlopeMaxBrake )
+                    {
+                        slopeAccel = sithPhysics_jeepSlopeMaxBrake;
+                    }
+                }
+            }
+
+            float accel = (sithPhysics_jeepSlopeAccelScale - groundUpDot) * slopeAccel * secDeltaTime * slopeDot;
+            rdVector_MultAcc3(&thrustDelta, &pThing->orient.lvec, accel);
+        }
+    }
+
+    //
+    // Velocity
+    //
+    rdVector_Add3Acc(&pPhysics->velocity, &thrustDelta);
+    pPhysics->velocity.x = stdMath_ClipNearZero(pPhysics->velocity.x);
+    pPhysics->velocity.y = stdMath_ClipNearZero(pPhysics->velocity.y);
+    pPhysics->velocity.z = stdMath_ClipNearZero(pPhysics->velocity.z);
+
+    if ( pThing->moveStatus == SITHPLAYERMOVE_UNKNOWN_82 )
+    {
+        // Airborne: gravity, weaker when flying up fast
+        float gravity = sithPhysics_jeepAirGravity;
+        if ( pPhysics->velocity.z >= 0.0f && pPhysics->maxVelocity * 0.95f < rdVector_Len3(&pPhysics->velocity) )
+        {
+            gravity = sithPhysics_jeepAirGravityFastUp;
+        }
+
+        pPhysics->velocity.z = pPhysics->velocity.z - gravity * secDeltaTime;
+    }
+    else if ( pThing->moveStatus == SITHPLAYERMOVE_UNKNOWN_84
+        || pThing->moveStatus == SITHPLAYERMOVE_UNKNOWN_83
+        || pThing->moveStatus == SITHPLAYERMOVE_JEEP_IMPACT )
+    {
+        pPhysics->velocity.z = pPhysics->velocity.z - sithPhysics_jeepCrashGravity * secDeltaTime;
+    }
+    else if ( pState->numGroundedWheels > 2 && !rdVector_IsZero3(&pPhysics->velocity) )
+    {
+        // On the ground: cancel velocity into the ground
+        float groundDot = stdMath_ClipNearZero(rdVector_Dot3(&pPhysics->velocity, &groundNormal));
+        if ( groundDot < 0.0f )
+        {
+            rdVector_MultAcc3(&pPhysics->velocity, &groundNormal, -groundDot);
+        }
+    }
+
+    pPhysics->velocity.x = stdMath_ClipNearZero(pPhysics->velocity.x);
+    pPhysics->velocity.y = stdMath_ClipNearZero(pPhysics->velocity.y);
+    pPhysics->velocity.z = stdMath_ClipNearZero(pPhysics->velocity.z);
+
+    if ( rdVector_Len3(&pPhysics->velocity) < 0.005f && rdVector_IsZero3(&pPhysics->thrust) )
+    {
+        rdVector_Zero3(&pPhysics->velocity);
+    }
+
+    if ( !rdVector_IsZero3(&pPhysics->velocity) )
+    {
+        rdVector_Scale3(&pPhysics->deltaVelocity, &pPhysics->velocity, secDeltaTime);
+    }
+
+    // Move the jeep onto the wheels
+    if ( pThing->moveStatus != SITHPLAYERMOVE_UNKNOWN_83
+        && pThing->moveStatus != SITHPLAYERMOVE_UNKNOWN_84
+        && pThing->moveStatus != SITHPLAYERMOVE_JEEP_IMPACT )
+    {
+        rdVector3 posCorrection;
+        rdVector_Sub3(&posCorrection, &pState->centerOfMass, &pThing->pos);
+        posCorrection.x = stdMath_ClipNearZero(posCorrection.x);
+        posCorrection.y = stdMath_ClipNearZero(posCorrection.y);
+        posCorrection.z = stdMath_ClipNearZero(posCorrection.z);
+        if ( rdVector_Len3(&posCorrection) > 0.001f )
+        {
+            rdVector_Add3Acc(&pPhysics->deltaVelocity, &posCorrection);
+
+            // Going down onto the ground while moving up: damp the upward velocity
+            if ( pState->numGroundedWheels > 1
+                && posCorrection.z < 0.0f
+                && pPhysics->velocity.z > 0.0f
+                && rdVector_Len3(&pPhysics->velocity) < pPhysics->maxVelocity * 0.95f )
+            {
+                pPhysics->velocity.z = (posCorrection.z / secDeltaTime) * 0.75f + pPhysics->velocity.z;
+            }
+        }
+    }
+
+    sithPhysics_UpdateJeepFx(pThing, &pThing->userblock.pJeep->fxstate, secDeltaTime);
+    sithPhysics_UpdateExhaustFx(pThing, &pThing->userblock.pJeep->exhaustInfo, secDeltaTime);
 }
 
-int J3DAPI sithPhysics_Jeep_sub_4892E0(SithThing* pThing, void* a2, float secDeltaTime)
+int J3DAPI sithPhysics_Jeep_sub_4892E0(SithThing* pThing, SithJeepState* pState, float secDeltaTime)
 {
-    return J3D_TRAMPOLINE_CALL(sithPhysics_Jeep_sub_4892E0, pThing, a2, secDeltaTime);
+    // Wheel contact states: 1 on ground, 2 no ground, 3 pressed into the ground, 4 on a steep surface
+    SithPhysicsInfo* pPhysics       = &pThing->moveInfo.physics;
+    SithJeepWheelState* pFrontLeft  = &pState->aWheels[0];
+    SithJeepWheelState* pRearLeft   = &pState->aWheels[1];
+    SithJeepWheelState* pRearRight  = &pState->aWheels[2];
+    SithJeepWheelState* pFrontRight = &pState->aWheels[3];
+
+    pState->numGroundedWheels = 0;
+    rdVector_Zero3(&pState->upVector);
+
+    // Probe the ground under each wheel
+    float halfWidth  = pState->width * 0.5f;
+    float halfLength = pState->length * 0.5f;
+    float halfHeight = pState->height * 0.5f;
+
+    rdVector3 wheelPos;
+    wheelPos.x = -halfWidth;
+    wheelPos.y = halfLength;
+    wheelPos.z = -halfHeight;
+    rdMatrix_TransformPoint34Acc(&wheelPos, &pThing->orient);
+    rdVector_Add3Acc(&wheelPos, &pThing->pos);
+    sithPhysics_sub_48A970(pThing, pFrontLeft, &wheelPos);
+
+    wheelPos.x = halfWidth;
+    wheelPos.y = halfLength;
+    wheelPos.z = -halfHeight;
+    rdMatrix_TransformPoint34Acc(&wheelPos, &pThing->orient);
+    rdVector_Add3Acc(&wheelPos, &pThing->pos);
+    sithPhysics_sub_48A970(pThing, pFrontRight, &wheelPos);
+
+    wheelPos.x = -halfWidth;
+    wheelPos.y = -halfLength;
+    wheelPos.z = -halfHeight;
+    rdMatrix_TransformPoint34Acc(&wheelPos, &pThing->orient);
+    rdVector_Add3Acc(&wheelPos, &pThing->pos);
+    sithPhysics_sub_48A970(pThing, pRearLeft, &wheelPos);
+
+    wheelPos.x = halfWidth;
+    wheelPos.y = -halfLength;
+    wheelPos.z = -halfHeight;
+    rdMatrix_TransformPoint34Acc(&wheelPos, &pThing->orient);
+    rdVector_Add3Acc(&wheelPos, &pThing->pos);
+    sithPhysics_sub_48A970(pThing, pRearRight, &wheelPos);
+
+    // Airborne when no wheel stands on drivable ground
+    int bWasAirborne   = pState->bAllWheelsGrounded;
+    size_t numNoGround = 0;
+    size_t numOnSteep  = 0;
+    for ( size_t i = 0; i < STD_ARRAYLEN(pState->aWheels); i++ )
+    {
+        if ( pState->aWheels[i].contactState == 2 )
+        {
+            numNoGround++;
+        }
+        else if ( pState->aWheels[i].contactState == 4 )
+        {
+            numOnSteep++;
+        }
+    }
+
+    if ( numNoGround == 4 )
+    {
+        pState->bAllWheelsGrounded = 1;
+    }
+    else if ( numNoGround == 3 && numOnSteep == 1 )
+    {
+        pState->bAllWheelsGrounded = 1;
+    }
+    else if ( numNoGround == 2 && numOnSteep == 2 )
+    {
+        pState->bAllWheelsGrounded = 1;
+    }
+    else
+    {
+        pState->bAllWheelsGrounded = 0;
+    }
+
+    if ( !bWasAirborne && pState->bAllWheelsGrounded )
+    {
+        pState->timeAllWheelsGrounded = 0.0f;
+    }
+    else if ( bWasAirborne && pState->bAllWheelsGrounded )
+    {
+        pState->timeAllWheelsGrounded = pState->timeAllWheelsGrounded + secDeltaTime;
+    }
+
+    float dropDist  = sithPhysics_jeepWheelDropSpeed * secDeltaTime;
+    float slideDist = sithPhysics_jeepWheelSlideSpeed * secDeltaTime;
+    pPhysics->thrust.z = 0.0f;
+
+    if ( !pState->bAllWheelsGrounded )
+    {
+        float minImpact = 1.0f;
+        float dist;
+
+        // Lower the wheels of an axle or side that are both off the ground
+        if ( pFrontRight->contactState == 2 && pFrontLeft->contactState == 2 )
+        {
+            dist = pFrontRight->compressionDist <= dropDist ? pFrontRight->compressionDist : dropDist;
+            dist = dist * fabsf(pThing->orient.uvec.z);
+            rdVector_MultAcc3(&pFrontRight->curPos, &pThing->orient.uvec, -dist);
+            pFrontRight->compressionDist = pFrontRight->compressionDist - dist;
+
+            dist = pFrontLeft->compressionDist <= dropDist ? pFrontLeft->compressionDist : dropDist;
+            dist = dist * fabsf(pThing->orient.uvec.z);
+            rdVector_MultAcc3(&pFrontLeft->curPos, &pThing->orient.uvec, -dist);
+            pFrontLeft->compressionDist = pFrontLeft->compressionDist - dist;
+        }
+
+        if ( pRearRight->contactState == 2 && pRearLeft->contactState == 2 )
+        {
+            dist = pRearRight->compressionDist <= dropDist ? pRearRight->compressionDist : dropDist;
+            dist = dist * fabsf(pThing->orient.uvec.z);
+            rdVector_MultAcc3(&pRearRight->curPos, &pThing->orient.uvec, -dist);
+            pRearRight->compressionDist = pRearRight->compressionDist - dist;
+
+            dist = pRearLeft->compressionDist <= dropDist ? pRearLeft->compressionDist : dropDist;
+            dist = dist * fabsf(pThing->orient.uvec.z);
+            rdVector_MultAcc3(&pRearLeft->curPos, &pThing->orient.uvec, -dist);
+            pRearLeft->compressionDist = pRearLeft->compressionDist - dist;
+        }
+
+        if ( pFrontLeft->contactState == 2 && pRearLeft->contactState == 2 )
+        {
+            dist = pFrontLeft->compressionDist <= dropDist ? pFrontLeft->compressionDist : dropDist;
+            dist = dist * fabsf(pThing->orient.uvec.z);
+            rdVector_MultAcc3(&pFrontLeft->curPos, &pThing->orient.uvec, -dist);
+            pFrontLeft->compressionDist = pFrontLeft->compressionDist - dist;
+
+            dist = pRearLeft->compressionDist <= dropDist ? pRearLeft->compressionDist : dropDist;
+            dist = dist * fabsf(pThing->orient.uvec.z);
+            rdVector_MultAcc3(&pRearLeft->curPos, &pThing->orient.uvec, -dist);
+            pRearLeft->compressionDist = pRearLeft->compressionDist - dist;
+        }
+
+        if ( pFrontRight->contactState == 2 && pRearRight->contactState == 2 )
+        {
+            dist = pFrontRight->compressionDist <= dropDist ? pFrontRight->compressionDist : dropDist;
+            dist = dist * fabsf(pThing->orient.uvec.z);
+            rdVector_MultAcc3(&pFrontRight->curPos, &pThing->orient.uvec, -dist);
+            pFrontRight->compressionDist = pFrontRight->compressionDist - dist;
+
+            dist = pRearRight->compressionDist <= dropDist ? pRearRight->compressionDist : dropDist;
+            dist = dist * fabsf(pThing->orient.uvec.z);
+            rdVector_MultAcc3(&pRearRight->curPos, &pThing->orient.uvec, -dist);
+            pRearRight->compressionDist = pRearRight->compressionDist - dist;
+        }
+
+        // A wheel on a steep surface slides down along it, and the jeep stops moving into the surface
+        if ( pFrontRight->contactState == 4 )
+        {
+            rdVector3 wallSide, slideDir, wallDir;
+            rdVector_Cross3(&wallSide, &rdroid_g_zVector3, &pFrontRight->surfNormal);
+            rdVector_Cross3(&slideDir, &wallSide, &pFrontRight->surfNormal);
+            dist = -slideDir.z * slideDist;
+            if ( pFrontRight->prevCompressionDist <= dist )
+            {
+                dist = pFrontRight->prevCompressionDist;
+            }
+
+            rdVector_MultAcc3(&pFrontRight->curPos, &slideDir, dist);
+
+            // Surface normal in the jeep's ground plane
+            dist = rdVector_Dot3(&pFrontRight->surfNormal, &pThing->orient.uvec);
+            rdVector_ScaleAdd3(&wallDir, &pThing->orient.uvec, -dist, &pFrontRight->surfNormal);
+            rdVector_Normalize3Acc(&wallDir);
+
+            float impact = rdVector_Dot3(&pPhysics->velocity, &wallDir);
+            if ( impact < 0.0f )
+            {
+                impact = (sithPhysics_jeepWallImpactNormalZ - pFrontRight->surfNormal.z) * impact * sithPhysics_jeepWallImpactScale;
+                rdVector_MultAcc3(&pPhysics->velocity, &wallDir, -impact);
+                if ( impact < minImpact )
+                {
+                    minImpact = impact;
+                }
+            }
+        }
+
+        if ( pFrontLeft->contactState == 4 )
+        {
+            rdVector3 wallSide, slideDir, wallDir;
+            rdVector_Cross3(&wallSide, &rdroid_g_zVector3, &pFrontLeft->surfNormal);
+            rdVector_Cross3(&slideDir, &wallSide, &pFrontLeft->surfNormal);
+            dist = -slideDir.z * slideDist;
+            if ( pFrontLeft->prevCompressionDist <= dist )
+            {
+                dist = pFrontLeft->prevCompressionDist;
+            }
+
+            rdVector_MultAcc3(&pFrontLeft->curPos, &slideDir, dist);
+
+            // Surface normal in the jeep's ground plane
+            dist = rdVector_Dot3(&pFrontLeft->surfNormal, &pThing->orient.uvec);
+            rdVector_ScaleAdd3(&wallDir, &pThing->orient.uvec, -dist, &pFrontLeft->surfNormal);
+            rdVector_Normalize3Acc(&wallDir);
+
+            float impact = rdVector_Dot3(&pPhysics->velocity, &wallDir);
+            if ( impact < 0.0f )
+            {
+                impact = (sithPhysics_jeepWallImpactNormalZ - pFrontLeft->surfNormal.z) * impact * sithPhysics_jeepWallImpactScale;
+                rdVector_MultAcc3(&pPhysics->velocity, &wallDir, -impact);
+                if ( impact < minImpact )
+                {
+                    minImpact = impact;
+                }
+            }
+        }
+
+        if ( pRearLeft->contactState == 4 )
+        {
+            rdVector3 wallSide, slideDir, wallDir;
+            rdVector_Cross3(&wallSide, &rdroid_g_zVector3, &pRearLeft->surfNormal);
+            rdVector_Cross3(&slideDir, &wallSide, &pRearLeft->surfNormal);
+            dist = -slideDir.z * slideDist;
+            if ( pRearLeft->prevCompressionDist <= dist )
+            {
+                dist = pRearLeft->prevCompressionDist;
+            }
+
+            rdVector_MultAcc3(&pRearLeft->curPos, &slideDir, dist);
+
+            // Surface normal in the jeep's ground plane
+            dist = rdVector_Dot3(&pRearLeft->surfNormal, &pThing->orient.uvec);
+            rdVector_ScaleAdd3(&wallDir, &pThing->orient.uvec, -dist, &pRearLeft->surfNormal);
+            rdVector_Normalize3Acc(&wallDir);
+
+            float impact = rdVector_Dot3(&pPhysics->velocity, &wallDir);
+            if ( impact < 0.0f )
+            {
+                impact = (sithPhysics_jeepWallImpactNormalZ - pRearLeft->surfNormal.z) * impact * sithPhysics_jeepWallImpactScale;
+                rdVector_MultAcc3(&pPhysics->velocity, &wallDir, -impact);
+                if ( impact < minImpact )
+                {
+                    minImpact = impact;
+                }
+            }
+        }
+
+        if ( pRearRight->contactState == 4 )
+        {
+            rdVector3 wallSide, slideDir, wallDir;
+            rdVector_Cross3(&wallSide, &rdroid_g_zVector3, &pRearRight->surfNormal);
+            rdVector_Cross3(&slideDir, &wallSide, &pRearRight->surfNormal);
+            dist = -slideDir.z * slideDist;
+            if ( pRearRight->prevCompressionDist <= dist )
+            {
+                dist = pRearRight->prevCompressionDist;
+            }
+
+            rdVector_MultAcc3(&pRearRight->curPos, &slideDir, dist);
+
+            // Surface normal in the jeep's ground plane
+            dist = rdVector_Dot3(&pRearRight->surfNormal, &pThing->orient.uvec);
+            rdVector_ScaleAdd3(&wallDir, &pThing->orient.uvec, -dist, &pRearRight->surfNormal);
+            rdVector_Normalize3Acc(&wallDir);
+
+            float impact = rdVector_Dot3(&pPhysics->velocity, &wallDir);
+            if ( impact < 0.0f )
+            {
+                impact = (sithPhysics_jeepWallImpactNormalZ - pRearRight->surfNormal.z) * impact * sithPhysics_jeepWallImpactScale;
+                rdVector_MultAcc3(&pPhysics->velocity, &wallDir, -impact);
+                if ( impact < minImpact )
+                {
+                    minImpact = impact;
+                }
+            }
+        }
+
+        if ( minImpact < sithPhysics_jeepHardLandingImpact )
+        {
+            sithSoundClass_PlayModeRandom(pThing, SITHSOUNDCLASS_LANDHARD);
+            sithPuppet_PlayMode(pThing, SITHPUPPETSUBMODE_LAND, NULL);
+        }
+    }
+
+    pState->avgPrevPos = pFrontRight->curPos;
+    rdVector_Add3Acc(&pState->avgPrevPos, &pFrontLeft->curPos);
+    rdVector_Add3Acc(&pState->avgPrevPos, &pRearLeft->curPos);
+    rdVector_Add3Acc(&pState->avgPrevPos, &pRearRight->curPos);
+    rdVector_Scale3Acc(&pState->avgPrevPos, 0.25f);
+
+    // Note: upVector holds the jeep's forward direction along the ground, averaged over the grounded wheels
+    if ( pFrontRight->contactState == 1 || pFrontRight->contactState == 3 )
+    {
+        rdVector3 sideDir, surfDir;
+        rdVector_Cross3(&sideDir, &pThing->orient.lvec, &pFrontRight->surfNormal);
+        rdVector_Cross3(&surfDir, &pFrontRight->surfNormal, &sideDir);
+        rdVector_Add3Acc(&pState->upVector, &surfDir);
+        pState->numGroundedWheels++;
+    }
+
+    if ( pFrontLeft->contactState == 1 || pFrontLeft->contactState == 3 )
+    {
+        rdVector3 sideDir, surfDir;
+        rdVector_Cross3(&sideDir, &pThing->orient.lvec, &pFrontLeft->surfNormal);
+        rdVector_Cross3(&surfDir, &pFrontLeft->surfNormal, &sideDir);
+        rdVector_Add3Acc(&pState->upVector, &surfDir);
+        pState->numGroundedWheels++;
+    }
+
+    if ( pRearLeft->contactState == 1 || pRearLeft->contactState == 3 )
+    {
+        rdVector3 sideDir, surfDir;
+        rdVector_Cross3(&sideDir, &pThing->orient.lvec, &pRearLeft->surfNormal);
+        rdVector_Cross3(&surfDir, &pRearLeft->surfNormal, &sideDir);
+        rdVector_Add3Acc(&pState->upVector, &surfDir);
+        pState->numGroundedWheels++;
+    }
+
+    if ( pRearRight->contactState == 1 || pRearRight->contactState == 3 )
+    {
+        rdVector3 sideDir, surfDir;
+        rdVector_Cross3(&sideDir, &pThing->orient.lvec, &pRearRight->surfNormal);
+        rdVector_Cross3(&surfDir, &pRearRight->surfNormal, &sideDir);
+        rdVector_Add3Acc(&pState->upVector, &surfDir);
+        pState->numGroundedWheels++;
+    }
+
+    rdVector_Normalize3Acc(&pState->upVector);
+    return 1;
 }
 
-// function might check for jeep surface and thing face collision
-void J3DAPI sithPhysics_sub_48A970(SithThing* pThing, void* a2, const rdVector3* a3)
+void J3DAPI sithPhysics_sub_48A970(SithThing* pThing, SithJeepWheelState* pWheel, const rdVector3* pWheelPos)
 {
-    J3D_TRAMPOLINE_CALL(sithPhysics_sub_48A970, pThing, a2, a3);
+    int bFoundGround = 0;
+    float searchDist = sithPhysics_jeepWheelProbeHeight * 2.0f;
+
+    pWheel->contactState  = 0;
+    pWheel->initPos       = *pWheelPos;
+    pWheel->curPos        = *pWheelPos;
+    pWheel->pSurfMaterial = NULL;
+
+    // Search the ground along the jeep's down axis from above the wheel
+    rdVector3 probeStart;
+    rdVector_ScaleAdd3(&probeStart, &pThing->orient.uvec, sithPhysics_jeepWheelProbeHeight, pWheelPos);
+    SithSector* pSector = sithCollision_FindSectorInRadius(pThing->pInSector, &pThing->pos, &probeStart, 0.001f);
+    if ( !pSector )
+    {
+        return;
+    }
+
+    SithCollision* pGroundHit = NULL;
+    SithCollision* pNextHit   = NULL;
+    rdVector3 probeDir = RDVECTOR_NEG3(pThing->orient.uvec);
+    sithCollision_SearchForCollisions(pSector, NULL, &probeStart, &probeDir, searchDist, pWheel->width, 0);
+
+    SithCollision* pCollision;
+    while ( (pCollision = sithCollision_PopStack()) != NULL )
+    {
+        if ( (pCollision->type & SITHCOLLISION_WORLD) != 0 && (pCollision->type & SITHCOLLISION_FACE) != 0 )
+        {
+            if ( bFoundGround )
+            {
+                pNextHit = pCollision;
+                break;
+            }
+
+            bFoundGround = 1;
+            pGroundHit   = pCollision;
+        }
+    }
+
+    if ( !bFoundGround )
+    {
+        pWheel->contactState    = 2;
+        pWheel->compressionDist = FLT_MAX;
+    }
+    else
+    {
+        const SithSurface* pSurface = pGroundHit->pSurfaceCollided;
+        pWheel->pSurfMaterial = pSurface->face.pMaterial;
+        if ( pSurface->face.normal.z < 0.0f )
+        {
+            pWheel->contactState    = 2;
+            pWheel->compressionDist = FLT_MAX;
+        }
+        else
+        {
+            // Note: compressionDist is the distance of the wheel above the ground (negative when in the ground)
+            float dist = -((sithPhysics_jeepWheelProbeHeight - pGroundHit->distance) - pWheel->width);
+            pWheel->compressionDist = dist;
+            if ( dist <= sithPhysics_jeepWheelContactDist )
+            {
+                if ( pSurface->face.normal.z < sithPhysics_flt_538D04 )
+                {
+                    // Steep surface
+                    pWheel->contactState = 4;
+                    pWheel->surfNormal   = pSurface->face.normal;
+                    if ( dist < 0.0f )
+                    {
+                        dist = dist * sithPhysics_jeepSteepWheelLiftScale;
+                        rdVector_MultAcc3(&pWheel->curPos, &pThing->orient.uvec, -dist);
+                    }
+
+                    // Note: prevCompressionDist is the distance to the surface below the steep one, used to limit
+                    //       sliding down
+                    if ( !pNextHit )
+                    {
+                        if ( (pThing->attach.flags & SITH_ATTACH_SURFACE) != 0 )
+                        {
+                            pWheel->prevCompressionDist = rdMath_DistancePointToPlane(&pWheel->curPos, &pThing->attach.pFace->normal, &pThing->attach.attachedFaceFirstVert);
+                            pWheel->prevCompressionDist = pWheel->prevCompressionDist * sithPhysics_jeepSteepWheelSlideScale;
+                        }
+                        else
+                        {
+                            pWheel->prevCompressionDist = FLT_MAX;
+                        }
+                    }
+                    else
+                    {
+                        pWheel->prevCompressionDist = -((sithPhysics_jeepWheelProbeHeight - pNextHit->distance) - pWheel->width);
+                    }
+                }
+                else
+                {
+                    pWheel->contactState = fabsf(dist) < sithPhysics_jeepWheelContactDist ? 1 : 3;
+                    rdVector_MultAcc3(&pWheel->curPos, &pThing->orient.uvec, -dist);
+                    pWheel->surfNormal = pSurface->face.normal;
+                }
+            }
+            else
+            {
+                pWheel->contactState = 2;
+            }
+        }
+    }
+
+    sithCollision_DecreaseStackLevel();
 }
 
-int J3DAPI sithPhysics_sub_48AD20(SithThing* pThing, void* a2, rdVector3* a3, float secDeltaTime)
+void J3DAPI sithPhysics_sub_48AD20(SithThing* pThing, SithJeepState* pState, rdVector3* pGroundNormal, float secDeltaTime)
 {
-    return J3D_TRAMPOLINE_CALL(sithPhysics_sub_48AD20, pThing, a2, a3, secDeltaTime);
+    SithPhysicsInfo* pPhysics             = &pThing->moveInfo.physics;
+    const SithJeepWheelState* pFrontLeft  = &pState->aWheels[0];
+    const SithJeepWheelState* pRearLeft   = &pState->aWheels[1];
+    const SithJeepWheelState* pRearRight  = &pState->aWheels[2];
+    const SithJeepWheelState* pFrontRight = &pState->aWheels[3];
+
+    // Ground normal: the sum of the normals of the triangles through 3 wheels with ground contact
+    rdVector3 edge1, edge2, triNormal;
+    rdVector_Zero3(pGroundNormal);
+    if ( pFrontRight->contactState && pFrontLeft->contactState && pRearLeft->contactState )
+    {
+        rdVector_Sub3(&edge1, &pFrontLeft->curPos, &pFrontRight->curPos);
+        rdVector_Sub3(&edge2, &pRearLeft->curPos, &pFrontLeft->curPos);
+        rdVector_Cross3(&triNormal, &edge1, &edge2);
+        rdVector_Normalize3Acc(&triNormal);
+        rdVector_Add3Acc(pGroundNormal, &triNormal);
+    }
+
+    if ( pFrontLeft->contactState && pRearLeft->contactState && pRearRight->contactState )
+    {
+        rdVector_Sub3(&edge1, &pRearLeft->curPos, &pFrontLeft->curPos);
+        rdVector_Sub3(&edge2, &pRearRight->curPos, &pRearLeft->curPos);
+        rdVector_Cross3(&triNormal, &edge1, &edge2);
+        rdVector_Normalize3Acc(&triNormal);
+        rdVector_Add3Acc(pGroundNormal, &triNormal);
+    }
+
+    if ( pRearLeft->contactState && pRearRight->contactState && pFrontRight->contactState )
+    {
+        rdVector_Sub3(&edge1, &pRearRight->curPos, &pRearLeft->curPos);
+        rdVector_Sub3(&edge2, &pFrontRight->curPos, &pRearRight->curPos);
+        rdVector_Cross3(&triNormal, &edge1, &edge2);
+        rdVector_Normalize3Acc(&triNormal);
+        rdVector_Add3Acc(pGroundNormal, &triNormal);
+    }
+
+    if ( pRearRight->contactState && pFrontRight->contactState && pFrontLeft->contactState )
+    {
+        rdVector_Sub3(&edge1, &pFrontRight->curPos, &pRearRight->curPos);
+        rdVector_Sub3(&edge2, &pFrontLeft->curPos, &pFrontRight->curPos);
+        rdVector_Cross3(&triNormal, &edge1, &edge2);
+        rdVector_Normalize3Acc(&triNormal);
+        rdVector_Add3Acc(pGroundNormal, &triNormal);
+    }
+
+    rdVector_Normalize3Acc(pGroundNormal);
+    rdVector_ScaleAdd3(&pState->centerOfMass, pGroundNormal, pState->height * 0.5f, &pState->avgPrevPos);
+
+    // A side with one wheel on a steep surface turns the jeep away from it
+    float turnScale = sithPhysics_jeepSteepTurnScale * secDeltaTime;
+    if ( pFrontRight->contactState == 4 || pFrontLeft->contactState == 4 || pRearLeft->contactState == 4 || pRearRight->contactState == 4 )
+    {
+        float sideDot = rdMath_DistancePointToPlane(&pFrontRight->curPos, &pThing->orient.rvec, &pRearRight->curPos);
+        if ( pFrontRight->contactState == 4 && pRearRight->contactState != 4 )
+        {
+            float turn  = (2.0f - pFrontRight->surfNormal.z) * sideDot;
+            float speed = rdVector_Len3(&pPhysics->velocity);
+            pPhysics->angularVelocity.yaw = pPhysics->angularVelocity.yaw - speed * turn * turnScale;
+        }
+        else if ( pRearRight->contactState == 4 && pFrontRight->contactState != 4 )
+        {
+            float turn  = (2.0f - pRearRight->surfNormal.z) * sideDot;
+            float speed = rdVector_Len3(&pPhysics->velocity);
+            pPhysics->angularVelocity.yaw = pPhysics->angularVelocity.yaw - speed * turn * turnScale;
+        }
+
+        sideDot = rdMath_DistancePointToPlane(&pFrontLeft->curPos, &pThing->orient.rvec, &pRearLeft->curPos);
+        if ( pFrontLeft->contactState == 4 && pRearLeft->contactState != 4 )
+        {
+            float turn  = (2.0f - pFrontLeft->surfNormal.z) * sideDot;
+            float speed = rdVector_Len3(&pPhysics->velocity);
+            pPhysics->angularVelocity.yaw = pPhysics->angularVelocity.yaw - speed * turn * turnScale;
+        }
+        else if ( pRearLeft->contactState == 4 && pFrontLeft->contactState != 4 )
+        {
+            float turn  = (2.0f - pRearLeft->surfNormal.z) * sideDot;
+            float speed = rdVector_Len3(&pPhysics->velocity);
+            pPhysics->angularVelocity.yaw = pPhysics->angularVelocity.yaw - speed * turn * turnScale;
+        }
+    }
+
+    // Airborne but still attached: push the jeep off the surface
+    if ( pState->bAllWheelsGrounded && pThing->attach.flags )
+    {
+        rdVector3 groundDirXY = { pGroundNormal->x, pGroundNormal->y, 0.0f };
+        rdVector_Normalize3Acc(&groundDirXY);
+
+        rdVector3 sideDir, pushDir;
+        rdVector_Cross3(&sideDir, &groundDirXY, pGroundNormal);
+        rdVector_Cross3(&pushDir, pGroundNormal, &sideDir);
+        rdVector_Normalize3Acc(&pushDir);
+        rdVector_MultAcc3(&pPhysics->velocity, &pushDir, sithPhysics_jeepPushOffSpeed * secDeltaTime);
+    }
 }
 
 int J3DAPI sithPhysics_CreateJeepUserBlock(SithThing* pThing)
 {
-    return J3D_TRAMPOLINE_CALL(sithPhysics_CreateJeepUserBlock, pThing);
+    if ( pThing->userblock.pJeep )
+    {
+        return 1;
+    }
+
+    pThing->userblock.pJeep = (SithJeepUserBlock*)STDMALLOC(sizeof(SithJeepUserBlock));
+    if ( !pThing->userblock.pJeep )
+    {
+        SITHLOG_ERROR("_CreateJeepUserBlock failed to allocate.\n");
+        return 0;
+    }
+
+    SithJeepUserBlock* pJeep = pThing->userblock.pJeep;
+    STD_ZEROMEM(pJeep, sizeof(SithJeepUserBlock));
+
+    if ( !stdUtil_StrCmp(pThing->aName, "jeepplayer") )
+    {
+        pJeep->type = 1; // player jeep
+        sithPhysics_Jeep_sub_48B4D0(pThing, &pThing->userblock.pJeep->state);
+        sithPhysics_InitVehicleFxState(pThing, &pThing->userblock.pJeep->fxstate);
+        sithPhysics_InitJeepExhaust(pThing, &pThing->userblock.pJeep->exhaustInfo);
+    }
+    else if ( !stdUtil_StrCmp(pThing->aName, "jeepplayerpyr") )
+    {
+        pJeep->type = 1; // player jeep
+        sithPhysics_Jeep_sub_48B4D0(pThing, &pThing->userblock.pJeep->state);
+        sithPhysics_InitVehicleFxState(pThing, &pThing->userblock.pJeep->fxstate);
+        sithPhysics_InitJeepExhaust(pThing, &pThing->userblock.pJeep->exhaustInfo);
+    }
+    else
+    {
+        pJeep->type = 0;
+        sithPhysics_Jeep_sub_48B4D0(pThing, &pThing->userblock.pJeep->state);
+        sithPhysics_InitVehicleFxState(pThing, &pThing->userblock.pJeep->fxstate);
+    }
+
+    return 1;
 }
 
-void J3DAPI sithPhysics_Jeep_sub_48B4D0(SithThing* pThing, float* a2)
+void J3DAPI sithPhysics_Jeep_sub_48B4D0(SithThing* pThing, SithJeepState* pState)
 {
-    J3D_TRAMPOLINE_CALL(sithPhysics_Jeep_sub_48B4D0, pThing, a2);
+    (void)pThing;
+
+    pState->width  = 0.14f;
+    pState->length = 0.22f;
+    pState->height = 0.18f;
+    for ( size_t i = 0; i < STD_ARRAYLEN(pState->aWheels); i++ )
+    {
+        pState->aWheels[i].width = 0.01f;
+    }
 }
 
-void J3DAPI sithPhysics_UpdateJeepFx(SithThing* pThing, SithVehicleEngineFxState* pFxState, float a3)
+void J3DAPI sithPhysics_UpdateJeepFx(SithThing* pThing, SithVehicleEngineFxState* pFxState, float secDeltaTime)
 {
-    J3D_TRAMPOLINE_CALL(sithPhysics_UpdateJeepFx, pThing, pFxState, a3);
+    if ( (pThing->flags & SITH_TF_DYING) != 0 )
+    {
+        return;
+    }
+
+    const SithJeepState* pState = &pThing->userblock.pJeep->state;
+
+    rdVector3 moveDir;
+    float speed     = rdVector_Normalize3(&moveDir, &pThing->moveInfo.physics.velocity);
+    float thrustMag = rdVector_Len3(&pThing->moveInfo.physics.thrust);
+    int bAirborne   = pState->bAllWheelsGrounded != 0;
+
+    pFxState->secUpdateTimer = pFxState->secUpdateTimer - secDeltaTime;
+    int bUpdateSnd = pFxState->secUpdateTimer < 0.0f;
+    if ( bUpdateSnd )
+    {
+        pFxState->secUpdateTimer = pFxState->secUpdateInterval;
+    }
+
+    // Engine
+    if ( !sithPhysics_dword_538D2C
+        || pThing->moveStatus == SITHPLAYERMOVE_JEEP_BOARDING
+        || pThing->moveStatus == SITHPLAYERMOVE_JEEP_UNBOARDING ) // Note: The original tests UNBOARDING twice
+    {
+        sithSoundClass_StopMode(pThing, SITHSOUNDCLASS_LWALKMETAL);
+    }
+    else
+    {
+        sithSoundClass_PlayModeFirstEx(pThing, SITHSOUNDCLASS_LWALKMETAL, sithPhysics_jeepEngineStartSndVolume);
+        if ( bUpdateSnd )
+        {
+            // Two gears; the second gear is used above its min speed while accelerating
+            int gear;
+            float gearSpeed, speedRange, minVolume, maxVolume, minPitch, maxPitch;
+            if ( speed < sithPhysics_jeepGear2MinSpeed || !sithControl_GetKey(SITHCONTROL_ACT1, NULL) )
+            {
+                gear       = 1;
+                speedRange = sithPhysics_jeepGear2MinSpeed;
+                minPitch   = sithPhysics_jeepGear1MinSndPitch;
+                maxPitch   = sithPhysics_jeepGear1MaxSndPitch;
+                minVolume  = sithPhysics_jeepGear1MinSndVolume;
+                maxVolume  = sithPhysics_jeepGear1MaxSndVolume;
+                gearSpeed  = speed;
+            }
+            else
+            {
+                gear       = 2;
+                speedRange = 2.0f - sithPhysics_jeepGear2MinSpeed;
+                minPitch   = sithPhysics_jeepGear2MinSndPitch;
+                maxPitch   = sithPhysics_jeepGear2MaxSndPitch;
+                minVolume  = sithPhysics_jeepGear2MinSndVolume;
+                maxVolume  = sithPhysics_jeepGear2MaxSndVolume;
+                gearSpeed  = speed - sithPhysics_jeepGear2MinSpeed;
+            }
+
+            if ( sithPhysics_dword_58540C != gear )
+            {
+                sithPhysics_dword_58540C = gear;
+            }
+
+            float volume = STDMATH_CLAMP(gearSpeed * ((maxVolume - minVolume) / speedRange) + minVolume, minVolume, maxVolume);
+            sithSoundClass_SetModeVolume(pThing, SITHSOUNDCLASS_LWALKMETAL, volume);
+
+            float pitch = STDMATH_CLAMP(gearSpeed * ((maxPitch - minPitch) / speedRange) + minPitch, minPitch, maxPitch);
+            if ( bAirborne )
+            {
+                // Engine revs up in the air
+                pitch = STDMATH_CLAMP(pState->timeAllWheelsGrounded * sithPhysics_jeepAirSndPitchRate + pitch, sithPhysics_jeepAirSndMinPitch, sithPhysics_jeepAirSndMaxPitch);
+            }
+
+            sithSoundClass_SetModePitch(pThing, SITHSOUNDCLASS_LWALKMETAL, pitch);
+        }
+    }
+
+    // Driving
+    if ( (!sithPhysics_dword_538D30 && !sithPhysics_bJeepMoveFx) || bAirborne || speed <= sithPhysics_jeepDriveSndMinSpeed )
+    {
+        if ( !sithSoundClass_IsModeFadingVol(pThing, SITHSOUNDCLASS_RWALKMETAL) )
+        {
+            sithSoundClass_FadeModeVolume(pThing, SITHSOUNDCLASS_RWALKMETAL, 0.0f, sithPhysics_jeepDriveSndFadeTime);
+        }
+    }
+    else
+    {
+        sithSoundClass_PlayModeFirstEx(pThing, SITHSOUNDCLASS_RWALKMETAL, sithPhysics_jeepDriveMinSndVolume);
+        if ( bUpdateSnd )
+        {
+            float volume;
+            float pitch      = 1.0f;
+            float headingDot = rdVector_Dot3(&pThing->orient.lvec, &moveDir);
+            if ( sithPhysics_bJeepMoveFx && thrustMag == 0.0f )
+            {
+                // Rolling without thrust
+                volume = sithPhysics_jeepRollSndVolume;
+                pitch  = sithPhysics_jeepRollSndPitch;
+            }
+            else if ( sithPhysics_bJeepMoveFx && headingDot <= sithPhysics_jeepSlideMaxHeadingDot && headingDot >= sithPhysics_jeepSlideMinHeadingDot )
+            {
+                // Sliding sideways
+                volume = (1.0f - headingDot) * sithPhysics_jeepSlideSndVolumeScale + speed * sithPhysics_jeepDriveSndVolumePerSpeed + sithPhysics_jeepDriveMinSndVolume;
+            }
+            else if ( sithPhysics_dword_538D30 )
+            {
+                volume = speed * sithPhysics_jeepDriveSndVolumePerSpeed + sithPhysics_jeepDriveMinSndVolume;
+            }
+            else
+            {
+                volume = sithPhysics_jeepDriveMinSndVolume;
+            }
+
+            sithSoundClass_SetModeVolume(pThing, SITHSOUNDCLASS_RWALKMETAL, volume);
+            sithSoundClass_SetModePitch(pThing, SITHSOUNDCLASS_RWALKMETAL, pitch);
+        }
+    }
+
+    // Random bump sounds while a wheel is pressed into the ground
+    if ( sithPhysics_dword_538D38 && !bAirborne )
+    {
+        float bumpChance    = speed * sithPhysics_jeepBumpChancePerSpeed;
+        bool bWheelInGround = false;
+        for ( size_t i = 0; i < STD_ARRAYLEN(pState->aWheels); i++ )
+        {
+            if ( pState->aWheels[i].compressionDist < sithPhysics_jeepBumpCompressionDist )
+            {
+                bWheelInGround = true;
+                break;
+            }
+        }
+
+        if ( bWheelInGround && speed > sithPhysics_jeepBumpMinSpeed && (float)rand() * (1.0f / 32767.0f) < bumpChance )
+        {
+            float volume = (speed - sithPhysics_jeepBumpMinSpeed) * sithPhysics_jeepBumpSndVolumePerSpeed + sithPhysics_jeepBumpMinSndVolume;
+            sithSoundClass_PlayModeRandom(pThing, SITHSOUNDCLASS_RWALKHARD);
+            sithSoundClass_SetModeVolume(pThing, SITHSOUNDCLASS_RWALKHARD, volume);
+        }
+    }
 }
+
