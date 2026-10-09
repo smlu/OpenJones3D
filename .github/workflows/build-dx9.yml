@@ -1,5 +1,5 @@
-# CMake build workflow for DirectX 9
-name: DirectX 9 Build
+# CMake build and test workflow for DirectX 9
+name: DirectX 9 Build and Tests
 
 on:
   push:
@@ -101,3 +101,41 @@ jobs:
         retention-days: 7
         if-no-files-found: error
         overwrite: true
+
+  test:
+    name: Tests
+    needs: build
+    permissions:
+      actions: read
+      contents: read
+    uses: ./.github/workflows/test-dx9.yml
+
+  build-status:
+    name: DX9 Build
+    needs: build
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    permissions: {}
+    steps:
+    - name: Check build matrix result
+      env:
+        CI_BUILD_RESULT: ${{ needs.build.result }}
+      run: |
+        echo "Build matrix result: $CI_BUILD_RESULT"
+        test "$CI_BUILD_RESULT" = "success"
+
+  test-status:
+    name: DX9 Tests
+    needs: test
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    permissions: {}
+    steps:
+    - name: Check test matrix result
+      env:
+        CI_TEST_RESULT: ${{ needs.test.result }}
+      run: |
+        echo "Tests matrix result: $CI_TEST_RESULT"
+        test "$CI_TEST_RESULT" = "success"

@@ -641,17 +641,23 @@ The CI test integration uses four profiles for both backends:
 
 Each profile enables `JONES3D_BUILD_TESTS` and disables
 `JONES3D_BUILD_SYSTEM_TESTS`. The MSVC Win32 build workflow uploads its build tree
-with the exact checked-out source revision and configuration. The follow-up test
+with the exact checked-out source revision and configuration. The reusable test
 workflow checks out that revision, restores the build at its original workspace
 path, requires all four suites (`j3dcore.Macros`, `std`, `sound`, and `sith`),
 and runs them with finite timeouts. Test failures and missing suites fail the job;
 JUnit results and CTest logs are uploaded even when tests fail.
 
-The test workflows use `workflow_run` and start after a successful matching build.
-GitHub requires these workflow files to exist on the repository's default branch
-before this trigger can run. These are separate follow-up runs, so they do not
-attach test checks to the built PR revision automatically. See
-[GitHub's workflow_run documentation](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#workflow_run).
+Each build workflow calls its reusable test workflow with `needs: build` after
+all four build profiles succeed. The test jobs appear in the same workflow run,
+and a test failure fails that run. The test workflows use `workflow_call` and a
+local `uses: ./.github/workflows/test-dx*.yml` reference, so they come from the
+same commit as the caller and work on `develop` and pull requests without first
+merging the workflow files into `main`. Artifacts are downloaded from the current
+run. Separate build and test summary jobs require all four profiles in their
+stage to succeed. The four README badges track those named check results on
+`develop`, independently for each backend and stage. A failed, cancelled, or
+skipped stage does not report a passing result. See
+[GitHub's reusable workflow documentation](https://docs.github.com/en/actions/how-tos/reuse-automations/reuse-workflows).
 
 These profiles check debug assertions, optimization-sensitive behavior, and
 opt-in guard rejection paths. System and disruptive tests remain outside CI

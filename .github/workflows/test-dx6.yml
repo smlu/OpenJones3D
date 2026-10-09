@@ -2,9 +2,7 @@
 name: DirectX 6 Tests
 
 on:
-  workflow_run:
-    workflows: [ "DirectX 6 Build" ]
-    types: [ completed ]
+  workflow_call:
 
 permissions:
   actions: read
@@ -12,7 +10,7 @@ permissions:
 
 jobs:
   test:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    name: Unit tests (${{ matrix.profile }})
     runs-on: windows-2025-vs2026
     timeout-minutes: 15
 
@@ -36,8 +34,6 @@ jobs:
       with:
         name: dx6-windows-2025-vs2026-${{ matrix.profile }}
         path: ${{ runner.temp }}/dx6-test-build
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        run-id: ${{ github.event.workflow_run.id }}
 
     - name: Verify test build metadata
       id: test_build

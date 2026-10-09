@@ -7,10 +7,10 @@
 **[📥 Latest Releases](https://github.com/smlu/OpenJones3D/releases)** • **[🕹️ Running](#running)** • **[⚙️ Building](#building)** • **[📜 Changelog](CHANGELOG.md)**
 
 [![License: AGPL v3](https://img.shields.io/badge/license-AGPL%20v3-0f766e?style=flat-square)](LICENSE)
-[![DX9 Build](https://img.shields.io/github/actions/workflow/status/smlu/OpenJones3D/build-dx9.yml?style=flat-square&label=DX9%20Build)](https://github.com/smlu/OpenJones3D/actions/workflows/build-dx9.yml)
-[![DX9 Tests](https://img.shields.io/github/actions/workflow/status/smlu/OpenJones3D/test-dx9.yml?style=flat-square&label=DX9%20Tests)](https://github.com/smlu/OpenJones3D/actions/workflows/test-dx9.yml)
-[![DX6 Build](https://img.shields.io/github/actions/workflow/status/smlu/OpenJones3D/build-dx6.yml?style=flat-square&label=DX6%20Build)](https://github.com/smlu/OpenJones3D/actions/workflows/build-dx6.yml)
-[![DX6 Tests](https://img.shields.io/github/actions/workflow/status/smlu/OpenJones3D/test-dx6.yml?style=flat-square&label=DX6%20Tests)](https://github.com/smlu/OpenJones3D/actions/workflows/test-dx6.yml)
+[![DX9 Build](https://img.shields.io/github/check-runs/smlu/OpenJones3D/develop?nameFilter=DX9%20Build&style=flat-square&label=DX9%20Build)](https://github.com/smlu/OpenJones3D/actions/workflows/build-dx9.yml)
+[![DX9 Tests](https://img.shields.io/github/check-runs/smlu/OpenJones3D/develop?nameFilter=DX9%20Tests&style=flat-square&label=DX9%20Tests)](https://github.com/smlu/OpenJones3D/actions/workflows/build-dx9.yml)
+[![DX6 Build](https://img.shields.io/github/check-runs/smlu/OpenJones3D/develop?nameFilter=DX6%20Build&style=flat-square&label=DX6%20Build)](https://github.com/smlu/OpenJones3D/actions/workflows/build-dx6.yml)
+[![DX6 Tests](https://img.shields.io/github/check-runs/smlu/OpenJones3D/develop?nameFilter=DX6%20Tests&style=flat-square&label=DX6%20Tests)](https://github.com/smlu/OpenJones3D/actions/workflows/build-dx6.yml)
 
 </div>
 
@@ -262,7 +262,7 @@ rdroid: 100.00% (219/219)
     rdCache:        100.00% (14/14)
     rdFace:         100.00% (2/2)
 
-sith: 88.90% (1666/1874)
+sith: 89.01% (1668/1874)
     sithAI:                 100.00% (27/27)
     sithAIAwareness:        100.00% (8/8)
     sithAIClass:            100.00% (12/12)
@@ -324,13 +324,13 @@ sith: 88.90% (1666/1874)
     sithSprite:             100.00% (15/15)
     sithSurface:            100.00% (20/20)
     sithTemplate:           100.00% (15/15)
-    sithThing:               95.38% (62/65)
+    sithThing:               98.46% (64/65)
     sithVoice:              100.00% (20/20)
     sithWeapon:             100.00% (48/48)
     sithWorld:              100.00% (23/23)
 
-sound: 92.24% (107/116)
-    AudioLib:        10.00% (1/10)
+sound: 93.97% (109/116)
+    AudioLib:        30.00% (3/10)
     Driver:         100.00% (37/37)
     Sound:          100.00% (69/69)
 
@@ -377,4 +377,4 @@ Jones3D: 100.00% (378/378)
     JonesControl:   100.00% (4/4)
     jonesInventory: 100.00% (15/15)
 
-Overall Progress: 92.53% | Implemented 2689 out of 2906 functions
+Overall Progress: 92.67% | Implemented 2693 out of 2906 functions

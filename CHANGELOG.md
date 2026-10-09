@@ -123,6 +123,7 @@
   - Changed the JONES3D_RUNTIME_GUARDS CMake option to be disabled by default. (db582ba)
   - Added AudioLib and Sound lip-sync unit tests covering generation, lookup, caching, playback offsets, and allocation failures. (19d570c)
   - Added sithThing, sithTemplate, and sithVoice unit tests, including retail-generated binary vectors and allocation/I/O failure coverage. (aa4e510)
+  - Added GitHub Actions unit-test workflows for DirectX 6/9 and updated the existing CI builds to use Visual Studio 2026 with four build profiles per backend. (2995463)
 
 ### Engine:
   - Added check for zero size in lip sync data generation to prevent allocation errors (f79736b)
