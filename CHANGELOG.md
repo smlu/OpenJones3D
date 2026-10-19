@@ -397,6 +397,7 @@
   - Applied official 1.2 update fix to `jonesConfig_ControlToString`: key names in the control configuration dialog are now queried from the system keyboard layout with `GetKeyNameTextA` instead of a hardcoded English table. ()
   - Applied official 1.2 update fix to `jonesConfig_StoreDialog_HandleWM_COMMAND`: closing the store dialog with a balance of exactly 0 now shows the purchase confirmation instead of leaving silently. ()
   - Applied official 1.2 update fix to `jonesConfig_ShowDialogInsertCD` and `jonesConfig_InsertCD_HandleWM_COMMAND`: the cursor is hidden when the insert-CD dialog is closed from its OK/Quit handler instead of after the dialog returns. ()
+  - Applied official 1.2 update change to the end credits (`JonesHud_DrawCredits`): added "Director of Sales Operations: JASON HORSTMAN" (the credits table now has 327 records) and swapped the order of `JOSH MOORE` and `HEATHER TWIST`. ()
 
 ## v0.3.1
 ### General:
