@@ -225,7 +225,7 @@ void J3DAPI sithCogFunctionThing_CreateLaser(SithCog* pCog)
     if ( !sithCogExec_PopVector(pCog, &endPos) )
     {
         STDLOG_ERROR("Cog %s: Invalid end pos vector in CreateLaser!\n", pCog->aName);
-        bArgError = true; // Fixed: Set bArgError to true so we don't proceed with creating laser thing
+        bArgError = true; // Fixed: Set bArgError to true so we don't proceed with creating laser thing (also fixed by the official 1.2 update, Indy3D.exe v1.2 0x0046D490)
     }
 
     rdVector3 offset;

@@ -498,7 +498,7 @@ SithCogSyntaxNode* J3DAPI sithCogParse_MakeLeafNode(SithCogExecOpcode opcode, in
 SithCogSyntaxNode* J3DAPI sithCogParse_MakeVectorLeafNode(SithCogExecOpcode opcode, const rdVector3* pVect)
 {
     SithCogSyntaxNode* pNewNode = sithCogParse_GetNextNode();
-    if ( !pNewNode ) // Fixed: was !sithCogParse_GetNextNode
+    if ( !pNewNode ) // Fixed: was !sithCogParse_GetNextNode (also fixed by the official 1.2 update, Indy3D.exe v1.2 0x00453240)
     {
         return pNewNode;
     }
