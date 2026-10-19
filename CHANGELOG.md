@@ -401,6 +401,7 @@
   - Applied official 1.2 update fix to push/pull in `sithPlayerControls_ProcessGeneralMove`: the collision check that decides whether the Marduk statue (`2marpushstatue`) can be pushed or pulled starts 0.05 lower. ()
   - Applied official 1.2 update fix to `sithPlayerControls_ProcessPushPullMove` (part of `sithPlayerControls_ProcessGeneralMove` in the original): the collision check that decides whether the Marduk statue (`2marpushstatue`) can be pushed or pulled starts 0.05 lower. ()
   - Applied official 1.2 update fix to `sithCamera_SetCameraCanvas`: changing the canvas resets the focus interpolation of the external camera so the camera focus is re-initialized. ()
+  - Applied official 1.2 update fix to `sithWeapon_ProcessWeaponControls`: activating the whip also clears the deactivated player weapon id. ()
 
 ## v0.3.1
 ### General:
