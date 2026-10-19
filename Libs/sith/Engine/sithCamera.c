@@ -281,6 +281,11 @@ void J3DAPI sithCamera_FreeEntry(SithCamera* pCamera)
 void J3DAPI sithCamera_SetCameraCanvas(SithCamera* pCamera, float aspect, rdCanvas* pCanvas)
 {
     rdCamera_SetCanvas(&pCamera->rdCamera, pCanvas);
+    if ( pCamera->type == SITHCAMERA_EXTERNAL ) // Fixed: Reset focus interpolation state of the external camera when the canvas changes, so the focus position is re-initialized (official 1.2 update, Indy3D.exe v1.2 0x0043B3F0)
+    {
+        pCamera->focusInterpState = -1;
+    }
+
     rdCamera_SetAspectRatio(&pCamera->rdCamera, aspect);
     rdCamera_SetAttenuation(&pCamera->rdCamera, SITHCAMERA_ATTENUATIONMIN, SITHCAMERA_ATTENUATIONMAX);
 }
