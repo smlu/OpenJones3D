@@ -2872,11 +2872,12 @@ typedef struct sSithAIWaypointOwner
 typedef struct sSithAIWaypoint
 {
     int thingNum;
-    int numUsedLinks;
+    size_t numUsedLinks;
     int aWpntLinks[8];
     SithAIWaypointLayerFlag flags;
-    int unknown11;
+    size_t unknown11; // rank
 } SithAIWaypoint;
+static_assert(sizeof(SithAIWaypoint) == 48, "sizeof(SithAIWaypoint) == 48");
 
 struct sSithEvent
 {
