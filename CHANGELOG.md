@@ -395,6 +395,7 @@
   - Applied official 1.2 update fix to `sithWeapon_ProcessWeaponControls`: activating the whip also clears the deactivated player weapon id. ()
   - Applied official 1.2 update fix to `sithActor_DamageActor`: the player no longer plays a damage sound when damaged by itself with damage types `0x1000`, `0x2000` or `0x4000`. ()
   - Applied official 1.2 update fix to `sithWhip_CreatePlayerWhip`: the whip thing pointer is cleared when the whip template or the player hand mesh is missing, instead of keeping a stale pointer from a previous level. ()
+  - Applied official 1.2 update fix to `sithWhip_CreatePlayerWhip`: the whip thing pointer is cleared when the whip template or the player hand mesh is missing, instead of keeping its previous value. ()
 
 ## v0.3.1
 ### General:
