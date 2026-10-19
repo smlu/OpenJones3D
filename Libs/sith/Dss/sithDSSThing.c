@@ -2,69 +2,82 @@
 #include <j3dcore/j3dhook.h>
 
 #include <rdroid/Engine/rdThing.h>
+#include <rdroid/Math/rdMatrix.h>
 #include <rdroid/Math/rdVector.h>
 #include <rdroid/Primitives/rdPolyline.h>
 
 #include <sith/Cog/sithCog.h>
 #include <sith/Devices/sithComm.h>
-#include <sith/Gameplay/sithPlayer.h>
+#include <sith/Devices/sithSoundMixer.h>
 #include <sith/Dss/sithDSS.h>
 #include <sith/Dss/sithMulti.h>
+#include <sith/Engine/sithPathMove.h>
+#include <sith/Engine/sithPuppet.h>
+#include <sith/Gameplay/sithPlayer.h>
+#include <sith/Gameplay/sithPlayerActions.h>
 #include <sith/RTI/symbols.h>
+#include <sith/World/sithActor.h>
+#include <sith/World/sithItem.h>
 #include <sith/World/sithModel.h>
 #include <sith/World/sithSector.h>
+#include <sith/World/sithSoundClass.h>
 #include <sith/World/sithSurface.h>
 #include <sith/World/sithTemplate.h>
 #include <sith/World/sithThing.h>
+#include <sith/World/sithWeapon.h>
 #include <sith/World/sithWorld.h>
+
+#include <sound/Sound.h>
 
 #include <std/General/stdMemory.h>
 #include <std/General/stdUtil.h>
 #include <std/Win95/stdComm.h>
 
+#include <string.h>
+
 void sithDSSThing_InstallHooks(void)
 {
     // Uncomment only lines for functions that have full definition and doesn't call original function (non-thunk functions)
 
-    // J3D_HOOKFUNC(sithDSSThing_Pos);
-    // J3D_HOOKFUNC(sithDSSThing_ProcessPos);
-    // J3D_HOOKFUNC(sithDSSThing_MovePos);
-    // J3D_HOOKFUNC(sithDSSThing_ProcessMovePos);
-    // J3D_HOOKFUNC(sithDSSThing_UpdateState);
-    // J3D_HOOKFUNC(sithDSSThing_ProcessStateUpdate);
-    // J3D_HOOKFUNC(sithDSSThing_PlaySound);
-    // J3D_HOOKFUNC(sithDSSThing_ProcessPlaySound);
-    // J3D_HOOKFUNC(sithDSSThing_PlaySoundMode);
-    // J3D_HOOKFUNC(sithDSSThing_ProcessPlaySoundMode);
-    // J3D_HOOKFUNC(sithDSSThing_PlayKey);
-    // J3D_HOOKFUNC(sithDSSThing_ProcessPlayKey);
-    // J3D_HOOKFUNC(sithDSSThing_PlayKeyMode);
-    // J3D_HOOKFUNC(sithDSSThing_ProcessPlayKeyMode);
-    // J3D_HOOKFUNC(sithDSSThing_SetModel);
-    // J3D_HOOKFUNC(sithDSSThing_ProcessSetModel);
-    // J3D_HOOKFUNC(sithDSSThing_StopKey);
-    // J3D_HOOKFUNC(sithDSSThing_ProcessStopKey);
-    // J3D_HOOKFUNC(sithDSSThing_StopSound);
-    // J3D_HOOKFUNC(sithDSSThing_ProcessStopSound);
-    // J3D_HOOKFUNC(sithDSSThing_Fire);
-    // J3D_HOOKFUNC(sithDSSThing_ProcessFire);
-    // J3D_HOOKFUNC(sithDSSThing_Death);
-    // J3D_HOOKFUNC(sithDSSThing_ProcessDeath);
-    // J3D_HOOKFUNC(sithDSSThing_DamageThing);
-    // J3D_HOOKFUNC(sithDSSThing_ProcessDamage);
+    J3D_HOOKFUNC(sithDSSThing_Pos);
+    J3D_HOOKFUNC(sithDSSThing_ProcessPos);
+    J3D_HOOKFUNC(sithDSSThing_MovePos);
+    J3D_HOOKFUNC(sithDSSThing_ProcessMovePos);
+    J3D_HOOKFUNC(sithDSSThing_UpdateState);
+    J3D_HOOKFUNC(sithDSSThing_ProcessStateUpdate);
+    J3D_HOOKFUNC(sithDSSThing_PlaySound);
+    J3D_HOOKFUNC(sithDSSThing_ProcessPlaySound);
+    J3D_HOOKFUNC(sithDSSThing_PlaySoundMode);
+    J3D_HOOKFUNC(sithDSSThing_ProcessPlaySoundMode);
+    J3D_HOOKFUNC(sithDSSThing_PlayKey);
+    J3D_HOOKFUNC(sithDSSThing_ProcessPlayKey);
+    J3D_HOOKFUNC(sithDSSThing_PlayKeyMode);
+    J3D_HOOKFUNC(sithDSSThing_ProcessPlayKeyMode);
+    J3D_HOOKFUNC(sithDSSThing_SetModel);
+    J3D_HOOKFUNC(sithDSSThing_ProcessSetModel);
+    J3D_HOOKFUNC(sithDSSThing_StopKey);
+    J3D_HOOKFUNC(sithDSSThing_ProcessStopKey);
+    J3D_HOOKFUNC(sithDSSThing_StopSound);
+    J3D_HOOKFUNC(sithDSSThing_ProcessStopSound);
+    J3D_HOOKFUNC(sithDSSThing_Fire);
+    J3D_HOOKFUNC(sithDSSThing_ProcessFire);
+    J3D_HOOKFUNC(sithDSSThing_Death);
+    J3D_HOOKFUNC(sithDSSThing_ProcessDeath);
+    J3D_HOOKFUNC(sithDSSThing_DamageThing);
+    J3D_HOOKFUNC(sithDSSThing_ProcessDamage);
     J3D_HOOKFUNC(sithDSSThing_ThingFullDescription);
     J3D_HOOKFUNC(sithDSSThing_ProcessThingFullDescription);
-    // J3D_HOOKFUNC(sithDSSThing_PathMove);
-    // J3D_HOOKFUNC(sithDSSThing_ProcessPathMove);
+    J3D_HOOKFUNC(sithDSSThing_PathMove);
+    J3D_HOOKFUNC(sithDSSThing_ProcessPathMove);
     J3D_HOOKFUNC(sithDSSThing_Attachment);
     J3D_HOOKFUNC(sithDSSThing_ProcessAttachment);
-    // J3D_HOOKFUNC(sithDSSThing_Take);
-    // J3D_HOOKFUNC(sithDSSThing_ProcessTake);
-    // J3D_HOOKFUNC(sithDSSThing_CreateThing);
-    // J3D_HOOKFUNC(sithDSSThing_ProcessCreateThing);
-    // J3D_HOOKFUNC(sithDSSThing_DestroyThing);
-    // J3D_HOOKFUNC(sithDSSThing_ProcessDestroyThing);
-    // J3D_HOOKFUNC(sithDSSThing_MoveToPos);
+    J3D_HOOKFUNC(sithDSSThing_Take);
+    J3D_HOOKFUNC(sithDSSThing_ProcessTake);
+    J3D_HOOKFUNC(sithDSSThing_CreateThing);
+    J3D_HOOKFUNC(sithDSSThing_ProcessCreateThing);
+    J3D_HOOKFUNC(sithDSSThing_DestroyThing);
+    J3D_HOOKFUNC(sithDSSThing_ProcessDestroyThing);
+    J3D_HOOKFUNC(sithDSSThing_MoveToPos);
 }
 
 void sithDSSThing_ResetGlobals(void)
@@ -72,133 +85,985 @@ void sithDSSThing_ResetGlobals(void)
 
 int J3DAPI sithDSSThing_Pos(const SithThing* pThing, DPID toID, unsigned int dpFlags)
 {
-    return J3D_TRAMPOLINE_CALL(sithDSSThing_Pos, pThing, toID, dpFlags);
+    if ( !pThing || !pThing->type || !pThing->pInSector )
+    {
+        SITHLOG_STATUS("Asked to send state for invalid thing pointer.\n");
+        return 0;
+    }
+
+    SITHDSS_STARTOUT(SITHDSS_POS);
+    SITHDSS_PUSHINT32(pThing->guid);
+    SITHDSS_PUSHUINT16(pThing->attach.flags);
+
+    SITH_ASSERTREL(pThing->pInSector);
+    SITHDSS_PUSHINT16((int16_t)sithSector_GetSectorIndex(pThing->pInSector));
+    SITHDSS_PUSHVEC3(&pThing->pos);
+
+    rdVector3 curpyr;
+    rdMatrix_ExtractAngles34(&pThing->orient, &curpyr);
+    SITHDSS_PUSHVEC3(&curpyr);
+
+    if ( pThing->moveType == SITH_MT_PHYSICS )
+    {
+        SITHDSS_PUSHUINT32(pThing->moveInfo.physics.flags);
+        SITHDSS_PUSHVEC3(&pThing->moveInfo.physics.velocity);
+        SITHDSS_PUSHVEC3(&pThing->moveInfo.physics.angularVelocity);
+    }
+
+    if ( pThing->type == SITH_THING_PLAYER )
+    {
+        SITHDSS_PUSHFLOAT(pThing->thingInfo.actorInfo.headPYR.x);
+    }
+
+    SITHDSS_ENDOUT;
+    return sithMessage_SendMessage(&sithMulti_g_message, toID, SITHMESSAGE_STREAM_ALL, dpFlags);
 }
+
 
 int J3DAPI sithDSSThing_ProcessPos(const SithMessage* pMsg)
 {
-    return J3D_TRAMPOLINE_CALL(sithDSSThing_ProcessPos, pMsg);
+    SITHDSS_STARTIN(pMsg);
+    if ( !sithWorld_g_pCurrentWorld )
+    {
+        return 0;
+    }
+
+    int index = SITHDSS_POPINT32();
+    SithThing* pThing = sithThing_GetGuidThing(index);
+    if ( !pThing )
+    {
+        SITHLOG_ERROR("Bad thing guid %d in DSS::Pos.\n", index);
+        return 0;
+    }
+
+    if ( !pThing->type || !pThing->pInSector )
+    {
+        SITHLOG_ERROR("Bad thing guid %d in DSS::Pos.\n", index);
+        return 0;
+    }
+
+    SithAttachFlag attachFlags = SITHDSS_POPUINT16();
+    if ( !attachFlags && pThing->attach.flags )
+    {
+        sithThing_DetachThing(pThing);
+    }
+
+    index = SITHDSS_POPUINT16();
+    SithSector* pSector = sithSector_GetSectorEx(sithWorld_g_pCurrentWorld, index);
+    if ( !pSector )
+    {
+        SITHLOG_ERROR("Bad sector index %d in DSS::Pos.\n", index);
+        return 0;
+    }
+
+    rdVector3 loc;
+    rdVector3 rotation;
+    SITHDSS_POPVEC3(&loc);
+    SITHDSS_POPVEC3(&rotation);
+    rdMatrix_BuildRotate34(&pThing->orient, &rotation);
+
+    if ( pThing->moveType == SITH_MT_PHYSICS )
+    {
+        pThing->moveInfo.physics.flags = SITHDSS_POPUINT32();
+        SITHDSS_POPVEC3(&pThing->moveInfo.physics.velocity);
+        SITHDSS_POPVEC3(&pThing->moveInfo.physics.angularVelocity);
+        sithDSSThing_MoveToPos(pThing, &loc, pSector);
+    }
+    else
+    {
+        rdVector_Copy3(&pThing->pos, &loc);
+        sithThing_SetSector(pThing, pSector, 0);
+    }
+
+    if ( pThing->type == SITH_THING_PLAYER )
+    {
+        memset(&rotation, 0, sizeof(rotation));
+        rotation.x = SITHDSS_POPFLOAT();
+        sithActor_SetHeadPYR(pThing, &rotation);
+    }
+
+    SITHDSS_ENDIN;
+    return 1;
 }
+
 
 int J3DAPI sithDSSThing_MovePos(const SithThing* pThing, DPID idTo, unsigned int sendFlags)
 {
-    return J3D_TRAMPOLINE_CALL(sithDSSThing_MovePos, pThing, idTo, sendFlags);
+    if ( !pThing || !pThing->type || !pThing->pInSector )
+    {
+        SITHLOG_STATUS("Asked to send state for invalid thing pointer.\n");
+        return 0;
+    }
+
+    SITHDSS_STARTOUT(SITHDSS_MOVEPOS);
+    SITHDSS_PUSHINT32(pThing->guid);
+    SITHDSS_PUSHINT16((int16_t)sithSector_GetSectorIndex(pThing->pInSector));
+    SITHDSS_PUSHVEC3(&pThing->pos);
+
+    rdVector3 curpyr;
+    rdMatrix_ExtractAngles34(&pThing->orient, &curpyr);
+    SITHDSS_PUSHVEC3(&curpyr);
+
+    SITHDSS_PUSHINT32(pThing->moveStatus);
+
+    SITHDSS_ENDOUT;
+    return sithMessage_SendMessage(&sithMulti_g_message, idTo, SITHMESSAGE_STREAM_ALL, sendFlags);
 }
+
 
 int J3DAPI sithDSSThing_ProcessMovePos(const SithMessage* pMsg)
 {
-    return J3D_TRAMPOLINE_CALL(sithDSSThing_ProcessMovePos, pMsg);
+    SITHDSS_STARTIN(pMsg);
+
+    int guid = SITHDSS_POPINT32();
+    SithThing* pThing = sithThing_GetGuidThing(guid);
+    if ( !pThing )
+    {
+        SITHLOG_ERROR("Bad thing guid %d in DSS::Pos.\n", guid);
+        return 0;
+    }
+
+    if ( !pThing->type || !pThing->pInSector )
+    {
+        SITHLOG_ERROR("Bad thing guid %d in DSS::Pos.\n", guid);
+        return 0;
+    }
+
+    unsigned int sectorIdx = SITHDSS_POPUINT16();
+    SithSector* pSector = sithSector_GetSectorEx(sithWorld_g_pCurrentWorld, sectorIdx);
+    if ( !pSector )
+    {
+        SITHLOG_ERROR("Bad sector index %d in DSS::Pos.\n", sectorIdx);
+        return 0;
+    }
+
+    rdVector3 pos;
+    SITHDSS_POPVEC3(&pos);
+    rdVector_Copy3(&pThing->pos, &pos);
+    sithThing_SetSector(pThing, pSector, 0);
+
+    rdVector3 pyr;
+    SITHDSS_POPVEC3(&pyr);
+    rdMatrix_BuildRotate34(&pThing->orient, &pyr);
+
+    switch ( SITHDSS_POPINT32() )
+    {
+        case SITHPLAYERMOVE_PUSHING:
+            break;
+
+        case SITHPLAYERMOVE_PULLINGUP:
+            sithPlayerActions_ClimbPullUp(pThing);
+            break;
+
+        case SITHPLAYERMOVE_PULLINGUP_1M:
+            sithPlayerActions_ClimbOn1m(pThing);
+            break;
+
+        case SITHPLAYERMOVE_UNKNOWN_60:
+            sithPlayerActions_HopLeft(pThing); // Note: the original's sithPlayerActions_JumpLeft
+            break;
+
+        case SITHPLAYERMOVE_STRAFING_RIGHT:
+            sithPlayerActions_StrafeRight(pThing);
+            break;
+
+        case SITHPLAYERMOVE_STRAFING_LEFT:
+            sithPlayerActions_StrafeLeft(pThing);
+            break;
+
+        case SITHPLAYERMOVE_JUMPBACK:
+            sithPlayerActions_HopBack(pThing);
+            break;
+
+        case SITHPLAYERMOVE_JUMP_READY:
+            sithPlayerActions_JumpStart(pThing);
+            break;
+    }
+
+    SITHDSS_ENDIN;
+    return 1;
 }
+
 
 int J3DAPI sithDSSThing_UpdateState(const SithThing* pThing, DPID toID, SithMessageStream outstream)
 {
-    return J3D_TRAMPOLINE_CALL(sithDSSThing_UpdateState, pThing, toID, outstream);
+    if ( !pThing || !pThing->type || !pThing->pInSector || !sithThing_ValidateThingPointer(sithWorld_g_pCurrentWorld, pThing) )
+    {
+        SITHLOG_STATUS("Asked to send state for invalid thing pointer.\n");
+        return 0;
+    }
+
+    SITHDSS_STARTOUT(SITHDSS_THINGSTATE);
+    SITHDSS_PUSHINT32(pThing->guid);
+    SITHDSS_PUSHINT32(pThing->unknownFlags);
+    SITHDSS_PUSHUINT32(pThing->msecLifeLeft);
+
+    SITH_ASSERTREL(pThing->pInSector);
+    SITHDSS_PUSHINT16((int16_t)sithSector_GetSectorIndex(pThing->pInSector));
+    SITHDSS_PUSHINT16(pThing->collide.type);
+    SITHDSS_PUSHVEC3(&pThing->pos);
+    SITHDSS_PUSHUINT32(pThing->flags);
+
+    if ( pThing->pPuppetClass )
+    {
+        SITHDSS_PUSHINT16((int16_t)pThing->pPuppetState->armedMode);
+        SITHDSS_PUSHINT16(pThing->pPuppetState->moveMode);
+    }
+
+    SITHDSS_PUSHVEC3((const rdVector3*)&pThing->light.color);
+
+    switch ( pThing->type )
+    {
+        case SITH_THING_ACTOR:
+        case SITH_THING_CORPSE:
+        case SITH_THING_PLAYER:
+            SITHDSS_PUSHUINT32(pThing->thingInfo.actorInfo.flags);
+            break;
+
+        case SITH_THING_WEAPON:
+            SITHDSS_PUSHUINT32(pThing->thingInfo.weaponInfo.flags);
+            break;
+
+        case SITH_THING_ITEM:
+            SITHDSS_PUSHUINT32(pThing->thingInfo.itemInfo.flags);
+            if ( (pThing->thingInfo.itemInfo.flags & SITH_ITEM_BACKPACK) != 0 )
+            {
+                // Note: numItems is serialized as int16_t
+                int16_t numItems = (int16_t)pThing->thingInfo.itemInfo.numItems;
+                SITHDSS_PUSHINT16(numItems);
+                for ( int16_t i = 0; i < numItems; ++i )
+                {
+                    SITHDSS_PUSHINT16((int16_t)pThing->thingInfo.itemInfo.aBackpackItems[i].typeId);
+                    SITHDSS_PUSHFLOAT(pThing->thingInfo.itemInfo.aBackpackItems[i].amount);
+                }
+            }
+            break;
+
+        default:
+            break;
+    }
+
+    if ( pThing->moveType == SITH_MT_PHYSICS )
+    {
+        SITHDSS_PUSHUINT32(pThing->moveInfo.physics.flags);
+    }
+
+    if ( !pThing->pSwapList )
+    {
+        SITHDSS_PUSHINT16(-1);
+    }
+    else
+    {
+        int16_t numUsedSwapEntries = 0;
+        for ( const SithThingSwapEntry* pEntry = pThing->pSwapList; pEntry; pEntry = pEntry->pNextEntry )
+        {
+            ++numUsedSwapEntries;
+        }
+
+        SITHDSS_PUSHINT16(numUsedSwapEntries);
+        for ( const SithThingSwapEntry* pEntry = pThing->pSwapList; pEntry; pEntry = pEntry->pNextEntry )
+        {
+            SITHDSS_PUSHINT32(pEntry->entryNum);
+            SITHDSS_PUSHINT32(pEntry->meshNum);
+
+            char aModelName[64] = { 0 };
+            STD_STRNCPY(aModelName, pEntry->pSrcModel->aName, STD_ARRAYLEN(aModelName) - 1);
+            SITHDSS_PUSHSTRING(aModelName, STD_ARRAYLEN(aModelName));
+
+            SITHDSS_PUSHINT32(pEntry->srcMeshNum);
+        }
+    }
+
+    SITHDSS_ENDOUT;
+    return sithMessage_SendMessage(&sithMulti_g_message, toID, outstream, DPSEND_GUARANTEED);
 }
+
 
 int J3DAPI sithDSSThing_ProcessStateUpdate(const SithMessage* pMsg)
 {
-    return J3D_TRAMPOLINE_CALL(sithDSSThing_ProcessStateUpdate, pMsg);
+    SITHDSS_STARTIN(pMsg);
+
+    int idx = SITHDSS_POPINT32();
+    SithThing* pThing = sithThing_GetGuidThing(idx);
+    if ( !pThing )
+    {
+        SITHLOG_ERROR("Thing guid %x not found.\n", idx);
+        return 0;
+    }
+
+    if ( !pThing->type || !pThing->pInSector )
+    {
+        SITHLOG_STATUS("Warning - got state update for non-existant thing index %d.\n", idx);
+        return 0;
+    }
+
+    pThing->unknownFlags = SITHDSS_POPINT32();
+    pThing->msecLifeLeft = SITHDSS_POPUINT32();
+
+    idx = SITHDSS_POPUINT16();
+    SithSector* pSector = sithSector_GetSectorEx(sithWorld_g_pCurrentWorld, idx);
+    if ( !pSector )
+    {
+        SITHLOG_ERROR("Bad sector index %d in DSS::Pos.\n", idx);
+        return 0;
+    }
+
+    pThing->collide.type = SITHDSS_POPUINT16();
+    SITHDSS_POPVEC3(&pThing->pos);
+    sithThing_SetSector(pThing, pSector, 0);
+
+    SithThingFlag flags = SITHDSS_POPUINT32();
+    if ( (pThing->flags & SITH_TF_REMOTE) != 0 )
+    {
+        flags |= SITH_TF_REMOTE;
+    }
+    else
+    {
+        flags &= ~SITH_TF_REMOTE;
+    }
+
+    pThing->flags = flags;
+
+    if ( pThing->pPuppetClass )
+    {
+        unsigned int armedMode = SITHDSS_POPUINT16();
+        SithPuppetMoveMode moveMode = SITHDSS_POPUINT16();
+        sithPuppet_SetArmedMode(pThing, armedMode);
+        sithPuppet_SetMoveMode(pThing, moveMode);
+    }
+
+    SITHDSS_POPVEC3((rdVector3*)&pThing->light.color);
+    pThing->light.color.alpha = 0.0f;
+
+    switch ( pThing->type )
+    {
+        case SITH_THING_ACTOR:
+        case SITH_THING_CORPSE:
+        case SITH_THING_PLAYER:
+            pThing->thingInfo.actorInfo.flags = SITHDSS_POPUINT32();
+            break;
+
+        case SITH_THING_WEAPON:
+            pThing->thingInfo.weaponInfo.flags = SITHDSS_POPUINT32();
+            break;
+
+        case SITH_THING_ITEM:
+            pThing->thingInfo.itemInfo.flags = SITHDSS_POPUINT32();
+            if ( (pThing->thingInfo.itemInfo.flags & SITH_ITEM_BACKPACK) != 0 )
+            {
+                // Note: The original stores numItems as int16_t (writes only the low 2 bytes of the field)
+                *(int16_t*)&pThing->thingInfo.itemInfo.numItems = SITHDSS_POPINT16();
+                int16_t numItems = *(int16_t*)&pThing->thingInfo.itemInfo.numItems;
+
+                // TODO: [BUG] numItems is not validated against the size of aBackpackItems (32) and can overflow it with a malformed message
+                for ( int16_t i = 0; i < numItems; ++i )
+                {
+                    pThing->thingInfo.itemInfo.aBackpackItems[i].typeId = SITHDSS_POPINT16();
+                    pThing->thingInfo.itemInfo.aBackpackItems[i].amount = SITHDSS_POPFLOAT();
+                }
+            }
+            break;
+
+        default:
+            break;
+    }
+
+    if ( pThing->moveType == SITH_MT_PHYSICS )
+    {
+        pThing->moveInfo.physics.flags = SITHDSS_POPUINT32();
+    }
+
+    if ( pThing->pSwapList )
+    {
+        sithThing_ResetSwapList(pThing);
+    }
+
+    int16_t numEntries = SITHDSS_POPINT16();
+    if ( numEntries != -1 )
+    {
+        for ( int16_t i = 0; i < numEntries; ++i )
+        {
+            SITHDSS_POPINT32(); // model num, unused
+            int meshNum = SITHDSS_POPINT32();
+
+            char aModelName[64];
+            SITHDSS_POPSTRING(aModelName, STD_ARRAYLEN(aModelName));
+            aModelName[STD_ARRAYLEN(aModelName) - 1] = 0;
+
+            int srcMeshNum = SITHDSS_POPINT32();
+            rdModel3* pModel = sithModel_Load(aModelName, 1);
+            if ( pModel )
+            {
+                sithThing_AddSwapEntry(pThing, meshNum, pModel, srcMeshNum);
+            }
+        }
+    }
+
+    SITHDSS_ENDIN;
+    return 1;
 }
+
 
 int J3DAPI sithDSSThing_PlaySound(const SithThing* pThing, const rdVector3* pPos, tSoundHandle hSnd, float volume, float pan, SoundPlayFlag playflags, int guid, DPID idTo, SithMessageStream outstream)
 {
-    return J3D_TRAMPOLINE_CALL(sithDSSThing_PlaySound, pThing, pPos, hSnd, volume, pan, playflags, guid, idTo, outstream);
+    SITH_ASSERTREL(hSnd);
+
+    SITHDSS_STARTOUT(SITHDSS_PLAYSOUND);
+    SITHDSS_PUSHUINT32(playflags);
+    SITHDSS_PUSHFLOAT(volume);
+    SITHDSS_PUSHFLOAT(pan);
+    SITHDSS_PUSHUINT16((uint16_t)Sound_GetSoundIndex(hSnd));
+
+    if ( (playflags & SOUNDPLAY_THING_POS) != 0 )
+    {
+        SITH_ASSERTREL(pThing);
+        SITHDSS_PUSHINT32(pThing->guid);
+    }
+    else if ( (playflags & SOUNDPLAY_ABSOLUTE_POS) != 0 )
+    {
+        SITHDSS_PUSHVEC3(pPos);
+    }
+
+    SITHDSS_PUSHINT32(guid);
+
+    SITHDSS_ENDOUT;
+    return sithMessage_SendMessage(&sithMulti_g_message, idTo, outstream, 0);
 }
+
 
 int J3DAPI sithDSSThing_ProcessPlaySound(const SithMessage* pMsg)
 {
-    return J3D_TRAMPOLINE_CALL(sithDSSThing_ProcessPlaySound, pMsg);
+    SITHDSS_STARTIN(pMsg);
+
+    SoundPlayFlag playflags = SITHDSS_POPUINT32();
+    float minRadius = SITHDSS_POPFLOAT();
+    float maxRadius = SITHDSS_POPFLOAT();
+    int idx = SITHDSS_POPUINT16();
+
+    tSoundHandle hSnd = Sound_GetSoundHandle(idx);
+    if ( !hSnd )
+    {
+        SITHLOG_ERROR("Sound index %d not valid in DSS::PlaySound.\n", idx);
+        return 0;
+    }
+
+    if ( (playflags & SOUNDPLAY_THING_POS) != 0 )
+    {
+        idx = SITHDSS_POPINT32();
+        SithThing* pThing = sithThing_GetGuidThing(idx);
+        if ( !pThing )
+        {
+            SITHLOG_ERROR("Thing guid %d not found in DSS::PlaySound (sound=%s)\n", idx, Sound_GetSoundFilename(hSnd));
+            return 0;
+        }
+
+        sithSoundMixer_PlaySoundThing(hSnd, pThing, 1.0f, minRadius, maxRadius, playflags);
+    }
+    else if ( (playflags & SOUNDPLAY_ABSOLUTE_POS) != 0 )
+    {
+        rdVector3 pos;
+        SITHDSS_POPVEC3(&pos);
+        sithSoundMixer_PlaySoundPos(hSnd, &pos, NULL, 1.0f, minRadius, maxRadius, playflags);
+    }
+    else
+    {
+        sithSoundMixer_PlaySound(hSnd, minRadius, maxRadius, playflags);
+    }
+
+    SITHDSS_POPINT32(); // sound guid, unused
+    SITHDSS_ENDIN;
+    return 1;
 }
+
 
 int J3DAPI sithDSSThing_PlaySoundMode(const SithThing* pThing, int16_t mode, int channel, float a4)
 {
-    return J3D_TRAMPOLINE_CALL(sithDSSThing_PlaySoundMode, pThing, mode, channel, a4);
+    SITH_ASSERTREL(pThing);
+
+    SITHDSS_STARTOUT(SITHDSS_PLAYSOUNDMODE);
+    SITHDSS_PUSHINT32(pThing->guid);
+    SITHDSS_PUSHINT32(channel);
+    SITHDSS_PUSHFLOAT(a4);
+    SITHDSS_PUSHINT16(mode);
+
+    SITHDSS_ENDOUT;
+    return sithMessage_SendMessage(&sithMulti_g_message, (DPID)-1, SITHMESSAGE_STREAM_ALL, 0);
 }
+
 
 int J3DAPI sithDSSThing_ProcessPlaySoundMode(const SithMessage* pMsg)
 {
-    return J3D_TRAMPOLINE_CALL(sithDSSThing_ProcessPlaySoundMode, pMsg);
+    SITHDSS_STARTIN(pMsg);
+
+    int guid = SITHDSS_POPINT32();
+    SithThing* pThing = sithThing_GetGuidThing(guid);
+    if ( !pThing )
+    {
+        SITHLOG_ERROR("Thing guid %d not found in DSS::PlaySoundMode\n", guid);
+        return 0;
+    }
+
+    SITHDSS_POPINT32(); // channel, unused
+    float selectionRatio = SITHDSS_POPFLOAT();
+    SithSoundClassMode mode = SITHDSS_POPUINT16();
+
+    if ( selectionRatio < 0.0f )
+    {
+        sithSoundClass_PlayModeRandom(pThing, mode);
+    }
+    else
+    {
+        sithSoundClass_PlayMode(pThing, mode, selectionRatio);
+    }
+
+    SITHDSS_ENDIN;
+    return 1;
 }
+
 
 int J3DAPI sithDSSThing_PlayKey(const SithThing* pThing, const rdKeyframe* pKey, rdKeyframeFlags flags, int16_t lo, unsigned int trackGUID, DPID idTo, SithMessageStream outstream)
 {
-    return J3D_TRAMPOLINE_CALL(sithDSSThing_PlayKey, pThing, pKey, flags, lo, trackGUID, idTo, outstream);
+    SITH_ASSERTREL(pThing && pKey);
+
+    SITHDSS_STARTOUT(SITHDSS_PLAYKEY);
+    SITHDSS_PUSHINT32(pThing->guid);
+    SITHDSS_PUSHINT32(pKey->idx);
+    SITHDSS_PUSHINT16(lo);
+    SITHDSS_PUSHINT32(flags);
+    SITHDSS_PUSHINT32(trackGUID);
+
+    SITHDSS_ENDOUT;
+    return sithMessage_SendMessage(&sithMulti_g_message, idTo, outstream, 0);
 }
+
 
 int J3DAPI sithDSSThing_ProcessPlayKey(const SithMessage* pMsg)
 {
-    return J3D_TRAMPOLINE_CALL(sithDSSThing_ProcessPlayKey, pMsg);
+    SITHDSS_STARTIN(pMsg);
+
+    int index = SITHDSS_POPINT32();
+    SithThing* pThing = sithThing_GetGuidThing(index);
+    if ( !pThing )
+    {
+        SITHLOG_ERROR("Got DSS::PlayKey message for thing GUID %d - not found.\n", index);
+        return 0;
+    }
+
+    if ( !pThing->renderData.pPuppet )
+    {
+        SITHLOG_ERROR("Got DSS::PlayKey message for thing %s - no puppet.\n", pThing->aName);
+        return 0;
+    }
+
+    index = SITHDSS_POPINT32();
+    rdKeyframe* pKey = sithPuppet_GetKeyframeByIndex(index);
+    if ( !pKey )
+    {
+        SITHLOG_ERROR("Key %d not found in DSS::PlayKey.\n", index);
+        return 0;
+    }
+
+    int bLowPriority = SITHDSS_POPUINT16();
+    rdKeyframeFlags flags = SITHDSS_POPINT32();
+    unsigned int curTrackGUID = SITHDSS_POPUINT32();
+
+    int trackNum = sithPuppet_PlayKey(pThing->renderData.pPuppet, pKey, bLowPriority, bLowPriority + 2, flags, NULL);
+    if ( trackNum >= 0 )
+    {
+        pThing->renderData.pPuppet->aTracks[trackNum].guid = curTrackGUID;
+    }
+
+    SITHDSS_ENDIN;
+    return 1;
 }
+
 
 int J3DAPI sithDSSThing_PlayKeyMode(const SithThing* pThing, SithPuppetSubMode mode, unsigned int trackGUID, DPID idTo, SithMessageStream outstream)
 {
-    return J3D_TRAMPOLINE_CALL(sithDSSThing_PlayKeyMode, pThing, mode, trackGUID, idTo, outstream);
+    SITH_ASSERTREL(pThing);
+
+    SITHDSS_STARTOUT(SITHDSS_PLAYKEYMODE);
+    SITHDSS_PUSHINT32(pThing->guid);
+    SITHDSS_PUSHINT32(trackGUID);
+    SITHDSS_PUSHINT16(mode);
+
+    SITHDSS_ENDOUT;
+    return sithMessage_SendMessage(&sithMulti_g_message, idTo, outstream, 0);
 }
+
 
 int J3DAPI sithDSSThing_ProcessPlayKeyMode(const SithMessage* pMsg)
 {
-    return J3D_TRAMPOLINE_CALL(sithDSSThing_ProcessPlayKeyMode, pMsg);
+    SITHDSS_STARTIN(pMsg);
+
+    int thingGuid = SITHDSS_POPINT32();
+    SithThing* pThing = sithThing_GetGuidThing(thingGuid);
+    if ( !pThing )
+    {
+        SITHLOG_ERROR("Got DSS::PlayKey message for thing GUID %d - not found.\n", thingGuid);
+        return 0;
+    }
+
+    if ( !pThing->renderData.pPuppet )
+    {
+        SITHLOG_ERROR("Got DSS::PlayKeyMode message for thing %s - no puppet.\n", pThing->aName);
+        return 0;
+    }
+
+    unsigned int trackGUID = SITHDSS_POPUINT32();
+    SithPuppetSubMode mode = SITHDSS_POPUINT16();
+
+    int trackNum = sithPuppet_PlayMode(pThing, mode, NULL);
+    if ( trackNum >= 0 )
+    {
+        pThing->renderData.pPuppet->aTracks[trackNum].guid = trackGUID;
+    }
+
+    SITHDSS_ENDIN;
+    return 1;
 }
+
 
 int J3DAPI sithDSSThing_SetModel(const SithThing* pThing, DPID idTo)
 {
-    return J3D_TRAMPOLINE_CALL(sithDSSThing_SetModel, pThing, idTo);
+    SITH_ASSERTREL(pThing);
+
+    if ( !pThing || pThing->renderData.type != RD_THING_MODEL3 || !pThing->renderData.data.pModel3 )
+    {
+        SITHLOG_STATUS("Asked to send state for invalid thing pointer.\n");
+        return 0;
+    }
+
+    SITHDSS_STARTOUT(SITHDSS_SETMODEL);
+    SITHDSS_PUSHINT32(pThing->guid);
+
+    char aModelName[64] = { 0 };
+    STD_STRNCPY(aModelName, pThing->renderData.data.pModel3->aName, STD_ARRAYLEN(aModelName) - 1);
+    SITHDSS_PUSHSTRING(aModelName, STD_ARRAYLEN(aModelName));
+
+    SITHDSS_ENDOUT;
+    return sithMessage_SendMessage(&sithMulti_g_message, idTo, SITHMESSAGE_STREAM_ALL, DPSEND_GUARANTEED);
 }
+
 
 int J3DAPI sithDSSThing_ProcessSetModel(const SithMessage* pMsg)
 {
-    return J3D_TRAMPOLINE_CALL(sithDSSThing_ProcessSetModel, pMsg);
+    SITHDSS_STARTIN(pMsg);
+
+    int guid = SITHDSS_POPINT32();
+    SithThing* pThing = sithThing_GetGuidThing(guid);
+    if ( !pThing )
+    {
+        SITHLOG_ERROR("Got DSS::PlayKey message for thing GUID %d - not found.\n", guid);
+        return 0;
+    }
+
+    char aModelName[64];
+    SITHDSS_POPSTRING(aModelName, STD_ARRAYLEN(aModelName));
+    aModelName[STD_ARRAYLEN(aModelName) - 1] = 0;
+
+    rdModel3* pModel = sithModel_Load(aModelName, 1);
+    if ( !pModel )
+    {
+        return 0;
+    }
+
+    SITHLOG_STATUS("Changing %s to use model %s.\n", pThing->aName, pModel->aName);
+    sithThing_SetThingModel(pThing, pModel);
+
+    SITHDSS_ENDIN;
+    return 1;
 }
+
 
 int J3DAPI sithDSSThing_StopKey(const SithThing* pThing, int trackGUID, float fadeTime, DPID idTo, SithMessageStream outstream)
 {
-    return J3D_TRAMPOLINE_CALL(sithDSSThing_StopKey, pThing, trackGUID, fadeTime, idTo, outstream);
+    SITH_ASSERTREL(pThing);
+
+    SITHDSS_STARTOUT(SITHDSS_STOPKEY);
+    SITHDSS_PUSHINT32(pThing->guid);
+    SITHDSS_PUSHINT32(trackGUID);
+    SITHDSS_PUSHFLOAT(fadeTime);
+
+    SITHDSS_ENDOUT;
+    return sithMessage_SendMessage(&sithMulti_g_message, idTo, outstream, DPSEND_GUARANTEED);
 }
+
 
 int J3DAPI sithDSSThing_ProcessStopKey(const SithMessage* pMsg)
 {
-    return J3D_TRAMPOLINE_CALL(sithDSSThing_ProcessStopKey, pMsg);
+    SITHDSS_STARTIN(pMsg);
+
+    int id = SITHDSS_POPINT32();
+    SithThing* pThing = sithThing_GetGuidThing(id);
+    if ( !pThing || !pThing->renderData.pPuppet )
+    {
+        SITHLOG_ERROR("Bad thing guid %d in DSS::StopKey.\n", id);
+        return 0;
+    }
+
+    unsigned int trackGUID = SITHDSS_POPUINT32();
+    float fadeTime = SITHDSS_POPFLOAT();
+
+    size_t track;
+    for ( track = 0; track < RDPUPPET_MAX_TRACKS; ++track )
+    {
+        if ( pThing->renderData.pPuppet->aTracks[track].guid == trackGUID )
+        {
+            break;
+        }
+    }
+
+    if ( track < RDPUPPET_MAX_TRACKS )
+    {
+        sithPuppet_StopKey(pThing->renderData.pPuppet, track, fadeTime);
+    }
+    else
+    {
+        SITHLOG_ERROR("Track with guid %x not found.\n", trackGUID);
+    }
+
+    SITHDSS_ENDIN;
+    return 1;
 }
+
 
 int J3DAPI sithDSSThing_StopSound(tSoundChannelHandle hChannel, float secFadeTime, DPID idTo, SithMessageStream outstream)
 {
-    return J3D_TRAMPOLINE_CALL(sithDSSThing_StopSound, hChannel, secFadeTime, idTo, outstream);
+    SITHDSS_STARTOUT(SITHDSS_STOPSOUND);
+
+    int guid = hChannel ? Sound_GetChannelGUID(hChannel) : -1;
+    SITHDSS_PUSHINT32(guid);
+    SITHDSS_PUSHFLOAT(secFadeTime);
+
+    SITHDSS_ENDOUT;
+    return sithMessage_SendMessage(&sithMulti_g_message, idTo, outstream, DPSEND_GUARANTEED);
 }
+
 
 int J3DAPI sithDSSThing_ProcessStopSound(const SithMessage* pMsg)
 {
-    return J3D_TRAMPOLINE_CALL(sithDSSThing_ProcessStopSound, pMsg);
+    SITHDSS_STARTIN(pMsg);
+
+    int guid = SITHDSS_POPINT32();
+    float secFadeTime = SITHDSS_POPFLOAT();
+
+    tSoundChannelHandle hChannel = sithSoundMixer_GetChannelHandle(guid);
+    if ( hChannel )
+    {
+        if ( secFadeTime <= 0.0f )
+        {
+            sithSoundMixer_StopSound(hChannel);
+        }
+        else
+        {
+            sithSoundMixer_FadeVolume(hChannel, 0.0f, secFadeTime);
+        }
+    }
+    else
+    {
+        SITHLOG_ERROR("Could not find a channel with GUID %d.\n", guid);
+    }
+
+    SITHDSS_ENDIN;
+    return 1;
 }
+
 
 int J3DAPI sithDSSThing_Fire(const SithThing* pShooter, const SithThing* pProjectileTemplate, const rdVector3* fireDir, const rdVector3* firePos, tSoundHandle hFireSnd, uint16_t puppetSubmode, float extra, int16_t projectileFlags, float sedRapidFireTime, int projectileGUID, DPID idTo, SithMessageStream outstream)
 {
-    return J3D_TRAMPOLINE_CALL(sithDSSThing_Fire, pShooter, pProjectileTemplate, fireDir, firePos, hFireSnd, puppetSubmode, extra, projectileFlags, sedRapidFireTime, projectileGUID, idTo, outstream);
+    SITH_ASSERTREL(pShooter && fireDir && firePos);
+
+    SITHDSS_STARTOUT(SITHDSS_FIRE);
+    SITHDSS_PUSHINT32(pShooter->guid);
+    SITHDSS_PUSHINT16(projectileFlags);
+    SITHDSS_PUSHINT16((int16_t)sithTemplate_GetTemplateIndex(pProjectileTemplate));
+    if ( hFireSnd )
+    {
+        SITHDSS_PUSHINT16((int16_t)Sound_GetSoundIndex(hFireSnd));
+    }
+    else
+    {
+        SITHDSS_PUSHINT16(-1);
+    }
+
+    SITHDSS_PUSHINT16(puppetSubmode);
+    SITHDSS_PUSHVEC3(firePos);
+    SITHDSS_PUSHVEC3(fireDir);
+    SITHDSS_PUSHFLOAT(extra);
+    SITHDSS_PUSHFLOAT(sedRapidFireTime);
+    SITHDSS_PUSHINT32(projectileGUID);
+
+    SITHDSS_ENDOUT;
+    return sithMessage_SendMessage(&sithMulti_g_message, idTo, outstream, 0);
 }
+
 
 int J3DAPI sithDSSThing_ProcessFire(const SithMessage* pMsg)
 {
-    return J3D_TRAMPOLINE_CALL(sithDSSThing_ProcessFire, pMsg);
+    SITHDSS_STARTIN(pMsg);
+
+    int idx = SITHDSS_POPINT32();
+    SithThing* pShooter = sithThing_GetGuidThing(idx);
+    if ( !pShooter )
+    {
+        SITHLOG_ERROR("Bad shooter guid %d in DSS:Fire.\n", idx);
+        return 0;
+    }
+
+    SithFireProjectileFlags flags = SITHDSS_POPUINT16();
+    idx = SITHDSS_POPUINT16();
+    SithThing* pTemplate = sithTemplate_GetTemplateByIndex(idx);
+    idx = SITHDSS_POPUINT16();
+    tSoundHandle hSnd = Sound_GetSoundHandle(idx);
+    SithPuppetSubMode submode = SITHDSS_POPUINT16();
+
+    rdVector3 firePos;
+    rdVector3 fireDir;
+    SITHDSS_POPVEC3(&firePos);
+    SITHDSS_POPVEC3(&fireDir);
+
+    float extra = SITHDSS_POPFLOAT();
+    float secDeltaTime = SITHDSS_POPFLOAT();
+    int projectileGUID = SITHDSS_POPINT32();
+
+    SithThing* pProjectile = sithWeapon_WeaponFireProjectile(pShooter, pTemplate, &fireDir, &firePos, hSnd, submode, extra, flags, secDeltaTime);
+    if ( pProjectile )
+    {
+        pProjectile->flags |= SITH_TF_REMOTE;
+        pProjectile->guid = projectileGUID;
+    }
+
+    SITHDSS_ENDIN;
+    return 1;
 }
+
 
 int J3DAPI sithDSSThing_Death(const SithThing* pThing, const SithThing* pKiller, char bKillPlayer, DPID to, SithMessageStream outstream)
 {
-    return J3D_TRAMPOLINE_CALL(sithDSSThing_Death, pThing, pKiller, bKillPlayer, to, outstream);
+    SITHDSS_STARTOUT(SITHDSS_DEATH);
+    SITHDSS_PUSHINT32(pThing->guid);
+    if ( pKiller )
+    {
+        SITHDSS_PUSHINT32(pKiller->guid);
+    }
+    else
+    {
+        SITHDSS_PUSHINT32(-1);
+    }
+
+    SITHDSS_PUSHUINT8(bKillPlayer);
+
+    SITHDSS_ENDOUT;
+    return sithMessage_SendMessage(&sithMulti_g_message, to, outstream, DPSEND_GUARANTEED);
 }
+
 
 int J3DAPI sithDSSThing_ProcessDeath(const SithMessage* pMsg)
 {
-    return J3D_TRAMPOLINE_CALL(sithDSSThing_ProcessDeath, pMsg);
+    SITH_ASSERTREL(pMsg);
+    SITHDSS_STARTIN(pMsg);
+
+    int curguid = SITHDSS_POPINT32();
+    int killerGuid = SITHDSS_POPINT32();
+    int bKillPlayer = SITHDSS_POPUINT8();
+
+    SithThing* pCurThing = sithThing_GetGuidThing(curguid);
+    if ( !pCurThing )
+    {
+        SITHLOG_ERROR("Got DSS::Death message for thing guid %d I don't have locally.\n", curguid);
+        return 0;
+    }
+
+    SithThing* pKiller = sithThing_GetGuidThing(killerGuid);
+    switch ( pCurThing->type )
+    {
+        case SITH_THING_ACTOR:
+            sithActor_KillActor(pCurThing, pKiller, 0);
+            break;
+
+        case SITH_THING_PLAYER:
+            if ( bKillPlayer == 1 )
+            {
+                sithPlayer_KillPlayer(pCurThing);
+            }
+            else
+            {
+                sithActor_KillActor(pCurThing, pKiller, 0);
+            }
+            break;
+
+        case SITH_THING_FREE:
+            SITHLOG_ERROR("Got death message from unused thing %d.\n", pCurThing->idx);
+            // Note: no break, falls through to the default case as in the original
+
+        default:
+            SITHLOG_ERROR("Got death message for unhandled thing type %d, index %d.\n", pCurThing->type, pCurThing->idx);
+            break;
+    }
+
+    SITHDSS_ENDIN;
+    return 1;
 }
+
 
 int J3DAPI sithDSSThing_DamageThing(const SithThing* pVictim, const SithThing* pPurpetrator, float damage, SithDamageType hitType, DPID idTo, SithMessageStream outstream)
 {
-    return J3D_TRAMPOLINE_CALL(sithDSSThing_DamageThing, pVictim, pPurpetrator, damage, hitType, idTo, outstream);
+    SITH_ASSERTREL(pVictim);
+
+    SITHDSS_STARTOUT(SITHDSS_DAMAGE);
+    SITHDSS_PUSHINT32(pVictim->guid);
+    if ( pPurpetrator )
+    {
+        SITHDSS_PUSHINT32(pPurpetrator->guid);
+    }
+    else
+    {
+        SITHDSS_PUSHINT32(-1);
+    }
+
+    SITHDSS_PUSHFLOAT(damage);
+    SITHDSS_PUSHINT16(hitType);
+
+    SITHDSS_ENDOUT;
+    return sithMessage_SendMessage(&sithMulti_g_message, idTo, outstream, DPSEND_GUARANTEED);
 }
+
 
 int J3DAPI sithDSSThing_ProcessDamage(const SithMessage* pMsg)
 {
-    return J3D_TRAMPOLINE_CALL(sithDSSThing_ProcessDamage, pMsg);
+    SITH_ASSERTREL(pMsg);
+    SITHDSS_STARTIN(pMsg);
+
+    if ( sithMessage_GetSenderID() != sithMulti_g_serverId )
+    {
+        return 0;
+    }
+
+    int guid = SITHDSS_POPINT32();
+    int purpGuid = SITHDSS_POPINT32();
+
+    SithThing* pThing = sithThing_GetGuidThing(guid);
+    if ( !pThing )
+    {
+        SITHLOG_ERROR("Got DSS::Death message for thing guid %d I don't have locally.\n", guid);
+        return 0;
+    }
+
+    SithThing* pPurpetrator = sithThing_GetGuidThing(purpGuid);
+    if ( !pPurpetrator )
+    {
+        pPurpetrator = pThing;
+    }
+
+    float damage = SITHDSS_POPFLOAT();
+    SithDamageType hitType = SITHDSS_POPUINT16();
+    sithThing_DamageThing(pThing, pPurpetrator, damage, hitType);
+
+    SITHDSS_ENDIN;
+    return 1;
 }
+
 
 int J3DAPI sithDSSThing_ThingFullDescription(const SithThing* pThing, DPID idTo, SithMessageStream outstream)
 {
@@ -951,13 +1816,91 @@ int J3DAPI sithDSSThing_ProcessThingFullDescription(const SithMessage* pMsg)
 
 int J3DAPI sithDSSThing_PathMove(const SithThing* pThing, int16_t frame, float speed, int moveType, DPID idTO, SithMessageStream outstream)
 {
-    return J3D_TRAMPOLINE_CALL(sithDSSThing_PathMove, pThing, frame, speed, moveType, idTO, outstream);
+    if ( !pThing || pThing->moveType != SITH_MT_PATH || !pThing->type || !pThing->pInSector )
+    {
+        return 0;
+    }
+
+    SITHDSS_STARTOUT(SITHDSS_PATHMOVE);
+    SITHDSS_PUSHINT32(moveType);
+    SITHDSS_PUSHINT32(pThing->guid);
+    SITHDSS_PUSHINT32(sithMain_g_frameNumber);
+    SITHDSS_PUSHINT16((int16_t)sithSector_GetSectorIndex(pThing->pInSector));
+    SITHDSS_PUSHVEC3(&pThing->pos);
+
+    rdVector3 curpyr;
+    rdMatrix_ExtractAngles34(&pThing->orient, &curpyr);
+    SITHDSS_PUSHVEC3(&curpyr);
+
+    SITHDSS_PUSHINT16(frame);
+    SITHDSS_PUSHFLOAT(speed);
+
+    SITHDSS_ENDOUT;
+    return sithMessage_SendMessage(&sithMulti_g_message, idTO, outstream, DPSEND_GUARANTEED);
 }
+
 
 int J3DAPI sithDSSThing_ProcessPathMove(const SithMessage* pMsg)
 {
-    return J3D_TRAMPOLINE_CALL(sithDSSThing_ProcessPathMove, pMsg);
+    SITH_ASSERTREL(pMsg);
+    SITHDSS_STARTIN(pMsg);
+
+    int moveClass = SITHDSS_POPINT32();
+    int curGuid = SITHDSS_POPINT32();
+    SithThing* pThing = sithThing_GetGuidThing(curGuid);
+    if ( !pThing || pThing->moveType != SITH_MT_PATH )
+    {
+        goto error;
+    }
+
+    unsigned int moveFrame = SITHDSS_POPUINT32();
+    if ( (unsigned int)pThing->moveFrame > moveFrame ) // Note: unsigned compare, as in the original
+    {
+        SITHLOG_STATUS("Received old move command: Frame %d < frame %d.  Ignored.\n", moveFrame, pThing->moveFrame);
+        return 1;
+    }
+
+    pThing->moveFrame = moveFrame;
+    int sectIndex = SITHDSS_POPUINT16();
+    SithSector* pSector = sithSector_GetSectorEx(sithWorld_g_pCurrentWorld, sectIndex);
+    if ( !pSector )
+    {
+        goto error;
+    }
+
+    SITHDSS_POPVEC3(&pThing->pos);
+    sithThing_SetSector(pThing, pSector, 0);
+
+    rdVector3 curPyr;
+    SITHDSS_POPVEC3(&curPyr);
+    rdMatrix_BuildRotate34(&pThing->orient, &curPyr);
+
+    unsigned int curFrm = SITHDSS_POPUINT16();
+    float velocity = SITHDSS_POPFLOAT();
+
+    switch ( moveClass )
+    {
+        case 0:
+            sithPathMove_MoveToFrame(pThing, curFrm, velocity);
+            break;
+
+        case 1:
+            sithPathMove_SkipToFrame(pThing, curFrm, velocity);
+            break;
+
+        case 2:
+            sithPathMove_Finish(pThing);
+            break;
+    }
+
+    SITHDSS_ENDIN;
+    return 1;
+
+error:
+    SITHLOG_ERROR("Bad format in DSS::PathMove message, GUID=%x.\n", curGuid);
+    return 0;
 }
+
 
 int J3DAPI sithDSSThing_Attachment(const SithThing* pThing, DPID idTo, SithMessageStream outstream, unsigned int sendFlags)
 {
@@ -1129,35 +2072,198 @@ int J3DAPI sithDSSThing_ProcessAttachment(const SithMessage* pMsg)
 
 int J3DAPI sithDSSThing_Take(const SithThing* pItem, const SithThing* pThing, SithMessageStream outstream)
 {
-    return J3D_TRAMPOLINE_CALL(sithDSSThing_Take, pItem, pThing, outstream);
+    SITHDSS_STARTOUT(SITHDSS_TAKE);
+    SITHDSS_PUSHINT32(pItem->guid);
+    SITHDSS_PUSHINT32(pThing->guid);
+
+    SITHDSS_ENDOUT;
+    if ( stdComm_IsGameHost() )
+    {
+        return sithDSSThing_ProcessTake(&sithMulti_g_message);
+    }
+
+    return sithMessage_SendMessage(&sithMulti_g_message, sithMulti_g_serverId, outstream, DPSEND_GUARANTEED);
 }
+
 
 int J3DAPI sithDSSThing_ProcessTake(const SithMessage* pMsg)
 {
-    return J3D_TRAMPOLINE_CALL(sithDSSThing_ProcessTake, pMsg);
+    SITHDSS_STARTIN(pMsg);
+
+    int guid = SITHDSS_POPINT32();
+    SithThing* pItem = sithThing_GetGuidThing(guid);
+    if ( !pItem && stdComm_IsGameHost() )
+    {
+        sithDSSThing_DestroyThing(guid, sithMessage_GetSenderID());
+        return 0;
+    }
+
+    guid = SITHDSS_POPINT32();
+    SithThing* pThing = sithThing_GetGuidThing(guid);
+    if ( !pItem || !pThing )
+    {
+        SITHLOG_ERROR("Bad thing or taker guid in DSS::Take.\n");
+        return 0;
+    }
+
+    if ( pMsg->type == SITHDSS_TAKE )
+    {
+        if ( !stdComm_IsGameHost() )
+        {
+            return 0;
+        }
+
+        if ( pItem->type != SITH_THING_ITEM || (pItem->flags & (SITH_TF_DISABLED | SITH_TF_DESTROYED)) != 0 )
+        {
+            return 1;
+        }
+
+        ((SithMessage*)pMsg)->type = SITHDSS_TAKE2;
+        sithMessage_SendMessage((SithMessage*)pMsg, (DPID)-1, SITHMESSAGE_STREAM_NET, DPSEND_GUARANTEED);
+    }
+
+    sithItem_SetItemTaken(pItem, pThing, 1);
+
+    SITHDSS_ENDIN;
+    return 1;
 }
+
 
 int J3DAPI sithDSSThing_CreateThing(const SithThing* pTemplate, const SithThing* pNewThing, const SithThing* pMarker, const SithSector* pSector, const rdVector3* pos, const rdVector3* pyr, SithMessageStream outstream, unsigned int sendFlags)
 {
-    return J3D_TRAMPOLINE_CALL(sithDSSThing_CreateThing, pTemplate, pNewThing, pMarker, pSector, pos, pyr, outstream, sendFlags);
+    SITHDSS_STARTOUT(SITHDSS_CREATETHING);
+    SITHDSS_PUSHINT16((int16_t)sithTemplate_GetTemplateIndex(pTemplate));
+
+    if ( pMarker )
+    {
+        SITHDSS_PUSHINT32(pMarker->guid);
+    }
+    else
+    {
+        SITH_ASSERTREL(pSector && pos && pyr);
+        SITHDSS_PUSHINT32(-1);
+        SITHDSS_PUSHINT32(sithSector_GetSectorIndex(pSector));
+        SITHDSS_PUSHVEC3(pos);
+        SITHDSS_PUSHVEC3(pyr);
+    }
+
+    SITHDSS_PUSHINT32(pNewThing->guid);
+
+    SITHDSS_ENDOUT;
+    return sithMessage_SendMessage(&sithMulti_g_message, (DPID)-1, outstream, sendFlags);
 }
+
 
 int J3DAPI sithDSSThing_ProcessCreateThing(const SithMessage* pMsg)
 {
-    return J3D_TRAMPOLINE_CALL(sithDSSThing_ProcessCreateThing, pMsg);
+    SITHDSS_STARTIN(pMsg);
+
+    int id = SITHDSS_POPUINT16();
+    SithThing* pTemplate = sithTemplate_GetTemplateByIndex(id);
+    if ( !pTemplate )
+    {
+        SITHLOG_ERROR("Bad template index %d in DSS::CreateThing message.\n", id);
+        return 0;
+    }
+
+    SithThing* pThing;
+    id = SITHDSS_POPINT32();
+    if ( id >= 0 )
+    {
+        SithThing* pMarker = sithThing_GetGuidThing(id);
+        if ( !pMarker )
+        {
+            SITHLOG_ERROR("Cannot find GUID %d to create template %s.\n", id, pTemplate->aName);
+            return 0;
+        }
+
+        pThing = sithThing_CreateThing(pTemplate, pMarker);
+    }
+    else
+    {
+        id = SITHDSS_POPINT32();
+        SithSector* pSector = sithSector_GetSectorEx(sithWorld_g_pCurrentWorld, id);
+        if ( !pSector )
+        {
+            SITHLOG_ERROR("Bad sector %d in DSS::CreateThing, template %s.\n", id, pTemplate->aName);
+            return 0;
+        }
+
+        rdVector3 pos;
+        rdVector3 curPyr;
+        SITHDSS_POPVEC3(&pos);
+        SITHDSS_POPVEC3(&curPyr);
+
+        rdMatrix34 rotation;
+        rdMatrix_BuildRotate34(&rotation, &curPyr);
+        pThing = sithThing_CreateThingAtPos(pTemplate, &pos, &rotation, pSector, NULL);
+    }
+
+    if ( !pThing )
+    {
+        SITHLOG_ERROR("Failed to create thing of type %s from network instruction.\n", pTemplate->aName);
+        return 0;
+    }
+
+    pThing->guid = SITHDSS_POPINT32();
+    pThing->flags |= SITH_TF_REMOTE;
+
+    SITHDSS_ENDIN;
+    return 1;
 }
+
 
 int J3DAPI sithDSSThing_DestroyThing(int guid, DPID idTo)
 {
-    return J3D_TRAMPOLINE_CALL(sithDSSThing_DestroyThing, guid, idTo);
+    SITHDSS_STARTOUT(SITHDSS_DESTROYTHING);
+    SITHDSS_PUSHINT32(guid);
+
+    SITHDSS_ENDOUT;
+    return sithMessage_SendMessage(&sithMulti_g_message, idTo, SITHMESSAGE_STREAM_ALL, DPSEND_GUARANTEED);
 }
+
 
 int J3DAPI sithDSSThing_ProcessDestroyThing(const SithMessage* pMsg)
 {
-    return J3D_TRAMPOLINE_CALL(sithDSSThing_ProcessDestroyThing, pMsg);
+    SITHDSS_STARTIN(pMsg);
+
+    int guid = SITHDSS_POPINT32();
+    SithThing* pThing = sithThing_GetGuidThing(guid);
+    if ( !pThing )
+    {
+        SITHLOG_ERROR("Bad thing guid %d in DSS::DestroyThing.\n", guid);
+        return 0;
+    }
+
+    sithThing_DestroyThing(pThing);
+
+    SITHDSS_ENDIN;
+    return 1;
 }
+
 
 void J3DAPI sithDSSThing_MoveToPos(SithThing* pThing, const rdVector3* pPos, SithSector* pSector)
 {
-    J3D_TRAMPOLINE_CALL(sithDSSThing_MoveToPos, pThing, pPos, pSector);
+    SITH_ASSERTREL(pThing && (pThing->moveType == SITH_MT_PHYSICS) && pSector && pPos);
+
+    rdVector3 predictedPos;
+    predictedPos.x = pThing->moveInfo.physics.velocity.x * 0.25f + pPos->x;
+    predictedPos.y = pThing->moveInfo.physics.velocity.y * 0.25f + pPos->y;
+    predictedPos.z = pThing->moveInfo.physics.velocity.z * 0.25f + pPos->z;
+
+    rdVector3 dir;
+    dir.x = predictedPos.x - pThing->pos.x;
+    dir.y = predictedPos.y - pThing->pos.y;
+    dir.z = predictedPos.z - pThing->pos.z;
+
+    float dist = rdVector_Len3(&dir);
+    if ( dist != 0.0f && dist < 0.5f )
+    {
+        rdVector_Scale3(&pThing->moveInfo.physics.velocity, &dir, 4.0f);
+    }
+    else
+    {
+        rdVector_Copy3(&pThing->pos, pPos);
+        sithThing_SetSector(pThing, pSector, 0);
+    }
 }

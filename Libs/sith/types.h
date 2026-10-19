@@ -2145,7 +2145,11 @@ typedef struct sSithSpriteInfo
 typedef struct sSithBackpackItem
 {
     int typeId;
-    SithInventoryItem* pItem;
+    union
+    {
+        SithInventoryItem* pItem; // Note: The original stores the item amount in this field (float amount), see sithDSSThing_ProcessStateUpdate
+        float amount;
+    };
 } SithBackpackItem;
 
 typedef struct sSithItemInfo
