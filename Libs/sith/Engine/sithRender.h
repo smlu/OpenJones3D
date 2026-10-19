@@ -59,6 +59,9 @@ typedef enum eSithRenderThingTraversal
 #define sithRender_g_numVisibleSectors J3D_DECL_FAR_VAR(sithRender_g_numVisibleSectors, size_t)
 // extern int sithRender_g_numVisibleSectors;
 
+// Set when the camera aspect ratio/FOV was altered by the render and needs to be reset, serialized by DSS
+extern bool sithRender_bResetCameraAspect;
+
 int sithRender_Startup(void);
 void sithRender_Shutdown(void);
 
