@@ -118,7 +118,6 @@ static int J3DAPI sithPlayerControls_ProcessDeadPlayer(SithThing* pThing, float 
 static void J3DAPI sithPlayerControls_ProcessFallingMove(SithThing* pThing, float secDeltaTime);
 static void J3DAPI sithPlayerControls_ProcessSwimMove(SithThing* pThing, float secDeltaTime);
 static void J3DAPI sithPlayerControls_ProcessHangMove(SithThing* pThing, float secDeltaTime);
-static void J3DAPI sithPlayerControls_ProcessWeaponAim(SithThing* pThing, float secDeltaTime);
 
 static int J3DAPI sithPlayerControls_CheckAimRange(SithThing* pThing, const rdVector3* pStartPos, const rdVector3* pTargetPos, float cosFarAimCone, float cosCloseAimCone, float cosVerticalLimit, float maxAimDist);
 static int J3DAPI sithPlayerControls_GetPushPullMoveNorm(rdVector3* moveNorm, const rdVector3* pLVect, float angle);

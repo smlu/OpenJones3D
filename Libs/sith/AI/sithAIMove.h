@@ -26,7 +26,7 @@ void J3DAPI sithAIMove_UpdateMineCar(SithAIControlBlock* pLocal, float secDeltaT
 void J3DAPI sithAIMove_sub_4958B0(SithAIControlBlock* pLocal, float secDeltatTime);
 void J3DAPI sithAIMove_sub_495CD0(SithAIControlBlock* pLocal, float secDeltaTime);
 void J3DAPI sithAIMove_sub_4961A0(SithAIControlBlock* pLocal);
-double J3DAPI sithAIMove_sub_496200(SithAIControlBlock* pLocal, const rdVector3* a2, rdVector3* a3);
+double J3DAPI sithAIMove_sub_496200(SithAIControlBlock* pLocal, rdVector3* a2, rdVector3* a3);
 int J3DAPI sithAIMove_sub_496550(SithAIControlBlock* pLocal, float secDeltaTime);
 int J3DAPI sithAIMove_sub_4966D0(SithAIControlBlock* pLocal, float secDeltaTime);
 int J3DAPI sithAIMove_sub_496820(SithAIControlBlock* pLocal, float secDeltaTime);

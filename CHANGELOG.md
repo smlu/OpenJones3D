@@ -114,6 +114,7 @@
     The loader validates message counts, decimal fields, quoted values, duplicate keys, and the trailing `END` marker, and releases partially loaded data after parsing or allocation failures.
   - Added implementations of `AudioLib_GenerateLipSyncBlock` and `AudioLib_GetMouthPosition`, preserving the original lip-sync timeline and cross-sample decoding behavior. (0facac9)
   - Added implementations of `AudioLib_ParseWaveFileHeader`, `AudioLib_Compress`, `AudioLib_Uncompress`, `AudioLib_ResetCompressor`, `AudioLib_CompressBlock`, `AudioLib_UncompressBlock`, and `AudioLib_WVSMUncompressBlock`, completing `AudioLib`; the codec tables are now owned by the DLL, and the unit tests compare against vectors captured from the original executable.
+  - Added implementations of the remaining `sithAIMove` functions (turning, movement, cliff/water checks, head tracking and the Quetz and Marduk tail animations), completing `sithAIMove`.
   - Added capacity-aware lip-sync generation helpers to calculate worst-case output sizes and validate input/output buffer capacities. (0facac9)
   - Added implementations of `sithThing_WriteThingsListBinary` and `sithThing_ReadThingsListBinary` for world things and templates, preserving the original binary record layout and block ordering. (92660f2)
   - Fixed MSVC incremental-link PDB collisions by giving the executable a separate debug-symbol database from the DLL. (db582ba)
