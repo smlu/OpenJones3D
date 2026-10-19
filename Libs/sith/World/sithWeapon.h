@@ -89,6 +89,7 @@ SithWeaponId J3DAPI sithWeapon_GetWeaponForControlKey(SithControlFunction keyID)
 
 SithThing* J3DAPI sithWeapon_FireProjectileEx(SithThing* pShooter, const SithThing* pProjectile, tSoundHandle hSndFire, SithPuppetSubMode submode, rdVector3* pFirePos, const rdVector3* pTargetPos, float extra, SithFireProjectileFlags flags, float autoAinFovX, float autoAimFovZ, const rdVector3* pFireOffset, int bUseFireOffset);
 void J3DAPI sithWeapon_CreateWeaponFireFx(SithThing* pThing, rdVector3* pos);
+SithThing* J3DAPI sithWeapon_WeaponFireProjectile(SithThing* pShooter, const SithThing* pProjectileTemplate, const rdVector3* pFireDir, rdVector3* pFirePos, tSoundHandle hFireSnd, SithPuppetSubMode submode, float extra, SithFireProjectileFlags flags, float secDeltaTime);
 int J3DAPI sithWeapon_ActivateWhip(SithThing* pThing, SithCog* pCog);
 
 // Helper hooking functions

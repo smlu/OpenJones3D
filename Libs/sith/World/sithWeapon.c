@@ -96,8 +96,6 @@ static int sithWeapon_playerBackHolsterSwapRefNum;
 static SithControlFunction sithWeapon_bufferedWaponKeyId;
 static SithWeaponActorKilledCallback sithWeapon_pfActorKilledCallback;
 
-SithThing* J3DAPI sithWeapon_WeaponFireProjectile(SithThing* pShooter, const SithThing* pProjectileTemplate, const rdVector3* pFireDir, rdVector3* pFirePos, tSoundHandle hFireSnd, SithPuppetSubMode submode, float extra, SithFireProjectileFlags flags, float secDeltaTime);
-
 void J3DAPI sithWeapon_HandleImpact(SithThing* pWeapon);
 int sithWeapon_IsLocalPlayerUnableToUseWeapon(void);
 
