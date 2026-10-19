@@ -228,7 +228,7 @@ startup and a stable module-level CTest entry.
 | `stdTests` | `std` | General and deterministic Win95 services | Available |
 | `stdSystemTests` | `std.System` | Win95 windows and DirectX devices | Available |
 | `stdDisruptiveSystemTests` | `std.DisruptiveSystem` | Opt-in fullscreen/device changes | Available |
-| `soundTests` | `sound` | Deterministic lip-sync generation and lookup | Available |
+| `soundTests` | `sound` | Deterministic lip-sync generation and lookup, AudioLib codec and header vectors | Available |
 | `sithTests` | `sith` | World thing/template I/O and voice lip-sync | Available |
 
 Name CTest entries after the owning module when the executable covers that whole module, such as `std`. When an executable covers only a subarea, use the owning module first and a short area name second, separated by a dot, such as `j3dcore.Macros`. Use labels that match the owning module, such as `j3dcore`, `std`, `rdroid`, `sith`, `sound`, or `Jones3D`.
@@ -872,6 +872,13 @@ was compared against the production implementation for 49,158 lookups and 72
 generation combinations in both Debug and Release. The oracle was removed after
 the results matched byte-for-byte; the permanent suite keeps independent golden
 blocks and behavior assertions.
+
+The ADPCM and WVSM codec functions and `AudioLib_ParseWaveFileHeader` are covered
+by original-engine vectors captured from retail v1.0 `Indy3D.exe` and stored in
+`Libs/sound/Tests/tv/AudioLib` (provenance, case lists, preserved quirks and the
+known `AudioLib_WVSMCompressBlock` difference are in that directory's
+`README.md`). The `TestOriginal*` cases compare complete outputs, return values
+and compressor state, including chained block calls.
 
 <a name="sound-fixtures"></a>
 
