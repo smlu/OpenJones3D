@@ -1829,6 +1829,32 @@ typedef struct sSithAnimationSlot
 } SithAnimationSlot;
 static_assert(sizeof(SithAnimationSlot) == 168, "sizeof(SithAnimationSlot) == 168");
 
+// Track face geometry gathered by sithPhysics_ProcessTrackFace for mine car track following
+typedef struct sSithPhysicsTrackFaceData
+{
+    rdVector3 aVertices[4];
+    float aForwardDists[4];    // Vertex distance from center along the forward axis
+    float aRightDists[4];      // Vertex distance from center along the right axis
+    int aVertexSides[4];       // Vertex side flags, see SITHPHYSICS_TRACKVERT_*
+    rdVector3 aEdges[4];
+    float aEdgeForwardDots[4];
+    float aEdgeRightDots[4];
+    size_t nVertices;
+    rdVector3 frontLeft;
+    rdVector3 frontRight;
+    rdVector3 backLeft;
+    rdVector3 backRight;
+    rdVector3 front;           // Middle of front edge
+    rdVector3 back;            // Middle of back edge
+    rdVector3 middle;
+    rdVector3 center;          // Average of face vertices
+    rdVector3 forward;         // Normalized back to front direction
+    rdVector3 right;
+    float distanceToFront;
+    float distanceFromBack;
+} SithPhysicsTrackFaceData;
+static_assert(sizeof(SithPhysicsTrackFaceData) == 308, "sizeof(SithPhysicsTrackFaceData) == 308");
+
 typedef struct sSithMineCarState
 {
     int maybeMoveSate; // most likely car turn state

@@ -1,5 +1,6 @@
 set(SITH_TEST_SOURCES
     sithTestRunner.c
+    ../Engine/Tests/sithPhysicsTest.c
     ../World/Tests/sithTemplateTest.c
     ../World/Tests/sithThingTest.c
     ../World/Tests/sithVoiceTest.c
@@ -66,6 +67,11 @@ set_property(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/../../std/General/stdConffile.c
 )
 
 set_property(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/../World/Tests/sithThingTest.c" PROPERTY COMPILE_DEFINITIONS
+    J3D_LOCAL_RTI
+    J3D_LOCAL_RDROID_RTI
+)
+
+set_property(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/../Engine/Tests/sithPhysicsTest.c" PROPERTY COMPILE_DEFINITIONS
     J3D_LOCAL_RTI
     J3D_LOCAL_RDROID_RTI
 )

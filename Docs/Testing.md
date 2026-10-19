@@ -229,7 +229,7 @@ startup and a stable module-level CTest entry.
 | `stdSystemTests` | `std.System` | Win95 windows and DirectX devices | Available |
 | `stdDisruptiveSystemTests` | `std.DisruptiveSystem` | Opt-in fullscreen/device changes | Available |
 | `soundTests` | `sound` | Deterministic lip-sync generation and lookup, AudioLib codec and header vectors | Available |
-| `sithTests` | `sith` | World thing/template I/O and voice lip-sync | Available |
+| `sithTests` | `sith` | World thing/template I/O, voice lip-sync and track/jeep physics helpers | Available |
 
 Name CTest entries after the owning module when the executable covers that whole module, such as `std`. When an executable covers only a subarea, use the owning module first and a short area name second, separated by a dot, such as `j3dcore.Macros`. Use labels that match the owning module, such as `j3dcore`, `std`, `rdroid`, `sith`, `sound`, or `Jones3D`.
 
