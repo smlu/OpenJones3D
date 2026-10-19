@@ -1422,53 +1422,64 @@ void J3DAPI jonesConfig_ControlToString(size_t controlId, char* pDest)
 
     memset(pDest, 0, JONESCONFIG_CONTROLSTRING_MAXLEN);
 
+    char aKeyName[256]; // Fixed: [v1.2] Buffer for key name
+
     char* pJonesString = NULL;
     if ( controlId < JONESCONFIG_JOYAXISKID_UP )
     {
         switch ( controlId )
         {
+            // Fixed: [v1.2] Key name is now queried from the system keyboard layout instead of being hardcoded
+            case DIK_1:
+            case DIK_2:
+            case DIK_3:
+            case DIK_4:
+            case DIK_5:
+            case DIK_6:
+            case DIK_7:
+            case DIK_8:
+            case DIK_9:
+            case DIK_0:
+            case DIK_Q:
+            case DIK_W:
+            case DIK_E:
+            case DIK_R:
+            case DIK_T:
+            case DIK_Y:
+            case DIK_U:
+            case DIK_I:
+            case DIK_O:
+            case DIK_P:
+            case DIK_A:
+            case DIK_S:
+            case DIK_D:
+            case DIK_F:
+            case DIK_G:
+            case DIK_H:
+            case DIK_J:
+            case DIK_K:
+            case DIK_L:
+            case DIK_SEMICOLON:
+            case DIK_APOSTROPHE:
+            case DIK_GRAVE:
+            case DIK_BACKSLASH:
+            case DIK_Z:
+            case DIK_X:
+            case DIK_C:
+            case DIK_V:
+            case DIK_B:
+            case DIK_N:
+            case DIK_M:
+            case DIK_PERIOD:
+            case DIK_SLASH:
+                // TODO: [BUG] Result is not checked, on failure aKeyName is uninitialized (as in the original)
+                GetKeyNameTextA(((controlId & 0x7F) | ((controlId & 0x80) << 1)) << 16, aKeyName, sizeof(aKeyName) - 1);
+                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, aKeyName);
+                stdUtil_ToUpper(pDest); // Note, original calls _strupr
+                return;
+
             case DIK_ESCAPE:
                 pJonesString = "JONES_STR_ESCAPE";
-                break;
-
-            case DIK_1:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "1");
-                break;
-
-            case DIK_2:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "2");
-                break;
-
-            case DIK_3:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "3");
-                break;
-
-            case DIK_4:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "4");
-                break;
-
-            case DIK_5:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "5");
-                break;
-
-            case DIK_6:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "6");
-                break;
-
-            case DIK_7:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "7");
-                break;
-
-            case DIK_8:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "8");
-                break;
-
-            case DIK_9:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "9");
-                break;
-
-            case DIK_0:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "0");
                 break;
 
             case DIK_MINUS:
@@ -1487,46 +1498,6 @@ void J3DAPI jonesConfig_ControlToString(size_t controlId, char* pDest)
                 pJonesString = "JONES_STR_TAB";
                 break;
 
-            case DIK_Q:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "Q");
-                break;
-
-            case DIK_W:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "W");
-                break;
-
-            case DIK_E:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "E");
-                break;
-
-            case DIK_R:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "R");
-                break;
-
-            case DIK_T:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "T");
-                break;
-
-            case DIK_Y:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "Y");
-                break;
-
-            case DIK_U:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "U");
-                break;
-
-            case DIK_I:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "I");
-                break;
-
-            case DIK_O:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "O");
-                break;
-
-            case DIK_P:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "P");
-                break;
-
             case DIK_LBRACKET:
                 pJonesString = "JONES_STR_LEFT_BRCKT";
                 break;
@@ -1543,100 +1514,12 @@ void J3DAPI jonesConfig_ControlToString(size_t controlId, char* pDest)
                 pJonesString = "JONES_STR_LEFT_CTRL";
                 break;
 
-            case DIK_A:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "A");
-                break;
-
-            case DIK_S:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "S");
-                break;
-
-            case DIK_D:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "D");
-                break;
-
-            case DIK_F:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "F");
-                break;
-
-            case DIK_G:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "G");
-                break;
-
-            case DIK_H:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "H");
-                break;
-
-            case DIK_J:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "J");
-                break;
-
-            case DIK_K:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "K");
-                break;
-
-            case DIK_L:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "L");
-                break;
-
-            case DIK_SEMICOLON:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, ";");
-                break;
-
-            case DIK_APOSTROPHE:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "'");
-                break;
-
-            case DIK_GRAVE:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "`");
-                break;
-
             case DIK_LSHIFT:
                 pJonesString = "JONES_STR_LEFT_SHIFT";
                 break;
 
-            case DIK_BACKSLASH:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "\\");
-                break;
-
-            case DIK_Z:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "Z");
-                break;
-
-            case DIK_X:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "X");
-                break;
-
-            case DIK_C:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "C");
-                break;
-
-            case DIK_V:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "V");
-                break;
-
-            case DIK_B:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "B");
-                break;
-
-            case DIK_N:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "N");
-                break;
-
-            case DIK_M:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "M");
-                break;
-
             case DIK_COMMA:
                 pJonesString = "JONES_STR_COMMA";
-                break;
-
-            case DIK_PERIOD:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, ".");
-                break;
-
-            case DIK_SLASH:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "/");
                 break;
 
             case DIK_RSHIFT:
