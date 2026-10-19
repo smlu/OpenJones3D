@@ -91,6 +91,7 @@ typedef enum eSithDSSType
     SITHDSS_WELCOME             = 33,
     SITHDSS_JOIN                = 34,
     SITHDSS_DESTROYTHING        = 35,
+    SITHDSS_JOINSTATUS          = 36,
     SITHDSS_PLAYSOUNDMODE       = 37,
     SITHDSS_PING                = 38,
     SITHDSS_PONG                = 39,
