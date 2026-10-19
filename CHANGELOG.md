@@ -400,6 +400,7 @@
   - Applied official 1.2 update change to the end credits (`JonesHud_DrawCredits`): added "Director of Sales Operations: JASON HORSTMAN" (the credits table now has 327 records) and swapped the order of `JOSH MOORE` and `HEATHER TWIST`. ()
   - Applied official 1.2 update fix to push/pull in `sithPlayerControls_ProcessGeneralMove`: the collision check that decides whether the Marduk statue (`2marpushstatue`) can be pushed or pulled starts 0.05 lower. ()
   - Applied official 1.2 update fix to `sithPlayerControls_ProcessPushPullMove` (part of `sithPlayerControls_ProcessGeneralMove` in the original): the collision check that decides whether the Marduk statue (`2marpushstatue`) can be pushed or pulled starts 0.05 lower. ()
+  - Applied official 1.2 update fix to `sithCamera_SetCameraCanvas`: changing the canvas resets the focus interpolation of the external camera so the camera focus is re-initialized. ()
 
 ## v0.3.1
 ### General:
