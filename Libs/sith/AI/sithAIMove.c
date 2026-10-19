@@ -1,6 +1,9 @@
 #include "sithAIMove.h"
 #include <j3dcore/j3dhook.h>
 
+#include <math.h>
+#include <string.h>
+
 #include <rdroid/Math/rdMath.h>
 #include <rdroid/Math/rdMatrix.h>
 #include <rdroid/Math/rdVector.h>
@@ -12,13 +15,18 @@
 #include <sith/Engine/sithPuppet.h>
 #include <sith/Engine/sithPhysics.h>
 #include <sith/Gameplay/sithPlayerActions.h>
+#include <sith/Gameplay/sithPlayerControls.h>
 #include <sith/Gameplay/sithTime.h>
 #include <sith/RTI/symbols.h>
 #include <sith/World/sithActor.h>
 #include <sith/World/sithSoundClass.h>
 #include <sith/World/sithTemplate.h>
 #include <sith/World/sithThing.h>
+#include <sith/World/sithWeapon.h>
 #include <sith/World/sithWorld.h>
+
+#include <std/General/stdMath.h>
+#include <std/General/stdUtil.h>
 
 static float sithAIMove_maxTurnSpeed = 0.0049999999f;
 static float sithAIMove_maxWalkSpeed = 0.27000001f;
@@ -35,15 +43,15 @@ void sithAIMove_InstallHooks(void)
 {
     // Uncomment only lines for functions that have full definition and doesn't call original function (non-thunk functions)
 
-    // J3D_HOOKFUNC(sithAIMove_Update);
-    // J3D_HOOKFUNC(sithAIMove_UpdateMineCar);
-    // J3D_HOOKFUNC(sithAIMove_sub_4958B0);
-    // J3D_HOOKFUNC(sithAIMove_sub_495CD0);
-    // J3D_HOOKFUNC(sithAIMove_sub_4961A0);
-    // J3D_HOOKFUNC(sithAIMove_sub_496200);
-    // J3D_HOOKFUNC(sithAIMove_sub_496550);
-    // J3D_HOOKFUNC(sithAIMove_sub_4966D0);
-    // J3D_HOOKFUNC(sithAIMove_sub_496820);
+    J3D_HOOKFUNC(sithAIMove_Update);
+    J3D_HOOKFUNC(sithAIMove_UpdateMineCar);
+    J3D_HOOKFUNC(sithAIMove_sub_4958B0);
+    J3D_HOOKFUNC(sithAIMove_sub_495CD0);
+    J3D_HOOKFUNC(sithAIMove_sub_4961A0);
+    J3D_HOOKFUNC(sithAIMove_sub_496200);
+    J3D_HOOKFUNC(sithAIMove_sub_496550);
+    J3D_HOOKFUNC(sithAIMove_sub_4966D0);
+    J3D_HOOKFUNC(sithAIMove_sub_496820);
     J3D_HOOKFUNC(sithAIMove_AIGetMoveState);
     J3D_HOOKFUNC(sithAIMove_AISpecialTurn);
     J3D_HOOKFUNC(sithAIMove_UpdateAIMove);
@@ -63,23 +71,23 @@ void sithAIMove_InstallHooks(void)
     J3D_HOOKFUNC(sithAIMove_Unreachable);
     J3D_HOOKFUNC(sithAIMove_StopAIMovement);
     J3D_HOOKFUNC(sithAIMove_ResetAILook);
-   // J3D_HOOKFUNC(sithAIMove_UpdateBoss);
-   // J3D_HOOKFUNC(sithAIMove_sub_499090);
-   // J3D_HOOKFUNC(sithAIMove_sub_4996C0);
-   // J3D_HOOKFUNC(sithAIMove_sub_499A80);
-   // J3D_HOOKFUNC(sithAIMove_sub_499CA0);
-   // J3D_HOOKFUNC(sithAIMove_sub_49A020);
-   // J3D_HOOKFUNC(sithAIMove_sub_49A1B0);
-   // J3D_HOOKFUNC(sithAIMove_sub_49A450);
-   // J3D_HOOKFUNC(sithAIMove_sub_49A630);
-   // J3D_HOOKFUNC(sithAIMove_sub_49A810);
-   // J3D_HOOKFUNC(sithAIMove_UpdateQuetzTail);
-   // J3D_HOOKFUNC(sithAIMove_sub_49AA60);
-   // J3D_HOOKFUNC(sithAIMove_sub_49AB80);
-   // J3D_HOOKFUNC(sithAIMove_sub_49AC50);
-   // J3D_HOOKFUNC(sithAIMove_sub_49AF80);
-   // J3D_HOOKFUNC(sithAIMove_sub_49B1B0);
-   // J3D_HOOKFUNC(sithAIMove_UpdateMardukTail);
+    J3D_HOOKFUNC(sithAIMove_UpdateBoss);
+    J3D_HOOKFUNC(sithAIMove_sub_499090);
+    J3D_HOOKFUNC(sithAIMove_sub_4996C0);
+    J3D_HOOKFUNC(sithAIMove_sub_499A80);
+    J3D_HOOKFUNC(sithAIMove_sub_499CA0);
+    J3D_HOOKFUNC(sithAIMove_sub_49A020);
+    J3D_HOOKFUNC(sithAIMove_sub_49A1B0);
+    J3D_HOOKFUNC(sithAIMove_sub_49A450);
+    J3D_HOOKFUNC(sithAIMove_sub_49A630);
+    J3D_HOOKFUNC(sithAIMove_sub_49A810);
+    J3D_HOOKFUNC(sithAIMove_UpdateQuetzTail);
+    J3D_HOOKFUNC(sithAIMove_sub_49AA60);
+    J3D_HOOKFUNC(sithAIMove_sub_49AB80);
+    J3D_HOOKFUNC(sithAIMove_sub_49AC50);
+    J3D_HOOKFUNC(sithAIMove_sub_49AF80);
+    J3D_HOOKFUNC(sithAIMove_sub_49B1B0);
+    J3D_HOOKFUNC(sithAIMove_UpdateMardukTail);
 }
 
 void sithAIMove_ResetGlobals(void)
@@ -92,47 +100,737 @@ void sithAIMove_ResetGlobals(void)
 
 void J3DAPI sithAIMove_Update(SithThing* pThing, float secDeltatTime)
 {
-    J3D_TRAMPOLINE_CALL(sithAIMove_Update, pThing, secDeltatTime);
+    SITH_ASSERTREL(pThing);
+    SITH_ASSERTREL(pThing->controlType == SITH_CT_AI);
+
+    if ( pThing->type != SITH_THING_ACTOR )
+    {
+        return;
+    }
+
+    if ( pThing->thingInfo.actorInfo.health <= 0.0f )
+    {
+        return;
+    }
+
+    SithAIControlBlock* pLocal = pThing->controlInfo.aiControl.pLocal;
+    SITH_ASSERTREL(pLocal);
+
+    if ( (pLocal->mode & SITHAI_MODE_SLEEPING) != 0 && (pLocal->mode & SITHAI_MODE_BLOCK) == 0 && (pThing->thingInfo.actorInfo.flags & SITH_AF_NOSLOPEMOVE) == 0 )
+    {
+        return;
+    }
+
+    if ( (pThing->flags & (SITH_TF_DISABLED | SITH_TF_DYING | SITH_TF_DESTROYED)) != 0 )
+    {
+        return;
+    }
+
+    if ( (pLocal->submode & SITHAI_SUBMODE_UNKNOWN_100) != 0 && (pLocal->mode & SITHAI_MODE_MOVING) != 0 && (pLocal->mode & SITHAI_MODE_DISABLED) == 0 )
+    {
+        rdVector3 lookPos;
+        rdVector_Copy3(&lookPos, &pLocal->movePos);
+        lookPos.z += pLocal->pOwner->thingInfo.actorInfo.eyeOffset.z;
+        sithAIMove_AISetLookPos(pLocal, &lookPos);
+    }
+
+    if ( (pLocal->mode & SITHAI_MODE_TURNING) != 0 || (pLocal->submode & SITHAI_SUBMODE_BODYTRACKINGMOTION) != 0 )
+    {
+        if ( (pThing->thingInfo.actorInfo.flags & SITH_AF_BOSS) != 0 )
+        {
+            sithAIMove_UpdateBoss(pLocal, secDeltatTime);
+        }
+        else if ( pLocal->pOwner->moveType == SITH_MT_PHYSICS && (pThing->moveInfo.physics.flags & SITH_PF_MINECAR) != 0 )
+        {
+            sithAIMove_UpdateMineCar(pLocal, secDeltatTime);
+        }
+        else
+        {
+            if ( (pLocal->submode & SITHAI_SUBMODE_BODYTRACKINGMOTION) != 0 && pLocal->pTargetThing )
+            {
+                if ( (pLocal->mode & SITHAI_MODE_TURNING) != 0 || (pLocal->submode & SITHAI_SUBMODE_UNKNOWN_400) == 0 )
+                {
+                    sithAIMove_AISetLookThing(pLocal, pLocal->pTargetThing);
+                }
+                else if ( fabsf(pThing->thingInfo.actorInfo.headPYR.y) > 20.0f )
+                {
+                    sithAIMove_AISetLookThing(pLocal, pLocal->pTargetThing);
+                }
+            }
+
+            sithAIMove_sub_4958B0(pLocal, secDeltatTime);
+        }
+    }
+
+    if ( (pLocal->submode & SITHAI_SUBMODE_UNKNOWN_10) != 0 )
+    {
+        if ( (pLocal->mode & SITHAI_MODE_TRAVERSEWPNTS) != 0 )
+        {
+            sithAIUtil_sub_49D170(pLocal);
+        }
+        else
+        {
+            sithAIMove_sub_4961A0(pLocal);
+        }
+    }
+
+    if ( (pLocal->mode & SITHAI_MODE_MOVING) != 0 && (pLocal->submode & SITHAI_SUBMODE_UNKNOWN_10) == 0 )
+    {
+        sithAIMove_sub_495CD0(pLocal, secDeltatTime);
+    }
+
+    if ( sithWeapon_HasWeaponSelected(pLocal->pOwner) )
+    {
+        sithPlayerControls_ProcessWeaponAim(pLocal->pOwner, secDeltatTime);
+    }
+
+    if ( !sithWeapon_IsAiming(pLocal->pOwner)
+        && ((pLocal->mode & (SITHAI_MODE_UNKNOWN_80 | SITHAI_MODE_TURNING)) != 0 || (pLocal->submode & SITHAI_SUBMODE_UNKNOWN_400) != 0) )
+    {
+        if ( ((pLocal->mode & SITHAI_MODE_BLOCK) != 0 || (pThing->thingInfo.actorInfo.flags & SITH_AF_NOSLOPEMOVE) != 0)
+            && (pLocal->submode & SITHAI_SUBMODE_UNKNOWN_400) == 0 )
+        {
+            sithAIMove_sub_4996C0(pLocal, secDeltatTime);
+        }
+        else
+        {
+            sithAIMove_sub_499090(pLocal, secDeltatTime);
+        }
+    }
+
+    if ( pLocal->pOwner->pAttachedThing && (pLocal->pOwner->pAttachedThing->attach.flags & SITH_ATTACH_TAIL) != 0 )
+    {
+        sithAIMove_UpdateQuetzTail(pLocal, secDeltatTime);
+    }
+    else if ( strncmp(pThing->aName, "marduk", 6) == 0 )
+    {
+        sithAIMove_UpdateMardukTail(pThing, secDeltatTime);
+    }
 }
 
 void J3DAPI sithAIMove_UpdateMineCar(SithAIControlBlock* pLocal, float secDeltaTime)
 {
-    J3D_TRAMPOLINE_CALL(sithAIMove_UpdateMineCar, pLocal, secDeltaTime);
+    SithThing* pThing = pLocal->pOwner;
+    SithActorInfo* pActorInfo = &pThing->thingInfo.actorInfo;
+    if ( (pActorInfo->flags & SITH_AF_IMMOBILE) != 0 )
+    {
+        return;
+    }
+
+    int meshIdx = sithThing_GetThingMeshIndex(pThing, "redarmy");
+
+    rdVector3 jointPos;
+    rdVector_Copy3(&jointPos, &pThing->renderData.paJointMatrices[meshIdx].dvec);
+
+    rdVector3 toLook;
+    rdVector_Sub3(&toLook, &pLocal->lookPos, &jointPos);
+
+    rdVector3 lvec;
+    rdVector_Rotate3(&lvec, &pThing->orient.lvec, &pThing->renderData.apTweakedAngles[meshIdx]);
+    rdVector_Normalize3Acc(&lvec);
+
+    float dist = rdMath_DistancePointToPlane(&lvec, &pThing->orient.uvec, &rdroid_g_zeroVector3);
+
+    rdVector3 aimDir;
+    rdVector_ScaleAdd3(&aimDir, &pThing->orient.uvec, -dist, &lvec);
+    rdVector_Normalize3Acc(&aimDir);
+
+    rdVector3 rvec;
+    rdVector_Cross3(&rvec, &aimDir, &pThing->orient.uvec);
+    rdVector_Normalize3Acc(&rvec);
+
+    // TODO: [BUG] The original never assigns the local moveState (sithAIMove_sub_4958B0 sets it from sithAIMove_AIGetMoveState).
+    //       The compiler reuses the stack slot of the pLocal argument for both moveState and angle: when angle is computed the slot
+    //       holds angle's bits, so moveState is zero only if angle is +0.0f; when the actor looks straight up or down angle is never
+    //       stored and the slot still holds the never-NULL pLocal pointer, so moveState is nonzero.
+    int moveState = 1;
+
+    float upDot = fabsf(rdVector_Dot3(&pThing->orient.uvec, &toLook));
+    if ( upDot > 0.999f )
+    {
+        if ( (pThing->moveInfo.physics.flags & SITH_PF_FLY) == 0 )
+        {
+            SITHLOG_ERROR("Strange... AI '%s' is looking straight up or down.\n", pThing->aName);
+        }
+    }
+    else
+    {
+        dist = rdMath_DistancePointToPlane(&toLook, &pThing->orient.uvec, &rdroid_g_zeroVector3);
+
+        rdVector3 lookDir;
+        rdVector_ScaleAdd3(&lookDir, &pThing->orient.uvec, -dist, &toLook);
+        rdVector_Normalize3Acc(&lookDir);
+
+        float angle = rdMath_DeltaAngleNormalized(&lookDir, &aimDir, &pThing->orient.uvec);
+        memcpy(&moveState, &angle, sizeof(moveState));
+
+        float turnRate = pActorInfo->maxRotVelocity * secDeltaTime;
+        float maxStep  = pActorInfo->maxRotVelocity * 0.07f;
+        if ( fabsf(angle) <= maxStep && fabsf(angle) >= 1.0f )
+        {
+            turnRate = (fabsf(angle) / maxStep) * turnRate;
+        }
+
+        float turnLimit = turnRate * 1.05f;
+        if ( fabsf(angle) <= turnLimit )
+        {
+            float fwdDot   = rdVector_Dot3(&pThing->orient.lvec, &lookDir);
+            float rightDot = rdVector_Dot3(&pThing->orient.rvec, &lookDir);
+            pThing->renderData.apTweakedAngles[meshIdx].y = 90.0f - stdMath_ArcSin3(fwdDot);
+            if ( rightDot > 0.0f )
+            {
+                pThing->renderData.apTweakedAngles[meshIdx].y = -pThing->renderData.apTweakedAngles[meshIdx].y;
+            }
+        }
+        else
+        {
+            rdVector3 pyr;
+            pyr.x = 0.0f;
+            pyr.y = -((angle < 0.0f ? -1.0f : 1.0f) * turnRate);
+            pyr.z = 0.0f;
+            rdVector_Rotate3Acc(&aimDir, &pyr);
+
+            float fwdDot   = rdVector_Dot3(&pThing->orient.lvec, &aimDir);
+            float rightDot = rdVector_Dot3(&pThing->orient.rvec, &aimDir);
+            pThing->renderData.apTweakedAngles[meshIdx].y = 90.0f - stdMath_ArcSin3(fwdDot);
+            if ( rightDot > 0.0f )
+            {
+                pThing->renderData.apTweakedAngles[meshIdx].y = -pThing->renderData.apTweakedAngles[meshIdx].y;
+            }
+
+            if ( moveState == 0 )
+            {
+                if ( angle < 0.0f )
+                {
+                    pThing->moveStatus = SITHPLAYERMOVE_TURNING_LEFT;
+                    if ( angle < -45.0f )
+                    {
+                        pThing->moveStatus = SITHPLAYERMOVE_UNKNOWN_105;
+                    }
+                }
+                else
+                {
+                    pThing->moveStatus = SITHPLAYERMOVE_TURNING_RIGHT;
+                    if ( angle > 45.0f )
+                    {
+                        pThing->moveStatus = SITHPLAYERMOVE_UNKNOWN_106;
+                    }
+                }
+            }
+
+            return;
+        }
+    }
+
+    pLocal->mode &= ~SITHAI_MODE_TURNING;
+
+    if ( moveState == 0 )
+    {
+        pThing->moveStatus = SITHPLAYERMOVE_STILL;
+    }
 }
 
 void J3DAPI sithAIMove_sub_4958B0(SithAIControlBlock* pLocal, float secDeltatTime)
 {
-    J3D_TRAMPOLINE_CALL(sithAIMove_sub_4958B0, pLocal, secDeltatTime);
+    SithThing* pOwner = pLocal->pOwner;
+    SithActorInfo* pActorInfo = &pOwner->thingInfo.actorInfo;
+
+    rdVector3 goalLVec;
+    rdVector_Copy3(&goalLVec, &pLocal->goalLVec);
+
+    if ( (pActorInfo->flags & SITH_AF_IMMOBILE) != 0 )
+    {
+        return;
+    }
+
+    int moveState = sithAIMove_AIGetMoveState(pLocal);
+    if ( moveState == 2 )
+    {
+        return;
+    }
+
+    float upDot = fabsf(rdVector_Dot3(&pOwner->orient.uvec, &goalLVec));
+    if ( upDot > 0.999f )
+    {
+        if ( (pOwner->moveInfo.physics.flags & SITH_PF_FLY) == 0 )
+        {
+            SITHLOG_ERROR("Strange... AI '%s' is looking straight up or down.\n", pOwner->aName);
+        }
+    }
+    else
+    {
+        float dist = rdMath_DistancePointToPlane(&goalLVec, &pOwner->orient.uvec, &rdroid_g_zeroVector3);
+
+        rdVector3 lvec;
+        rdVector_ScaleAdd3(&lvec, &pOwner->orient.uvec, -dist, &goalLVec);
+        rdVector_Normalize3Acc(&lvec);
+
+        float angle = rdMath_DeltaAngleNormalized(&lvec, &pOwner->orient.lvec, &pOwner->orient.uvec);
+        if ( sithAIMove_AISpecialTurn(pLocal, angle) )
+        {
+            return;
+        }
+
+        float turnRate = pActorInfo->maxRotVelocity * secDeltatTime;
+        float maxStep  = pActorInfo->maxRotVelocity * 0.07f;
+        if ( fabsf(angle) <= maxStep && fabsf(angle) >= 1.0f )
+        {
+            turnRate = (fabsf(angle) / maxStep) * turnRate;
+        }
+
+        float turnLimit = turnRate * 1.05f;
+        if ( fabsf(angle) <= turnLimit )
+        {
+            rdVector_Copy3(&pOwner->orient.lvec, &lvec);
+            rdVector_Cross3(&pOwner->orient.rvec, &pOwner->orient.lvec, &pOwner->orient.uvec);
+            rdVector_Normalize3Acc(&pOwner->orient.rvec);
+            rdVector_Cross3(&pOwner->orient.uvec, &pOwner->orient.rvec, &pOwner->orient.lvec);
+        }
+        else
+        {
+            rdVector3 pyr;
+            pyr.x = 0.0f;
+            pyr.y = -((angle < 0.0f ? -1.0f : 1.0f) * turnRate);
+            pyr.z = 0.0f;
+            rdMatrix_PreRotate34(&pOwner->orient, &pyr);
+            rdMatrix_Normalize34(&pOwner->orient);
+
+            if ( moveState == 0 )
+            {
+                if ( angle < 0.0f )
+                {
+                    pOwner->moveStatus = SITHPLAYERMOVE_TURNING_LEFT;
+                    if ( angle < -45.0f )
+                    {
+                        pOwner->moveStatus = SITHPLAYERMOVE_UNKNOWN_105;
+                    }
+                }
+                else
+                {
+                    pOwner->moveStatus = SITHPLAYERMOVE_TURNING_RIGHT;
+                    if ( angle > 45.0f )
+                    {
+                        pOwner->moveStatus = SITHPLAYERMOVE_UNKNOWN_106;
+                    }
+                }
+            }
+
+            return;
+        }
+    }
+
+    pLocal->mode &= ~SITHAI_MODE_TURNING;
+    if ( moveState == 0 )
+    {
+        pOwner->moveStatus = SITHPLAYERMOVE_STILL;
+    }
 }
 
 void J3DAPI sithAIMove_sub_495CD0(SithAIControlBlock* pLocal, float secDeltaTime)
 {
-    J3D_TRAMPOLINE_CALL(sithAIMove_sub_495CD0, pLocal, secDeltaTime);
+    int bGoalReached = 0;
+
+    SITH_ASSERTREL(pLocal);
+
+    SithThing* pThing = pLocal->pOwner;
+    SITH_ASSERTREL(pThing && (pThing->type == SITH_THING_ACTOR));
+
+    if ( (pThing->flags & (SITH_TF_DISABLED | SITH_TF_DYING | SITH_TF_DESTROYED)) != 0 )
+    {
+        return;
+    }
+
+    if ( (pThing->thingInfo.actorInfo.flags & SITH_AF_IMMOBILE) != 0 )
+    {
+        return;
+    }
+
+    if ( sithTime_g_msecGameTime < pLocal->msecPauseMoveUntil )
+    {
+        return;
+    }
+
+    pLocal->submode &= ~(SITHAI_SUBMODE_UNKNOWN_4000 | SITHAI_SUBMODE_UNKNOWN_4);
+
+    float moveDist = (pThing->thingInfo.actorInfo.maxThrust * secDeltaTime) * pLocal->moveSpeed;
+
+    rdVector3 pos;
+    rdVector_Copy3(&pos, &pThing->pos);
+
+    rdVector3 movePos;
+    rdVector_Copy3(&movePos, &pLocal->movePos);
+
+    float goalDist = (float)sithAIMove_sub_496200(pLocal, &pos, &movePos);
+
+    rdVector_Sub3(&pLocal->moveDirection, &movePos, &pos);
+    pLocal->moveDistance = rdVector_Normalize3Acc(&pLocal->moveDirection);
+
+    rdVector3 vel;
+    if ( (pLocal->submode & SITHAI_SUBMODE_UNKNOWN_100) == 0 )
+    {
+        rdVector_Scale3(&vel, &pLocal->moveDirection, moveDist);
+    }
+    else
+    {
+        float dot = rdVector_Dot3(&pThing->orient.lvec, &pLocal->moveDirection);
+        dot = STDMATH_CLAMP(dot, 0.3f, 1.0f);
+        moveDist *= dot;
+        rdVector_Scale3(&vel, &pThing->orient.lvec, moveDist);
+    }
+
+    vel.x = stdMath_ClipNearZero(vel.x);
+    vel.y = stdMath_ClipNearZero(vel.y);
+    vel.z = stdMath_ClipNearZero(vel.z);
+
+    if ( (pLocal->mode & SITHAI_MODE_UNKNOWN_8000) != 0 && pLocal->goalThing )
+    {
+        rdVector3 goalDir;
+        rdVector_Copy3(&goalDir, &pLocal->goalThing->moveInfo.physics.velocity);
+        float goalSpeed = rdVector_Normalize3Acc(&goalDir);
+
+        rdVector3 dir;
+        rdVector_Copy3(&dir, &pThing->moveInfo.physics.velocity);
+        rdVector_Normalize3Acc(&dir);
+        rdVector_Scale3(&pThing->moveInfo.physics.velocity, &dir, goalSpeed);
+    }
+    else
+    {
+        rdVector_Add3Acc(&pThing->moveInfo.physics.velocity, &vel);
+    }
+
+    if ( sithAIMove_AIGetMoveState(pLocal) == 2 )
+    {
+        memset(&pLocal->pOwner->moveInfo.physics.velocity, 0, sizeof(rdVector3));
+    }
+
+    if ( (pLocal->submode & SITHAI_SUBMODE_UNKNOWN_100) != 0 )
+    {
+        float speed = rdVector_Len3(&pThing->moveInfo.physics.velocity);
+        rdVector_Scale3(&pThing->moveInfo.physics.velocity, &pThing->orient.lvec, speed);
+    }
+
+    if ( (pLocal->mode & SITHAI_MODE_NOCHECKFORCLIFF) == 0
+        && (pThing->moveInfo.physics.velocity.x != 0.0f || pThing->moveInfo.physics.velocity.y != 0.0f || pThing->moveInfo.physics.velocity.z != 0.0f) )
+    {
+        if ( (pThing->moveInfo.physics.flags & SITH_PF_FLY) == 0 && pThing->attach.flags )
+        {
+            bGoalReached = sithAIMove_sub_496550(pLocal, secDeltaTime);
+        }
+        else if ( (pThing->moveInfo.physics.flags & SITH_PF_FLY) != 0 && (pThing->thingInfo.actorInfo.flags & SITH_AF_BREATHEUNDERWATER) == 0 )
+        {
+            bGoalReached = sithAIMove_sub_4966D0(pLocal, secDeltaTime);
+        }
+        else if ( (pThing->flags & (SITH_TF_AIRDESTROYED | SITH_TF_SUBMERGED)) != 0 )
+        {
+            bGoalReached = sithAIMove_sub_496820(pLocal, secDeltaTime);
+        }
+
+        if ( (pLocal->mode & SITHAI_MODE_MOVING) == 0 )
+        {
+            return;
+        }
+    }
+
+    if ( pThing->collide.movesize * 3.0f >= pLocal->moveDistance )
+    {
+        sithAI_EmitEvent(pLocal, SITHAI_EVENT_GOAL_SET, NULL);
+    }
+
+    if ( !bGoalReached && pLocal->moveDistance <= goalDist )
+    {
+        bGoalReached = 1;
+    }
+
+    if ( bGoalReached )
+    {
+        if ( (pLocal->submode & SITHAI_SUBMODE_UNKNOWN_2) != 0 )
+        {
+            sithAIMove_StopAIMovement(pLocal);
+            sithAIMove_AISetMovePos(pLocal, &pLocal->vecUnknown3, pLocal->moveSpeed);
+            return;
+        }
+
+        if ( (pLocal->submode & SITHAI_SUBMODE_UNKNOWN_8) != 0 )
+        {
+            int flags = 0;
+            if ( (pLocal->mode & SITHAI_MODE_ACTIVE) != 0 )
+            {
+                flags |= 0x100;
+            }
+
+            if ( sithAIUtil_sub_49EE50(pLocal, &pLocal->vecUnknown3, 45.0f, 90.0f, 45.0f, flags) )
+            {
+                return;
+            }
+        }
+
+        if ( (pLocal->mode & SITHAI_MODE_TRAVERSEWPNTS) != 0 && sithAIUtil_AIAdvanceToNextWpnt(pLocal, 1) )
+        {
+            return;
+        }
+
+        sithAIMove_SetGoalReached(pLocal);
+    }
 }
 
 void J3DAPI sithAIMove_sub_4961A0(SithAIControlBlock* pLocal)
 {
-    J3D_TRAMPOLINE_CALL(sithAIMove_sub_4961A0, pLocal);
+    if ( (pLocal->submode & SITHAI_SUBMODE_NOMOVEBACKWARDS) != 0 )
+    {
+        if ( rdVector_Dot3(&pLocal->goalLVec, &pLocal->pOwner->orient.lvec) >= 0.0f )
+        {
+            pLocal->submode &= ~SITHAI_SUBMODE_UNKNOWN_10;
+        }
+    }
+    else
+    {
+        pLocal->submode &= ~SITHAI_SUBMODE_UNKNOWN_10;
+    }
 }
 
-double J3DAPI sithAIMove_sub_496200(SithAIControlBlock* pLocal, const rdVector3* a2, rdVector3* a3)
+double J3DAPI sithAIMove_sub_496200(SithAIControlBlock* pLocal, rdVector3* a2, rdVector3* a3)
 {
-    return J3D_TRAMPOLINE_CALL(sithAIMove_sub_496200, pLocal, a2, a3);
+    SithThing* pThing = pLocal->pOwner;
+    SITH_ASSERTREL(pThing);
+
+    if ( (pThing->pInSector->flags & SITH_SECTOR_UNDERWATER) != 0 || (pThing->moveInfo.physics.flags & SITH_PF_FLY) != 0 )
+    {
+        return J3DMIN(pThing->collide.movesize, 0.05f);
+    }
+
+    if ( (pLocal->mode & SITHAI_MODE_WALLCRAWLING) != 0 )
+    {
+        int numAligned = 0;
+        int bOnSurface = 0;
+        float distance = 0.0f;
+        float minDist  = J3DMIN(pThing->collide.movesize, 0.03f);
+        if ( pThing->moveStatus == SITHPLAYERMOVE_MOUNTING_WALL )
+        {
+            return minDist;
+        }
+
+        rdVector3 delta;
+        rdVector_Sub3(&delta, a3, a2);
+        if ( fabsf(delta.x) <= minDist )
+        {
+            ++numAligned;
+            a3->x = a2->x;
+            delta.x = 0.0f;
+        }
+
+        if ( fabsf(delta.y) <= minDist )
+        {
+            ++numAligned;
+            a3->y = a2->y;
+            delta.y = 0.0f;
+        }
+
+        if ( fabsf(delta.z) <= minDist )
+        {
+            ++numAligned;
+            a3->z = a2->z;
+            delta.z = 0.0f;
+        }
+
+        if ( (pThing->attach.flags & SITH_ATTACH_SURFACE) != 0 )
+        {
+            distance = rdVector_Normalize3Acc(&delta);
+            float dot = rdVector_Dot3(&pThing->attach.attachedToStructure.pSurfaceAttached->face.normal, &delta);
+            if ( fabsf(dot) < 0.996f )
+            {
+                bOnSurface = 1;
+            }
+        }
+
+        if ( !bOnSurface )
+        {
+            if ( numAligned == 2 || distance <= pThing->collide.movesize * 2.0f )
+            {
+                rdVector_Copy3(a3, a2);
+            }
+            else
+            {
+                sithAIMove_Unreachable(pLocal);
+            }
+        }
+
+        return minDist;
+    }
+
+    float minDist = J3DMIN(pThing->collide.movesize, 0.03f);
+    a2->z = pThing->pos.z;
+    a3->z = pThing->pos.z;
+    if ( (pLocal->submode & SITHAI_SUBMODE_UNKNOWN_100) != 0 )
+    {
+        rdVector3 pos;
+        rdVector_ScaleAdd3(&pos, &pThing->orient.rvec, 0.05f, a2);
+        float dist1 = stdMath_Dist2D1(pos.x - a3->x, pos.y - a3->y);
+
+        rdVector3 pos2;
+        rdVector_ScaleAdd3(&pos2, &pThing->orient.rvec, -0.05f, a2);
+        float dist2 = stdMath_Dist2D1(pos2.x - a3->x, pos2.y - a3->y);
+
+        if ( dist1 < 0.05f || dist2 < 0.05f )
+        {
+            rdVector_Copy3(a3, a2);
+        }
+    }
+
+    return minDist;
 }
 
 int J3DAPI sithAIMove_sub_496550(SithAIControlBlock* pLocal, float secDeltaTime)
 {
-    return J3D_TRAMPOLINE_CALL(sithAIMove_sub_496550, pLocal, secDeltaTime);
+    rdVector3 endPos;
+    rdVector_ScaleAdd3(&endPos, &pLocal->pOwner->moveInfo.physics.velocity, secDeltaTime, &pLocal->pOwner->pos);
+
+    if ( ((pLocal->pOwner->idx + sithMain_g_frameNumber) & 1) != 0 )
+    {
+        rdVector3 direction;
+        float offset;
+        if ( (pLocal->mode & SITHAI_MODE_WALLCRAWLING) != 0 )
+        {
+            sithAIUtil_GetXYZHeadingVector(pLocal->pOwner, &direction);
+            offset = pLocal->pOwner->collide.movesize;
+            if ( offset - 0.03f > 0.0f )
+            {
+                offset -= 0.03f;
+            }
+        }
+        else
+        {
+            sithAIUtil_GetXYHeadingVector(pLocal->pOwner, &direction);
+            offset = pLocal->pOwner->collide.movesize + 0.03f;
+        }
+
+        rdVector_ScaleAdd3(&endPos, &direction, offset, &endPos);
+    }
+
+    switch ( sithAIUtil_CheckPosition(pLocal, &endPos, NULL) )
+    {
+        case 1:
+            break;
+
+        case 0:
+        case 8:
+            sithAI_EmitEvent(pLocal, SITHAI_EVENT_HIT_CLIFF, NULL);
+            break;
+
+        case 2:
+            if ( !sithAI_HasInstinct(pLocal, "wallcrawl") )
+            {
+                sithAI_EmitEvent(pLocal, SITHAI_EVENT_HIT_CLIFF, NULL);
+            }
+
+            break;
+
+        case 4:
+            if ( (pLocal->submode & SITHAI_SUBMODE_ALLOWSTEPTHING) == 0 )
+            {
+                sithAI_EmitEvent(pLocal, SITHAI_EVENT_HIT_THING, NULL);
+            }
+
+            break;
+
+        default:
+            sithAIMove_Unreachable(pLocal);
+            break;
+    }
+
+    return 0;
 }
 
 int J3DAPI sithAIMove_sub_4966D0(SithAIControlBlock* pLocal, float secDeltaTime)
 {
-    return J3D_TRAMPOLINE_CALL(sithAIMove_sub_4966D0, pLocal, secDeltaTime);
+    SithThing* pThing = pLocal->pOwner;
+    if ( (pThing->flags & SITH_TF_SUBMERGED) != 0 )
+    {
+        sithAIMove_StopAIMovement(pLocal);
+        pThing->moveInfo.physics.velocity.z += 0.5f;
+        pThing->moveStatus = SITHPLAYERMOVE_WALKING;
+    }
+    else
+    {
+        rdVector3 endPosition;
+        rdVector_ScaleAdd3(&endPosition, &pThing->moveInfo.physics.velocity, secDeltaTime, &pThing->pos);
+
+        rdVector3 curdir;
+        sithAIUtil_GetXYHeadingVector(pThing, &curdir);
+        rdVector_ScaleAdd3(&endPosition, &curdir, pThing->collide.movesize + 0.05f, &endPosition);
+
+        SithSector* pSector = sithCollision_FindSectorInRadius(pThing->pInSector, &pThing->pos, &endPosition, 0.0f);
+        if ( !pSector )
+        {
+            sithAIMove_Unreachable(pLocal);
+            return 1;
+        }
+
+        if ( (pSector->flags & SITH_SECTOR_NOACTORENTER) != 0 )
+        {
+            sithAIMove_Unreachable(pLocal);
+            return 1;
+        }
+
+        if ( pSector && (pSector->flags & SITH_SECTOR_UNDERWATER) != 0 )
+        {
+            sithAIMove_StopAIMovement(pLocal);
+            pThing->moveStatus = SITHPLAYERMOVE_WALKING;
+            pThing->moveInfo.physics.velocity.z += 0.5f;
+            return 1;
+        }
+    }
+
+    return 0;
 }
 
 int J3DAPI sithAIMove_sub_496820(SithAIControlBlock* pLocal, float secDeltaTime)
 {
-    return J3D_TRAMPOLINE_CALL(sithAIMove_sub_496820, pLocal, secDeltaTime);
+    SithThing* pThing = pLocal->pOwner;
+    rdVector3 endPosition;
+    SithSector* pSector;
+
+    if ( pThing->moveInfo.physics.velocity.z != 0.0f )
+    {
+        rdVector_Copy3(&endPosition, &pThing->pos);
+        if ( (pLocal->submode & SITHAI_SUBMODE_SWIMNEARSURFACE) != 0 )
+        {
+            endPosition.z = pThing->collide.movesize * 0.2f + endPosition.z;
+        }
+        else
+        {
+            endPosition.z = pThing->collide.movesize * 0.5f + endPosition.z;
+        }
+
+        pSector = sithCollision_FindSectorInRadius(pThing->pInSector, &pThing->pos, &endPosition, 0.0f);
+        if ( pSector && (pSector->flags & SITH_SECTOR_UNDERWATER) == 0 )
+        {
+            pThing->moveInfo.physics.velocity.z = -0.05f;
+            if ( pLocal->movePos.z > pThing->pos.z )
+            {
+                pLocal->movePos.z = pThing->pos.z - 0.05f;
+            }
+        }
+    }
+
+    rdVector_ScaleAdd3(&endPosition, &pThing->moveInfo.physics.velocity, secDeltaTime, &pThing->pos);
+
+    rdVector3 curdir;
+    sithAIUtil_GetXYHeadingVector(pLocal->pOwner, &curdir);
+    rdVector_ScaleAdd3(&endPosition, &curdir, pLocal->pOwner->collide.movesize + 0.03f, &endPosition);
+
+    pSector = sithCollision_FindSectorInRadius(pThing->pInSector, &pThing->pos, &endPosition, 0.0f);
+    if ( !pSector )
+    {
+        sithAIMove_Unreachable(pLocal);
+        return 0;
+    }
+
+    if ( (pSector->flags & SITH_SECTOR_NOACTORENTER) != 0 || (pSector->flags & SITH_SECTOR_UNDERWATER) == 0 )
+    {
+        sithAIMove_Unreachable(pLocal);
+    }
+
+    return 0;
 }
 
 int J3DAPI sithAIMove_AIGetMoveState(const SithAIControlBlock* pLocal)
@@ -1715,85 +2413,1074 @@ void J3DAPI sithAIMove_ResetAILook(SithAIControlBlock* pLocal)
 
 void J3DAPI sithAIMove_UpdateBoss(SithAIControlBlock* pLocal, float secDeltaTime)
 {
-    J3D_TRAMPOLINE_CALL(sithAIMove_UpdateBoss, pLocal, secDeltaTime);
+    SithThing* pOwner = pLocal->pOwner;
+    SithActorInfo* pActorInfo = &pOwner->thingInfo.actorInfo;
+
+    rdVector3 goal;
+    rdVector_Copy3(&goal, &pLocal->goalLVec);
+
+    float dot = fabsf(rdVector_Dot3(&pOwner->orient.uvec, &goal));
+    if ( dot > 0.99f )
+    {
+        pLocal->mode &= ~SITHAI_MODE_TURNING;
+        SITHLOG_ERROR("WARNING! AI '%s' looking straight up or down.\n", pOwner->aName);
+        return;
+    }
+
+    float dist = rdMath_DistancePointToPlane(&goal, &pOwner->orient.uvec, &rdroid_g_zeroVector3);
+
+    rdVector3 dir;
+    rdVector_ScaleAdd3(&dir, &pOwner->orient.uvec, -dist, &goal);
+    rdVector_Normalize3Acc(&dir);
+
+    float angle    = rdMath_DeltaAngleNormalized(&dir, &pOwner->orient.lvec, &pOwner->orient.uvec);
+    float rotStep  = (pActorInfo->maxRotVelocity * 1.0f) * secDeltaTime;
+    float rotLimit = rotStep * 1.05f;
+    if ( fabsf(angle) <= rotLimit )
+    {
+        rdVector_Copy3(&pOwner->orient.lvec, &dir);
+        rdVector_Cross3(&pOwner->orient.rvec, &pOwner->orient.lvec, &pOwner->orient.uvec);
+        rdVector_Normalize3Acc(&pOwner->orient.rvec);
+        rdVector_Cross3(&pOwner->orient.uvec, &pOwner->orient.rvec, &pOwner->orient.lvec);
+        pLocal->mode &= ~SITHAI_MODE_TURNING;
+    }
+    else
+    {
+        rdVector3 pyr;
+        pyr.x = 0.0f;
+        pyr.y = -((angle < 0.0f ? -1.0f : 1.0f) * rotStep);
+        pyr.z = 0.0f;
+        rdMatrix_PreRotate34(&pOwner->orient, &pyr);
+        rdMatrix_Normalize34(&pOwner->orient);
+    }
 }
 
 void J3DAPI sithAIMove_sub_499090(SithAIControlBlock* pLocal, float secDeltaTime)
 {
-    J3D_TRAMPOLINE_CALL(sithAIMove_sub_499090, pLocal, secDeltaTime);
+    SITH_ASSERTREL(pLocal && pLocal->pOwner);
+
+    SithThing* pOwner = pLocal->pOwner;
+    SithActorInfo* pActorInfo = &pOwner->thingInfo.actorInfo;
+    SithThing* pTarget = pLocal->pTargetThing;
+
+    rdVector3 headPYR;
+    rdVector_Copy3(&headPYR, &pActorInfo->headPYR);
+
+    if ( (pActorInfo->flags & SITH_AF_IMMOBILE) != 0 )
+    {
+        return;
+    }
+
+    if ( (pActorInfo->flags & SITH_AF_CANROTATEHEAD) == 0 )
+    {
+        return;
+    }
+
+    rdVector3 eyePos;
+    eyePos.x = 0.0f;
+    eyePos.y = 0.0f;
+    eyePos.z = pOwner->thingInfo.actorInfo.eyeOffset.z;
+    rdMatrix_TransformVector34Acc(&eyePos, &pOwner->orient);
+    rdVector_Add3Acc(&eyePos, &pOwner->pos);
+
+    if ( pTarget && (pActorInfo->flags & SITH_AF_SEEINVISIBLE) == 0 )
+    {
+        if ( (pTarget->type == SITH_THING_ACTOR || pTarget->type == SITH_THING_PLAYER) && (pTarget->thingInfo.actorInfo.flags & SITH_AF_INVISIBLE) != 0 )
+        {
+            pTarget = NULL;
+        }
+
+        if ( (pActorInfo->flags & SITH_AF_BLIND) != 0 )
+        {
+            pTarget = NULL;
+        }
+    }
+
+    float dist;
+    rdVector3 targetPos;
+    rdVector3 targetDir;
+    rdVector3 projTargetDir;
+    if ( pTarget )
+    {
+        if ( pTarget->type == SITH_THING_ACTOR || pTarget->type == SITH_THING_PLAYER )
+        {
+            rdMatrix_TransformVector34(&targetPos, &pTarget->thingInfo.actorInfo.eyeOffset, &pTarget->orient);
+            rdVector_Add3Acc(&targetPos, &pTarget->pos);
+        }
+        else
+        {
+            rdVector_Copy3(&targetPos, &pTarget->pos);
+        }
+
+        rdVector_Sub3(&targetDir, &targetPos, &eyePos);
+        rdVector_Normalize3Acc(&targetDir);
+
+        dist = rdMath_DistancePointToPlane(&targetDir, &pOwner->orient.uvec, &rdroid_g_zeroVector3);
+        rdVector_ScaleAdd3(&projTargetDir, &pOwner->orient.uvec, -dist, &targetDir);
+        rdVector_Normalize3Acc(&projTargetDir);
+    }
+
+    rdVector_Copy3(&targetPos, &pLocal->lookPos);
+
+    rdVector3 lookDir;
+    rdVector_Sub3(&lookDir, &targetPos, &eyePos);
+    rdVector_Normalize3Acc(&lookDir);
+
+    dist = rdMath_DistancePointToPlane(&lookDir, &pOwner->orient.uvec, &rdroid_g_zeroVector3);
+
+    rdVector3 projLookDir;
+    rdVector_ScaleAdd3(&projLookDir, &pOwner->orient.uvec, -dist, &lookDir);
+    rdVector_Normalize3Acc(&projLookDir);
+
+    float lowThreshold  = -0.2f;
+    float highThreshold = sithAIMove_g_flt_58546C;
+    if ( !pTarget )
+    {
+        pLocal->submode &= ~SITHAI_SUBMODE_UNKNOWN_800;
+    }
+    else if ( (pActorInfo->flags & SITH_AF_NOSLOPEMOVE) != 0 || (pLocal->mode & SITHAI_MODE_BLOCK) != 0 )
+    {
+        pLocal->submode |= SITHAI_SUBMODE_UNKNOWN_800;
+        lowThreshold  = -1.0f;
+        highThreshold = 1.0f;
+    }
+    else
+    {
+        float dot = rdVector_Dot3(&pOwner->orient.lvec, &projTargetDir);
+        if ( (pLocal->submode & SITHAI_SUBMODE_UNKNOWN_800) != 0 )
+        {
+            if ( dot < lowThreshold )
+            {
+                pLocal->submode &= ~SITHAI_SUBMODE_UNKNOWN_800;
+            }
+        }
+        else if ( dot > highThreshold )
+        {
+            pLocal->submode |= SITHAI_SUBMODE_UNKNOWN_800;
+        }
+    }
+
+    rdVector3 aimDir;
+    rdVector3 pitchDir;
+    if ( (pLocal->submode & SITHAI_SUBMODE_UNKNOWN_800) != 0 )
+    {
+        rdVector_Copy3(&aimDir, &projTargetDir);
+        rdVector_Copy3(&pitchDir, &targetDir);
+    }
+    else
+    {
+        rdVector_Copy3(&aimDir, &projLookDir);
+        rdVector_Copy3(&pitchDir, &lookDir);
+    }
+
+    float yawRate   = pActorInfo->maxHeadVelocity * secDeltaTime;
+    float pitchRate = (pActorInfo->maxHeadVelocity * 0.5f) * secDeltaTime;
+
+    float dot = rdVector_Dot3(&pOwner->orient.lvec, &aimDir);
+
+    float yaw = 0.0f;
+    if ( dot >= lowThreshold )
+    {
+        yaw = rdMath_DeltaAngleNormalized(&pOwner->orient.lvec, &aimDir, &pOwner->orient.uvec);
+    }
+
+    float deltaYaw = yaw - pActorInfo->headPYR.y;
+    deltaYaw = STDMATH_CLAMP(deltaYaw, -yawRate, yawRate);
+    headPYR.y += deltaYaw;
+    if ( headPYR.y <= -pActorInfo->maxHeadYaw || headPYR.y >= pActorInfo->maxHeadYaw )
+    {
+        headPYR.y = pActorInfo->maxHeadYaw * (headPYR.y < 0.0f ? -1.0f : 1.0f);
+        pLocal->submode &= ~SITHAI_SUBMODE_HEADTRACKINGMOTION;
+    }
+    else
+    {
+        pLocal->submode |= SITHAI_SUBMODE_HEADTRACKINGMOTION;
+    }
+
+    float pitch = 0.0f;
+    if ( dot > 0.0f )
+    {
+        pitch = rdMath_DeltaAngleNormalized(&aimDir, &pitchDir, &pOwner->orient.rvec);
+    }
+
+    float deltaPitch = pitch - pActorInfo->headPYR.x;
+    deltaPitch = STDMATH_CLAMP(deltaPitch, -pitchRate, pitchRate);
+    headPYR.x = STDMATH_CLAMP(headPYR.x + deltaPitch, pActorInfo->minHeadPitch, pActorInfo->maxHeadPitch);
+
+    sithActor_SetHeadPYR(pLocal->pOwner, &headPYR);
 }
 
 void J3DAPI sithAIMove_sub_4996C0(SithAIControlBlock* pLocal, float a2)
 {
-    J3D_TRAMPOLINE_CALL(sithAIMove_sub_4996C0, pLocal, a2);
+    SITH_ASSERTREL(pLocal && pLocal->pOwner);
+
+    SithThing* pOwner = pLocal->pOwner;
+    SithActorInfo* pActorInfo = &pOwner->thingInfo.actorInfo;
+
+    rdVector3 headPYR;
+    rdVector_Copy3(&headPYR, &pActorInfo->headPYR);
+
+    rdVector3 lookPos;
+    rdVector_Copy3(&lookPos, &pLocal->lookPos);
+
+    if ( (pActorInfo->flags & SITH_AF_CANROTATEHEAD) == 0 )
+    {
+        return;
+    }
+
+    if ( (pOwner->thingInfo.actorInfo.flags & SITH_AF_IMMOBILE) != 0 )
+    {
+        return;
+    }
+
+    rdVector3 eyePos;
+    eyePos.x = 0.0f;
+    eyePos.y = 0.0f;
+    eyePos.z = pOwner->thingInfo.actorInfo.eyeOffset.z;
+    rdMatrix_TransformVector34Acc(&eyePos, &pOwner->orient);
+    rdVector_Add3Acc(&eyePos, &pOwner->pos);
+
+    rdVector3 lookDir;
+    rdVector_Sub3(&lookDir, &lookPos, &eyePos);
+    rdVector_Normalize3Acc(&lookDir);
+
+    float dist = rdMath_DistancePointToPlane(&lookDir, &pOwner->orient.uvec, &rdroid_g_zeroVector3);
+
+    rdVector3 projDir;
+    rdVector_ScaleAdd3(&projDir, &pOwner->orient.uvec, -dist, &lookDir);
+    rdVector_Normalize3Acc(&projDir);
+
+    float yawRate   = pActorInfo->maxHeadVelocity * a2;
+    float pitchRate = (pActorInfo->maxHeadVelocity * 0.5f) * a2;
+
+    float yaw = rdMath_DeltaAngleNormalized(&pOwner->orient.lvec, &projDir, &pOwner->orient.uvec);
+    float deltaYaw = yaw - pActorInfo->headPYR.y;
+    deltaYaw = STDMATH_CLAMP(deltaYaw, -yawRate, yawRate);
+    headPYR.y = STDMATH_CLAMP(headPYR.y + deltaYaw, -pActorInfo->maxHeadYaw, pActorInfo->maxHeadYaw);
+
+    float pitch = 0.0f;
+    float dot = rdVector_Dot3(&pOwner->orient.lvec, &projDir);
+    if ( dot > 0.0f )
+    {
+        pitch = rdMath_DeltaAngleNormalized(&projDir, &lookDir, &pOwner->orient.rvec);
+    }
+
+    float deltaPitch = pitch - pActorInfo->headPYR.x;
+    deltaPitch = STDMATH_CLAMP(deltaPitch, -pitchRate, pitchRate);
+    headPYR.x = STDMATH_CLAMP(headPYR.x + deltaPitch, pActorInfo->minHeadPitch, pActorInfo->maxHeadPitch);
+
+    sithActor_SetHeadPYR(pLocal->pOwner, &headPYR);
+
+    if ( fabsf(deltaYaw) <= 0.5f && fabsf(deltaPitch) <= 0.5f )
+    {
+        pLocal->mode &= ~SITHAI_MODE_UNKNOWN_80;
+    }
 }
 
 void J3DAPI sithAIMove_sub_499A80(SithAIControlBlock* pLocal, float* pDestAngle, float* a3, float* a4, float* a5)
 {
-    J3D_TRAMPOLINE_CALL(sithAIMove_sub_499A80, pLocal, pDestAngle, a3, a4, a5);
+    SithThing* pOwner  = pLocal->pOwner;
+    SithThing* pTarget = pLocal->pTargetThing;
+
+    rdVector3 ownerEye;
+    rdVector_Copy3(&ownerEye, &pOwner->pos);
+    ownerEye.z += pOwner->thingInfo.actorInfo.eyeOffset.z;
+
+    rdVector3 targetEye;
+    rdMatrix_TransformVector34(&targetEye, &pTarget->thingInfo.actorInfo.eyeOffset, &pTarget->orient);
+    rdVector_Add3Acc(&targetEye, &pTarget->pos);
+    if ( (pTarget->moveInfo.physics.flags & SITH_PF_CROUCHING) != 0 )
+    {
+        targetEye.z -= 0.1f;
+    }
+
+    rdVector3 dir;
+    rdVector_Sub3(&dir, &targetEye, &ownerEye);
+    rdVector_Normalize3Acc(&dir);
+
+    float dist = rdMath_DistancePointToPlane(&dir, &pOwner->orient.uvec, &rdroid_g_zeroVector3);
+
+    rdVector3 lookDir;
+    rdVector_ScaleAdd3(&lookDir, &pOwner->orient.uvec, -dist, &dir);
+    rdVector_Normalize3Acc(&lookDir);
+
+    float yaw = rdMath_DeltaAngleNormalized(&pOwner->orient.lvec, &lookDir, &pOwner->orient.uvec);
+    *pDestAngle     = yaw;
+    *a4 = -pOwner->renderData.apTweakedAngles[2].y;
+
+    float distance = sqrtf((pOwner->pos.x - pTarget->pos.x) * (pOwner->pos.x - pTarget->pos.x) + (pOwner->pos.y - pTarget->pos.y) * (pOwner->pos.y - pTarget->pos.y));
+    distance = STDMATH_CLAMP(distance, 0.3f, 0.5f);
+
+    float pitchScale = (-60.0f - -15.0f) / (0.5f - 0.3f);
+    *a3 = (distance - 0.3f) * pitchScale + -15.0f;
+
+    float headPitchScale = (60.0f - sithAIMove_g_flt_585470) / (0.5f - 0.3f);
+    *a5 = (distance - 0.3f) * headPitchScale + sithAIMove_g_flt_585470 - pOwner->renderData.apTweakedAngles[2].x;
 }
 
 void J3DAPI sithAIMove_sub_499CA0(SithAIControlBlock* pLocal, float secDeltaTime)
 {
-    J3D_TRAMPOLINE_CALL(sithAIMove_sub_499CA0, pLocal, secDeltaTime);
+    SithThing* pThing = pLocal->pOwner;
+    if ( !sithThing_CreateQuetzUserBlock(pThing) )
+    {
+        return;
+    }
+
+    // Strike: unknown0 = mode, unknown1 = curTime, unknown3 = numSnapShots; snapshot: unknown0 = time
+    SithQuetzStrike* pStrike = &pThing->userblock.pQuetz->strike;
+    if ( pStrike->unknown0 != 1 )
+    {
+        return;
+    }
+
+    SithQuetzSnapShot* pSnapShot = &pStrike->aSnapShots[pStrike->snapShot];
+    float remainder = pSnapShot->unknown0 - pStrike->unknown1;
+
+    if ( pStrike->snapShot == 1 )
+    {
+        float angle;
+        float pitchAngle;
+        float headYaw;
+        float angleHeadPitch;
+        sithAIMove_sub_499A80(pLocal, &angle, &pitchAngle, &headYaw, &angleHeadPitch);
+        pStrike->aSnapShots[1].angle1 = 20.0f;
+        pStrike->aSnapShots[1].angle2 = angle * 0.5f;
+        pStrike->aSnapShots[1].angle3 = pThing->renderData.apTweakedAngles[2].pitch - 20.0f;
+        pStrike->aSnapShots[1].angle4 = pThing->renderData.apTweakedAngles[2].yaw + headYaw * 0.5f;
+        pStrike->aSnapShots[1].angle5 = pStrike->aSnapShots[0].angle5;
+    }
+    else if ( pStrike->snapShot == 2 )
+    {
+        float angle;
+        float pitchAngle;
+        float headYaw;
+        float angleHeadPitch;
+        sithAIMove_sub_499A80(pLocal, &angle, &pitchAngle, &headYaw, &angleHeadPitch);
+        pStrike->aSnapShots[2].angle1 = pitchAngle * 0.9f;
+        pStrike->aSnapShots[2].angle2 = angle * 0.9f;
+        pStrike->aSnapShots[2].angle3 = pThing->renderData.apTweakedAngles[2].pitch + angleHeadPitch * 0.9f;
+        pStrike->aSnapShots[2].angle4 = pThing->renderData.apTweakedAngles[2].yaw + headYaw * 0.9f;
+        pStrike->aSnapShots[2].angle5 = -30.0f;
+    }
+    else if ( pStrike->snapShot == 3 )
+    {
+        float angle;
+        float pitchAngle;
+        float headYaw;
+        float angleHeadPitch;
+        sithAIMove_sub_499A80(pLocal, &angle, &pitchAngle, &headYaw, &angleHeadPitch);
+        pStrike->aSnapShots[3].angle1 = pitchAngle;
+        pStrike->aSnapShots[3].angle2 = angle;
+        pStrike->aSnapShots[3].angle3 = pThing->renderData.apTweakedAngles[2].pitch + angleHeadPitch;
+        pStrike->aSnapShots[3].angle4 = pThing->renderData.apTweakedAngles[2].yaw + headYaw;
+        pStrike->aSnapShots[3].angle5 = 20.0f;
+    }
+    else if ( pStrike->snapShot == 4 )
+    {
+        float angle;
+        float pitchAngle;
+        float headYaw;
+        float angleHeadPitch;
+        sithAIMove_sub_499A80(pLocal, &angle, &pitchAngle, &headYaw, &angleHeadPitch);
+        pStrike->aSnapShots[4].angle1 = 10.0f;
+        pStrike->aSnapShots[4].angle2 = angle * 0.4f;
+        pStrike->aSnapShots[4].angle3 = pThing->renderData.apTweakedAngles[2].pitch - 10.0f;
+        pStrike->aSnapShots[4].angle4 = pThing->renderData.apTweakedAngles[2].yaw + headYaw * 0.4f;
+        pStrike->aSnapShots[4].angle5 = pStrike->aSnapShots[0].angle5;
+    }
+    else if ( pStrike->snapShot == pStrike->unknown3 - 1 )
+    {
+        pSnapShot->angle3 = pThing->renderData.apTweakedAngles[2].pitch;
+        pSnapShot->angle4 = pThing->renderData.apTweakedAngles[2].yaw;
+    }
+
+    if ( remainder >= secDeltaTime )
+    {
+        SITH_ASSERTREL(pStrike->snapShot != 0);
+        SithQuetzSnapShot* pPrevSnapShot = &pStrike->aSnapShots[pStrike->snapShot - 1];
+        pStrike->unknown1 += secDeltaTime;
+
+        float length      = pSnapShot->unknown0 - pPrevSnapShot->unknown0;
+        float timeElapsed = pStrike->unknown1 - pPrevSnapShot->unknown0;
+        float ratio       = timeElapsed / length;
+        ratio = STDMATH_CLAMP(ratio, 0.0f, 1.0f);
+
+        pThing->renderData.apTweakedAngles[1].pitch  = (pSnapShot->angle1 - pPrevSnapShot->angle1) * ratio + pPrevSnapShot->angle1;
+        pThing->renderData.apTweakedAngles[1].yaw    = (pSnapShot->angle2 - pPrevSnapShot->angle2) * ratio + pPrevSnapShot->angle2;
+        pThing->renderData.apTweakedAngles[2].pitch  = (pSnapShot->angle3 - pPrevSnapShot->angle3) * ratio + pPrevSnapShot->angle3;
+        pThing->renderData.apTweakedAngles[2].yaw    = (pSnapShot->angle4 - pPrevSnapShot->angle4) * ratio + pPrevSnapShot->angle4;
+        pThing->renderData.apTweakedAngles[28].pitch = (pSnapShot->angle5 - pPrevSnapShot->angle5) * ratio + pPrevSnapShot->angle5;
+    }
+    else
+    {
+        pStrike->snapShot++;
+        pStrike->unknown1 = pSnapShot->unknown0;
+        pThing->renderData.apTweakedAngles[1].pitch  = pSnapShot->angle1;
+        pThing->renderData.apTweakedAngles[1].yaw    = pSnapShot->angle2;
+        pThing->renderData.apTweakedAngles[2].pitch  = pSnapShot->angle3;
+        pThing->renderData.apTweakedAngles[2].yaw    = pSnapShot->angle4;
+        pThing->renderData.apTweakedAngles[28].pitch = pSnapShot->angle5;
+        if ( pStrike->snapShot == pStrike->unknown3 )
+        {
+            pStrike->unknown0 = 0;
+        }
+        else
+        {
+            sithAIMove_sub_499CA0(pLocal, secDeltaTime - remainder);
+        }
+    }
 }
 
 void J3DAPI sithAIMove_sub_49A020(SithAIControlBlock* pLocal, float* angle, float* a3, float* a4, float* a5)
 {
-    J3D_TRAMPOLINE_CALL(sithAIMove_sub_49A020, pLocal, angle, a3, a4, a5);
+    SithThing* pOwner  = pLocal->pOwner;
+    SithThing* pTarget = pLocal->pTargetThing;
+
+    rdVector3 pos;
+    rdVector_Copy3(&pos, &pOwner->pos);
+    pos.z += pOwner->thingInfo.actorInfo.eyeOffset.z;
+
+    rdVector3 targetPos;
+    rdMatrix_TransformVector34(&targetPos, &pTarget->thingInfo.actorInfo.eyeOffset, &pTarget->orient);
+    rdVector_Add3Acc(&targetPos, &pTarget->pos);
+
+    rdVector3 dir;
+    rdVector_Sub3(&dir, &targetPos, &pos);
+    rdVector_Normalize3Acc(&dir);
+
+    float dist = rdMath_DistancePointToPlane(&dir, &pOwner->orient.uvec, &rdroid_g_zeroVector3);
+
+    rdVector3 planeDir;
+    rdVector_ScaleAdd3(&planeDir, &pOwner->orient.uvec, -dist, &dir);
+    rdVector_Normalize3Acc(&planeDir);
+
+    float yaw = rdMath_DeltaAngleNormalized(&pOwner->orient.lvec, &planeDir, &pOwner->orient.uvec);
+    *angle       = yaw;
+    *a4   = -pOwner->renderData.apTweakedAngles[2].yaw;
+    *a5 = 50.0f;
+    *a3     = -30.0f;
 }
 
 void J3DAPI sithAIMove_sub_49A1B0(SithAIControlBlock* pLocal, float secDeltaTime)
 {
-    J3D_TRAMPOLINE_CALL(sithAIMove_sub_49A1B0, pLocal, secDeltaTime);
+    SithThing* pThing = pLocal->pOwner;
+    if ( !sithThing_CreateQuetzUserBlock(pThing) )
+    {
+        return;
+    }
+
+    SithQuetzStrike* pStrike = &pThing->userblock.pQuetz->strike;
+    if ( pStrike->unknown0 != 2 )
+    {
+        return;
+    }
+
+    SithQuetzSnapShot* pSnapShot = &pStrike->aSnapShots[pStrike->snapShot];
+    float remainder = pSnapShot->unknown0 - pStrike->unknown1;
+
+    if ( pStrike->snapShot == 1 )
+    {
+        float angle;
+        float pitchAngle;
+        float headYaw;
+        float angleHeadPitch;
+        sithAIMove_sub_49A020(pLocal, &angle, &pitchAngle, &headYaw, &angleHeadPitch);
+        pStrike->aSnapShots[1].angle1 = 20.0f;
+        pStrike->aSnapShots[1].angle2 = angle * 0.5f;
+        pStrike->aSnapShots[1].angle3 = pThing->renderData.apTweakedAngles[2].pitch + 10.0f;
+        pStrike->aSnapShots[1].angle4 = pThing->renderData.apTweakedAngles[2].yaw + headYaw * 0.5f;
+        pStrike->aSnapShots[1].angle5 = pStrike->aSnapShots[0].angle5;
+    }
+    else if ( pStrike->snapShot == 2 )
+    {
+        float angle;
+        float pitchAngle;
+        float headYaw;
+        float angleHeadPitch;
+        sithAIMove_sub_49A020(pLocal, &angle, &pitchAngle, &headYaw, &angleHeadPitch);
+        pStrike->aSnapShots[2].angle1 = pitchAngle;
+        pStrike->aSnapShots[2].angle2 = angle;
+        pStrike->aSnapShots[2].angle3 = pThing->renderData.apTweakedAngles[2].pitch + angleHeadPitch;
+        pStrike->aSnapShots[2].angle4 = pThing->renderData.apTweakedAngles[2].yaw + headYaw;
+        pStrike->aSnapShots[2].angle5 = -70.0f;
+    }
+    else if ( pStrike->snapShot == pStrike->unknown3 - 1 )
+    {
+        pSnapShot->angle3 = pThing->renderData.apTweakedAngles[2].pitch;
+        pSnapShot->angle4 = pThing->renderData.apTweakedAngles[2].yaw;
+    }
+
+    if ( remainder >= secDeltaTime )
+    {
+        SITH_ASSERTREL(pStrike->snapShot != 0);
+        SithQuetzSnapShot* pPrevSnapShot = &pStrike->aSnapShots[pStrike->snapShot - 1];
+        pStrike->unknown1 += secDeltaTime;
+
+        float length      = pSnapShot->unknown0 - pPrevSnapShot->unknown0;
+        float timeElapsed = pStrike->unknown1 - pPrevSnapShot->unknown0;
+        float ratio       = timeElapsed / length;
+        ratio = STDMATH_CLAMP(ratio, 0.0f, 1.0f);
+
+        pThing->renderData.apTweakedAngles[1].pitch  = (pSnapShot->angle1 - pPrevSnapShot->angle1) * ratio + pPrevSnapShot->angle1;
+        pThing->renderData.apTweakedAngles[1].yaw    = (pSnapShot->angle2 - pPrevSnapShot->angle2) * ratio + pPrevSnapShot->angle2;
+        pThing->renderData.apTweakedAngles[2].pitch  = (pSnapShot->angle3 - pPrevSnapShot->angle3) * ratio + pPrevSnapShot->angle3;
+        pThing->renderData.apTweakedAngles[2].yaw    = (pSnapShot->angle4 - pPrevSnapShot->angle4) * ratio + pPrevSnapShot->angle4;
+        pThing->renderData.apTweakedAngles[28].pitch = (pSnapShot->angle5 - pPrevSnapShot->angle5) * ratio + pPrevSnapShot->angle5;
+    }
+    else
+    {
+        pStrike->snapShot++;
+        pStrike->unknown1 = pSnapShot->unknown0;
+        pThing->renderData.apTweakedAngles[1].pitch  = pSnapShot->angle1;
+        pThing->renderData.apTweakedAngles[1].yaw    = pSnapShot->angle2;
+        pThing->renderData.apTweakedAngles[2].pitch  = pSnapShot->angle3;
+        pThing->renderData.apTweakedAngles[2].yaw    = pSnapShot->angle4;
+        pThing->renderData.apTweakedAngles[28].pitch = pSnapShot->angle5;
+        if ( pStrike->snapShot == pStrike->unknown3 )
+        {
+            pStrike->unknown0 = 0;
+        }
+        else
+        {
+            sithAIMove_sub_49A1B0(pLocal, secDeltaTime - remainder);
+        }
+    }
 }
 
 void J3DAPI sithAIMove_sub_49A450(SithAIControlBlock* pLocal, float secDeltaTime)
 {
-    J3D_TRAMPOLINE_CALL(sithAIMove_sub_49A450, pLocal, secDeltaTime);
+    SithThing* pThing = pLocal->pOwner;
+    if ( !sithThing_CreateQuetzUserBlock(pThing) )
+    {
+        return;
+    }
+
+    SithQuetzStrike* pStrike = &pThing->userblock.pQuetz->strike;
+    if ( pStrike->unknown0 != 3 )
+    {
+        return;
+    }
+
+    SithQuetzSnapShot* pSnapShot = &pStrike->aSnapShots[pStrike->snapShot];
+    float timeLeft = pSnapShot->unknown0 - pStrike->unknown1;
+
+    if ( pStrike->snapShot == pStrike->unknown3 - 1 )
+    {
+        pSnapShot->angle3 = pThing->renderData.apTweakedAngles[2].pitch;
+        pSnapShot->angle4 = pThing->renderData.apTweakedAngles[2].yaw;
+    }
+
+    if ( timeLeft >= secDeltaTime )
+    {
+        SITH_ASSERTREL(pStrike->snapShot != 0);
+        SithQuetzSnapShot* pPrevSnapShot = &pStrike->aSnapShots[pStrike->snapShot - 1];
+        pStrike->unknown1 += secDeltaTime;
+
+        float period      = pSnapShot->unknown0 - pPrevSnapShot->unknown0;
+        float timeElapsed = pStrike->unknown1 - pPrevSnapShot->unknown0;
+        float ratio       = timeElapsed / period;
+        ratio = STDMATH_CLAMP(ratio, 0.0f, 1.0f);
+
+        pThing->renderData.apTweakedAngles[1].pitch  = (pSnapShot->angle1 - pPrevSnapShot->angle1) * ratio + pPrevSnapShot->angle1;
+        pThing->renderData.apTweakedAngles[1].yaw    = (pSnapShot->angle2 - pPrevSnapShot->angle2) * ratio + pPrevSnapShot->angle2;
+        pThing->renderData.apTweakedAngles[2].pitch  = (pSnapShot->angle3 - pPrevSnapShot->angle3) * ratio + pPrevSnapShot->angle3;
+        pThing->renderData.apTweakedAngles[2].yaw    = (pSnapShot->angle4 - pPrevSnapShot->angle4) * ratio + pPrevSnapShot->angle4;
+        pThing->renderData.apTweakedAngles[28].pitch = (pSnapShot->angle5 - pPrevSnapShot->angle5) * ratio + pPrevSnapShot->angle5;
+    }
+    else
+    {
+        pStrike->snapShot++;
+        pStrike->unknown1 = pSnapShot->unknown0;
+        pThing->renderData.apTweakedAngles[1].pitch  = pSnapShot->angle1;
+        pThing->renderData.apTweakedAngles[1].yaw    = pSnapShot->angle2;
+        pThing->renderData.apTweakedAngles[2].pitch  = pSnapShot->angle3;
+        pThing->renderData.apTweakedAngles[2].yaw    = pSnapShot->angle4;
+        pThing->renderData.apTweakedAngles[28].pitch = pSnapShot->angle5;
+        if ( pStrike->snapShot == pStrike->unknown3 )
+        {
+            pStrike->unknown0 = 0;
+        }
+        else
+        {
+            sithAIMove_sub_49A450(pLocal, secDeltaTime - timeLeft);
+        }
+    }
 }
 
 void J3DAPI sithAIMove_sub_49A630(SithAIControlBlock* pLocal, float secDeltaTime)
 {
-    J3D_TRAMPOLINE_CALL(sithAIMove_sub_49A630, pLocal, secDeltaTime);
+    SithThing* pThing = pLocal->pOwner;
+    if ( !sithThing_CreateQuetzUserBlock(pThing) )
+    {
+        return;
+    }
+
+    SithQuetzStrike* pStrike = &pThing->userblock.pQuetz->strike;
+    if ( pStrike->unknown0 != 5 )
+    {
+        return;
+    }
+
+    SithQuetzSnapShot* pSnapShot = &pStrike->aSnapShots[pStrike->snapShot];
+    float timeLeft = pSnapShot->unknown0 - pStrike->unknown1;
+
+    if ( pStrike->snapShot == pStrike->unknown3 - 1 )
+    {
+        pSnapShot->angle3 = pThing->renderData.apTweakedAngles[2].pitch;
+        pSnapShot->angle4 = pThing->renderData.apTweakedAngles[2].yaw;
+    }
+
+    if ( timeLeft >= secDeltaTime )
+    {
+        SITH_ASSERTREL(pStrike->snapShot != 0);
+        SithQuetzSnapShot* pPrevSnapShot = &pStrike->aSnapShots[pStrike->snapShot - 1];
+        pStrike->unknown1 += secDeltaTime;
+
+        float period      = pSnapShot->unknown0 - pPrevSnapShot->unknown0;
+        float timeElapsed = pStrike->unknown1 - pPrevSnapShot->unknown0;
+        float ratio       = timeElapsed / period;
+        ratio = STDMATH_CLAMP(ratio, 0.0f, 1.0f);
+
+        pThing->renderData.apTweakedAngles[1].pitch  = (pSnapShot->angle1 - pPrevSnapShot->angle1) * ratio + pPrevSnapShot->angle1;
+        pThing->renderData.apTweakedAngles[1].yaw    = (pSnapShot->angle2 - pPrevSnapShot->angle2) * ratio + pPrevSnapShot->angle2;
+        pThing->renderData.apTweakedAngles[2].pitch  = (pSnapShot->angle3 - pPrevSnapShot->angle3) * ratio + pPrevSnapShot->angle3;
+        pThing->renderData.apTweakedAngles[2].yaw    = (pSnapShot->angle4 - pPrevSnapShot->angle4) * ratio + pPrevSnapShot->angle4;
+        pThing->renderData.apTweakedAngles[28].pitch = (pSnapShot->angle5 - pPrevSnapShot->angle5) * ratio + pPrevSnapShot->angle5;
+    }
+    else
+    {
+        pStrike->snapShot++;
+        pStrike->unknown1 = pSnapShot->unknown0;
+        pThing->renderData.apTweakedAngles[1].pitch  = pSnapShot->angle1;
+        pThing->renderData.apTweakedAngles[1].yaw    = pSnapShot->angle2;
+        pThing->renderData.apTweakedAngles[2].pitch  = pSnapShot->angle3;
+        pThing->renderData.apTweakedAngles[2].yaw    = pSnapShot->angle4;
+        pThing->renderData.apTweakedAngles[28].pitch = pSnapShot->angle5;
+        if ( pStrike->snapShot == pStrike->unknown3 )
+        {
+            pStrike->unknown0 = 0;
+        }
+        else
+        {
+            sithAIMove_sub_49A630(pLocal, secDeltaTime - timeLeft);
+        }
+    }
 }
 
 void J3DAPI sithAIMove_sub_49A810(SithAIControlBlock* pLocal, float secDeltaTime)
 {
-    J3D_TRAMPOLINE_CALL(sithAIMove_sub_49A810, pLocal, secDeltaTime);
+    SithThing* pThing = pLocal->pOwner;
+    if ( !sithThing_CreateQuetzUserBlock(pThing) )
+    {
+        return;
+    }
+
+    SithQuetzStrike* pStrike = &pThing->userblock.pQuetz->strike;
+    if ( pStrike->unknown0 != 4 )
+    {
+        return;
+    }
+
+    SithQuetzSnapShot* pSnapShot = &pStrike->aSnapShots[pStrike->snapShot];
+    float timeLeft = pSnapShot->unknown0 - pStrike->unknown1;
+
+    if ( timeLeft >= secDeltaTime )
+    {
+        SITH_ASSERTREL(pStrike->snapShot != 0);
+        SithQuetzSnapShot* pPrevSnapShot = &pStrike->aSnapShots[pStrike->snapShot - 1];
+        pStrike->unknown1 += secDeltaTime;
+
+        float period      = pSnapShot->unknown0 - pPrevSnapShot->unknown0;
+        float timeElapsed = pStrike->unknown1 - pPrevSnapShot->unknown0;
+        float ratio       = timeElapsed / period;
+        ratio = STDMATH_CLAMP(ratio, 0.0f, 1.0f);
+
+        pThing->renderData.apTweakedAngles[1].pitch  = (pSnapShot->angle1 - pPrevSnapShot->angle1) * ratio + pPrevSnapShot->angle1;
+        pThing->renderData.apTweakedAngles[1].yaw    = (pSnapShot->angle2 - pPrevSnapShot->angle2) * ratio + pPrevSnapShot->angle2;
+        pThing->renderData.apTweakedAngles[2].pitch  = (pSnapShot->angle3 - pPrevSnapShot->angle3) * ratio + pPrevSnapShot->angle3;
+        pThing->renderData.apTweakedAngles[2].yaw    = (pSnapShot->angle4 - pPrevSnapShot->angle4) * ratio + pPrevSnapShot->angle4;
+        pThing->renderData.apTweakedAngles[28].pitch = (pSnapShot->angle5 - pPrevSnapShot->angle5) * ratio + pPrevSnapShot->angle5;
+    }
+    else
+    {
+        pStrike->snapShot++;
+        pStrike->unknown1 = pSnapShot->unknown0;
+        pThing->renderData.apTweakedAngles[1].pitch  = pSnapShot->angle1;
+        pThing->renderData.apTweakedAngles[1].yaw    = pSnapShot->angle2;
+        pThing->renderData.apTweakedAngles[2].pitch  = pSnapShot->angle3;
+        pThing->renderData.apTweakedAngles[2].yaw    = pSnapShot->angle4;
+        pThing->renderData.apTweakedAngles[28].pitch = pSnapShot->angle5;
+        if ( pStrike->snapShot == pStrike->unknown3 )
+        {
+            pStrike->unknown0 = 0;
+        }
+        else
+        {
+            sithAIMove_sub_49A810(pLocal, secDeltaTime - timeLeft);
+        }
+    }
 }
 
 void J3DAPI sithAIMove_UpdateQuetzTail(SithAIControlBlock* pLocal, float secDeltaTime)
 {
-    J3D_TRAMPOLINE_CALL(sithAIMove_UpdateQuetzTail, pLocal, secDeltaTime);
+    SithThing* pThing = pLocal->pOwner;
+    if ( !sithThing_CreateQuetzUserBlock(pThing) )
+    {
+        return;
+    }
+
+    SithQuetzStrike* pStrike = &pThing->userblock.pQuetz->strike;
+    switch ( pStrike->unknown0 )
+    {
+        case 1:
+            sithAIMove_sub_499CA0(pLocal, secDeltaTime);
+            break;
+
+        case 2:
+            sithAIMove_sub_49A1B0(pLocal, secDeltaTime);
+            break;
+
+        case 3:
+            sithAIMove_sub_49A450(pLocal, secDeltaTime);
+            break;
+
+        case 5:
+            sithAIMove_sub_49A630(pLocal, secDeltaTime);
+            break;
+
+        case 4:
+            sithAIMove_sub_49A810(pLocal, secDeltaTime);
+            break;
+    }
 }
 
 void J3DAPI sithAIMove_sub_49AA60(SithAIControlBlock* pLocal)
 {
-    J3D_TRAMPOLINE_CALL(sithAIMove_sub_49AA60, pLocal);
+    SithThing* pThing = pLocal->pOwner;
+    if ( !sithThing_CreateQuetzUserBlock(pThing) )
+    {
+        return;
+    }
+
+    SithQuetzStrike* pStrike = &pThing->userblock.pQuetz->strike;
+    float angle;
+    float pitchAngle;
+    float headYaw;
+    float neckPitch;
+    sithAIMove_sub_499A80(pLocal, &angle, &pitchAngle, &headYaw, &neckPitch);
+
+    pStrike->unknown1 = 0.0f;
+    pStrike->snapShot = 0;
+    pStrike->aSnapShots[0].unknown0 = 0.0f;
+    pStrike->aSnapShots[0].angle1 = pThing->renderData.apTweakedAngles[1].pitch;
+    pStrike->aSnapShots[0].angle2 = pThing->renderData.apTweakedAngles[1].yaw;
+    pStrike->aSnapShots[0].angle3 = pThing->renderData.apTweakedAngles[2].pitch;
+    pStrike->aSnapShots[0].angle4 = pThing->renderData.apTweakedAngles[2].yaw;
+    pStrike->aSnapShots[0].angle5 = pThing->renderData.apTweakedAngles[28].pitch;
+
+    pStrike->aSnapShots[1].unknown0 = 0.11f;
+    pStrike->aSnapShots[2].unknown0 = 0.24f;
+    pStrike->aSnapShots[3].unknown0 = 0.3f;
+    pStrike->aSnapShots[4].unknown0 = 0.5f;
+
+    pStrike->aSnapShots[5].unknown0 = 0.7f;
+    pStrike->aSnapShots[5].angle1 = pThing->renderData.apTweakedAngles[1].pitch;
+    pStrike->aSnapShots[5].angle2 = pThing->renderData.apTweakedAngles[1].yaw;
+    pStrike->aSnapShots[5].angle3 = pThing->renderData.apTweakedAngles[2].pitch;
+    pStrike->aSnapShots[5].angle4 = pThing->renderData.apTweakedAngles[2].yaw;
+    pStrike->aSnapShots[5].angle5 = pThing->renderData.apTweakedAngles[28].pitch;
+
+    pStrike->unknown0 = 1;
+    pStrike->unknown3 = 6;
 }
 
 void J3DAPI sithAIMove_sub_49AB80(SithAIControlBlock* pLocal)
 {
-    J3D_TRAMPOLINE_CALL(sithAIMove_sub_49AB80, pLocal);
+    SithThing* pThing = pLocal->pOwner;
+    if ( !sithThing_CreateQuetzUserBlock(pThing) )
+    {
+        return;
+    }
+
+    SithQuetzStrike* pStrike = &pThing->userblock.pQuetz->strike;
+    pStrike->unknown1 = 0.0f;
+    pStrike->snapShot = 0;
+
+    pStrike->aSnapShots[0].unknown0 = 0.0f;
+    pStrike->aSnapShots[0].angle1 = pThing->renderData.apTweakedAngles[1].pitch;
+    pStrike->aSnapShots[0].angle2 = pThing->renderData.apTweakedAngles[1].yaw;
+    pStrike->aSnapShots[0].angle3 = pThing->renderData.apTweakedAngles[2].pitch;
+    pStrike->aSnapShots[0].angle4 = pThing->renderData.apTweakedAngles[2].yaw;
+    pStrike->aSnapShots[0].angle5 = pThing->renderData.apTweakedAngles[28].pitch;
+
+    pStrike->aSnapShots[1].unknown0 = 0.11f;
+
+    pStrike->aSnapShots[2].unknown0 = 0.24f;
+
+    pStrike->aSnapShots[3].unknown0 = 0.5f;
+    pStrike->aSnapShots[3].angle1 = pThing->renderData.apTweakedAngles[1].pitch;
+    pStrike->aSnapShots[3].angle2 = pThing->renderData.apTweakedAngles[1].yaw;
+    pStrike->aSnapShots[3].angle3 = pThing->renderData.apTweakedAngles[2].pitch;
+    pStrike->aSnapShots[3].angle4 = pThing->renderData.apTweakedAngles[2].yaw;
+    pStrike->aSnapShots[3].angle5 = pThing->renderData.apTweakedAngles[28].pitch;
+
+    pStrike->unknown0 = 2;
+    pStrike->unknown3 = 4;
 }
 
 void J3DAPI sithAIMove_sub_49AC50(SithAIControlBlock* pLocal)
 {
-    J3D_TRAMPOLINE_CALL(sithAIMove_sub_49AC50, pLocal);
+    SithThing* pThing = pLocal->pOwner;
+    if ( !sithThing_CreateQuetzUserBlock(pThing) )
+    {
+        return;
+    }
+
+    SithQuetzStrike* pStrike = &pThing->userblock.pQuetz->strike;
+    pStrike->unknown1 = 0.0f;
+    pStrike->snapShot = 0;
+
+    pStrike->aSnapShots[0].unknown0 = 0.0f;
+    pStrike->aSnapShots[0].angle1 = pThing->renderData.apTweakedAngles[1].pitch;
+    pStrike->aSnapShots[0].angle2 = pThing->renderData.apTweakedAngles[1].yaw;
+    pStrike->aSnapShots[0].angle3 = pThing->renderData.apTweakedAngles[2].pitch;
+    pStrike->aSnapShots[0].angle4 = pThing->renderData.apTweakedAngles[2].yaw;
+    pStrike->aSnapShots[0].angle5 = pThing->renderData.apTweakedAngles[28].pitch;
+
+    pStrike->aSnapShots[1].unknown0 = 0.1f;
+    pStrike->aSnapShots[1].angle1 = -10.0f;
+    pStrike->aSnapShots[1].angle2 = 0.0f;
+    pStrike->aSnapShots[1].angle3 = 50.0f;
+    pStrike->aSnapShots[1].angle4 = 0.0f;
+    pStrike->aSnapShots[1].angle5 = -40.0f;
+
+    pStrike->aSnapShots[2].unknown0 = 0.3f;
+    pStrike->aSnapShots[2].angle1 = -15.0f;
+    pStrike->aSnapShots[2].angle2 = 30.0f;
+    pStrike->aSnapShots[2].angle3 = 60.0f;
+    pStrike->aSnapShots[2].angle4 = 50.0f;
+    pStrike->aSnapShots[2].angle5 = -60.0f;
+
+    pStrike->aSnapShots[3].unknown0 = 0.6f;
+    pStrike->aSnapShots[3].angle1 = -12.0f;
+    pStrike->aSnapShots[3].angle2 = -30.0f;
+    pStrike->aSnapShots[3].angle3 = 55.0f;
+    pStrike->aSnapShots[3].angle4 = -50.0f;
+    pStrike->aSnapShots[3].angle5 = -50.0f;
+
+    pStrike->aSnapShots[4].unknown0 = 0.9f;
+    pStrike->aSnapShots[4].angle1 = -15.0f;
+    pStrike->aSnapShots[4].angle2 = 30.0f;
+    pStrike->aSnapShots[4].angle3 = 60.0f;
+    pStrike->aSnapShots[4].angle4 = 50.0f;
+    pStrike->aSnapShots[4].angle5 = -35.0f;
+
+    pStrike->aSnapShots[5].unknown0 = 1.2f;
+    pStrike->aSnapShots[5].angle1 = -12.0f;
+    pStrike->aSnapShots[5].angle2 = -30.0f;
+    pStrike->aSnapShots[5].angle3 = 55.0f;
+    pStrike->aSnapShots[5].angle4 = -50.0f;
+    pStrike->aSnapShots[5].angle5 = -50.0f;
+
+    pStrike->aSnapShots[6].unknown0 = 1.5f;
+    pStrike->aSnapShots[6].angle1 = -15.0f;
+    pStrike->aSnapShots[6].angle2 = 30.0f;
+    pStrike->aSnapShots[6].angle3 = 60.0f;
+    pStrike->aSnapShots[6].angle4 = 50.0f;
+    pStrike->aSnapShots[6].angle5 = -60.0f;
+
+    pStrike->aSnapShots[7].unknown0 = 1.8f;
+    pStrike->aSnapShots[7].angle1 = -12.0f;
+    pStrike->aSnapShots[7].angle2 = -30.0f;
+    pStrike->aSnapShots[7].angle3 = 55.0f;
+    pStrike->aSnapShots[7].angle4 = -50.0f;
+    pStrike->aSnapShots[7].angle5 = -50.0f;
+
+    pStrike->aSnapShots[8].unknown0 = 2.1f;
+    pStrike->aSnapShots[8].angle1 = -15.0f;
+    pStrike->aSnapShots[8].angle2 = 30.0f;
+    pStrike->aSnapShots[8].angle3 = 60.0f;
+    pStrike->aSnapShots[8].angle4 = 50.0f;
+    pStrike->aSnapShots[8].angle5 = -35.0f;
+
+    pStrike->aSnapShots[9].unknown0 = 2.4f;
+    pStrike->aSnapShots[9].angle1 = -12.0f;
+    pStrike->aSnapShots[9].angle2 = -30.0f;
+    pStrike->aSnapShots[9].angle3 = 55.0f;
+    pStrike->aSnapShots[9].angle4 = -50.0f;
+    pStrike->aSnapShots[9].angle5 = -50.0f;
+
+    pStrike->aSnapShots[10].unknown0 = 2.7f;
+    pStrike->aSnapShots[10].angle1 = -15.0f;
+    pStrike->aSnapShots[10].angle2 = 30.0f;
+    pStrike->aSnapShots[10].angle3 = 60.0f;
+    pStrike->aSnapShots[10].angle4 = 50.0f;
+    pStrike->aSnapShots[10].angle5 = -60.0f;
+
+    pStrike->aSnapShots[11].unknown0 = 3.0f;
+    pStrike->aSnapShots[11].angle1 = -12.0f;
+    pStrike->aSnapShots[11].angle2 = -30.0f;
+    pStrike->aSnapShots[11].angle3 = 55.0f;
+    pStrike->aSnapShots[11].angle4 = -50.0f;
+    pStrike->aSnapShots[11].angle5 = -50.0f;
+
+    pStrike->aSnapShots[12].unknown0 = 3.3f;
+    pStrike->aSnapShots[12].angle1 = -10.0f;
+    pStrike->aSnapShots[12].angle2 = 0.0f;
+    pStrike->aSnapShots[12].angle3 = 20.0f;
+    pStrike->aSnapShots[12].angle4 = 0.0f;
+    pStrike->aSnapShots[12].angle5 = -15.0f;
+
+    pStrike->aSnapShots[13].unknown0 = 3.7f;
+    pStrike->aSnapShots[13].angle1 = 0.0f;
+    pStrike->aSnapShots[13].angle2 = 0.0f;
+    pStrike->aSnapShots[13].angle3 = 5.0f;
+    pStrike->aSnapShots[13].angle4 = 0.0f;
+    pStrike->aSnapShots[13].angle5 = -10.0f;
+
+    pStrike->aSnapShots[14].unknown0 = 5.0f;
+    pStrike->aSnapShots[14].angle1 = pThing->renderData.apTweakedAngles[1].pitch;
+    pStrike->aSnapShots[14].angle2 = pThing->renderData.apTweakedAngles[1].yaw;
+    pStrike->aSnapShots[14].angle3 = pThing->renderData.apTweakedAngles[2].pitch;
+    pStrike->aSnapShots[14].angle4 = pThing->renderData.apTweakedAngles[2].yaw;
+    pStrike->aSnapShots[14].angle5 = pThing->renderData.apTweakedAngles[28].pitch;
+
+    pStrike->unknown0 = 3;
+    pStrike->unknown3 = 15;
 }
 
 void J3DAPI sithAIMove_sub_49AF80(SithAIControlBlock* pLocal)
 {
-    J3D_TRAMPOLINE_CALL(sithAIMove_sub_49AF80, pLocal);
+    SithThing* pThing = pLocal->pOwner;
+    if ( !sithThing_CreateQuetzUserBlock(pThing) )
+    {
+        return;
+    }
+
+    SithQuetzStrike* pStrike = &pThing->userblock.pQuetz->strike;
+    pStrike->unknown1 = 0.0f;
+    pStrike->snapShot = 0;
+
+    pStrike->aSnapShots[0].unknown0 = 0.0f;
+    pStrike->aSnapShots[0].angle1 = pThing->renderData.apTweakedAngles[1].pitch;
+    pStrike->aSnapShots[0].angle2 = pThing->renderData.apTweakedAngles[1].yaw;
+    pStrike->aSnapShots[0].angle3 = pThing->renderData.apTweakedAngles[2].pitch;
+    pStrike->aSnapShots[0].angle4 = pThing->renderData.apTweakedAngles[2].yaw;
+    pStrike->aSnapShots[0].angle5 = pThing->renderData.apTweakedAngles[28].pitch;
+
+    pStrike->aSnapShots[1].unknown0 = 0.1f;
+    pStrike->aSnapShots[1].angle1 = -10.0f;
+    pStrike->aSnapShots[1].angle2 = 0.0f;
+    pStrike->aSnapShots[1].angle3 = 50.0f;
+    pStrike->aSnapShots[1].angle4 = 0.0f;
+    pStrike->aSnapShots[1].angle5 = -40.0f;
+
+    pStrike->aSnapShots[2].unknown0 = 0.3f;
+    pStrike->aSnapShots[2].angle1 = -15.0f;
+    pStrike->aSnapShots[2].angle2 = 30.0f;
+    pStrike->aSnapShots[2].angle3 = 60.0f;
+    pStrike->aSnapShots[2].angle4 = 50.0f;
+    pStrike->aSnapShots[2].angle5 = -60.0f;
+
+    pStrike->aSnapShots[3].unknown0 = 0.6f;
+    pStrike->aSnapShots[3].angle1 = -12.0f;
+    pStrike->aSnapShots[3].angle2 = -30.0f;
+    pStrike->aSnapShots[3].angle3 = 55.0f;
+    pStrike->aSnapShots[3].angle4 = -50.0f;
+    pStrike->aSnapShots[3].angle5 = -50.0f;
+
+    pStrike->aSnapShots[4].unknown0 = 0.9f;
+    pStrike->aSnapShots[4].angle1 = -15.0f;
+    pStrike->aSnapShots[4].angle2 = 30.0f;
+    pStrike->aSnapShots[4].angle3 = 60.0f;
+    pStrike->aSnapShots[4].angle4 = 50.0f;
+    pStrike->aSnapShots[4].angle5 = -35.0f;
+
+    pStrike->aSnapShots[5].unknown0 = 1.2f;
+    pStrike->aSnapShots[5].angle1 = -12.0f;
+    pStrike->aSnapShots[5].angle2 = -30.0f;
+    pStrike->aSnapShots[5].angle3 = 55.0f;
+    pStrike->aSnapShots[5].angle4 = -50.0f;
+    pStrike->aSnapShots[5].angle5 = -50.0f;
+
+    pStrike->aSnapShots[6].unknown0 = 1.5f;
+    pStrike->aSnapShots[6].angle1 = -15.0f;
+    pStrike->aSnapShots[6].angle2 = 30.0f;
+    pStrike->aSnapShots[6].angle3 = 60.0f;
+    pStrike->aSnapShots[6].angle4 = 50.0f;
+    pStrike->aSnapShots[6].angle5 = -60.0f;
+
+    pStrike->aSnapShots[7].unknown0 = 1.8f;
+    pStrike->aSnapShots[7].angle1 = -12.0f;
+    pStrike->aSnapShots[7].angle2 = -30.0f;
+    pStrike->aSnapShots[7].angle3 = 55.0f;
+    pStrike->aSnapShots[7].angle4 = -50.0f;
+    pStrike->aSnapShots[7].angle5 = -50.0f;
+
+    pStrike->aSnapShots[8].unknown0 = 2.1f;
+    pStrike->aSnapShots[8].angle1 = -15.0f;
+    pStrike->aSnapShots[8].angle2 = 30.0f;
+    pStrike->aSnapShots[8].angle3 = 60.0f;
+    pStrike->aSnapShots[8].angle4 = 50.0f;
+    pStrike->aSnapShots[8].angle5 = -35.0f;
+
+    pStrike->aSnapShots[9].unknown0 = 3.0f;
+    pStrike->aSnapShots[9].angle1 = pThing->renderData.apTweakedAngles[1].pitch;
+    pStrike->aSnapShots[9].angle2 = pThing->renderData.apTweakedAngles[1].yaw;
+    pStrike->aSnapShots[9].angle3 = pThing->renderData.apTweakedAngles[2].pitch;
+    pStrike->aSnapShots[9].angle4 = pThing->renderData.apTweakedAngles[2].yaw;
+    pStrike->aSnapShots[9].angle5 = pThing->renderData.apTweakedAngles[28].pitch;
+
+    pStrike->unknown0 = 5;
+    pStrike->unknown3 = 10;
 }
 
 void J3DAPI sithAIMove_sub_49B1B0(SithAIControlBlock* pLocal)
 {
-    J3D_TRAMPOLINE_CALL(sithAIMove_sub_49B1B0, pLocal);
+    SithThing* pThing = pLocal->pOwner;
+    if ( !sithThing_CreateQuetzUserBlock(pThing) )
+    {
+        return;
+    }
+
+    SithQuetzStrike* pStrike = &pThing->userblock.pQuetz->strike;
+    pStrike->unknown1 = 0.0f;
+    pStrike->snapShot = 0;
+
+    pStrike->aSnapShots[0].unknown0 = 0.0f;
+    pStrike->aSnapShots[0].angle1 = pThing->renderData.apTweakedAngles[1].pitch;
+    pStrike->aSnapShots[0].angle2 = pThing->renderData.apTweakedAngles[1].yaw;
+    pStrike->aSnapShots[0].angle3 = pThing->renderData.apTweakedAngles[2].pitch;
+    pStrike->aSnapShots[0].angle4 = pThing->renderData.apTweakedAngles[2].yaw;
+    pStrike->aSnapShots[0].angle5 = pThing->renderData.apTweakedAngles[28].pitch;
+
+    pStrike->aSnapShots[1].unknown0 = 1.6f;
+    pStrike->aSnapShots[1].angle1 = 0.0f;
+    pStrike->aSnapShots[1].angle2 = 0.0f;
+    pStrike->aSnapShots[1].angle3 = 0.0f;
+    pStrike->aSnapShots[1].angle4 = 0.0f;
+    pStrike->aSnapShots[1].angle5 = -60.0f;
+
+    pStrike->aSnapShots[2].unknown0 = 5.0f;
+    pStrike->aSnapShots[2].angle1 = 0.0f;
+    pStrike->aSnapShots[2].angle2 = 0.0f;
+    pStrike->aSnapShots[2].angle3 = 0.0f;
+    pStrike->aSnapShots[2].angle4 = 0.0f;
+    pStrike->aSnapShots[2].angle5 = -60.0f;
+
+    pStrike->unknown0 = 4;
+    pStrike->unknown3 = 3;
 }
 
 void J3DAPI sithAIMove_UpdateMardukTail(SithThing* pThing, float secDeltaTime)
 {
-    J3D_TRAMPOLINE_CALL(sithAIMove_UpdateMardukTail, pThing, secDeltaTime);
+    if ( stdUtil_StrCmp(pThing->aName, "marduk") == 0 || stdUtil_StrCmp(pThing->aName, "marduk2") == 0 )
+    {
+        int jointIndex = sithThing_GetThingJointIndex(pThing, "wmabdomen");
+        if ( jointIndex != -1 )
+        {
+            float angle = stdMath_NormalizeAngle(720.0f * secDeltaTime);
+            pThing->renderData.apTweakedAngles[jointIndex].yaw += angle;
+        }
+    }
 }

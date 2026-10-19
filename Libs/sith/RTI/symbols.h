@@ -1164,7 +1164,7 @@
 #define sithAIMove_sub_4958B0_TYPE void (J3DAPI*)(SithAIControlBlock*, float)
 #define sithAIMove_sub_495CD0_TYPE void (J3DAPI*)(SithAIControlBlock*, float)
 #define sithAIMove_sub_4961A0_TYPE void (J3DAPI*)(SithAIControlBlock*)
-#define sithAIMove_sub_496200_TYPE double (J3DAPI*)(SithAIControlBlock*, const rdVector3*, rdVector3*)
+#define sithAIMove_sub_496200_TYPE double (J3DAPI*)(SithAIControlBlock*, rdVector3*, rdVector3*)
 #define sithAIMove_sub_496550_TYPE int (J3DAPI*)(SithAIControlBlock*, float)
 #define sithAIMove_sub_4966D0_TYPE int (J3DAPI*)(SithAIControlBlock*, float)
 #define sithAIMove_sub_496820_TYPE int (J3DAPI*)(SithAIControlBlock*, float)
