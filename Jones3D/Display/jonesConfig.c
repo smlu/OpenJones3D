@@ -9771,7 +9771,7 @@ int J3DAPI jonesConfig_ShowDialogInsertCD(HWND hWnd, LPARAM dwInitParam)
     ShowCursor(1);
     GetWindowLongPtr(hWnd, GWL_HINSTANCE); // TODO: ??
     int btnNum = JonesDialog_ShowDialog(MAKEINTRESOURCE(167), hWnd, jonesConfig_DialogInsertCDProc, dwInitParam);
-    ShowCursor(0);
+    // Fixed: [v1.2] Removed ShowCursor(0), the cursor is now hidden when the dialog is closed in jonesConfig_InsertCD_HandleWM_COMMAND
     return btnNum; // 1 - ok or 2 - quit
 }
 
@@ -9834,12 +9834,16 @@ int J3DAPI jonesConfig_InsertCD_HandleWM_COMMAND(HWND hWnd, int nResult)
             return cdNum;
         }
 
-        return EndDialog(hWnd, nResult);
+        int bEnded = EndDialog(hWnd, nResult);
+        ShowCursor(0); // Fixed: [v1.2] Added ShowCursor(0)
+        return bEnded;
     }
 
     if ( nResult == 2 ) // quit
     {
-        return EndDialog(hWnd, nResult);
+        int bEnded = EndDialog(hWnd, nResult);
+        ShowCursor(0); // Fixed: [v1.2] Added ShowCursor(0)
+        return bEnded;
     }
 
     return cdNum;
