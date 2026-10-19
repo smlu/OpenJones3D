@@ -1402,6 +1402,7 @@ int J3DAPI sithWeapon_ProcessWeaponControls(SithThing* pThing, float secDeltaTim
                     if ( curWeaponID == SITHWEAPON_WHIP && sithWeapon_ActivateWhip(pThing, pItem->pCog) == 1 )
                     {
                         sithWeapon_bLocalPlayerAiming = 0;
+                        sithWeapon_deactivatedPlayerWeaponID = SITHWEAPON_NOWEAPONDESELECTED; // Fixed: Also clear the deactivated player weapon id when the whip is activated, like the buffered key id (official 1.2 update, Indy3D.exe v1.2 0x00448600)
                         sithWeapon_bufferedWaponKeyId = -1;
                         return 0;
                     }
