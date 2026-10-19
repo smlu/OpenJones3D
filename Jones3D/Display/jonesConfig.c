@@ -9642,7 +9642,7 @@ void J3DAPI jonesConfig_StoreDialog_HandleWM_COMMAND(HWND hWnd, WPARAM wParam)
         case 1:
         case 2:
         {
-            if ( pCart->balance <= 0 )
+            if ( pCart->balance < 0 ) // Fixed: Changed from `balance <= 0` so the purchase confirmation is also shown when the balance is exactly 0 (official 1.2 update, Indy3D.exe v1.2 0x0040EA80)
             {
                 EndDialog(hWnd, wParam);
             }
