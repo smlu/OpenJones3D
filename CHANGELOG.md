@@ -398,6 +398,8 @@
   - Applied official 1.2 update fix to `jonesConfig_StoreDialog_HandleWM_COMMAND`: closing the store dialog with a balance of exactly 0 now shows the purchase confirmation instead of leaving silently. ()
   - Applied official 1.2 update fix to `jonesConfig_ShowDialogInsertCD` and `jonesConfig_InsertCD_HandleWM_COMMAND`: the cursor is hidden when the insert-CD dialog is closed from its OK/Quit handler instead of after the dialog returns. ()
   - Applied official 1.2 update change to the end credits (`JonesHud_DrawCredits`): added "Director of Sales Operations: JASON HORSTMAN" (the credits table now has 327 records) and swapped the order of `JOSH MOORE` and `HEATHER TWIST`. ()
+  - Applied official 1.2 update fix to push/pull in `sithPlayerControls_ProcessGeneralMove`: the collision check that decides whether the Marduk statue (`2marpushstatue`) can be pushed or pulled starts 0.05 lower. ()
+  - Applied official 1.2 update fix to `sithPlayerControls_ProcessPushPullMove` (part of `sithPlayerControls_ProcessGeneralMove` in the original): the collision check that decides whether the Marduk statue (`2marpushstatue`) can be pushed or pulled starts 0.05 lower. ()
 
 ## v0.3.1
 ### General:
