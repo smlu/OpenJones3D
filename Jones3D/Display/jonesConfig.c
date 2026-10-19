@@ -9503,7 +9503,7 @@ void J3DAPI jonesConfig_AddStoreCartItem(HWND hDlg, tStoreCartState* pCart)
             ListView_GetItem(hItemsList, &lvitem);
 
             int storeItemIdx = HIWORD(lvitem.lParam);//  HIWORD
-            if ( storeItemIdx > -1 ) // Fixed: Added check for bonusMapItemIdx > -1
+            if ( storeItemIdx > -1 ) // Fixed: [v1.2] Added check for bonusMapItemIdx > -1
             {
                 if ( JonesHud_aStoreItems[storeItemIdx].menuID == JONESHUD_MENU_INVITEM_BONUSMAP )
                 {
@@ -9516,7 +9516,7 @@ void J3DAPI jonesConfig_AddStoreCartItem(HWND hDlg, tStoreCartState* pCart)
 
         if ( pCart->balance >= total )
         {
-            if ( bonusMapItemIdx > -1 && JonesHud_aStoreItems[bonusMapItemIdx].menuID == JONESHUD_MENU_INVITEM_BONUSMAP ) // Fixed: Added check for bonusMapItemIdx > -1
+            if ( bonusMapItemIdx > -1 && JonesHud_aStoreItems[bonusMapItemIdx].menuID == JONESHUD_MENU_INVITEM_BONUSMAP ) // Fixed: [v1.2] Added check for bonusMapItemIdx > -1
             {
                 const char* pDlgText = jonesString_GetString("JONES_STR_PERU");
                 if ( pDlgText )
@@ -9575,7 +9575,7 @@ void J3DAPI jonesConfig_AddStoreCartItem(HWND hDlg, tStoreCartState* pCart)
         {
             const char* pDlgText = NULL;
             if ( bonusMapItemIdx > -1 && JonesHud_aStoreItems[bonusMapItemIdx].menuID == JONESHUD_MENU_INVITEM_BONUSMAP )
-            { // Fixed: Added check for bonusMapItemIdx > -1
+            { // Fixed: [v1.2] Added check for bonusMapItemIdx > -1
                 pDlgText = jonesString_GetString("JONES_STR_NOPERU");
             }
             else if ( selectedCount == 1 )
