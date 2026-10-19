@@ -5205,10 +5205,17 @@ void J3DAPI sithPlayerControls_ProcessPushPullMove(SithThing* pThing, float secD
         //
         rdVector3 pullDir = RDVECTOR_NEG3(pushPullMoveNorm);
         float pullMoveDist = pThing->collide.movesize + 0.19f;
+        // Fixed: Start the search from a position lowered by 0.05 for the statue movable thing `2marpushstatue` (official 1.2 update, Indy3D.exe v1.2 0x0042BF80)
+        rdVector3 startPos = sithPlayerControls_pMovableThing->pos;
+        if ( streq(sithPlayerControls_pMovableThing->aName, "2marpushstatue") )
+        {
+            startPos.z -= 0.05f;
+        }
+
         sithCollision_SearchForCollisions(
             sithPlayerControls_pMovableThing->pInSector,
             sithPlayerControls_pMovableThing,
-            &sithPlayerControls_pMovableThing->pos,
+            &startPos,
             &pullDir,
             pullMoveDist,
             searchRadius,
@@ -5472,10 +5479,17 @@ void J3DAPI sithPlayerControls_ProcessPushPullMove(SithThing* pThing, float secD
         //
         // Check if movable thing can be pushed to new position
         //
+        // Fixed: Start the search from a position lowered by 0.05 for the statue movable thing `2marpushstatue` (official 1.2 update, Indy3D.exe v1.2 0x0042BF80)
+        rdVector3 startPos = sithPlayerControls_pMovableThing->pos;
+        if ( streq(sithPlayerControls_pMovableThing->aName, "2marpushstatue") )
+        {
+            startPos.z -= 0.05f;
+        }
+
         sithCollision_SearchForCollisions(
             sithPlayerControls_pMovableThing->pInSector,
             sithPlayerControls_pMovableThing,
-            &sithPlayerControls_pMovableThing->pos,
+            &startPos,
             &pushPullMoveNorm,
             0.19f, // move distance
             searchRadius,
