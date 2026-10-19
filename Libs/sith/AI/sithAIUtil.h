@@ -67,8 +67,8 @@ int J3DAPI sithAIUtil_CanAttackTarget(const SithThing* pThing);
 int J3DAPI sithAIUtil_IsThingMoving(const SithThing* pThing);
 void J3DAPI sithAIUtil_ApplyForce(SithAIControlBlock* pLocal, const rdVector3* pDirection, float force);
 void J3DAPI sithAIUtil_RandomRotate(rdVector3* pOutPYR, float scalar);
-size_t J3DAPI sithAIUtil_GetThingsInView(const SithSector* pStartSector, const rdMatrix34* orient, float fovX, float fovY, int sizeResult, SithThing** pResult, int thingTypeMask, float maxDistance);
-void J3DAPI sithAIUtil_GetNextThingsInView(const SithSector* pSector, const rdMatrix34* pOrient, float distance);
+size_t J3DAPI sithAIUtil_GetThingsInView(SithSector* pStartSector, const rdMatrix34* orient, float fovX, float fovY, int sizeResult, SithThing** pResult, int thingTypeMask, float maxDistance);
+void J3DAPI sithAIUtil_GetNextThingsInView(SithSector* pSector, const rdMatrix34* pOrient, float distance);
 int J3DAPI sithAIUtil_CanSeeTarget(const SithAIControlBlock* pLocal, SithThing* pTarget, float distance);
 
 // Helper hooking functions
