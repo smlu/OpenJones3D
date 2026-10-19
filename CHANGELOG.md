@@ -385,6 +385,7 @@
   - Prevented playing climb-pullup animation when movement could be blocked (144d684)
   - Fixed not to play climb left/right animation when found climb surface is currently attached surface (c0b8367)
   - [QOL] Enabled mounting climb surface while walking/running (8e1f3e3)
+  - Applied official 1.2 update fix to `jonesConfig_ControlToString`: key names in the control configuration dialog are now queried from the system keyboard layout with `GetKeyNameTextA` instead of a hardcoded English table. ()
 
 ## v0.3.1
 ### General:
