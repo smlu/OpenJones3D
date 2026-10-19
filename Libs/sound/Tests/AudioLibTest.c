@@ -2,6 +2,8 @@
 
 #include <limits.h>
 #include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include <sound/AudioLib.h>
@@ -1037,6 +1039,541 @@ TEST(AudioLib, TestGeneratedRoundTrip)
     }
 }
 
+// Original-engine vectors
+//
+// The fixtures under tv/AudioLib were captured by running the retail v1.0 Indy3D.exe functions in the original process
+// (see tv/AudioLib/README.md). Every file starts with "AVTV", a kind and a case count; a case starts with its name.
+// All values are little endian. Compressor state is stored as the six bytes of tAudioCompressorState.
+#define AUDIOLIB_TEST_VECTOR_MAGIC       "AVTV"
+#define AUDIOLIB_TEST_VECTOR_PATHSIZE    512
+#define AUDIOLIB_TEST_VECTOR_NAMESIZE    256
+#define AUDIOLIB_TEST_INPUT_PAD          64   // Zero bytes after each input, as in the capture
+#define AUDIOLIB_TEST_OUTPUT_FILL        0xA5 // Pattern in untouched output bytes, as in the capture
+#define AUDIOLIB_TEST_STATE_SIZE         6
+#define AUDIOLIB_TEST_UNTOUCHED          0xCDCDCDCDu
+
+enum
+{
+    AUDIOLIB_TEST_KIND_PARSE            = 1,
+    AUDIOLIB_TEST_KIND_COMPRESSBLOCK    = 2,
+    AUDIOLIB_TEST_KIND_UNCOMPRESSBLOCK  = 3,
+    AUDIOLIB_TEST_KIND_COMPRESS         = 4,
+    AUDIOLIB_TEST_KIND_UNCOMPRESS       = 5,
+    AUDIOLIB_TEST_KIND_WVSMUNCOMPRESS   = 6,
+    AUDIOLIB_TEST_KIND_RESETCOMPRESSOR  = 7
+};
+
+typedef struct
+{
+    uint8_t* pData;
+    size_t size;
+    size_t pos;
+    uint32_t numCases;
+    char aFileName[AUDIOLIB_TEST_VECTOR_NAMESIZE];
+} AudioLibTestVector;
+
+static void AudioLibTest_OpenVector(AudioLibTestVector* pVec, const char* pFileName, uint32_t kind)
+{
+    char aPath[AUDIOLIB_TEST_VECTOR_PATHSIZE];
+    STD_FORMAT(aPath, "%s/AudioLib/%s", AUDIOLIB_TEST_TV_DIR, pFileName);
+
+    FILE* pFile = fopen(aPath, "rb");
+    TEST_ASSERT_NOT_NULL_MESSAGE(pFile, aPath);
+    TEST_ASSERT_EQUAL_INT_MESSAGE(0, fseek(pFile, 0, SEEK_END), aPath);
+
+    long size = ftell(pFile);
+    TEST_ASSERT_TRUE_MESSAGE(size > 12, aPath);
+    TEST_ASSERT_EQUAL_INT_MESSAGE(0, fseek(pFile, 0, SEEK_SET), aPath);
+
+    pVec->pData = (uint8_t*)malloc((size_t)size);
+    TEST_ASSERT_NOT_NULL_MESSAGE(pVec->pData, aPath);
+    TEST_ASSERT_EQUAL_size_t_MESSAGE((size_t)size, fread(pVec->pData, 1u, (size_t)size, pFile), aPath);
+    fclose(pFile);
+
+    pVec->size = (size_t)size;
+    STD_FORMAT(pVec->aFileName, "%s", pFileName);
+
+    TEST_ASSERT_EQUAL_MEMORY_MESSAGE(AUDIOLIB_TEST_VECTOR_MAGIC, pVec->pData, 4, pFileName);
+    TEST_ASSERT_EQUAL_UINT32_MESSAGE(kind, AudioLibTest_ReadU32LE(pVec->pData + 4), pFileName);
+    pVec->numCases = AudioLibTest_ReadU32LE(pVec->pData + 8);
+    pVec->pos      = 12;
+}
+
+static void AudioLibTest_CloseVector(AudioLibTestVector* pVec)
+{
+    // The whole file must be consumed so that a changed layout cannot go unnoticed.
+    TEST_ASSERT_EQUAL_size_t_MESSAGE(pVec->size, pVec->pos, pVec->aFileName);
+    free(pVec->pData);
+    pVec->pData = NULL;
+}
+
+static const uint8_t* AudioLibTest_VectorRead(AudioLibTestVector* pVec, size_t size)
+{
+    TEST_ASSERT_TRUE_MESSAGE(pVec->pos + size <= pVec->size, pVec->aFileName);
+    const uint8_t* pRead = pVec->pData + pVec->pos;
+    pVec->pos += size;
+    return pRead;
+}
+
+static uint32_t AudioLibTest_VectorU32(AudioLibTestVector* pVec)
+{
+    return AudioLibTest_ReadU32LE(AudioLibTest_VectorRead(pVec, 4));
+}
+
+// Reads a length prefixed byte blob and returns a pointer into the file data.
+static const uint8_t* AudioLibTest_VectorBlob(AudioLibTestVector* pVec, size_t* pSize)
+{
+    *pSize = AudioLibTest_VectorU32(pVec);
+    return AudioLibTest_VectorRead(pVec, *pSize);
+}
+
+static void AudioLibTest_VectorCaseName(AudioLibTestVector* pVec, char* pName, size_t nameSize)
+{
+    size_t length = AudioLibTest_VectorRead(pVec, 1)[0];
+    TEST_ASSERT_TRUE_MESSAGE(length < nameSize, pVec->aFileName);
+    memcpy(pName, AudioLibTest_VectorRead(pVec, length), length);
+    pName[length] = '\0';
+}
+
+static void AudioLibTest_VectorState(AudioLibTestVector* pVec, tAudioCompressorState* pState)
+{
+    static_assert(sizeof(*pState) == AUDIOLIB_TEST_STATE_SIZE, "State layout");
+    memcpy(pState, AudioLibTest_VectorRead(pVec, AUDIOLIB_TEST_STATE_SIZE), AUDIOLIB_TEST_STATE_SIZE);
+}
+
+static void AudioLibTest_AssertState(const tAudioCompressorState* pExpected, const tAudioCompressorState* pActual, const char* pName)
+{
+    TEST_ASSERT_EQUAL_INT8_MESSAGE(pExpected->aStepIndex[0], pActual->aStepIndex[0], pName);
+    TEST_ASSERT_EQUAL_INT8_MESSAGE(pExpected->aStepIndex[1], pActual->aStepIndex[1], pName);
+    TEST_ASSERT_EQUAL_INT16_MESSAGE(pExpected->aPrevSample[0], pActual->aPrevSample[0], pName);
+    TEST_ASSERT_EQUAL_INT16_MESSAGE(pExpected->aPrevSample[1], pActual->aPrevSample[1], pName);
+}
+
+// Allocates a copy of the input followed by the zero padding used in the capture.
+static uint8_t* AudioLibTest_AllocInput(const uint8_t* pData, size_t size)
+{
+    uint8_t* pInput = (uint8_t*)calloc(size + AUDIOLIB_TEST_INPUT_PAD, 1u);
+    TEST_ASSERT_NOT_NULL(pInput);
+    if ( size )
+    {
+        memcpy(pInput, pData, size);
+    }
+
+    return pInput;
+}
+
+static uint8_t* AudioLibTest_AllocOutput(size_t capacity)
+{
+    uint8_t* pOutput = (uint8_t*)malloc(capacity);
+    TEST_ASSERT_NOT_NULL(pOutput);
+    memset(pOutput, AUDIOLIB_TEST_OUTPUT_FILL, capacity);
+    return pOutput;
+}
+
+// Checks the leading expected bytes and that every byte after them was left untouched.
+static void AudioLibTest_AssertOutput(const uint8_t* pExpected, size_t expectedSize, const uint8_t* pOutput, size_t capacity, const char* pName)
+{
+    TEST_ASSERT_TRUE_MESSAGE(expectedSize <= capacity, pName);
+    if ( expectedSize )
+    {
+        TEST_ASSERT_EQUAL_MEMORY_MESSAGE(pExpected, pOutput, expectedSize, pName);
+    }
+
+    for ( size_t i = expectedSize; i < capacity; ++i )
+    {
+        if ( pOutput[i] != AUDIOLIB_TEST_OUTPUT_FILL )
+        {
+            TEST_FAIL_MESSAGE(pName); // Wrote past the expected output
+        }
+    }
+}
+
+TEST(AudioLib, TestOriginalParseWaveFileHeader)
+{
+    // Headers of every container the parser handles (RIFF WAVE with and without sync chunk, INDYWV with and without
+    // extra data, iMUS, AIFF with each rate exponent, MCMP wrapped files) and the well-formed variants it rejects.
+    // Each output pointer is passed or omitted as recorded in the case, so untouched outputs are checked as well.
+    AudioLibTestVector vec;
+    AudioLibTest_OpenVector(&vec, "ParseWaveFileHeader.tv", AUDIOLIB_TEST_KIND_PARSE);
+    TEST_ASSERT_GREATER_THAN_UINT32(0, vec.numCases);
+
+    for ( uint32_t i = 0; i < vec.numCases; ++i )
+    {
+        char aName[AUDIOLIB_TEST_VECTOR_NAMESIZE];
+        AudioLibTest_VectorCaseName(&vec, aName, sizeof(aName));
+
+        uint32_t flags = AudioLibTest_VectorU32(&vec);
+        size_t inputSize;
+        const uint8_t* pBlob = AudioLibTest_VectorBlob(&vec, &inputSize);
+        int32_t expectedRet  = (int32_t)AudioLibTest_VectorU32(&vec);
+        uint32_t aExpected[8];
+        for ( size_t k = 0; k < STD_ARRAYLEN(aExpected); ++k )
+        {
+            aExpected[k] = AudioLibTest_VectorU32(&vec);
+        }
+
+        uint8_t* pInput = AudioLibTest_AllocInput(pBlob, inputSize);
+
+        int type = (int)AUDIOLIB_TEST_UNTOUCHED;
+        uint32_t aOut[7];
+        for ( size_t k = 0; k < STD_ARRAYLEN(aOut); ++k )
+        {
+            aOut[k] = AUDIOLIB_TEST_UNTOUCHED;
+        }
+
+        const uint8_t* pRet = AudioLib_ParseWaveFileHeader(
+            (flags & 1u) ? NULL : pInput,
+            (flags & (1u << 1)) ? &type : NULL,
+            (flags & (1u << 2)) ? &aOut[0] : NULL,
+            (flags & (1u << 3)) ? &aOut[1] : NULL,
+            (flags & (1u << 4)) ? &aOut[2] : NULL,
+            (flags & (1u << 5)) ? &aOut[3] : NULL,
+            (flags & (1u << 6)) ? &aOut[4] : NULL,
+            (flags & (1u << 7)) ? &aOut[5] : NULL,
+            (flags & (1u << 8)) ? &aOut[6] : NULL
+        );
+
+        if ( expectedRet < 0 )
+        {
+            TEST_ASSERT_NULL_MESSAGE(pRet, aName);
+        }
+        else
+        {
+            TEST_ASSERT_TRUE_MESSAGE(pRet == pInput + expectedRet, aName);
+        }
+
+        TEST_ASSERT_EQUAL_UINT32_MESSAGE(aExpected[0], (uint32_t)type, aName);
+        for ( size_t k = 0; k < STD_ARRAYLEN(aOut); ++k )
+        {
+            uint32_t actual = aOut[k];
+            if ( k == 5 && actual != 0 && actual != AUDIOLIB_TEST_UNTOUCHED )
+            {
+                // The extra data location is an address inside the input; the fixture stores its offset.
+                actual -= (uint32_t)(uintptr_t)pInput;
+            }
+
+            TEST_ASSERT_EQUAL_UINT32_MESSAGE(aExpected[k + 1], actual, aName);
+        }
+
+        free(pInput);
+    }
+
+    AudioLibTest_CloseVector(&vec);
+}
+
+TEST(AudioLib, TestOriginalResetCompressor)
+{
+    AudioLibTestVector vec;
+    AudioLibTest_OpenVector(&vec, "ResetCompressor.tv", AUDIOLIB_TEST_KIND_RESETCOMPRESSOR);
+    TEST_ASSERT_GREATER_THAN_UINT32(0, vec.numCases);
+
+    for ( uint32_t i = 0; i < vec.numCases; ++i )
+    {
+        char aName[AUDIOLIB_TEST_VECTOR_NAMESIZE];
+        AudioLibTest_VectorCaseName(&vec, aName, sizeof(aName));
+
+        tAudioCompressorState state, expected;
+        AudioLibTest_VectorState(&vec, &state);
+        AudioLibTest_VectorState(&vec, &expected);
+
+        AudioLib_ResetCompressor(&state);
+        AudioLibTest_AssertState(&expected, &state, aName);
+    }
+
+    AudioLibTest_CloseVector(&vec);
+}
+
+TEST(AudioLib, TestOriginalCompressBlock)
+{
+    // Mono and stereo ADPCM blocks of silence, square, sine, ramp, impulse, extreme and seeded noise PCM of 0 to 4096
+    // samples, which reach every sample width and the escape code. Cases cover a supplied and a reset compressor state,
+    // big endian input (including negative samples, which the original does not sign extend), and block chains where
+    // each call continues from the state left by the previous call instead of the saved state.
+    AudioLibTestVector vec;
+    AudioLibTest_OpenVector(&vec, "CompressBlock.tv", AUDIOLIB_TEST_KIND_COMPRESSBLOCK);
+    TEST_ASSERT_GREATER_THAN_UINT32(0, vec.numCases);
+
+    tAudioCompressorState prevOut = { 0 };
+    for ( uint32_t i = 0; i < vec.numCases; ++i )
+    {
+        char aName[AUDIOLIB_TEST_VECTOR_NAMESIZE];
+        AudioLibTest_VectorCaseName(&vec, aName, sizeof(aName));
+
+        uint32_t numChannels  = AudioLibTest_VectorU32(&vec);
+        uint32_t numSamples   = AudioLibTest_VectorU32(&vec);
+        uint32_t bNative      = AudioLibTest_VectorU32(&vec);
+        uint32_t bStateInited = AudioLibTest_VectorU32(&vec);
+        uint32_t bChained     = AudioLibTest_VectorU32(&vec);
+
+        tAudioCompressorState state, expectedState;
+        AudioLibTest_VectorState(&vec, &state);
+
+        size_t pcmSize;
+        const uint8_t* pPcm = AudioLibTest_VectorBlob(&vec, &pcmSize);
+        TEST_ASSERT_EQUAL_size_t_MESSAGE((size_t)numSamples * numChannels * sizeof(int16_t), pcmSize, aName);
+
+        int expectedRet = (int)AudioLibTest_VectorU32(&vec);
+        size_t outSize;
+        const uint8_t* pExpected = AudioLibTest_VectorBlob(&vec, &outSize);
+        TEST_ASSERT_EQUAL_size_t_MESSAGE((size_t)expectedRet, outSize, aName);
+        AudioLibTest_VectorState(&vec, &expectedState);
+
+        if ( bChained )
+        {
+            AudioLibTest_AssertState(&state, &prevOut, aName);
+            state = prevOut;
+        }
+
+        uint8_t* pInput  = AudioLibTest_AllocInput(pPcm, pcmSize);
+        size_t capacity  = (size_t)numSamples * numChannels * 3u + 64u;
+        uint8_t* pOutput = AudioLibTest_AllocOutput(capacity);
+
+        int ret = AudioLib_CompressBlock(&state, pOutput, (int16_t*)pInput, (int)numSamples, numChannels, (int)bNative, (int)bStateInited);
+        TEST_ASSERT_EQUAL_INT_MESSAGE(expectedRet, ret, aName);
+        AudioLibTest_AssertOutput(pExpected, outSize, pOutput, capacity, aName);
+        AudioLibTest_AssertState(&expectedState, &state, aName);
+        prevOut = state;
+
+        free(pInput);
+        free(pOutput);
+    }
+
+    AudioLibTest_CloseVector(&vec);
+}
+
+TEST(AudioLib, TestOriginalUncompressBlock)
+{
+    // Decodes the original encoder's blocks, chains of blocks carrying the decoder state, a garbage state with the
+    // reset flag, and pseudo-random bit streams, which reach every sample width, escape codes, saturation and the
+    // full step index range in both channel layouts.
+    AudioLibTestVector vec;
+    AudioLibTest_OpenVector(&vec, "UncompressBlock.tv", AUDIOLIB_TEST_KIND_UNCOMPRESSBLOCK);
+    TEST_ASSERT_GREATER_THAN_UINT32(0, vec.numCases);
+
+    tAudioCompressorState prevOut = { 0 };
+    for ( uint32_t i = 0; i < vec.numCases; ++i )
+    {
+        char aName[AUDIOLIB_TEST_VECTOR_NAMESIZE];
+        AudioLibTest_VectorCaseName(&vec, aName, sizeof(aName));
+
+        uint32_t numChannels  = AudioLibTest_VectorU32(&vec);
+        uint32_t numSamples   = AudioLibTest_VectorU32(&vec);
+        uint32_t bStateInited = AudioLibTest_VectorU32(&vec);
+        uint32_t bChained     = AudioLibTest_VectorU32(&vec);
+
+        tAudioCompressorState state, expectedState;
+        AudioLibTest_VectorState(&vec, &state);
+
+        size_t inSize;
+        const uint8_t* pIn = AudioLibTest_VectorBlob(&vec, &inSize);
+        size_t pcmSize;
+        const uint8_t* pExpected = AudioLibTest_VectorBlob(&vec, &pcmSize);
+        TEST_ASSERT_EQUAL_size_t_MESSAGE((size_t)numSamples * numChannels * sizeof(int16_t), pcmSize, aName);
+        AudioLibTest_VectorState(&vec, &expectedState);
+
+        if ( bChained )
+        {
+            AudioLibTest_AssertState(&state, &prevOut, aName);
+            state = prevOut;
+        }
+
+        uint8_t* pInput  = AudioLibTest_AllocInput(pIn, inSize);
+        size_t capacity  = pcmSize + 64u;
+        uint8_t* pOutput = AudioLibTest_AllocOutput(capacity);
+
+        AudioLib_UncompressBlock(&state, pOutput, pInput, (int)numSamples, numChannels, (int)bStateInited);
+        AudioLibTest_AssertOutput(pExpected, pcmSize, pOutput, capacity, aName);
+        AudioLibTest_AssertState(&expectedState, &state, aName);
+        prevOut = state;
+
+        free(pInput);
+        free(pOutput);
+    }
+
+    AudioLibTest_CloseVector(&vec);
+}
+
+// Runs the Compress cases of a fixture file. Cases named in ppKnownDifferences are compared without failing the test
+// and the number of those that differ from the original is returned.
+static size_t AudioLibTest_RunCompressVectors(const char* pFileName, const char* const* ppKnownDifferences, size_t numKnownDifferences)
+{
+    AudioLibTestVector vec;
+    AudioLibTest_OpenVector(&vec, pFileName, AUDIOLIB_TEST_KIND_COMPRESS);
+    TEST_ASSERT_GREATER_THAN_UINT32(0, vec.numCases);
+
+    size_t numDifferent = 0;
+    tAudioCompressorState prevOut = { 0 };
+    for ( uint32_t i = 0; i < vec.numCases; ++i )
+    {
+        char aName[AUDIOLIB_TEST_VECTOR_NAMESIZE];
+        AudioLibTest_VectorCaseName(&vec, aName, sizeof(aName));
+
+        uint32_t numChannels = AudioLibTest_VectorU32(&vec);
+        uint32_t size        = AudioLibTest_VectorU32(&vec);
+        uint32_t bChained    = AudioLibTest_VectorU32(&vec);
+
+        tAudioCompressorState state, expectedState;
+        AudioLibTest_VectorState(&vec, &state);
+
+        size_t pcmSize;
+        const uint8_t* pPcm = AudioLibTest_VectorBlob(&vec, &pcmSize);
+        TEST_ASSERT_EQUAL_size_t_MESSAGE(size, pcmSize, aName);
+
+        int expectedRet = (int)AudioLibTest_VectorU32(&vec);
+        size_t outSize;
+        const uint8_t* pExpected = AudioLibTest_VectorBlob(&vec, &outSize);
+        AudioLibTest_VectorState(&vec, &expectedState);
+
+        if ( bChained )
+        {
+            AudioLibTest_AssertState(&state, &prevOut, aName);
+            state = prevOut;
+        }
+
+        uint8_t* pInput  = AudioLibTest_AllocInput(pPcm, pcmSize);
+        size_t capacity  = (size_t)size * 3u + 256u;
+        uint8_t* pOutput = AudioLibTest_AllocOutput(capacity);
+
+        int ret = AudioLib_Compress(&state, pOutput, pInput, (int)size, numChannels);
+
+        bool bKnownDifference = false;
+        for ( size_t k = 0; k < numKnownDifferences; ++k )
+        {
+            bKnownDifference = bKnownDifference || strcmp(ppKnownDifferences[k], aName) == 0;
+        }
+
+        if ( bKnownDifference )
+        {
+            bool bSame = ret == expectedRet
+                && memcmp(pExpected, pOutput, outSize) == 0
+                && memcmp(&expectedState, &state, sizeof(state)) == 0;
+            numDifferent += bSame ? 0u : 1u;
+        }
+        else
+        {
+            TEST_ASSERT_EQUAL_INT_MESSAGE(expectedRet, ret, aName);
+            AudioLibTest_AssertOutput(pExpected, outSize, pOutput, capacity, aName);
+            AudioLibTest_AssertState(&expectedState, &state, aName);
+        }
+
+        prevOut = state;
+        free(pInput);
+        free(pOutput);
+    }
+
+    AudioLibTest_CloseVector(&vec);
+    return numDifferent;
+}
+
+TEST(AudioLib, TestOriginalCompress)
+{
+    // ADPCM streams (the channel argument is the channel count plus two): mono and stereo of 0 to 8192 bytes with a
+    // zero and a supplied compressor state, which is stored in the stream header, and calls chained through the state.
+    TEST_ASSERT_EQUAL_size_t(0, AudioLibTest_RunCompressVectors("Compress.tv", NULL, 0));
+}
+
+TEST(AudioLib, TestOriginalCompressWVSM)
+{
+    // WVSM streams (channel argument 1 and 2) of 0 to 10000 bytes, which cover the 0x1000 block size boundary. The
+    // returned size is compared too; it includes the 10 byte header twice, as in the original.
+    //
+    // NOTE: AudioLib_WVSMCompressBlock currently starts its sample bit length counters at 0 instead of the original 1 to
+    // avoid an out-of-bounds write. This moves every histogram bucket and so changes the selected shifts and the
+    // compressed bytes of most inputs. Those cases are listed here; the rest must match the original exactly.
+    static const char* const aKnownDifferences[] = {
+        "wvsm_size1024_noise_full",
+        "wvsm_size1024_square_20000",
+        "wvsm_size1024_ramp",
+        "wvsm_size4096_sine",
+        "wvsm_size4100_block_boundary",
+        "wvsm_size8192_two_blocks",
+        "wvsm_size10000_three_blocks",
+        "wvsm_mono_arg_size2048",
+    };
+
+    size_t numDifferent = AudioLibTest_RunCompressVectors("CompressWVSM.tv", aKnownDifferences, STD_ARRAYLEN(aKnownDifferences));
+    if ( numDifferent )
+    {
+        TEST_IGNORE_MESSAGE("AudioLib_WVSMCompressBlock differs from the original for the listed cases; see tv/AudioLib/README.md.");
+    }
+}
+
+TEST(AudioLib, TestOriginalUncompress)
+{
+    // Decodes streams written by the original compressor (ADPCM mono and stereo, WVSM) with a garbage input state, since
+    // the decoder takes the state from the stream header, and hand-assembled ADPCM streams with pseudo-random payloads,
+    // including a stereo header that only resembles the WVSM signature and must be decoded as ADPCM.
+    AudioLibTestVector vec;
+    AudioLibTest_OpenVector(&vec, "Uncompress.tv", AUDIOLIB_TEST_KIND_UNCOMPRESS);
+    TEST_ASSERT_GREATER_THAN_UINT32(0, vec.numCases);
+
+    for ( uint32_t i = 0; i < vec.numCases; ++i )
+    {
+        char aName[AUDIOLIB_TEST_VECTOR_NAMESIZE];
+        AudioLibTest_VectorCaseName(&vec, aName, sizeof(aName));
+
+        uint32_t size = AudioLibTest_VectorU32(&vec);
+        (void)AudioLibTest_VectorU32(&vec); // Chained flag; unused because the state is replaced by the stream header
+
+        tAudioCompressorState state, expectedState;
+        AudioLibTest_VectorState(&vec, &state);
+
+        size_t inSize;
+        const uint8_t* pIn = AudioLibTest_VectorBlob(&vec, &inSize);
+        size_t outSize;
+        const uint8_t* pExpected = AudioLibTest_VectorBlob(&vec, &outSize);
+        AudioLibTest_VectorState(&vec, &expectedState);
+
+        uint8_t* pInput  = AudioLibTest_AllocInput(pIn, inSize);
+        size_t capacity  = (size_t)size + 64u;
+        uint8_t* pOutput = AudioLibTest_AllocOutput(capacity);
+
+        AudioLib_Uncompress(&state, pOutput, pInput, size);
+        AudioLibTest_AssertOutput(pExpected, outSize, pOutput, capacity, aName);
+        AudioLibTest_AssertState(&expectedState, &state, aName);
+
+        free(pInput);
+        free(pOutput);
+    }
+
+    AudioLibTest_CloseVector(&vec);
+}
+
+TEST(AudioLib, TestOriginalWVSMUncompressBlock)
+{
+    // Blocks written by the original WVSM encoder for several signals and block sizes, hand-assembled blocks with 0x80
+    // escapes, shifts and odd sample counts, and pseudo-random byte streams. The consumed byte count is compared too.
+    AudioLibTestVector vec;
+    AudioLibTest_OpenVector(&vec, "WVSMUncompressBlock.tv", AUDIOLIB_TEST_KIND_WVSMUNCOMPRESS);
+    TEST_ASSERT_GREATER_THAN_UINT32(0, vec.numCases);
+
+    for ( uint32_t i = 0; i < vec.numCases; ++i )
+    {
+        char aName[AUDIOLIB_TEST_VECTOR_NAMESIZE];
+        AudioLibTest_VectorCaseName(&vec, aName, sizeof(aName));
+
+        uint32_t blockSize = AudioLibTest_VectorU32(&vec);
+        size_t inSize;
+        const uint8_t* pIn = AudioLibTest_VectorBlob(&vec, &inSize);
+        int expectedRet = (int)AudioLibTest_VectorU32(&vec);
+        size_t outSize;
+        const uint8_t* pExpected = AudioLibTest_VectorBlob(&vec, &outSize);
+
+        uint8_t* pInput  = AudioLibTest_AllocInput(pIn, inSize);
+        size_t capacity  = (size_t)blockSize + 64u;
+        uint8_t* pOutput = AudioLibTest_AllocOutput(capacity);
+
+        int ret = AudioLib_WVSMUncompressBlock(pOutput, pInput, (int)blockSize);
+        TEST_ASSERT_EQUAL_INT_MESSAGE(expectedRet, ret, aName);
+        AudioLibTest_AssertOutput(pExpected, outSize, pOutput, capacity, aName);
+
+        free(pInput);
+        free(pOutput);
+    }
+
+    AudioLibTest_CloseVector(&vec);
+}
+
 TEST_GROUP_RUNNER(AudioLib)
 {
     RUN_TEST_CASE(AudioLib, TestMouthTimeline);
@@ -1060,4 +1597,12 @@ TEST_GROUP_RUNNER(AudioLib)
     RUN_TEST_CASE(AudioLib, TestOutputGrowth);
     RUN_TEST_CASE(AudioLib, TestRandomReferenceVectors);
     RUN_TEST_CASE(AudioLib, TestGeneratedRoundTrip);
+    RUN_TEST_CASE(AudioLib, TestOriginalParseWaveFileHeader);
+    RUN_TEST_CASE(AudioLib, TestOriginalResetCompressor);
+    RUN_TEST_CASE(AudioLib, TestOriginalCompressBlock);
+    RUN_TEST_CASE(AudioLib, TestOriginalUncompressBlock);
+    RUN_TEST_CASE(AudioLib, TestOriginalCompress);
+    RUN_TEST_CASE(AudioLib, TestOriginalCompressWVSM);
+    RUN_TEST_CASE(AudioLib, TestOriginalUncompress);
+    RUN_TEST_CASE(AudioLib, TestOriginalWVSMUncompressBlock);
 }
