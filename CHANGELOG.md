@@ -477,6 +477,7 @@
   - Fixed `jonesInventory_UpdateLevelStatisticTime` narrowing the hours of the level and total game time statistics to 8 bits, which made the played time wrap to zero after 256 hours. ()
   - Fixed the save and load game file dialogs building their file filter string by formatting a buffer into itself (`jonesConfig_GetSaveGameFilePath`, `jonesConfig_GetLoadGameFilePath`), which is undefined behavior. ()
   - Fixed `jonesConfig_ShowControlOptions` leaking the copied control configuration when the dialog returns with an invalid selected scheme index. ()
+  - Fixed `JonesMain_GameWndProc` returning an uninitialized window procedure result for handled `SC_KEYMENU` and `SC_SCREENSAVE` system commands. ()
 
 ## v0.3.1
 ### General:
