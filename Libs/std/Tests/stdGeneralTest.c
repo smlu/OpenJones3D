@@ -490,6 +490,27 @@ const char* StdGeneralTest_GetDebugOutput(void)
     return stdGeneralTest_aDebugOutput;
 }
 
+void StdGeneralTest_AssertDebugOutputMessage(const char* pExpectedFile, const char* pExpectedMessage)
+{
+    const char* pOutput = stdGeneralTest_aDebugOutput;
+    size_t fileLen      = strlen(pExpectedFile);
+
+    TEST_ASSERT_EQUAL_STRING_LEN(pExpectedFile, pOutput, fileLen);
+    TEST_ASSERT_EQUAL_CHAR('(', pOutput[fileLen]);
+
+    const char* pCur = pOutput + fileLen + 1;
+    TEST_ASSERT_TRUE(*pCur >= '0' && *pCur <= '9');
+    while ( *pCur >= '0' && *pCur <= '9' )
+    {
+        ++pCur;
+    }
+
+    TEST_ASSERT_EQUAL_CHAR(')', pCur[0]);
+    TEST_ASSERT_EQUAL_CHAR(':', pCur[1]);
+    TEST_ASSERT_EQUAL_CHAR(' ', pCur[2]);
+    TEST_ASSERT_EQUAL_STRING(pExpectedMessage, pCur + 3);
+}
+
 uint32_t StdGeneralTest_GetConsoleAttributes(void)
 {
     return stdGeneralTest_consoleAttributes;
