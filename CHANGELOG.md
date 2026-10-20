@@ -414,6 +414,7 @@
   - Fixed `sithExplosion_Update` variable light: the explosion light color is now the emit color plus the max light scaled by the remaining blast time, instead of the emit color multiplied by it. ()
   - Fixed `sithThing_PlayCogDamageSound` to keep the original sound radii (0.5 and 2.5) for the impact and machete hit sounds outside of QOL builds. ()
   - Fixed `sithSoundClass_PlayPlayerVoiceModeRandom` repeat avoidance wrapping one entry too early, so the last player voice entry of a mode was skipped after a repeat. ()
+  - Fixed the `strtof`/`strtoul` conversion range checks in `sithActor_ParseArg`, `sithWeapon_ParseArg`, `sithItem_ParseArg` and `sithThing_ParseThingArg` to reset `errno` before each conversion, so a stale `ERANGE` no longer rejects valid values (template stats could silently be lost at load). ()
 
 ## v0.3.1
 ### General:
