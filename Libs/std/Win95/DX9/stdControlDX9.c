@@ -580,6 +580,20 @@ int J3DAPI stdControl_ReadAxisAsKey(size_t axis, int* pbPressed)
     }
 }
 
+static inline void stdControl_AddAxisKeyPressed(int* pbPressed)
+{
+#ifdef J3D_QOL_IMPROVEMENTS
+    // Altered: Axes bound to key functions (e.g. gamepad triggers) count as a key press in the num pressed state, the original never updates it when reading an axis as key.
+    //          Fixed: Increment the state by 1, it was set to 1 which dropped the presses of other bindings of the key function.
+    if ( pbPressed )
+    {
+        *pbPressed += 1;
+    }
+#else
+    J3D_UNUSED(pbPressed);
+#endif
+}
+
 int J3DAPI stdControl_ReadAxisAsKeyEx(size_t axis, int* pbPressed, float lowValue)
 {
     float pos = stdControl_ReadAxis(axis);
@@ -588,20 +602,13 @@ int J3DAPI stdControl_ReadAxisAsKeyEx(size_t axis, int* pbPressed, float lowValu
         int axisFlag = axis & STDCONTROL_AID_NEGATIVE_AXIS;
         if ( axisFlag == STDCONTROL_AID_POSITIVE_AXIS && pos > (double)lowValue )
         {
-            if ( pbPressed )
-            {
-                *pbPressed = 1;
-            }
+            stdControl_AddAxisKeyPressed(pbPressed);
             return 1;
         }
 
         if ( axisFlag == STDCONTROL_AID_NEGATIVE_AXIS && -lowValue > pos )
         {
-            // Fixed: Increment num key pressed by 1
-            if ( pbPressed )
-            {
-                *pbPressed = 1;
-            }
+            stdControl_AddAxisKeyPressed(pbPressed);
             return 1;
         }
     }
@@ -609,11 +616,7 @@ int J3DAPI stdControl_ReadAxisAsKeyEx(size_t axis, int* pbPressed, float lowValu
     {
         if ( fabsf(pos) > lowValue )
         {
-            // Fixed: Increment num key pressed by 1
-            if ( pbPressed )
-            {
-                *pbPressed = 1;
-            }
+            stdControl_AddAxisKeyPressed(pbPressed);
             return 1;
         }
     }

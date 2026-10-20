@@ -448,14 +448,25 @@ TEST(stdControl, TestReadTimingAndFlaggedAxes)
     stdControl_TestSetAxisState(axis, 80);
     TEST_ASSERT_EQUAL_INT(80, stdControl_ReadAxisRaw(axis | STDCONTROL_AID_POSITIVE_AXIS));
 
+    // The original never updates the num pressed state when reading an axis as key, QOL builds count the axis as a key press.
+    // The press is added to the presses of the other bindings of the key function.
     int pressed = 0;
     TEST_ASSERT_EQUAL_INT(1, stdControl_ReadAxisAsKey(axis | STDCONTROL_AID_LOW_SENSITIVITY | STDCONTROL_AID_POSITIVE_AXIS, &pressed));
-    TEST_ASSERT_EQUAL_INT(1, pressed);
+    TEST_ASSERT_EQUAL_INT(J3D_QOL_VALUE(1, 0), pressed);
 
     stdControl_TestSetAxisState(axis, -80);
     pressed = 0;
     TEST_ASSERT_EQUAL_INT(1, stdControl_ReadAxisAsKey(axis | STDCONTROL_AID_LOW_SENSITIVITY | STDCONTROL_AID_NEGATIVE_AXIS, &pressed));
-    TEST_ASSERT_EQUAL_INT(1, pressed);
+    TEST_ASSERT_EQUAL_INT(J3D_QOL_VALUE(1, 0), pressed);
+
+    pressed = 2;
+    TEST_ASSERT_EQUAL_INT(1, stdControl_ReadAxisAsKey(axis | STDCONTROL_AID_LOW_SENSITIVITY | STDCONTROL_AID_NEGATIVE_AXIS, &pressed));
+    TEST_ASSERT_EQUAL_INT(J3D_QOL_VALUE(3, 2), pressed);
+
+    // Axis below the threshold is not a key press
+    pressed = 2;
+    TEST_ASSERT_EQUAL_INT(0, stdControl_ReadAxisAsKey(axis | STDCONTROL_AID_LOW_SENSITIVITY | STDCONTROL_AID_POSITIVE_AXIS, &pressed));
+    TEST_ASSERT_EQUAL_INT(2, pressed);
 
     uint8_t aKeyboardState[STDCONTROL_MAX_KEYBOARD_BUTTONS] = { 0 };
     aKeyboardState[DIK_F15] = 0x80u;
