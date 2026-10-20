@@ -5179,7 +5179,7 @@ void J3DAPI sithPlayerControls_ProcessPushPullMove(SithThing* pThing, float secD
     //
     // Handle pull object move
     //
-    if ( sithControl_GetKey(SITHCONTROL_BACK, NULL) )
+    if ( !sithControl_GetKey(SITHCONTROL_FORWARD, NULL) ) // Fixed: Push takes priority when both the forward and back keys are held, the pull was selected first (original Indy3D.exe v1.0 0x0042C1B0)
     {
         // Check height difference for pull - can't pull objects that are higher
         if ( searchRadius > 0.05f && pThing->pos.z > sithPlayerControls_pMovableThing->pos.z )
