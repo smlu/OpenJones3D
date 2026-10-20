@@ -5105,6 +5105,7 @@ void J3DAPI sithCogFunctionThing_SetThingMaxHeadVel(SithCog* pCog)
     if ( !pThing )
     {
         STDLOG_ERROR("Cog %s: Ain't no thing in SetThingMaxHeadVel().\n", pCog->aName);
+        return;
     }
 
     if ( pThing->type != SITH_THING_PLAYER && pThing->type != SITH_THING_ACTOR )
