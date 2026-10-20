@@ -104,17 +104,18 @@ int J3DAPI sithMessage_SendMessage(SithMessage* pMessage, DPID idTo, SithMessage
     }
 
     pMessage->msecTime = sithTime_g_msecGameTime;
+    int result = 1; // Added: Init result, the original returns an uninitialized value when neither stream bit is set
     if ( (stream & SITHMESSAGE_STREAM_NET) != 0 )
     {
-        return sithMessage_NetWrite(pMessage, idTo, dwDPFlags);
+        result = sithMessage_NetWrite(pMessage, idTo, dwDPFlags);
     }
 
     if ( (stream & SITHMESSAGE_STREAM_FILE) != 0 )
     {
-        return sithMessage_FileWrite(pMessage);
+        result = sithMessage_FileWrite(pMessage);
     }
 
-    return 1; // Added: return error
+    return result;
 }
 
 void sithMessage_ProcessMessages(void)
