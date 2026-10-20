@@ -275,39 +275,15 @@ LABEL_4:
             curMatCelNum = pCurPoly->matCelNum;
             if ( curMatCelNum == -1 )
             {
-                if ( pCurPoly->pMaterial->curCelNum < 0 )
-                {
-                    curMatCelNum = 0;
-                }
-                else if ( pCurPoly->pMaterial->curCelNum > pCurPoly->pMaterial->numCels - 1 )
-                {
-                    curMatCelNum = pCurPoly->pMaterial->numCels - 1;
-                }
-                else
-                {
-                    curMatCelNum = pCurPoly->pMaterial->curCelNum;
-                }
-
-                pTex = &pCurPoly->pMaterial->aTextures[curMatCelNum];
+                // Fixed: Clamp signed into a local texture index; the clamped value was written back to curMatCelNum, which is compared with the next poly's cel number, so polys with cel -1 were never batched (original Indy3D.exe v1.0 0x004C7000)
+                int texCelNum = STDMATH_CLAMP((int)pCurPoly->pMaterial->curCelNum, 0, (int)pCurPoly->pMaterial->numCels - 1);
+                pTex = &pCurPoly->pMaterial->aTextures[texCelNum];
                 rdCache_AddToTextureCache(pTex, pCurMat->formatType);
             }
             else
             {
-                if ( curMatCelNum < 0 )
-                {
-                    curMatCelNum = 0;
-                }
-
-                else if ( curMatCelNum > pCurPoly->pMaterial->numCels - 1 )
-                {
-                    curMatCelNum = pCurPoly->pMaterial->numCels - 1;
-                }
-                else
-                {
-                    curMatCelNum = pCurPoly->matCelNum;
-                }
-
-                pTex = &pCurPoly->pMaterial->aTextures[curMatCelNum];
+                int texCelNum = STDMATH_CLAMP(curMatCelNum, 0, (int)pCurPoly->pMaterial->numCels - 1);
+                pTex = &pCurPoly->pMaterial->aTextures[texCelNum];
                 rdCache_AddToTextureCache(pTex, pCurMat->formatType);
             }
 
