@@ -279,6 +279,7 @@
   - Fixed `stdControl_ReadMouse` smoothing (frame times under 25 msec) averaging the mouse movement with the previous read by division, which truncated toward zero; it now floors like the original, so small left/up mouse movements are no longer lost (DirectX 6 and DirectX 9). ()
   - Fixed `stdControl_ReadAxisAsKeyEx` overwriting the num pressed state with 1 for axes bound to key functions, which dropped the presses counted by other bindings of the function. The count of axis key presses is now a QOL feature (legacy builds do not update the state as the original); it adds 1 to the state. ()
   - Fixed `stdControl_RegisterAxis` rounding the axis deadzone threshold instead of truncating it as the original does (DirectX 6 and DirectX 9). ()
+  - Fixed `SITH_RAND` scaling `rand()` by the double constant `1.0 / RAND_MAX` instead of the float constant of the original, which changed the last bits of the random values and returned exactly 1.0 for `rand() == RAND_MAX` where the original stays below 1.0 at double/extended precision. ()
 
 ### Graphics:
   - Fixed an issue where active textures used in the current render frame were being removed from the cache prematurely in low VRAM situations (f37ecb7)
