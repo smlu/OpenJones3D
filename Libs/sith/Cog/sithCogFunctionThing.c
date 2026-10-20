@@ -5413,16 +5413,16 @@ void J3DAPI sithCogFunctionThing_StartQuetzAnim(SithCog* pCog)
     switch ( mode )
     {
         case 2:
-            sithAIMove_sub_49AB80(pThing->controlInfo.aiControl.pLocal);
+            sithAIMove_StartQuetzAnim2(pThing->controlInfo.aiControl.pLocal);
             break;
         case 3:
-            sithAIMove_sub_49AC50(pThing->controlInfo.aiControl.pLocal);
+            sithAIMove_StartQuetzAnim3(pThing->controlInfo.aiControl.pLocal);
             break;
         case 4:
-            sithAIMove_sub_49B1B0(pThing->controlInfo.aiControl.pLocal);
+            sithAIMove_StartQuetzAnim4(pThing->controlInfo.aiControl.pLocal);
             break;
         case 5:
-            sithAIMove_sub_49AF80(pThing->controlInfo.aiControl.pLocal);
+            sithAIMove_StartQuetzAnim5(pThing->controlInfo.aiControl.pLocal);
             break;
         default:
             return;

@@ -286,13 +286,13 @@ static_assert(sizeof(SithTrackFaceData) == 0x134, "sizeof(SithTrackFaceData) == 
 void J3DAPI sithPhysics_ProcessMineCarTrackMove(SithThing* pThing, float secDeltaTime, float speed, rdVector3* pDeltaPos);
 int J3DAPI sithPhysics_ProcessTrackFace(SithThing* pThing, rdFace* pFace, rdVector3* pMoveDir, rdVector3* pRightDir, rdVector3* pPos, SithTrackFaceData* pData);
 int J3DAPI sithPhysics_CheckForPointOnTrack(SithThing* pThing, const rdVector3* pPoint, rdFace** ppFoundFace, int bUpdateState, const rdFace* pPrevFace);
-void J3DAPI sithPhysics_sub_487EC0(SithThing* pThing, SithTrackFaceData* pData, float* pSecDeltaTime, rdVector3* pStartPos, rdVector3* pNewPos, float speed);
+void J3DAPI sithPhysics_MoveToTrackFaceFront(SithThing* pThing, SithTrackFaceData* pData, float* pSecDeltaTime, rdVector3* pStartPos, rdVector3* pNewPos, float speed);
 
 // Jeep physics
-int J3DAPI sithPhysics_Jeep_sub_4892E0(SithThing* pThing, SithJeepState* pState, float secDeltaTime); // Updates the wheels
-void J3DAPI sithPhysics_sub_48A970(SithThing* pThing, SithJeepWheelState* pWheel, const rdVector3* pWheelPos); // Probes the ground below a wheel
-void J3DAPI sithPhysics_sub_48AD20(SithThing* pThing, SithJeepState* pState, rdVector3* pGroundNormal, float secDeltaTime); // Ground normal and wall turning
-void J3DAPI sithPhysics_Jeep_sub_48B4D0(SithThing* pThing, SithJeepState* pState); // Inits the jeep dimensions
+int J3DAPI sithPhysics_UpdateJeepWheels(SithThing* pThing, SithJeepState* pState, float secDeltaTime); // Updates the wheels
+void J3DAPI sithPhysics_UpdateJeepWheelContact(SithThing* pThing, SithJeepWheelState* pWheel, const rdVector3* pWheelPos); // Probes the ground below a wheel
+void J3DAPI sithPhysics_GetJeepChassisNormal(SithThing* pThing, SithJeepState* pState, rdVector3* pGroundNormal, float secDeltaTime); // Ground normal and wall turning
+void J3DAPI sithPhysics_ResetJeepWheels(SithThing* pThing, SithJeepState* pState); // Inits the jeep dimensions
 void J3DAPI sithPhysics_UpdateJeepFx(SithThing* pThing, SithVehicleEngineFxState* pFxState, float secDeltaTime);
 
 void sithPhysics_InstallHooks(void)
@@ -338,13 +338,13 @@ void sithPhysics_InstallHooks(void)
     J3D_HOOKFUNC(sithPhysics_ProcessMineCarTrackMove);
     J3D_HOOKFUNC(sithPhysics_ProcessTrackFace);
     J3D_HOOKFUNC(sithPhysics_CheckForPointOnTrack);
-    J3D_HOOKFUNC(sithPhysics_sub_487EC0);
+    J3D_HOOKFUNC(sithPhysics_MoveToTrackFaceFront);
     J3D_HOOKFUNC(sithPhysics_UpdateJeepPhysics);
-    J3D_HOOKFUNC(sithPhysics_Jeep_sub_4892E0);
-    J3D_HOOKFUNC(sithPhysics_sub_48A970);
-    J3D_HOOKFUNC(sithPhysics_sub_48AD20);
+    J3D_HOOKFUNC(sithPhysics_UpdateJeepWheels);
+    J3D_HOOKFUNC(sithPhysics_UpdateJeepWheelContact);
+    J3D_HOOKFUNC(sithPhysics_GetJeepChassisNormal);
     J3D_HOOKFUNC(sithPhysics_CreateJeepUserBlock);
-    J3D_HOOKFUNC(sithPhysics_Jeep_sub_48B4D0);
+    J3D_HOOKFUNC(sithPhysics_ResetJeepWheels);
     J3D_HOOKFUNC(sithPhysics_UpdateJeepFx);
 }
 
@@ -3421,7 +3421,7 @@ void J3DAPI sithPhysics_ProcessMineCarTrackMove(SithThing* pThing, float secDelt
             goto stop_move;
         }
 
-        sithPhysics_sub_487EC0(pThing, &faceData, &remainingTime, &curPos, &newPos, speed);
+        sithPhysics_MoveToTrackFaceFront(pThing, &faceData, &remainingTime, &curPos, &newPos, speed);
         if ( remainingTime == 0.0f )
         {
             bDone = true;
@@ -4106,7 +4106,7 @@ void J3DAPI sithPhysics_FreeUserBlockEntry(SithThing* pThing)
     }
 }
 
-void J3DAPI sithPhysics_sub_487EC0(SithThing* pThing, SithTrackFaceData* pData, float* pSecDeltaTime, rdVector3* pStartPos, rdVector3* pNewPos, float speed)
+void J3DAPI sithPhysics_MoveToTrackFaceFront(SithThing* pThing, SithTrackFaceData* pData, float* pSecDeltaTime, rdVector3* pStartPos, rdVector3* pNewPos, float speed)
 {
     (void)pThing;
     (void)pStartPos;
@@ -4177,8 +4177,8 @@ void J3DAPI sithPhysics_UpdateJeepPhysics(SithThing* pThing, float secDeltaTime)
         && pThing->moveStatus != SITHPLAYERMOVE_UNKNOWN_84
         && pThing->moveStatus != SITHPLAYERMOVE_JEEP_IMPACT )
     {
-        sithPhysics_Jeep_sub_4892E0(pThing, pState, secDeltaTime);
-        sithPhysics_sub_48AD20(pThing, pState, &groundNormal, secDeltaTime);
+        sithPhysics_UpdateJeepWheels(pThing, pState, secDeltaTime);
+        sithPhysics_GetJeepChassisNormal(pThing, pState, &groundNormal, secDeltaTime);
 
         if ( !pState->bAllWheelsGrounded ) // Note: the flag is set when no wheel has ground contact
         {
@@ -4519,7 +4519,7 @@ void J3DAPI sithPhysics_UpdateJeepPhysics(SithThing* pThing, float secDeltaTime)
     sithPhysics_UpdateExhaustFx(pThing, &pThing->userblock.pJeep->exhaustInfo, secDeltaTime);
 }
 
-int J3DAPI sithPhysics_Jeep_sub_4892E0(SithThing* pThing, SithJeepState* pState, float secDeltaTime)
+int J3DAPI sithPhysics_UpdateJeepWheels(SithThing* pThing, SithJeepState* pState, float secDeltaTime)
 {
     // Wheel contact states: 1 on ground, 2 no ground, 3 pressed into the ground, 4 on a steep surface
     SithPhysicsInfo* pPhysics       = &pThing->moveInfo.physics;
@@ -4542,28 +4542,28 @@ int J3DAPI sithPhysics_Jeep_sub_4892E0(SithThing* pThing, SithJeepState* pState,
     wheelPos.z = -halfHeight;
     rdMatrix_TransformPoint34Acc(&wheelPos, &pThing->orient);
     rdVector_Add3Acc(&wheelPos, &pThing->pos);
-    sithPhysics_sub_48A970(pThing, pFrontLeft, &wheelPos);
+    sithPhysics_UpdateJeepWheelContact(pThing, pFrontLeft, &wheelPos);
 
     wheelPos.x = halfWidth;
     wheelPos.y = halfLength;
     wheelPos.z = -halfHeight;
     rdMatrix_TransformPoint34Acc(&wheelPos, &pThing->orient);
     rdVector_Add3Acc(&wheelPos, &pThing->pos);
-    sithPhysics_sub_48A970(pThing, pFrontRight, &wheelPos);
+    sithPhysics_UpdateJeepWheelContact(pThing, pFrontRight, &wheelPos);
 
     wheelPos.x = -halfWidth;
     wheelPos.y = -halfLength;
     wheelPos.z = -halfHeight;
     rdMatrix_TransformPoint34Acc(&wheelPos, &pThing->orient);
     rdVector_Add3Acc(&wheelPos, &pThing->pos);
-    sithPhysics_sub_48A970(pThing, pRearLeft, &wheelPos);
+    sithPhysics_UpdateJeepWheelContact(pThing, pRearLeft, &wheelPos);
 
     wheelPos.x = halfWidth;
     wheelPos.y = -halfLength;
     wheelPos.z = -halfHeight;
     rdMatrix_TransformPoint34Acc(&wheelPos, &pThing->orient);
     rdVector_Add3Acc(&wheelPos, &pThing->pos);
-    sithPhysics_sub_48A970(pThing, pRearRight, &wheelPos);
+    sithPhysics_UpdateJeepWheelContact(pThing, pRearRight, &wheelPos);
 
     // Airborne when no wheel stands on drivable ground
     int bWasAirborne   = pState->bAllWheelsGrounded;
@@ -4844,7 +4844,7 @@ int J3DAPI sithPhysics_Jeep_sub_4892E0(SithThing* pThing, SithJeepState* pState,
     return 1;
 }
 
-void J3DAPI sithPhysics_sub_48A970(SithThing* pThing, SithJeepWheelState* pWheel, const rdVector3* pWheelPos)
+void J3DAPI sithPhysics_UpdateJeepWheelContact(SithThing* pThing, SithJeepWheelState* pWheel, const rdVector3* pWheelPos)
 {
     int bFoundGround = 0;
     float searchDist = sithPhysics_jeepWheelProbeHeight * 2.0f;
@@ -4952,7 +4952,7 @@ void J3DAPI sithPhysics_sub_48A970(SithThing* pThing, SithJeepWheelState* pWheel
     sithCollision_DecreaseStackLevel();
 }
 
-void J3DAPI sithPhysics_sub_48AD20(SithThing* pThing, SithJeepState* pState, rdVector3* pGroundNormal, float secDeltaTime)
+void J3DAPI sithPhysics_GetJeepChassisNormal(SithThing* pThing, SithJeepState* pState, rdVector3* pGroundNormal, float secDeltaTime)
 {
     SithPhysicsInfo* pPhysics             = &pThing->moveInfo.physics;
     const SithJeepWheelState* pFrontLeft  = &pState->aWheels[0];
@@ -5069,28 +5069,28 @@ int J3DAPI sithPhysics_CreateJeepUserBlock(SithThing* pThing)
     if ( !stdUtil_StrCmp(pThing->aName, "jeepplayer") )
     {
         pJeep->type = 1; // player jeep
-        sithPhysics_Jeep_sub_48B4D0(pThing, &pThing->userblock.pJeep->state);
+        sithPhysics_ResetJeepWheels(pThing, &pThing->userblock.pJeep->state);
         sithPhysics_InitVehicleFxState(pThing, &pThing->userblock.pJeep->fxstate);
         sithPhysics_InitJeepExhaust(pThing, &pThing->userblock.pJeep->exhaustInfo);
     }
     else if ( !stdUtil_StrCmp(pThing->aName, "jeepplayerpyr") )
     {
         pJeep->type = 1; // player jeep
-        sithPhysics_Jeep_sub_48B4D0(pThing, &pThing->userblock.pJeep->state);
+        sithPhysics_ResetJeepWheels(pThing, &pThing->userblock.pJeep->state);
         sithPhysics_InitVehicleFxState(pThing, &pThing->userblock.pJeep->fxstate);
         sithPhysics_InitJeepExhaust(pThing, &pThing->userblock.pJeep->exhaustInfo);
     }
     else
     {
         pJeep->type = 0;
-        sithPhysics_Jeep_sub_48B4D0(pThing, &pThing->userblock.pJeep->state);
+        sithPhysics_ResetJeepWheels(pThing, &pThing->userblock.pJeep->state);
         sithPhysics_InitVehicleFxState(pThing, &pThing->userblock.pJeep->fxstate);
     }
 
     return 1;
 }
 
-void J3DAPI sithPhysics_Jeep_sub_48B4D0(SithThing* pThing, SithJeepState* pState)
+void J3DAPI sithPhysics_ResetJeepWheels(SithThing* pThing, SithJeepState* pState)
 {
     (void)pThing;
 

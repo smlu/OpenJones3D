@@ -374,7 +374,7 @@ Surface hits either use a thing-type-specific surface handler or fall back to [`
 [`sithCollision_HandleThingHitSurface()`](../../Libs/sith/Engine/sithCollision.c#L1311) only handles physics movers. It:
 
 - computes impact speed along the hit normal
-- delegates bounce/slide response to [`sithCollision_sub_4AA1A0()`](../../Libs/sith/Engine/sithCollision.c#L1979)
+- delegates bounce/slide response to [`sithCollision_CollideHurt()`](../../Libs/sith/Engine/sithCollision.c#L1979)
 - sends `TOUCHED` to cog-linked surfaces with a short time gate
 - contains many player and vehicle landing cases
 - chooses landing or scrape sounds from material-like surface flags

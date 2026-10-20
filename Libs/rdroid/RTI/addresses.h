@@ -87,7 +87,7 @@
 #define rdCamera_SetAttenuation_ADDR 0x004C5F70
 #define rdCamera_AddLight_ADDR 0x004C5FF0
 #define rdCamera_ClearLights_ADDR 0x004C6090
-#define rdCamera_sub_4C60B0_ADDR 0x004C60B0
+#define rdCamera_SetOverlayDepthRange_ADDR 0x004C60B0
 #define rdCache_Startup_ADDR 0x004C6D60
 #define rdCache_AdvanceFrame_ADDR 0x004C6D80
 #define rdCache_GetFrameNum_ADDR 0x004C6DB0

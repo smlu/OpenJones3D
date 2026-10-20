@@ -64,10 +64,10 @@ void sithAIInstinct_InstallHooks(void)
     J3D_HOOKFUNC(sithAIInstinct_Flee);
     J3D_HOOKFUNC(sithAIInstinct_BasicFallow);
     J3D_HOOKFUNC(sithAIInstinct_WallCrawl);
-    J3D_HOOKFUNC(sithAIInstinct_sub_494360);
+    J3D_HOOKFUNC(sithAIInstinct_SnakeFindMovePos);
     J3D_HOOKFUNC(sithAIInstinct_SnakeMungeTestCheck);
     J3D_HOOKFUNC(sithAIInstinct_SnakeFollow);
-    J3D_HOOKFUNC(sithAIInstinct_sub_494FF0);
+    J3D_HOOKFUNC(sithAIInstinct_SnakePlaySlitherSound);
 }
 
 void sithAIInstinct_ResetGlobals(void)
@@ -435,7 +435,7 @@ int J3DAPI sithAIInstinct_LookForTarget(SithAIControlBlock* pLocal, SithAIInstin
         return 0;
     }
 
-    sithAIUtil_sub_49B2E0(pLocal, 0);
+    sithAIUtil_UpdateTargetSight(pLocal, 0);
     if ( !pLocal->targetSightState )
     {
         if ( pLocal->goalThing == pLocal->pTargetThing )
@@ -559,7 +559,7 @@ int J3DAPI sithAIInstinct_SenseDanger(SithAIControlBlock* pLocal, SithAIInstinct
                 return 0;
             }
 
-            sithAIUtil_sub_49B2E0(pLocal, 0);
+            sithAIUtil_UpdateTargetSight(pLocal, 0);
             if ( !pLocal->targetSightState )
             {
                 sithAIUtil_AISetMode(pLocal, SITHAI_MODE_FLEEING);
@@ -1074,7 +1074,7 @@ int J3DAPI sithAIInstinct_PrimaryFire(SithAIControlBlock* pLocal, SithAIInstinct
                 break;
 
             case 2:
-                sithAIUtil_sub_49B2E0(pLocal, 0);
+                sithAIUtil_UpdateTargetSight(pLocal, 0);
                 return 0;
         }
     }
@@ -1083,7 +1083,7 @@ int J3DAPI sithAIInstinct_PrimaryFire(SithAIControlBlock* pLocal, SithAIInstinct
         float curFireDist = pInstinct->fltArg[15];
         if ( curFireDist != 0.0f )
         {
-            sithAIUtil_sub_49B2E0(pLocal, 0);
+            sithAIUtil_UpdateTargetSight(pLocal, 0);
             if ( curFireDist < pLocal->distance )
             {
                 weaponNum = pInstinct->intArg[11] + 1;
@@ -1124,7 +1124,7 @@ int J3DAPI sithAIInstinct_PrimaryFire(SithAIControlBlock* pLocal, SithAIInstinct
         farDist = sithWeapon_GetWeaponMaxAimDistance(pActor->thingInfo.actorInfo.weaponInfo.curWeaponID);
     }
 
-    if ( (pLocal->mode & SITHAI_MODE_UNKNOWN_100000) == 0 && !sithAIUtil_sub_49F1F0(pLocal, &pLocal->pOwner->pos) )
+    if ( (pLocal->mode & SITHAI_MODE_UNKNOWN_100000) == 0 && !sithAIUtil_IsLineOfFireClear(pLocal, &pLocal->pOwner->pos) )
     {
         // No clear line of fire, skip the shot
     }
@@ -1334,7 +1334,7 @@ int J3DAPI sithAIInstinct_CircleStrafe(SithAIControlBlock* pLocal, SithAIInstinc
     }
 
     int bRandom = pInstinct->intArg[4];
-    sithAIUtil_sub_49B640(pLocal);
+    sithAIUtil_UpdateGoalSight(pLocal);
     if ( pInstinct->fltArg[2] < pLocal->targetDistance || pLocal->targetSightState2 )
     {
         goto stop;
@@ -1871,7 +1871,7 @@ int J3DAPI sithAIInstinct_RandomMove(SithAIControlBlock* pLocal, SithAIInstinct*
         return 0;
     }
 
-    sithAIUtil_sub_49B2E0(pLocal, 0);
+    sithAIUtil_UpdateTargetSight(pLocal, 0);
 
     rdVector3 direction;
     int delay;
@@ -1996,7 +1996,7 @@ int J3DAPI sithAIInstinct_HumanCombatMove(SithAIControlBlock* pLocal, SithAIInst
         goto clear;
     }
 
-    sithAIUtil_sub_49B2E0(pLocal, 0);
+    sithAIUtil_UpdateTargetSight(pLocal, 0);
     float healthPct = pOwner->thingInfo.actorInfo.health / pOwner->thingInfo.actorInfo.maxHealth;
 
     switch ( event )
@@ -2064,7 +2064,7 @@ int J3DAPI sithAIInstinct_HumanCombatMove(SithAIControlBlock* pLocal, SithAIInst
                 return 0;
             }
 
-            if ( sithAIUtil_sub_49F1F0(pLocal, &pLocal->pOwner->pos) )
+            if ( sithAIUtil_IsLineOfFireClear(pLocal, &pLocal->pOwner->pos) )
             {
                 bCheckPath = 1;
                 if ( (pLocal->pTargetThing->moveInfo.physics.flags & (SITH_PF_MINECAR | SITH_PF_RAFT | SITH_PF_JEEP | SITH_PF_UNKNOWN_8000000)) == 0 && sithAIUtil_IsThingMoving(pLocal->pTargetThing) )
@@ -2164,7 +2164,7 @@ int J3DAPI sithAIInstinct_HumanCombatMove(SithAIControlBlock* pLocal, SithAIInst
         make_path:
             if ( sithAIUtil_MakePathPos(pLocal, &pLocal->pOwner->pos, minDist, enemyRange, angle, opts, &dirNorm, &targetPos) )
             {
-                if ( !bCheckPath || sithAIUtil_sub_49F1F0(pLocal, &targetPos) )
+                if ( !bCheckPath || sithAIUtil_IsLineOfFireClear(pLocal, &targetPos) )
                 {
                     pState->aParams[1] = 0.0f;
                     pState->aParams[2] = 0.0f;
@@ -2360,7 +2360,7 @@ int J3DAPI sithAIInstinct_Roam(SithAIControlBlock* pLocal, SithAIInstinct* pInst
             return 0;
     }
 
-    if ( sithAIUtil_sub_49F010(pLocal, &startPos, closestDist, roamDist, bEnabled, 2, &movePos) && sithAIMove_AISetMovePos(pLocal, &movePos, moveSpeed) )
+    if ( sithAIUtil_MakeRoamPos(pLocal, &startPos, closestDist, roamDist, bEnabled, 2, &movePos) && sithAIMove_AISetMovePos(pLocal, &movePos, moveSpeed) )
     {
         sithAIMove_AISetLookPosEyeLevel(pLocal, &movePos);
         return 1;
@@ -2625,7 +2625,7 @@ int J3DAPI sithAIInstinct_BasicFallow(SithAIControlBlock* pLocal, SithAIInstinct
             rdVector_Neg3Acc(&heading);
             gap = pFoe->collide.movesize * 4.0f;
             rdVector_ScaleAdd3(&movePos, &heading, gap, &pFoe->pos);
-            if ( sithAIUtil_sub_49EE50(pLocal, &movePos, 0.0f, 60.0f, 30.0f, 0x100) )
+            if ( sithAIUtil_SweepMoveToPathPos(pLocal, &movePos, 0.0f, 60.0f, 30.0f, 0x100) )
             {
                 pLocal->submode |= SITHAI_SUBMODE_UNKNOWN_8;
                 return 1;
@@ -2651,7 +2651,7 @@ int J3DAPI sithAIInstinct_BasicFallow(SithAIControlBlock* pLocal, SithAIInstinct
     }
 
     SithThing* pGoal = pLocal->goalThing;
-    sithAIUtil_sub_49B640(pLocal);
+    sithAIUtil_UpdateGoalSight(pLocal);
     SithSurface* pSurface;
     rdVector3 toDir;
     switch ( event )
@@ -2683,7 +2683,7 @@ int J3DAPI sithAIInstinct_BasicFallow(SithAIControlBlock* pLocal, SithAIInstinct
 
             pState->aParams[0] += 1.0f;
             pLocal->submode |= SITHAI_SUBMODE_UNKNOWN_4;
-            if ( sithAIUtil_sub_49EE50(pLocal, &pLocal->movePos, 45.0f, 135.0f, 45.0f, 0x100) )
+            if ( sithAIUtil_SweepMoveToPathPos(pLocal, &pLocal->movePos, 45.0f, 135.0f, 45.0f, 0x100) )
             {
                 return 1;
             }
@@ -2952,7 +2952,7 @@ int J3DAPI sithAIInstinct_WallCrawl(SithAIControlBlock* pLocal, SithAIInstinct* 
     rdVector3 movePos;
     if ( (pLocal->mode & (SITHAI_MODE_ACTIVE | SITHAI_MODE_ATTACKING)) != 0 )
     {
-        sithAIUtil_sub_49B640(pLocal);
+        sithAIUtil_UpdateGoalSight(pLocal);
         sithAIUtil_AIGetMovePos(pLocal, 0x100, &movePos);
     }
     else
@@ -3145,7 +3145,7 @@ int J3DAPI sithAIInstinct_SnakeMungeTestCheck(SithAIControlBlock* pLocal, rdVect
     }
 }
 
-void J3DAPI sithAIInstinct_sub_494360(SithAIControlBlock* pLocal, rdVector3* moveToPosLeft, rdVector3* moveToPosRight)
+void J3DAPI sithAIInstinct_SnakeFindMovePos(SithAIControlBlock* pLocal, rdVector3* moveToPosLeft, rdVector3* moveToPosRight)
 {
     SithThing* pThing = pLocal->pOwner;
 
@@ -3250,8 +3250,8 @@ signed int J3DAPI sithAIInstinct_SnakeFollow(SithAIControlBlock* pLocal, SithAII
     }
 
     pState->msecNextUpdate = sithTime_g_msecGameTime + 500;
-    sithAIUtil_sub_49B640(pLocal);
-    sithAIUtil_sub_49B2E0(pLocal, 0);
+    sithAIUtil_UpdateGoalSight(pLocal);
+    sithAIUtil_UpdateTargetSight(pLocal, 0);
 
     rdVector3 dirVec;
     float distance;
@@ -3379,7 +3379,7 @@ signed int J3DAPI sithAIInstinct_SnakeFollow(SithAIControlBlock* pLocal, SithAII
 
         moveGoal.z = pLocal->pOwner->pos.z;
         altPos.z = pLocal->pOwner->pos.z;
-        sithAIInstinct_sub_494360(pLocal, &moveGoal, &altPos);
+        sithAIInstinct_SnakeFindMovePos(pLocal, &moveGoal, &altPos);
         sithAIMove_AISetMovePos(pLocal, &moveGoal, 2.0f);
 
         rdVector_Copy3(&moveGoal, &pLocal->movePos);
@@ -3388,7 +3388,7 @@ signed int J3DAPI sithAIInstinct_SnakeFollow(SithAIControlBlock* pLocal, SithAII
 
         rdVector_Sub3(&dirVec, &pLocal->movePos, &pOwner->pos);
         dotRight = rdVector_Dot3(&pLocal->pOwner->orient.rvec, &dirVec);
-        sithAIInstinct_sub_494FF0(pOwner, dotRight);
+        sithAIInstinct_SnakePlaySlitherSound(pOwner, dotRight);
 
         if ( pLocal->pOwner->userblock.pQuetz )
         {
@@ -3414,7 +3414,7 @@ signed int J3DAPI sithAIInstinct_SnakeFollow(SithAIControlBlock* pLocal, SithAII
     }
 }
 
-void J3DAPI sithAIInstinct_sub_494FF0(const SithThing* pThing, float a2)
+void J3DAPI sithAIInstinct_SnakePlaySlitherSound(const SithThing* pThing, float a2)
 {
     tSoundHandle hSnd = 0;
     if ( fabsf(a2) < 0.1f )

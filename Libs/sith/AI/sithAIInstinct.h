@@ -35,10 +35,10 @@ int J3DAPI sithAIInstinct_ReturnHome(SithAIControlBlock* pLocal, SithAIInstinct*
 int J3DAPI sithAIInstinct_Flee(SithAIControlBlock* pLocal, SithAIInstinct* pInstinct, SithAIInstinctState* pState, SithAIEventType event, SithThing* pThing);
 int J3DAPI sithAIInstinct_BasicFallow(SithAIControlBlock* pLocal, SithAIInstinct* pInstinct, SithAIInstinctState* pState, SithAIEventType event, void* pObject);
 int J3DAPI sithAIInstinct_WallCrawl(SithAIControlBlock* pLocal, SithAIInstinct* pInstinct, SithAIInstinctState* pState, SithAIEventType event, SithSurface* pSurface);
-void J3DAPI sithAIInstinct_sub_494360(SithAIControlBlock* pLocal, rdVector3* moveToPosLeft, rdVector3* moveToPosRight);
+void J3DAPI sithAIInstinct_SnakeFindMovePos(SithAIControlBlock* pLocal, rdVector3* moveToPosLeft, rdVector3* moveToPosRight);
 int J3DAPI sithAIInstinct_SnakeMungeTestCheck(SithAIControlBlock* pLocal, rdVector3* pDirection, float distance, rdVector3* pOutPoint);
 signed int J3DAPI sithAIInstinct_SnakeFollow(SithAIControlBlock* pLocal, SithAIInstinct* pInstinct, SithAIInstinctState* pState, SithAIEventType event, SithThing* pThing);
-void J3DAPI sithAIInstinct_sub_494FF0(const SithThing* pThing, float a2);
+void J3DAPI sithAIInstinct_SnakePlaySlitherSound(const SithThing* pThing, float a2);
 
 // Helper hooking functions
 void sithAIInstinct_InstallHooks(void);

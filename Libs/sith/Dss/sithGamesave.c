@@ -413,7 +413,7 @@ int J3DAPI sithGamesave_SaveCurrentWorld(SithMessageStream outstream)
     sithGamesave_aNdsSaveSectionSizes[14] += sithMulti_g_message.length;
 
     // Write unknown section
-    bError = sithDSS_sub_4B3760(DPID_ALLPLAYERS, outstream);
+    bError = sithDSS_SendEndSection(DPID_ALLPLAYERS, outstream);
     if ( bError )
     {
         return bError;

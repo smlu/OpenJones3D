@@ -47,7 +47,7 @@ void rdCamera_InstallHooks(void)
     J3D_HOOKFUNC(rdCamera_SetAttenuation);
     J3D_HOOKFUNC(rdCamera_AddLight);
     J3D_HOOKFUNC(rdCamera_ClearLights);
-    J3D_HOOKFUNC(rdCamera_sub_4C60B0);
+    J3D_HOOKFUNC(rdCamera_SetOverlayDepthRange);
 }
 
 void rdCamera_ResetGlobals(void)
@@ -519,7 +519,7 @@ int J3DAPI rdCamera_ClearLights(rdCamera* pCamera)
     return 1;
 }
 
-void J3DAPI rdCamera_sub_4C60B0(bool bEnable)
+void J3DAPI rdCamera_SetOverlayDepthRange(bool bEnable)
 {
     rdCamera_dword_5E10E8 = bEnable;
 }

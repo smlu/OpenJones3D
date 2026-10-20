@@ -142,8 +142,8 @@ int J3DAPI sithDSS_ProcessSyncGameState(const SithMessage* pMsg);
 int J3DAPI sithDSS_SyncVehicleControlState(DPID idTo, unsigned int outstream);
 int J3DAPI sithDSS_ProcessVehicleControlsState(const SithMessage* pMsg);
 
-int J3DAPI sithDSS_sub_4B3760(DPID idTo, unsigned int outstream);
-int J3DAPI sithDSS_sub_4B3790(const SithMessage* pMsg);
+int J3DAPI sithDSS_SendEndSection(DPID idTo, unsigned int outstream);
+int J3DAPI sithDSS_ProcessEndSection(const SithMessage* pMsg);
 
 // Functions for de-serializing data from stream
 static inline int8_t J3DAPI sithDSS_ReadInt8(uint8_t** stream);
