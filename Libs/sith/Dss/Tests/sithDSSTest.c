@@ -406,16 +406,7 @@ SITHDSSTHINGTEST_FAMILY(PathMove, "PathMove_", "ProcessPathMove_")
 SITHDSSTHINGTEST_FAMILY(Take, "Take_", "ProcessTake_")
 SITHDSSTHINGTEST_FAMILY(CreateThing, "CreateThing_", "ProcessCreateThing_")
 SITHDSSTHINGTEST_FAMILY(DestroyThing, "DestroyThing_", "ProcessDestroyThing")
-// The original computes the predicted position and the direction in the extended precision of the x87 FPU and rounds once
-// when it stores the direction; the reconstruction rounds the predicted position to float first. The results differ in the
-// low bits of the velocity when the values are not exactly representable (README, "Known Differences").
-TEST(sithDSSThing, TestOriginalMoveToPos)
-{
-    static const char* const aKnown[] = { "MoveToPos_close_inexact", "MoveToPos_close2_inexact" };
-    unsigned numFailed = sithDSSTest_RunCases(dssv_aThingCases, (unsigned)DSSV_NUMTHINGCASES, &sithDSSTest_thingFixture, "MoveToPos_", NULL, sithDSSTest_aFailText, sizeof(sithDSSTest_aFailText));
-    sithDSSTest_ExpectKnownDifferences(numFailed, sithDSSTest_aFailText, aKnown, sizeof(aKnown) / sizeof(aKnown[0]),
-        "sithDSSThing_MoveToPos rounds the predicted position to float, the original keeps it in extended precision; see tv/sithDSS/README.md.");
-}
+SITHDSSTHINGTEST_FAMILY(MoveToPos, "MoveToPos_", NULL)
 
 // Every case of the table must be in the fixture and the other way around
 TEST(sithDSSThing, TestFixtureCoversAllCases)

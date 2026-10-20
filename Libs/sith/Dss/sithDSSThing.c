@@ -2246,15 +2246,12 @@ void J3DAPI sithDSSThing_MoveToPos(SithThing* pThing, const rdVector3* pPos, Sit
 {
     SITH_ASSERTREL(pThing && (pThing->moveType == SITH_MT_PHYSICS) && pSector && pPos);
 
-    rdVector3 predictedPos;
-    predictedPos.x = pThing->moveInfo.physics.velocity.x * 0.25f + pPos->x;
-    predictedPos.y = pThing->moveInfo.physics.velocity.y * 0.25f + pPos->y;
-    predictedPos.z = pThing->moveInfo.physics.velocity.z * 0.25f + pPos->z;
-
+    // Note: The original evaluates the predicted position minus the current position in x87 extended precision
+    //       and rounds to float once when storing the direction. Double precision reproduces that exactly.
     rdVector3 dir;
-    dir.x = predictedPos.x - pThing->pos.x;
-    dir.y = predictedPos.y - pThing->pos.y;
-    dir.z = predictedPos.z - pThing->pos.z;
+    dir.x = (float)((double)pThing->moveInfo.physics.velocity.x * 0.25 + (double)pPos->x - (double)pThing->pos.x);
+    dir.y = (float)((double)pThing->moveInfo.physics.velocity.y * 0.25 + (double)pPos->y - (double)pThing->pos.y);
+    dir.z = (float)((double)pThing->moveInfo.physics.velocity.z * 0.25 + (double)pPos->z - (double)pThing->pos.z);
 
     float dist = rdVector_Len3(&dir);
     if ( dist != 0.0f && dist < 0.5f )
