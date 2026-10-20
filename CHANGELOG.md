@@ -438,6 +438,7 @@
   - Fixed `sithOverlayMap_UpdateHints` not removing the SEEN flag from the hint value because of an operator precedence error in the mask, which made the map move on to the wrong hint once a hint had been seen. ()
   - Fixed `sithOverlayMap_DrawSector` testing the lower bound of the vertical canvas range with `>` instead of `<=`, which wrongly culled map sectors. ()
   - Fixed `sithPlayerActions_HopBack` always playing the first sound of the jump mode instead of a random one. ()
+  - Fixed `sithFX_CreateChalkMark` scaling the random chalk mark pick by the array length instead of length - 1, which could index one past the end of the chalk mark template names. ()
 
 ## v0.3.1
 ### General:
