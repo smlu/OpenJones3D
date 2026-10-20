@@ -6418,7 +6418,7 @@ void J3DAPI jonesConfig_EditControlScheme_AddAssignment(HWND hDlg, HWND hListCtr
         {
             item.mask   = LVIF_PARAM;
             item.lParam = MAKELONG(data.actionId, data.controlId);
-            ListView_GetItem(hListCtrl, &item);
+            ListView_SetItem(hListCtrl, &item); // Fixed: Set the item param, was ListView_GetItem which overwrote the new param and left the row stale (original Indy3D.exe v1.0 0x004097D0)
         }
         else
         {
