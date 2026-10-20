@@ -3946,7 +3946,7 @@ bool J3DAPI sithPlayerControls_CanStrafeMove(SithThing* pThing, int bMoveRight)
             rdVector3* apVertices = pMeshCollided->apVertices;
 
             rdVector3 worldVert;
-            rdMatrix_TransformPoint34(&worldVert, &apVertices[*pFaceCollided->aVertices], &pCollision->pThingCollided->orient);
+            rdMatrix_TransformVector34(&worldVert, &apVertices[*pFaceCollided->aVertices], &pCollision->pThingCollided->orient); // Fixed: Transform the vertex as a vector as the original, the translation is added from the thing position below (original Indy3D.exe v1.0 0x00432F60)
             rdVector_Add3Acc(&worldVert, &pCollision->pThingCollided->pos);
 
             // Calculate distance from start pos to face plane
