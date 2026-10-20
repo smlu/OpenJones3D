@@ -127,7 +127,7 @@ int J3DAPI stdfile_size(int fh)
 
 char* J3DAPI stdfile_gets(int fh, char* pBuf, int size)
 {
-    // TODO: [BUG] The result is not null-terminated when size characters are read without hitting a newline (or end of file)
+    // TODO: [BUG] The result is not null-terminated when size characters are read without hitting a newline (or end of file), or when the '\n' lands in the last slot
     for ( int i = 0; i < size; ++i )
     {
         int c = stdfile_getc(fh);

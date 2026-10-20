@@ -104,7 +104,10 @@ void Zfilio_InstallHooks(void)
 
 void Zfilio_ResetGlobals(void)
 {
-    // zfilio_pFilio lives in the executable, Smush_ResetGlobals clears it
+#ifdef J3D_LOCAL_RTI
+    zfilio_pFilio = NULL;
+#endif
+    // Otherwise zfilio_pFilio lives in the executable and Smush_ResetGlobals clears it
     zfilio_extCount = 1;
     memset((void*)zfilio_extensions, 0, sizeof(zfilio_extensions));
     zfilio_extensions[0] = ".gz";
@@ -223,7 +226,7 @@ ZfileHandle* J3DAPI zfilio_open(const char* pPath, const char* pMode)
                     pFile->pos   = 0;
 
                     // The uncompressed size is the last 4 bytes of a gz file
-                    int size = 0;
+                    int size = 0; // Fixed: initialize size (the original leaves it uninitialized when the read returns fewer than 4 bytes)
                     int fh   = zfilio_pFilio->Open(pPath, pMode);
                     zfilio_pFilio->Seek(fh, -4, 2);
                     zfilio_pFilio->Read(fh, &size, 4);
@@ -354,7 +357,7 @@ int J3DAPI zfilio_seek(ZfileHandle* pFile, int offset, int whence)
         }
     }
 
-    // TODO: [BUG] The original returns no value here (undefined) for gz files and for a closed handle; 0 is returned
+    // TODO: [BUG] Falls off the end: the original returns no value here (retail leaves pFile in eax) for gz files and for a closed handle; 0 is returned
     return 0;
 }
 

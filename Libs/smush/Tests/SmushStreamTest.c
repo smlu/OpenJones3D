@@ -272,7 +272,6 @@ static void SmushStreamTest_Reset(void)
     Frame_ResetGlobals();
     Pcplay_ResetGlobals();
     Zfilio_TestSetGz(NULL);
-    if ( zfilio_pFilio ) { zfilio_pFilio = NULL; }
 
     memset(Test_published, 0, sizeof(Test_published));
     memset(Test_subscriptions, 0, sizeof(Test_subscriptions));
