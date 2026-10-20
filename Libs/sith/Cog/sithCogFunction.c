@@ -426,7 +426,7 @@ void J3DAPI sithCogFunction_SetTimerEx(SithCog* pCog)
     params.param2 = sithCogExec_PopInt(pCog);
     params.param1 = sithCogExec_PopInt(pCog);
     params.idx = pCog->idx;
-    int msWhen = (int)(sithCogExec_PopFlex(pCog) * 1000.0f);
+    int msWhen = (int)floorf(sithCogExec_PopFlex(pCog) * 1000.0f); // Fixed: Milliseconds are floored, not truncated toward zero (original Indy3D.exe v1.0 0x00477D00)
 
     if ( msWhen >= 0 )
     {
