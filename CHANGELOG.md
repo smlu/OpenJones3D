@@ -265,6 +265,7 @@
   - Fixed the `wkernel` application GUID (`wkernel_guid`) third field to `0x11D1` as in the original, was `0x01D1`. **Network:** DirectPlay sessions created by OpenJones3D now use the original application GUID, so they are visible to and joinable by the original game, and sessions of earlier OpenJones3D builds are no longer compatible. ()
   - Fixed `Sound_Play` scanning past the end of the channel array when all sound channels are busy; a lower priority channel is now reused as in the original, or the sound is not played. ()
   - Fixed `Sound_Load` dropping the first character of the file name when the path has no directory separator (the sound was not found in the sound bank and was loaded again). ()
+  - Fixed `Sound_GetSoundIndex` matching the invalid sound handle with unused sound infos; it now returns the invalid index as the original does. ()
 
 ### Graphics:
   - Fixed an issue where active textures used in the current render frame were being removed from the cache prematurely in low VRAM situations (f37ecb7)

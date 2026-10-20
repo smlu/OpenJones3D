@@ -1510,6 +1510,11 @@ tSoundHandle J3DAPI Sound_GetSoundHandle(uint32_t idx)
 
 size_t J3DAPI Sound_GetSoundIndex(tSoundHandle hSnd)
 {
+    if ( hSnd == SOUND_INVALIDHANDLE ) // Fixed: Invalid handle must not match unused sound infos (original Indy3D.exe v1.0 0x004DBB50)
+    {
+        return SOUND_INVALISOUNDINFOINDEX;
+    }
+
     for ( size_t bankNum = 0; bankNum < SOUNDBANK_NUMBANKS; ++bankNum )
     {
         size_t numInfos = soundbank_aNumSounds[bankNum];
