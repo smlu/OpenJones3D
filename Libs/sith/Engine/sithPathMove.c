@@ -350,7 +350,7 @@ int J3DAPI sithPathMove_ParseArg(const StdConffileArg* pArg, SithThing* pThing, 
         }
         case SITHTHING_ARG_NUMFRAMES:
         {
-            size_t sizeFrames;
+            int sizeFrames;
             if ( pThing->moveInfo.pathMovement.sizeFrames || (sizeFrames = atoi(pArg->argValue), sizeFrames < 1) )
             {
                 SITHLOG_ERROR("Bad argument %s=%s line %d.\n", pArg->argName, pArg->argValue, stdConffile_GetLineNumber());
@@ -359,14 +359,14 @@ int J3DAPI sithPathMove_ParseArg(const StdConffileArg* pArg, SithThing* pThing, 
 
             SITH_ASSERTREL(pThing->moveInfo.pathMovement.aFrames == NULL);
 
-            pThing->moveInfo.pathMovement.aFrames = (SithPathFrame*)STDMALLOC(sizeof(SithPathFrame) * sizeFrames);
+            pThing->moveInfo.pathMovement.aFrames = (SithPathFrame*)STDMALLOC(sizeof(SithPathFrame) * (size_t)sizeFrames);
             if ( !pThing->moveInfo.pathMovement.aFrames )
             {
                 SITHLOG_ERROR("Memory allocation error, line %d.\n", stdConffile_GetLineNumber());
                 return 0;
             }
 
-            memset(pThing->moveInfo.pathMovement.aFrames, 0, sizeof(SithPathFrame) * sizeFrames);
+            memset(pThing->moveInfo.pathMovement.aFrames, 0, sizeof(SithPathFrame) * (size_t)sizeFrames);
             pThing->moveInfo.pathMovement.sizeFrames = sizeFrames;
             pThing->moveInfo.pathMovement.numFrames  = 0;
             return 1;
