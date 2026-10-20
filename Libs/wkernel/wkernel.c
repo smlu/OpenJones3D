@@ -9,7 +9,8 @@
 
 
 #define IDI_APPICON 108
-DEFINE_GUID(wkernel_guid, 0x82CE4DA0, 0x9CBF, 0x1D1, 0x90, 0x85, 0x00, 0x60, 0x97, 0x76, 0x0EA, 0x02);
+// Fixed: The third field was 0x1D1, the original application GUID is {82CE4DA0-9CBF-11D1-9085-00609776EA02} (original Indy3D.exe v1.0 0x005099A8)
+DEFINE_GUID(wkernel_guid, 0x82CE4DA0, 0x9CBF, 0x11D1, 0x90, 0x85, 0x00, 0x60, 0x97, 0x76, 0x0EA, 0x02);
 static const TCHAR wkernel_aClassName[] = "wKernelJones3D";
 
 static HWND wkernel_hwnd       = 0;

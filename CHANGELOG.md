@@ -262,6 +262,7 @@
   - Fixed `sithCogExec_PopInt` converting float values by truncating toward zero instead of flooring them, so negative non-integer COG arguments (e.g. -1.5) became -1 instead of -2. ()
   - Fixed `sithCogParse_GetNextNode` growing the syntax tree by only 8 bytes per node instead of the node size, which corrupted the heap for scripts with more than about 8000 nodes. ()
   - Fixed multiplayer messages being sent and received with a 2 byte header instead of the original 4 bytes (`sithMessage_NetWrite`, `sithMessage_ReceiveMessage`), which dropped the last 2 bytes and truncated the largest messages (more than 3070 bytes of payload). **Network protocol change:** this build no longer exchanges messages correctly with earlier OpenJones3D builds, only with the original game or builds including this fix. ()
+  - Fixed the `wkernel` application GUID (`wkernel_guid`) third field to `0x11D1` as in the original, was `0x01D1`. **Network:** DirectPlay sessions created by OpenJones3D now use the original application GUID, so they are visible to and joinable by the original game, and sessions of earlier OpenJones3D builds are no longer compatible. ()
 
 ### Graphics:
   - Fixed an issue where active textures used in the current render frame were being removed from the cache prematurely in low VRAM situations (f37ecb7)
