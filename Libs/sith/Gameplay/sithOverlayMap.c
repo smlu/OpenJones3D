@@ -659,7 +659,7 @@ int J3DAPI sithOverlayMap_DrawSector(SithSector* pSector)
 
         if ( (sithCamera_g_pCurCamera->rdCamera.pCanvas->rect.left - radius <= x1
             && sithCamera_g_pCurCamera->rdCamera.pCanvas->rect.right + radius >= x1)
-            || (sithCamera_g_pCurCamera->rdCamera.pCanvas->rect.top - radius > y1
+            || (sithCamera_g_pCurCamera->rdCamera.pCanvas->rect.top - radius <= y1 // Fixed: Operator was > instead of <=, the vertical range check culled sectors incorrectly (original Indy3D.exe v1.0 0x00429120)
                 && sithCamera_g_pCurCamera->rdCamera.pCanvas->rect.bottom + radius >= y1) )
         {
             bSectorDrawn = 1;
