@@ -11,6 +11,9 @@
 #include <std/General/stdPlatform.h>
 #include <std/General/stdUtil.h>
 
+#include <stdarg.h>
+#include <stdio.h>
+
 #define SOUNDDRIVER_FARVOLUMETHRESHOLD 0.01f
 
 static float SoundDriver_maxVolume = 1.0f;
@@ -141,18 +144,16 @@ static void SoundDriver_LogError(const char* pFormat, ...)
 {
     if ( SoundDriver_pfLogError )
     {
+        // Fixed: Format the message into a buffer, a va_list was passed as a variadic argument of the log function (undefined output or crash)
+        char aMessage[1024];
+
         va_list args;
         va_start(args, pFormat);
-
-        // Create a new va_list for the function call
-        va_list argsCopy;
-        va_copy(argsCopy, args);
-
-        // Forward the variable arguments to SoundDriver_pfLogError
-        SoundDriver_pfLogError(pFormat, argsCopy);
-
-        va_end(argsCopy);
+        vsnprintf(aMessage, sizeof(aMessage), pFormat, args);
         va_end(args);
+
+        aMessage[sizeof(aMessage) - 1] = '\0';
+        SoundDriver_pfLogError("%s", aMessage);
     }
 }
 

@@ -267,6 +267,7 @@
   - Fixed `Sound_Load` dropping the first character of the file name when the path has no directory separator (the sound was not found in the sound bank and was loaded again). ()
   - Fixed `Sound_GetSoundIndex` matching the invalid sound handle with unused sound infos; it now returns the invalid index as the original does. ()
   - Fixed `Sound_FadeVolume` and `Sound_FadePitch` comparing the remaining fade time as unsigned (`SoundFade` start and end times are now signed as in the original), which reused expired fade slots incorrectly and produced a huge fade fraction when the sound clock was behind a fade start. ()
+  - Fixed `SoundDriver_LogError` passing a `va_list` as a variadic argument to the host log function (garbage output or crash when DirectSound errors are logged); the message is now formatted into a buffer first. ()
 
 ### Graphics:
   - Fixed an issue where active textures used in the current render frame were being removed from the cache prematurely in low VRAM situations (f37ecb7)
