@@ -1340,7 +1340,7 @@ int J3DAPI sithDSS_SyncGameState(DPID idTo, unsigned int outstream)
 
     SITHDSS_PUSHINT32(sithFX_g_numChalkMarks);
     SITHDSS_PUSHINT32(sithFX_g_lastChalkMarkNum);
-    for ( int n = 0; n < (int)sithFX_g_numChalkMarks; ++n )
+    for ( int n = 0; n < sithFX_g_numChalkMarks; ++n )
     {
         SITHDSS_PUSHINT32(sithThing_GetThingIndex(sithFX_g_aChalkMarks[n]));
     }
@@ -1442,7 +1442,7 @@ int J3DAPI sithDSS_ProcessSyncGameState(const SithMessage* pMsg)
     sithFX_g_lastChalkMarkNum = SITHDSS_POPINT32();
 
     // TODO: [BUG] Number of chalk marks read from the stream is not checked against the size of aChalkMarks
-    for ( int i = 0; i < (int)sithFX_g_numChalkMarks; ++i )
+    for ( int i = 0; i < sithFX_g_numChalkMarks; ++i )
     {
         thingIdx = SITHDSS_POPINT32();
         if ( thingIdx >= 0 && thingIdx < (int)sithWorld_g_pCurrentWorld->numThings )

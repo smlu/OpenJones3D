@@ -336,7 +336,7 @@ void sithOverlayMap_Draw(void)
         sithOverlayMap_DrawSectors(sithOverlayMap_pLocalPlayer->pInSector);
 
         // Draw map hints
-        for ( size_t i = 0; i < sithFX_g_numChalkMarks; ++i )
+        for ( int i = 0; i < sithFX_g_numChalkMarks; ++i )
         {
             sithOverlayMap_DrawThingIcon(
                 sithFX_g_aChalkMarks[i],
