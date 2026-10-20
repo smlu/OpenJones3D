@@ -713,7 +713,7 @@ tSoundChannelHandle J3DAPI sithSoundClass_PlayPlayerVoiceModeRandom(SithThing* p
         entryNum = pModeEntry->numEntries - 1;
     }
 
-    if ( entryNum == sithSoundClass_lastVoiceEntryNum && ++entryNum + 1 >= pModeEntry->numEntries )
+    if ( entryNum == sithSoundClass_lastVoiceEntryNum && ++entryNum >= pModeEntry->numEntries ) // Fixed: Removed extra +1 in the wrap check, the last entry could never be selected by the repeat avoidance (original Indy3D.exe v1.0 0x004A1C60)
     {
         entryNum = 0;
     }
