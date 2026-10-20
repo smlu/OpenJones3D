@@ -6266,30 +6266,27 @@ void J3DAPI jonesConfig_EditControlScheme_EditAssignment(HWND hDlg, HWND hListCt
     {
         InvalidateRect(hDlg, 0, 1);
 
-        if ( JONESCONTROL_ACTION_GETNUMBINDS(pScheme->aActions[assignkeyData.actionId]) )
+        itemIdx = ListView_GetNextItem(hListCtrl, -1, LVNI_SELECTED); // TODO: why do another call, and not use value of itemIdx returned by above func?
+        ListView_SetItemText(hListCtrl, itemIdx, 1, assignkeyData.aControlName);
+
+        LVITEM item;
+        item.mask     = LVIF_PARAM;
+        item.iItem    = itemIdx;
+        item.iSubItem = 0;
+        item.lParam   = assignkeyData.actionId | (assignkeyData.controlId << 16);
+        ListView_SetItem(hListCtrl, &item);
+
+        // Assign new key biding
+        pScheme->aActions[assignkeyData.actionId][bindIdx + 1] = assignkeyData.controlId; // Note, bindIdx must be incremented as it starts with 0, and index 0 points to num binds state
+
+        // Update num key binds only if 0
+        if ( assignkeyData.listID == 1005 && !JONESCONTROL_ACTION_GETNUMKEYBOARDBINDS(pScheme->aActions[assignkeyData.actionId]) )
         {
-            itemIdx = ListView_GetNextItem(hListCtrl, -1, LVNI_SELECTED); // TODO: why do another call, and not use value of itemIdx returned by above func?
-            ListView_SetItemText(hListCtrl, itemIdx, 1, assignkeyData.aControlName);
-
-            LVITEM item;
-            item.mask     = LVIF_PARAM;
-            item.iItem    = itemIdx;
-            item.iSubItem = 0;
-            item.lParam   = assignkeyData.actionId | (assignkeyData.controlId << 16);
-            ListView_SetItem(hListCtrl, &item);
-
-            // Assign new key biding
-            pScheme->aActions[assignkeyData.actionId][bindIdx + 1] = assignkeyData.controlId; // Note, bindIdx must be incremented as it starts with 0, and index 0 points to num binds state
-
-            // Update num key binds only if 0
-            if ( assignkeyData.listID == 1005 && !JONESCONTROL_ACTION_GETNUMKEYBOARDBINDS(pScheme->aActions[assignkeyData.actionId]) )
-            {
-                JONESCONTROL_ACTION_UPDATENUMBINDINGS_KEYBOARD(pScheme->aActions[assignkeyData.actionId], +1);
-            }
-            else if ( assignkeyData.listID == 1006 && !JONESCONTROL_ACTION_GETNUMCONTROLLERBINDS(pScheme->aActions[assignkeyData.actionId]) )
-            {
-                JONESCONTROL_ACTION_UPDATENUMBINDINGS_CONTROLLER(pScheme->aActions[assignkeyData.actionId], +1);
-            }
+            JONESCONTROL_ACTION_UPDATENUMBINDINGS_KEYBOARD(pScheme->aActions[assignkeyData.actionId], +1);
+        }
+        else if ( assignkeyData.listID == 1006 && !JONESCONTROL_ACTION_GETNUMCONTROLLERBINDS(pScheme->aActions[assignkeyData.actionId]) )
+        {
+            JONESCONTROL_ACTION_UPDATENUMBINDINGS_CONTROLLER(pScheme->aActions[assignkeyData.actionId], +1);
         }
     }
 }
