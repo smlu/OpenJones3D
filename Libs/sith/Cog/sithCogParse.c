@@ -109,7 +109,8 @@ int J3DAPI sithCogParse_Load(const char* pFilename, SithCogScript* pScript, int 
     // Parse optional flags
     if ( streq(stdConffile_g_entry.aArgs[0].argName, "flags") ) // TODO: case-insensitive cmp?
     {
-        if ( sscanf_s(stdConffile_g_entry.aArgs[0].argValue, "%x", &pScript->flags) != 1 || !stdConffile_ReadArgs() )
+        sscanf_s(stdConffile_g_entry.aArgs[0].argValue, "%x", &pScript->flags);
+        if ( !stdConffile_ReadArgs() )
         {
             goto eof_error;
         }
