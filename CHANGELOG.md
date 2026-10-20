@@ -115,6 +115,7 @@
     The loader validates message counts, decimal fields, quoted values, duplicate keys, and the trailing `END` marker, and releases partially loaded data after parsing or allocation failures.
   - Added implementations of `AudioLib_GenerateLipSyncBlock` and `AudioLib_GetMouthPosition`, preserving the original lip-sync timeline and cross-sample decoding behavior. (0facac9)
   - Added implementations of `AudioLib_ParseWaveFileHeader`, `AudioLib_Compress`, `AudioLib_Uncompress`, `AudioLib_ResetCompressor`, `AudioLib_CompressBlock`, `AudioLib_UncompressBlock`, and `AudioLib_WVSMUncompressBlock`, completing `AudioLib`; the codec tables are now owned by the DLL, and the unit tests compare against vectors captured from the original executable.
+  - Fixed `AudioLib_WVSMCompressBlock` writing past the end of its sample bit length histograms for the sample -32768 and, with the earlier bounds fix, counting the bit lengths from 0 instead of 1, which selected different shifts than the original and produced different (larger) compressed WVSM data; it now matches the original output.
   - Added implementations of the remaining `sithAIMove` functions (turning, movement, cliff/water checks, head tracking and the Quetz and Marduk tail animations), completing `sithAIMove`.
   - Added implementation of `sithThing_UpdateQuetzUserBlock`, preserving the original Quetz tail follow behavior.
   - Added capacity-aware lip-sync generation helpers to calculate worst-case output sizes and validate input/output buffer capacities. (0facac9)
