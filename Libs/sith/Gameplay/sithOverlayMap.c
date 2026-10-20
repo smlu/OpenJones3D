@@ -422,7 +422,7 @@ int sithOverlayMap_UpdateHints(void)
             if ( (hintflags & SITH_HINT_SOLVED) == 0 )
             {
                 int32_t hintval = (int32_t)sithWorld_g_pCurrentWorld->aThings[i].userval;
-                hintval &= ~SITH_HINT_SOLVED | SITH_HINT_SEEN; // Remove flags to extract hint value
+                hintval &= ~(SITH_HINT_SOLVED | SITH_HINT_SEEN); // Fixed: Parenthesized the mask to remove both flags to extract the hint value, SEEN was never removed (original Indy3D.exe v1.0 0x00428F20)
                 if ( (size_t)hintval < (size_t)maxHintVal ) // Note: Don't remove casting
                 {
                     maxHintVal = hintval;
