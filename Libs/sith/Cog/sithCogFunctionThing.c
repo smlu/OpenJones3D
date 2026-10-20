@@ -544,7 +544,7 @@ void J3DAPI sithCogFunctionThing_SetMoveMode(SithCog* pCog)
         return;
     }
 
-    if ( (size_t)newMode >= SITH_PUPPET_NUMMOVEMODES ) //107 )     // ?? shouldnt be less than SITH_PUPPET_NUMMOVEMODES which is 3 => newMode > -1 && newMode <  SITH_PUPPET_NUMMOVEMODES
+    if ( (size_t)newMode >= SITH_PUPPET_NUMMOVEMODES ) // Altered: Reject modes outside of the valid range of SITH_PUPPET_NUMMOVEMODES, the original accepts modes 0 to 107 (original Indy3D.exe v1.0 0x0046DCB0), which then fail the release assert in sithPuppet_SetMoveMode
     {
         STDLOG_ERROR("Cog %s: Bad move mode for thing %s in SetMoveMode()\n", pCog->aName, pThing->aName); // Fixed: Updated format to show cog name
         sithCogExec_PushInt(pCog, -1);
