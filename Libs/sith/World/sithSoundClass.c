@@ -713,7 +713,7 @@ tSoundChannelHandle J3DAPI sithSoundClass_PlayPlayerVoiceModeRandom(SithThing* p
         entryNum = pModeEntry->numEntries - 1;
     }
 
-    if ( entryNum == sithSoundClass_lastVoiceEntryNum && ++entryNum + 1 >= pModeEntry->numEntries )
+    if ( entryNum == sithSoundClass_lastVoiceEntryNum && ++entryNum >= pModeEntry->numEntries )
     {
         entryNum = 0;
     }
