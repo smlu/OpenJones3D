@@ -380,6 +380,25 @@ TEST(stdControl, TestAxisRegistrationAndFlags)
     TEST_ASSERT_EQUAL_INT(0, stdControl_ReadAxisRaw(axis));
 }
 
+// Regression: the deadzone threshold is the truncated product of the scale and the axis range (it was rounded)
+TEST(stdControl, TestAxisDeadzoneThresholdTruncated)
+{
+    StdControlAxis axis;
+    size_t aid = STDCONTROL_GET_JOYSTICK_AXIS_X(0u);
+
+    stdControl_RegisterAxis(aid, -100, 100, 0.159f); // 100 * 0.159 = 15.9
+    TEST_ASSERT_TRUE(stdControl_TestGetAxis(aid, &axis));
+    TEST_ASSERT_EQUAL_INT(15, axis.deadzoneThreshold);
+
+    stdControl_RegisterAxis(aid, -100, 100, 0.0f);
+    TEST_ASSERT_TRUE(stdControl_TestGetAxis(aid, &axis));
+    TEST_ASSERT_EQUAL_INT(0, axis.deadzoneThreshold);
+
+    stdControl_RegisterAxis(aid, -1000, 1000, 0.2999f); // 299.9
+    TEST_ASSERT_TRUE(stdControl_TestGetAxis(aid, &axis));
+    TEST_ASSERT_EQUAL_INT(299, axis.deadzoneThreshold);
+}
+
 #ifdef J3D_RUNTIME_GUARDS
 TEST(stdControl, TestRuntimeGuardsRejectOutOfRangeInputs)
 {
@@ -781,6 +800,7 @@ TEST_GROUP_RUNNER(stdControl)
     RUN_TEST_CASE(stdControl, TestNoDeviceLifecycleAndReadDefaults);
     RUN_TEST_CASE(stdControl, TestMouseAndSensitivityState);
     RUN_TEST_CASE(stdControl, TestAxisRegistrationAndFlags);
+    RUN_TEST_CASE(stdControl, TestAxisDeadzoneThresholdTruncated);
 #ifdef J3D_RUNTIME_GUARDS
     RUN_TEST_CASE(stdControl, TestRuntimeGuardsRejectOutOfRangeInputs);
 #endif
