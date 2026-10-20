@@ -41,17 +41,20 @@ static int mock_Publish(const char* pName, void* pInterface)
 
 static void mock_Unpublish(const char* pName)
 {
+    J3D_UNUSED(pName);
     mock_numUnpublished++;
 }
 
 static void* mock_Alloc(int size, const char* pFile, int line)
 {
+    J3D_UNUSED(pFile); J3D_UNUSED(line);
     mock_numAllocs++;
     return calloc(1, size);
 }
 
 static void mock_Free(void* pBlock, const char* pFile, int line)
 {
+    J3D_UNUSED(pFile); J3D_UNUSED(line);
     mock_numFrees++;
     free(pBlock);
 }
@@ -62,6 +65,7 @@ static int mock_numPlays;
 static uint8_t mock_lastPacket[256];
 static void mock_Play(uint8_t* pData, int id, int volume, int pan, int priority)
 {
+    J3D_UNUSED(id); J3D_UNUSED(volume); J3D_UNUSED(pan); J3D_UNUSED(priority);
     mock_numPlays++;
     memcpy(mock_lastPacket, pData, sizeof(mock_lastPacket));
 }
@@ -70,6 +74,7 @@ static SoundInterface mock_sound;
 
 static int mock_CreateBitmap(LecBitmapHeader** ppBitmap, int width, int height, int type)
 {
+    J3D_UNUSED(type);
     LecBitmapHeader* pBitmap = calloc(1, sizeof(LecBitmapHeader));
     pBitmap->pPixels   = calloc(1, (size_t)width * height * 2 + 64);
     pBitmap->width     = width;
@@ -92,6 +97,7 @@ static BitmapInterface mock_bitmap = { mock_CreateBitmap, NULL, mock_DestroyBitm
 
 static void* mock_Subscribe(const char* pName, void* pParam)
 {
+    J3D_UNUSED(pParam);
     if ( strcmp(pName, "SOUND") == 0 ) {
         return &mock_sound;
     }
@@ -107,10 +113,11 @@ static void* mock_Subscribe(const char* pName, void* pParam)
     return NULL;
 }
 
-static void mock_Unsubscribe(void* pInterface) {}
+static void mock_Unsubscribe(void* pInterface) { J3D_UNUSED(pInterface); }
 
 static void mock_ReportError(const char* pFormat, ...)
 {
+    J3D_UNUSED(pFormat);
     mock_numErrors++;
 }
 
@@ -334,9 +341,9 @@ TEST(SmushCodec, DecodeConvertTableDispatch)
     src.pixelSize = 2;
     src.bpp       = 16;
     src.colorMode = 2;
-    const uint16_t aSrc16[2] = { 1, 3 };
+    uint16_t aSrc16[2] = { 1, 3 };
     memset(aDst, 0, sizeof(aDst));
-    TEST_ASSERT_EQUAL_INT(0, decode_Convert((const uint8_t*)aSrc16, &src, 2, NULL, aDst, &dst, aTable));
+    TEST_ASSERT_EQUAL_INT(0, decode_Convert((uint8_t*)aSrc16, &src, 2, NULL, aDst, &dst, aTable));
     TEST_ASSERT_EQUAL_HEX16(0x1111, ((uint16_t*)aDst)[0]);
     TEST_ASSERT_EQUAL_HEX16(0x1333, ((uint16_t*)aDst)[1]);
 }
@@ -428,33 +435,33 @@ TEST(SmushCodec, DecodeBeginGeneric)
     bitmap.format.greenPosShiftRight = 3;
     bitmap.format.bluePosShiftRight = 3;
 
-    static const uint8_t aSrc[] = { 0xFF, 0xFF, 0xFF, 0xFF, 0, 0, 0, 0 };
+    uint8_t aSrc[] = { 0xFF, 0xFF, 0xFF, 0xFF, 0, 0, 0, 0 };
     uint16_t aDst[2] = { 0 };
-    TEST_ASSERT_EQUAL_INT(0, decode_Begin((uint8_t*)aDst, &bitmap, 2, NULL, (uint8_t*)aSrc));
-    TEST_ASSERT_EQUAL_HEX16((0x1F << 12) | (0x1F << 7) | (0x1F << 2), aDst[0]);
+    TEST_ASSERT_EQUAL_INT(0, decode_Begin((uint8_t*)aDst, &bitmap, 2, NULL, aSrc));
+    TEST_ASSERT_EQUAL_HEX16(0xFFFC, aDst[0]); // (0x1F << 12) | (0x1F << 7) | (0x1F << 2), truncated to 16 bits
     TEST_ASSERT_EQUAL_HEX16(0, aDst[1]);
 
     bitmap.pixelSize = 4;
     uint32_t aDst4[2] = { 0 };
-    TEST_ASSERT_EQUAL_INT(0, decode_Begin((uint8_t*)aDst4, &bitmap, 2, NULL, (uint8_t*)aSrc));
+    TEST_ASSERT_EQUAL_INT(0, decode_Begin((uint8_t*)aDst4, &bitmap, 2, NULL, aSrc));
     TEST_ASSERT_EQUAL_HEX32((0x1Fu << 12) | (0x1Fu << 7) | (0x1Fu << 2), aDst4[0]);
 
     bitmap.pixelSize = 3;
     uint8_t aDst3[6] = { 0 };
-    TEST_ASSERT_EQUAL_INT(0, decode_Begin(aDst3, &bitmap, 2, NULL, (uint8_t*)aSrc));
-    TEST_ASSERT_EQUAL_HEX8(((0x1F << 12) | (0x1F << 7) | (0x1F << 2)) & 0xFF, aDst3[0]);
+    TEST_ASSERT_EQUAL_INT(0, decode_Begin(aDst3, &bitmap, 2, NULL, aSrc));
+    TEST_ASSERT_EQUAL_HEX8(0xFC, aDst3[0]);
     TEST_ASSERT_EQUAL_HEX8(0, aDst3[3]);
 
     bitmap.pixelSize = 6;
-    TEST_ASSERT_EQUAL_INT(-1, decode_Begin(aDst3, &bitmap, 2, NULL, (uint8_t*)aSrc));
+    TEST_ASSERT_EQUAL_INT(-1, decode_Begin(aDst3, &bitmap, 2, NULL, aSrc));
     bitmap.colorMode = 7;
-    TEST_ASSERT_EQUAL_INT(-1, decode_Begin(aDst3, &bitmap, 2, NULL, (uint8_t*)aSrc));
+    TEST_ASSERT_EQUAL_INT(-1, decode_Begin(aDst3, &bitmap, 2, NULL, aSrc));
 }
 
 TEST(SmushCodec, DecodeBeginFastPaths)
 {
     LecBitmapHeader bitmap = { 0 };
-    static const uint8_t aSrc[8] = { 0xFF, 0x00, 0x00, 0xFF, 0x00, 0x00, 0xFF, 0xFF }; // RGBA: red, blue
+    uint8_t aSrc[8] = { 0xFF, 0x00, 0x00, 0xFF, 0x00, 0x00, 0xFF, 0xFF }; // RGBA: red, blue
     uint16_t aDst[2];
     bitmap.colorMode = 1;
     bitmap.pixelSize = 2;
@@ -529,6 +536,7 @@ static int blit_count;
 static LecBitmapHeader* blit_pSrc;
 static int blitTest_Callback(LecBitmapHeader* pDst, MixerRect* pClip, int x, int y, LecBitmapHeader* pSrc, void* pPalette, void* pTable)
 {
+    J3D_UNUSED(pDst); J3D_UNUSED(pClip); J3D_UNUSED(x); J3D_UNUSED(y); J3D_UNUSED(pPalette); J3D_UNUSED(pTable);
     blit_count++;
     blit_pSrc = pSrc;
     return 42;

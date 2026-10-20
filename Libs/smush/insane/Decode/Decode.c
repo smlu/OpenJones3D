@@ -53,7 +53,7 @@ void decode_RleEnd(void)
 
 uint8_t decode_RleByte(void)
 {
-    uint8_t c;
+    uint8_t c = 0; // Fixed: initialize c (the original returns an undefined value for an invalid state)
 
     if ( decode_state == 2 )
     {
@@ -385,6 +385,7 @@ int J3DAPI decode_ToRGBA(uint8_t* pSrc, LecBitmapHeader* pBitmap, int n, void* p
 
 int J3DAPI decode_Begin(uint8_t* pDst, LecBitmapHeader* pBitmap, int n, void* pPalette, uint8_t* pSrc)
 {
+    J3D_UNUSED(pPalette);
     if ( pBitmap->colorMode == 1 && pBitmap->pixelSize == 2 )
     {
         if ( pBitmap->format.redPosShift == 10 && pBitmap->format.greenPosShift == 5 && pBitmap->format.bluePosShift == 0 )
