@@ -1207,7 +1207,7 @@ float J3DAPI sithCollision_SearchForThingCollisions(const SithSector* pSector, S
 
 void J3DAPI sithCollision_SearchForSurfaceCollisions(const SithSector* pSector, const rdVector3* startPos, const rdVector3* moveNorm, float moveDist, float radius, int colflags)
 {
-    float hitDist;
+    float hitDist = 0.0f; // Added: Init, the original passes the uninitialized value to sithIntersect_CheckSphereHit, which adds the radius to it for colflags 0x400
     SithSurfaceAdjoin* pAdjoin;
     SithSurface* pCurSurf;
 

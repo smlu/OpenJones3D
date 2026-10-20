@@ -275,6 +275,7 @@
   - Fixed `stdControl_RegisterAxis` rounding the axis deadzone threshold instead of truncating it as the original does (DirectX 6 and DirectX 9). ()
   - Fixed `SITH_RAND` scaling `rand()` by the double constant `1.0 / RAND_MAX` instead of the float constant of the original, which changed the last bits of the random values and returned exactly 1.0 for `rand() == RAND_MAX` where the original stays below 1.0 at double/extended precision. ()
   - Fixed `sithGamesave_SaveFile` writing "Oct 28 1999" into the save game header date; the original writes its build date "Oct 29 1999". ()
+  - Fixed `sithIntersect_CheckSphereHit` accepting a sphere moving away from the plane when the sphere is touching it and zeroing the hit distance before adding the radius for a sphere inside the plane distance with the collision flag 0x400. ()
 
 ### Graphics:
   - Fixed an issue where active textures used in the current render frame were being removed from the cache prematurely in low VRAM situations (f37ecb7)
