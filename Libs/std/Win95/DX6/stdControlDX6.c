@@ -1178,8 +1178,8 @@ static void stdControl_ApplyMouseAxisState(const DIMOUSESTATE* pState)
     stdControl_aAxisStates[STDCONTROL_AID_MOUSE_Z] = pState->lZ;
     if ( stdControl_readDeltaTime < 25 )
     {
-        stdControl_aAxisStates[STDCONTROL_AID_MOUSE_X] = (stdControl_mousePos.x + pState->lX) / 2;
-        stdControl_aAxisStates[STDCONTROL_AID_MOUSE_Y] = (stdControl_mousePos.y + pState->lY) / 2;
+        stdControl_aAxisStates[STDCONTROL_AID_MOUSE_X] = (stdControl_mousePos.x + pState->lX) >> 1;
+        stdControl_aAxisStates[STDCONTROL_AID_MOUSE_Y] = (stdControl_mousePos.y + pState->lY) >> 1;
     }
 
     stdControl_mousePos.x = pState->lX;

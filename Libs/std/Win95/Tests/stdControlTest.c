@@ -629,6 +629,41 @@ TEST(stdControl, TestMouseStateTranslationAndRanges)
     TEST_ASSERT_EQUAL_INT(0, stdControl_TestGetAxisState(STDCONTROL_MAX_AXES));
 }
 
+// Regression: the mouse smoothing averages with the previous read using an arithmetic shift (floor), division truncated negative sums toward zero
+TEST(stdControl, TestMouseSmoothingFloorsNegativeValues)
+{
+    DIMOUSESTATE state;
+
+    stdControl_RegisterAxis(STDCONTROL_AID_MOUSE_X, -100, 100, 0.0f);
+    stdControl_RegisterAxis(STDCONTROL_AID_MOUSE_Y, -100, 100, 0.0f);
+    TEST_ASSERT_EQUAL_INT(1, stdControl_EnableAxis(STDCONTROL_AID_MOUSE_X));
+    TEST_ASSERT_EQUAL_INT(1, stdControl_EnableAxis(STDCONTROL_AID_MOUSE_Y));
+    stdControl_TestSetControlsActive(true);
+
+    // Frame time below 25 msec enables the smoothing, the previous mouse position is (0, 0)
+    stdControl_TestBeginRead(110u, 100u);
+    STD_ZEROMEM(&state, sizeof(state));
+    state.lX = -1;
+    state.lY = 1;
+    stdControl_TestApplyMouseState(&state, false);
+    TEST_ASSERT_EQUAL_INT(-1, stdControl_TestGetAxisState(STDCONTROL_AID_MOUSE_X)); // floor(-1 / 2)
+    TEST_ASSERT_EQUAL_INT(0, stdControl_TestGetAxisState(STDCONTROL_AID_MOUSE_Y));  // floor(1 / 2)
+
+    // Previous position is now (-1, 1)
+    state.lX = -4;
+    state.lY = -4;
+    stdControl_TestApplyMouseState(&state, false);
+    TEST_ASSERT_EQUAL_INT(-3, stdControl_TestGetAxisState(STDCONTROL_AID_MOUSE_X)); // floor((-1 + -4) / 2)
+    TEST_ASSERT_EQUAL_INT(-2, stdControl_TestGetAxisState(STDCONTROL_AID_MOUSE_Y)); // floor((1 + -4) / 2)
+
+    // Previous position is now (-4, -4)
+    state.lX = -3;
+    state.lY = 0;
+    stdControl_TestApplyMouseState(&state, false);
+    TEST_ASSERT_EQUAL_INT(-4, stdControl_TestGetAxisState(STDCONTROL_AID_MOUSE_X)); // floor((-4 + -3) / 2)
+    TEST_ASSERT_EQUAL_INT(-2, stdControl_TestGetAxisState(STDCONTROL_AID_MOUSE_Y)); // (-4 + 0) / 2
+}
+
 TEST(stdControl, TestStatusAndEmptyJoystickState)
 {
     TEST_ASSERT_EQUAL_STRING("DI_OK", stdControl_DIGetStatus(DI_OK));
@@ -739,6 +774,7 @@ TEST_GROUP_RUNNER(stdControl)
     RUN_TEST_CASE(stdControl, TestRuntimeGuardsRejectOutOfRangeInputs);
 #endif
     RUN_TEST_CASE(stdControl, TestMouseAxisRegistrationAndSensitivityHelpers);
+    RUN_TEST_CASE(stdControl, TestMouseSmoothingFloorsNegativeValues);
     RUN_TEST_CASE(stdControl, TestReadTimingAndFlaggedAxes);
     RUN_TEST_CASE(stdControl, TestKeyboardStateTransitions);
     RUN_TEST_CASE(stdControl, TestDirectInputJoystickStateTranslation);
