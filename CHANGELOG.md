@@ -281,6 +281,7 @@
   - Fixed `sithPathMove_UpdateRotate` clamping a NaN rotation delta of a rotating path movement to 1.0 instead of leaving it like the original. ()
   - Fixed `sithEvent_Process` advancing the event queue only after calling the task of the processed event; a COG timer handler killing its own timer (`KillTimerEx`) freed the processed event twice and lost the rest of the queue. ()
   - Fixed `sithCogParse_Load` rejecting a COG script whose `flags` value cannot be converted (reported as "Unexpected EOF"); the original ignores the conversion result and loads the script with zero flags. ()
+  - Fixed `sithMessage_SendMessage` not writing a message to the file stream when the stream mask includes both the network and the file stream (not reached by the stock code). ()
 
 ### Graphics:
   - Fixed an issue where active textures used in the current render frame were being removed from the cache prematurely in low VRAM situations (f37ecb7)
