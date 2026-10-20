@@ -191,6 +191,7 @@ Examples:
 - `Libs/sith/World/Tests`
 - `Libs/sith/Cog/Tests`
 - `Libs/sound/Tests`
+- `Libs/smush/Tests`
 - `Jones3D/Main/Tests`
 
 Prefer the narrowest source-area owner that makes sense. For example, tests for `stdFnames` belong under `Libs/std/General/Tests`, while tests for voice playback state belong under `Libs/sith/World/Tests`.
@@ -229,6 +230,7 @@ startup and a stable module-level CTest entry.
 | `stdSystemTests` | `std.System` | Win95 windows and DirectX devices | Available |
 | `stdDisruptiveSystemTests` | `std.DisruptiveSystem` | Opt-in fullscreen/device changes | Available |
 | `soundTests` | `sound` | Deterministic lip-sync generation and lookup, AudioLib codec and header vectors | Available |
+| `smushTests` | `smush` | INSANE movie player: core, bitmap, codec, sound, stream areas and original-engine assembly vectors | Available |
 | `sithTests` | `sith` | World thing/template I/O, voice lip-sync and track/jeep physics helpers | Available |
 | `sithDSSTests` | `sith.DSS` | Original-engine vectors of the DSS and DSS thing save/network serialization functions | Available |
 
@@ -841,12 +843,14 @@ build. See [Microsoft's AddressSanitizer guidance](https://learn.microsoft.com/e
 
 ### 🧩 Additional Module Commands
 
-The `soundTests`, `sithTests` and `sithDSSTests` targets are available and included
+The `soundTests`, `smushTests`, `sithTests` and `sithDSSTests` targets are available and included
 in a full build. Use the matching target and CTest entry for a focused rebuild and run:
 
 ```bat
 cmake --build build\codex\dx9-win32 --config Debug --target soundTests
 ctest --test-dir build\codex\dx9-win32 -C Debug --output-on-failure -R "^sound$"
+cmake --build build\codex\dx9-win32 --config Debug --target smushTests
+ctest --test-dir build\codex\dx9-win32 -C Debug --output-on-failure -R "^smush$"
 cmake --build build\codex\dx9-win32 --config Debug --target sithTests
 ctest --test-dir build\codex\dx9-win32 -C Debug --output-on-failure -R "^sith$"
 cmake --build build\codex\dx9-win32 --config Debug --target sithDSSTests
@@ -856,7 +860,7 @@ ctest --test-dir build\codex\dx9-win32 -C Debug --output-on-failure -R "^sith\.D
 These focused commands supplement the validation selected under
 [Backend Validation Scope](#backend-validation-scope).
 
-The fixture descriptions below cover the available `soundTests`, `sithTests` and
+The fixture descriptions below cover the available `soundTests`, `smushTests`, `sithTests` and
 `sithDSSTests` targets.
 
 <a name="audiolib-fixtures"></a>
@@ -882,6 +886,29 @@ by original-engine vectors captured from retail v1.0 `Indy3D.exe` and stored in
 known `AudioLib_WVSMCompressBlock` difference are in that directory's
 `README.md`). The `TestOriginal*` cases compare complete outputs, return values
 and compressor state, including chained block calls.
+
+<a name="smush-fixtures"></a>
+
+### 🎞️ Smush Fixtures
+
+The `smush` suite (`smushTests`, CTest entry `smush`, labels `unit;smush;<backend>`) links the smush library and runs
+every area against the real functions of the other areas; the only mocks are the LEC services (share table, allocator,
+timer), an in-memory file system, the executable's zlib `gz*` functions (through the `Zfilio_TestSetGz` seam) and a pure C
+`IDirectSound`. Each area has its own test file and CMake list under `Libs/smush/Tests`: `SmushCoreTest.c` (SmushPlay,
+LecShare, Timer, Memory, List, Bitmap, Blit), `SmushSoundTest.c` (Engine, Mixer, Dsnd), `SmushCodecTest.c` (D_bloc16,
+D_wave, Decode), `SmushStreamTest.c` (Cdstream, Framestream, Stdfile, Stdio, Zfilio, Readauto, Frame, Pcplay) and
+`SmushAsmTest.c`.
+
+`SmushAsmTest.c` covers the six assembly files that were translated to C (`Bloc16Asm`, `DecodeAsm`, `MixerAsm`,
+`BlitAsm`, `MemCopy`, `MemFill`) with original-engine vectors: inputs and complete results of every procedure captured by
+executing the retail v1.0 `Indy3D.exe`, stored in `Libs/smush/Tests/tv` (format, reference executable hash, procedure
+addresses and case counts in `Libs/smush/Tests/tv/README.md`). The test requires every byte of every buffer to match and
+never launches the executable. The vectors include the assembly's quirks (zero counts that run the loop once, 16-bit
+pitch multiplies, index carry-over in the three-byte table lookups), which carry `TODO: [BUG]` notes in the code.
+
+Not covered by unit tests: the intro movie playback itself (needs the game data and a window; checked by running the
+game), and the exact output of `mixer_Setup`'s sine and clip tables, which are computed with the DLL's CRT instead of the
+executable's.
 
 <a name="sound-fixtures"></a>
 

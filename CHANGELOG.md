@@ -29,6 +29,7 @@
     * `sithVehicleControls` (63685d3)
     * `sithPlayerControls` (d31ee9b)
     * `sithAIMove` [incomplete] (05c806d)
+    * `smush` (INSANE movie player used for the intro movies, including its assembly routines translated to C) ()
   - Moved high poly option to advance display settings (7b58bff)
   - Fixed selecting stored MipMap filter mode in developer dialog (ad1633c)
   - Added new graphic options for MSAA, anisotropic texture filtering and mipmap auto gen to display settings (77df36d)
