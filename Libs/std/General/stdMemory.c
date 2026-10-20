@@ -531,7 +531,7 @@ void J3DAPI stdMemory_BlockFree(void* pMemory)
             pBlock->pFirst       = NULL;
             pBlock->availableMem = 0;
             pBlock->pLargestFree = NULL;
-            pBlock->bAllocated   = 0;
+            // Fixed: Removed pBlock->bAllocated = 0. The original keeps the flag set so BlockMalloc's first search skips the emptied zone slot (original Indy3D.exe v1.0 0x004B72F1)
         }
         else
         {
