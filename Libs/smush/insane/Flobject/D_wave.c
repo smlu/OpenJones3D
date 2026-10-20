@@ -2,7 +2,6 @@
 #include <smush/insane/Flobject/D_wave.h>
 #include <j3dcore/j3d.h>
 #include <j3dcore/j3dhook.h>
-#include <smush/RTI/addresses.h>
 #include <smush/RTI/symbols.h>
 
 #include <stddef.h>

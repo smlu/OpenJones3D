@@ -642,11 +642,11 @@ TEST(SmushCodec, DBloc16Codec2ReceivesTables)
         TEST_ASSERT_EQUAL_INT(16, pSmall[i].n1 + pSmall[i].n2);
         TEST_ASSERT_EQUAL_INT(64, pBig[i].n1 + pBig[i].n2);
         for ( int j = 0; j < pSmall[i].n1; j++ ) {
-            TEST_ASSERT_EQUAL_INT16((pSmall[i].idx1[j] >> 2) * width + (pSmall[i].idx1[j] & 3), pSmall[i].off1[j]);
+            TEST_ASSERT_EQUAL_UINT16((pSmall[i].idx1[j] >> 2) * width + (pSmall[i].idx1[j] & 3), pSmall[i].off1[j]);
         }
 
         for ( int j = 0; j < pBig[i].n2; j++ ) {
-            TEST_ASSERT_EQUAL_INT16((pBig[i].idx2[j] >> 3) * width + (pBig[i].idx2[j] & 7), pBig[i].off2[j]);
+            TEST_ASSERT_EQUAL_UINT16((pBig[i].idx2[j] >> 3) * width + (pBig[i].idx2[j] & 7), pBig[i].off2[j]);
         }
     }
 
