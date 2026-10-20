@@ -1509,7 +1509,7 @@ void J3DAPI sithPlayerActions_HopBack(SithThing* pThing)
             }
         }
 
-        sithSoundClass_PlayModeFirst(pThing, sndmode);
+        sithSoundClass_PlayModeRandom(pThing, sndmode); // Fixed: Plays a random sound of the mode instead of the first (original Indy3D.exe v1.0 0x0044F3E0)
     }
 
     sithThing_DetachThing(pThing);
