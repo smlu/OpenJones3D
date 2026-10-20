@@ -299,6 +299,7 @@
   - Fixed `sithIntersect_CheckSphereFaceIntersectionEx` passing the tested position also as the output hit position to the face vertices test, which changed the position tested against later edges and vertices and the resulting hit normal. ()
   - Fixed `sithPathMove_ParseArg` treating a negative `numframes` argument of a thing path as a huge frame count (failing with a memory allocation error) instead of rejecting it as a bad argument. ()
   - Fixed `sithPathMove_UpdateRotate` clamping a NaN rotation delta of a rotating path movement to 1.0 instead of leaving it like the original. ()
+  - Fixed `sithEvent_Process` advancing the event queue only after calling the task of the processed event; a COG timer handler killing its own timer (`KillTimerEx`) freed the processed event twice and lost the rest of the queue. ()
   - Fixed overlapping COG stack shifts on overflow by using `memmove` in `sithCogExec_PushStack`. [PR #55](https://github.com/smlu/OpenJones3D/pull/55)
   - Added an optional runtime guard in `sithCamera_Update` to skip cinematic camera updates while either focus thing is missing. [PR #54](https://github.com/smlu/OpenJones3D/pull/54)
   - Fixed an out-of-bounds write in `sithEvent_ResetFreeBufferTable` that could cause startup hangs in optimized Clang builds. [PR #45](https://github.com/smlu/OpenJones3D/pull/45)
