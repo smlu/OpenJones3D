@@ -426,7 +426,7 @@ void J3DAPI sithCogFunction_SetTimerEx(SithCog* pCog)
     params.param2 = sithCogExec_PopInt(pCog);
     params.param1 = sithCogExec_PopInt(pCog);
     params.idx = pCog->idx;
-    int msWhen = (int)(sithCogExec_PopFlex(pCog) * 1000.0f);
+    int msWhen = (int)floorf(sithCogExec_PopFlex(pCog) * 1000.0f);
 
     if ( msWhen >= 0 )
     {
