@@ -2378,16 +2378,19 @@ void J3DAPI sithPlayerControls_ProcessHangMove(SithThing* pThing, float secDelta
 
             pThing->forceMoveStartPos = pThing->pos;
             pThing->collide.movesize = 0.0f;
-            sithPuppet_PlayForceMoveMode(pThing, SITHPUPPETSUBMODE_HANGSHIMLEFT, NULL);
-            sithSoundClass_PlayModeFirst(pThing, SITHSOUNDCLASS_CLIMBHANDLEFT);
 
+            // Fixed: Call order as in the original, the sound is played after attaching to the surface but before the thing face is attached (original Indy3D.exe v1.0 0x00430300)
             if ( pLedgeSurf )
             {
+                sithPuppet_PlayForceMoveMode(pThing, SITHPUPPETSUBMODE_HANGSHIMLEFT, NULL);
                 sithThing_AttachThingToClimbSurface(pThing, pLedgeSurf);
+                sithSoundClass_PlayModeFirst(pThing, SITHSOUNDCLASS_CLIMBHANDLEFT);
                 sithPlayerActions_g_pCurCollidedSurface = pLedgeSurf;
             }
             else
             {
+                sithSoundClass_PlayModeFirst(pThing, SITHSOUNDCLASS_CLIMBHANDLEFT);
+                sithPuppet_PlayForceMoveMode(pThing, SITHPUPPETSUBMODE_HANGSHIMLEFT, NULL);
                 sithThing_AttachThingToThingFace(pThing, pLedgeThing, pLedgeFace, pLedgeMesh->apVertices, 1);
                 sithPlayerActions_g_pCurCollidedModelFace = pLedgeFace;
                 sithPlayerActions_g_pCurCollidedModel     = pLedgeModel;

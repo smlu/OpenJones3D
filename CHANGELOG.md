@@ -498,6 +498,7 @@
   - Fixed `sithPlayerControls_ProcessPlayerDebugControls` stopping the processing of the player controls while the debug key is held and no player position key is pressed; the original continues with the normal controls. ()
   - Fixed `sithPlayerControls_CanStrafeMove` transforming the vertex of a thing face with the translation of the thing orientation matrix; the original transforms it as a vector and adds the thing position. ()
   - Fixed `sithVehicleControls_ProcessMineCarMove` ending the accelerating state of the mine cart using the new thrust after the first acceleration step from standstill, where the original tests the old (zero) thrust. ()
+  - Fixed `sithPlayerControls_ProcessHangMove` starting the hang shimmy left animation, sound and surface attach in a different order than the original. ()
 
 ## v0.3.1
 ### General:
