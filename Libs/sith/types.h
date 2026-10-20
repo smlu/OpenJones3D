@@ -2200,7 +2200,7 @@ typedef struct sSithActorInfo
     SithActorVoiceInfo voiceInfo;
     SithActorStateChange stateChange;
 } SithActorInfo;
-static_assert(sizeof(SithActorInfo) == 300, "sizeof(SithActorInfo) == 292");
+static_assert(sizeof(SithActorInfo) == 300, "sizeof(SithActorInfo) == 300");
 
 typedef struct sSithSpriteInfo
 {
