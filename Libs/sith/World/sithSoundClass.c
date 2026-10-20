@@ -276,7 +276,7 @@ int J3DAPI sithSoundClass_ReadSoundClassesListText(SithWorld* pWorld, int bSkip)
         return 1;
     }
 
-    size_t numClasses = atoi(stdConffile_g_entry.aArgs[2].argValue);
+    int numClasses = atoi(stdConffile_g_entry.aArgs[2].argValue); // Fixed: Read the count as signed int like the original so a count <= 0 is rejected, a negative count became a huge size_t (original Indy3D.exe v1.0 0x004A0FC0)
     if ( numClasses <= 0 )
     {
         return 0;
