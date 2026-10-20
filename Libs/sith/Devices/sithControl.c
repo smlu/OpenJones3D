@@ -629,7 +629,7 @@ void sithControl_UnbindJoystickAxes(void)
             for ( size_t bindIndex = 0; bindIndex < pBinding->numBindings && !bFound; ++bindIndex )
             {
                 int32_t bAxisControl = pBinding->aBindings[bindIndex].flags & SITHCONTROLBIND_AXISCONTROL;
-                if ( (!bAxisControl && STDCONTROL_ISJOYSTICKBUTTON(pBinding->aBindings[bindIndex].controlId))
+                if ( (!bAxisControl && STDCONTROL_ISJOYSTICKCID(pBinding->aBindings[bindIndex].controlId)) // Fixed: Test for any joystick control id, the button macro no longer matches POV hat directions the original unbinds (original Indy3D.exe v1.0 0x004400B0)
                     || (bAxisControl && STDCONTROL_ISJOYSTICKAXIS(pBinding->aBindings[bindIndex].controlId)) ) // Joystick axis
                 {
                     sithControl_UnbindFunctionIndex(funcId, bindIndex);
