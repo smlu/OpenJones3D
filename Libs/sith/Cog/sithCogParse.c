@@ -608,7 +608,7 @@ SithCogSyntaxNode* sithCogParse_GetNextNode(void)
     if ( numTreeNodes == syntaxTreeSize )
     {
         SITHLOG_ERROR("Max # of nodes %d exceeded, expanding size to %d.\n", syntaxTreeSize, 2 * syntaxTreeSize);
-        pSyntaxTree = (SithCogSyntaxNode*)STDREALLOC(pSyntaxTree, 2 * sizeof(int32_t) * syntaxTreeSize);
+        pSyntaxTree = (SithCogSyntaxNode*)STDREALLOC(pSyntaxTree, 2 * syntaxTreeSize * sizeof(SithCogSyntaxNode));
         if ( !pSyntaxTree )
         {
             return NULL;
