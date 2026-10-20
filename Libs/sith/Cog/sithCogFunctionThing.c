@@ -1436,6 +1436,8 @@ void J3DAPI sithCogFunctionThing_ThingLightAnim(SithCog* pCog)
         sithCogExec_PushInt(pCog, pAnim->animID);
         return;
     }
+
+    sithCogExec_PushInt(pCog, -1); // Fixed: Push -1 when the animation could not be started (original Indy3D.exe v1.0 0x0046F820)
 }
 
 void J3DAPI sithCogFunctionThing_ThingFadeAnim(SithCog* pCog)

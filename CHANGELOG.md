@@ -425,6 +425,7 @@
   - Fixed `sithCogFunctionThing_TrackToMode` not returning after a bad thing error, which pushed a second result or dereferenced the invalid thing. ()
   - Fixed `sithCogFunctionThing_GetThingRotVel` not returning after pushing the zero vector for a bad or non-physics thing, which pushed a second vector or dereferenced a NULL thing. ()
   - Fixed `sithCogFunctionThing_SetThingMaxHeadVel` not returning for an invalid thing, which dereferenced a NULL pointer. ()
+  - Fixed `sithCogFunctionThing_ThingLightAnim` pushing no result when the light animation could not be started, which unbalanced the COG stack; it now returns -1. ()
 
 ## v0.3.1
 ### General:
