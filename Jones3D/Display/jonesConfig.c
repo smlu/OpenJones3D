@@ -3539,9 +3539,12 @@ int J3DAPI jonesConfig_GetSaveGameFilePath(HWND hWnd, char* pOutFilePath)
     ofn.hwndOwner     = hWnd;
     ofn.hInstance     = (HINSTANCE)GetWindowLongPtr(hWnd, GWL_HINSTANCE);
 
+    char aFilterText[128] = { 0 };
+    STD_FORMAT(aFilterText, aFileterStr, "(.nds)");
+
     char aFilterStr[128] = { 0 };
-    STD_FORMAT(aFilterStr, aFileterStr, "(.nds)");
-    STD_FORMAT(aFilterStr, "%s%c%s%c", aFilterStr, '\0', "*.nds", '\0'); // Fixed: filtering only by .nds files. Note, 2 terminal nulls are required, that's way null at the end
+    // Fixed: Format from a separate buffer, formatting a buffer into itself is undefined behavior
+    STD_FORMAT(aFilterStr, "%s%c%s%c", aFilterText, '\0', "*.nds", '\0'); // Fixed: filtering only by .nds files. Note, 2 terminal nulls are required, that's way null at the end
 
     ofn.lpstrFilter = aFilterStr;
 
@@ -4005,9 +4008,12 @@ int J3DAPI jonesConfig_GetLoadGameFilePath(HWND hWnd, char* pDestNdsPath)
     LoadGameDialogData data = { 0 };
     data.hThumbnail = 0;
 
+    char aFilterText[128] = { 0 };
+    STD_FORMAT(aFilterText, aFilterFormatStr, " (.nds)");
+
     char aFilterStr[128] = { 0 };
-    STD_FORMAT(aFilterStr, aFilterFormatStr, " (.nds)");
-    STD_FORMAT(aFilterStr, "%s%c%s%c", aFilterStr, '\0', "*.nds", '\0'); // Fixed: filtering only by .nds files. Note, 2 terminal nulls are required, that's way null at the end
+    // Fixed: Format from a separate buffer, formatting a buffer into itself is undefined behavior
+    STD_FORMAT(aFilterStr, "%s%c%s%c", aFilterText, '\0', "*.nds", '\0'); // Fixed: filtering only by .nds files. Note, 2 terminal nulls are required, that's way null at the end
 
     OPENFILENAME ofn      = { 0 };
     ofn.lStructSize       = sizeof(OPENFILENAME);
