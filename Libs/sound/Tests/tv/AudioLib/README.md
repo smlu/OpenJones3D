@@ -104,7 +104,7 @@ for container filler bytes. Seeds are part of the case names or fixed in the har
 
 - Full-scale alternating samples (`-32768`, `32767`) crash the original
   `AudioLib_WVSMCompressBlock` (the sample bit length reaches index 17 of a
-  17-entry histogram). They are used only with `AudioLib_CompressBlock`.
+  17-entry histogram, which `AudioLib_WVSMCompressBlock` no longer overflows). They are used only with `AudioLib_CompressBlock`.
 - Channel counts above two in `AudioLib_CompressBlock`/`AudioLib_UncompressBlock`
   index past the two-entry compressor state and are not covered.
 - Every case was executed twice inside the capture, with different padding bytes
@@ -112,21 +112,15 @@ for container filler bytes. Seeds are part of the case names or fixed in the har
   case whose result depended on bytes outside the declared input or output was
   dropped. None were dropped.
 
-### Known Difference: WVSM Compression
+### WVSM Compression
 
-The existing `AudioLib_WVSMCompressBlock` starts its sample bit length counters
-at 0 instead of the original 1 to avoid the out-of-bounds access above. That
-moves every histogram bucket, so the shifts it selects, the compressed bytes and
-the returned sizes differ from the original for most non-trivial inputs. In
-`CompressWVSM.tv` the cases `wvsm_size1024_noise_full`,
-`wvsm_size1024_square_20000`, `wvsm_size1024_ramp`, `wvsm_size4096_sine`,
-`wvsm_size4100_block_boundary`, `wvsm_size8192_two_blocks`,
-`wvsm_size10000_three_blocks` and `wvsm_mono_arg_size2048` currently differ
-(output lengths 1221/1559/1229/3737/4146/8220/7369/2347 against the original's
-915/535/903/2071/2080/4122/5029/1335 including the preserved over count). The
-other six cases must match and are asserted. `TestOriginalCompressWVSM` is
-reported as ignored while any listed case differs and passes once all match.
-The streams written by this implementation still use the original format.
+`AudioLib_WVSMCompressBlock` matches the original on every case of
+`CompressWVSM.tv`, including the returned sizes. It keeps the original sample
+bit length counters (starting at 1) and uses 18-entry histograms, so the
+sample -32768 (bit length 17) no longer writes past the end of the histograms
+as it does in the original. `TestCompressWVSMFullScaleSamples` covers that
+input, which is kept out of the corpus because it crashes the original.
+The streams written by this implementation use the original format.
 
 ### Provenance
 
