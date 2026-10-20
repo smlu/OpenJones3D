@@ -1404,6 +1404,7 @@ void jonesConfig_Shutdown(void)
     for ( size_t i = 0; i < 2; i++ ) // TODO: Bug? Why only 2?
     {
         DeleteObject(jonesConfig_apDialogIcons[i]);
+        jonesConfig_apDialogIcons[i] = NULL;
     }
 
     if ( *jonesConfig_aKeySetsDirPath )
