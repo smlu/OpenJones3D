@@ -1109,11 +1109,12 @@ void J3DAPI sithPlayerControls_ProcessClimbMove(SithThing* pThing, float secDelt
 
                 sithPlayerActions_ClimbPullUp(pThing);
                 sithPlayerControls_UpdateClimbingSpeed(pThing, bFastClimb); // Added: Speedup play if runmode is enabled
+                return;
             }
         }
     }
     // Handle Jump-off key
-    else if ( sithControl_GetKey(SITHCONTROL_JUMP, NULL)
+    if ( sithControl_GetKey(SITHCONTROL_JUMP, NULL)
         && !sithPlayerControls_bJumpKeyActive
         && !pThing->thingInfo.actorInfo.bForceMovePlay )
     {
