@@ -93,6 +93,9 @@ void stdShutdown(void)
 {
     if ( bStdStartup )
     {
+        short tmp = word_183962C;
+        __asm fldcw word ptr[tmp]; // Fixed: Restore the FPU control word saved by stdStartup like the original (Indy3D.exe v1.0 0x004B6389)
+
         stdJSON_Shutdown();
         stdMemory_Close();
         stdMemory_Shutdown();

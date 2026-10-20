@@ -287,6 +287,7 @@
   - Fixed `stdMath_ClipNearZero` returning NaN unchanged; it now returns 0 for NaN like the original. ()
   - Fixed `STDMATH_CLAMP` passing NaN through; it now turns NaN into the lower bound like the original. ()
   - Fixed `stdMemory_BlockFree` clearing the allocated flag of a zone that became completely free, which made `stdMemory_BlockMalloc` open a new zone in the emptied slot instead of using a later zone with enough free memory like the original. ()
+  - Fixed `stdShutdown` not restoring the FPU control word saved by `stdStartup` like the original. ()
   - Fixed `rdMath_ClipVector3` and `rdMath_ClipVector3Acc` keeping vector components that are exactly equal to the minimum value; a component is now kept only if its magnitude is greater than the minimum, like the original near zero clipping of the physics velocities. ()
   - Fixed `SoundDriver_Update3DSound` playing 3D sounds at full volume while there is no camera (the sound mix callback leaves the volume untouched); such sounds are now culled by the far volume check like in the original (DirectX 6 and DirectX 9). ()
   - Fixed `rdMath_DeltaAngleNormalized` passing NaN dot products through the clamp and returning the positive angle for a NaN direction test; a NaN dot product now gives 180 degrees and a NaN direction test gives the negated angle, like the original. ()
