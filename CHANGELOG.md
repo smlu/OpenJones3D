@@ -277,6 +277,7 @@
   - Fixed `sithGamesave_SaveFile` writing "Oct 28 1999" into the save game header date; the original writes its build date "Oct 29 1999". ()
   - Fixed `sithIntersect_CheckSphereHit` accepting a sphere moving away from the plane when the sphere is touching it and zeroing the hit distance before adding the radius for a sphere inside the plane distance with the collision flag 0x400. ()
   - Fixed `sithIntersect_CheckSphereFaceIntersectionEx` passing the tested position also as the output hit position to the face vertices test, which changed the position tested against later edges and vertices and the resulting hit normal. ()
+  - Fixed `sithPathMove_ParseArg` treating a negative `numframes` argument of a thing path as a huge frame count (failing with a memory allocation error) instead of rejecting it as a bad argument. ()
 
 ### Graphics:
   - Fixed an issue where active textures used in the current render frame were being removed from the cache prematurely in low VRAM situations (f37ecb7)
