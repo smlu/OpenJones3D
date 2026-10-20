@@ -288,6 +288,7 @@
   - Fixed `sithEvent_Process` advancing the event queue only after calling the task of the processed event; a COG timer handler killing its own timer (`KillTimerEx`) freed the processed event twice and lost the rest of the queue. ()
   - Fixed `sithCogParse_Load` rejecting a COG script whose `flags` value cannot be converted (reported as "Unexpected EOF"); the original ignores the conversion result and loads the script with zero flags. ()
   - Fixed `sithMessage_SendMessage` not writing a message to the file stream when the stream mask includes both the network and the file stream (not reached by the stock code). ()
+  - Fixed `sithSoundClass_ReadSoundClassesListText` reading the sound class count of the world file into an unsigned variable, so a negative count was not rejected and led to a huge allocation size. ()
   - Fixed `stdMath_ClipNearZero` returning NaN unchanged; it now returns 0 for NaN like the original. ()
   - Fixed `STDMATH_CLAMP` passing NaN through; it now turns NaN into the lower bound like the original. ()
   - Fixed `rdMath_ClipVector3` and `rdMath_ClipVector3Acc` keeping vector components that are exactly equal to the minimum value; a component is now kept only if its magnitude is greater than the minimum, like the original near zero clipping of the physics velocities. ()
