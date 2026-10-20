@@ -428,6 +428,7 @@
   - Fixed `sithAIClass_LoadEntry` truncating instinct integer arguments toward zero instead of flooring them. ()
   - Fixed `sithCogFunctionThing_SetThingStateChange` storing the two COG arguments in swapped fields, which gave COG-driven AI state changes the wrong type and parameter. ()
   - Fixed `sithCogFunction_FindNewSectorFromThing` pushing no result when the thing is invalid, which unbalanced the COG stack; it now returns -1. ()
+  - Fixed `sithCogFunctionThing_GetInventoryCog` pushing no result for inventory types without a COG, which unbalanced the COG stack; it now returns -1. ()
 
 ## v0.3.1
 ### General:

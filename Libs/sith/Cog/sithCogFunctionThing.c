@@ -1902,6 +1902,8 @@ void J3DAPI sithCogFunctionThing_GetInventoryCog(SithCog* pCog)
         sithCogExec_PushInt(pCog, pInventory->pCog->idx);
         return;
     }
+
+    sithCogExec_PushInt(pCog, -1);
 }
 
 void J3DAPI sithCogFunctionThing_GetThingVelocity(SithCog* pCog)
