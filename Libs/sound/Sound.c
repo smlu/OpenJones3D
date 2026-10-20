@@ -1637,7 +1637,14 @@ size_t J3DAPI Sound_GetLengthMsec(tSoundHandleType handle)
 
 void J3DAPI Sound_SetMaxVolume(float maxVolume)
 {
-    maxVolume = STDMATH_CLAMP(maxVolume, 0.0f, 1.0f);
+    if ( maxVolume < 0.0f )
+    {
+        maxVolume = 0.0f;
+    }
+    else if ( maxVolume > 1.0f )
+    {
+        maxVolume = 1.0f;
+    }
     if ( maxVolume != Sound_maxVolume )
     {
         Sound_maxVolume = maxVolume;
