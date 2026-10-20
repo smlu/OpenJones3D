@@ -224,7 +224,7 @@ static HFONT jonesConfig_hFontGameOverDialog = NULL; // Fixed: Added init. to NU
 static HFONT jonesConfig_hFontGameStatisticsDialog = NULL; // Fixed: Added init. to NULL
 int jonesConfig_gameStatistics_curLevelNum;
 
-static const char* jonesConfig_gameStatistics__aLevelNames[JONESLEVEL_NUMLEVELS - 1] = // not including the general load level
+static const char* jonesConfig_gameStatistics__aLevelNames[JONESLEVEL_NUMLEVELS] = // Fixed: Added the summary page's title entry, the fallback title lookup for the summary page (index 17) read past the end of the array (original Indy3D.exe v1.0 0x0040CC80)
 {
     "JONES_STR_CYN",
     "JONES_STR_BAB",
@@ -242,7 +242,8 @@ static const char* jonesConfig_gameStatistics__aLevelNames[JONESLEVEL_NUMLEVELS 
     "JONES_STR_NUB",
     "JONES_STR_INF",
     "JONES_STR_AET",
-    "JONES_STR_PRU"
+    "JONES_STR_PRU",
+    "JONES_STR_SUMMARY"
 };
 
 // Chapter completed dialog
