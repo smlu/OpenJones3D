@@ -57,7 +57,7 @@ void sithInventory_ResetGlobals(void)
     STD_ZEROMEM(&sithInventory_g_dword_56B750, sizeof(sithInventory_g_dword_56B750));
     STD_ZEROMEM(&sithInventory_g_dword_56B754, sizeof(sithInventory_g_dword_56B754));
     STD_ZEROMEM(&sithInventory_g_aTypes, sizeof(sithInventory_g_aTypes));
-    STD_ZEROMEM(&sithInventory_g_aUnknown, sizeof(sithInventory_g_aUnknown));
+    STD_ZEROMEM(&sithInventory_g_aPowerKeybinds, sizeof(sithInventory_g_aPowerKeybinds));
 }
 
 void J3DAPI sithInventory_RegisterType(size_t typeId, const char* pName, float min, float max, SithInventoryTypeFlag flags, SithCog* pItemCog, rdModel3* pInvModel, rdModel3* pItemModel)
@@ -715,9 +715,9 @@ SithInventoryType* J3DAPI sithInventory_GetInventoryType(SithThing* pThing, size
 
 int sithInventory_sub_45E072(void)
 {
-    for ( size_t i = 0; i < STD_ARRAYLEN(sithInventory_g_aUnknown); ++i )
+    for ( size_t i = 0; i < STD_ARRAYLEN(sithInventory_g_aPowerKeybinds); ++i )
     {
-        sithInventory_g_aUnknown[i].bEnabled = 0;
+        sithInventory_g_aPowerKeybinds[i].bEnabled = 0;
     }
 
     return 0;
@@ -725,16 +725,16 @@ int sithInventory_sub_45E072(void)
 
 void J3DAPI sithInventory_sub_45E0B0(size_t index, int a2)
 {
-    sithInventory_g_aUnknown[index].bEnabled = 1;
-    sithInventory_g_aUnknown[index].unknown2 = a2;
-    sithInventory_g_aUnknown[index].unknown3 = 0;
+    sithInventory_g_aPowerKeybinds[index].bEnabled = 1;
+    sithInventory_g_aPowerKeybinds[index].binding = a2;
+    sithInventory_g_aPowerKeybinds[index].bActivated = 0;
 }
 
 int J3DAPI sithInventory_sub_45E0E4(size_t index)
 {
-    if ( sithInventory_g_aUnknown[index].bEnabled == 1 )
+    if ( sithInventory_g_aPowerKeybinds[index].bEnabled == 1 )
     {
-        return sithInventory_g_aUnknown[index].unknown2;
+        return sithInventory_g_aPowerKeybinds[index].binding;
     }
 
     return -1;

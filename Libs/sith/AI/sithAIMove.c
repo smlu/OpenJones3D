@@ -2726,15 +2726,14 @@ void J3DAPI sithAIMove_UpdateQuetzStrike(SithAIControlBlock* pLocal, float secDe
         return;
     }
 
-    // Strike: unknown0 = mode, unknown1 = curTime, unknown3 = numSnapShots; snapshot: unknown0 = time
     SithQuetzStrike* pStrike = &pThing->userblock.pQuetz->strike;
-    if ( pStrike->unknown0 != 1 )
+    if ( pStrike->mode != 1 )
     {
         return;
     }
 
     SithQuetzSnapShot* pSnapShot = &pStrike->aSnapShots[pStrike->snapShot];
-    float remainder = pSnapShot->unknown0 - pStrike->unknown1;
+    float remainder = pSnapShot->time - pStrike->curTime;
 
     if ( pStrike->snapShot == 1 )
     {
@@ -2788,7 +2787,7 @@ void J3DAPI sithAIMove_UpdateQuetzStrike(SithAIControlBlock* pLocal, float secDe
         pStrike->aSnapShots[4].angle4 = pThing->renderData.apTweakedAngles[2].yaw + headYaw * 0.4f;
         pStrike->aSnapShots[4].angle5 = pStrike->aSnapShots[0].angle5;
     }
-    else if ( pStrike->snapShot == pStrike->unknown3 - 1 )
+    else if ( pStrike->snapShot == pStrike->numSnapShots - 1 )
     {
         pSnapShot->angle3 = pThing->renderData.apTweakedAngles[2].pitch;
         pSnapShot->angle4 = pThing->renderData.apTweakedAngles[2].yaw;
@@ -2798,10 +2797,10 @@ void J3DAPI sithAIMove_UpdateQuetzStrike(SithAIControlBlock* pLocal, float secDe
     {
         SITH_ASSERTREL(pStrike->snapShot != 0);
         SithQuetzSnapShot* pPrevSnapShot = &pStrike->aSnapShots[pStrike->snapShot - 1];
-        pStrike->unknown1 += secDeltaTime;
+        pStrike->curTime += secDeltaTime;
 
-        float length      = pSnapShot->unknown0 - pPrevSnapShot->unknown0;
-        float timeElapsed = pStrike->unknown1 - pPrevSnapShot->unknown0;
+        float length      = pSnapShot->time - pPrevSnapShot->time;
+        float timeElapsed = pStrike->curTime - pPrevSnapShot->time;
         float ratio       = timeElapsed / length;
         ratio = STDMATH_CLAMP(ratio, 0.0f, 1.0f);
 
@@ -2814,15 +2813,15 @@ void J3DAPI sithAIMove_UpdateQuetzStrike(SithAIControlBlock* pLocal, float secDe
     else
     {
         pStrike->snapShot++;
-        pStrike->unknown1 = pSnapShot->unknown0;
+        pStrike->curTime = pSnapShot->time;
         pThing->renderData.apTweakedAngles[1].pitch  = pSnapShot->angle1;
         pThing->renderData.apTweakedAngles[1].yaw    = pSnapShot->angle2;
         pThing->renderData.apTweakedAngles[2].pitch  = pSnapShot->angle3;
         pThing->renderData.apTweakedAngles[2].yaw    = pSnapShot->angle4;
         pThing->renderData.apTweakedAngles[28].pitch = pSnapShot->angle5;
-        if ( pStrike->snapShot == pStrike->unknown3 )
+        if ( pStrike->snapShot == pStrike->numSnapShots )
         {
-            pStrike->unknown0 = 0;
+            pStrike->mode = 0;
         }
         else
         {
@@ -2870,13 +2869,13 @@ void J3DAPI sithAIMove_UpdateQuetzAnim2(SithAIControlBlock* pLocal, float secDel
     }
 
     SithQuetzStrike* pStrike = &pThing->userblock.pQuetz->strike;
-    if ( pStrike->unknown0 != 2 )
+    if ( pStrike->mode != 2 )
     {
         return;
     }
 
     SithQuetzSnapShot* pSnapShot = &pStrike->aSnapShots[pStrike->snapShot];
-    float remainder = pSnapShot->unknown0 - pStrike->unknown1;
+    float remainder = pSnapShot->time - pStrike->curTime;
 
     if ( pStrike->snapShot == 1 )
     {
@@ -2904,7 +2903,7 @@ void J3DAPI sithAIMove_UpdateQuetzAnim2(SithAIControlBlock* pLocal, float secDel
         pStrike->aSnapShots[2].angle4 = pThing->renderData.apTweakedAngles[2].yaw + headYaw;
         pStrike->aSnapShots[2].angle5 = -70.0f;
     }
-    else if ( pStrike->snapShot == pStrike->unknown3 - 1 )
+    else if ( pStrike->snapShot == pStrike->numSnapShots - 1 )
     {
         pSnapShot->angle3 = pThing->renderData.apTweakedAngles[2].pitch;
         pSnapShot->angle4 = pThing->renderData.apTweakedAngles[2].yaw;
@@ -2914,10 +2913,10 @@ void J3DAPI sithAIMove_UpdateQuetzAnim2(SithAIControlBlock* pLocal, float secDel
     {
         SITH_ASSERTREL(pStrike->snapShot != 0);
         SithQuetzSnapShot* pPrevSnapShot = &pStrike->aSnapShots[pStrike->snapShot - 1];
-        pStrike->unknown1 += secDeltaTime;
+        pStrike->curTime += secDeltaTime;
 
-        float length      = pSnapShot->unknown0 - pPrevSnapShot->unknown0;
-        float timeElapsed = pStrike->unknown1 - pPrevSnapShot->unknown0;
+        float length      = pSnapShot->time - pPrevSnapShot->time;
+        float timeElapsed = pStrike->curTime - pPrevSnapShot->time;
         float ratio       = timeElapsed / length;
         ratio = STDMATH_CLAMP(ratio, 0.0f, 1.0f);
 
@@ -2930,15 +2929,15 @@ void J3DAPI sithAIMove_UpdateQuetzAnim2(SithAIControlBlock* pLocal, float secDel
     else
     {
         pStrike->snapShot++;
-        pStrike->unknown1 = pSnapShot->unknown0;
+        pStrike->curTime = pSnapShot->time;
         pThing->renderData.apTweakedAngles[1].pitch  = pSnapShot->angle1;
         pThing->renderData.apTweakedAngles[1].yaw    = pSnapShot->angle2;
         pThing->renderData.apTweakedAngles[2].pitch  = pSnapShot->angle3;
         pThing->renderData.apTweakedAngles[2].yaw    = pSnapShot->angle4;
         pThing->renderData.apTweakedAngles[28].pitch = pSnapShot->angle5;
-        if ( pStrike->snapShot == pStrike->unknown3 )
+        if ( pStrike->snapShot == pStrike->numSnapShots )
         {
-            pStrike->unknown0 = 0;
+            pStrike->mode = 0;
         }
         else
         {
@@ -2956,15 +2955,15 @@ void J3DAPI sithAIMove_UpdateQuetzAnim3(SithAIControlBlock* pLocal, float secDel
     }
 
     SithQuetzStrike* pStrike = &pThing->userblock.pQuetz->strike;
-    if ( pStrike->unknown0 != 3 )
+    if ( pStrike->mode != 3 )
     {
         return;
     }
 
     SithQuetzSnapShot* pSnapShot = &pStrike->aSnapShots[pStrike->snapShot];
-    float timeLeft = pSnapShot->unknown0 - pStrike->unknown1;
+    float timeLeft = pSnapShot->time - pStrike->curTime;
 
-    if ( pStrike->snapShot == pStrike->unknown3 - 1 )
+    if ( pStrike->snapShot == pStrike->numSnapShots - 1 )
     {
         pSnapShot->angle3 = pThing->renderData.apTweakedAngles[2].pitch;
         pSnapShot->angle4 = pThing->renderData.apTweakedAngles[2].yaw;
@@ -2974,10 +2973,10 @@ void J3DAPI sithAIMove_UpdateQuetzAnim3(SithAIControlBlock* pLocal, float secDel
     {
         SITH_ASSERTREL(pStrike->snapShot != 0);
         SithQuetzSnapShot* pPrevSnapShot = &pStrike->aSnapShots[pStrike->snapShot - 1];
-        pStrike->unknown1 += secDeltaTime;
+        pStrike->curTime += secDeltaTime;
 
-        float period      = pSnapShot->unknown0 - pPrevSnapShot->unknown0;
-        float timeElapsed = pStrike->unknown1 - pPrevSnapShot->unknown0;
+        float period      = pSnapShot->time - pPrevSnapShot->time;
+        float timeElapsed = pStrike->curTime - pPrevSnapShot->time;
         float ratio       = timeElapsed / period;
         ratio = STDMATH_CLAMP(ratio, 0.0f, 1.0f);
 
@@ -2990,15 +2989,15 @@ void J3DAPI sithAIMove_UpdateQuetzAnim3(SithAIControlBlock* pLocal, float secDel
     else
     {
         pStrike->snapShot++;
-        pStrike->unknown1 = pSnapShot->unknown0;
+        pStrike->curTime = pSnapShot->time;
         pThing->renderData.apTweakedAngles[1].pitch  = pSnapShot->angle1;
         pThing->renderData.apTweakedAngles[1].yaw    = pSnapShot->angle2;
         pThing->renderData.apTweakedAngles[2].pitch  = pSnapShot->angle3;
         pThing->renderData.apTweakedAngles[2].yaw    = pSnapShot->angle4;
         pThing->renderData.apTweakedAngles[28].pitch = pSnapShot->angle5;
-        if ( pStrike->snapShot == pStrike->unknown3 )
+        if ( pStrike->snapShot == pStrike->numSnapShots )
         {
-            pStrike->unknown0 = 0;
+            pStrike->mode = 0;
         }
         else
         {
@@ -3016,15 +3015,15 @@ void J3DAPI sithAIMove_UpdateQuetzAnim5(SithAIControlBlock* pLocal, float secDel
     }
 
     SithQuetzStrike* pStrike = &pThing->userblock.pQuetz->strike;
-    if ( pStrike->unknown0 != 5 )
+    if ( pStrike->mode != 5 )
     {
         return;
     }
 
     SithQuetzSnapShot* pSnapShot = &pStrike->aSnapShots[pStrike->snapShot];
-    float timeLeft = pSnapShot->unknown0 - pStrike->unknown1;
+    float timeLeft = pSnapShot->time - pStrike->curTime;
 
-    if ( pStrike->snapShot == pStrike->unknown3 - 1 )
+    if ( pStrike->snapShot == pStrike->numSnapShots - 1 )
     {
         pSnapShot->angle3 = pThing->renderData.apTweakedAngles[2].pitch;
         pSnapShot->angle4 = pThing->renderData.apTweakedAngles[2].yaw;
@@ -3034,10 +3033,10 @@ void J3DAPI sithAIMove_UpdateQuetzAnim5(SithAIControlBlock* pLocal, float secDel
     {
         SITH_ASSERTREL(pStrike->snapShot != 0);
         SithQuetzSnapShot* pPrevSnapShot = &pStrike->aSnapShots[pStrike->snapShot - 1];
-        pStrike->unknown1 += secDeltaTime;
+        pStrike->curTime += secDeltaTime;
 
-        float period      = pSnapShot->unknown0 - pPrevSnapShot->unknown0;
-        float timeElapsed = pStrike->unknown1 - pPrevSnapShot->unknown0;
+        float period      = pSnapShot->time - pPrevSnapShot->time;
+        float timeElapsed = pStrike->curTime - pPrevSnapShot->time;
         float ratio       = timeElapsed / period;
         ratio = STDMATH_CLAMP(ratio, 0.0f, 1.0f);
 
@@ -3050,15 +3049,15 @@ void J3DAPI sithAIMove_UpdateQuetzAnim5(SithAIControlBlock* pLocal, float secDel
     else
     {
         pStrike->snapShot++;
-        pStrike->unknown1 = pSnapShot->unknown0;
+        pStrike->curTime = pSnapShot->time;
         pThing->renderData.apTweakedAngles[1].pitch  = pSnapShot->angle1;
         pThing->renderData.apTweakedAngles[1].yaw    = pSnapShot->angle2;
         pThing->renderData.apTweakedAngles[2].pitch  = pSnapShot->angle3;
         pThing->renderData.apTweakedAngles[2].yaw    = pSnapShot->angle4;
         pThing->renderData.apTweakedAngles[28].pitch = pSnapShot->angle5;
-        if ( pStrike->snapShot == pStrike->unknown3 )
+        if ( pStrike->snapShot == pStrike->numSnapShots )
         {
-            pStrike->unknown0 = 0;
+            pStrike->mode = 0;
         }
         else
         {
@@ -3076,22 +3075,22 @@ void J3DAPI sithAIMove_UpdateQuetzAnim4(SithAIControlBlock* pLocal, float secDel
     }
 
     SithQuetzStrike* pStrike = &pThing->userblock.pQuetz->strike;
-    if ( pStrike->unknown0 != 4 )
+    if ( pStrike->mode != 4 )
     {
         return;
     }
 
     SithQuetzSnapShot* pSnapShot = &pStrike->aSnapShots[pStrike->snapShot];
-    float timeLeft = pSnapShot->unknown0 - pStrike->unknown1;
+    float timeLeft = pSnapShot->time - pStrike->curTime;
 
     if ( timeLeft >= secDeltaTime )
     {
         SITH_ASSERTREL(pStrike->snapShot != 0);
         SithQuetzSnapShot* pPrevSnapShot = &pStrike->aSnapShots[pStrike->snapShot - 1];
-        pStrike->unknown1 += secDeltaTime;
+        pStrike->curTime += secDeltaTime;
 
-        float period      = pSnapShot->unknown0 - pPrevSnapShot->unknown0;
-        float timeElapsed = pStrike->unknown1 - pPrevSnapShot->unknown0;
+        float period      = pSnapShot->time - pPrevSnapShot->time;
+        float timeElapsed = pStrike->curTime - pPrevSnapShot->time;
         float ratio       = timeElapsed / period;
         ratio = STDMATH_CLAMP(ratio, 0.0f, 1.0f);
 
@@ -3104,15 +3103,15 @@ void J3DAPI sithAIMove_UpdateQuetzAnim4(SithAIControlBlock* pLocal, float secDel
     else
     {
         pStrike->snapShot++;
-        pStrike->unknown1 = pSnapShot->unknown0;
+        pStrike->curTime = pSnapShot->time;
         pThing->renderData.apTweakedAngles[1].pitch  = pSnapShot->angle1;
         pThing->renderData.apTweakedAngles[1].yaw    = pSnapShot->angle2;
         pThing->renderData.apTweakedAngles[2].pitch  = pSnapShot->angle3;
         pThing->renderData.apTweakedAngles[2].yaw    = pSnapShot->angle4;
         pThing->renderData.apTweakedAngles[28].pitch = pSnapShot->angle5;
-        if ( pStrike->snapShot == pStrike->unknown3 )
+        if ( pStrike->snapShot == pStrike->numSnapShots )
         {
-            pStrike->unknown0 = 0;
+            pStrike->mode = 0;
         }
         else
         {
@@ -3130,7 +3129,7 @@ void J3DAPI sithAIMove_UpdateQuetzTail(SithAIControlBlock* pLocal, float secDelt
     }
 
     SithQuetzStrike* pStrike = &pThing->userblock.pQuetz->strike;
-    switch ( pStrike->unknown0 )
+    switch ( pStrike->mode )
     {
         case 1:
             sithAIMove_UpdateQuetzStrike(pLocal, secDeltaTime);
@@ -3169,29 +3168,29 @@ void J3DAPI sithAIMove_StartQuetzStrike(SithAIControlBlock* pLocal)
     float neckPitch;
     sithAIMove_GetQuetzStrikeAngles(pLocal, &angle, &pitchAngle, &headYaw, &neckPitch);
 
-    pStrike->unknown1 = 0.0f;
+    pStrike->curTime = 0.0f;
     pStrike->snapShot = 0;
-    pStrike->aSnapShots[0].unknown0 = 0.0f;
+    pStrike->aSnapShots[0].time = 0.0f;
     pStrike->aSnapShots[0].angle1 = pThing->renderData.apTweakedAngles[1].pitch;
     pStrike->aSnapShots[0].angle2 = pThing->renderData.apTweakedAngles[1].yaw;
     pStrike->aSnapShots[0].angle3 = pThing->renderData.apTweakedAngles[2].pitch;
     pStrike->aSnapShots[0].angle4 = pThing->renderData.apTweakedAngles[2].yaw;
     pStrike->aSnapShots[0].angle5 = pThing->renderData.apTweakedAngles[28].pitch;
 
-    pStrike->aSnapShots[1].unknown0 = 0.11f;
-    pStrike->aSnapShots[2].unknown0 = 0.24f;
-    pStrike->aSnapShots[3].unknown0 = 0.3f;
-    pStrike->aSnapShots[4].unknown0 = 0.5f;
+    pStrike->aSnapShots[1].time = 0.11f;
+    pStrike->aSnapShots[2].time = 0.24f;
+    pStrike->aSnapShots[3].time = 0.3f;
+    pStrike->aSnapShots[4].time = 0.5f;
 
-    pStrike->aSnapShots[5].unknown0 = 0.7f;
+    pStrike->aSnapShots[5].time = 0.7f;
     pStrike->aSnapShots[5].angle1 = pThing->renderData.apTweakedAngles[1].pitch;
     pStrike->aSnapShots[5].angle2 = pThing->renderData.apTweakedAngles[1].yaw;
     pStrike->aSnapShots[5].angle3 = pThing->renderData.apTweakedAngles[2].pitch;
     pStrike->aSnapShots[5].angle4 = pThing->renderData.apTweakedAngles[2].yaw;
     pStrike->aSnapShots[5].angle5 = pThing->renderData.apTweakedAngles[28].pitch;
 
-    pStrike->unknown0 = 1;
-    pStrike->unknown3 = 6;
+    pStrike->mode = 1;
+    pStrike->numSnapShots = 6;
 }
 
 void J3DAPI sithAIMove_StartQuetzAnim2(SithAIControlBlock* pLocal)
@@ -3203,29 +3202,29 @@ void J3DAPI sithAIMove_StartQuetzAnim2(SithAIControlBlock* pLocal)
     }
 
     SithQuetzStrike* pStrike = &pThing->userblock.pQuetz->strike;
-    pStrike->unknown1 = 0.0f;
+    pStrike->curTime = 0.0f;
     pStrike->snapShot = 0;
 
-    pStrike->aSnapShots[0].unknown0 = 0.0f;
+    pStrike->aSnapShots[0].time = 0.0f;
     pStrike->aSnapShots[0].angle1 = pThing->renderData.apTweakedAngles[1].pitch;
     pStrike->aSnapShots[0].angle2 = pThing->renderData.apTweakedAngles[1].yaw;
     pStrike->aSnapShots[0].angle3 = pThing->renderData.apTweakedAngles[2].pitch;
     pStrike->aSnapShots[0].angle4 = pThing->renderData.apTweakedAngles[2].yaw;
     pStrike->aSnapShots[0].angle5 = pThing->renderData.apTweakedAngles[28].pitch;
 
-    pStrike->aSnapShots[1].unknown0 = 0.11f;
+    pStrike->aSnapShots[1].time = 0.11f;
 
-    pStrike->aSnapShots[2].unknown0 = 0.24f;
+    pStrike->aSnapShots[2].time = 0.24f;
 
-    pStrike->aSnapShots[3].unknown0 = 0.5f;
+    pStrike->aSnapShots[3].time = 0.5f;
     pStrike->aSnapShots[3].angle1 = pThing->renderData.apTweakedAngles[1].pitch;
     pStrike->aSnapShots[3].angle2 = pThing->renderData.apTweakedAngles[1].yaw;
     pStrike->aSnapShots[3].angle3 = pThing->renderData.apTweakedAngles[2].pitch;
     pStrike->aSnapShots[3].angle4 = pThing->renderData.apTweakedAngles[2].yaw;
     pStrike->aSnapShots[3].angle5 = pThing->renderData.apTweakedAngles[28].pitch;
 
-    pStrike->unknown0 = 2;
-    pStrike->unknown3 = 4;
+    pStrike->mode = 2;
+    pStrike->numSnapShots = 4;
 }
 
 void J3DAPI sithAIMove_StartQuetzAnim3(SithAIControlBlock* pLocal)
@@ -3237,116 +3236,116 @@ void J3DAPI sithAIMove_StartQuetzAnim3(SithAIControlBlock* pLocal)
     }
 
     SithQuetzStrike* pStrike = &pThing->userblock.pQuetz->strike;
-    pStrike->unknown1 = 0.0f;
+    pStrike->curTime = 0.0f;
     pStrike->snapShot = 0;
 
-    pStrike->aSnapShots[0].unknown0 = 0.0f;
+    pStrike->aSnapShots[0].time = 0.0f;
     pStrike->aSnapShots[0].angle1 = pThing->renderData.apTweakedAngles[1].pitch;
     pStrike->aSnapShots[0].angle2 = pThing->renderData.apTweakedAngles[1].yaw;
     pStrike->aSnapShots[0].angle3 = pThing->renderData.apTweakedAngles[2].pitch;
     pStrike->aSnapShots[0].angle4 = pThing->renderData.apTweakedAngles[2].yaw;
     pStrike->aSnapShots[0].angle5 = pThing->renderData.apTweakedAngles[28].pitch;
 
-    pStrike->aSnapShots[1].unknown0 = 0.1f;
+    pStrike->aSnapShots[1].time = 0.1f;
     pStrike->aSnapShots[1].angle1 = -10.0f;
     pStrike->aSnapShots[1].angle2 = 0.0f;
     pStrike->aSnapShots[1].angle3 = 50.0f;
     pStrike->aSnapShots[1].angle4 = 0.0f;
     pStrike->aSnapShots[1].angle5 = -40.0f;
 
-    pStrike->aSnapShots[2].unknown0 = 0.3f;
+    pStrike->aSnapShots[2].time = 0.3f;
     pStrike->aSnapShots[2].angle1 = -15.0f;
     pStrike->aSnapShots[2].angle2 = 30.0f;
     pStrike->aSnapShots[2].angle3 = 60.0f;
     pStrike->aSnapShots[2].angle4 = 50.0f;
     pStrike->aSnapShots[2].angle5 = -60.0f;
 
-    pStrike->aSnapShots[3].unknown0 = 0.6f;
+    pStrike->aSnapShots[3].time = 0.6f;
     pStrike->aSnapShots[3].angle1 = -12.0f;
     pStrike->aSnapShots[3].angle2 = -30.0f;
     pStrike->aSnapShots[3].angle3 = 55.0f;
     pStrike->aSnapShots[3].angle4 = -50.0f;
     pStrike->aSnapShots[3].angle5 = -50.0f;
 
-    pStrike->aSnapShots[4].unknown0 = 0.9f;
+    pStrike->aSnapShots[4].time = 0.9f;
     pStrike->aSnapShots[4].angle1 = -15.0f;
     pStrike->aSnapShots[4].angle2 = 30.0f;
     pStrike->aSnapShots[4].angle3 = 60.0f;
     pStrike->aSnapShots[4].angle4 = 50.0f;
     pStrike->aSnapShots[4].angle5 = -35.0f;
 
-    pStrike->aSnapShots[5].unknown0 = 1.2f;
+    pStrike->aSnapShots[5].time = 1.2f;
     pStrike->aSnapShots[5].angle1 = -12.0f;
     pStrike->aSnapShots[5].angle2 = -30.0f;
     pStrike->aSnapShots[5].angle3 = 55.0f;
     pStrike->aSnapShots[5].angle4 = -50.0f;
     pStrike->aSnapShots[5].angle5 = -50.0f;
 
-    pStrike->aSnapShots[6].unknown0 = 1.5f;
+    pStrike->aSnapShots[6].time = 1.5f;
     pStrike->aSnapShots[6].angle1 = -15.0f;
     pStrike->aSnapShots[6].angle2 = 30.0f;
     pStrike->aSnapShots[6].angle3 = 60.0f;
     pStrike->aSnapShots[6].angle4 = 50.0f;
     pStrike->aSnapShots[6].angle5 = -60.0f;
 
-    pStrike->aSnapShots[7].unknown0 = 1.8f;
+    pStrike->aSnapShots[7].time = 1.8f;
     pStrike->aSnapShots[7].angle1 = -12.0f;
     pStrike->aSnapShots[7].angle2 = -30.0f;
     pStrike->aSnapShots[7].angle3 = 55.0f;
     pStrike->aSnapShots[7].angle4 = -50.0f;
     pStrike->aSnapShots[7].angle5 = -50.0f;
 
-    pStrike->aSnapShots[8].unknown0 = 2.1f;
+    pStrike->aSnapShots[8].time = 2.1f;
     pStrike->aSnapShots[8].angle1 = -15.0f;
     pStrike->aSnapShots[8].angle2 = 30.0f;
     pStrike->aSnapShots[8].angle3 = 60.0f;
     pStrike->aSnapShots[8].angle4 = 50.0f;
     pStrike->aSnapShots[8].angle5 = -35.0f;
 
-    pStrike->aSnapShots[9].unknown0 = 2.4f;
+    pStrike->aSnapShots[9].time = 2.4f;
     pStrike->aSnapShots[9].angle1 = -12.0f;
     pStrike->aSnapShots[9].angle2 = -30.0f;
     pStrike->aSnapShots[9].angle3 = 55.0f;
     pStrike->aSnapShots[9].angle4 = -50.0f;
     pStrike->aSnapShots[9].angle5 = -50.0f;
 
-    pStrike->aSnapShots[10].unknown0 = 2.7f;
+    pStrike->aSnapShots[10].time = 2.7f;
     pStrike->aSnapShots[10].angle1 = -15.0f;
     pStrike->aSnapShots[10].angle2 = 30.0f;
     pStrike->aSnapShots[10].angle3 = 60.0f;
     pStrike->aSnapShots[10].angle4 = 50.0f;
     pStrike->aSnapShots[10].angle5 = -60.0f;
 
-    pStrike->aSnapShots[11].unknown0 = 3.0f;
+    pStrike->aSnapShots[11].time = 3.0f;
     pStrike->aSnapShots[11].angle1 = -12.0f;
     pStrike->aSnapShots[11].angle2 = -30.0f;
     pStrike->aSnapShots[11].angle3 = 55.0f;
     pStrike->aSnapShots[11].angle4 = -50.0f;
     pStrike->aSnapShots[11].angle5 = -50.0f;
 
-    pStrike->aSnapShots[12].unknown0 = 3.3f;
+    pStrike->aSnapShots[12].time = 3.3f;
     pStrike->aSnapShots[12].angle1 = -10.0f;
     pStrike->aSnapShots[12].angle2 = 0.0f;
     pStrike->aSnapShots[12].angle3 = 20.0f;
     pStrike->aSnapShots[12].angle4 = 0.0f;
     pStrike->aSnapShots[12].angle5 = -15.0f;
 
-    pStrike->aSnapShots[13].unknown0 = 3.7f;
+    pStrike->aSnapShots[13].time = 3.7f;
     pStrike->aSnapShots[13].angle1 = 0.0f;
     pStrike->aSnapShots[13].angle2 = 0.0f;
     pStrike->aSnapShots[13].angle3 = 5.0f;
     pStrike->aSnapShots[13].angle4 = 0.0f;
     pStrike->aSnapShots[13].angle5 = -10.0f;
 
-    pStrike->aSnapShots[14].unknown0 = 5.0f;
+    pStrike->aSnapShots[14].time = 5.0f;
     pStrike->aSnapShots[14].angle1 = pThing->renderData.apTweakedAngles[1].pitch;
     pStrike->aSnapShots[14].angle2 = pThing->renderData.apTweakedAngles[1].yaw;
     pStrike->aSnapShots[14].angle3 = pThing->renderData.apTweakedAngles[2].pitch;
     pStrike->aSnapShots[14].angle4 = pThing->renderData.apTweakedAngles[2].yaw;
     pStrike->aSnapShots[14].angle5 = pThing->renderData.apTweakedAngles[28].pitch;
 
-    pStrike->unknown0 = 3;
-    pStrike->unknown3 = 15;
+    pStrike->mode = 3;
+    pStrike->numSnapShots = 15;
 }
 
 void J3DAPI sithAIMove_StartQuetzAnim5(SithAIControlBlock* pLocal)
@@ -3358,81 +3357,81 @@ void J3DAPI sithAIMove_StartQuetzAnim5(SithAIControlBlock* pLocal)
     }
 
     SithQuetzStrike* pStrike = &pThing->userblock.pQuetz->strike;
-    pStrike->unknown1 = 0.0f;
+    pStrike->curTime = 0.0f;
     pStrike->snapShot = 0;
 
-    pStrike->aSnapShots[0].unknown0 = 0.0f;
+    pStrike->aSnapShots[0].time = 0.0f;
     pStrike->aSnapShots[0].angle1 = pThing->renderData.apTweakedAngles[1].pitch;
     pStrike->aSnapShots[0].angle2 = pThing->renderData.apTweakedAngles[1].yaw;
     pStrike->aSnapShots[0].angle3 = pThing->renderData.apTweakedAngles[2].pitch;
     pStrike->aSnapShots[0].angle4 = pThing->renderData.apTweakedAngles[2].yaw;
     pStrike->aSnapShots[0].angle5 = pThing->renderData.apTweakedAngles[28].pitch;
 
-    pStrike->aSnapShots[1].unknown0 = 0.1f;
+    pStrike->aSnapShots[1].time = 0.1f;
     pStrike->aSnapShots[1].angle1 = -10.0f;
     pStrike->aSnapShots[1].angle2 = 0.0f;
     pStrike->aSnapShots[1].angle3 = 50.0f;
     pStrike->aSnapShots[1].angle4 = 0.0f;
     pStrike->aSnapShots[1].angle5 = -40.0f;
 
-    pStrike->aSnapShots[2].unknown0 = 0.3f;
+    pStrike->aSnapShots[2].time = 0.3f;
     pStrike->aSnapShots[2].angle1 = -15.0f;
     pStrike->aSnapShots[2].angle2 = 30.0f;
     pStrike->aSnapShots[2].angle3 = 60.0f;
     pStrike->aSnapShots[2].angle4 = 50.0f;
     pStrike->aSnapShots[2].angle5 = -60.0f;
 
-    pStrike->aSnapShots[3].unknown0 = 0.6f;
+    pStrike->aSnapShots[3].time = 0.6f;
     pStrike->aSnapShots[3].angle1 = -12.0f;
     pStrike->aSnapShots[3].angle2 = -30.0f;
     pStrike->aSnapShots[3].angle3 = 55.0f;
     pStrike->aSnapShots[3].angle4 = -50.0f;
     pStrike->aSnapShots[3].angle5 = -50.0f;
 
-    pStrike->aSnapShots[4].unknown0 = 0.9f;
+    pStrike->aSnapShots[4].time = 0.9f;
     pStrike->aSnapShots[4].angle1 = -15.0f;
     pStrike->aSnapShots[4].angle2 = 30.0f;
     pStrike->aSnapShots[4].angle3 = 60.0f;
     pStrike->aSnapShots[4].angle4 = 50.0f;
     pStrike->aSnapShots[4].angle5 = -35.0f;
 
-    pStrike->aSnapShots[5].unknown0 = 1.2f;
+    pStrike->aSnapShots[5].time = 1.2f;
     pStrike->aSnapShots[5].angle1 = -12.0f;
     pStrike->aSnapShots[5].angle2 = -30.0f;
     pStrike->aSnapShots[5].angle3 = 55.0f;
     pStrike->aSnapShots[5].angle4 = -50.0f;
     pStrike->aSnapShots[5].angle5 = -50.0f;
 
-    pStrike->aSnapShots[6].unknown0 = 1.5f;
+    pStrike->aSnapShots[6].time = 1.5f;
     pStrike->aSnapShots[6].angle1 = -15.0f;
     pStrike->aSnapShots[6].angle2 = 30.0f;
     pStrike->aSnapShots[6].angle3 = 60.0f;
     pStrike->aSnapShots[6].angle4 = 50.0f;
     pStrike->aSnapShots[6].angle5 = -60.0f;
 
-    pStrike->aSnapShots[7].unknown0 = 1.8f;
+    pStrike->aSnapShots[7].time = 1.8f;
     pStrike->aSnapShots[7].angle1 = -12.0f;
     pStrike->aSnapShots[7].angle2 = -30.0f;
     pStrike->aSnapShots[7].angle3 = 55.0f;
     pStrike->aSnapShots[7].angle4 = -50.0f;
     pStrike->aSnapShots[7].angle5 = -50.0f;
 
-    pStrike->aSnapShots[8].unknown0 = 2.1f;
+    pStrike->aSnapShots[8].time = 2.1f;
     pStrike->aSnapShots[8].angle1 = -15.0f;
     pStrike->aSnapShots[8].angle2 = 30.0f;
     pStrike->aSnapShots[8].angle3 = 60.0f;
     pStrike->aSnapShots[8].angle4 = 50.0f;
     pStrike->aSnapShots[8].angle5 = -35.0f;
 
-    pStrike->aSnapShots[9].unknown0 = 3.0f;
+    pStrike->aSnapShots[9].time = 3.0f;
     pStrike->aSnapShots[9].angle1 = pThing->renderData.apTweakedAngles[1].pitch;
     pStrike->aSnapShots[9].angle2 = pThing->renderData.apTweakedAngles[1].yaw;
     pStrike->aSnapShots[9].angle3 = pThing->renderData.apTweakedAngles[2].pitch;
     pStrike->aSnapShots[9].angle4 = pThing->renderData.apTweakedAngles[2].yaw;
     pStrike->aSnapShots[9].angle5 = pThing->renderData.apTweakedAngles[28].pitch;
 
-    pStrike->unknown0 = 5;
-    pStrike->unknown3 = 10;
+    pStrike->mode = 5;
+    pStrike->numSnapShots = 10;
 }
 
 void J3DAPI sithAIMove_StartQuetzAnim4(SithAIControlBlock* pLocal)
@@ -3444,32 +3443,32 @@ void J3DAPI sithAIMove_StartQuetzAnim4(SithAIControlBlock* pLocal)
     }
 
     SithQuetzStrike* pStrike = &pThing->userblock.pQuetz->strike;
-    pStrike->unknown1 = 0.0f;
+    pStrike->curTime = 0.0f;
     pStrike->snapShot = 0;
 
-    pStrike->aSnapShots[0].unknown0 = 0.0f;
+    pStrike->aSnapShots[0].time = 0.0f;
     pStrike->aSnapShots[0].angle1 = pThing->renderData.apTweakedAngles[1].pitch;
     pStrike->aSnapShots[0].angle2 = pThing->renderData.apTweakedAngles[1].yaw;
     pStrike->aSnapShots[0].angle3 = pThing->renderData.apTweakedAngles[2].pitch;
     pStrike->aSnapShots[0].angle4 = pThing->renderData.apTweakedAngles[2].yaw;
     pStrike->aSnapShots[0].angle5 = pThing->renderData.apTweakedAngles[28].pitch;
 
-    pStrike->aSnapShots[1].unknown0 = 1.6f;
+    pStrike->aSnapShots[1].time = 1.6f;
     pStrike->aSnapShots[1].angle1 = 0.0f;
     pStrike->aSnapShots[1].angle2 = 0.0f;
     pStrike->aSnapShots[1].angle3 = 0.0f;
     pStrike->aSnapShots[1].angle4 = 0.0f;
     pStrike->aSnapShots[1].angle5 = -60.0f;
 
-    pStrike->aSnapShots[2].unknown0 = 5.0f;
+    pStrike->aSnapShots[2].time = 5.0f;
     pStrike->aSnapShots[2].angle1 = 0.0f;
     pStrike->aSnapShots[2].angle2 = 0.0f;
     pStrike->aSnapShots[2].angle3 = 0.0f;
     pStrike->aSnapShots[2].angle4 = 0.0f;
     pStrike->aSnapShots[2].angle5 = -60.0f;
 
-    pStrike->unknown0 = 4;
-    pStrike->unknown3 = 3;
+    pStrike->mode = 4;
+    pStrike->numSnapShots = 3;
 }
 
 void J3DAPI sithAIMove_UpdateMardukTail(SithThing* pThing, float secDeltaTime)

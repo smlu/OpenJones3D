@@ -4157,7 +4157,7 @@ void J3DAPI sithPhysics_UpdateJeepPhysics(SithThing* pThing, float secDeltaTime)
     {
         sithPhysics_UpdateJeepWheels(pThing, pState, secDeltaTime);
         sithPhysics_GetJeepChassisNormal(pThing, pState, &normal, secDeltaTime);
-        if ( pState->bAllWheelsGrounded ) // Note, set when the jeep wheels are not touching the ground
+        if ( pState->bWheelsLoose ) // Note, set when the jeep wheels are not touching the ground
         {
             pThing->moveStatus = SITHPLAYERMOVE_UNKNOWN_82;
         }
@@ -4315,9 +4315,8 @@ void J3DAPI sithPhysics_UpdateJeepPhysics(SithThing* pThing, float secDeltaTime)
         float thrustScale = secDeltaTime * dragFactor;
         thrustScale = thrustScale * moveFactor;
 
-        // Note, upVector is the sum of the wheel contact directions (wheel torque)
         rdVector3 torqueThrust;
-        rdVector_Scale3(&torqueThrust, &pState->upVector, pPhysics->thrust.y);
+        rdVector_Scale3(&torqueThrust, &pState->torque, pPhysics->thrust.y);
 
         rdVector3 dir;
         dir.x = pPhysics->thrust.x;
@@ -4409,7 +4408,7 @@ void J3DAPI sithPhysics_UpdateJeepPhysics(SithThing* pThing, float secDeltaTime)
         float fall = sithPhysics_flt_538E10 * secDeltaTime;
         pPhysics->velocity.z = pPhysics->velocity.z - fall;
     }
-    else if ( pState->numGroundedWheels >= 3 && !rdVector_IsZero3(&pPhysics->velocity) )
+    else if ( pState->numTorqueWheels >= 3 && !rdVector_IsZero3(&pPhysics->velocity) )
     {
         float dot = rdVector_Dot3(&pPhysics->velocity, &normal);
         dot = stdMath_ClipNearZero(dot);
@@ -4440,7 +4439,7 @@ void J3DAPI sithPhysics_UpdateJeepPhysics(SithThing* pThing, float secDeltaTime)
         if ( sqrtf(rdVector_Dot3(&delta, &delta)) > 0.001f )
         {
             rdVector_Add3Acc(&pPhysics->deltaVelocity, &delta);
-            if ( pState->numGroundedWheels >= 2
+            if ( pState->numTorqueWheels >= 2
                 && delta.z < 0.0f
                 && pPhysics->velocity.z > 0.0f
                 && sqrtf(rdVector_Dot3(&pPhysics->velocity, &pPhysics->velocity)) < pPhysics->maxVelocity * 0.95f )
@@ -4458,8 +4457,8 @@ int J3DAPI sithPhysics_UpdateJeepWheels(SithThing* pThing, SithJeepState* pState
 {
     SithPhysicsInfo* pPhysics = &pThing->moveInfo.physics;
 
-    pState->numGroundedWheels = 0;
-    STD_ZEROMEM(&pState->upVector, sizeof(rdVector3));
+    pState->numTorqueWheels = 0;
+    STD_ZEROMEM(&pState->torque, sizeof(rdVector3));
 
     float halfX = pState->width * 0.5f;
     float halfY = pState->length * 0.5f;
@@ -4486,8 +4485,7 @@ int J3DAPI sithPhysics_UpdateJeepWheels(SithThing* pThing, SithJeepState* pState
     rdVector_Add3(&pos, &pos, &pThing->pos);
     sithPhysics_UpdateJeepWheelContact(pThing, &pState->aWheels[2], &pos);
 
-    // Note, bAllWheelsGrounded is set when the jeep wheels are off the ground (the wheels are loose)
-    int bPrevWheelsLoose = pState->bAllWheelsGrounded;
+    int bPrevWheelsLoose = pState->bWheelsLoose;
 
     int numFree    = 0;
     int numContact = 0;
@@ -4505,28 +4503,28 @@ int J3DAPI sithPhysics_UpdateJeepWheels(SithThing* pThing, SithJeepState* pState
 
     if ( numFree == 4 )
     {
-        pState->bAllWheelsGrounded = 1;
+        pState->bWheelsLoose = 1;
     }
     else if ( numFree == 3 && numContact == 1 )
     {
-        pState->bAllWheelsGrounded = 1;
+        pState->bWheelsLoose = 1;
     }
     else if ( numFree == 2 && numContact == 2 )
     {
-        pState->bAllWheelsGrounded = 1;
+        pState->bWheelsLoose = 1;
     }
     else
     {
-        pState->bAllWheelsGrounded = 0;
+        pState->bWheelsLoose = 0;
     }
 
-    if ( !bPrevWheelsLoose && pState->bAllWheelsGrounded )
+    if ( !bPrevWheelsLoose && pState->bWheelsLoose )
     {
-        pState->timeAllWheelsGrounded = 0.0f;
+        pState->secWheelsLooseTime = 0.0f;
     }
-    else if ( bPrevWheelsLoose && pState->bAllWheelsGrounded )
+    else if ( bPrevWheelsLoose && pState->bWheelsLoose )
     {
-        pState->timeAllWheelsGrounded += secDeltaTime;
+        pState->secWheelsLooseTime += secDeltaTime;
     }
 
     float step       = sithPhysics_flt_538D10 * secDeltaTime;
@@ -4536,7 +4534,7 @@ int J3DAPI sithPhysics_UpdateJeepWheels(SithThing* pThing, SithJeepState* pState
     // Wheel indices ordered as processed in the original
     static const size_t aWheelOrder[4] = { 3, 0, 1, 2 };
 
-    if ( !pState->bAllWheelsGrounded )
+    if ( !pState->bWheelsLoose )
     {
         float minImpact = 1.0f;
 
@@ -4573,7 +4571,7 @@ int J3DAPI sithPhysics_UpdateJeepWheels(SithThing* pThing, SithJeepState* pState
                 rdVector_Cross3(&push, &side, &pWheel->surfNormal);
 
                 float scale = -push.z * maxImpulse;
-                scale = J3DMIN(scale, pWheel->prevCompressionDist);
+                scale = J3DMIN(scale, pWheel->maxImpulse);
                 rdVector_MultAcc3(&pWheel->curPos, &push, scale);
 
                 float dist = rdMath_DistancePointToPlane(&pWheel->surfNormal, &pThing->orient.uvec, &rdroid_g_zeroVector3);
@@ -4603,11 +4601,11 @@ int J3DAPI sithPhysics_UpdateJeepWheels(SithThing* pThing, SithJeepState* pState
         }
     }
 
-    rdVector_Copy3(&pState->avgPrevPos, &pState->aWheels[3].curPos);
-    rdVector_Add3Acc(&pState->avgPrevPos, &pState->aWheels[0].curPos);
-    rdVector_Add3Acc(&pState->avgPrevPos, &pState->aWheels[1].curPos);
-    rdVector_Add3Acc(&pState->avgPrevPos, &pState->aWheels[2].curPos);
-    rdVector_Scale3Acc(&pState->avgPrevPos, 0.25f);
+    rdVector_Copy3(&pState->impulse, &pState->aWheels[3].curPos);
+    rdVector_Add3Acc(&pState->impulse, &pState->aWheels[0].curPos);
+    rdVector_Add3Acc(&pState->impulse, &pState->aWheels[1].curPos);
+    rdVector_Add3Acc(&pState->impulse, &pState->aWheels[2].curPos);
+    rdVector_Scale3Acc(&pState->impulse, 0.25f);
 
     // Accumulate the wheel contact directions
     for ( size_t i = 0; i < 4; i++ )
@@ -4620,12 +4618,12 @@ int J3DAPI sithPhysics_UpdateJeepWheels(SithThing* pThing, SithJeepState* pState
 
             rdVector3 wheelTorque;
             rdVector_Cross3(&wheelTorque, &pWheel->surfNormal, &wheelSide);
-            rdVector_Add3Acc(&pState->upVector, &wheelTorque);
-            pState->numGroundedWheels++;
+            rdVector_Add3Acc(&pState->torque, &wheelTorque);
+            pState->numTorqueWheels++;
         }
     }
 
-    rdVector_Normalize3Acc(&pState->upVector);
+    rdVector_Normalize3Acc(&pState->torque);
     return 1;
 }
 
@@ -4712,16 +4710,16 @@ void J3DAPI sithPhysics_UpdateJeepWheelContact(SithThing* pThing, SithJeepWheelS
 
                 if ( pNextCollision )
                 {
-                    pWheel->prevCompressionDist = -(sithPhysics_flt_538CFC - pNextCollision->distance - pWheel->width);
+                    pWheel->maxImpulse = -(sithPhysics_flt_538CFC - pNextCollision->distance - pWheel->width);
                 }
                 else if ( (pThing->attach.flags & SITH_ATTACH_SURFACE) != 0 )
                 {
-                    pWheel->prevCompressionDist = rdMath_DistancePointToPlane(&pWheel->curPos, &pThing->attach.pFace->normal, &pThing->attach.attachedFaceFirstVert);
-                    pWheel->prevCompressionDist = pWheel->prevCompressionDist * sithPhysics_flt_538D0C;
+                    pWheel->maxImpulse = rdMath_DistancePointToPlane(&pWheel->curPos, &pThing->attach.pFace->normal, &pThing->attach.attachedFaceFirstVert);
+                    pWheel->maxImpulse = pWheel->maxImpulse * sithPhysics_flt_538D0C;
                 }
                 else
                 {
-                    pWheel->prevCompressionDist = FLT_MAX;
+                    pWheel->maxImpulse = FLT_MAX;
                 }
             }
         }
@@ -4790,7 +4788,7 @@ void J3DAPI sithPhysics_GetJeepChassisNormal(SithThing* pThing, SithJeepState* p
     }
 
     rdVector_Normalize3Acc(pOutNormal);
-    rdVector_ScaleAdd3(&pState->centerOfMass, pOutNormal, pState->height * 0.5f, &pState->avgPrevPos);
+    rdVector_ScaleAdd3(&pState->centerOfMass, pOutNormal, pState->height * 0.5f, &pState->impulse);
 
     // Turn the jeep towards the wheel which is in contact with a steep slope
     float rotScale = sithPhysics_flt_538D24 * secDeltaTime;
@@ -4832,7 +4830,7 @@ void J3DAPI sithPhysics_GetJeepChassisNormal(SithThing* pThing, SithJeepState* p
     }
 
     // Slide jeep down the slope when the wheels are off the ground
-    if ( pState->bAllWheelsGrounded && pThing->attach.flags )
+    if ( pState->bWheelsLoose && pThing->attach.flags )
     {
         rdVector3 dir;
         dir.x = pOutNormal->x;
@@ -4911,9 +4909,8 @@ void J3DAPI sithPhysics_UpdateJeepFx(SithThing* pThing, SithVehicleEngineFxState
     float speed     = rdVector_Normalize3(&moveDir, &pPhysics->velocity);
     float thrustLen = sqrtf(rdVector_Dot3(&pPhysics->thrust, &pPhysics->thrust));
 
-    // Note, bAllWheelsGrounded is set when the jeep wheels are off the ground
     int bWheelsLoose = 0;
-    if ( pState->bAllWheelsGrounded )
+    if ( pState->bWheelsLoose )
     {
         bWheelsLoose = 1;
     }
@@ -4981,9 +4978,9 @@ void J3DAPI sithPhysics_UpdateJeepFx(SithThing* pThing, SithVehicleEngineFxState
 
                 float pitch = rate * scale + minPitch;
                 pitch = STDMATH_CLAMP(pitch, minPitch, maxPitch);
-                if ( pState->bAllWheelsGrounded )
+                if ( pState->bWheelsLoose )
                 {
-                    pitch = pState->timeAllWheelsGrounded * sithPhysics_flt_538D50 + pitch;
+                    pitch = pState->secWheelsLooseTime * sithPhysics_flt_538D50 + pitch;
                     pitch = STDMATH_CLAMP(pitch, sithPhysics_flt_538D40, sithPhysics_flt_538D4C);
                 }
 

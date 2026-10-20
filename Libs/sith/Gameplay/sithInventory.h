@@ -24,8 +24,8 @@ J3D_EXTERN_C_START
 #define sithInventory_g_aTypes J3D_DECL_FAR_ARRAYVAR(sithInventory_g_aTypes, SithInventoryType(*)[SITHINVENTORY_MAXTYPES])
 // extern SithInventoryType sithInventory_g_aTypes[SITHINVENTORY_MAXTYPES];
 
-#define sithInventory_g_aUnknown J3D_DECL_FAR_ARRAYVAR(sithInventory_g_aUnknown, SithInventoryUnknown(*)[20])
-// extern SithInventoryUnknown sithInventory_g_aUnknown[20];
+#define sithInventory_g_aPowerKeybinds J3D_DECL_FAR_ARRAYVAR(sithInventory_g_aPowerKeybinds, SithPowerKeybind(*)[20])
+// extern SithPowerKeybind sithInventory_g_aPowerKeybinds[20];
 
 void J3DAPI sithInventory_RegisterType(size_t typeId, const char* pName, float min, float max, SithInventoryTypeFlag flags, SithCog* pItemCog, rdModel3* pInvModel, rdModel3* pItemModel);
 

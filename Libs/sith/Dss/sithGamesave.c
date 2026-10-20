@@ -669,11 +669,11 @@ int J3DAPI sithGamesave_ReadBlockTypeLength(uint16_t* pType, uint32_t* pLength)
 {
     if ( !stdConffile_Read(pType, sizeof(uint16_t)) || !stdConffile_Read(pLength, sizeof(uint32_t)) )
     {
-        *pType   = SITHDSS_UNKNOWN_44;
+        *pType   = SITHDSS_ENDSECTION;
         *pLength = 0;
         return 1; // error
     }
-    else if ( *pType == SITHDSS_UNKNOWN_44 )
+    else if ( *pType == SITHDSS_ENDSECTION )
     {
         return SITHSAVEGAME_ENDFILE; // end of savegame file section
     }
@@ -682,7 +682,7 @@ int J3DAPI sithGamesave_ReadBlockTypeLength(uint16_t* pType, uint32_t* pLength)
     if ( *pLength > STD_ARRAYLEN(sithMulti_g_message.data) )
     {
         SITHLOG_ERROR("Savegame DSS block type %d length %u exceeds message buffer size %u.\n", *pType, *pLength, (unsigned int)STD_ARRAYLEN(sithMulti_g_message.data));
-        *pType   = SITHDSS_UNKNOWN_44;
+        *pType   = SITHDSS_ENDSECTION;
         *pLength = 0;
         return 1;
     }

@@ -2202,12 +2202,12 @@
 #define sithInventory_g_dword_56B750_ADDR 0x0056B750
 #define sithInventory_g_dword_56B754_ADDR 0x0056B754
 #define sithInventory_g_aTypes_ADDR 0x017F1E20
-#define sithInventory_g_aUnknown_ADDR 0x017F1D20
+#define sithInventory_g_aPowerKeybinds_ADDR 0x017F1D20
 #define sithPlayerActions_g_jewelFlyingPuppetTrackNum_ADDR 0x0052C888
 #define sithPlayerActions_climbPupTrackNum_ADDR 0x0055EDD4
-#define sithPlayerActions_g_pCurLedgeSurface_ADDR 0x0056B768
-#define sithPlayerActions_g_pCurLedgeThingModelFace_ADDR 0x0056B76C
-#define sithPlayerActions_g_pCurLedgeThingModel_ADDR 0x0056B770
+#define sithPlayerActions_g_pCurCollidedSurface_ADDR 0x0056B768
+#define sithPlayerActions_g_pCurCollidedModelFace_ADDR 0x0056B76C
+#define sithPlayerActions_g_pCurCollidedModel_ADDR 0x0056B770
 #define sithPlayerActions_g_pPlasma_ADDR 0x0056B774
 #define sithPlayerActions_g_bJewelFlying_ADDR 0x0056B778
 #define sithPlayerActions_g_bPlayerInvisible_ADDR 0x0056B77C
@@ -2246,7 +2246,7 @@
 #define sithMulti_msecLastSyncScoreTime_ADDR 0x0056F9A0
 #define sithMulti_msecWelcomeUpdateInterval_ADDR 0x0056F9A4
 #define sithMulti_g_serverId_ADDR 0x017F10E8
-#define sithMulti_dword_17F10EC_ADDR 0x017F10EC
+#define sithMulti_msecSyncTime_ADDR 0x017F10EC
 #define sithMulti_g_message_ADDR 0x017F1100
 #define sithPuppet_aStrSubModes_ADDR 0x0052E0B0
 #define sithPuppet_pClassHashtable_ADDR 0x0056F9AC
@@ -2427,7 +2427,7 @@
 #define sithAIUtil_g_bRenderAIWpnts_ADDR 0x00585480
 #define sithAIUtil_activeWpntLayer_ADDR 0x00585484
 #define sithAIUtil_numThingsInView_ADDR 0x00585488
-#define sithAIUtil_vec_585490_ADDR 0x00585490
+#define sithAIUtil_mkPointCurDir_ADDR 0x00585490
 #define sithAIUtil_pMkPointCurLocal_ADDR 0x0058549C
 #define sithAIUtil_mkPointCurPYR_ADDR 0x005854A0
 #define sithAIUtil_thingsInViewFovX_ADDR 0x005854AC
@@ -2435,7 +2435,7 @@
 #define sithAIUtil_aThingsInView_ADDR 0x00585528
 #define sithAIUtil_aWpntDistances_ADDR 0x00585530
 #define sithAIUtil_sizeThingsInView_ADDR 0x00585710
-#define sithAIUtil_vec_585718_ADDR 0x00585718
+#define sithAIUtil_mkPointCurRVec_ADDR 0x00585718
 #define sithAIUtil_maxDistanceToThingsInView_ADDR 0x00585724
 #define sithAIUtil_thingInViewTypeMask_ADDR 0x00585728
 #define sithAIUtil_aAIWpnts_ADDR 0x00585730

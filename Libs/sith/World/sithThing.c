@@ -4656,8 +4656,8 @@ int J3DAPI sithThing_CreateQuetzUserBlock(SithThing* pThing)
     SithQuetzUserBlock* pQuetz = pThing->userblock.pQuetz;
     STD_ZEROMEM(pQuetz, sizeof(SithQuetzUserBlock));
 
-    pQuetz->strike.unknown0 = 0;
-    pQuetz->strike.unknown3 = 0;
+    pQuetz->strike.mode = 0;
+    pQuetz->strike.numSnapShots = 0;
 
     size_t attNum = 0;
     SithThing* pPrevThing = pThing;

@@ -12,14 +12,14 @@ J3D_EXTERN_C_START
 #define sithPlayerActions_g_jewelFlyingPuppetTrackNum J3D_DECL_FAR_VAR(sithPlayerActions_g_jewelFlyingPuppetTrackNum, int)
 // extern int sithPlayerActions_g_jewelFlyingPuppetTrackNum ;
 
-#define sithPlayerActions_g_pCurLedgeSurface J3D_DECL_FAR_VAR(sithPlayerActions_g_pCurLedgeSurface, SithSurface*)
-// extern SithSurface *sithPlayerActions_g_pCurLedgeSurface;
+#define sithPlayerActions_g_pCurCollidedSurface J3D_DECL_FAR_VAR(sithPlayerActions_g_pCurCollidedSurface, SithSurface*)
+// extern SithSurface *sithPlayerActions_g_pCurCollidedSurface;
 
-#define sithPlayerActions_g_pCurLedgeThingModelFace J3D_DECL_FAR_VAR(sithPlayerActions_g_pCurLedgeThingModelFace, rdFace*)
-// extern rdFace *sithPlayerActions_g_pCurLedgeThingModelFace;
+#define sithPlayerActions_g_pCurCollidedModelFace J3D_DECL_FAR_VAR(sithPlayerActions_g_pCurCollidedModelFace, rdFace*)
+// extern rdFace *sithPlayerActions_g_pCurCollidedModelFace;
 
-#define sithPlayerActions_g_pCurLedgeThingModel J3D_DECL_FAR_VAR(sithPlayerActions_g_pCurLedgeThingModel, rdModel3*)
-// extern rdModel3 *sithPlayerActions_g_pCurLedgeThingModel;
+#define sithPlayerActions_g_pCurCollidedModel J3D_DECL_FAR_VAR(sithPlayerActions_g_pCurCollidedModel, rdModel3*)
+// extern rdModel3 *sithPlayerActions_g_pCurCollidedModel;
 
 #define sithPlayerActions_g_pPlasma J3D_DECL_FAR_VAR(sithPlayerActions_g_pPlasma, SithThing*)
 // extern SithThing *sithPlayerActions_g_pPlasma;

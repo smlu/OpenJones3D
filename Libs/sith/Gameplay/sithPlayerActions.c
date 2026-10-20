@@ -88,9 +88,9 @@ void sithPlayerActions_ResetGlobals(void)
     int sithPlayerActions_g_jewelFlyingPuppetTrackNum_tmp = -1;
     STD_COPYMEM(&sithPlayerActions_g_jewelFlyingPuppetTrackNum, &sithPlayerActions_g_jewelFlyingPuppetTrackNum_tmp, sizeof(sithPlayerActions_g_jewelFlyingPuppetTrackNum));
 
-    STD_ZEROMEM(&sithPlayerActions_g_pCurLedgeSurface, sizeof(sithPlayerActions_g_pCurLedgeSurface));
-    STD_ZEROMEM(&sithPlayerActions_g_pCurLedgeThingModelFace, sizeof(sithPlayerActions_g_pCurLedgeThingModelFace));
-    STD_ZEROMEM(&sithPlayerActions_g_pCurLedgeThingModel, sizeof(sithPlayerActions_g_pCurLedgeThingModel));
+    STD_ZEROMEM(&sithPlayerActions_g_pCurCollidedSurface, sizeof(sithPlayerActions_g_pCurCollidedSurface));
+    STD_ZEROMEM(&sithPlayerActions_g_pCurCollidedModelFace, sizeof(sithPlayerActions_g_pCurCollidedModelFace));
+    STD_ZEROMEM(&sithPlayerActions_g_pCurCollidedModel, sizeof(sithPlayerActions_g_pCurCollidedModel));
     STD_ZEROMEM(&sithPlayerActions_g_pPlasma, sizeof(sithPlayerActions_g_pPlasma));
     STD_ZEROMEM(&sithPlayerActions_g_bJewelFlying, sizeof(sithPlayerActions_g_bJewelFlying));
     STD_ZEROMEM(&sithPlayerActions_g_bPlayerInvisible, sizeof(sithPlayerActions_g_bPlayerInvisible));
@@ -1849,11 +1849,11 @@ float J3DAPI sithPlayerActions_FindLedge(SithThing* pThing, const rdVector3* pPY
                 rdVector3 hitNormal = RDVECTOR_NEG3(pCollision->pSurfaceCollided->face.normal); // Negate normal to get the hit surface normal
                 if ( rdVector_Dot3(&pThing->orient.lvec, &hitNormal) >= 0.949f )
                 {
-                    if ( sithPlayerActions_g_pCurLedgeSurface != pCollision->pSurfaceCollided ) // TODO: This check should probably be done before the dot product check
+                    if ( sithPlayerActions_g_pCurCollidedSurface != pCollision->pSurfaceCollided ) // TODO: This check should probably be done before the dot product check
                     {
-                        sithPlayerActions_g_pCurLedgeSurface = pCollision->pSurfaceCollided;
+                        sithPlayerActions_g_pCurCollidedSurface = pCollision->pSurfaceCollided;
 
-                        pHitLedgeSurf = sithPlayerActions_g_pCurLedgeSurface;
+                        pHitLedgeSurf = sithPlayerActions_g_pCurCollidedSurface;
                         bSurfaceHit   = true;
                         hitDistance   = pCollision->distance;
                         if ( hitDistance < 0.0f )
@@ -1869,11 +1869,11 @@ float J3DAPI sithPlayerActions_FindLedge(SithThing* pThing, const rdVector3* pPY
         else if ( (pCollision->type & SITHCOLLISION_THING) != 0 )
         {
             if ( pCollision->pFaceCollided
-                && pCollision->pFaceCollided != sithPlayerActions_g_pCurLedgeThingModelFace
+                && pCollision->pFaceCollided != sithPlayerActions_g_pCurCollidedModelFace
                 && (pCollision->pFaceCollided->flags & RD_FF_3DO_LEDGE) != 0 )
             {
-                sithPlayerActions_g_pCurLedgeThingModelFace = pCollision->pFaceCollided;
-                pHitThingFace = sithPlayerActions_g_pCurLedgeThingModelFace;
+                sithPlayerActions_g_pCurCollidedModelFace = pCollision->pFaceCollided;
+                pHitThingFace = sithPlayerActions_g_pCurCollidedModelFace;
 
                 // Convert face normal to world space
                 rdVector3 hitNormal;
@@ -1893,8 +1893,8 @@ float J3DAPI sithPlayerActions_FindLedge(SithThing* pThing, const rdVector3* pPY
                     *ppLedgeThingMesh = pCollision->pMeshCollided;
                     *ppLedgeThing     = pCollision->pThingCollided;
 
-                    sithPlayerActions_g_pCurLedgeThingModel     = pCollision->pThingCollided->renderData.data.pModel3;
-                    sithPlayerActions_g_pCurLedgeThingModelFace = pCollision->pFaceCollided;
+                    sithPlayerActions_g_pCurCollidedModel     = pCollision->pThingCollided->renderData.data.pModel3;
+                    sithPlayerActions_g_pCurCollidedModelFace = pCollision->pFaceCollided;
                     break;
                 }
             }
@@ -2484,7 +2484,7 @@ int J3DAPI sithPlayerActions_GrabLedge(SithThing* pThing, float distance, SithSu
         }
 
         sithThing_AttachThingToClimbSurface(pThing, pLedgeSurf);
-        sithPlayerActions_g_pCurLedgeSurface = pLedgeSurf;
+        sithPlayerActions_g_pCurCollidedSurface = pLedgeSurf;
     }
     else if ( pLedgeThingFace )
     {
@@ -2526,8 +2526,8 @@ int J3DAPI sithPlayerActions_GrabLedge(SithThing* pThing, float distance, SithSu
 
         sithThing_AttachThingToThingFace(pThing, pLedgeThing, pLedgeThingFace, pLedgeThingMesh->apVertices, 1);
 
-        sithPlayerActions_g_pCurLedgeThingModelFace = pLedgeThingFace;
-        sithPlayerActions_g_pCurLedgeThingModel     = pLedgeThing->renderData.data.pModel3;
+        sithPlayerActions_g_pCurCollidedModelFace = pLedgeThingFace;
+        sithPlayerActions_g_pCurCollidedModel     = pLedgeThing->renderData.data.pModel3;
     }
 
     sithPuppet_PlayMode(pThing, SITHPUPPETSUBMODE_HANGLEDGE, NULL);
