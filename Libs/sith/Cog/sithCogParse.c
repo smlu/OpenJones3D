@@ -109,7 +109,8 @@ int J3DAPI sithCogParse_Load(const char* pFilename, SithCogScript* pScript, int 
     // Parse optional flags
     if ( streq(stdConffile_g_entry.aArgs[0].argName, "flags") ) // TODO: case-insensitive cmp?
     {
-        if ( sscanf_s(stdConffile_g_entry.aArgs[0].argValue, "%x", &pScript->flags) != 1 || !stdConffile_ReadArgs() )
+        sscanf_s(stdConffile_g_entry.aArgs[0].argValue, "%x", &pScript->flags); // Fixed: Ignore the result of the flags conversion as the original, a malformed flags value is not an error and leaves the flags zero (original Indy3D.exe v1.0 0x00452990)
+        if ( !stdConffile_ReadArgs() )
         {
             goto eof_error;
         }
