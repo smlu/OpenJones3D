@@ -6807,6 +6807,7 @@ void J3DAPI jonesConfig_AssignControlKey_ReadKey(HWND hWnd)
                             bGotKy = 1;
                             KillTimer(hWnd, 1u);
                             EndDialog(hWnd, 1);
+                            return; // Fixed: Don't show the number key error message after the key was accepted (original Indy3D.exe v1.0 0x0040A230)
                         }
 
                         // Only weapon key and we have non-weapon action

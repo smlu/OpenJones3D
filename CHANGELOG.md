@@ -455,6 +455,7 @@
   - Fixed the quick load key (F8) leaving saving disabled when there is no quick save file or when loading the quick save and the last save both fail. ()
   - Fixed `JonesHud_GetKey` resetting the menu move duration on every key read, which disabled the speed up of the inventory menu when a direction key is held. ()
   - Fixed the key assignment dialog (`jonesConfig_AssignControlKey_ReadKey`) rejecting the number keys for the fists, whip, Mauser, PPSh-41, pistol, Simonov, Tokarev and TOZ-34 actions; they are accepted for all weapon actions from fists to grenade as in the original. ()
+  - Fixed the key assignment dialog (`jonesConfig_AssignControlKey_ReadKey`) showing the "number keys only for weapons" message and clearing the key name after an accepted number key. ()
 
 ## v0.3.1
 ### General:
