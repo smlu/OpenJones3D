@@ -1928,6 +1928,7 @@ void J3DAPI sithCogFunction_FindNewSectorFromThing(SithCog* pCog)
     if ( !pThing || !pThing->pInSector )
     {
         SITHLOG_ERROR("BAD THING REF IN FindNewSectorFromThing\n");
+        sithCogExec_PushInt(pCog, -1); // Fixed: Push -1 on error like the original (Indy3D.exe v1.0 0x0047A880)
         return;
     }
 
