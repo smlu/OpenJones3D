@@ -226,7 +226,8 @@ ZfileHandle* J3DAPI zfilio_open(const char* pPath, const char* pMode)
                     pFile->pos   = 0;
 
                     // The uncompressed size is the last 4 bytes of a gz file
-                    int size = 0; // Fixed: initialize size (the original leaves it uninitialized when the read returns fewer than 4 bytes)
+                    // TODO: [BUG] The original leaves size uninitialized when the read returns fewer than 4 bytes
+                    int size = 0; // Fixed: Init to 0
                     int fh   = zfilio_pFilio->Open(pPath, pMode);
                     zfilio_pFilio->Seek(fh, -4, 2);
                     zfilio_pFilio->Read(fh, &size, 4);

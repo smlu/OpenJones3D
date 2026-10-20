@@ -136,7 +136,7 @@ int J3DAPI SmushPlay_PlayMovie(const char* pFilename, int a1, int a3, int a4, in
     dbloc16_Configure(1, smushplay_Blit);
 
     // TODO: [BUG] The original returns an uninitialized rc if the loop doesn't run (count is -1 if 0 is passed in), here it is 0.
-    int rc = 0;
+    int rc = 0; // Fixed: Init to 0
     for ( int i = 0; i < a11; ++i )
     {
         rc = smushplay_pAnimPlay->Create(&smushplay_pPlay, aPath, a1, a12, a13, a3 | 0xD);

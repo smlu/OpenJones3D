@@ -2,6 +2,7 @@
 #define SMUSH_INSANE_IMAGE_READAUTO_H
 #include <assert.h>
 #include <j3dcore/j3d.h>
+#include <smush/RTI/addresses.h>
 #include <smush/insane/lec.h>
 #include <smush/insane/readanim.h>
 #include <smush/insane/Memory/Memory.h>

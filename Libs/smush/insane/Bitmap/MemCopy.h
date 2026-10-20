@@ -1,6 +1,7 @@
 #ifndef SMUSH_INSANE_BITMAP_MEMCOPY_H
 #define SMUSH_INSANE_BITMAP_MEMCOPY_H
 #include <j3dcore/j3d.h>
+#include <smush/RTI/addresses.h>
 
 /* MemCopy.asm: blit_MemCopy copies size bytes, the size & 3 odd bytes first, then whole dwords. */
 

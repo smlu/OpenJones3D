@@ -4,8 +4,7 @@
 #include <stdint.h>
 
 #include <j3dcore/j3d.h>
-#include <j3dcore/j3dhook.h>
-#include <smush/RTI/symbols.h>
+#include <smush/RTI/addresses.h>
 #include <sound/Driver.h>
 #include <std/types.h>
 
@@ -57,7 +56,7 @@ int J3DAPI SmushPlay_PlayMovie(const char* pFilename, int a1, int a3, int a4, in
 int J3DAPI smushplay_Blit(int a1, int a2, int a3, int a4, void* pBitmap);
 void* smushplay_GetHwnd(void);
 
-// Installs/resets every smush translation unit (called from the DLL's InstallHooks/ResetGlobals once the library is enabled)
+// Install the hooks of / reset the globals of every smush translation unit (called from the DLL's InstallHooks/ResetGlobals)
 void Smush_InstallHooks(void);
 void Smush_ResetGlobals(void);
 

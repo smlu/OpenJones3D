@@ -1,6 +1,7 @@
 #ifndef SMUSH_INSANE_FILE_STDIO_H
 #define SMUSH_INSANE_FILE_STDIO_H
 #include <j3dcore/j3d.h>
+#include <smush/RTI/addresses.h>
 #include <smush/insane/lec.h>
 #include <smush/insane/filio.h>
 

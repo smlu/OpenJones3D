@@ -532,7 +532,7 @@ void J3DAPI dbloc16_MakeGlyphs(int size)
 
 int J3DAPI dbloc16_DecodeFrame(LecBitmapHeader* pBitmap, MixerRect* pClip, int x, int y, void* pPalette, Bl16Header* pHdr, int flags)
 {
-    int rc = 0; // Fixed: initialize rc (see the TODO at the return)
+    int rc = 0; // Fixed: Init to 0 (see the TODO at the return)
 
     int width      = pHdr->width;
     int height     = pHdr->height;

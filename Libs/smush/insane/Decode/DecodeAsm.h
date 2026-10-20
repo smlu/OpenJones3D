@@ -1,6 +1,7 @@
 #ifndef SMUSH_INSANE_DECODE_DECODEASM_H
 #define SMUSH_INSANE_DECODE_DECODEASM_H
 #include <j3dcore/j3d.h>
+#include <smush/RTI/addresses.h>
 #include <stdint.h>
 
 /*
