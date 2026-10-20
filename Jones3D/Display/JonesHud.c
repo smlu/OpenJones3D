@@ -1523,7 +1523,7 @@ void JonesHud_MenuClose(void)
                 || (JonesHud_apMenuItems[pItem->nextUpItemId]->flags & 0x20) != 0) )
         {
             //(JonesHud_item_flag_state_55514C & 0xFF) = (1 << i) | JonesHud_item_flag_state_55514C;
-            JonesHud_item_flag_state_55514C = (JonesHud_item_flag_state_55514C & ~0xFF) | (1 << i);
+            JonesHud_item_flag_state_55514C |= (1 << i); // Fixed: Set the bit of this column, assignment dropped the bits of previously collapsed columns (original Indy3D.exe v1.0 0x00414FF0)
             if ( JonesHud_aSoundFxHandles[3] )  // inv_expand.wav
             {
                 JonesHud_hCurSndChannel = sithSoundMixer_PlaySound(JonesHud_aSoundFxHandles[3], 1.0f, 0.0f, SOUNDPLAY_PLAYONCE);

@@ -451,6 +451,7 @@
   - Fixed `sithPlayerControls_ProcessSwimMove` rotating the swim thrust by the head angles, which the original never does, so swimming direction followed the head instead of the body. ()
   - Fixed `sithPlayerControls_ProcessClimbMove` ignoring the jump, climb and strafe keys while the action key (pull up) is held, even when no pull up was possible. ()
   - Fixed the water ripple sector in `sithFX_GetWaterPosition` callers (raft splatter, raft wake and paddle water effects): the found water surface sector is now returned through a pointer instead of being assigned to a copy. ()
+  - Fixed `JonesHud_MenuClose` replacing instead of accumulating the collapsed column bits of the menu close animation, which broke the closing of inventory menus with more than one expanded column. ()
 
 ## v0.3.1
 ### General:
