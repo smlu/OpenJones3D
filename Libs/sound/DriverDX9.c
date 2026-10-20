@@ -812,6 +812,9 @@ int J3DAPI SoundDriver_Update3DSound(tSysSoundBuffer** ppDSBuf, float x, float y
     float newPitch  = pitch;
     if ( !b3DControl )
     {
+        // Fixed: The original has no initial value here and the mix callback leaves the outputs untouched when there is no camera (sithSoundMixer_CalcCameraRelativeSoundMix),
+        //        so the sound is culled by the far volume check below. In the original the unwritten volume slot holds the ppDSBuf argument (NULL or a heap pointer), which as a float is always below the far threshold, so the sound is always culled. Start with silence to get the same cull (original Indy3D.exe v1.0 0x004DE790)
+        newVolume = 0.0f;
         SoundDriver_CalcListeneSoundMix(x, y, z, volume, pitch, &newVolume, &pan, &newPitch, minRadius, maxRadius, envflags);
         if ( newVolume < SOUNDDRIVER_FARVOLUMETHRESHOLD
             && (*pChannelFlags & (SOUND_CHANNEL_LOOP | SOUND_CHANNEL_PLAYING)) != (SOUND_CHANNEL_LOOP | SOUND_CHANNEL_PLAYING)
