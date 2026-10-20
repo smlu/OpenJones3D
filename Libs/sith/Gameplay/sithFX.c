@@ -111,9 +111,9 @@ static void sithFX_RotateSpriteToMovement(SithThing* pSprite, const rdVector3* v
 
 void J3DAPI sithFX_CreatePaddleWaterSplash(SithThing* pThing, const rdVector3* pos);
 
-bool J3DAPI sithFX_GetWaterPosition(SithThing* pThing, rdVector3* waterPos, SithSector* waterSec, rdVector3* waterNormal)
+bool J3DAPI sithFX_GetWaterPosition(SithThing* pThing, rdVector3* waterPos, SithSector** ppWaterSec, rdVector3* waterNormal)
 {
-    SITH_ASSERT(waterPos && waterSec && waterNormal);
+    SITH_ASSERT(waterPos && ppWaterSec && waterNormal);
 
     rdVector3 rippleStartPos = *waterPos;
     rippleStartPos.z = pThing->pos.z;
@@ -127,7 +127,7 @@ bool J3DAPI sithFX_GetWaterPosition(SithThing* pThing, rdVector3* waterPos, Sith
         SithSurface* pWaterSurf = sithCollision_FindWaterSurface(pStartSec, &rippleStartPos, &endPos, sithFX_surfaceOffsetZ);
         if ( pWaterSurf )
         {
-            waterSec     = pWaterSurf->pSector;
+            *ppWaterSec  = pWaterSurf->pSector; // Fixed: Pass the sector by pointer, assigning the by-value parameter had no effect for the callers
             *waterNormal = pWaterSurf->face.normal;
 
             // Assign found position
@@ -550,7 +550,7 @@ void J3DAPI sithFX_CreateRaftSplatterFX(SithThing* pThing, int bCreateSplash)
         //        This prevents visual issues where ripples could be misplaced or
         //        incorrectly oriented (e.g. embedded in the water surface or spawned
         //        in the air) due to steep, uneven, or overlapping water surfaces.
-        sithFX_GetWaterPosition(pThing, &ripplePos, pRippleSec, &rippleUpDir);
+        sithFX_GetWaterPosition(pThing, &ripplePos, &pRippleSec, &rippleUpDir);
 
         // Altered: Replaced OG code with sithFX_CreateThingFacingUp
         SithThing* pRipple = sithFX_CreateThingFacingUp(pSplashTpl, &ripplePos, pRippleSec, &rippleUpDir);
@@ -686,7 +686,7 @@ void J3DAPI sithFX_CreateRaftWakeFX(SithThing* pThing)
         //        This prevents visual issues where ripples could be misplaced or
         //        incorrectly oriented (e.g. embedded in the water surface or spawned
         //        in the air) due to steep, uneven, or overlapping water surfaces.
-        sithFX_GetWaterPosition(pThing, &ripplePos, pRippleSec, &rippleUpDir);
+        sithFX_GetWaterPosition(pThing, &ripplePos, &pRippleSec, &rippleUpDir);
 
         SithThing* pRipple = sithFX_CreateThingFacingUp(pRippleTpl, &ripplePos, pRippleSec, &rippleUpDir);
         if ( !pRipple )
@@ -851,7 +851,7 @@ void J3DAPI sithFX_CreateRaftPaddleWaterFX(SithThing* pThing, float secTime)
     //        This prevents visual issues where ripples could be misplaced or
     //        incorrectly oriented (e.g. embedded in the water surface or spawned
     //        in the air) due to steep, uneven, or overlapping water surfaces.
-    sithFX_GetWaterPosition(pThing, &ripplePos, pRippleSec, &rippleUpDir);
+    sithFX_GetWaterPosition(pThing, &ripplePos, &pRippleSec, &rippleUpDir);
 
     bool bCreateSplashFx = false;
     if ( secDeltaTime == 0.0f || secDelatLastCreated >= 0.2f )
