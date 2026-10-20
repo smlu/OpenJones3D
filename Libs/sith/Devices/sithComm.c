@@ -169,7 +169,7 @@ int J3DAPI sithMessage_NetWrite(const SithMessage* pMsg, DPID idTo, uint32_t fla
     SITH_ASSERTREL(pMsg); // Fixed: Moved this assert to the start, before accessing the pMsg
 
     int bFailed = 0;
-    uint32_t dataSize = pMsg->length + sizeof(pMsg->type); // 4 is the size of message type
+    uint32_t dataSize = pMsg->length + 4; // Fixed: Sends the type plus 2 bytes after the data (4 in total), sizeof(type) was 2 (original Indy3D.exe v1.0 0x00451D10)
     if ( idTo == SITHMESSAGE_SENDTOJOINEDPLAYERS )
     {
         for ( size_t i = 0; i < sithPlayer_g_numPlayers; ++i )
@@ -201,7 +201,7 @@ int J3DAPI sithMessage_ReceiveMessage(SithMessage* pMsg, DPID* pSender)
 {
     SITH_ASSERTREL(pMsg != NULL); // Fixed: Moved this assert to beginning of scope before accessing pMsg
 
-    size_t dataLen = STD_ARRAYLEN(pMsg->data);
+    size_t dataLen = STD_ARRAYLEN(pMsg->data) + 4; // Fixed: Buffer holds the type, the data and 2 more bytes as sent by NetWrite (original Indy3D.exe v1.0 0x00451E20)
     int res = stdComm_Receive(pSender, &pMsg->type, &dataLen);
     if ( res == -1 ) // no more messages
     {
@@ -210,7 +210,7 @@ int J3DAPI sithMessage_ReceiveMessage(SithMessage* pMsg, DPID* pSender)
 
     if ( res == 0 ) // success
     {
-        pMsg->length = dataLen - sizeof(pMsg->type);
+        pMsg->length = dataLen - 4; // Fixed: The size of the type plus 2 trailing bytes is 4 (original Indy3D.exe v1.0 0x00451E20)
         pMsg->msecTime = sithTime_g_msecGameTime;
         return 1;
     }
