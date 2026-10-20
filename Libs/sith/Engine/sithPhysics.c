@@ -2833,7 +2833,7 @@ void J3DAPI sithPhysics_PowerOffMineCar(SithThing* pThing)
         }
 
         // Added: Falowing is new code
-        pThing->flags &= SITH_TF_EMITLIGHT; // Added: Turn on rear red light
+        pThing->flags &= ~SITH_TF_EMITLIGHT; // Added: Turn off rear red light. Fixed: Missing ~, the mask cleared all other thing flags (new upstream code, no counterpart in the original Indy3D.exe v1.0)
         pThing->thingInfo.actorInfo.flags &= ~SITH_AF_HEADLIGHT;
         sithPhysics_SetVehicleLights(&pCarState->lights, /*bOn=*/ false);
         pCarState->bEngineRunning = false;
