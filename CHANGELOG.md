@@ -288,6 +288,7 @@
   - Fixed `Sound_Play` scanning past the end of the channel array when all sound channels are busy; a lower priority channel is now reused as in the original, or the sound is not played. ()
   - Fixed `Sound_Load` dropping the first character of the file name when the path has no directory separator (the sound was not found in the sound bank and was loaded again). ()
   - Fixed `Sound_GetSoundIndex` matching the invalid sound handle with unused sound infos; it now returns the invalid index as the original does. ()
+  - Fixed `Sound_FadeVolume` and `Sound_FadePitch` comparing the remaining fade time as unsigned (`SoundFade` start and end times are now signed as in the original), which reused expired fade slots incorrectly and produced a huge fade fraction when the sound clock was behind a fade start. ()
   - Fixed overlapping COG stack shifts on overflow by using `memmove` in `sithCogExec_PushStack`. [PR #55](https://github.com/smlu/OpenJones3D/pull/55)
   - Added an optional runtime guard in `sithCamera_Update` to skip cinematic camera updates while either focus thing is missing. [PR #54](https://github.com/smlu/OpenJones3D/pull/54)
   - Fixed an out-of-bounds write in `sithEvent_ResetFreeBufferTable` that could cause startup hangs in optimized Clang builds. [PR #45](https://github.com/smlu/OpenJones3D/pull/45)
