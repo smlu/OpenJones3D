@@ -350,6 +350,11 @@ void Sound_TestSetSoundBank(size_t bankNum, SoundInfo* pSoundInfos, size_t numSo
     soundbank_aUsedCacheSizes[bankNum] = cacheSize;
 }
 
+void Sound_TestSetOpen(int bOpen)
+{
+    Sound_state = bOpen ? SOUNDSTATE_OPEN : SOUNDSTATE_INITIALIZED;
+}
+
 void Sound_TestSetNoLipSync(int bNoLipSync)
 {
     Sound_bNoLipSync = bNoLipSync != 0;
@@ -1694,6 +1699,7 @@ tSoundChannelHandle J3DAPI Sound_Play(tSoundHandle hSnd, float volume, float pan
     // First scan for a free channel while tracking lowest priority
     tSoundChannel* pChannel       = Sound_apChannels;
     tSoundChannel* pLowPriChannel = NULL;
+    bool bFoundFree = false;
     for ( size_t i = 0; i < Sound_numChannels; ++i )
     {
          // Track lowest priority channel seen so far
@@ -1705,6 +1711,7 @@ tSoundChannelHandle J3DAPI Sound_Play(tSoundHandle hSnd, float volume, float pan
         // Found a free channel - use it immediately
         if ( pChannel->handle == SOUND_INVALIDHANDLE )
         {
+            bFoundFree = true;
             break;
         }
 
@@ -1712,7 +1719,7 @@ tSoundChannelHandle J3DAPI Sound_Play(tSoundHandle hSnd, float volume, float pan
     }
 
     // If we couldn't find a free channel, try to reuse lowest priority one
-    if ( pChannel->handle != SOUND_INVALIDHANDLE )
+    if ( !bFoundFree )
     {
         // No free channel found, check if we have a lower priority one to reuse
         if ( !pLowPriChannel )
