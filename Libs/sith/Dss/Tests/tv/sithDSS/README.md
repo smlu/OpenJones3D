@@ -209,22 +209,10 @@ changes of both records.
   replaces a value of zero or less with 1.0 (an intentional `Added:` change in
   `sithDSS_ProcessPuppetStatus`). `TestOriginalPuppetStatus` expects exactly these two
   cases to differ and is reported as ignored.
-- `MoveToPos_close_inexact`, `MoveToPos_close2_inexact` (`sithDSSThing_MoveToPos`
-  at `0x0047E3B0`, also reached from `ProcessPos` for physics things): the original
-  evaluates `velocity * 0.25 + newPos - pos` entirely in x87 registers and rounds to
-  float once, when it stores the direction (disassembly: `fmul`/`fadd`/`fsub` on
-  `st(0..2)`, then `fstp` to the stack). The reconstruction rounds the predicted
-  position to float first. For values that are not exactly representable the direction
-  and therefore the new velocity (`direction * 4`) differ in the low bits. First case,
-  velocity (12 bytes at `SithThing.moveInfo.physics.velocity`): original
-  `98 cd cc be 34 cd 4c 3f 68 cd 4c be`, reconstruction `00 cc cc be 00 cd 4c 3f 00 cd 4c be`;
-  second case original `cc cc 4c bf cc cc 4c bf da cc 4c bf`, reconstruction
-  `00 cc 4c bf 00 cd 4c bf c0 cc 4c bf`. Computing the three components in double and
-  rounding once reproduces the original (verified against these vectors):
-  `dir.x = (float)((double)velocity.x * 0.25 + (double)pPos->x - (double)pThing->pos.x)`
-  (same for y and z) instead of the `predictedPos` temporary.
-  `TestOriginalMoveToPos` expects exactly these two cases to differ and is reported
-  as ignored.
+- None for `sithDSSThing_MoveToPos` any more: the original evaluates
+  `velocity * 0.25 + newPos - pos` in x87 extended precision and rounds once, and the
+  reconstruction computes the direction in double and rounds once, which reproduces
+  `MoveToPos_close_inexact` and `MoveToPos_close2_inexact` exactly.
 
 ### Inputs Kept Out Of The Corpus
 

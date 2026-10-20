@@ -950,6 +950,5 @@ parts of the world and of the message buffers to reject accesses outside the dat
 function is given. The engine globals of the original executable are redirected to
 static memory in this suite, and the suite links its image at a fixed high base so the
 normalized addresses of the synthetic state cannot collide with generated values.
-The expected differences (an intentional playback speed fix and a float precision
-difference in `sithDSSThing_MoveToPos`) make the matching test report as ignored while
-they exist.
+The one expected difference (an intentional playback speed fix in
+`sithDSS_ProcessPuppetStatus`) makes the matching test report as ignored.
