@@ -912,6 +912,7 @@ void J3DAPI JonesMain_HandleWMKeydown(HWND hWnd, WPARAM vk, int a3, uint16_t rep
                                 char aErrorText[128] = { 0 };
                                 STD_FORMAT(aErrorText, pErrorFormat, aPath);
                                 JonesMain_LogErrorToFile(aErrorText);
+                                jonesCog_g_bEnableGamesave = 1; // Fixed: Re-enable saving after a failed quick load (original Indy3D.exe v1.0 0x0041D650)
                             }
                             return;
                         }
@@ -939,6 +940,10 @@ void J3DAPI JonesMain_HandleWMKeydown(HWND hWnd, WPARAM vk, int a3, uint16_t rep
 
                     // Success
                     JonesHud_RestoreGameStatistics();
+                }
+                else
+                {
+                    jonesCog_g_bEnableGamesave = 1; // Fixed: Re-enable saving if there is no quick save file (original Indy3D.exe v1.0 0x0041D650)
                 }
             }
         } break;
