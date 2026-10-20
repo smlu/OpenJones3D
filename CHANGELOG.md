@@ -465,6 +465,7 @@
   - Fixed `jonesConfig_LoadControlScheme` never reporting "too many bindings" for an action with more than 8 bindings in a control scheme file; the clamped binding count could not exceed the limit, so the loader kept writing bindings past the end of the action. ()
   - Fixed the save game dialog hook (`jonesConfig_SaveGameDialogHookProc`) falling into the CDN_INITDONE code after accepting a new file name, which created the dialog fonts a second time and leaked the previous one. ()
   - Fixed `jonesConfig_InitKeySetsPath` always inserting an extra backslash between the install path and the key sets directory, even when the install path already ends with one. ()
+  - Fixed `jonesConfig_Shutdown` leaving the deleted dialog icon bitmap handles in the table, so the handles could be deleted again after a restart of the module. ()
 
 ## v0.3.1
 ### General:
