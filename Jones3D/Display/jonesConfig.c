@@ -8237,15 +8237,15 @@ int J3DAPI jonesConfig_ShowGameOverDialog(HWND hWnd, char* pRestoreFilename, tSo
     GameOverDialogData data;
     data.result           = 0;
     data.pRestoreFilename = pRestoreFilename;
-    data.sndChnlMusic     = 0;
+    data.sndChnlMusic     = *pSndChnlMus;
     data.hSndMusic        = 0;
     data.hSndMusic        = hSndGameOVerMus;
     JonesDialog_ShowDialog(MAKEINTRESOURCE(150), hWnd, jonesConfig_GameOverDialogProc, (LPARAM)&data);
 
-    if ( pSndChnlMus )
-    {
-        *pSndChnlMus = data.sndChnlMusic;
-    }
+#ifdef J3D_QOL_IMPROVEMENTS
+    // Altered: Return the music channel to the caller so it can stop the game over music. The original never writes it back (Indy3D.exe v1.0 0x0040C800)
+    *pSndChnlMus = data.sndChnlMusic;
+#endif
     return data.result;
 }
 
