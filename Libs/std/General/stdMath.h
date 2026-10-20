@@ -76,11 +76,12 @@ float stdMath_SmoothDamp(float current, float target, float rate, float deltaTim
 
 float stdMath_ClipNearZero(float val)
 {
-    if ( fabsf(val) <= STDMATH_ZERO_EPSILON )
+    // Fixed: Was fabsf(val) <= eps ? 0 : val which returns NaN unchanged, the original returns 0 for NaN (original Indy3D.exe v1.0, e.g. sithAIAwareness_IsInTransmittingRange 0x004B0BE0)
+    if ( fabsf(val) > STDMATH_ZERO_EPSILON )
     {
-        return 0.0f;
+        return val;
     }
-    return val;
+    return 0.0f;
 }
 
 /**

@@ -374,6 +374,14 @@ TEST(stdMath, TestClipNearZero)
     TEST_ASSERT_EQUAL_FLOAT(-2.0f * STDMATH_ZERO_EPSILON, stdMath_ClipNearZero(-2.0f * STDMATH_ZERO_EPSILON));
 }
 
+// Regression: NaN is turned into 0 like the original (it was returned unchanged)
+TEST(stdMath, TestClipNearZeroNaN)
+{
+    TEST_ASSERT_EQUAL_FLOAT(0.0f, stdMath_ClipNearZero(NAN));
+    TEST_ASSERT_EQUAL_FLOAT(INFINITY, stdMath_ClipNearZero(INFINITY));
+    TEST_ASSERT_EQUAL_FLOAT(-INFINITY, stdMath_ClipNearZero(-INFINITY));
+}
+
 TEST(stdMath, TestExpm1f)
 {
     TEST_ASSERT_FLOAT_WITHIN(0.000001f, expf(0.000001f) - 1.0f, stdMath_Expm1f(0.000001f));
@@ -792,6 +800,7 @@ TEST_GROUP_RUNNER(stdMath)
     RUN_TEST_CASE(stdMath, TestConstantAndHelperMacros);
     RUN_TEST_CASE(stdMath, TestDoubleConversionMacros);
     RUN_TEST_CASE(stdMath, TestClipNearZero);
+    RUN_TEST_CASE(stdMath, TestClipNearZeroNaN);
     RUN_TEST_CASE(stdMath, TestExpm1f);
     RUN_TEST_CASE(stdMath, TestFlexPower);
     RUN_TEST_CASE(stdMath, TestFlexPowerZeroNegativeExponent);
