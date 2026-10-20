@@ -220,7 +220,7 @@ void J3DAPI sithParticle_Update(SithThing* pThing, float secDeltaTime)
 
     if ( (pParticle->flags & SITHPARTICLE_FLAG_TIMEOUT_RATE) != 0 )
     {
-        size_t dverts = J3DMIN((int32_t)(pThing->thingInfo.particleInfo.timeoutRate * 0.15000001f), 1);
+        int32_t dverts = J3DMAX((int32_t)(pThing->thingInfo.particleInfo.timeoutRate * 0.15000001f), 1);
         pThing->renderData.data.pParticle->numVertices += dverts;
         if ( pThing->renderData.data.pParticle->numVertices > pThing->thingInfo.particleInfo.numParticles )
         {
