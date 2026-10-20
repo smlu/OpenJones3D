@@ -351,6 +351,11 @@ size_t J3DAPI rdFont_GetTextWidthEx(const char* pText, const rdFont* pFont, floa
 
 size_t J3DAPI rdFont_GetTextWidth(const char* pText, const rdFont* pFont)
 {
+    if ( !pFont ) // Fixed: NULL font check before reading the font size (original Indy3D.exe v1.0 0x004C4B80)
+    {
+        return 0;
+    }
+
     return rdFont_GetTextWidthEx(pText, pFont, (float)pFont->fontSize);
 }
 
@@ -396,6 +401,11 @@ const char* J3DAPI rdFont_GetWrapLineEx(const char* pText, const rdFont* pFont, 
 
 const char* J3DAPI rdFont_GetWrapLine(const char* pText, const rdFont* pFont, float widthScale)
 {
+    if ( !pFont ) // Fixed: NULL font check before reading the font size (original Indy3D.exe v1.0 0x004C4A90)
+    {
+        return NULL;
+    }
+
     return rdFont_GetWrapLineEx(pText, pFont, widthScale, (float)pFont->fontSize);
 }
 
@@ -475,6 +485,11 @@ void J3DAPI rdFont_DrawTextLineEx(const char* pText, float x, float y, float z, 
 
 void J3DAPI rdFont_DrawTextLine(const char* pText, float x, float y, float z, const rdFont* pFont, int alignFlags)
 {
+    if ( !pFont ) // Fixed: NULL font check before reading the font size (original Indy3D.exe v1.0 0x004C4BF0)
+    {
+        return;
+    }
+
     rdFont_DrawTextLineEx(pText, x, y, z, pFont, alignFlags, (float)pFont->fontSize);
 }
 
@@ -549,6 +564,11 @@ void J3DAPI rdFont_DrawTextLineClippedEx(const char* pText, float x, float y, fl
 
 void J3DAPI rdFont_DrawTextLineClipped(const char* pText, float x, float y, float z, const rdFont* pFont, int alignFlags)
 {
+    if ( !pFont ) // Fixed: NULL font check before reading the font size (original Indy3D.exe v1.0 0x004C5090)
+    {
+        return;
+    }
+
     rdFont_DrawTextLineClippedEx(pText, x, y, z, pFont, alignFlags, (float)pFont->fontSize);
 }
 
