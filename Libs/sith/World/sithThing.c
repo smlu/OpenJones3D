@@ -4369,7 +4369,7 @@ int J3DAPI sithThing_ParseThingArg(const StdConffileArg* pArg, SithWorld* pWorld
     }
 
 syntax_error:
-    SITHLOG_ERROR("Bad argument %s=%s, line %d in %s.\n", pArg->argName, pArg->argValue, stdConffile_GetFilename(), stdConffile_GetLineNumber());
+    SITHLOG_ERROR("Bad argument %s=%s, line %d in %s.\n", pArg->argName, pArg->argValue, stdConffile_GetLineNumber(), stdConffile_GetFilename()); // Fixed: Arguments were swapped, the file name was passed for the line number (original Indy3D.exe v1.0 0x00439590)
     return SITHTHING_PARSEARG_BADSYNTAX;
 }
 
