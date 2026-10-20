@@ -175,7 +175,7 @@ void sithFX_ResetGlobals(void)
     int sithFX_g_lastChalkMarkNum_tmp = -1;
     STD_COPYMEM(&sithFX_g_lastChalkMarkNum, &sithFX_g_lastChalkMarkNum_tmp, sizeof(sithFX_g_lastChalkMarkNum));
 
-    size_t sithFX_g_numChalkMarks_tmp = 0;
+    int sithFX_g_numChalkMarks_tmp = 0;
     STD_COPYMEM(&sithFX_g_numChalkMarks, &sithFX_g_numChalkMarks_tmp, sizeof(sithFX_g_numChalkMarks));
 
     STD_ZEROMEM(&sithFX_g_aChalkMarks, sizeof(sithFX_g_aChalkMarks));
@@ -1087,7 +1087,7 @@ void J3DAPI sithFX_CreateChalkMark(const rdVector3* pPos, const SithSurface* pAt
     {
         tplNum = (size_t)(SITH_RAND() * (float)(STD_ARRAYLEN(sithFX_aChalkMarkNames) - 1));
         bSearch = false;
-        for ( size_t i = 0; i < sithFX_g_numChalkMarks && !bSearch && sithFX_g_aChalkMarks[i]; i++ )
+        for ( int i = 0; i < sithFX_g_numChalkMarks && !bSearch && sithFX_g_aChalkMarks[i]; i++ )
         {
             if ( streq(sithFX_g_aChalkMarks[i]->aName, sithFX_aChalkMarkNames[tplNum]) )
             {
@@ -1109,7 +1109,7 @@ void J3DAPI sithFX_CreateChalkMark(const rdVector3* pPos, const SithSurface* pAt
         if ( sithFX_g_aChalkMarks[markNum] )
         {
             ++sithFX_g_lastChalkMarkNum;
-            if ( ++sithFX_g_numChalkMarks > STD_ARRAYLEN(sithFX_g_aChalkMarks) )
+            if ( ++sithFX_g_numChalkMarks > (int)STD_ARRAYLEN(sithFX_g_aChalkMarks) )
             {
                 sithFX_g_numChalkMarks = STD_ARRAYLEN(sithFX_g_aChalkMarks);
             }
