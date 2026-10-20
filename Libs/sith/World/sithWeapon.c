@@ -2169,7 +2169,7 @@ static bool J3DAPI sithWeapon_GenBloodSplatterEx(SithThing* pHitThing)
     size = size * 2.0f;
     end.x = size;
     end.y = size;
-    end.z = 0.8f;
+    end.z = J3D_QOL_VALUE(0.8f, 1.0f); // Altered: End alpha is 0.8, the original uses 1.0 (original Indy3D.exe v1.0 0x00449C40)
     sithAnimate_StartAnimateSpriteSize(pSprite, &start, &end, 0.5f);
 
     return true;

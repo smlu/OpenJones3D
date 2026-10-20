@@ -418,6 +418,7 @@
   - Fixed `sithThing_PlayCogDamageSound` to keep the original sound radii (0.5 and 2.5) for the impact and machete hit sounds outside of QOL builds. ()
   - Fixed `sithSoundClass_PlayPlayerVoiceModeRandom` repeat avoidance wrapping one entry too early, so the last player voice entry of a mode was skipped after a repeat. ()
   - Fixed the `strtof`/`strtoul` conversion range checks in `sithActor_ParseArg`, `sithWeapon_ParseArg`, `sithItem_ParseArg` and `sithThing_ParseThingArg` to reset `errno` before each conversion, so a stale `ERANGE` no longer rejects valid values (template stats could silently be lost at load). ()
+  - Fixed the blood splatter sprite end size in `sithWeapon_GenBloodSplatterEx` outside of QOL builds: the third component of the end size (the sprite alpha, not a depth) is 1.0 as in the original, was 0.8. ()
 
 ## v0.3.1
 ### General:
