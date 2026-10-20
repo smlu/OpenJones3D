@@ -1286,7 +1286,7 @@ void J3DAPI stdControl_RegisterAxis(size_t aid, int min, int max, float deadzone
     }
     else
     {
-        stdControl_aAxes[aid].deadzoneThreshold = lround((float)(max - center) * deadzoneScale);
+        stdControl_aAxes[aid].deadzoneThreshold = (int)((double)deadzoneScale * (double)(max - center)); // Fixed: The threshold is truncated from the unrounded product, was rounded with lround (original Indy3D.exe v1.0 0x004B9050)
     }
 }
 
