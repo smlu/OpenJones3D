@@ -12,7 +12,8 @@ J3D_EXTERN_C_START
 #define STDMATH_ZERO_EPSILON 0.00001f
 
 // Clamp value between min and max
-#define STDMATH_CLAMP(val, minv, maxv) (((val) < (minv)) ? (minv) : ((val) > (maxv)) ? (maxv) : (val))
+// Fixed: Was (val < min) ? min : (val > max) ? max : val which passes NaN through, the original turns NaN into min (original Indy3D.exe v1.0, e.g. rdMath_DeltaAngleNormalized 0x004CD9F0)
+#define STDMATH_CLAMP(val, minv, maxv) (((val) >= (minv)) ? (((val) <= (maxv)) ? (val) : (maxv)) : (minv))
 
 // PI
 #define STDMATH_PI M_PI

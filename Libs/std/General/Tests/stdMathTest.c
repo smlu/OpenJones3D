@@ -327,6 +327,17 @@ TEST(stdMath, TestConstantAndHelperMacros)
     TEST_ASSERT_FLOAT_WITHIN(0.0001f, 18.8495407f, STDMATH_CIRCLE_CIRCUMF(3.0f));
 }
 
+// Regression: NaN is turned into the lower bound like the original macro (it was passed through)
+TEST(stdMath, TestClampNaN)
+{
+    TEST_ASSERT_EQUAL_FLOAT(-2.0f, STDMATH_CLAMP(NAN, -2.0f, 5.0f));
+    TEST_ASSERT_EQUAL_FLOAT(0.0f, STDMATH_CLAMP(NAN, 0.0f, 1.0f));
+    TEST_ASSERT_EQUAL_FLOAT(5.0f, STDMATH_CLAMP(INFINITY, -2.0f, 5.0f));
+    TEST_ASSERT_EQUAL_FLOAT(-2.0f, STDMATH_CLAMP(-INFINITY, -2.0f, 5.0f));
+    TEST_ASSERT_EQUAL_INT(-1, STDMATH_CLAMP(-5, -1, 3));
+    TEST_ASSERT_EQUAL_INT(3, STDMATH_CLAMP(9, -1, 3));
+}
+
 TEST(stdMath, TestDoubleConversionMacros)
 {
     const double angles[] = {
@@ -798,6 +809,7 @@ TEST(stdMath, TestSmoothDamp)
 TEST_GROUP_RUNNER(stdMath)
 {
     RUN_TEST_CASE(stdMath, TestConstantAndHelperMacros);
+    RUN_TEST_CASE(stdMath, TestClampNaN);
     RUN_TEST_CASE(stdMath, TestDoubleConversionMacros);
     RUN_TEST_CASE(stdMath, TestClipNearZero);
     RUN_TEST_CASE(stdMath, TestClipNearZeroNaN);
