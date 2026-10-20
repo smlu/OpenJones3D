@@ -273,7 +273,7 @@ int J3DAPI rdParticle_LoadEntry(const char* pFilename, rdParticle* pParticle)
     {
         int num;
         float x, y, z;
-        if ( nRead = stdConffile_ScanLine(" %d: %f %f %f %d", &num, &x, &y, &z, pCurCelNums), nRead != 5 || *pCurCelNums >= pParticle->pMaterial->numCels )
+        if ( nRead = stdConffile_ScanLine(" %d: %f %f %f %d", &num, &x, &y, &z, pCurCelNums), nRead != 5 || *pCurCelNums >= (int)pParticle->pMaterial->numCels )
         {
             if ( nRead < 0 )
             {
