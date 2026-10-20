@@ -1133,11 +1133,13 @@ tSoundHandle J3DAPI Sound_Load(const char* pFilepath, uint32_t* sndIdx)
     // Extract filename from file path
     size_t curPathPos     = strlen(pFilepath);
     const char* pFilename = &pFilepath[curPathPos];
-    do
+    while ( (--pFilename, curPathPos-- != 0) ) // Fixed: Last scanned char was skipped when path has no separator, first char of the filename was lost (original Indy3D.exe v1.0 0x004DB3D0)
     {
-        --pFilename;
-        --curPathPos;
-    } while ( curPathPos && *pFilename != '/' && *pFilename != '\\' );
+        if ( *pFilename == '/' || *pFilename == '\\' )
+        {
+            break;
+        }
+    }
 
     // Skip '/' or '\'
     ++pFilename;
