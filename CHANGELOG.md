@@ -349,6 +349,7 @@
   - [QOL] Updated DX6 anisotropic filtering detection and reporting to require matching filter capabilities and a usable anisotropy level. (4faef7c)
   - Fixed DX9 fullscreen mode setup overwriting advertised video modes when the runtime promotes the created surface format, preserving the available modes for later selections. (ec573c8)
   - Fixed `sithParticle_Update` timeout-rate particles growing by at most one vertex per update (used min instead of max with 1). ()
+  - Fixed `rdMatrix_BuildFromLook34` using swapped cross product operands when the look vector is parallel to the z axis, which rotated the resulting matrix 180 degrees about the look axis (things or projectiles pointing straight up or down). ()
 
 ### Game play:
   - Fixed bug in `sithPlayer_Update` where force move animation could be stopped when required distance to move was almost zero (127aa92)
