@@ -5411,7 +5411,7 @@ void J3DAPI sithCogFunctionThing_StartQuetzAnim(SithCog* pCog)
         return;
     }
 
-    if ( mode > 6 )
+    if ( mode < 0 || mode > 6 ) // Fixed: Also reject negative modes, they pushed no result (original Indy3D.exe v1.0 0x004762E0)
     {
         STDLOG_ERROR("Bad mode for thing %s in StartQuetzAnim()\n", pThing->aName);
         sithCogExec_PushInt(pCog, -1);
