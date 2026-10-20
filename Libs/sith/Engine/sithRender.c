@@ -955,22 +955,25 @@ void J3DAPI sithRender_CollectVisibleThingSector(SithSector* pSector, float curD
     {
         pSector->renderTick = sithMain_g_curRenderTick;
 
-        // Added: Added check for new light collection distance
-        if ( curDistance < sithRender_maxLightCollectDistance )
+        if ( pSector->pFirstThingInSector )
         {
-            for ( SithThing* pThing = pSector->pFirstThingInSector; pThing; pThing = pThing->pNextThingInSector )
+            // Added: Added check for new light collection distance
+            if ( curDistance < sithRender_maxLightCollectDistance )
             {
-                // Altered: Replaced inplace code with the new function
-                sithRender_CollectThingLights(pThing);
+                for ( SithThing* pThing = pSector->pFirstThingInSector; pThing; pThing = pThing->pNextThingInSector )
+                {
+                    // Altered: Replaced inplace code with the new function
+                    sithRender_CollectThingLights(pThing);
+                }
             }
-        }
 
-        if ( curDistance < sithRender_maxThingCollectDistance ) // Altered: Replaced with new max thing collection distance
-        {
-            ++sithRender_totalVisibleThingSectors;
-            if ( sithRender_numVisibleThingSectors < SITHRENDER_MAX_VISIBLE_THING_SECTORS )
+            if ( curDistance < sithRender_maxThingCollectDistance ) // Altered: Replaced with new max thing collection distance
             {
-                sithRender_aVisibleThingSectors[sithRender_numVisibleThingSectors++] = pSector;
+                ++sithRender_totalVisibleThingSectors;
+                if ( sithRender_numVisibleThingSectors < SITHRENDER_MAX_VISIBLE_THING_SECTORS )
+                {
+                    sithRender_aVisibleThingSectors[sithRender_numVisibleThingSectors++] = pSector;
+                }
             }
         }
 
