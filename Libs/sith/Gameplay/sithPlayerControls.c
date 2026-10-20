@@ -2184,7 +2184,7 @@ void J3DAPI sithPlayerControls_ProcessSwimMove(SithThing* pThing, float secDelta
             return;
         }
 
-        pPhysics->thrust.z = 0.0f;
+        // Fixed: Do not reset the vertical thrust on the water surface, the original only resets it when not on the surface (original Indy3D.exe v1.0 0x0042FCC0)
     }
     else
     {
