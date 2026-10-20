@@ -1201,7 +1201,7 @@ void JonesHud_Process(void) // maybe this function should be called something el
                     {
                         healthState = (300.0f * sithPlayer_g_pLocalPlayerThing->thingInfo.actorInfo.health / maxHealth);
                     }
-                    JonesHud_RenderHealthIndicatorHit(roundf(healthState));
+                    JonesHud_RenderHealthIndicatorHit((float)(int)healthState);
                 }
 
                 // DRAW endurance indicator
