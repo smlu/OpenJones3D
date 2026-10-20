@@ -1509,8 +1509,6 @@ void J3DAPI sithAnimate_UpdateSlideSkyAnim(SithAnimationSlot* pAnim, int skyType
     {
         pWorld->horizonSkyOffset.x = pAnim->direction2.x * secDeltaTime + pWorld->horizonSkyOffset.x;
         pWorld->horizonSkyOffset.y = pAnim->direction2.y * secDeltaTime + pWorld->horizonSkyOffset.y;
-
-        rdVector_MultAcc2(&pWorld->horizonSkyOffset, &pAnim->direction2, secDeltaTime);
         if ( SITH_ISFRAMECYCLE(animNum, 16) )
         {
             // Wrap texture coordinates
