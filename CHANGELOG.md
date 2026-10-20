@@ -259,6 +259,7 @@
   - Fixed `sithDSSThing_ProcessThingFullDescription` reading the path movement `mode`, `numBlockedMoves`, `nextFrame` and `goalFrame` zero extended instead of sign extended; a stored `-1` is now restored as `-1` as in the original instead of `65535`. ()
   - Fixed `sithDSS_ProcessPuppetStatus` reading puppet track low and high priorities sign extended instead of zero extended as the original does. ()
   - Fixed `sithMaterial_ReadMaterialsListText` returning success when the `world materials` line is missing or malformed; it now reports an error as the original does. ()
+  - Fixed `sithCogExec_PopInt` converting float values by truncating toward zero instead of flooring them, so negative non-integer COG arguments (e.g. -1.5) became -1 instead of -2. ()
 
 ### Graphics:
   - Fixed an issue where active textures used in the current render frame were being removed from the cache prematurely in low VRAM situations (f37ecb7)
