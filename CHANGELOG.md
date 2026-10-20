@@ -438,6 +438,7 @@
   - Fixed `sithCogFunctionAI_AIGetGoalLVec` pushing no vector for an invalid thing and reading the AI control data of non-AI controlled things; both now return the zero vector. ()
   - Fixed `sithCogFunctionAI_IsAITargetInSight` pushing no result for an invalid AI thing, which unbalanced the COG stack; it now returns 0. ()
   - Fixed `sithCogFunctionSurface_SlideWall` pushing no result for an illegal surface or vector, which unbalanced the COG stack; it now returns -1. ()
+  - Fixed `sithCogFunctionSurface_SetWallCel` pushing no result for an illegal surface, which unbalanced the COG stack; it now returns -1. ()
 
 ## v0.3.1
 ### General:
