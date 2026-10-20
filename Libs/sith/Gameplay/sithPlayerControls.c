@@ -3945,7 +3945,7 @@ bool J3DAPI sithPlayerControls_CanStrafeMove(SithThing* pThing, int bMoveRight)
             rdVector3* apVertices = pMeshCollided->apVertices;
 
             rdVector3 worldVert;
-            rdMatrix_TransformPoint34(&worldVert, &apVertices[*pFaceCollided->aVertices], &pCollision->pThingCollided->orient);
+            rdMatrix_TransformVector34(&worldVert, &apVertices[*pFaceCollided->aVertices], &pCollision->pThingCollided->orient);
             rdVector_Add3Acc(&worldVert, &pCollision->pThingCollided->pos);
 
             // Calculate distance from start pos to face plane
