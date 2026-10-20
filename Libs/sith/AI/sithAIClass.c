@@ -352,7 +352,7 @@ int J3DAPI sithAIClass_LoadEntry(const char* pPath, SithAIClass* pClass)
                     {
 
                         pInstinct->fltArg[i] = atof(stdConffile_g_entry.aArgs[i + 1].argValue);
-                        pInstinct->intArg[i] = (int)pInstinct->fltArg[i];
+                        pInstinct->intArg[i] = (int)floorf(pInstinct->fltArg[i]); // Fixed: Float argument is floored, not truncated toward zero (original Indy3D.exe v1.0 0x00456DE0)
                     }
                 }
 
