@@ -3635,7 +3635,7 @@ UINT_PTR CALLBACK jonesConfig_SaveGameDialogHookProc(HWND hDlg, UINT uMsg, WPARA
                     CHAR aPath[128]     = { 0 };
                     char aFilename[128] = { 0 };
 
-                    if ( pOfNotify->lpOFN->nFileOffset < 0x8000 )
+                    if ( (int16_t)pOfNotify->lpOFN->nFileOffset > 0 )
                     {
                         CHAR aExtension[128] = { 0 };
                         STD_FORMAT(aExtension, ".%s", pOfNotify->lpOFN->lpstrDefExt);
@@ -4163,7 +4163,7 @@ UINT_PTR CALLBACK jonesConfig_LoadGameDialogHookProc(HWND hDlg, UINT uMsg, WPARA
                     bool bValidFile = false;
                     CHAR aPath[128] = { 0 };
                     LPOPENFILENAME pofn = pOfNotify->lpOFN;
-                    if ( pofn->nFileOffset < 0x8000 )
+                    if ( (int16_t)pofn->nFileOffset > 0 )
                     {
                         char aExtension[128] = { 0 };
                         STD_FORMAT(aExtension, ".%s", pofn->lpstrDefExt);
