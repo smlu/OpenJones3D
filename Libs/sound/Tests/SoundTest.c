@@ -474,6 +474,26 @@ TEST(Sound, TestMouthLevelMacro)
     }
 }
 
+// Regression: with all channels busy and none of lower priority Sound_Play scanned past the end of the channel array
+TEST(Sound, TestPlayAllChannelsBusy)
+{
+    // The second element is outside of the channel list (numChannels == 1) and looks like a free channel.
+    tSoundChannel aChannels[2];
+    STD_ZEROMEM(aChannels, sizeof(aChannels));
+    aChannels[0]               = SoundTest_channel;
+    aChannels[0].priority      = 5;
+    Sound_TestSetChannels(aChannels, 1);
+    Sound_TestSetOpen(1);
+
+    TEST_ASSERT_EQUAL_UINT32(SOUND_INVALIDHANDLE, Sound_Play(SOUND_TEST_SOUND_HANDLE, 1.0f, 0.0f, 3, SOUND_CHANNEL_STARTFAR, 0)); // STARTFAR skips the driver, so a write outside the list fails the test instead of crashing
+    TEST_ASSERT_EQUAL_UINT32(SOUND_INVALIDHANDLE, aChannels[1].handle);
+    TEST_ASSERT_EQUAL_UINT32(SOUND_INVALIDHANDLE, aChannels[1].hSnd);
+    TEST_ASSERT_EQUAL_UINT32(SOUND_TEST_CHANNEL_HANDLE, aChannels[0].handle);
+
+    Sound_TestSetOpen(0);
+    Sound_TestSetChannels(&SoundTest_channel, 1);
+}
+
 TEST_GROUP_RUNNER(Sound)
 {
     RUN_TEST_CASE(Sound, TestFailures);
@@ -483,4 +503,5 @@ TEST_GROUP_RUNNER(Sound)
     RUN_TEST_CASE(Sound, TestAllocationFailures);
     RUN_TEST_CASE(Sound, TestLargeLipSyncBuffer);
     RUN_TEST_CASE(Sound, TestMouthLevelMacro);
+    RUN_TEST_CASE(Sound, TestPlayAllChannelsBusy);
 }
