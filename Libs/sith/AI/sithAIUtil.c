@@ -723,7 +723,7 @@ void J3DAPI sithAIUtil_AISetWpntRank(unsigned int wpntIdx, unsigned int rank)
     sithAIUtil_aAIWpnts[wpntIdx].flags |= rank;
 }
 
-void J3DAPI sithAIUtil_AISetWpntFlags(unsigned int wpntIdx, SithAIWaypointLayerFlag flags)
+void J3DAPI sithAIUtil_AISetWpntFlags(unsigned int wpntIdx, unsigned int flags)
 {
     if ( wpntIdx >= STD_ARRAYLEN(sithAIUtil_aAIWpnts) )
     {
@@ -731,13 +731,12 @@ void J3DAPI sithAIUtil_AISetWpntFlags(unsigned int wpntIdx, SithAIWaypointLayerF
         return;
     }
 
-    unsigned int uFlags = flags;
-    uFlags = STDMATH_CLAMP(uFlags, 0x100, 0xFFFFFF00);
+    flags = STDMATH_CLAMP(flags, 0x100, 0xFFFFFF00);
 
-    sithAIUtil_aAIWpnts[wpntIdx].flags |= uFlags;
+    sithAIUtil_aAIWpnts[wpntIdx].flags |= flags;
 }
 
-void J3DAPI sithAIUtil_AIClearWpntFlags(unsigned int wpntIdx, SithAIWaypointLayerFlag flags)
+void J3DAPI sithAIUtil_AIClearWpntFlags(unsigned int wpntIdx, unsigned int flags)
 {
     if ( wpntIdx >= STD_ARRAYLEN(sithAIUtil_aAIWpnts) )
     {
@@ -745,10 +744,9 @@ void J3DAPI sithAIUtil_AIClearWpntFlags(unsigned int wpntIdx, SithAIWaypointLaye
         return;
     }
 
-    unsigned int uFlags = flags;
-    uFlags = STDMATH_CLAMP(uFlags, 0x100, 0xFFFFFF00);
+    flags = STDMATH_CLAMP(flags, 0x100, 0xFFFFFF00);
 
-    sithAIUtil_aAIWpnts[wpntIdx].flags &= ~uFlags;
+    sithAIUtil_aAIWpnts[wpntIdx].flags &= ~flags;
 }
 
 void J3DAPI sithAIUtil_AISetActiveWpntLayer(SithAIWaypointLayerFlag layer)
@@ -823,13 +821,13 @@ int J3DAPI sithAIUtil_AIMoveToNextWpnt(SithAIControlBlock* pLocal, float moveSpe
     return 0;
 }
 
-void J3DAPI sithAIUtil_AITraverseWpnts(SithAIControlBlock* pLocal, int wpntIdx, float moveSpeed, float degTurn, int mode)
+void J3DAPI sithAIUtil_AITraverseWpnts(SithAIControlBlock* pLocal, unsigned int wpntIdx, float moveSpeed, float degTurn, unsigned int mode)
 {
     SithWorld* pCurWorld = sithWorld_g_pCurrentWorld;
 
     SITH_ASSERTREL(pLocal);
 
-    if ( !pCurWorld || (unsigned int)wpntIdx >= STD_ARRAYLEN(sithAIUtil_aAIWpnts) )
+    if ( !pCurWorld || wpntIdx >= STD_ARRAYLEN(sithAIUtil_aAIWpnts) )
     {
         SITHLOG_ERROR("AITraverseWpnts: Index out of allowed range.\n");
         return;
@@ -864,7 +862,7 @@ void J3DAPI sithAIUtil_AITraverseWpnts(SithAIControlBlock* pLocal, int wpntIdx, 
     {
         pLocal->submode |= SITHAI_SUBMODE_SEMICONTINUOUSWPNTMOTION;
     }
-    else if ( (unsigned int)mode > 1 )
+    else if ( mode > 1 )
     {
         pLocal->submode |= SITHAI_SUBMODE_CONTINUOUSWPNTMOTION;
     }
@@ -2306,20 +2304,20 @@ int J3DAPI sithAIUtil_IsLineOfFireClear(const SithAIControlBlock* pLocal, const 
     return 1;
 }
 
-void J3DAPI sithAIUtil_AIPlaySoundMode(SithAIControlBlock* pLocal, SithSoundClassMode mode)
+void J3DAPI sithAIUtil_AIPlaySoundMode(SithAIControlBlock* pLocal, unsigned int mode)
 {
     if ( !pLocal || !pLocal->pOwner )
     {
         return;
     }
 
-    if ( (unsigned int)mode >= SITHSOUNDCLASS_CURIOUS && (unsigned int)mode <= SITHSOUNDCLASS_RESERVED8 && sithAI_HasInstinct(pLocal, "talk") )
+    if ( mode >= SITHSOUNDCLASS_CURIOUS && mode <= SITHSOUNDCLASS_RESERVED8 && sithAI_HasInstinct(pLocal, "talk") )
     {
         sithAI_EmitEvent(pLocal, SITHAI_EVENT_TALK, (void*)mode);
     }
     else
     {
-        sithSoundClass_PlayModeRandom(pLocal->pOwner, mode);
+        sithSoundClass_PlayModeRandom(pLocal->pOwner, (SithSoundClassMode)mode);
     }
 }
 
