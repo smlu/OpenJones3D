@@ -3623,7 +3623,7 @@ UINT_PTR CALLBACK jonesConfig_SaveGameDialogHookProc(HWND hDlg, UINT uMsg, WPARA
             HDC* hdc = (HDC*)GetWindowLongPtr(hDlg, DWL_USER);
             DeleteDC(*hdc);
             *hdc = NULL;
-            return 1;
+            return 0; // Fixed: Don't report WM_DESTROY as handled, the original returns 0 (original Indy3D.exe v1.0 0x00405010)
         }
         case WM_NOTIFY:
         {
