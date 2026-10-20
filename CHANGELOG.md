@@ -439,6 +439,7 @@
   - Fixed `sithOverlayMap_DrawSector` testing the lower bound of the vertical canvas range with `>` instead of `<=`, which wrongly culled map sectors. ()
   - Fixed `sithPlayerActions_HopBack` always playing the first sound of the jump mode instead of a random one. ()
   - Fixed `sithFX_CreateChalkMark` scaling the random chalk mark pick by the array length instead of length - 1, which could index one past the end of the chalk mark template names. ()
+  - Fixed `sithPlayerControls_ProcessJewelFlyMove` not stopping the vertical velocity when no vertical key is pressed and the player cannot move down, while flying with the jewel. ()
 
 ## v0.3.1
 ### General:
