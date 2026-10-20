@@ -104,7 +104,8 @@ for container filler bytes. Seeds are part of the case names or fixed in the har
 
 - Full-scale alternating samples (`-32768`, `32767`) crash the original
   `AudioLib_WVSMCompressBlock` (the sample bit length reaches index 17 of a
-  17-entry histogram, which `AudioLib_WVSMCompressBlock` no longer overflows). They are used only with `AudioLib_CompressBlock`.
+  17-entry histogram, which `AudioLib_WVSMCompressBlock` no longer overflows).
+  They are used only with `AudioLib_CompressBlock`.
 - Channel counts above two in `AudioLib_CompressBlock`/`AudioLib_UncompressBlock`
   index past the two-entry compressor state and are not covered.
 - Every case was executed twice inside the capture, with different padding bytes

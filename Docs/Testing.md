@@ -880,10 +880,10 @@ generation combinations in both Debug and Release. The oracle was removed after
 the results matched byte-for-byte; the permanent suite keeps independent golden
 blocks and behavior assertions.
 
-The ADPCM and WVSM codec functions and `AudioLib_ParseWaveFileHeader` are covered
-by original-engine vectors captured from retail v1.0 `Indy3D.exe` and stored in
-`Libs/sound/Tests/tv/AudioLib` (provenance, case lists, preserved quirks and the
-known `AudioLib_WVSMCompressBlock` difference are in that directory's
+The ADPCM and WVSM codec functions and `AudioLib_ParseWaveFileHeader` are
+covered by original-engine vectors captured from retail v1.0 `Indy3D.exe` and
+stored in `Libs/sound/Tests/tv/AudioLib` (provenance, case lists, preserved
+quirks and the inputs kept out of the corpus are in that directory's
 `README.md`). The `TestOriginal*` cases compare complete outputs, return values
 and compressor state, including chained block calls.
 
