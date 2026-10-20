@@ -55,6 +55,8 @@ void stdio_Shutdown(void)
 
 // Altered: The original calls the C runtime's stdio directly (fopen, after remove() for a 'w' mode). The wrappers below use the
 // engine's std file functions instead, see std.c. The original removes the file before opening it for 'w', stdFileOpen does not.
+// stdFileOpen also differs in the share mode (fopen_s uses _SH_SECURE, the original's fopen _SH_DENYNO) and in the handling of invalid
+// parameters (fopen_s calls the invalid parameter handler where fopen returned an error).
 int J3DAPI stdio_open(const char* pPath, const char* pMode)
 {
     return (int)stdFileOpen(pPath, pMode);
