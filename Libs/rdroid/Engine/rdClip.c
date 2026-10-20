@@ -3805,7 +3805,7 @@ int J3DAPI rdClip_Face3TOrtho(const rdClipFrustum* pFrustum, rdVector3* aVertice
             if ( pCurVert->y <= pFrustum->farPlane )
             {
                 memcpy(&rdClip_pDestVert[clipindex], pCurVert, sizeof(rdVector3));
-                memcpy(&rdClip_pDestTVert[clipindex++], pCurTVert, sizeof(*rdClip_pDestTVert));
+                memcpy(&rdClip_pDestTVert[clipindex], pCurTVert, sizeof(*rdClip_pDestTVert));
                 memcpy(&rdClip_pDestVertIntensity[clipindex++], pCurIntens, sizeof(*rdClip_pDestVertIntensity));
             }
         }
