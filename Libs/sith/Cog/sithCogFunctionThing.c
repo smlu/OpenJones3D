@@ -2478,6 +2478,7 @@ void J3DAPI sithCogFunctionThing_TrackToMode(SithCog* pCog)
     {
         STDLOG_ERROR("Cog %s: Bad thing in TrackToMode().\n", pCog->aName);
         sithCogExec_PushInt(pCog, -1);
+        return;
     }
 
     if ( trackNum >= RDPUPPET_MAX_TRACKS )
