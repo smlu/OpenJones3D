@@ -2765,7 +2765,7 @@ int J3DAPI rdClip_Face3GTOrtho(const rdClipFrustum* pFrustum, rdVector3* aVertic
     numVerts  = clipindex;
     clipindex = 0;
     pPrevVert = &paVerts[numVerts - 1];
-    pCurTVert = &paTVerts[numVerts - 1];
+    pPrevTVert = &paTVerts[numVerts - 1]; // Fixed: Set the previous UV pointer, it was left unset for this plane and the interpolated UV was wrong (original Indy3D.exe v1.0 0x004D4E50)
     pCurVert  = paVerts;
     pCurTVert = paTVerts;
 

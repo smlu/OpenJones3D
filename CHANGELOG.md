@@ -352,6 +352,7 @@
   - Fixed `rdMatrix_BuildFromLook34` using swapped cross product operands when the look vector is parallel to the z axis, which rotated the resulting matrix 180 degrees about the look axis (things or projectiles pointing straight up or down). ()
   - Fixed `rdLight_CalcFaceIntensity` writing the distance attenuation back into its parameter, which attenuated every following light by all earlier ones; each light is now attenuated on its own. ()
   - Fixed `rdParticle_Draw` overwriting the per-thing RGBA material flag with the per-particle distance test, so after one particle beyond the alpha distance all remaining particles of the thing were drawn opaque. ()
+  - Fixed `rdClip_Face3GTOrtho` leaving the previous UV pointer unset for one clip plane, which gave wrong texture coordinates for polygons clipped by an orthographic camera. ()
 
 ### Game play:
   - Fixed bug in `sithPlayer_Update` where force move animation could be stopped when required distance to move was almost zero (127aa92)
