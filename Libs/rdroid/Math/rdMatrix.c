@@ -92,7 +92,7 @@ void J3DAPI rdMatrix_BuildFromLook34(rdMatrix34* mat, const rdVector3* look)
         mat->uvec.y = mat->lvec.x * 0.0f - mat->lvec.z * 1.0f;
         mat->uvec.z = mat->lvec.y * 1.0f - mat->lvec.x * 0.0f;*/
 
-        rdVector_Cross3(&mat->uvec, &mat->lvec, &rdroid_g_xVector3);
+        rdVector_Cross3(&mat->uvec, &rdroid_g_xVector3, &mat->lvec);
         rdVector_Normalize3Acc(&mat->uvec);
 
         /*mat->rvec.x = mat->lvec.y * mat->uvec.z - mat->lvec.z * mat->uvec.y;
