@@ -285,6 +285,7 @@
   - Fixed `AudioLib_WVSMCompressBlock` writing past the end of its sample bit length histograms for the sample -32768 and, with the earlier bounds fix, counting the bit lengths from 0 instead of 1, which selected different shifts than the original and produced different (larger) compressed WVSM data; it now matches the original output. ()
   - Fixed `stdMath_ClipNearZero` returning NaN unchanged; it now returns 0 for NaN like the original. ()
   - Fixed `STDMATH_CLAMP` passing NaN through; it now turns NaN into the lower bound like the original. ()
+  - Fixed `rdMath_ClipVector3` and `rdMath_ClipVector3Acc` keeping vector components that are exactly equal to the minimum value; a component is now kept only if its magnitude is greater than the minimum, like the original near zero clipping of the physics velocities. ()
 
 ### Graphics:
   - Fixed an issue where active textures used in the current render frame were being removed from the cache prematurely in low VRAM situations (f37ecb7)
