@@ -493,6 +493,7 @@
   - Fixed `sithAI_Startup` creating the instinct registry and resetting all AIs again when called while the AI system is already initialized. ()
   - Fixed `sithAI_Shutdown` freeing the instinct registry again (asserting in debug builds) when called while the AI system is already shut down. ()
   - Fixed `sithAI_Close` resetting all AIs when called while the AI system is not open. ()
+  - Fixed `sithAI_ProcessUnhandledEvent` scaling the random cliff retreat distance by the double constant 0.2 instead of the float constant 0.2f, which changed the distance by a fraction of a float ulp. ()
 
 ## v0.3.1
 ### General:
