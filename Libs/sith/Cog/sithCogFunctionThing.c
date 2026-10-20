@@ -3559,6 +3559,7 @@ void J3DAPI sithCogFunctionThing_GetThingRotVel(SithCog* pCog)
     {
         STDLOG_ERROR("Cog %s: No thing, or non-physics thing in GetThingRotVel.\n", pCog->aName);
         sithCogExec_PushVector(pCog, &rdroid_g_zeroVector3);
+        return; // Fixed: Return after pushing the zero vector, otherwise a second vector is pushed or a NULL thing is dereferenced (original Indy3D.exe v1.0 0x00472FE0)
     }
 
     sithCogExec_PushVector(pCog, &pThing->moveInfo.physics.angularVelocity);
