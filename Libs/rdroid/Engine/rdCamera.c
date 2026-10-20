@@ -245,6 +245,8 @@ void J3DAPI rdCamera_BuildFOV(rdCamera* pCamera)
             float hwidth = (pCamera->pCanvas->rect.right - pCamera->pCanvas->rect.left) / 2.0f;
             float hheight = (pCamera->pCanvas->rect.bottom - pCamera->pCanvas->rect.top) / 2.0f;
 
+            // Altered: The left/right ortho planes are divided by aspectRatio too; the original divided only the top/bottom planes
+            //          (the projection functions below also scale x by aspectRatio).
             pCamera->pFrustum->orthoLeftPlane   = -(hwidth / pCamera->orthoScale) / pCamera->aspectRatio;
             pCamera->pFrustum->orthoTopPlane    = hheight / pCamera->orthoScale / pCamera->aspectRatio;
             pCamera->pFrustum->orthoRightPlane  = hwidth / pCamera->orthoScale / pCamera->aspectRatio;
@@ -281,6 +283,7 @@ void J3DAPI rdCamera_BuildFOV(rdCamera* pCamera)
             }
 
             // Setup frustum planes
+            // Altered: The left/right planes are divided by aspectRatio too; the original divided only the top/bottom planes.
             pCamera->pFrustum->topPlane    =  (hheight / pCamera->focalLength) / pCamera->aspectRatio;
             pCamera->pFrustum->bottomPlane = -(hheight / pCamera->focalLength) / pCamera->aspectRatio;
             pCamera->pFrustum->leftPlane   = -(hwidth / pCamera->focalLength) / pCamera->aspectRatio;
@@ -328,6 +331,7 @@ int J3DAPI rdCamera_SetFrustrum(rdCamera* pCamera, rdClipFrustum* pFrustrum, int
     float tsize = pCanvas->center.y - (top - 0.5f);
     float bsize = bottom - 0.5f - pCanvas->center.y;
 
+    // Altered: The left/right planes are divided by aspectRatio too; the original divided only the top/bottom planes.
     pFrustrum->topPlane    =  tsize / pCamera->focalLength / pCamera->aspectRatio;
     pFrustrum->leftPlane   = -lsize / pCamera->focalLength / pCamera->aspectRatio;
     pFrustrum->bottomPlane = -bsize / pCamera->focalLength / pCamera->aspectRatio;

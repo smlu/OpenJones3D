@@ -319,7 +319,7 @@ rdWallLine* J3DAPI rdWallpaper_NewWallLine(float startX, float startY, float end
     if ( !pWallLine )
     {
         RDLOG_ERROR("Error allocating memory for WallLine.\n");
-        return NULL;
+        return NULL; // Fixed: The original logged the error and then dereferenced the NULL pointer.
     }
     memset(pWallLine, 0, sizeof(rdWallLine));
 

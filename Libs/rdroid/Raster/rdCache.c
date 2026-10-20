@@ -22,6 +22,7 @@ static rdVector4 rdCache_aVertIntensities[RDCACHE_VERTBUFFERSIZE] = { 0 }; // Fi
 
 
 static size_t rdCache_numAlphaProcFaces               = 0;
+// Altered: The original list holds 2048 entries; a larger list means fewer early flushes, so alpha face batches (and their sort order) differ from the original.
 static rdCacheProcEntry rdCache_aAlphaProcFaces[4096] = { 0 };
 
 static size_t rdCache_numUsedAlphaVertices = 0;
