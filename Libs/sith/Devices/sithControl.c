@@ -441,7 +441,7 @@ float J3DAPI sithControl_GetKeyAsAxisNormalized(size_t axisId)
         }
         else
         {
-            if ( (sithControl_g_controlOptions & 0x20) != 0 && STDCONTROL_ISJOYSTICKBUTTON(pBinding->controlId) ) // Fixed: Macro extracts correct aid by clearing any additional axis flags
+            if ( (sithControl_g_controlOptions & 0x20) != 0 && STDCONTROL_ISJOYSTICKCID(pBinding->controlId) ) // Fixed: Macro extracts correct aid by clearing any additional axis flags
             {
                 continue;
             }
@@ -486,7 +486,7 @@ float J3DAPI sithControl_GetKeyAsAxis(SithControlFunction axisId)
 
         if ( (bindflags & SITHCONTROLBIND_AXIS_ENABLED) == 0
             && (bindflags & SITHCONTROLBIND_AXISCONTROL) == 0
-            && ((sithControl_g_controlOptions & 0x20) == 0 || !STDCONTROL_ISJOYSTICKBUTTON(pBinding->controlId)) ) // Fixed: Macro extracts correct aid by clearing any additional axis flags
+            && ((sithControl_g_controlOptions & 0x20) == 0 || !STDCONTROL_ISJOYSTICKCID(pBinding->controlId)) )
         {
             float axisValue = stdControl_ReadKeyAsAxis(pBinding->controlId);
             if ( axisValue != 0.0f )
@@ -910,7 +910,7 @@ void J3DAPI sithControl_sub_44F334(int (J3DAPI* pfFunc)(size_t, const char*, Sit
                     && ((bflags & SITHCONTROLBIND_KEYCONTROL) == 0 || controlId < STDCONTROL_KID_MOUSE_LBUTTON || controlId >= STDCONTROL_MAX_KEYID)
                     || a4)
                 && (((bflags & SITHCONTROLBIND_AXISCONTROL) == 0 || STDCONTROL_ISMOUSEAXIS(controlId))
-                    && ((bflags & SITHCONTROLBIND_KEYCONTROL) == 0 || !STDCONTROL_ISJOYSTICKBUTTON(controlId)) || a3) )
+                    && ((bflags & SITHCONTROLBIND_KEYCONTROL) == 0 || !STDCONTROL_ISJOYSTICKCID(controlId)) || a3) )
             {
                 bContinue = pfFunc(i, aFunctionNames[i], aControlFlags[i], j, controlId, bflags, &pBinding->aBindings[j].controlId, a5);
                 bKeyBinding = bKeyBinding
