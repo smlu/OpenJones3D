@@ -411,6 +411,7 @@
   - Fixed `rdModel3_SwapMesh` not replacing the mesh of the second model when replacing the mesh of the first model fails. ()
   - Fixed `rdPolyline_NewEntry` allocating the texture vertices and UVs only for the exact full geometry mode instead of for full or higher geometry modes. ()
   - Fixed `rdParticle_LoadEntry` rejecting particle files with a negative material cel number (-1, the material's current cel) as a syntax error because the cel number was compared with the cel count as unsigned. ()
+  - Fixed `rdFont_DrawTextLine` and `rdFont_DrawTextLineClipped` (and their `Ex` variants) centering or right aligning text at a fractional pixel instead of a whole pixel, and centering the text when both the center and right alignment flags are set (right alignment wins like in the original). ()
   - Fixed an out-of-bounds read after the last polygon in `rdCache_SendFaceListToHardware`. [PR #52](https://github.com/smlu/OpenJones3D/pull/52)
 
 ### Game play:
