@@ -434,6 +434,7 @@
   - Fixed `sithCogFunctionSurface_SlideWall` pushing no result for an illegal surface or vector, which unbalanced the COG stack; it now returns -1. ()
   - Fixed `sithCogFunctionSurface_SetWallCel` pushing no result for an illegal surface, which unbalanced the COG stack; it now returns -1. ()
   - Fixed `sithCog_GetSymbolRefInitializer` converting a COG reference of -1 (no cog) to the number of cogs. ()
+  - Fixed `sithCogFunctionThing_SetInventory` accepting an inventory type equal to the maximum type count, which wrote one entry past the end of the inventory. ()
 
 ## v0.3.1
 ### General:

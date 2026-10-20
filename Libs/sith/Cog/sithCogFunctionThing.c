@@ -1838,7 +1838,7 @@ void J3DAPI sithCogFunctionThing_SetInventory(SithCog* pCog)
         return;
     }
 
-    if ( typeId > SITHINVENTORY_MAXTYPES )
+    if ( typeId >= SITHINVENTORY_MAXTYPES ) // Fixed: Type equal to the max count is out of bounds (original Indy3D.exe v1.0 0x00470430)
     {
         STDLOG_ERROR("Cog %s: Called SetInventory for illegal type %d.\n", pCog->aName, typeId);
         return;
