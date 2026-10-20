@@ -2166,7 +2166,7 @@ void J3DAPI sithPhysics_UpdateMineCarPhysics(SithThing* pThing, float secDeltaTi
             if ( pPhysics->thrust.y < 0.0f ) // Backward thrust
             {
                 // Backward thrust while moving forward - brake
-                thrustDelta = -pPhysics->thrust.y * scaledDeltaTime;
+                thrustDelta = pPhysics->thrust.y * scaledDeltaTime; // Fixed: Braking sign, was -thrust.y which accelerated the car (original Indy3D.exe v1.0 0x00482C20)
                 if ( fabsf(thrustDelta) > speed )
                 {
                     rdVector_Zero3(&pPhysics->velocity);
