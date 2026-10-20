@@ -131,6 +131,7 @@ void sithAI_Close(void)
     if ( !sithAI_g_bOpen )
     {
         SITHLOG_ERROR("Warning: System already closed!\n");
+        return;
     }
 
     sithAI_ResetAllAIs();

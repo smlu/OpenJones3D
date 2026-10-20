@@ -492,6 +492,7 @@
   - Fixed `JonesMain_GameWndProc` returning an uninitialized window procedure result for handled `SC_KEYMENU` and `SC_SCREENSAVE` system commands. ()
   - Fixed `sithAI_Startup` creating the instinct registry and resetting all AIs again when called while the AI system is already initialized. ()
   - Fixed `sithAI_Shutdown` freeing the instinct registry again (asserting in debug builds) when called while the AI system is already shut down. ()
+  - Fixed `sithAI_Close` resetting all AIs when called while the AI system is not open. ()
 
 ## v0.3.1
 ### General:
