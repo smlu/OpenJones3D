@@ -336,6 +336,7 @@ int J3DAPI sithSector_ReadSectorsListText(SithWorld* pWorld, int bSkip)
             goto range_error;
         }
 
+        // Altered: pFirstSurface stays NULL for a sector without surfaces; the original always called sithSurface_GetSurfaceEx.
         SithSurface* pSurf = numSurfs ? sithSurface_GetSurfaceEx(pWorld, surfIdx) : NULL;
         pSec->pFirstSurface = pSurf;
 

@@ -817,6 +817,7 @@ int J3DAPI sithSurface_ReadSurfacesListText(SithWorld* pWorld, int bSkip)
         for ( size_t j = 0; j < numVerts; ++j )
         {
             int vertIdx = atoi(stdConffile_g_entry.aArgs[curArg++].argValue);
+            // Fixed: Validate the serialized vertex index; the original stored indices from the file unchecked.
             if ( vertIdx < 0 || (size_t)vertIdx >= pWorld->numVertices )
             {
                 SITHLOG_ERROR("Surface vertex index out of range!\n");

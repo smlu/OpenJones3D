@@ -596,7 +596,7 @@ SithAnimationSlot* J3DAPI sithAnimate_StartAnimateSpriteSize(SithThing* pSprite,
     pAnim->curVector.z = start->z;  // alpha
     pAnim->curVector.w = 0.0f;
 
-    // Fixed: Added handling for zero timeDelta. Originally division by 0 didn't produced NAN values but 0 so the animation wasn't looping indefinitely.
+    // Fixed: Added handling for zero timeDelta. The original divides by timeDelta unguarded (x / 0 gives inf deltas, which finish the animation on the first update).
     //        In other functions such case is handled by assertion but we need to let this one pass 
     //        because aet_sprpulse.cog script uses timeDelta = 0.0 to instantly set the sprite size to end value.
     if ( timeDelta == 0.0f )
@@ -725,7 +725,7 @@ SithAnimationSlot* J3DAPI sithAnimate_StartThingMove(SithThing* pThing, const rd
         return NULL;
     }
 
-    // Fixed: Added handling for zero timeDelta. Originally division by 0 didn't produced NAN values but 0 so the animation wasn't looping indefinitely.
+    // Fixed: Added handling for zero timeDelta. The original divides by timeDelta unguarded (x / 0 gives an inf delta, which finishes the animation on the first update).
     if ( timeDelta == 0.0f )
     {
         timeDelta = 1.0f;
@@ -1677,7 +1677,7 @@ void J3DAPI sithAnimate_UpdatePushItemAnim(SithAnimationSlot* pAnim)
         pAnim->pItemThing->moveInfo.physics.surfDrag = 0.0f;
 
         // One final item push
-        rdVector3 moveDir = { 0 }; // Fixed: Init to zero; TODO: this must be a bug as it should be a copy of pAnim->direction3
+        rdVector3 moveDir = { 0 }; // Fixed: Init to zero; the original passed an uninitialized vector here. TODO: this must be a bug as it should be a copy of pAnim->direction3
         sithCollision_MoveThing(pAnim->pItemThing, &moveDir, moveDist, 0);
 
         // Restore item surface drag, and mark animation as finished
@@ -1763,7 +1763,7 @@ void J3DAPI sithAnimate_UpdatePullItemAnim(SithAnimationSlot* pAnim)
         pAnim->pItemThing->moveInfo.physics.surfDrag = 0.0f;
 
         // One final item pull
-        rdVector3 moveDir = { 0 }; // Fixed: Init to zero; TODO: this must be a bug as it should be a copy of pAnim->direction3
+        rdVector3 moveDir = { 0 }; // Fixed: Init to zero; the original passed an uninitialized vector here. TODO: this must be a bug as it should be a copy of pAnim->direction3
         sithCollision_MoveThing(pAnim->pItemThing, &moveDir, moveDist, 0);
 
         // Restore item surface drag, and mark animation as finished

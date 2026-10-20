@@ -465,6 +465,8 @@ void J3DAPI sithWeapon_HandleImpact(SithThing* pWeapon)
                 // Generate bloodsplort and destroy projectile or explode projectile
                 if ( (pWeaponInfo->flags & SITH_WF_BLOODSPLATTER) != 0
                     && (pVictim->thingInfo.actorInfo.flags & SITH_AF_DROID) == 0
+                // Altered: With J3D_QOL_IMPROVEMENTS the dead-victim and non-player conditions are dropped, so non-killing hits and hits on the player
+                //          also splatter and destroy the projectile. The original did so only for a killing hit on a non-player.
                 #ifndef J3D_QOL_IMPROVEMENTS
                     && pVictim->thingInfo.actorInfo.health == 0.0f
                     && pVictim->type != SITH_THING_PLAYER
@@ -969,6 +971,8 @@ int J3DAPI sithWeapon_ThingCollisionHandler(SithThing* pWeapon, SithThing* pThin
         {
             if ( (pWeapon->thingInfo.weaponInfo.flags & SITH_WF_BLOODSPLATTER) != 0
                 && (pThing->thingInfo.actorInfo.flags & SITH_AF_DROID) == 0
+            // Altered: With J3D_QOL_IMPROVEMENTS the dead-victim and non-player conditions are dropped, so non-killing hits and hits on the player
+            //          also splatter and destroy the projectile. The original did so only for a killing hit on a non-player.
             #ifndef J3D_QOL_IMPROVEMENTS
                 && pThing->thingInfo.actorInfo.health == 0.0f
                 && pThing->type != SITH_THING_PLAYER
@@ -2139,6 +2143,7 @@ static bool J3DAPI sithWeapon_GenBloodSplatterEx(SithThing* pHitThing)
             {
                 // We have either vehicle that has no human exposed to outside of vehicle
                 // or some other (non-human) actor
+                // TODO: [BUG] (QOL) The sprite created above is not attached or destroyed when returning false here; the original always attached it.
                 return false;
             }
         #endif
