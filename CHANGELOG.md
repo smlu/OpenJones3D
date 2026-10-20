@@ -473,6 +473,7 @@
   - Fixed the save game dialog hook (`jonesConfig_SaveGameDialogHookProc`) falling into the CDN_INITDONE code after accepting a new file name, which created the dialog fonts a second time and leaked the previous one. ()
   - Fixed `jonesConfig_InitKeySetsPath` always inserting an extra backslash between the install path and the key sets directory, even when the install path already ends with one. ()
   - Fixed `jonesConfig_Shutdown` leaving the deleted dialog icon bitmap handles in the table, so the handles could be deleted again after a restart of the module. ()
+  - Fixed the game statistics dialog level name table lacking the summary page entry, which made the title fallback of the summary page read past the end of the table. ()
 
 ## v0.3.1
 ### General:
