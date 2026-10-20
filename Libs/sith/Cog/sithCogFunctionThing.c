@@ -1838,7 +1838,7 @@ void J3DAPI sithCogFunctionThing_SetInventory(SithCog* pCog)
         return;
     }
 
-    if ( typeId > SITHINVENTORY_MAXTYPES )
+    if ( typeId >= SITHINVENTORY_MAXTYPES )
     {
         STDLOG_ERROR("Cog %s: Called SetInventory for illegal type %d.\n", pCog->aName, typeId);
         return;
