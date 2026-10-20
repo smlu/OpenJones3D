@@ -1178,8 +1178,8 @@ static void stdControl_ApplyMouseAxisState(const DIMOUSESTATE* pState)
     stdControl_aAxisStates[STDCONTROL_AID_MOUSE_Z] = pState->lZ;
     if ( stdControl_readDeltaTime < 25 )
     {
-        stdControl_aAxisStates[STDCONTROL_AID_MOUSE_X] = (stdControl_mousePos.x + pState->lX) / 2;
-        stdControl_aAxisStates[STDCONTROL_AID_MOUSE_Y] = (stdControl_mousePos.y + pState->lY) / 2;
+        stdControl_aAxisStates[STDCONTROL_AID_MOUSE_X] = (stdControl_mousePos.x + pState->lX) >> 1; // Fixed: Arithmetic shift floors negative values, division truncated them toward zero (original Indy3D.exe v1.0 0x004B8D10)
+        stdControl_aAxisStates[STDCONTROL_AID_MOUSE_Y] = (stdControl_mousePos.y + pState->lY) >> 1; // Fixed: Arithmetic shift floors negative values, division truncated them toward zero
     }
 
     stdControl_mousePos.x = pState->lX;
