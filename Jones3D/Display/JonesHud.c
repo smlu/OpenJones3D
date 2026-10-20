@@ -2626,7 +2626,6 @@ int J3DAPI JonesHud_GetKey(unsigned int keyId)
         return 0;
     }
 
-    JonesHud_msecMenuItemMoveCurDuration = JonesHud_msecMenuItemMoveDuration;
     if ( keyId == JonesHud_curKeyId )
     {
         if ( JonesHud_msecMenuItemMoveCurDuration < JonesHud_msecMenuItemMoveDuration
@@ -2642,6 +2641,10 @@ int J3DAPI JonesHud_GetKey(unsigned int keyId)
                 JonesHud_msecMenuItemMoveCurDuration = 75;
             }
         }
+    }
+    else
+    {
+        JonesHud_msecMenuItemMoveCurDuration = JonesHud_msecMenuItemMoveDuration; // Fixed: Reset the duration only when the key changes, resetting it always disabled the key repeat acceleration (original Indy3D.exe v1.0 0x00417150)
     }
 
     JonesHud_msecLastKeyPressTime = JonesHud_msecTime;
