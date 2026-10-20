@@ -6807,6 +6807,7 @@ void J3DAPI jonesConfig_AssignControlKey_ReadKey(HWND hWnd)
                             bGotKy = 1;
                             KillTimer(hWnd, 1u);
                             EndDialog(hWnd, 1);
+                            return;
                         }
 
                         // Only weapon key and we have non-weapon action
