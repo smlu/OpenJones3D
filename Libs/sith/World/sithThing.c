@@ -2342,10 +2342,10 @@ float J3DAPI sithThing_ScaleCombatDamage(const SithThing* pThing, SithThing* pHi
 
             if ( dist <= (double)maxAimDist )
             {
-                return damage * sithGetCombatDamageScalar() * 0.9f;
+                return damage * (sithGetCombatDamageScalar() * 0.9f); // Fixed: Multiply by the scaled scalar as the original, was scaling the damage twice in sequence which differs in the last bit (original Indy3D.exe v1.0 0x00434570)
             }
 
-            return damage * sithGetCombatDamageScalar() * 0.8f;
+            return damage * (sithGetCombatDamageScalar() * 0.8f);
         }
     }
 
