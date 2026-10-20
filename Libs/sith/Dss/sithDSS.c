@@ -83,8 +83,8 @@ void sithDSS_InstallHooks(void)
     J3D_HOOKFUNC(sithDSS_ProcessSyncGameState);
     J3D_HOOKFUNC(sithDSS_SyncVehicleControlState);
     J3D_HOOKFUNC(sithDSS_ProcessVehicleControlsState);
-    J3D_HOOKFUNC(sithDSS_sub_4B3760);
-    J3D_HOOKFUNC(sithDSS_sub_4B3790);
+    J3D_HOOKFUNC(sithDSS_SendEndSection);
+    J3D_HOOKFUNC(sithDSS_ProcessEndSection);
 }
 
 void sithDSS_ResetGlobals(void)
@@ -1530,14 +1530,14 @@ int J3DAPI sithDSS_ProcessVehicleControlsState(const SithMessage* pMsg)
     return 1;
 }
 
-int J3DAPI sithDSS_sub_4B3760(DPID idTo, unsigned int outstream)
+int J3DAPI sithDSS_SendEndSection(DPID idTo, unsigned int outstream)
 {
     SITHDSS_STARTOUT(SITHDSS_UNKNOWN_44); // Original name: SITHDSS_ENDSECTION
     SITHDSS_ENDOUT;
     return sithMessage_SendMessage(&sithMulti_g_message, idTo, outstream, DPSEND_GUARANTEED);
 }
 
-int J3DAPI sithDSS_sub_4B3790(const SithMessage* pMsg)
+int J3DAPI sithDSS_ProcessEndSection(const SithMessage* pMsg)
 {
     SITH_ASSERTREL(pMsg);
     return 1;

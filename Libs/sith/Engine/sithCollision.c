@@ -67,7 +67,7 @@ void sithCollision_InstallHooks(void)
     J3D_HOOKFUNC(sithCollision_CheckLOS);
     J3D_HOOKFUNC(sithCollision_CheckThingLOS);
     J3D_HOOKFUNC(sithCollision_RotateThing);
-    J3D_HOOKFUNC(sithCollision_sub_4A6EE0);
+    J3D_HOOKFUNC(sithCollision_ApplyThingOrient);
     J3D_HOOKFUNC(sithCollision_MoveThing);
     J3D_HOOKFUNC(sithCollision_SearchForCollisions);
     J3D_HOOKFUNC(sithCollision_DecreaseStackLevel);
@@ -76,13 +76,13 @@ void sithCollision_InstallHooks(void)
     J3D_HOOKFUNC(sithCollision_HandleThingHitSurface);
     J3D_HOOKFUNC(sithCollision_ThingCollisionHandler);
     J3D_HOOKFUNC(sithCollision_VehicleCollisionHandler);
-    J3D_HOOKFUNC(sithCollision_sub_4AA1A0);
+    J3D_HOOKFUNC(sithCollision_CollideHurt);
     J3D_HOOKFUNC(sithCollision_FindItemThing);
     J3D_HOOKFUNC(sithCollision_PushThingCollision);
     J3D_HOOKFUNC(sithCollision_PushSurfaceCollision);
     J3D_HOOKFUNC(sithCollision_ParticleAndActorCollisionHandler);
     J3D_HOOKFUNC(sithCollision_CheckFloorDistance);
-    J3D_HOOKFUNC(sithCollision_sub_4AAF30);
+    J3D_HOOKFUNC(sithCollision_ActorPlayerSearchFilter);
 }
 
 void sithCollision_ResetGlobals(void)
@@ -100,7 +100,7 @@ void sithCollision_Startup(void)
     memset(sithCollision_aThingSurfaceCollideResults, 0, sizeof(sithCollision_aThingSurfaceCollideResults));
 
     sithCollision_AddCollisionHandler(SITH_THING_ACTOR, SITH_THING_ACTOR, sithActor_ActorCollisionHandler, NULL);
-    sithCollision_AddCollisionHandler(SITH_THING_ACTOR, SITH_THING_PLAYER, sithActor_ActorCollisionHandler, sithCollision_sub_4AAF30);
+    sithCollision_AddCollisionHandler(SITH_THING_ACTOR, SITH_THING_PLAYER, sithActor_ActorCollisionHandler, sithCollision_ActorPlayerSearchFilter);
 
     sithCollision_AddCollisionHandler(SITH_THING_PLAYER, SITH_THING_PLAYER, sithCollision_ThingCollisionHandler, NULL);
     sithCollision_AddCollisionHandler(SITH_THING_PLAYER, SITH_THING_COG, sithCollision_ThingCollisionHandler, NULL);
@@ -545,7 +545,7 @@ void J3DAPI sithCollision_RotateThing(SithThing* pThing, const rdMatrix34* pOrie
     }
 }
 
-void J3DAPI sithCollision_sub_4A6EE0(SithThing* pThing, rdMatrix34* pOrient)
+void J3DAPI sithCollision_ApplyThingOrient(SithThing* pThing, rdMatrix34* pOrient)
 {
     if ( pThing->pAttachedThing )
     {
@@ -582,7 +582,7 @@ void J3DAPI sithCollision_sub_4A6EE0(SithThing* pThing, rdMatrix34* pOrient)
                 sithCollision_MoveThing(pAttachedThing, &moveNorm, moveDist, 0x40);
             }
 
-            sithCollision_sub_4A6EE0(pAttachedThing, &mat);
+            sithCollision_ApplyThingOrient(pAttachedThing, &mat);
             if ( pAttachedThing->moveType == SITH_MT_PHYSICS )
             {
                 pAttachedThing->moveInfo.physics.flags &= ~SITH_PF_ALIGNED;
@@ -1329,7 +1329,7 @@ int J3DAPI sithCollision_HandleThingHitSurface(SithThing* pThing, SithSurface* p
 
     absVelZ = fabsf(pThing->moveInfo.physics.velocity.z);
 
-    if ( !sithCollision_sub_4AA1A0(pThing, &pCollision->hitNorm, pCollision->distance, 0, pSurface) )
+    if ( !sithCollision_CollideHurt(pThing, &pCollision->hitNorm, pCollision->distance, 0, pSurface) )
     {
         return 0;
     }
@@ -1551,7 +1551,7 @@ int J3DAPI sithCollision_ThingCollisionHandler(SithThing* pSrcThing, SithThing* 
 
             if ( a5 )
             {
-                return sithCollision_sub_4AA1A0(pThing, &hitNorm, pCollision->distance, 0, 0);
+                return sithCollision_CollideHurt(pThing, &hitNorm, pCollision->distance, 0, 0);
             }
             else
             {
@@ -1578,7 +1578,7 @@ int J3DAPI sithCollision_ThingCollisionHandler(SithThing* pSrcThing, SithThing* 
             {
                 return 0;
             }
-            else if ( !sithCollision_sub_4AA1A0(pThing, &hitNorm, pCollision->distance, 0, 0) )
+            else if ( !sithCollision_CollideHurt(pThing, &hitNorm, pCollision->distance, 0, 0) )
             {
                 return 0;
             }
@@ -1976,7 +1976,7 @@ void J3DAPI sithCollision_VehicleCollisionHandler(SithThing* pThing, SithThing* 
     }
 }
 
-int J3DAPI sithCollision_sub_4AA1A0(SithThing* pThing, const rdVector3* pHitNorm, float colDistance, int a4, const SithSurface* pHitSurf)
+int J3DAPI sithCollision_CollideHurt(SithThing* pThing, const rdVector3* pHitNorm, float colDistance, int a4, const SithSurface* pHitSurf)
 {
     J3D_UNUSED(a4);
     float impactDot;
@@ -2600,7 +2600,7 @@ float J3DAPI sithCollision_CheckFloorDistance(SithThing* pThing, const rdVector3
     return distance;
 }
 
-int J3DAPI sithCollision_sub_4AAF30(SithThing* pThing1, SithThing* pThing2)
+int J3DAPI sithCollision_ActorPlayerSearchFilter(SithThing* pThing1, SithThing* pThing2)
 {
     if ( pThing1->type == SITH_THING_PLAYER && (pThing1->moveInfo.physics.flags & (SITH_PF_JEEP | SITH_PF_MINECAR)) != 0 && pThing2->type == SITH_THING_ACTOR )
     {

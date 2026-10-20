@@ -23,7 +23,7 @@ SithSurface* J3DAPI sithCollision_FindWaterSurface(SithSector* pStartSector, con
 int J3DAPI sithCollision_CheckLOS(SithSector* pStartSector, const rdVector3* startPos, const rdVector3* endPos, float radius);
 int J3DAPI sithCollision_CheckThingLOS(const SithThing* pViewer, const SithThing* pTarget, int a3);
 void J3DAPI sithCollision_RotateThing(SithThing* pThing, const rdMatrix34* pOrient);
-void J3DAPI sithCollision_sub_4A6EE0(SithThing* pThing, rdMatrix34* pOrient);
+void J3DAPI sithCollision_ApplyThingOrient(SithThing* pThing, rdMatrix34* pOrient);
 // Function returns distance the thing has travelled
 float J3DAPI sithCollision_MoveThing(SithThing* pThing, const rdVector3* moveNorm, float moveDist, int flags);
 float J3DAPI sithCollision_SearchForCollisions(SithSector* pStartSector, SithThing* pThing, const rdVector3* startPos, const rdVector3* moveNorm, float moveDist, float radius, int searchFlags);
@@ -38,13 +38,13 @@ int J3DAPI sithCollision_HandleThingHitSurface(SithThing* pThing, SithSurface* p
 // It returns True if there was collision otherwise False
 int J3DAPI sithCollision_ThingCollisionHandler(SithThing* pSrcThing, SithThing* pThingCollided, SithCollision* pCollision, int bSecondThingIsSource);
 void J3DAPI sithCollision_VehicleCollisionHandler(SithThing* pThing, SithThing* pHitThing, rdVector3* pForce, rdVector3* pInpactForce, int* a5, const rdVector3* hitNormal, float impactSpeed, float hitImpactSpeed);
-int J3DAPI sithCollision_sub_4AA1A0(SithThing* pThing, const rdVector3* pHitNorm, float distance, int a4, const SithSurface* pHitSurf);
+int J3DAPI sithCollision_CollideHurt(SithThing* pThing, const rdVector3* pHitNorm, float distance, int a4, const SithSurface* pHitSurf);
 SithThing* J3DAPI sithCollision_FindItemThing(SithThing* pThing, int* pbFoundFloorItem);
 void J3DAPI sithCollision_PushThingCollision(SithThing* pHitThing, float distance, SithCollisionType hitType, rdModel3Mesh* pHitMesh, rdFace* pHitFace, rdVector3* hitNorm);
 void J3DAPI sithCollision_PushSurfaceCollision(SithSurface* pSurf, float distance, SithCollisionType hitType, rdVector3* pHitNorm);
 int J3DAPI sithCollision_ParticleAndActorCollisionHandler(SithThing* pSrcThing, SithThing* pThingCollided, SithCollision* pCollision, int bSecondThingIsSource);
 float J3DAPI sithCollision_CheckFloorDistance(SithThing* pThing, const rdVector3* moveNorm);
-int J3DAPI sithCollision_sub_4AAF30(SithThing* pThing1, SithThing* pThing2);
+int J3DAPI sithCollision_ActorPlayerSearchFilter(SithThing* pThing1, SithThing* pThing2);
 
 // Helper hooking functions
 void sithCollision_InstallHooks(void);

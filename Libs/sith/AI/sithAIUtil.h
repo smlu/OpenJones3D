@@ -12,8 +12,8 @@ J3D_EXTERN_C_START
 #define sithAIUtil_g_bRenderAIWpnts J3D_DECL_FAR_VAR(sithAIUtil_g_bRenderAIWpnts, int)
 // extern int sithAIUtil_g_bRenderAIWpnts;
 
-void J3DAPI sithAIUtil_sub_49B2E0(SithAIControlBlock* pLocal, SithAIUtilFireFlags flags);
-void J3DAPI sithAIUtil_sub_49B640(SithAIControlBlock* pLocal);
+void J3DAPI sithAIUtil_UpdateTargetSight(SithAIControlBlock* pLocal, SithAIUtilFireFlags flags);
+void J3DAPI sithAIUtil_UpdateGoalSight(SithAIControlBlock* pLocal);
 // returns target sight state:
 // 0 - target in sight
 // 1 - target too far away (dist > sightDistance)
@@ -36,11 +36,11 @@ void J3DAPI sithAIUtil_AIConnectWpnts(unsigned int wpntIdx1, unsigned int wpntId
 int J3DAPI sithAIUtil_AIMoveToNextWpnt(SithAIControlBlock* pLocal, float moveSpeed, float degTurn, int mode);
 void J3DAPI sithAIUtil_AITraverseWpnts(SithAIControlBlock* pLocal, int wpntIdx, float moveSpeed, float degTurn, int mode);
 int J3DAPI sithAIUtil_AIAdvanceToNextWpnt(SithAIControlBlock* pLocal, int bNotify);
-int J3DAPI sithAIUtil_sub_49CC60(SithAIControlBlock* pLocal, unsigned int numLinks, int* aWypointLinks, int linkNum, int wpntOwnerNum);
-void J3DAPI sithAIUtil_sub_49D170(SithAIControlBlock* pLocal);
+int J3DAPI sithAIUtil_SelectWpntLink(SithAIControlBlock* pLocal, unsigned int numLinks, int* aWypointLinks, int linkNum, int wpntOwnerNum);
+void J3DAPI sithAIUtil_CheckWpntMoveAlign(SithAIControlBlock* pLocal);
 int J3DAPI sithAIUtil_AIFindNearestWpnt(SithThing* pThing, int a2);
-void J3DAPI sithAIUtil_sub_49D640();
-void J3DAPI sithAIUtil_sub_49D750(SithThing* pThing);
+void J3DAPI sithAIUtil_RankWpntsFromPlayer();
+void J3DAPI sithAIUtil_RankWpntsFromThing(SithThing* pThing);
 int J3DAPI sithAIUtil_CreateAIWaypoint(SithAIControlBlock* pLocal, float degTurn);
 void J3DAPI sithAIUtil_ClearAIWaypoint(SithAIControlBlock* pLocal);
 int J3DAPI sithAIUtil_GetAIWaypointNum(SithAIControlBlock* pLocal);
@@ -52,10 +52,10 @@ int J3DAPI sithAIUtil_CheckFloorAtPos(const SithAIControlBlock* pLocal, const rd
 int J3DAPI sithAIUtil_MakeRandPoint(SithAIControlBlock* pLocal, rdVector3* pPos, int flags, float angle, float* pDownCos, rdVector3* pDir, rdVector3* pDestPoint);
 int J3DAPI sithAIUtil_RetryMakeRandPoint(SithAIControlBlock* pLocal, rdVector3* pPos, float a3, rdVector3* pDirection, rdVector3* pDestPoint);
 int J3DAPI sithAIUtil_CheckPathToPos(SithAIControlBlock* pLocal, SithSector* pStartSector, rdVector3* startPos, int flags, float minMoveDist, float moveDist, float radius, rdVector3* pDirection, rdVector3* a9);
-int J3DAPI sithAIUtil_sub_49EE50(SithAIControlBlock* pLocal, rdVector3* pPos, float angle, float maxAngle, float deltaAngle, int flags);
-int J3DAPI sithAIUtil_sub_49F010(SithAIControlBlock* pLocal, rdVector3* pPos, float minDist, float moveDist, int bSomeBool, int maxRetries, rdVector3* pDestPos);
+int J3DAPI sithAIUtil_SweepMoveToPathPos(SithAIControlBlock* pLocal, rdVector3* pPos, float angle, float maxAngle, float deltaAngle, int flags);
+int J3DAPI sithAIUtil_MakeRoamPos(SithAIControlBlock* pLocal, rdVector3* pPos, float minDist, float moveDist, int bSomeBool, int maxRetries, rdVector3* pDestPos);
 int J3DAPI sithAIUtil_MakePathPos(SithAIControlBlock* pLocal, rdVector3* pPos, float minDist, float moveDist, float angle, int flags, rdVector3* pDirection, rdVector3* pDestPos);
-int J3DAPI sithAIUtil_sub_49F1F0(const SithAIControlBlock* pLocal, const rdVector3* pPos);
+int J3DAPI sithAIUtil_IsLineOfFireClear(const SithAIControlBlock* pLocal, const rdVector3* pPos);
 void J3DAPI sithAIUtil_AIPlaySoundMode(SithAIControlBlock* pLocal, SithSoundClassMode mode);
 void J3DAPI sithAIUtil_AISetMode(SithAIControlBlock* pLocal, SithAIMode mode);
 void J3DAPI sithAIUtil_AIClearMode(SithAIControlBlock* pLocal, SithAIMode mode);

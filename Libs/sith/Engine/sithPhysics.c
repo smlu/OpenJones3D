@@ -270,14 +270,14 @@ void J3DAPI sithPhysics_GetThingAttachNormalAndDistance(const SithThing* pThing,
 void J3DAPI sithPhysics_ProcessMineCarTrackMove(SithThing* pThing, float secDeltaTime, float a3, rdVector3* a4);
 int J3DAPI sithPhysics_ProcessTrackFace(SithThing* pThing, rdFace* pFace, const rdVector3* a3, const rdVector3* a4, const rdVector3* a5, SithPhysicsTrackFaceData* pData);
 int J3DAPI sithPhysics_CheckForPointOnTrack(SithThing* pThing, const rdVector3* pPoint, rdFace** ppFoundFace, int bUpdateState, const rdFace* pPrevFace);
-void J3DAPI sithPhysics_sub_487EC0(SithThing* pThing, SithPhysicsTrackFaceData* pData, float* secDeltaTime, rdVector3* a4, rdVector3* a5, float a6);
+void J3DAPI sithPhysics_MoveToTrackFaceFront(SithThing* pThing, SithPhysicsTrackFaceData* pData, float* secDeltaTime, rdVector3* a4, rdVector3* a5, float a6);
 
 // Jeep physics
-int J3DAPI sithPhysics_Jeep_sub_4892E0(SithThing* pThing, SithJeepState* a2, float secDeltaTime);
+int J3DAPI sithPhysics_UpdateJeepWheels(SithThing* pThing, SithJeepState* a2, float secDeltaTime);
 // function might check for jeep surface and thing face collision
-void J3DAPI sithPhysics_sub_48A970(SithThing* pThing, SithJeepWheelState* a2, const rdVector3* a3);
-void J3DAPI sithPhysics_sub_48AD20(SithThing* pThing, SithJeepState* a2, rdVector3* a3, float secDeltaTime);
-void J3DAPI sithPhysics_Jeep_sub_48B4D0(SithThing* pThing, SithJeepState* a2);
+void J3DAPI sithPhysics_UpdateJeepWheelContact(SithThing* pThing, SithJeepWheelState* a2, const rdVector3* a3);
+void J3DAPI sithPhysics_GetJeepChassisNormal(SithThing* pThing, SithJeepState* a2, rdVector3* a3, float secDeltaTime);
+void J3DAPI sithPhysics_ResetJeepWheels(SithThing* pThing, SithJeepState* a2);
 void J3DAPI sithPhysics_UpdateJeepFx(SithThing* pThing, SithVehicleEngineFxState* pFxState, float a3);
 
 void sithPhysics_InstallHooks(void)
@@ -323,13 +323,13 @@ void sithPhysics_InstallHooks(void)
     J3D_HOOKFUNC(sithPhysics_ProcessMineCarTrackMove);
     J3D_HOOKFUNC(sithPhysics_ProcessTrackFace);
     J3D_HOOKFUNC(sithPhysics_CheckForPointOnTrack);
-    J3D_HOOKFUNC(sithPhysics_sub_487EC0);
+    J3D_HOOKFUNC(sithPhysics_MoveToTrackFaceFront);
     J3D_HOOKFUNC(sithPhysics_UpdateJeepPhysics);
-    J3D_HOOKFUNC(sithPhysics_Jeep_sub_4892E0);
-    J3D_HOOKFUNC(sithPhysics_sub_48A970);
-    J3D_HOOKFUNC(sithPhysics_sub_48AD20);
+    J3D_HOOKFUNC(sithPhysics_UpdateJeepWheels);
+    J3D_HOOKFUNC(sithPhysics_UpdateJeepWheelContact);
+    J3D_HOOKFUNC(sithPhysics_GetJeepChassisNormal);
     J3D_HOOKFUNC(sithPhysics_CreateJeepUserBlock);
-    J3D_HOOKFUNC(sithPhysics_Jeep_sub_48B4D0);
+    J3D_HOOKFUNC(sithPhysics_ResetJeepWheels);
     J3D_HOOKFUNC(sithPhysics_UpdateJeepFx);
 }
 
@@ -3382,7 +3382,7 @@ void J3DAPI sithPhysics_ProcessMineCarTrackMove(SithThing* pThing, float secDelt
             goto error;
         }
 
-        sithPhysics_sub_487EC0(pThing, &data, &secRemaining, &curPos, &newPos, a3);
+        sithPhysics_MoveToTrackFaceFront(pThing, &data, &secRemaining, &curPos, &newPos, a3);
         if ( secRemaining == 0.0f )
         {
             bDone = 1;
@@ -4088,7 +4088,7 @@ void J3DAPI sithPhysics_FreeUserBlockEntry(SithThing* pThing)
     }
 }
 
-void J3DAPI sithPhysics_sub_487EC0(SithThing* pThing, SithPhysicsTrackFaceData* pData, float* secDeltaTime, rdVector3* a4, rdVector3* a5, float a6)
+void J3DAPI sithPhysics_MoveToTrackFaceFront(SithThing* pThing, SithPhysicsTrackFaceData* pData, float* secDeltaTime, rdVector3* a4, rdVector3* a5, float a6)
 {
     J3D_UNUSED(pThing);
     J3D_UNUSED(a4);
@@ -4155,8 +4155,8 @@ void J3DAPI sithPhysics_UpdateJeepPhysics(SithThing* pThing, float secDeltaTime)
 
     if ( pThing->moveStatus != SITHPLAYERMOVE_UNKNOWN_83 && pThing->moveStatus != SITHPLAYERMOVE_UNKNOWN_84 && pThing->moveStatus != SITHPLAYERMOVE_JEEP_IMPACT )
     {
-        sithPhysics_Jeep_sub_4892E0(pThing, pState, secDeltaTime);
-        sithPhysics_sub_48AD20(pThing, pState, &normal, secDeltaTime);
+        sithPhysics_UpdateJeepWheels(pThing, pState, secDeltaTime);
+        sithPhysics_GetJeepChassisNormal(pThing, pState, &normal, secDeltaTime);
         if ( pState->bAllWheelsGrounded ) // Note, set when the jeep wheels are not touching the ground
         {
             pThing->moveStatus = SITHPLAYERMOVE_UNKNOWN_82;
@@ -4454,7 +4454,7 @@ void J3DAPI sithPhysics_UpdateJeepPhysics(SithThing* pThing, float secDeltaTime)
     sithPhysics_UpdateExhaustFx(pThing, &pThing->userblock.pJeep->exhaustInfo, secDeltaTime);
 }
 
-int J3DAPI sithPhysics_Jeep_sub_4892E0(SithThing* pThing, SithJeepState* a2, float secDeltaTime)
+int J3DAPI sithPhysics_UpdateJeepWheels(SithThing* pThing, SithJeepState* a2, float secDeltaTime)
 {
     SithPhysicsInfo* pPhysics = &pThing->moveInfo.physics;
 
@@ -4469,22 +4469,22 @@ int J3DAPI sithPhysics_Jeep_sub_4892E0(SithThing* pThing, SithJeepState* a2, flo
     rdVector_Set3(&pos, -halfX, halfY, -halfZ);
     rdMatrix_TransformPoint34Acc(&pos, &pThing->orient);
     rdVector_Add3(&pos, &pos, &pThing->pos);
-    sithPhysics_sub_48A970(pThing, &a2->aWheels[0], &pos);
+    sithPhysics_UpdateJeepWheelContact(pThing, &a2->aWheels[0], &pos);
 
     rdVector_Set3(&pos, halfX, halfY, -halfZ);
     rdMatrix_TransformPoint34Acc(&pos, &pThing->orient);
     rdVector_Add3(&pos, &pos, &pThing->pos);
-    sithPhysics_sub_48A970(pThing, &a2->aWheels[3], &pos);
+    sithPhysics_UpdateJeepWheelContact(pThing, &a2->aWheels[3], &pos);
 
     rdVector_Set3(&pos, -halfX, -halfY, -halfZ);
     rdMatrix_TransformPoint34Acc(&pos, &pThing->orient);
     rdVector_Add3(&pos, &pos, &pThing->pos);
-    sithPhysics_sub_48A970(pThing, &a2->aWheels[1], &pos);
+    sithPhysics_UpdateJeepWheelContact(pThing, &a2->aWheels[1], &pos);
 
     rdVector_Set3(&pos, halfX, -halfY, -halfZ);
     rdMatrix_TransformPoint34Acc(&pos, &pThing->orient);
     rdVector_Add3(&pos, &pos, &pThing->pos);
-    sithPhysics_sub_48A970(pThing, &a2->aWheels[2], &pos);
+    sithPhysics_UpdateJeepWheelContact(pThing, &a2->aWheels[2], &pos);
 
     // Note, bAllWheelsGrounded is set when the jeep wheels are off the ground (the wheels are loose)
     int bPrevWheelsLoose = a2->bAllWheelsGrounded;
@@ -4630,7 +4630,7 @@ int J3DAPI sithPhysics_Jeep_sub_4892E0(SithThing* pThing, SithJeepState* a2, flo
 }
 
 // function might check for jeep surface and thing face collision
-void J3DAPI sithPhysics_sub_48A970(SithThing* pThing, SithJeepWheelState* a2, const rdVector3* a3)
+void J3DAPI sithPhysics_UpdateJeepWheelContact(SithThing* pThing, SithJeepWheelState* a2, const rdVector3* a3)
 {
     float searchDist = sithPhysics_flt_538CFC * 2.0f;
 
@@ -4740,7 +4740,7 @@ void J3DAPI sithPhysics_sub_48A970(SithThing* pThing, SithJeepWheelState* a2, co
     sithCollision_DecreaseStackLevel();
 }
 
-void J3DAPI sithPhysics_sub_48AD20(SithThing* pThing, SithJeepState* a2, rdVector3* a3, float secDeltaTime)
+void J3DAPI sithPhysics_GetJeepChassisNormal(SithThing* pThing, SithJeepState* a2, rdVector3* a3, float secDeltaTime)
 {
     SithPhysicsInfo* pPhysics = &pThing->moveInfo.physics;
 
@@ -4850,7 +4850,7 @@ void J3DAPI sithPhysics_sub_48AD20(SithThing* pThing, SithJeepState* a2, rdVecto
     }
 }
 
-void J3DAPI sithPhysics_Jeep_sub_48B4D0(SithThing* pThing, SithJeepState* a2)
+void J3DAPI sithPhysics_ResetJeepWheels(SithThing* pThing, SithJeepState* a2)
 {
     J3D_UNUSED(pThing);
 
@@ -4883,14 +4883,14 @@ int J3DAPI sithPhysics_CreateJeepUserBlock(SithThing* pThing)
     if ( !stdUtil_StrCmp(pThing->aName, "jeepplayer") || !stdUtil_StrCmp(pThing->aName, "jeepplayerpyr") )
     {
         pJeep->type = 1;
-        sithPhysics_Jeep_sub_48B4D0(pThing, &pThing->userblock.pJeep->state);
+        sithPhysics_ResetJeepWheels(pThing, &pThing->userblock.pJeep->state);
         sithPhysics_InitVehicleFxState(pThing, &pThing->userblock.pJeep->fxstate);
         sithPhysics_InitJeepExhaust(pThing, &pThing->userblock.pJeep->exhaustInfo);
     }
     else
     {
         pJeep->type = 0;
-        sithPhysics_Jeep_sub_48B4D0(pThing, &pThing->userblock.pJeep->state);
+        sithPhysics_ResetJeepWheels(pThing, &pThing->userblock.pJeep->state);
         sithPhysics_InitVehicleFxState(pThing, &pThing->userblock.pJeep->fxstate);
     }
 

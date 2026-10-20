@@ -473,7 +473,7 @@ void sithMessage_InitMessageHandlers(void)
     sithMessage_RegisterFunction(SITHDSS_CHECKMEMBERSHIPLIST, sithMessage_ProcessCheckMembershipList);
     sithMessage_RegisterFunction(SITHDSS_QUIT, sithMulti_ProcessQuit);
     sithMessage_RegisterFunction(SITHDSS_MOVEPOS, sithDSSThing_ProcessMovePos);
-    sithMessage_RegisterFunction(SITHDSS_UNKNOWN_44, sithDSS_sub_4B3790);
+    sithMessage_RegisterFunction(SITHDSS_UNKNOWN_44, sithDSS_ProcessEndSection);
     sithMessage_RegisterFunction(SITHDSS_VOICESTATE, sithVoice_ProcessVoiceState);
     sithMessage_RegisterFunction(SITHDSS_VEHICLECONTROLSTATE, sithDSS_ProcessVehicleControlsState);
     sithMessage_RegisterFunction(SITHDSS_WHIPSTATUS, sithWhip_Restore);

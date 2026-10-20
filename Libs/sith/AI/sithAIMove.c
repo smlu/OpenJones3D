@@ -45,13 +45,13 @@ void sithAIMove_InstallHooks(void)
 
     J3D_HOOKFUNC(sithAIMove_Update);
     J3D_HOOKFUNC(sithAIMove_UpdateMineCar);
-    J3D_HOOKFUNC(sithAIMove_sub_4958B0);
-    J3D_HOOKFUNC(sithAIMove_sub_495CD0);
-    J3D_HOOKFUNC(sithAIMove_sub_4961A0);
-    J3D_HOOKFUNC(sithAIMove_sub_496200);
-    J3D_HOOKFUNC(sithAIMove_sub_496550);
-    J3D_HOOKFUNC(sithAIMove_sub_4966D0);
-    J3D_HOOKFUNC(sithAIMove_sub_496820);
+    J3D_HOOKFUNC(sithAIMove_UpdateTurn);
+    J3D_HOOKFUNC(sithAIMove_UpdateMove);
+    J3D_HOOKFUNC(sithAIMove_CheckMoveAlign);
+    J3D_HOOKFUNC(sithAIMove_GetGoalTolerance);
+    J3D_HOOKFUNC(sithAIMove_CheckWalkMove);
+    J3D_HOOKFUNC(sithAIMove_CheckFlyMove);
+    J3D_HOOKFUNC(sithAIMove_CheckSwimMove);
     J3D_HOOKFUNC(sithAIMove_AIGetMoveState);
     J3D_HOOKFUNC(sithAIMove_AISpecialTurn);
     J3D_HOOKFUNC(sithAIMove_UpdateAIMove);
@@ -72,21 +72,21 @@ void sithAIMove_InstallHooks(void)
     J3D_HOOKFUNC(sithAIMove_StopAIMovement);
     J3D_HOOKFUNC(sithAIMove_ResetAILook);
     J3D_HOOKFUNC(sithAIMove_UpdateBoss);
-    J3D_HOOKFUNC(sithAIMove_sub_499090);
-    J3D_HOOKFUNC(sithAIMove_sub_4996C0);
-    J3D_HOOKFUNC(sithAIMove_sub_499A80);
-    J3D_HOOKFUNC(sithAIMove_sub_499CA0);
-    J3D_HOOKFUNC(sithAIMove_sub_49A020);
-    J3D_HOOKFUNC(sithAIMove_sub_49A1B0);
-    J3D_HOOKFUNC(sithAIMove_sub_49A450);
-    J3D_HOOKFUNC(sithAIMove_sub_49A630);
-    J3D_HOOKFUNC(sithAIMove_sub_49A810);
+    J3D_HOOKFUNC(sithAIMove_UpdateHeadTrackTarget);
+    J3D_HOOKFUNC(sithAIMove_UpdateHeadTrackLookPos);
+    J3D_HOOKFUNC(sithAIMove_GetQuetzStrikeAngles);
+    J3D_HOOKFUNC(sithAIMove_UpdateQuetzStrike);
+    J3D_HOOKFUNC(sithAIMove_GetQuetzAnim2Angles);
+    J3D_HOOKFUNC(sithAIMove_UpdateQuetzAnim2);
+    J3D_HOOKFUNC(sithAIMove_UpdateQuetzAnim3);
+    J3D_HOOKFUNC(sithAIMove_UpdateQuetzAnim5);
+    J3D_HOOKFUNC(sithAIMove_UpdateQuetzAnim4);
     J3D_HOOKFUNC(sithAIMove_UpdateQuetzTail);
-    J3D_HOOKFUNC(sithAIMove_sub_49AA60);
-    J3D_HOOKFUNC(sithAIMove_sub_49AB80);
-    J3D_HOOKFUNC(sithAIMove_sub_49AC50);
-    J3D_HOOKFUNC(sithAIMove_sub_49AF80);
-    J3D_HOOKFUNC(sithAIMove_sub_49B1B0);
+    J3D_HOOKFUNC(sithAIMove_StartQuetzStrike);
+    J3D_HOOKFUNC(sithAIMove_StartQuetzAnim2);
+    J3D_HOOKFUNC(sithAIMove_StartQuetzAnim3);
+    J3D_HOOKFUNC(sithAIMove_StartQuetzAnim5);
+    J3D_HOOKFUNC(sithAIMove_StartQuetzAnim4);
     J3D_HOOKFUNC(sithAIMove_UpdateMardukTail);
 }
 
@@ -158,7 +158,7 @@ void J3DAPI sithAIMove_Update(SithThing* pThing, float secDeltatTime)
                 }
             }
 
-            sithAIMove_sub_4958B0(pLocal, secDeltatTime);
+            sithAIMove_UpdateTurn(pLocal, secDeltatTime);
         }
     }
 
@@ -166,17 +166,17 @@ void J3DAPI sithAIMove_Update(SithThing* pThing, float secDeltatTime)
     {
         if ( (pLocal->mode & SITHAI_MODE_TRAVERSEWPNTS) != 0 )
         {
-            sithAIUtil_sub_49D170(pLocal);
+            sithAIUtil_CheckWpntMoveAlign(pLocal);
         }
         else
         {
-            sithAIMove_sub_4961A0(pLocal);
+            sithAIMove_CheckMoveAlign(pLocal);
         }
     }
 
     if ( (pLocal->mode & SITHAI_MODE_MOVING) != 0 && (pLocal->submode & SITHAI_SUBMODE_UNKNOWN_10) == 0 )
     {
-        sithAIMove_sub_495CD0(pLocal, secDeltatTime);
+        sithAIMove_UpdateMove(pLocal, secDeltatTime);
     }
 
     if ( sithWeapon_HasWeaponSelected(pLocal->pOwner) )
@@ -190,11 +190,11 @@ void J3DAPI sithAIMove_Update(SithThing* pThing, float secDeltatTime)
         if ( ((pLocal->mode & SITHAI_MODE_BLOCK) != 0 || (pThing->thingInfo.actorInfo.flags & SITH_AF_NOSLOPEMOVE) != 0)
             && (pLocal->submode & SITHAI_SUBMODE_UNKNOWN_400) == 0 )
         {
-            sithAIMove_sub_4996C0(pLocal, secDeltatTime);
+            sithAIMove_UpdateHeadTrackLookPos(pLocal, secDeltatTime);
         }
         else
         {
-            sithAIMove_sub_499090(pLocal, secDeltatTime);
+            sithAIMove_UpdateHeadTrackTarget(pLocal, secDeltatTime);
         }
     }
 
@@ -239,7 +239,7 @@ void J3DAPI sithAIMove_UpdateMineCar(SithAIControlBlock* pLocal, float secDeltaT
     rdVector_Cross3(&rvec, &aimDir, &pThing->orient.uvec);
     rdVector_Normalize3Acc(&rvec);
 
-    // TODO: [BUG] The original never assigns the local moveState (sithAIMove_sub_4958B0 sets it from sithAIMove_AIGetMoveState).
+    // TODO: [BUG] The original never assigns the local moveState (sithAIMove_UpdateTurn sets it from sithAIMove_AIGetMoveState).
     //       The compiler reuses the stack slot of the pLocal argument for both moveState and angle: when angle is computed the slot
     //       holds angle's bits, so moveState is zero only if angle is +0.0f; when the actor looks straight up or down angle is never
     //       stored and the slot still holds the never-NULL pLocal pointer, so moveState is nonzero.
@@ -330,7 +330,7 @@ void J3DAPI sithAIMove_UpdateMineCar(SithAIControlBlock* pLocal, float secDeltaT
     }
 }
 
-void J3DAPI sithAIMove_sub_4958B0(SithAIControlBlock* pLocal, float secDeltatTime)
+void J3DAPI sithAIMove_UpdateTurn(SithAIControlBlock* pLocal, float secDeltatTime)
 {
     SithThing* pOwner = pLocal->pOwner;
     SithActorInfo* pActorInfo = &pOwner->thingInfo.actorInfo;
@@ -426,7 +426,7 @@ void J3DAPI sithAIMove_sub_4958B0(SithAIControlBlock* pLocal, float secDeltatTim
     }
 }
 
-void J3DAPI sithAIMove_sub_495CD0(SithAIControlBlock* pLocal, float secDeltaTime)
+void J3DAPI sithAIMove_UpdateMove(SithAIControlBlock* pLocal, float secDeltaTime)
 {
     int bGoalReached = 0;
 
@@ -460,7 +460,7 @@ void J3DAPI sithAIMove_sub_495CD0(SithAIControlBlock* pLocal, float secDeltaTime
     rdVector3 movePos;
     rdVector_Copy3(&movePos, &pLocal->movePos);
 
-    float goalDist = (float)sithAIMove_sub_496200(pLocal, &pos, &movePos);
+    float goalDist = (float)sithAIMove_GetGoalTolerance(pLocal, &pos, &movePos);
 
     rdVector_Sub3(&pLocal->moveDirection, &movePos, &pos);
     pLocal->moveDistance = rdVector_Normalize3Acc(&pLocal->moveDirection);
@@ -514,15 +514,15 @@ void J3DAPI sithAIMove_sub_495CD0(SithAIControlBlock* pLocal, float secDeltaTime
     {
         if ( (pThing->moveInfo.physics.flags & SITH_PF_FLY) == 0 && pThing->attach.flags )
         {
-            bGoalReached = sithAIMove_sub_496550(pLocal, secDeltaTime);
+            bGoalReached = sithAIMove_CheckWalkMove(pLocal, secDeltaTime);
         }
         else if ( (pThing->moveInfo.physics.flags & SITH_PF_FLY) != 0 && (pThing->thingInfo.actorInfo.flags & SITH_AF_BREATHEUNDERWATER) == 0 )
         {
-            bGoalReached = sithAIMove_sub_4966D0(pLocal, secDeltaTime);
+            bGoalReached = sithAIMove_CheckFlyMove(pLocal, secDeltaTime);
         }
         else if ( (pThing->flags & (SITH_TF_AIRDESTROYED | SITH_TF_SUBMERGED)) != 0 )
         {
-            bGoalReached = sithAIMove_sub_496820(pLocal, secDeltaTime);
+            bGoalReached = sithAIMove_CheckSwimMove(pLocal, secDeltaTime);
         }
 
         if ( (pLocal->mode & SITHAI_MODE_MOVING) == 0 )
@@ -558,7 +558,7 @@ void J3DAPI sithAIMove_sub_495CD0(SithAIControlBlock* pLocal, float secDeltaTime
                 flags |= 0x100;
             }
 
-            if ( sithAIUtil_sub_49EE50(pLocal, &pLocal->vecUnknown3, 45.0f, 90.0f, 45.0f, flags) )
+            if ( sithAIUtil_SweepMoveToPathPos(pLocal, &pLocal->vecUnknown3, 45.0f, 90.0f, 45.0f, flags) )
             {
                 return;
             }
@@ -573,7 +573,7 @@ void J3DAPI sithAIMove_sub_495CD0(SithAIControlBlock* pLocal, float secDeltaTime
     }
 }
 
-void J3DAPI sithAIMove_sub_4961A0(SithAIControlBlock* pLocal)
+void J3DAPI sithAIMove_CheckMoveAlign(SithAIControlBlock* pLocal)
 {
     if ( (pLocal->submode & SITHAI_SUBMODE_NOMOVEBACKWARDS) != 0 )
     {
@@ -588,7 +588,7 @@ void J3DAPI sithAIMove_sub_4961A0(SithAIControlBlock* pLocal)
     }
 }
 
-double J3DAPI sithAIMove_sub_496200(SithAIControlBlock* pLocal, rdVector3* a2, rdVector3* a3)
+double J3DAPI sithAIMove_GetGoalTolerance(SithAIControlBlock* pLocal, rdVector3* a2, rdVector3* a3)
 {
     SithThing* pThing = pLocal->pOwner;
     SITH_ASSERTREL(pThing);
@@ -679,7 +679,7 @@ double J3DAPI sithAIMove_sub_496200(SithAIControlBlock* pLocal, rdVector3* a2, r
     return minDist;
 }
 
-int J3DAPI sithAIMove_sub_496550(SithAIControlBlock* pLocal, float secDeltaTime)
+int J3DAPI sithAIMove_CheckWalkMove(SithAIControlBlock* pLocal, float secDeltaTime)
 {
     rdVector3 endPos;
     rdVector_ScaleAdd3(&endPos, &pLocal->pOwner->moveInfo.physics.velocity, secDeltaTime, &pLocal->pOwner->pos);
@@ -740,7 +740,7 @@ int J3DAPI sithAIMove_sub_496550(SithAIControlBlock* pLocal, float secDeltaTime)
     return 0;
 }
 
-int J3DAPI sithAIMove_sub_4966D0(SithAIControlBlock* pLocal, float secDeltaTime)
+int J3DAPI sithAIMove_CheckFlyMove(SithAIControlBlock* pLocal, float secDeltaTime)
 {
     SithThing* pThing = pLocal->pOwner;
     if ( (pThing->flags & SITH_TF_SUBMERGED) != 0 )
@@ -783,7 +783,7 @@ int J3DAPI sithAIMove_sub_4966D0(SithAIControlBlock* pLocal, float secDeltaTime)
     return 0;
 }
 
-int J3DAPI sithAIMove_sub_496820(SithAIControlBlock* pLocal, float secDeltaTime)
+int J3DAPI sithAIMove_CheckSwimMove(SithAIControlBlock* pLocal, float secDeltaTime)
 {
     SithThing* pThing = pLocal->pOwner;
     rdVector3 endPosition;
@@ -1736,7 +1736,7 @@ int J3DAPI sithAIMove_AISetMovePos(SithAIControlBlock* pLocal, const rdVector3* 
         }
     }
 
-    float moveSize = sithAIMove_sub_496200(pLocal, &curPos, &newPos);
+    float moveSize = sithAIMove_GetGoalTolerance(pLocal, &curPos, &newPos);
     if ( rdVector_Dist3(moveToPos, &pLocal->pOwner->pos) <= moveSize )
     {
         return 0;
@@ -2455,7 +2455,7 @@ void J3DAPI sithAIMove_UpdateBoss(SithAIControlBlock* pLocal, float secDeltaTime
     }
 }
 
-void J3DAPI sithAIMove_sub_499090(SithAIControlBlock* pLocal, float secDeltaTime)
+void J3DAPI sithAIMove_UpdateHeadTrackTarget(SithAIControlBlock* pLocal, float secDeltaTime)
 {
     SITH_ASSERTREL(pLocal && pLocal->pOwner);
 
@@ -2610,7 +2610,7 @@ void J3DAPI sithAIMove_sub_499090(SithAIControlBlock* pLocal, float secDeltaTime
     sithActor_SetHeadPYR(pLocal->pOwner, &headPYR);
 }
 
-void J3DAPI sithAIMove_sub_4996C0(SithAIControlBlock* pLocal, float a2)
+void J3DAPI sithAIMove_UpdateHeadTrackLookPos(SithAIControlBlock* pLocal, float a2)
 {
     SITH_ASSERTREL(pLocal && pLocal->pOwner);
 
@@ -2677,7 +2677,7 @@ void J3DAPI sithAIMove_sub_4996C0(SithAIControlBlock* pLocal, float a2)
     }
 }
 
-void J3DAPI sithAIMove_sub_499A80(SithAIControlBlock* pLocal, float* pDestAngle, float* a3, float* a4, float* a5)
+void J3DAPI sithAIMove_GetQuetzStrikeAngles(SithAIControlBlock* pLocal, float* pDestAngle, float* a3, float* a4, float* a5)
 {
     SithThing* pOwner  = pLocal->pOwner;
     SithThing* pTarget = pLocal->pTargetThing;
@@ -2718,7 +2718,7 @@ void J3DAPI sithAIMove_sub_499A80(SithAIControlBlock* pLocal, float* pDestAngle,
     *a5 = (distance - 0.3f) * headPitchScale + sithAIMove_g_flt_585470 - pOwner->renderData.apTweakedAngles[2].x;
 }
 
-void J3DAPI sithAIMove_sub_499CA0(SithAIControlBlock* pLocal, float secDeltaTime)
+void J3DAPI sithAIMove_UpdateQuetzStrike(SithAIControlBlock* pLocal, float secDeltaTime)
 {
     SithThing* pThing = pLocal->pOwner;
     if ( !sithThing_CreateQuetzUserBlock(pThing) )
@@ -2742,7 +2742,7 @@ void J3DAPI sithAIMove_sub_499CA0(SithAIControlBlock* pLocal, float secDeltaTime
         float pitchAngle;
         float headYaw;
         float angleHeadPitch;
-        sithAIMove_sub_499A80(pLocal, &angle, &pitchAngle, &headYaw, &angleHeadPitch);
+        sithAIMove_GetQuetzStrikeAngles(pLocal, &angle, &pitchAngle, &headYaw, &angleHeadPitch);
         pStrike->aSnapShots[1].angle1 = 20.0f;
         pStrike->aSnapShots[1].angle2 = angle * 0.5f;
         pStrike->aSnapShots[1].angle3 = pThing->renderData.apTweakedAngles[2].pitch - 20.0f;
@@ -2755,7 +2755,7 @@ void J3DAPI sithAIMove_sub_499CA0(SithAIControlBlock* pLocal, float secDeltaTime
         float pitchAngle;
         float headYaw;
         float angleHeadPitch;
-        sithAIMove_sub_499A80(pLocal, &angle, &pitchAngle, &headYaw, &angleHeadPitch);
+        sithAIMove_GetQuetzStrikeAngles(pLocal, &angle, &pitchAngle, &headYaw, &angleHeadPitch);
         pStrike->aSnapShots[2].angle1 = pitchAngle * 0.9f;
         pStrike->aSnapShots[2].angle2 = angle * 0.9f;
         pStrike->aSnapShots[2].angle3 = pThing->renderData.apTweakedAngles[2].pitch + angleHeadPitch * 0.9f;
@@ -2768,7 +2768,7 @@ void J3DAPI sithAIMove_sub_499CA0(SithAIControlBlock* pLocal, float secDeltaTime
         float pitchAngle;
         float headYaw;
         float angleHeadPitch;
-        sithAIMove_sub_499A80(pLocal, &angle, &pitchAngle, &headYaw, &angleHeadPitch);
+        sithAIMove_GetQuetzStrikeAngles(pLocal, &angle, &pitchAngle, &headYaw, &angleHeadPitch);
         pStrike->aSnapShots[3].angle1 = pitchAngle;
         pStrike->aSnapShots[3].angle2 = angle;
         pStrike->aSnapShots[3].angle3 = pThing->renderData.apTweakedAngles[2].pitch + angleHeadPitch;
@@ -2781,7 +2781,7 @@ void J3DAPI sithAIMove_sub_499CA0(SithAIControlBlock* pLocal, float secDeltaTime
         float pitchAngle;
         float headYaw;
         float angleHeadPitch;
-        sithAIMove_sub_499A80(pLocal, &angle, &pitchAngle, &headYaw, &angleHeadPitch);
+        sithAIMove_GetQuetzStrikeAngles(pLocal, &angle, &pitchAngle, &headYaw, &angleHeadPitch);
         pStrike->aSnapShots[4].angle1 = 10.0f;
         pStrike->aSnapShots[4].angle2 = angle * 0.4f;
         pStrike->aSnapShots[4].angle3 = pThing->renderData.apTweakedAngles[2].pitch - 10.0f;
@@ -2826,12 +2826,12 @@ void J3DAPI sithAIMove_sub_499CA0(SithAIControlBlock* pLocal, float secDeltaTime
         }
         else
         {
-            sithAIMove_sub_499CA0(pLocal, secDeltaTime - remainder);
+            sithAIMove_UpdateQuetzStrike(pLocal, secDeltaTime - remainder);
         }
     }
 }
 
-void J3DAPI sithAIMove_sub_49A020(SithAIControlBlock* pLocal, float* angle, float* a3, float* a4, float* a5)
+void J3DAPI sithAIMove_GetQuetzAnim2Angles(SithAIControlBlock* pLocal, float* angle, float* a3, float* a4, float* a5)
 {
     SithThing* pOwner  = pLocal->pOwner;
     SithThing* pTarget = pLocal->pTargetThing;
@@ -2861,7 +2861,7 @@ void J3DAPI sithAIMove_sub_49A020(SithAIControlBlock* pLocal, float* angle, floa
     *a3     = -30.0f;
 }
 
-void J3DAPI sithAIMove_sub_49A1B0(SithAIControlBlock* pLocal, float secDeltaTime)
+void J3DAPI sithAIMove_UpdateQuetzAnim2(SithAIControlBlock* pLocal, float secDeltaTime)
 {
     SithThing* pThing = pLocal->pOwner;
     if ( !sithThing_CreateQuetzUserBlock(pThing) )
@@ -2884,7 +2884,7 @@ void J3DAPI sithAIMove_sub_49A1B0(SithAIControlBlock* pLocal, float secDeltaTime
         float pitchAngle;
         float headYaw;
         float angleHeadPitch;
-        sithAIMove_sub_49A020(pLocal, &angle, &pitchAngle, &headYaw, &angleHeadPitch);
+        sithAIMove_GetQuetzAnim2Angles(pLocal, &angle, &pitchAngle, &headYaw, &angleHeadPitch);
         pStrike->aSnapShots[1].angle1 = 20.0f;
         pStrike->aSnapShots[1].angle2 = angle * 0.5f;
         pStrike->aSnapShots[1].angle3 = pThing->renderData.apTweakedAngles[2].pitch + 10.0f;
@@ -2897,7 +2897,7 @@ void J3DAPI sithAIMove_sub_49A1B0(SithAIControlBlock* pLocal, float secDeltaTime
         float pitchAngle;
         float headYaw;
         float angleHeadPitch;
-        sithAIMove_sub_49A020(pLocal, &angle, &pitchAngle, &headYaw, &angleHeadPitch);
+        sithAIMove_GetQuetzAnim2Angles(pLocal, &angle, &pitchAngle, &headYaw, &angleHeadPitch);
         pStrike->aSnapShots[2].angle1 = pitchAngle;
         pStrike->aSnapShots[2].angle2 = angle;
         pStrike->aSnapShots[2].angle3 = pThing->renderData.apTweakedAngles[2].pitch + angleHeadPitch;
@@ -2942,12 +2942,12 @@ void J3DAPI sithAIMove_sub_49A1B0(SithAIControlBlock* pLocal, float secDeltaTime
         }
         else
         {
-            sithAIMove_sub_49A1B0(pLocal, secDeltaTime - remainder);
+            sithAIMove_UpdateQuetzAnim2(pLocal, secDeltaTime - remainder);
         }
     }
 }
 
-void J3DAPI sithAIMove_sub_49A450(SithAIControlBlock* pLocal, float secDeltaTime)
+void J3DAPI sithAIMove_UpdateQuetzAnim3(SithAIControlBlock* pLocal, float secDeltaTime)
 {
     SithThing* pThing = pLocal->pOwner;
     if ( !sithThing_CreateQuetzUserBlock(pThing) )
@@ -3002,12 +3002,12 @@ void J3DAPI sithAIMove_sub_49A450(SithAIControlBlock* pLocal, float secDeltaTime
         }
         else
         {
-            sithAIMove_sub_49A450(pLocal, secDeltaTime - timeLeft);
+            sithAIMove_UpdateQuetzAnim3(pLocal, secDeltaTime - timeLeft);
         }
     }
 }
 
-void J3DAPI sithAIMove_sub_49A630(SithAIControlBlock* pLocal, float secDeltaTime)
+void J3DAPI sithAIMove_UpdateQuetzAnim5(SithAIControlBlock* pLocal, float secDeltaTime)
 {
     SithThing* pThing = pLocal->pOwner;
     if ( !sithThing_CreateQuetzUserBlock(pThing) )
@@ -3062,12 +3062,12 @@ void J3DAPI sithAIMove_sub_49A630(SithAIControlBlock* pLocal, float secDeltaTime
         }
         else
         {
-            sithAIMove_sub_49A630(pLocal, secDeltaTime - timeLeft);
+            sithAIMove_UpdateQuetzAnim5(pLocal, secDeltaTime - timeLeft);
         }
     }
 }
 
-void J3DAPI sithAIMove_sub_49A810(SithAIControlBlock* pLocal, float secDeltaTime)
+void J3DAPI sithAIMove_UpdateQuetzAnim4(SithAIControlBlock* pLocal, float secDeltaTime)
 {
     SithThing* pThing = pLocal->pOwner;
     if ( !sithThing_CreateQuetzUserBlock(pThing) )
@@ -3116,7 +3116,7 @@ void J3DAPI sithAIMove_sub_49A810(SithAIControlBlock* pLocal, float secDeltaTime
         }
         else
         {
-            sithAIMove_sub_49A810(pLocal, secDeltaTime - timeLeft);
+            sithAIMove_UpdateQuetzAnim4(pLocal, secDeltaTime - timeLeft);
         }
     }
 }
@@ -3133,28 +3133,28 @@ void J3DAPI sithAIMove_UpdateQuetzTail(SithAIControlBlock* pLocal, float secDelt
     switch ( pStrike->unknown0 )
     {
         case 1:
-            sithAIMove_sub_499CA0(pLocal, secDeltaTime);
+            sithAIMove_UpdateQuetzStrike(pLocal, secDeltaTime);
             break;
 
         case 2:
-            sithAIMove_sub_49A1B0(pLocal, secDeltaTime);
+            sithAIMove_UpdateQuetzAnim2(pLocal, secDeltaTime);
             break;
 
         case 3:
-            sithAIMove_sub_49A450(pLocal, secDeltaTime);
+            sithAIMove_UpdateQuetzAnim3(pLocal, secDeltaTime);
             break;
 
         case 5:
-            sithAIMove_sub_49A630(pLocal, secDeltaTime);
+            sithAIMove_UpdateQuetzAnim5(pLocal, secDeltaTime);
             break;
 
         case 4:
-            sithAIMove_sub_49A810(pLocal, secDeltaTime);
+            sithAIMove_UpdateQuetzAnim4(pLocal, secDeltaTime);
             break;
     }
 }
 
-void J3DAPI sithAIMove_sub_49AA60(SithAIControlBlock* pLocal)
+void J3DAPI sithAIMove_StartQuetzStrike(SithAIControlBlock* pLocal)
 {
     SithThing* pThing = pLocal->pOwner;
     if ( !sithThing_CreateQuetzUserBlock(pThing) )
@@ -3167,7 +3167,7 @@ void J3DAPI sithAIMove_sub_49AA60(SithAIControlBlock* pLocal)
     float pitchAngle;
     float headYaw;
     float neckPitch;
-    sithAIMove_sub_499A80(pLocal, &angle, &pitchAngle, &headYaw, &neckPitch);
+    sithAIMove_GetQuetzStrikeAngles(pLocal, &angle, &pitchAngle, &headYaw, &neckPitch);
 
     pStrike->unknown1 = 0.0f;
     pStrike->snapShot = 0;
@@ -3194,7 +3194,7 @@ void J3DAPI sithAIMove_sub_49AA60(SithAIControlBlock* pLocal)
     pStrike->unknown3 = 6;
 }
 
-void J3DAPI sithAIMove_sub_49AB80(SithAIControlBlock* pLocal)
+void J3DAPI sithAIMove_StartQuetzAnim2(SithAIControlBlock* pLocal)
 {
     SithThing* pThing = pLocal->pOwner;
     if ( !sithThing_CreateQuetzUserBlock(pThing) )
@@ -3228,7 +3228,7 @@ void J3DAPI sithAIMove_sub_49AB80(SithAIControlBlock* pLocal)
     pStrike->unknown3 = 4;
 }
 
-void J3DAPI sithAIMove_sub_49AC50(SithAIControlBlock* pLocal)
+void J3DAPI sithAIMove_StartQuetzAnim3(SithAIControlBlock* pLocal)
 {
     SithThing* pThing = pLocal->pOwner;
     if ( !sithThing_CreateQuetzUserBlock(pThing) )
@@ -3349,7 +3349,7 @@ void J3DAPI sithAIMove_sub_49AC50(SithAIControlBlock* pLocal)
     pStrike->unknown3 = 15;
 }
 
-void J3DAPI sithAIMove_sub_49AF80(SithAIControlBlock* pLocal)
+void J3DAPI sithAIMove_StartQuetzAnim5(SithAIControlBlock* pLocal)
 {
     SithThing* pThing = pLocal->pOwner;
     if ( !sithThing_CreateQuetzUserBlock(pThing) )
@@ -3435,7 +3435,7 @@ void J3DAPI sithAIMove_sub_49AF80(SithAIControlBlock* pLocal)
     pStrike->unknown3 = 10;
 }
 
-void J3DAPI sithAIMove_sub_49B1B0(SithAIControlBlock* pLocal)
+void J3DAPI sithAIMove_StartQuetzAnim4(SithAIControlBlock* pLocal)
 {
     SithThing* pThing = pLocal->pOwner;
     if ( !sithThing_CreateQuetzUserBlock(pThing) )

@@ -530,7 +530,7 @@ void J3DAPI sithPathMove_UpdateRotate(SithThing* pThing, float simTime)
 
     pPath->rotDelta = rotDelta;
     rdVector_Copy3(&pThing->orient.dvec, &rdroid_g_zeroVector3);
-    sithCollision_sub_4A6EE0(pThing, &curOrient);
+    sithCollision_ApplyThingOrient(pThing, &curOrient);
 
     if ( pPath->rotDelta >= 1.0f || pPath->rotDelta <= -1.0f )
     {
@@ -538,7 +538,7 @@ void J3DAPI sithPathMove_UpdateRotate(SithThing* pThing, float simTime)
         {
             rdMatrix_BuildRotate34(&curOrient, &pPath->rotateToPYR);
             rdVector_Copy3(&pThing->orient.dvec, &rdroid_g_zeroVector3);
-            sithCollision_sub_4A6EE0(pThing, &curOrient);
+            sithCollision_ApplyThingOrient(pThing, &curOrient);
         }
 
         pPath->mode &= ~(SITH_PATHMOVE_ROTATE_PIVOT | SITH_PATHMOVE_ROTATE);

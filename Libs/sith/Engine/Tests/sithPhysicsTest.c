@@ -7,8 +7,8 @@
 #include <std/General/stdUtil.h>
 
 // These helpers are not exposed by the header
-void J3DAPI sithPhysics_sub_487EC0(SithThing* pThing, SithPhysicsTrackFaceData* pData, float* secDeltaTime, rdVector3* a4, rdVector3* a5, float a6);
-void J3DAPI sithPhysics_Jeep_sub_48B4D0(SithThing* pThing, SithJeepState* a2);
+void J3DAPI sithPhysics_MoveToTrackFaceFront(SithThing* pThing, SithPhysicsTrackFaceData* pData, float* secDeltaTime, rdVector3* a4, rdVector3* a5, float a6);
+void J3DAPI sithPhysics_ResetJeepWheels(SithThing* pThing, SithJeepState* a2);
 
 TEST_GROUP(sithPhysics);
 
@@ -31,7 +31,7 @@ TEST(sithPhysics, MoveToTrackFaceFrontStaysInFace)
     rdVector3 startPos = { 0 };
     rdVector3 outPos   = { 0 };
 
-    sithPhysics_sub_487EC0(NULL, &data, &secDeltaTime, &startPos, &outPos, 1.0f);
+    sithPhysics_MoveToTrackFaceFront(NULL, &data, &secDeltaTime, &startPos, &outPos, 1.0f);
 
     TEST_ASSERT_EQUAL_FLOAT(0.0f, secDeltaTime);
     TEST_ASSERT_EQUAL_FLOAT(0.0f, outPos.x);
@@ -52,7 +52,7 @@ TEST(sithPhysics, MoveToTrackFaceFrontOvershoot)
     rdVector3 startPos = { 0 };
     rdVector3 outPos   = { 0 };
 
-    sithPhysics_sub_487EC0(NULL, &data, &secDeltaTime, &startPos, &outPos, 1.0f);
+    sithPhysics_MoveToTrackFaceFront(NULL, &data, &secDeltaTime, &startPos, &outPos, 1.0f);
 
     TEST_ASSERT_EQUAL_FLOAT(0.0f, outPos.x);
     TEST_ASSERT_EQUAL_FLOAT(2.0f, outPos.y);
@@ -65,7 +65,7 @@ TEST(sithPhysics, ResetJeepWheelsSetsDefaults)
     SithJeepState state;
     memset(&state, 0xCD, sizeof(state));
 
-    sithPhysics_Jeep_sub_48B4D0(NULL, &state);
+    sithPhysics_ResetJeepWheels(NULL, &state);
 
     TEST_ASSERT_EQUAL_FLOAT(0.14f, state.width);
     TEST_ASSERT_EQUAL_FLOAT(0.22f, state.length);
