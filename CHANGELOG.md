@@ -278,6 +278,7 @@
   - Removed registration of the additional COG functions `DebugPrint`, `DebugFlex`, `DebugInt`, `DebugVector`, `DebugLocalSymbols`, `DebugWaitForKey`, `EnablePrint`, and `IsPrintEnabled`, introduced in v0.3, to preserve retail savegame compatibility. (3f2fdc7)
     This preserves the script-local symbol counts and ordering used by positional COG state restoration.
   - Fixed `sithSector_ReadSectorsListText` and `sithSector_ReadSectorsListBinary` to clear the `NOGRAVITY` sector flag from level data as the original does; sectors marked in level files no longer become gravity free. ()
+  - Fixed `sithDSSThing_ProcessThingFullDescription` reading the path movement `mode`, `numBlockedMoves`, `nextFrame` and `goalFrame` zero extended instead of sign extended; a stored `-1` is now restored as `-1` as in the original instead of `65535`. ()
   - Fixed overlapping COG stack shifts on overflow by using `memmove` in `sithCogExec_PushStack`. [PR #55](https://github.com/smlu/OpenJones3D/pull/55)
   - Added an optional runtime guard in `sithCamera_Update` to skip cinematic camera updates while either focus thing is missing. [PR #54](https://github.com/smlu/OpenJones3D/pull/54)
   - Fixed an out-of-bounds write in `sithEvent_ResetFreeBufferTable` that could cause startup hangs in optimized Clang builds. [PR #45](https://github.com/smlu/OpenJones3D/pull/45)
