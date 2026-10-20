@@ -3621,7 +3621,7 @@ UINT_PTR CALLBACK jonesConfig_SaveGameDialogHookProc(HWND hDlg, UINT uMsg, WPARA
             HDC* hdc = (HDC*)GetWindowLongPtr(hDlg, DWL_USER);
             DeleteDC(*hdc);
             *hdc = NULL;
-            return 1;
+            return 0;
         }
         case WM_NOTIFY:
         {
