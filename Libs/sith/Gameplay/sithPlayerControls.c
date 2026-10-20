@@ -855,7 +855,7 @@ void J3DAPI sithPlayerControls_ProcessLookControls(SithThing* pThing, float secD
 
     if ( yawDelta != 0.0f )
     {
-        yawDelta *= 90.0f * secDeltaTime;
+        yawDelta = (yawDelta * 90.0f) * secDeltaTime;  // Fixed: Scale the step by 90 before secDeltaTime as the original, multiplying by (90 * secDeltaTime) differs in the last bit (original Indy3D.exe v1.0 0x0042BFC0)
     }
 
     if ( sithControl_GetKey(SITHCONTROL_FORWARD, NULL) )
@@ -870,7 +870,7 @@ void J3DAPI sithPlayerControls_ProcessLookControls(SithThing* pThing, float secD
     if ( pitchDelta != 0.0f )
     {
         bInputReceived = true;
-        pitchDelta *= 90.0f * secDeltaTime;
+        pitchDelta = (pitchDelta * 90.0f) * secDeltaTime;  // Fixed: As above for the pitch step
     }
 
     if ( bInputReceived )
