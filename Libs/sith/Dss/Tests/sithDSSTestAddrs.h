@@ -55,7 +55,7 @@ typedef struct
     int bPlayerInvisible;
     int bCutsceneMode;
     int bPlayerLeapForward;
-    size_t numChalkMarks;
+    int numChalkMarks;
     int lastChalkMarkNum;
     SithThing* aChalkMarks[10];
     SithCog* pMasterCog;
