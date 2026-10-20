@@ -362,6 +362,7 @@
   - Fixed `rdClip_Face3GTOrtho` leaving the previous UV pointer unset for one clip plane, which gave wrong texture coordinates for polygons clipped by an orthographic camera. ()
   - Fixed `rdClip_Face3TOrtho` incrementing the clip index twice for each vertex kept by the far plane, which corrupted the clipped polygon for orthographic cameras. ()
   - Fixed `rdCache_SendFaceListToHardware` writing the clamped texture cel back into the batch cel number, which split the draw calls of faces using the current material cel (-1) into one batch per face, and clamped the cel with unsigned comparisons. ()
+  - Fixed `std3D_Open` (DirectX 6) leaving the color key of the color key texture formats NULL; they now use the original color key {0, 0}, which avoids a NULL dereference in `stdColor_ColorConvertOneRow` and sets the same source color key on texture surfaces as the original. ()
 
 ### Game play:
   - Fixed bug in `sithPlayer_Update` where force move animation could be stopped when required distance to move was almost zero (127aa92)
