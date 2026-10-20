@@ -163,6 +163,7 @@ void dwave_Reset(void)
 
 int J3DAPI dwave_Parse(const uint8_t* pData, int size)
 {
+    J3D_UNUSED(size);
     uint32_t total = *(const uint32_t*)(pData + 8);
 
     dwave_state.packets = 0;
@@ -172,6 +173,7 @@ int J3DAPI dwave_Parse(const uint8_t* pData, int size)
 
 uint32_t J3DAPI dwave_Decode(void* a1, int a2, int a3, int a4, void* a5, const uint8_t* pData, int size, int mode, int a9, int a10)
 {
+    J3D_UNUSED(a1); J3D_UNUSED(a2); J3D_UNUSED(a3); J3D_UNUSED(a4); J3D_UNUSED(a5); J3D_UNUSED(size); J3D_UNUSED(mode); J3D_UNUSED(a9); J3D_UNUSED(a10);
     uint32_t channels   = 1;
     const uint8_t* src  = pData;
 
@@ -271,6 +273,7 @@ int dwave_Query1(void)
 
 int J3DAPI dwave_Query(const uint8_t* pData, int tag, int* pX, int* pY, int* pWidth, int* pHeight)
 {
+    J3D_UNUSED(pData); J3D_UNUSED(tag); J3D_UNUSED(pX); J3D_UNUSED(pY); J3D_UNUSED(pWidth); J3D_UNUSED(pHeight);
     return -1;
 }
 

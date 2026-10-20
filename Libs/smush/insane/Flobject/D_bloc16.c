@@ -225,6 +225,7 @@ void dbloc16_Reset(void)
 
 int J3DAPI dbloc16_Parse(const Bl16Parse* pData, int size)
 {
+    J3D_UNUSED(size);
     int width  = pData->width;
     int height = (pData->height + 7) & ~7;
 
@@ -307,6 +308,7 @@ void dbloc16_Free(void)
 
 int J3DAPI dbloc16_Decode(void* a1, int a2, int a3, int a4, void* a5, const uint8_t* pData, int size, int mode, int a9, int a10)
 {
+    J3D_UNUSED(size); J3D_UNUSED(a9); J3D_UNUSED(a10);
     return dbloc16_DecodeFrame(a1, (MixerRect*)a2, a3, a4, a5, (Bl16Header*)pData, mode);
 }
 
@@ -530,7 +532,7 @@ void J3DAPI dbloc16_MakeGlyphs(int size)
 
 int J3DAPI dbloc16_DecodeFrame(LecBitmapHeader* pBitmap, MixerRect* pClip, int x, int y, void* pPalette, Bl16Header* pHdr, int flags)
 {
-    int rc;
+    int rc = 0; // Fixed: initialize rc (see the TODO at the return)
 
     int width      = pHdr->width;
     int height     = pHdr->height;
