@@ -826,7 +826,7 @@ int J3DAPI sithPlayerControls_ProcessPlayerDebugControls(SithThing* pThing, floa
         }
     }
 
-    return 1;
+    return 0; // Fixed: Return 0 when no player position key is pressed, the original returns the zero state of the last key and the player controls continue processing (original Indy3D.exe v1.0 0x0042BEC0)
 }
 
 void J3DAPI sithPlayerControls_ProcessLookControls(SithThing* pThing, float secDeltaTime)
