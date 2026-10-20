@@ -3880,7 +3880,7 @@ void J3DAPI sithThing_PurgeGarbageThings(SithWorld* pWorld)
             sithThing_RemoveThing(pWorld, pThing);
         }
 
-        if ( ++count > SITHTHING_MAXTHINGSTOPURGE )
+        if ( count++ > SITHTHING_MAXTHINGSTOPURGE ) // Fixed: Post increment as in the original, checks one more slot per call (original Indy3D.exe v1.0 0x004371F0)
         {
             break;
         }
