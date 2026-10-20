@@ -826,7 +826,7 @@ int J3DAPI sithPlayerControls_ProcessPlayerDebugControls(SithThing* pThing, floa
         }
     }
 
-    return 1;
+    return 0;
 }
 
 void J3DAPI sithPlayerControls_ProcessLookControls(SithThing* pThing, float secDeltaTime)

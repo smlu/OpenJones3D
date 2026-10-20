@@ -500,6 +500,7 @@
   - Fixed `sithAI_Close` resetting all AIs when called while the AI system is not open. ()
   - Fixed `sithAI_ProcessUnhandledEvent` scaling the random cliff retreat distance by the double constant 0.2 instead of the float constant 0.2f, which changed the distance by a fraction of a float ulp. ()
   - Fixed `sithPhysics_UpdateExhaustFx` (mine cart and jeep exhaust smoke) placing the smoke puffs without the vehicle speed factor in their spawn offset, scaling the puff life scatter and the puff size and alpha in a different operation order than the original, and drawing the random numbers of the puff alpha in the wrong order. ()
+  - Fixed `sithPlayerControls_ProcessPlayerDebugControls` stopping the processing of the player controls while the debug key is held and no player position key is pressed; the original continues with the normal controls. ()
 
 ## v0.3.1
 ### General:
