@@ -422,7 +422,7 @@ int sithOverlayMap_UpdateHints(void)
             if ( (hintflags & SITH_HINT_SOLVED) == 0 )
             {
                 int32_t hintval = (int32_t)sithWorld_g_pCurrentWorld->aThings[i].userval;
-                hintval &= ~SITH_HINT_SOLVED | SITH_HINT_SEEN; // Remove flags to extract hint value
+                hintval &= ~(SITH_HINT_SOLVED | SITH_HINT_SEEN);
                 if ( (size_t)hintval < (size_t)maxHintVal ) // Note: Don't remove casting
                 {
                     maxHintVal = hintval;
