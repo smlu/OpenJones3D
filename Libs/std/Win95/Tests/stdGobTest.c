@@ -598,7 +598,7 @@ TEST(stdGob, TestStartupShutdownAndFreeGuards)
 
     StdGeneralTest_ResetDebugOutput();
     stdGob_Free(NULL);
-    TEST_ASSERT_EQUAL_STRING("stdGob.c(264): Warning: attempt to free NULL Gob file ptr.\n", StdGeneralTest_GetDebugOutput());
+    TEST_ASSERT_EQUAL_STRING("stdGob.c(273): Warning: attempt to free NULL Gob file ptr.\n", StdGeneralTest_GetDebugOutput());
 
 #ifdef J3D_RUNTIME_GUARDS
     J3DTest_ResetAssertCapture();
