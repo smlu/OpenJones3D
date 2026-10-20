@@ -89,7 +89,7 @@ int J3DAPI rdPolyline_NewEntry(rdPolyline* pLine, const char* pName, const char*
         pLine->face.aVertices[i] = i;
     }
 
-    if ( pLine->face.geometryMode == RD_GEOMETRY_FULL )
+    if ( pLine->face.geometryMode >= RD_GEOMETRY_FULL ) // Fixed: Was == RD_GEOMETRY_FULL (original Indy3D.exe v1.0 0x004D8680)
     {
         pLine->face.aTexVertices = (int*)STDMALLOC(sizeof(*pLine->face.aTexVertices) * pLine->face.numVertices);
         if ( !pLine->face.aTexVertices )

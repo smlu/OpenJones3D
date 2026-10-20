@@ -385,6 +385,7 @@
   - Fixed `sithRender_CollectVisibleThingSector` registering sectors without things in the visible thing sector list (legacy collection mode), which wasted list slots and counted them in the visible thing sector statistic. ()
   - Fixed `std3D_DrawRenderList` truncating the table-less vertex fog alpha instead of rounding it to nearest like the original, which made the fog alpha 1/255 lower for about half of the values (DirectX 6 and DirectX 9). ()
   - Fixed `rdModel3_SwapMesh` not replacing the mesh of the second model when replacing the mesh of the first model fails. ()
+  - Fixed `rdPolyline_NewEntry` allocating the texture vertices and UVs only for the exact full geometry mode instead of for full or higher geometry modes. ()
 
 ### Game play:
   - Fixed bug in `sithPlayer_Update` where force move animation could be stopped when required distance to move was almost zero (127aa92)
