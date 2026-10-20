@@ -362,6 +362,12 @@ TEST(SmushCodec, DecodeToRGBAFastPaths)
     static const uint8_t aExpected555[] = { 0x07, 0x07, 0x07, 0xFF, 0x07, 0x07, 0x07, 0xFF };
     TEST_ASSERT_EQUAL_MEMORY(aExpected555, aDst, sizeof(aExpected555));
 
+    // Channel order: red in the high bits, blue in the low bits
+    uint16_t aOrder[2] = { 0x7C00, 0x001F };
+    TEST_ASSERT_EQUAL_INT(0, decode_ToRGBA((uint8_t*)aOrder, &bitmap, 2, NULL, aDst));
+    static const uint8_t aExpectedOrder[] = { 0xFF, 0x07, 0x07, 0xFF, 0x07, 0x07, 0xFF, 0xFF };
+    TEST_ASSERT_EQUAL_MEMORY(aExpectedOrder, aDst, sizeof(aExpectedOrder));
+
     bitmap.format.redPosShift = 0;
     bitmap.format.bluePosShift = 11;
     memset(aDst, 0xEE, sizeof(aDst));
@@ -621,7 +627,7 @@ TEST(SmushCodec, DBloc16DecodeRawFrameBlits)
     dbloc16_Unregister();
 }
 
-TEST(SmushCodec, DBloc16Codec2ReceivesTables)
+TEST(SmushCodec, DBloc16MakeTables)
 {
     dbloc16_Register(&mock_share, NULL);
     dbloc16_Startup();
@@ -658,17 +664,68 @@ TEST(SmushCodec, DBloc16Codec2ReceivesTables)
         }
     }
 
-    // Glyph 0 joins the top-left corner with itself: only the pixels above and left of... it fills the column up from the point
+    // Every glyph copies at least one pixel from the small table
     TEST_ASSERT_TRUE(pSmall[0].n1 >= 1);
 
-    // Further frames at the same width keep the tables (also a frame out of sequence)
-    Bl16Header* pHdr2 = DBloc16Test_MakeFrame(width, height, 2, 5, 64);
-    pInterface->Decode(&dst, 0, 0, 0, NULL, (uint8_t*)pHdr2, 0, 0, 0, 0);
-    Bl16Header* pHdr3 = DBloc16Test_MakeFrame(width, height, 2, 6, 64);
-    pInterface->Decode(&dst, 0, 0, 0, NULL, (uint8_t*)pHdr3, 0, 0, 0, 0);
-    TEST_ASSERT_EQUAL_INT16(1 * width + 0, pMotion[136]);
-
     free(pHdr);
+    dbloc16_Shutdown();
+    dbloc16_Unregister();
+}
+
+static void DBloc16Test_Fill(Bl16Header* pHdr, uint16_t color, int numBlocks)
+{
+    for ( int i = 0; i < numBlocks; i++ )
+    {
+        pHdr->data[i * 3]     = 0xFE;
+        pHdr->data[i * 3 + 1] = (uint8_t)color;
+        pHdr->data[i * 3 + 2] = (uint8_t)(color >> 8);
+    }
+}
+
+static void DBloc16Test_AssertAll(const LecBitmapHeader* pBmp, uint16_t color, int n)
+{
+    for ( int i = 0; i < n; i++ ) {
+        TEST_ASSERT_EQUAL_HEX16(color, ((const uint16_t*)pBmp->pPixels)[i]);
+    }
+}
+
+TEST(SmushCodec, DBloc16Codec2SkipsFramesOutOfSequence)
+{
+    dbloc16_Register(&mock_share, NULL);
+    dbloc16_Startup();
+    Bl16Interface* pInterface = Mock_Find("FLOBDEC=insane_blocky16");
+    dbloc16_Configure(1, blitTest_Callback, 0);
+    blit_count = 0;
+
+    const int width = 16, height = 8; // two 8x8 blocks
+    LecBitmapHeader dst = { 0 };
+    dst.pixelSize = 2;
+    dst.bpp       = 16;
+    dst.colorMode = 1;
+
+    Bl16Header* pHdr1 = DBloc16Test_MakeFrame(width, height, 2, 0, 64);
+    DBloc16Test_Fill(pHdr1, 0x1234, 2);
+    TEST_ASSERT_EQUAL_INT(42, pInterface->Decode(&dst, 0, 0, 0, NULL, (uint8_t*)pHdr1, 0, 0, 0, 0));
+    LecBitmapHeader* pShown = blit_pSrc;
+    DBloc16Test_AssertAll(pShown, 0x1234, width * height);
+
+    // Seq 5 after seq 0: not decoded, the previous image is shown again and the buffers are not rotated
+    Bl16Header* pHdr2 = DBloc16Test_MakeFrame(width, height, 2, 5, 64);
+    DBloc16Test_Fill(pHdr2, 0x5678, 2);
+    pHdr2->rotate = 1;
+    TEST_ASSERT_EQUAL_INT(42, pInterface->Decode(&dst, 0, 0, 0, NULL, (uint8_t*)pHdr2, 0, 0, 0, 0));
+    TEST_ASSERT_EQUAL_INT(2, blit_count);
+    TEST_ASSERT_EQUAL_PTR(pShown, blit_pSrc);
+    DBloc16Test_AssertAll(pShown, 0x1234, width * height);
+
+    // Seq 6 follows seq 5: decoded again, into the same buffer
+    Bl16Header* pHdr3 = DBloc16Test_MakeFrame(width, height, 2, 6, 64);
+    DBloc16Test_Fill(pHdr3, 0x9ABC, 2);
+    pInterface->Decode(&dst, 0, 0, 0, NULL, (uint8_t*)pHdr3, 0, 0, 0, 0);
+    TEST_ASSERT_EQUAL_PTR(pShown, blit_pSrc);
+    DBloc16Test_AssertAll(pShown, 0x9ABC, width * height);
+
+    free(pHdr1);
     free(pHdr2);
     free(pHdr3);
     dbloc16_Shutdown();
@@ -734,7 +791,8 @@ TEST_GROUP_RUNNER(SmushCodec)
     RUN_TEST_CASE(SmushCodec, DBloc16RegisterAndInfo);
     RUN_TEST_CASE(SmushCodec, DBloc16ParseAllocatesBitmaps);
     RUN_TEST_CASE(SmushCodec, DBloc16DecodeRawFrameBlits);
-    RUN_TEST_CASE(SmushCodec, DBloc16Codec2ReceivesTables);
+    RUN_TEST_CASE(SmushCodec, DBloc16MakeTables);
+    RUN_TEST_CASE(SmushCodec, DBloc16Codec2SkipsFramesOutOfSequence);
     RUN_TEST_CASE(SmushCodec, DBloc16ScaleDoublesRows);
     RUN_TEST_CASE(SmushCodec, DBloc16ScalePalMatchesScale);
 }
