@@ -508,6 +508,7 @@
   - Fixed `sithPlayerControls_ProcessHangMove` starting the hang shimmy left animation, sound and surface attach in a different order than the original. ()
   - Fixed `sithPlayerControls_ProcessSwimMove` resetting the vertical swim thrust of the player while on the water surface; the original only resets it when not on the surface. ()
   - Fixed `JonesHud_Process` rounding the health state passed to the health indicator to the nearest integer where the original truncates, which made the indicator and the hit overlay step one unit early. ()
+  - Fixed `sithThing_ScaleCombatDamage` scaling the damage by the combat damage scalar and the 0.9 or 0.8 factor in separate steps for fleeing actors shot by the player, which differs from the original in the last bit. ()
 
 ## v0.3.1
 ### General:

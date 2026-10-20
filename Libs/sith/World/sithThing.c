@@ -2334,10 +2334,10 @@ float J3DAPI sithThing_ScaleCombatDamage(const SithThing* pThing, SithThing* pHi
 
             if ( dist <= (double)maxAimDist )
             {
-                return damage * sithGetCombatDamageScalar() * 0.9f;
+                return damage * (sithGetCombatDamageScalar() * 0.9f);
             }
 
-            return damage * sithGetCombatDamageScalar() * 0.8f;
+            return damage * (sithGetCombatDamageScalar() * 0.8f);
         }
     }
 
