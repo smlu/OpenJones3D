@@ -230,7 +230,7 @@ startup and a stable module-level CTest entry.
 | `stdDisruptiveSystemTests` | `std.DisruptiveSystem` | Opt-in fullscreen/device changes | Available |
 | `soundTests` | `sound` | Deterministic lip-sync generation and lookup, AudioLib codec and header vectors | Available |
 | `sithTests` | `sith` | World thing/template I/O, voice lip-sync and track/jeep physics helpers | Available |
-| `sithDSSTests` | `sith.DSS` | Original-engine vectors of the DSS save/network serialization functions | Available |
+| `sithDSSTests` | `sith.DSS` | Original-engine vectors of the DSS and DSS thing save/network serialization functions | Available |
 
 Name CTest entries after the owning module when the executable covers that whole module, such as `std`. When an executable covers only a subarea, use the owning module first and a short area name second, separated by a dot, such as `j3dcore.Macros`. Use labels that match the owning module, such as `j3dcore`, `std`, `rdroid`, `sith`, `sound`, or `Jones3D`.
 
@@ -936,7 +936,7 @@ and cross-speaker state behavior.
 
 ### 📨 sithDSS Fixtures
 
-The `sithDSS` fixtures compare the save/network message writers and readers of `sithDSS.c` with
+The `sithDSS` and `sithDSSThing` fixtures compare the save/network message writers and readers of `sithDSS.c` and `sithDSSThing.c` with
 original-engine vectors captured from retail v1.0 `Indy3D.exe` and stored in
 `Libs/sith/Dss/Tests/tv/sithDSS` (provenance, regeneration, case lists and the
 documented differences are in that directory's `README.md`). The writers and readers
@@ -950,6 +950,6 @@ parts of the world and of the message buffers to reject accesses outside the dat
 function is given. The engine globals of the original executable are redirected to
 static memory in this suite, and the suite links its image at a fixed high base so the
 normalized addresses of the synthetic state cannot collide with generated values.
-The one expected difference (an intentional playback speed fix in
-`sithDSS_ProcessPuppetStatus`) makes the matching test report as ignored while it
-exists.
+The expected differences (an intentional playback speed fix and a float precision
+difference in `sithDSSThing_MoveToPos`) make the matching test report as ignored while
+they exist.
