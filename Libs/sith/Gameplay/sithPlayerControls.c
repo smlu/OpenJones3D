@@ -1321,6 +1321,12 @@ void J3DAPI sithPlayerControls_ProcessJewelFlyMove(SithThing* pThing, float secD
             pPhysics->velocity.z = 0.0f;
             sithPhysics_ResetThingMovement(pThing);
         }
+
+        if ( !bCanMoveDown )
+        {
+            pPhysics->velocity.z = 0.0f;
+            sithPhysics_ResetThingMovement(pThing);
+        }
     }
 
     // Process turn keys
