@@ -328,12 +328,10 @@ int J3DAPI sithDSSThing_UpdateState(const SithThing* pThing, DPID toID, SithMess
             SITHDSS_PUSHUINT32(pThing->thingInfo.itemInfo.flags);
             if ( (pThing->thingInfo.itemInfo.flags & SITH_ITEM_BACKPACK) != 0 )
             {
-                // Note: numItems is serialized as int16_t
-                int16_t numItems = (int16_t)pThing->thingInfo.itemInfo.numItems;
-                SITHDSS_PUSHINT16(numItems);
-                for ( int16_t i = 0; i < numItems; ++i )
+                SITHDSS_PUSHINT16(pThing->thingInfo.itemInfo.numItems);
+                for ( int i = 0; i < pThing->thingInfo.itemInfo.numItems; ++i )
                 {
-                    SITHDSS_PUSHINT16((int16_t)pThing->thingInfo.itemInfo.aBackpackItems[i].typeId);
+                    SITHDSS_PUSHINT16(pThing->thingInfo.itemInfo.aBackpackItems[i].typeId);
                     SITHDSS_PUSHFLOAT(pThing->thingInfo.itemInfo.aBackpackItems[i].amount);
                 }
             }
@@ -451,12 +449,10 @@ int J3DAPI sithDSSThing_ProcessStateUpdate(const SithMessage* pMsg)
             pThing->thingInfo.itemInfo.flags = SITHDSS_POPUINT32();
             if ( (pThing->thingInfo.itemInfo.flags & SITH_ITEM_BACKPACK) != 0 )
             {
-                // Note: The original stores numItems as int16_t (writes only the low 2 bytes of the field)
-                *(int16_t*)&pThing->thingInfo.itemInfo.numItems = SITHDSS_POPINT16();
-                int16_t numItems = *(int16_t*)&pThing->thingInfo.itemInfo.numItems;
+                pThing->thingInfo.itemInfo.numItems = SITHDSS_POPINT16();
 
                 // TODO: [BUG] numItems is not validated against the size of aBackpackItems (32) and can overflow it with a malformed message
-                for ( int16_t i = 0; i < numItems; ++i )
+                for ( int i = 0; i < pThing->thingInfo.itemInfo.numItems; ++i )
                 {
                     pThing->thingInfo.itemInfo.aBackpackItems[i].typeId = SITHDSS_POPINT16();
                     pThing->thingInfo.itemInfo.aBackpackItems[i].amount = SITHDSS_POPFLOAT();

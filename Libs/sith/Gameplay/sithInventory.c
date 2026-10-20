@@ -631,7 +631,7 @@ SithThing* J3DAPI sithInventory_CreateBackpack(SithThing* pThing)
             float amount = sithInventory_GetInventory(pThing, typeId);
             if ( pItemInfo->numItems < STD_ARRAYLEN(pItemInfo->aBackpackItems) && amount > 0.0f )
             {
-                pItemInfo->aBackpackItems[pItemInfo->numItems].typeId = typeId;
+                pItemInfo->aBackpackItems[pItemInfo->numItems].typeId = (int16_t)typeId;
                 pItemInfo->aBackpackItems[pItemInfo->numItems++].amount = amount; // Fixed: Store the amount inline, was dereferencing the amount as an item pointer (original Indy3D.exe v1.0 0x0044BB50)
             }
         }
@@ -650,7 +650,7 @@ void J3DAPI sithInventory_PickupBackpack(SithThing* pPlayerThing, SithThing* pBa
     SITH_ASSERTREL(((pBackpackThing->thingInfo.itemInfo.flags) & (SITH_ITEM_BACKPACK)));
 
     SithItemInfo* pItemInfo = &pBackpackThing->thingInfo.itemInfo;
-    for ( size_t i = 0; i < pItemInfo->numItems; ++i )
+    for ( int i = 0; i < pItemInfo->numItems; ++i )
     {
         if ( sithInventory_IsBackpackItem(pPlayerThing, pItemInfo->aBackpackItems[i].typeId) )
         {
@@ -663,7 +663,7 @@ int J3DAPI sithInventory_GetBackpackItemID(SithThing* pBackpackThing, size_t ite
 {
     SITH_ASSERTREL(pBackpackThing->type == SITH_THING_ITEM);
     SITH_ASSERTREL(((pBackpackThing->thingInfo.itemInfo.flags) & (SITH_ITEM_BACKPACK)));
-    if ( itemNum >= pBackpackThing->thingInfo.itemInfo.numItems )
+    if ( itemNum >= (size_t)pBackpackThing->thingInfo.itemInfo.numItems )
     {
         return -1;
     }
@@ -675,7 +675,7 @@ float J3DAPI sithInventory_GetBackpackItemValue(SithThing* pBackpackThing, size_
 {
     SITH_ASSERTREL(pBackpackThing->type == SITH_THING_ITEM);
     SITH_ASSERTREL(((pBackpackThing->thingInfo.itemInfo.flags) & (SITH_ITEM_BACKPACK)));
-    if ( itemNum >= pBackpackThing->thingInfo.itemInfo.numItems )
+    if ( itemNum >= (size_t)pBackpackThing->thingInfo.itemInfo.numItems )
     {
         return -1.0f;
     }

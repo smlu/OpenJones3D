@@ -227,10 +227,10 @@ static void dssv_SetBackpack(unsigned thingIdx, unsigned numItems)
 {
     SithItemInfo* p = &DSSV_T(thingIdx)->thingInfo.itemInfo;
     p->flags |= SITH_ITEM_BACKPACK;
-    p->numItems = numItems;
+    p->numItems = (int16_t)numItems;
     for ( unsigned k = 0; k < 32; ++k )
     {
-        p->aBackpackItems[k].typeId = (int)(10 + k * 3);
+        p->aBackpackItems[k].typeId = (int16_t)(10 + k * 3);
         p->aBackpackItems[k].amount = dssv_RndF();
     }
 }
