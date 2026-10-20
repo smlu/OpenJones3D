@@ -728,6 +728,7 @@ int J3DAPI JonesMain_GameWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPa
             // on F10 and ALT press and eat player's input.
             if ( JonesMain_bWndMsgProcessed )
             {
+                *pReturnVal = 0; // Fixed: Set the window procedure result, wkernel returns it when the message is handled and it was left uninitialized
                 return wParam;
             }
             return 0;
