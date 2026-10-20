@@ -12,7 +12,7 @@ J3D_EXTERN_C_START
 #define STDMATH_ZERO_EPSILON 0.00001f
 
 // Clamp value between min and max
-#define STDMATH_CLAMP(val, minv, maxv) (((val) < (minv)) ? (minv) : ((val) > (maxv)) ? (maxv) : (val))
+#define STDMATH_CLAMP(val, minv, maxv) (((val) >= (minv)) ? (((val) <= (maxv)) ? (val) : (maxv)) : (minv))
 
 // PI
 #define STDMATH_PI M_PI
