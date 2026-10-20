@@ -3872,7 +3872,7 @@ void J3DAPI sithThing_PurgeGarbageThings(SithWorld* pWorld)
             sithThing_RemoveThing(pWorld, pThing);
         }
 
-        if ( ++count > SITHTHING_MAXTHINGSTOPURGE )
+        if ( count++ > SITHTHING_MAXTHINGSTOPURGE )
         {
             break;
         }
