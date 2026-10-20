@@ -3805,7 +3805,7 @@ int J3DAPI rdClip_Face3TOrtho(const rdClipFrustum* pFrustum, rdVector3* aVertice
             if ( pCurVert->y <= pFrustum->farPlane )
             {
                 memcpy(&rdClip_pDestVert[clipindex], pCurVert, sizeof(rdVector3));
-                memcpy(&rdClip_pDestTVert[clipindex++], pCurTVert, sizeof(*rdClip_pDestTVert));
+                memcpy(&rdClip_pDestTVert[clipindex], pCurTVert, sizeof(*rdClip_pDestTVert)); // Fixed: Don't increment the index twice per vertex, it corrupted the clipped polygon (original Indy3D.exe v1.0 0x004D6E70)
                 memcpy(&rdClip_pDestVertIntensity[clipindex++], pCurIntens, sizeof(*rdClip_pDestVertIntensity));
             }
         }

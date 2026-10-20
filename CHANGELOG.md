@@ -353,6 +353,7 @@
   - Fixed `rdLight_CalcFaceIntensity` writing the distance attenuation back into its parameter, which attenuated every following light by all earlier ones; each light is now attenuated on its own. ()
   - Fixed `rdParticle_Draw` overwriting the per-thing RGBA material flag with the per-particle distance test, so after one particle beyond the alpha distance all remaining particles of the thing were drawn opaque. ()
   - Fixed `rdClip_Face3GTOrtho` leaving the previous UV pointer unset for one clip plane, which gave wrong texture coordinates for polygons clipped by an orthographic camera. ()
+  - Fixed `rdClip_Face3TOrtho` incrementing the clip index twice for each vertex kept by the far plane, which corrupted the clipped polygon for orthographic cameras. ()
 
 ### Game play:
   - Fixed bug in `sithPlayer_Update` where force move animation could be stopped when required distance to move was almost zero (127aa92)
