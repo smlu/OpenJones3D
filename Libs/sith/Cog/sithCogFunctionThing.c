@@ -1436,6 +1436,8 @@ void J3DAPI sithCogFunctionThing_ThingLightAnim(SithCog* pCog)
         sithCogExec_PushInt(pCog, pAnim->animID);
         return;
     }
+
+    sithCogExec_PushInt(pCog, -1);
 }
 
 void J3DAPI sithCogFunctionThing_ThingFadeAnim(SithCog* pCog)
