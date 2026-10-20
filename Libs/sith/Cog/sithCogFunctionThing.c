@@ -5105,6 +5105,7 @@ void J3DAPI sithCogFunctionThing_SetThingMaxHeadVel(SithCog* pCog)
     if ( !pThing )
     {
         STDLOG_ERROR("Cog %s: Ain't no thing in SetThingMaxHeadVel().\n", pCog->aName);
+        return; // Fixed: Return on a NULL thing instead of dereferencing it (original Indy3D.exe v1.0 0x004759B0)
     }
 
     if ( pThing->type != SITH_THING_PLAYER && pThing->type != SITH_THING_ACTOR )
