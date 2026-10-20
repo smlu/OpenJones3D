@@ -2261,10 +2261,7 @@ error:
     memset(pConfig->aName, 0, sizeof(pConfig->aName));
     for ( size_t i = 0; i < bindNum; ++i ) // TODO: Hmm is it ok using binNum here? Shouldn't it use actionCount, or just memset the whole array?
     {
-        if ( pConfig->aActions[i][0] )
-        {
-            memset(pConfig->aActions[i], 0, STD_ARRAYLEN(pConfig->aActions[i]));
-        }
+        memset(pConfig->aActions[i], 0, STD_ARRAYLEN(pConfig->aActions[i])); // TODO: [BUG] Clears 9 bytes, not 9 entries, as the original
     }
     // Old code
     /*if ( bindNum > 0 )
