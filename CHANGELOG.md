@@ -286,6 +286,7 @@
   - Fixed `stdMath_ClipNearZero` returning NaN unchanged; it now returns 0 for NaN like the original. ()
   - Fixed `STDMATH_CLAMP` passing NaN through; it now turns NaN into the lower bound like the original. ()
   - Fixed `rdMath_ClipVector3` and `rdMath_ClipVector3Acc` keeping vector components that are exactly equal to the minimum value; a component is now kept only if its magnitude is greater than the minimum, like the original near zero clipping of the physics velocities. ()
+  - Fixed `SoundDriver_Update3DSound` playing 3D sounds at full volume while there is no camera (the sound mix callback leaves the volume untouched); such sounds are now culled by the far volume check like in the original (DirectX 6 and DirectX 9). ()
 
 ### Graphics:
   - Fixed an issue where active textures used in the current render frame were being removed from the cache prematurely in low VRAM situations (f37ecb7)
