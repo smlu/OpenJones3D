@@ -309,10 +309,9 @@ void J3DAPI sithExplosion_Update(SithThing* pThing, float sedDeltaTime)
         }
 
         float delta = (float)(msecLifeLeft / msecBlastTime);
-        rdVector_Scale3((rdVector3*)&pThing->light.color, (rdVector3*)&pThing->light.emitColor, pExplode->maxLight * delta);
-       /* pThing->light.color.x = pThing->thingInfo.explosionInfo.maxLight * delta + pThing->light.emitColor.x;
-        pThing->light.color.y = pThing->thingInfo.explosionInfo.maxLight * delta + pThing->light.emitColor.y;
-        pThing->light.color.z = pThing->thingInfo.explosionInfo.maxLight * delta + pThing->light.emitColor.z;*/
+        pThing->light.color.red   = pExplode->maxLight * delta + pThing->light.emitColor.red;
+        pThing->light.color.green = pExplode->maxLight * delta + pThing->light.emitColor.green;
+        pThing->light.color.blue  = pExplode->maxLight * delta + pThing->light.emitColor.blue;
     }
 }
 
