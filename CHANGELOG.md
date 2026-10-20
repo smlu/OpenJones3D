@@ -401,6 +401,7 @@
   - Fixed `sithInventory_CreateBackpack`, `sithInventory_PickupBackpack` and `sithInventory_GetBackpackItemValue` to store and read the backpack item amount inline as the original does, instead of dereferencing the float bits as an item pointer (crash when a backpack is created or picked up). ()
   - Fixed `sithPhysics_UpdateMineCarPhysics` braking sign: a minecart moving forward with backward thrust now decelerates instead of accelerating. ()
   - Fixed `sithPhysics_PowerOffMineCar` clearing all thing flags except `EMITLIGHT` when leaving the minecart; it now only clears `EMITLIGHT` to turn off the rear light. ()
+  - Fixed `sithAnimate_UpdateSlideSkyAnim` advancing the horizon sky offset twice per update, which made the horizon sky scroll at twice the original speed. ()
 
 ## v0.3.1
 ### General:

@@ -1509,8 +1509,7 @@ void J3DAPI sithAnimate_UpdateSlideSkyAnim(SithAnimationSlot* pAnim, int skyType
     {
         pWorld->horizonSkyOffset.x = pAnim->direction2.x * secDeltaTime + pWorld->horizonSkyOffset.x;
         pWorld->horizonSkyOffset.y = pAnim->direction2.y * secDeltaTime + pWorld->horizonSkyOffset.y;
-
-        rdVector_MultAcc2(&pWorld->horizonSkyOffset, &pAnim->direction2, secDeltaTime);
+        // Fixed: Removed second advance of the horizon sky offset (rdVector_MultAcc2), which made the sky scroll at twice the speed (original Indy3D.exe v1.0 0x004638C0)
         if ( SITH_ISFRAMECYCLE(animNum, 16) )
         {
             // Wrap texture coordinates
