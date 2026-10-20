@@ -82,6 +82,7 @@ int sithAI_Startup(void)
     if ( bStartup )
     {
         SITHLOG_ERROR("Warning: System already initialized!\n");
+        return 0;
     }
 
     if ( sithAI_CreateInstinctRegistry(SITHAI_MAXREGISTEREDINSTINCTS) )
