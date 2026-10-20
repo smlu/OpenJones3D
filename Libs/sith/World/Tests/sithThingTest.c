@@ -2202,6 +2202,32 @@ TEST(sithThingBinary, TestStaticListPerformanceAndSkip)
     TEST_ASSERT_EQUAL_INT(SITH_THING_FREE, sithThingTest_staticWorld.aThings[3].type);
 }
 
+int J3DAPI sithThing_ParseThingArg(const StdConffileArg* pArg, SithWorld* pWorld, SithThing* pThing, int adjNum);
+
+TEST(sithThingBinary, TestParseArgFloatRange)
+{
+    // Underflowing values (ERANGE with a tiny result) are accepted like the original (float)atof, overflow is rejected.
+    static SithThing thing;
+    memset(&thing, 0, sizeof(thing));
+
+    StdConffileArg arg = { "userval", "1e-50" };
+    TEST_ASSERT_EQUAL_INT(0, sithThing_ParseThingArg(&arg, &sithThingTest_staticWorld, &thing, SITHTHING_ARG_USERVAL));
+    TEST_ASSERT_EQUAL_FLOAT(0.0f, thing.userval);
+
+    arg.argValue = "1e-42";
+    TEST_ASSERT_EQUAL_INT(0, sithThing_ParseThingArg(&arg, &sithThingTest_staticWorld, &thing, SITHTHING_ARG_USERVAL));
+    TEST_ASSERT_TRUE(thing.userval >= 0.0f && thing.userval < 1e-30f);
+
+    arg.argValue = "2.5";
+    TEST_ASSERT_EQUAL_INT(0, sithThing_ParseThingArg(&arg, &sithThingTest_staticWorld, &thing, SITHTHING_ARG_USERVAL));
+    TEST_ASSERT_EQUAL_FLOAT(2.5f, thing.userval);
+
+    thing.userval = 7.0f;
+    arg.argValue = "1e50";
+    TEST_ASSERT_NOT_EQUAL(0, sithThing_ParseThingArg(&arg, &sithThingTest_staticWorld, &thing, SITHTHING_ARG_USERVAL));
+    TEST_ASSERT_EQUAL_FLOAT(7.0f, thing.userval);
+}
+
 TEST(sithThingBinary, TestStaticListFailures)
 {
     // Covers malformed text, allocation failures, skipped placements, and binary wrapper failures.
@@ -2282,4 +2308,5 @@ TEST_GROUP_RUNNER(sithThingBinary)
     RUN_TEST_CASE(sithThingBinary, TestReadsAndReserializesStaticBinary);
     RUN_TEST_CASE(sithThingBinary, TestStaticListPerformanceAndSkip);
     RUN_TEST_CASE(sithThingBinary, TestStaticListFailures);
+    RUN_TEST_CASE(sithThingBinary, TestParseArgFloatRange);
 }
