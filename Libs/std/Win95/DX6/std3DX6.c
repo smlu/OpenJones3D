@@ -61,6 +61,7 @@ static size_t std3D_numTextureFormats            = 0;
 static StdTextureFormat std3D_aTextureFormats[8] = { 0 };
 
 static const ColorInfo std3D_cfRGB565   = { STDCOLOR_RGB,  16, 5, 6, 5, 11,  5, 0, 3, 2, 3, 0, 0, 0 };
+static DDCOLORKEY std3D_textureColorKey = { 0, 0 }; // Added: Color key of textures with the color key format, the original stores the key value 0 in the texture format
 static const ColorInfo std3D_cfRGB5551  = { STDCOLOR_RGBA, 16, 5, 5, 5, 11,  6, 1, 3, 3, 3, 1, 0, 7 };
 static const ColorInfo std3D_cfRGB4444  = { STDCOLOR_RGBA, 16, 4, 4, 4, 12,  8, 4, 4, 4, 4, 4, 0, 4 };
 
@@ -521,14 +522,14 @@ int J3DAPI std3D_Open(size_t deviceNum)
         && std3D_pCurDevice->bColorkeyTextureSupported )
     {
         std3D_aTextureFormats[std3D_RGBAKeyTextureFormat].bColorKey = 1;
-        std3D_aTextureFormats[std3D_RGBAKeyTextureFormat].pColorKey = NULL;
+        std3D_aTextureFormats[std3D_RGBAKeyTextureFormat].pColorKey = &std3D_textureColorKey;
     }
 
     if ( std3D_aTextureFormats[std3D_RGBATextureFormat].ci.alphaBPP == 0
         && std3D_pCurDevice->bColorkeyTextureSupported )
     {
         std3D_aTextureFormats[std3D_RGBATextureFormat].bColorKey = 1;
-        std3D_aTextureFormats[std3D_RGBATextureFormat].pColorKey = NULL;
+        std3D_aTextureFormats[std3D_RGBATextureFormat].pColorKey = &std3D_textureColorKey;
     }
 
     std3D_mipmapFilter = -1; // Fixed: Reset mipmap filter to be able to set filter to newly created device in std3D_SetMipmapFilter
