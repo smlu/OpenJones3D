@@ -494,6 +494,27 @@ TEST(Sound, TestPlayAllChannelsBusy)
     Sound_TestSetChannels(&SoundTest_channel, 1);
 }
 
+// Regression: Sound_Load dropped the first char of a path without separator, so the sound in the bank was not found
+TEST(Sound, TestLoadFindsBankedSound)
+{
+    uint32_t sndIdx = UINT32_MAX;
+    SoundTest_soundInfo.idx = 5u;
+
+    TEST_ASSERT_EQUAL_UINT32(SOUND_TEST_SOUND_HANDLE, Sound_Load("voice_test.wav", &sndIdx));
+    TEST_ASSERT_EQUAL_UINT32(5u, sndIdx);
+
+    sndIdx = UINT32_MAX;
+    TEST_ASSERT_EQUAL_UINT32(SOUND_TEST_SOUND_HANDLE, Sound_Load("sound\\voice_test.wav", &sndIdx));
+    TEST_ASSERT_EQUAL_UINT32(5u, sndIdx);
+
+    sndIdx = UINT32_MAX;
+    TEST_ASSERT_EQUAL_UINT32(SOUND_TEST_SOUND_HANDLE, Sound_Load("/res/sound/voice_test.wav", &sndIdx));
+    TEST_ASSERT_EQUAL_UINT32(5u, sndIdx);
+
+    // Leading separator
+    TEST_ASSERT_EQUAL_UINT32(SOUND_TEST_SOUND_HANDLE, Sound_Load("\\voice_test.wav", NULL));
+}
+
 TEST_GROUP_RUNNER(Sound)
 {
     RUN_TEST_CASE(Sound, TestFailures);
@@ -504,4 +525,5 @@ TEST_GROUP_RUNNER(Sound)
     RUN_TEST_CASE(Sound, TestLargeLipSyncBuffer);
     RUN_TEST_CASE(Sound, TestMouthLevelMacro);
     RUN_TEST_CASE(Sound, TestPlayAllChannelsBusy);
+    RUN_TEST_CASE(Sound, TestLoadFindsBankedSound);
 }
