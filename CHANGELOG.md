@@ -525,6 +525,7 @@
   - Fixed `JonesHud_Process` rounding the health state passed to the health indicator to the nearest integer where the original truncates, which made the indicator and the hit overlay step one unit early. ()
   - Fixed `sithThing_ScaleCombatDamage` scaling the damage by the combat damage scalar and the 0.9 or 0.8 factor in separate steps for fleeing actors shot by the player, which differs from the original in the last bit. ()
   - Fixed `sithActor_Update` computing the raft leak damage interval in a different operation order than the original, which differs in the last bit. ()
+  - Fixed `sithPlayerControls_ProcessLookControls` scaling the keyboard look offset by `90 * secDeltaTime` before multiplying with the input step instead of `(step * 90) * secDeltaTime` like the original, which changes the last bit of the camera offset. ()
 
 ## v0.3.1
 ### General:
