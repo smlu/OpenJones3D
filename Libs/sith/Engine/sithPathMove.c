@@ -484,18 +484,15 @@ void J3DAPI sithPathMove_UpdateRotate(SithThing* pThing, float simTime)
 
     float deltaTime = pPath->rotDeltaTime * simTime;
     float rotDelta  = pPath->rotDelta + deltaTime;
-    if ( rotDelta <= 1.0f )
-    {
-        if ( rotDelta < -1.0f )
-        {
-            deltaTime = -1.0f - pPath->rotDelta;
-            rotDelta = -1.0f;
-        }
-    }
-    else
+    if ( rotDelta > 1.0f ) // Fixed: Test the upper limit first as the original, a NaN rotation delta was clamped to 1.0 (original Indy3D.exe v1.0 0x004AC540)
     {
         deltaTime = 1.0f - pPath->rotDelta;
         rotDelta = 1.0f;
+    }
+    else if ( rotDelta < -1.0f )
+    {
+        deltaTime = -1.0f - pPath->rotDelta;
+        rotDelta = -1.0f;
     }
 
     rdVector3 deltaPYR;
