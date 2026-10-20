@@ -1526,7 +1526,9 @@ int J3DAPI rdModel3_SwapMesh(rdModel3* pModel1, unsigned int meshNum1, rdModel3*
     rdModel3Mesh mesh1;
     memcpy(&mesh1, &pModel1->aGeos[0].aMeshes[meshNum1], sizeof(mesh1));
 
-    if ( rdModel3_ReplaceMesh(pModel1, 0, meshNum1, pMesh2) || rdModel3_ReplaceMesh(pModel2, 0, meshNum2, &mesh1) )
+    int bFailed1 = rdModel3_ReplaceMesh(pModel1, 0, meshNum1, pMesh2);
+    int bFailed2 = rdModel3_ReplaceMesh(pModel2, 0, meshNum2, &mesh1);
+    if ( bFailed1 || bFailed2 )
     {
         RDLOG_ERROR("Error: SwapMesh for models '%s and %s'.\n", pModel1->aName, pModel2->aName);
         return 1;

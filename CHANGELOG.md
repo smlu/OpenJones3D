@@ -408,6 +408,7 @@
   - Fixed `std3D_Open` (DirectX 6) leaving the color key of the color key texture formats NULL; they now use the original color key {0, 0}, which avoids a NULL dereference in `stdColor_ColorConvertOneRow` and sets the same source color key on texture surfaces as the original. ()
   - Fixed `sithRender_CollectVisibleThingSector` registering sectors without things in the visible thing sector list (legacy collection mode), which wasted list slots and counted them in the visible thing sector statistic. ()
   - Fixed `std3D_DrawRenderList` truncating the table-less vertex fog alpha instead of rounding it to nearest like the original, which made the fog alpha 1/255 lower for about half of the values (DirectX 6 and DirectX 9). ()
+  - Fixed `rdModel3_SwapMesh` not replacing the mesh of the second model when replacing the mesh of the first model fails. ()
   - Fixed an out-of-bounds read after the last polygon in `rdCache_SendFaceListToHardware`. [PR #52](https://github.com/smlu/OpenJones3D/pull/52)
 
 ### Game play:
