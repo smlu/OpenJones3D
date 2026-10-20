@@ -844,6 +844,7 @@ int J3DAPI sithActor_ParseArg(const StdConffileArg* pArg, SithThing* pThing, int
         }
         case SITHTHING_ARG_HEALTH:
         {
+            errno = 0; // Fixed: Reset errno, a stale ERANGE rejected valid values
             float health = strtof(pArg->argValue, NULL); // Changed: Use strtof instead atof
             if ( health < 0.0f || (errno == ERANGE) ) // Added: Conversion range error check
             {
@@ -860,6 +861,7 @@ int J3DAPI sithActor_ParseArg(const StdConffileArg* pArg, SithThing* pThing, int
         }
         case SITHTHING_ARG_MAXTHRUST:
         {
+            errno = 0; // Fixed: Reset errno, a stale ERANGE rejected valid values
             float maxthrust = strtof(pArg->argValue, NULL); // Changed: Use strtof instead atof
             if ( maxthrust < 0.0f || (errno == ERANGE) )    // Added: Conversion range error check
             {
@@ -871,6 +873,7 @@ int J3DAPI sithActor_ParseArg(const StdConffileArg* pArg, SithThing* pThing, int
         }
         case SITHTHING_ARG_MAXROTTHRUST:
         {
+            errno = 0; // Fixed: Reset errno, a stale ERANGE rejected valid values
             float maxrotthrust = strtof(pArg->argValue, NULL); // Changed: Use strtof instead atof
             if ( maxrotthrust < 0.0f || (errno == ERANGE) )    // Added: Conversion range error check
             {
@@ -882,6 +885,7 @@ int J3DAPI sithActor_ParseArg(const StdConffileArg* pArg, SithThing* pThing, int
         }
         case SITHTHING_ARG_MAXHEADVEL:
         {
+            errno = 0; // Fixed: Reset errno, a stale ERANGE rejected valid values
             float maxheadvel = strtof(pArg->argValue, NULL); // Changed: Use strtof instead atof
             if ( maxheadvel < 0.0f || (errno == ERANGE) )    // Added: Conversion range error check
             {
@@ -893,6 +897,7 @@ int J3DAPI sithActor_ParseArg(const StdConffileArg* pArg, SithThing* pThing, int
         }
         case SITHTHING_ARG_MAXHEADYAW:
         {
+            errno = 0; // Fixed: Reset errno, a stale ERANGE rejected valid values
             float maxheadyaw = strtof(pArg->argValue, NULL); // Changed: Use strtof instead atof
             if ( maxheadyaw < 0.0f || (errno == ERANGE) )    // Added: Conversion range error check
             {
@@ -904,6 +909,7 @@ int J3DAPI sithActor_ParseArg(const StdConffileArg* pArg, SithThing* pThing, int
         }
         case SITHTHING_ARG_JUMPSPEED:
         {
+            errno = 0; // Fixed: Reset errno, a stale ERANGE rejected valid values
             float jumpspeed = strtof(pArg->argValue, NULL); // Changed: Use strtof instead atof
             if ( jumpspeed < 0.0f || (errno == ERANGE) )    // Added: Conversion range error check
             {
@@ -925,6 +931,7 @@ int J3DAPI sithActor_ParseArg(const StdConffileArg* pArg, SithThing* pThing, int
         }
         case SITHTHING_ARG_MAXHEALTH:
         {
+            errno = 0; // Fixed: Reset errno, a stale ERANGE rejected valid values
             float maxhealth = strtof(pArg->argValue, NULL); // Changed: Use strtof instead atof
             if ( maxhealth < 0.0f || (errno == ERANGE) )    // Added: Conversion range error check
             {
