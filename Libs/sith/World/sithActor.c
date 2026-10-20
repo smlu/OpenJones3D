@@ -167,7 +167,8 @@ void J3DAPI sithActor_Update(SithThing* pThing, unsigned int msecDeltaTime)
         {
             // Update Raft damage
 
-            float damage = (float)sithGetGameDifficulty() * (0.60000002f - 1.2f) / 5.0f + 1.2f;
+            float rate   = (0.60000002f - 1.2f) / 5.0f;
+            float damage = (float)sithGetGameDifficulty() * rate + 1.2f;
             damage = (float)msecDeltaTime / damage;
             sithThing_DamageThing(pThing, pThing, damage, SITH_DAMAGE_RAFT_LEAK);
         }
