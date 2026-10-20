@@ -444,6 +444,7 @@
   - Fixed `sithCogFunctionThing_SetInventory` accepting an inventory type equal to the maximum type count, which wrote one entry past the end of the inventory. ()
   - Fixed `sithOverlayMap_UpdateHints` not removing the SEEN flag from the hint value because of an operator precedence error in the mask, which made the map move on to the wrong hint once a hint had been seen. ()
   - Fixed `sithOverlayMap_DrawSector` testing the lower bound of the vertical canvas range with `>` instead of `<=`, which wrongly culled map sectors. ()
+  - Fixed `sithPlayerActions_HopBack` always playing the first sound of the jump mode instead of a random one. ()
 
 ## v0.3.1
 ### General:

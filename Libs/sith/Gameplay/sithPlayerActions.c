@@ -1509,7 +1509,7 @@ void J3DAPI sithPlayerActions_HopBack(SithThing* pThing)
             }
         }
 
-        sithSoundClass_PlayModeFirst(pThing, sndmode);
+        sithSoundClass_PlayModeRandom(pThing, sndmode);
     }
 
     sithThing_DetachThing(pThing);
