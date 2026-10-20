@@ -460,6 +460,7 @@
   - Fixed the water ripple sector in `sithFX_GetWaterPosition` callers (raft splatter, raft wake and paddle water effects): the found water surface sector is now returned through a pointer instead of being assigned to a copy. ()
   - Fixed `JonesHud_MenuClose` replacing instead of accumulating the collapsed column bits of the menu close animation, which broke the closing of inventory menus with more than one expanded column. ()
   - Fixed the quick load key (F8) leaving saving disabled when there is no quick save file or when loading the quick save and the last save both fail. ()
+  - Fixed `JonesHud_GetKey` resetting the menu move duration on every key read, which disabled the speed up of the inventory menu when a direction key is held. ()
 
 ## v0.3.1
 ### General:
