@@ -337,6 +337,7 @@ size_t J3DAPI rdFont_GetTextWidthEx(const char* pText, const rdFont* pFont, floa
 
     for ( size_t i = 0; i < texLen; ++i )
     {
+        // Fixed: Index glyphs by the unsigned char value. The original rdFont_GetTextWidth used the signed char (negative index for chars >= 128).
         size_t curChar = (uint8_t)pText[i];
         if ( pFont->aGlyphs[curChar].baselineOriginY == -pFont->fontSize )
         {
