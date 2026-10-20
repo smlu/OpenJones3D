@@ -111,7 +111,7 @@ void J3DAPI sithExplosion_CreateSpriteThing(SithThing* pThing)
         }
     }
 
-    if ( pExplode->flags && pExplode->pSprite && pExplode->pSprite->renderData.data.pSprite3 )
+    if ( pExplode && pExplode->pSprite && pExplode->pSprite->renderData.data.pSprite3 ) // Fixed: Was testing pExplode->flags, the roll angle was not set for explosions without flags (original Indy3D.exe v1.0 0x004AD020)
     {
         if ( (pExplode->flags & SITH_EF_RANDOMROLL) != 0 )
         {

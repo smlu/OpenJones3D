@@ -415,6 +415,7 @@
   - Fixed the bad argument log message in `sithThing_ParseThingArg` passing the file name and line number in swapped order (crash on a malformed thing argument). ()
   - Fixed `sithThing_DetachThing` to validate the thing pointer only when a world is loaded, as the original does, instead of dereferencing a NULL world. ()
   - Fixed `sithThing_PurgeGarbageThings` checking the purge limit with a pre-increment, which checked one slot fewer per call than the original. ()
+  - Fixed `sithExplosion_CreateSpriteThing` testing the explosion flags instead of the explosion info pointer before setting the sprite roll angle, so sprites of explosions without flags now get their roll angle reset. ()
 
 ## v0.3.1
 ### General:
