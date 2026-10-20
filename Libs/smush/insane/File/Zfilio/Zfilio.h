@@ -66,6 +66,21 @@ int J3DAPI zfilio_tell(ZfileHandle* pFile);
 int J3DAPI zfilio_seek(ZfileHandle* pFile, int offset, int whence);
 void J3DAPI zfilio_flush(ZfileHandle* pFile);
 
+#if defined(J3D_TEST)
+// Added: Test seam, replaces the executable's zlib gz functions (unset members fall back to the executable's).
+typedef struct sZfilioTestGz
+{
+    gzFile (J3DAPI* gzopen)(const char*, const char*);
+    int (J3DAPI* gzclose)(gzFile);
+    int (J3DAPI* gzread)(gzFile, void*, unsigned int);
+    int (J3DAPI* gzwrite)(gzFile, const void*, unsigned int);
+    int (J3DAPI* gzflush)(gzFile, int);
+    long (J3DAPI* gzseek)(gzFile, long, int);
+} ZfilioTestGz;
+
+void Zfilio_TestSetGz(const ZfilioTestGz* pGz);
+#endif
+
 void Zfilio_InstallHooks(void);
 void Zfilio_ResetGlobals(void);
 
