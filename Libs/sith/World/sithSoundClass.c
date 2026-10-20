@@ -276,7 +276,7 @@ int J3DAPI sithSoundClass_ReadSoundClassesListText(SithWorld* pWorld, int bSkip)
         return 1;
     }
 
-    size_t numClasses = atoi(stdConffile_g_entry.aArgs[2].argValue);
+    int numClasses = atoi(stdConffile_g_entry.aArgs[2].argValue);
     if ( numClasses <= 0 )
     {
         return 0;
