@@ -5371,8 +5371,8 @@ void J3DAPI sithCogFunctionThing_MoveThingToPos(SithCog* pCog)
 
 void J3DAPI sithCogFunctionThing_SetThingStateChange(SithCog* pCog)
 {
+    int param         = sithCogExec_PopInt(pCog);
     int type          = sithCogExec_PopInt(pCog);
-    int state         = sithCogExec_PopInt(pCog);
     SithThing* pThing = sithCogExec_PopThing(pCog);
 
     if ( !pThing )
@@ -5387,8 +5387,9 @@ void J3DAPI sithCogFunctionThing_SetThingStateChange(SithCog* pCog)
         return;
     }
 
+    // Fixed: The first popped argument is the params value and the second the type, they were swapped (original Indy3D.exe v1.0 0x00476230)
     pThing->thingInfo.actorInfo.stateChange.type             = type;
-    pThing->thingInfo.actorInfo.stateChange.params.moveFlags = (SithActorSpecialMoveFlags)state; // Note could be also armedMode, depending on the type
+    pThing->thingInfo.actorInfo.stateChange.params.moveFlags = (SithActorSpecialMoveFlags)param; // Note could be also armedMode, depending on the type
 }
 
 void J3DAPI sithCogFunctionThing_StartQuetzAnim(SithCog* pCog)
