@@ -82,6 +82,7 @@ int sithAI_Startup(void)
     if ( bStartup )
     {
         SITHLOG_ERROR("Warning: System already initialized!\n");
+        return 0; // Fixed: Return after the warning, the original does not initialize the system a second time (original Indy3D.exe v1.0 0x00429E90)
     }
 
     if ( sithAI_CreateInstinctRegistry(SITHAI_MAXREGISTEREDINSTINCTS) )
