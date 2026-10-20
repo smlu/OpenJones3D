@@ -1,7 +1,7 @@
-## sithDSS Original-Engine Test Vectors
+## sithDSS And sithDSSThing Original-Engine Test Vectors
 
 These files hold, for every case, the complete observable result of the original
-`sithDSS` functions (the save/network message writers and readers), captured by
+`sithDSS` and `sithDSSThing` functions (the save/network message writers and readers), captured by
 executing them inside the retail `Indy3D.exe` on a synthetic engine state. They are
 consumed by `TestOriginal*` in `Libs/sith/Dss/Tests/sithDSSTest.c`. The tests read only
 these files; they never launch or depend on `Indy3D.exe` or game assets.
@@ -45,8 +45,43 @@ these files; they never launch or depend on `Indy3D.exe` or game assets.
 | `sithDSS_SendEndSection` (end of section message) | `0x004B3760` |
 | `sithDSS_ProcessEndSection` (its reader) | `0x004B3790` |
 
+| `sithDSSThing_Pos` | `0x0047A920` |
+| `sithDSSThing_ProcessPos` | `0x0047AAB0` |
+| `sithDSSThing_MovePos` | `0x0047ACC0` |
+| `sithDSSThing_ProcessMovePos` | `0x0047ADC0` |
+| `sithDSSThing_UpdateState` | `0x0047B010` |
+| `sithDSSThing_ProcessStateUpdate` | `0x0047B2A0` |
+| `sithDSSThing_PlaySound` | `0x0047B570` |
+| `sithDSSThing_ProcessPlaySound` | `0x0047B660` |
+| `sithDSSThing_PlaySoundMode` | `0x0047B7B0` |
+| `sithDSSThing_ProcessPlaySoundMode` | `0x0047B830` |
+| `sithDSSThing_PlayKey` | `0x0047B8C0` |
+| `sithDSSThing_ProcessPlayKey` | `0x0047B950` |
+| `sithDSSThing_PlayKeyMode` | `0x0047BA60` |
+| `sithDSSThing_ProcessPlayKeyMode` | `0x0047BAD0` |
+| `sithDSSThing_SetModel` | `0x0047BB90` |
+| `sithDSSThing_ProcessSetModel` | `0x0047BC50` |
+| `sithDSSThing_StopKey` | `0x0047BD20` |
+| `sithDSSThing_ProcessStopKey` | `0x0047BD90` |
+| `sithDSSThing_StopSound` | `0x0047BE60` |
+| `sithDSSThing_ProcessStopSound` | `0x0047BEC0` |
+| `sithDSSThing_Fire` | `0x0047BF50` |
+| `sithDSSThing_ProcessFire` | `0x0047C060` |
+| `sithDSSThing_Death` | `0x0047C170` |
+| `sithDSSThing_ProcessDeath` | `0x0047C1D0` |
+| `sithDSSThing_DamageThing` | `0x0047C2F0` |
+| `sithDSSThing_ProcessDamage` | `0x0047C380` |
+| `sithDSSThing_PathMove` | `0x0047D9A0` |
+| `sithDSSThing_ProcessPathMove` | `0x0047DAA0` |
+| `sithDSSThing_Take` | `0x0047DF60` |
+| `sithDSSThing_ProcessTake` | `0x0047DFC0` |
+| `sithDSSThing_CreateThing` | `0x0047E0A0` |
+| `sithDSSThing_ProcessCreateThing` | `0x0047E190` |
+| `sithDSSThing_DestroyThing` | `0x0047E320` |
+| `sithDSSThing_ProcessDestroyThing` | `0x0047E360` |
+| `sithDSSThing_MoveToPos` | `0x0047E3B0` |
 
-Fixtures: `sithDSS.tv`.
+Fixtures: `sithDSS.tv`, `sithDSSThing.tv`.
 
 ### How The Vectors Are Produced
 
@@ -63,9 +98,9 @@ fills it with distinct seeded values, and calls the original functions by addres
   hash of its name; all values are integers or multiples of 1/16 unless a case says
   otherwise.
 - Engine functions with side effects that the DSS functions call (the sends, sound,
-  puppet and thing creation functions, ...; the list is `sithDSSSeams.def`) are
+  puppet and thing creation functions, ...; the list is `sithDSSSeams.def` and `sithDSSThingSeams.def`) are
   replaced by shared stubs. In the harness the original functions are patched to
-  jump to the stub, in the tests the calls of `sithDSS.c` are renamed to the
+  jump to the stub, in the tests the calls of `sithDSS.c` and `sithDSSThing.c` are renamed to the
   stub (`dssv_<name>`). Every call is recorded with its arguments (pointers as stable
   ids) and part of the case result. `sithMessage_SendMessage` records the complete
   message, the destination, the stream and the DirectPlay flags.
@@ -137,6 +172,36 @@ changes of both records.
   numbers past the last), game state (everything set, nothing set, ten chalk marks),
   vehicle control state and the end of section message.
 
+`sithDSSThing.tv` (173 cases):
+
+- Pos/MovePos: player, actor, item without physics and path mover (physics and player
+  data are optional fields), rejected free/NULL/sectorless things. Reader: all of them,
+  attachment flags cleared (detach), physics things within 0.5 of the received
+  position and exactly on it (`MoveToPos` slides instead of snapping), a missing
+  world, bad guid and sector index, and every move status the reader dispatches
+  on (pushing, pulling up, 1 m climb, the action at 60, strafing, jump back, jump
+  ready, others).
+- State update: player, actor, item with and without backpack (numItems 3), weapon,
+  corpse, sprite, a swap list, rejected free/NULL/misplaced things. Reader: all of
+  them, remote flag merging, an existing swap list that gets replaced, bad guid and
+  sector index.
+- Sounds: play sound at a thing, at a position and plain; play sound mode with a
+  negative (random) and a positive selection ratio; stop sound with and without a
+  channel (fade, stop and negative fade time). Readers: all of them and bad sound
+  index/thing guid. The sound handle/channel/guid functions are stubbed.
+- Keys/puppets: play key and play key mode (track found and not found), set model
+  (known and unknown model name), stop key (track found and not found), bad thing
+  and a thing without puppet.
+- Fire (with and without sound, projectile created or not), death (actor with and
+  without killer, player kill and no kill, other things), damage (with and without
+  perpetrator, sender is the server or not), path move (move to, skip to, finish,
+  old frame number, a frame number above 2^31, bad thing/sector), take (client and
+  host, TAKE and TAKE2 messages, disabled and non-item things, unknown item/taker),
+  create thing (at a marker and at a position, creation failure, bad template,
+  static template, bad marker/sector), destroy thing and `MoveToPos` called directly
+  (within 0.5, exactly on the thing, far away, and with values that are not exactly
+  representable).
+
 ### Known Differences
 
 - `ProcessPuppetStatus_zerospeed`, `ProcessPuppetStatus_negativespeed`: the
@@ -144,6 +209,22 @@ changes of both records.
   replaces a value of zero or less with 1.0 (an intentional `Added:` change in
   `sithDSS_ProcessPuppetStatus`). `TestOriginalPuppetStatus` expects exactly these two
   cases to differ and is reported as ignored.
+- `MoveToPos_close_inexact`, `MoveToPos_close2_inexact` (`sithDSSThing_MoveToPos`
+  at `0x0047E3B0`, also reached from `ProcessPos` for physics things): the original
+  evaluates `velocity * 0.25 + newPos - pos` entirely in x87 registers and rounds to
+  float once, when it stores the direction (disassembly: `fmul`/`fadd`/`fsub` on
+  `st(0..2)`, then `fstp` to the stack). The reconstruction rounds the predicted
+  position to float first. For values that are not exactly representable the direction
+  and therefore the new velocity (`direction * 4`) differ in the low bits. First case,
+  velocity (12 bytes at `SithThing.moveInfo.physics.velocity`): original
+  `98 cd cc be 34 cd 4c 3f 68 cd 4c be`, reconstruction `00 cc cc be 00 cd 4c 3f 00 cd 4c be`;
+  second case original `cc cc 4c bf cc cc 4c bf da cc 4c bf`, reconstruction
+  `00 cc 4c bf 00 cd 4c bf c0 cc 4c bf`. Computing the three components in double and
+  rounding once reproduces the original (verified against these vectors):
+  `dir.x = (float)((double)velocity.x * 0.25 + (double)pPos->x - (double)pThing->pos.x)`
+  (same for y and z) instead of the `predictedPos` temporary.
+  `TestOriginalMoveToPos` expects exactly these two cases to differ and is reported
+  as ignored.
 
 ### Inputs Kept Out Of The Corpus
 
@@ -153,22 +234,24 @@ changes of both records.
   can crash). The malformed-input checks the reconstruction added (`Fixed:` in
   `sithDSS_ProcessPuppetStatus`, armed/move modes and track counts) have no original
   behavior to compare with and are not part of the corpus.
-- Counts that overflow fixed arrays (`sithDSS_ProcessSyncGameState` chalk marks, a
-  preserved original bug).
+- Counts that overflow fixed arrays (`sithDSS_ProcessSyncGameState` chalk marks,
+  `sithDSSThing_ProcessStateUpdate` backpack items, both preserved original bugs).
+- `ThingFullDescription` and `Attachment`: already implemented upstream (with
+  documented extensions), not part of this corpus.
 
 ### Provenance
 
 - Capture harness: a temporary C file built with MSVC (x86, static CRT) as
   `Jones3D.dll` and kept outside the repository (SHA-256 of the source used:
   `b5ff22764bc51ca780b5f0a5557988eb0ebf8f87260262db5f96930cc391aec8`), including the shared headers of `Libs/sith/Dss/Tests`. It
-  patches the engine functions of `sithDSSSeams.def` to jump to the stubs, builds the
+  patches the engine functions of `sithDSSSeams.def` and `sithDSSThingSeams.def` to jump to the stubs, builds the
   state of each case, calls the original functions at the addresses above and writes the
   fixtures; no other function of the executable is modified. `Jones3D.exe` (this
   repository's launcher) starts `Indy3D.exe` suspended and injects the DLL from its own
   directory; a helper thread terminates the process after the files are written.
 - Regeneration: build the harness with
   `cl /MT /LD capture.c /DDSSV_HARNESS /I<Libs/sith/Dss/Tests> /I<generated j3dcore header dir> /I<Libs> /I<DirectX61c include> /Fe:Jones3D.dll`
-  place it next to `Jones3D.exe` and
+  (define `CAPTURE_THING` for the sithDSSThing cases), place it next to `Jones3D.exe` and
   a copy of `Indy3D.exe` with the SHA-256 above, run `Jones3D.exe Indy3D.exe` and collect
   the files from `out\`. Review regenerated fixtures as behavior changes.
 - Environment: MSVC 2026 x86 compiler, executed under Wine. No locale, time or
@@ -184,4 +267,5 @@ changes of both records.
 
 ```text
 820dc9c5c44824ea34fd3e3a1077529cb0deeb6016821f54f3818aaa17f18b9d  sithDSS.tv
+fe9bc9a6c074d5954c6cf440bc863d88d94f69a9c75c6115d4f9e12ee6efca18  sithDSSThing.tv
 ```

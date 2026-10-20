@@ -10,9 +10,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "sithDSSVecDSS.h"
+#include "sithDSSVecThing.h"
 
-// Original-engine test vectors for the sithDSS functions. The fixtures in tv/sithDSS hold, for every case of
+// Original-engine test vectors for the sithDSS and sithDSSThing functions. The fixtures in tv/sithDSS hold, for every case of
 // dssv_aDSSCases, the result of the retail v1.0 function (return value, the messages and engine calls it made and the
 // bytes it changed in the synthetic state). The tests rebuild the same state, run the reconstructed functions and compare.
 // See tv/sithDSS/README.md.
@@ -46,6 +46,7 @@ static size_t sithDSSTest_previousDebugFillThreshold;
 #endif
 
 static SithDSSTestFixture sithDSSTest_dssFixture;
+static SithDSSTestFixture sithDSSTest_thingFixture;
 static unsigned sithDSSTest_numRun;
 
 static uint32_t sithDSSTest_Rd32(const uint8_t* p)
@@ -353,4 +354,98 @@ TEST_GROUP_RUNNER(sithDSS)
     RUN_TEST_CASE(sithDSS, TestOriginalSyncGameState);
     RUN_TEST_CASE(sithDSS, TestOriginalVehicleControlState);
     RUN_TEST_CASE(sithDSS, TestOriginalEndSection);
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// sithDSSThing
+// ---------------------------------------------------------------------------------------------------------------
+TEST_GROUP(sithDSSThing);
+
+TEST_SETUP(sithDSSThing)
+{
+#if defined(_DEBUG)
+    // The original zero pads fixed size names; suppress the Debug CRT's 0xFE tail fill of strncpy_s
+    sithDSSTest_previousDebugFillThreshold = _CrtSetDebugFillThreshold(0u);
+#endif
+    TEST_ASSERT_TRUE_MESSAGE((uintptr_t)&dssv_arena >= 0x10000000u && (uintptr_t)&dssv_arena + sizeof(dssv_arena) < 0x3C000000u, "test image not loaded at its fixed base");
+    dssv_InitHostServices();
+    sith_g_pHS = &dssv_hostServices;
+    sithDSSTest_LoadFixture(&sithDSSTest_thingFixture, "sithDSSThing.tv");
+}
+
+TEST_TEAR_DOWN(sithDSSThing)
+{
+#if defined(_DEBUG)
+    _CrtSetDebugFillThreshold(sithDSSTest_previousDebugFillThreshold);
+#endif
+    sithDSSTest_FreeFixture(&sithDSSTest_thingFixture);
+    sith_g_pHS = NULL;
+}
+
+#define SITHDSSTHINGTEST_FAMILY(name, prefixA, prefixB) \
+    TEST(sithDSSThing, TestOriginal##name) \
+    { \
+        unsigned numFailed = sithDSSTest_RunCases(dssv_aThingCases, (unsigned)DSSV_NUMTHINGCASES, &sithDSSTest_thingFixture, prefixA, prefixB, sithDSSTest_aFailText, sizeof(sithDSSTest_aFailText)); \
+        TEST_ASSERT_EQUAL_UINT_MESSAGE(0, numFailed, sithDSSTest_aFailText); \
+    }
+
+SITHDSSTHINGTEST_FAMILY(Pos, "Pos_", "ProcessPos_")
+SITHDSSTHINGTEST_FAMILY(MovePos, "MovePos_", "ProcessMovePos_")
+SITHDSSTHINGTEST_FAMILY(StateUpdate, "UpdateState_", "ProcessStateUpdate_")
+SITHDSSTHINGTEST_FAMILY(PlaySound, "PlaySound_", "ProcessPlaySound_")
+SITHDSSTHINGTEST_FAMILY(PlaySoundMode, "PlaySoundMode_", "ProcessPlaySoundMode_")
+SITHDSSTHINGTEST_FAMILY(StopSound, "StopSound_", "ProcessStopSound_")
+SITHDSSTHINGTEST_FAMILY(PlayKey, "PlayKey_", "ProcessPlayKey_")
+SITHDSSTHINGTEST_FAMILY(PlayKeyMode, "PlayKeyMode_", "ProcessPlayKeyMode_")
+SITHDSSTHINGTEST_FAMILY(SetModel, "SetModel_", "ProcessSetModel_")
+SITHDSSTHINGTEST_FAMILY(StopKey, "StopKey_", "ProcessStopKey_")
+SITHDSSTHINGTEST_FAMILY(Fire, "Fire_", "ProcessFire_")
+SITHDSSTHINGTEST_FAMILY(Death, "Death_", "ProcessDeath_")
+SITHDSSTHINGTEST_FAMILY(Damage, "DamageThing_", "ProcessDamage_")
+SITHDSSTHINGTEST_FAMILY(PathMove, "PathMove_", "ProcessPathMove_")
+SITHDSSTHINGTEST_FAMILY(Take, "Take_", "ProcessTake_")
+SITHDSSTHINGTEST_FAMILY(CreateThing, "CreateThing_", "ProcessCreateThing_")
+SITHDSSTHINGTEST_FAMILY(DestroyThing, "DestroyThing_", "ProcessDestroyThing")
+// The original computes the predicted position and the direction in the extended precision of the x87 FPU and rounds once
+// when it stores the direction; the reconstruction rounds the predicted position to float first. The results differ in the
+// low bits of the velocity when the values are not exactly representable (README, "Known Differences").
+TEST(sithDSSThing, TestOriginalMoveToPos)
+{
+    static const char* const aKnown[] = { "MoveToPos_close_inexact", "MoveToPos_close2_inexact" };
+    unsigned numFailed = sithDSSTest_RunCases(dssv_aThingCases, (unsigned)DSSV_NUMTHINGCASES, &sithDSSTest_thingFixture, "MoveToPos_", NULL, sithDSSTest_aFailText, sizeof(sithDSSTest_aFailText));
+    sithDSSTest_ExpectKnownDifferences(numFailed, sithDSSTest_aFailText, aKnown, sizeof(aKnown) / sizeof(aKnown[0]),
+        "sithDSSThing_MoveToPos rounds the predicted position to float, the original keeps it in extended precision; see tv/sithDSS/README.md.");
+}
+
+// Every case of the table must be in the fixture and the other way around
+TEST(sithDSSThing, TestFixtureCoversAllCases)
+{
+    TEST_ASSERT_EQUAL_UINT(DSSV_NUMTHINGCASES, sithDSSTest_thingFixture.numCases);
+    for ( unsigned i = 0; i < DSSV_NUMTHINGCASES; ++i )
+    {
+        TEST_ASSERT_EQUAL_STRING(dssv_aThingCases[i].name, sithDSSTest_thingFixture.aCases[i].aName);
+    }
+}
+
+TEST_GROUP_RUNNER(sithDSSThing)
+{
+    RUN_TEST_CASE(sithDSSThing, TestFixtureCoversAllCases);
+    RUN_TEST_CASE(sithDSSThing, TestOriginalPos);
+    RUN_TEST_CASE(sithDSSThing, TestOriginalMovePos);
+    RUN_TEST_CASE(sithDSSThing, TestOriginalStateUpdate);
+    RUN_TEST_CASE(sithDSSThing, TestOriginalPlaySound);
+    RUN_TEST_CASE(sithDSSThing, TestOriginalPlaySoundMode);
+    RUN_TEST_CASE(sithDSSThing, TestOriginalStopSound);
+    RUN_TEST_CASE(sithDSSThing, TestOriginalPlayKey);
+    RUN_TEST_CASE(sithDSSThing, TestOriginalPlayKeyMode);
+    RUN_TEST_CASE(sithDSSThing, TestOriginalSetModel);
+    RUN_TEST_CASE(sithDSSThing, TestOriginalStopKey);
+    RUN_TEST_CASE(sithDSSThing, TestOriginalFire);
+    RUN_TEST_CASE(sithDSSThing, TestOriginalDeath);
+    RUN_TEST_CASE(sithDSSThing, TestOriginalDamage);
+    RUN_TEST_CASE(sithDSSThing, TestOriginalPathMove);
+    RUN_TEST_CASE(sithDSSThing, TestOriginalTake);
+    RUN_TEST_CASE(sithDSSThing, TestOriginalCreateThing);
+    RUN_TEST_CASE(sithDSSThing, TestOriginalDestroyThing);
+    RUN_TEST_CASE(sithDSSThing, TestOriginalMoveToPos);
 }
