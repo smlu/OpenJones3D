@@ -588,7 +588,7 @@ void J3DAPI sithAIMove_CheckMoveAlign(SithAIControlBlock* pLocal)
     }
 }
 
-double J3DAPI sithAIMove_GetGoalTolerance(SithAIControlBlock* pLocal, rdVector3* a2, rdVector3* a3)
+double J3DAPI sithAIMove_GetGoalTolerance(SithAIControlBlock* pLocal, rdVector3* pPos, rdVector3* pMovePos)
 {
     SithThing* pThing = pLocal->pOwner;
     SITH_ASSERTREL(pThing);
@@ -610,25 +610,25 @@ double J3DAPI sithAIMove_GetGoalTolerance(SithAIControlBlock* pLocal, rdVector3*
         }
 
         rdVector3 delta;
-        rdVector_Sub3(&delta, a3, a2);
+        rdVector_Sub3(&delta, pMovePos, pPos);
         if ( fabsf(delta.x) <= minDist )
         {
             ++numAligned;
-            a3->x = a2->x;
+            pMovePos->x = pPos->x;
             delta.x = 0.0f;
         }
 
         if ( fabsf(delta.y) <= minDist )
         {
             ++numAligned;
-            a3->y = a2->y;
+            pMovePos->y = pPos->y;
             delta.y = 0.0f;
         }
 
         if ( fabsf(delta.z) <= minDist )
         {
             ++numAligned;
-            a3->z = a2->z;
+            pMovePos->z = pPos->z;
             delta.z = 0.0f;
         }
 
@@ -646,7 +646,7 @@ double J3DAPI sithAIMove_GetGoalTolerance(SithAIControlBlock* pLocal, rdVector3*
         {
             if ( numAligned == 2 || distance <= pThing->collide.movesize * 2.0f )
             {
-                rdVector_Copy3(a3, a2);
+                rdVector_Copy3(pMovePos, pPos);
             }
             else
             {
@@ -658,21 +658,21 @@ double J3DAPI sithAIMove_GetGoalTolerance(SithAIControlBlock* pLocal, rdVector3*
     }
 
     float minDist = J3DMIN(pThing->collide.movesize, 0.03f);
-    a2->z = pThing->pos.z;
-    a3->z = pThing->pos.z;
+    pPos->z = pThing->pos.z;
+    pMovePos->z = pThing->pos.z;
     if ( (pLocal->submode & SITHAI_SUBMODE_UNKNOWN_100) != 0 )
     {
         rdVector3 pos;
-        rdVector_ScaleAdd3(&pos, &pThing->orient.rvec, 0.05f, a2);
-        float dist1 = stdMath_Dist2D1(pos.x - a3->x, pos.y - a3->y);
+        rdVector_ScaleAdd3(&pos, &pThing->orient.rvec, 0.05f, pPos);
+        float dist1 = stdMath_Dist2D1(pos.x - pMovePos->x, pos.y - pMovePos->y);
 
         rdVector3 pos2;
-        rdVector_ScaleAdd3(&pos2, &pThing->orient.rvec, -0.05f, a2);
-        float dist2 = stdMath_Dist2D1(pos2.x - a3->x, pos2.y - a3->y);
+        rdVector_ScaleAdd3(&pos2, &pThing->orient.rvec, -0.05f, pPos);
+        float dist2 = stdMath_Dist2D1(pos2.x - pMovePos->x, pos2.y - pMovePos->y);
 
         if ( dist1 < 0.05f || dist2 < 0.05f )
         {
-            rdVector_Copy3(a3, a2);
+            rdVector_Copy3(pMovePos, pPos);
         }
     }
 
@@ -2610,7 +2610,7 @@ void J3DAPI sithAIMove_UpdateHeadTrackTarget(SithAIControlBlock* pLocal, float s
     sithActor_SetHeadPYR(pLocal->pOwner, &headPYR);
 }
 
-void J3DAPI sithAIMove_UpdateHeadTrackLookPos(SithAIControlBlock* pLocal, float a2)
+void J3DAPI sithAIMove_UpdateHeadTrackLookPos(SithAIControlBlock* pLocal, float secDeltaTime)
 {
     SITH_ASSERTREL(pLocal && pLocal->pOwner);
 
@@ -2650,8 +2650,8 @@ void J3DAPI sithAIMove_UpdateHeadTrackLookPos(SithAIControlBlock* pLocal, float 
     rdVector_ScaleAdd3(&projDir, &pOwner->orient.uvec, -dist, &lookDir);
     rdVector_Normalize3Acc(&projDir);
 
-    float yawRate   = pActorInfo->maxHeadVelocity * a2;
-    float pitchRate = (pActorInfo->maxHeadVelocity * 0.5f) * a2;
+    float yawRate   = pActorInfo->maxHeadVelocity * secDeltaTime;
+    float pitchRate = (pActorInfo->maxHeadVelocity * 0.5f) * secDeltaTime;
 
     float yaw = rdMath_DeltaAngleNormalized(&pOwner->orient.lvec, &projDir, &pOwner->orient.uvec);
     float deltaYaw = yaw - pActorInfo->headPYR.y;
@@ -2677,7 +2677,7 @@ void J3DAPI sithAIMove_UpdateHeadTrackLookPos(SithAIControlBlock* pLocal, float 
     }
 }
 
-void J3DAPI sithAIMove_GetQuetzStrikeAngles(SithAIControlBlock* pLocal, float* pDestAngle, float* a3, float* a4, float* a5)
+void J3DAPI sithAIMove_GetQuetzStrikeAngles(SithAIControlBlock* pLocal, float* pYaw, float* pPitch, float* pHeadYaw, float* pHeadPitch)
 {
     SithThing* pOwner  = pLocal->pOwner;
     SithThing* pTarget = pLocal->pTargetThing;
@@ -2705,17 +2705,17 @@ void J3DAPI sithAIMove_GetQuetzStrikeAngles(SithAIControlBlock* pLocal, float* p
     rdVector_Normalize3Acc(&lookDir);
 
     float yaw = rdMath_DeltaAngleNormalized(&pOwner->orient.lvec, &lookDir, &pOwner->orient.uvec);
-    *pDestAngle     = yaw;
-    *a4 = -pOwner->renderData.apTweakedAngles[2].y;
+    *pYaw     = yaw;
+    *pHeadYaw = -pOwner->renderData.apTweakedAngles[2].y;
 
     float distance = sqrtf((pOwner->pos.x - pTarget->pos.x) * (pOwner->pos.x - pTarget->pos.x) + (pOwner->pos.y - pTarget->pos.y) * (pOwner->pos.y - pTarget->pos.y));
     distance = STDMATH_CLAMP(distance, 0.3f, 0.5f);
 
     float pitchScale = (-60.0f - -15.0f) / (0.5f - 0.3f);
-    *a3 = (distance - 0.3f) * pitchScale + -15.0f;
+    *pPitch = (distance - 0.3f) * pitchScale + -15.0f;
 
     float headPitchScale = (60.0f - sithAIMove_g_flt_585470) / (0.5f - 0.3f);
-    *a5 = (distance - 0.3f) * headPitchScale + sithAIMove_g_flt_585470 - pOwner->renderData.apTweakedAngles[2].x;
+    *pHeadPitch = (distance - 0.3f) * headPitchScale + sithAIMove_g_flt_585470 - pOwner->renderData.apTweakedAngles[2].x;
 }
 
 void J3DAPI sithAIMove_UpdateQuetzStrike(SithAIControlBlock* pLocal, float secDeltaTime)
@@ -2831,7 +2831,7 @@ void J3DAPI sithAIMove_UpdateQuetzStrike(SithAIControlBlock* pLocal, float secDe
     }
 }
 
-void J3DAPI sithAIMove_GetQuetzAnim2Angles(SithAIControlBlock* pLocal, float* angle, float* a3, float* a4, float* a5)
+void J3DAPI sithAIMove_GetQuetzAnim2Angles(SithAIControlBlock* pLocal, float* pYaw, float* pPitch, float* pHeadYaw, float* pHeadPitch)
 {
     SithThing* pOwner  = pLocal->pOwner;
     SithThing* pTarget = pLocal->pTargetThing;
@@ -2855,10 +2855,10 @@ void J3DAPI sithAIMove_GetQuetzAnim2Angles(SithAIControlBlock* pLocal, float* an
     rdVector_Normalize3Acc(&planeDir);
 
     float yaw = rdMath_DeltaAngleNormalized(&pOwner->orient.lvec, &planeDir, &pOwner->orient.uvec);
-    *angle       = yaw;
-    *a4   = -pOwner->renderData.apTweakedAngles[2].yaw;
-    *a5 = 50.0f;
-    *a3     = -30.0f;
+    *pYaw       = yaw;
+    *pHeadYaw   = -pOwner->renderData.apTweakedAngles[2].yaw;
+    *pHeadPitch = 50.0f;
+    *pPitch     = -30.0f;
 }
 
 void J3DAPI sithAIMove_UpdateQuetzAnim2(SithAIControlBlock* pLocal, float secDeltaTime)

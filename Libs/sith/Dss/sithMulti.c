@@ -511,11 +511,11 @@ int J3DAPI sithMulti_ProcessJoinRequest(const SithMessage* pMsg)
     return 1;
 }
 
-signed int J3DAPI sithMulti_FinishJoining(SithMultiJoinStatus code, float arg4, int playerId)
+signed int J3DAPI sithMulti_FinishJoining(SithMultiJoinStatus code, float progress, int playerId)
 {
     SITHDSS_STARTOUT(SITHDSS_JOINSTATUS);
     SITHDSS_PUSHINT32(code);
-    SITHDSS_PUSHFLOAT(arg4);
+    SITHDSS_PUSHFLOAT(progress);
 
     SITHDSS_ENDOUT;
     return sithMessage_SendMessage(&sithMulti_g_message, playerId, SITHMESSAGE_STREAM_NET, 0);

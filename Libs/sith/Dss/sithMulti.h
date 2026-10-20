@@ -33,7 +33,7 @@ void J3DAPI sithMulti_ProcessPlayerJoin(int playerNum);
 void J3DAPI sithMulti_SyncPlayers(DPID idTo, uint32_t dpFlags);
 signed int J3DAPI sithMulti_ProcessSyncPlayers(const SithMessage* pMsg);
 int J3DAPI sithMulti_ProcessJoinRequest(const SithMessage* pMsg);
-signed int J3DAPI sithMulti_FinishJoining(SithMultiJoinStatus code, float arg4, int playerId);
+signed int J3DAPI sithMulti_FinishJoining(SithMultiJoinStatus code, float progress, int playerId);
 int J3DAPI sithMulti_ProcessChat(const SithMessage* pMsg);
 
 int J3DAPI sithMulti_Ping(DPID idTo); // Added: from debug
