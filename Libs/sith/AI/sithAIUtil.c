@@ -40,7 +40,7 @@
 #define sithAIUtil_numVisitedSectors J3D_DECL_FAR_VAR(sithAIUtil_numVisitedSectors, size_t)
 #define sithAIUtil_activeWpntLayer J3D_DECL_FAR_VAR(sithAIUtil_activeWpntLayer, SithAIWaypointLayerFlag)
 #define sithAIUtil_numThingsInView J3D_DECL_FAR_VAR(sithAIUtil_numThingsInView, size_t)
-#define sithAIUtil_vec_585490 J3D_DECL_FAR_VAR(sithAIUtil_vec_585490, rdVector3)
+#define sithAIUtil_mkPointCurDir J3D_DECL_FAR_VAR(sithAIUtil_mkPointCurDir, rdVector3)
 #define sithAIUtil_pMkPointCurLocal J3D_DECL_FAR_VAR(sithAIUtil_pMkPointCurLocal, SithAIControlBlock*)
 #define sithAIUtil_mkPointCurPYR J3D_DECL_FAR_VAR(sithAIUtil_mkPointCurPYR, rdVector3)
 #define sithAIUtil_thingsInViewFovX J3D_DECL_FAR_VAR(sithAIUtil_thingsInViewFovX, float)
@@ -48,7 +48,7 @@
 #define sithAIUtil_aThingsInView J3D_DECL_FAR_VAR(sithAIUtil_aThingsInView, SithThing**)
 #define sithAIUtil_aWpntDistances J3D_DECL_FAR_ARRAYVAR(sithAIUtil_aWpntDistances, SithAIWaypointDistance(*)[60])
 #define sithAIUtil_sizeThingsInView J3D_DECL_FAR_VAR(sithAIUtil_sizeThingsInView, size_t)
-#define sithAIUtil_vec_585718 J3D_DECL_FAR_VAR(sithAIUtil_vec_585718, rdVector3)
+#define sithAIUtil_mkPointCurRVec J3D_DECL_FAR_VAR(sithAIUtil_mkPointCurRVec, rdVector3)
 #define sithAIUtil_maxDistanceToThingsInView J3D_DECL_FAR_VAR(sithAIUtil_maxDistanceToThingsInView, float)
 #define sithAIUtil_thingInViewTypeMask J3D_DECL_FAR_VAR(sithAIUtil_thingInViewTypeMask, int)
 #define sithAIUtil_aAIWpnts J3D_DECL_FAR_ARRAYVAR(sithAIUtil_aAIWpnts, SithAIWaypoint(*)[60])
@@ -119,7 +119,7 @@ void sithAIUtil_ResetGlobals(void)
     memset(&sithAIUtil_g_bRenderAIWpnts, 0, sizeof(sithAIUtil_g_bRenderAIWpnts));
     memset(&sithAIUtil_activeWpntLayer, 0, sizeof(sithAIUtil_activeWpntLayer));
     memset(&sithAIUtil_numThingsInView, 0, sizeof(sithAIUtil_numThingsInView));
-    memset(&sithAIUtil_vec_585490, 0, sizeof(sithAIUtil_vec_585490));
+    memset(&sithAIUtil_mkPointCurDir, 0, sizeof(sithAIUtil_mkPointCurDir));
     memset(&sithAIUtil_pMkPointCurLocal, 0, sizeof(sithAIUtil_pMkPointCurLocal));
     memset(&sithAIUtil_mkPointCurPYR, 0, sizeof(sithAIUtil_mkPointCurPYR));
     memset(&sithAIUtil_thingsInViewFovX, 0, sizeof(sithAIUtil_thingsInViewFovX));
@@ -127,7 +127,7 @@ void sithAIUtil_ResetGlobals(void)
     memset(&sithAIUtil_aThingsInView, 0, sizeof(sithAIUtil_aThingsInView));
     memset(&sithAIUtil_aWpntDistances, 0, sizeof(sithAIUtil_aWpntDistances));
     memset(&sithAIUtil_sizeThingsInView, 0, sizeof(sithAIUtil_sizeThingsInView));
-    memset(&sithAIUtil_vec_585718, 0, sizeof(sithAIUtil_vec_585718));
+    memset(&sithAIUtil_mkPointCurRVec, 0, sizeof(sithAIUtil_mkPointCurRVec));
     memset(&sithAIUtil_maxDistanceToThingsInView, 0, sizeof(sithAIUtil_maxDistanceToThingsInView));
     memset(&sithAIUtil_thingInViewTypeMask, 0, sizeof(sithAIUtil_thingInViewTypeMask));
     memset(&sithAIUtil_aAIWpnts, 0, sizeof(sithAIUtil_aAIWpnts));
@@ -610,7 +610,7 @@ void sithAIUtil_AIResetWaypoints(void)
         sithAIUtil_aAIWpnts[i].thingNum = -1;
         sithAIUtil_aAIWpnts[i].flags = SITH_AIWPNT_LAYER0;
         sithAIUtil_aAIWpnts[i].numUsedLinks = 0;
-        sithAIUtil_aAIWpnts[i].unknown11 = 0;
+        sithAIUtil_aAIWpnts[i].rank = 0;
     }
 
     for ( int i = 0; i < 10; ++i )
@@ -638,7 +638,7 @@ int J3DAPI sithAIUtil_SyncWpnts(DPID idTo, unsigned int outstream)
             SITHDSS_PUSHINT32(sithAIUtil_aAIWpnts[wpntNum].aWpntLinks[j]);
         }
 
-        SITHDSS_PUSHINT32(sithAIUtil_aAIWpnts[wpntNum].unknown11);
+        SITHDSS_PUSHINT32(sithAIUtil_aAIWpnts[wpntNum].rank);
     }
 
     for ( int wpntNum = 0; wpntNum < 10; ++wpntNum )
@@ -670,7 +670,7 @@ int J3DAPI sithAIUtil_ProcessSyncWpnts(const SithMessage* pMsg)
             sithAIUtil_aAIWpnts[idx].aWpntLinks[j] = SITHDSS_POPINT32();
         }
 
-        sithAIUtil_aAIWpnts[idx].unknown11 = SITHDSS_POPINT32();
+        sithAIUtil_aAIWpnts[idx].rank = SITHDSS_POPINT32();
     }
 
     for ( int idx = 0; idx < 10; ++idx )
@@ -986,11 +986,11 @@ int J3DAPI sithAIUtil_SelectWpntLink(SithAIControlBlock* pLocal, unsigned int nu
 
         if ( (pLocal->mode & SITHAI_MODE_FLEEING) != 0 && pLocal->pFleeFromThing && (pLocal->mode & SITHAI_MODE_FLEEINGTOWAYPOINT) == 0 )
         {
-            if ( sithAIUtil_aAIWpnts[leadWpnt].unknown11 == 0xFF )
+            if ( sithAIUtil_aAIWpnts[leadWpnt].rank == 0xFF )
             {
                 bestPriority -= 14;
             }
-            else if ( sithAIUtil_aAIWpnts[nextWpnt].unknown11 == 0xFF )
+            else if ( sithAIUtil_aAIWpnts[nextWpnt].rank == 0xFF )
             {
                 curRank -= 14;
             }
@@ -1021,7 +1021,7 @@ int J3DAPI sithAIUtil_SelectWpntLink(SithAIControlBlock* pLocal, unsigned int nu
                 curRank -= 10;
             }
 
-            int rankLead = sithAIUtil_aAIWpnts[nextWpnt].unknown11 - sithAIUtil_aAIWpnts[leadWpnt].unknown11;
+            int rankLead = sithAIUtil_aAIWpnts[nextWpnt].rank - sithAIUtil_aAIWpnts[leadWpnt].rank;
             if ( rankLead < 0 )
             {
                 curRank += -rankLead * 3;
@@ -1067,11 +1067,11 @@ int J3DAPI sithAIUtil_SelectWpntLink(SithAIControlBlock* pLocal, unsigned int nu
                 }
             }
 
-            if ( sithAIUtil_aAIWpnts[nextWpnt].unknown11 > sithAIUtil_aAIWpnts[leadWpnt].unknown11 )
+            if ( sithAIUtil_aAIWpnts[nextWpnt].rank > sithAIUtil_aAIWpnts[leadWpnt].rank )
             {
                 curRank += 7;
             }
-            else if ( sithAIUtil_aAIWpnts[nextWpnt].unknown11 < sithAIUtil_aAIWpnts[leadWpnt].unknown11 )
+            else if ( sithAIUtil_aAIWpnts[nextWpnt].rank < sithAIUtil_aAIWpnts[leadWpnt].rank )
             {
                 bestPriority += 7;
             }
@@ -1096,11 +1096,11 @@ int J3DAPI sithAIUtil_SelectWpntLink(SithAIControlBlock* pLocal, unsigned int nu
                 }
             }
 
-            if ( sithAIUtil_aAIWpnts[nextWpnt].unknown11 > sithAIUtil_aAIWpnts[leadWpnt].unknown11 )
+            if ( sithAIUtil_aAIWpnts[nextWpnt].rank > sithAIUtil_aAIWpnts[leadWpnt].rank )
             {
                 curRank += 7;
             }
-            else if ( sithAIUtil_aAIWpnts[nextWpnt].unknown11 < sithAIUtil_aAIWpnts[leadWpnt].unknown11 )
+            else if ( sithAIUtil_aAIWpnts[nextWpnt].rank < sithAIUtil_aAIWpnts[leadWpnt].rank )
             {
                 bestPriority += 7;
             }
@@ -1291,7 +1291,7 @@ void J3DAPI sithAIUtil_RankWpntsFromPlayer()
 
     for ( unsigned int idx = 0; idx < 60; ++idx )
     {
-        sithAIUtil_aAIWpnts[idx].unknown11 = 0;
+        sithAIUtil_aAIWpnts[idx].rank = 0;
     }
 
     int wpntNum = sithAIUtil_AIFindNearestWpnt(sithPlayer_g_pLocalPlayerThing, 0);
@@ -1304,11 +1304,11 @@ void J3DAPI sithAIUtil_RankWpntsFromPlayer()
     int aStack[60];
     int top = 0;
     aStack[0] = wpntNum;
-    sithAIUtil_aAIWpnts[wpntNum].unknown11 = rankNum;
+    sithAIUtil_aAIWpnts[wpntNum].rank = rankNum;
     while ( top >= 0 )
     {
         int curWpnt = aStack[top--];
-        rankNum = sithAIUtil_aAIWpnts[curWpnt].unknown11 - 1;
+        rankNum = sithAIUtil_aAIWpnts[curWpnt].rank - 1;
         for ( unsigned int idx = 0; idx < sithAIUtil_aAIWpnts[curWpnt].numUsedLinks; ++idx )
         {
             int linkCount = sithAIUtil_aAIWpnts[curWpnt].aWpntLinks[idx];
@@ -1317,9 +1317,9 @@ void J3DAPI sithAIUtil_RankWpntsFromPlayer()
                 continue;
             }
 
-            if ( sithAIUtil_aAIWpnts[linkCount].unknown11 < rankNum )
+            if ( sithAIUtil_aAIWpnts[linkCount].rank < rankNum )
             {
-                sithAIUtil_aAIWpnts[linkCount].unknown11 = rankNum;
+                sithAIUtil_aAIWpnts[linkCount].rank = rankNum;
                 if ( sithAIUtil_aAIWpnts[linkCount].numUsedLinks > 1 )
                 {
                     aStack[++top] = linkCount;
@@ -1333,7 +1333,7 @@ void J3DAPI sithAIUtil_RankWpntsFromThing(SithThing* pThing)
 {
     for ( int idx = 0; idx < 60; ++idx )
     {
-        sithAIUtil_aAIWpnts[idx].unknown11 = 0;
+        sithAIUtil_aAIWpnts[idx].rank = 0;
     }
 
     int wpntNum = 0;
@@ -1357,11 +1357,11 @@ void J3DAPI sithAIUtil_RankWpntsFromThing(SithThing* pThing)
     int aStack[60];
     int top = 0;
     aStack[0] = wpntNum;
-    sithAIUtil_aAIWpnts[wpntNum].unknown11 = rankNum;
+    sithAIUtil_aAIWpnts[wpntNum].rank = rankNum;
     while ( top >= 0 )
     {
         int curWpnt = aStack[top--];
-        rankNum = sithAIUtil_aAIWpnts[curWpnt].unknown11 - 1;
+        rankNum = sithAIUtil_aAIWpnts[curWpnt].rank - 1;
         for ( unsigned int idx = 0; idx < sithAIUtil_aAIWpnts[curWpnt].numUsedLinks; ++idx )
         {
             int linkCount = sithAIUtil_aAIWpnts[curWpnt].aWpntLinks[idx];
@@ -1370,9 +1370,9 @@ void J3DAPI sithAIUtil_RankWpntsFromThing(SithThing* pThing)
                 continue;
             }
 
-            if ( sithAIUtil_aAIWpnts[linkCount].unknown11 < rankNum )
+            if ( sithAIUtil_aAIWpnts[linkCount].rank < rankNum )
             {
-                sithAIUtil_aAIWpnts[linkCount].unknown11 = rankNum;
+                sithAIUtil_aAIWpnts[linkCount].rank = rankNum;
                 if ( sithAIUtil_aAIWpnts[linkCount].numUsedLinks > 1 )
                 {
                     aStack[++top] = linkCount;
@@ -1831,14 +1831,14 @@ int J3DAPI sithAIUtil_MakeRandPoint(SithAIControlBlock* pLocal, rdVector3* pPos,
         {
             sithAIUtil_mkPoinCurFlags = flags;
             sithAIUtil_pMkPointCurLocal = pLocal;
-            rdVector_Copy3(&sithAIUtil_vec_585490, pDir);
+            rdVector_Copy3(&sithAIUtil_mkPointCurDir, pDir);
             if ( (flags & 2) != 0 )
             {
                 rdVector_Copy3(&sithAIUtil_mkPointCurPYR, &rotPyr);
             }
             else
             {
-                rdVector_Copy3(&sithAIUtil_vec_585718, &newDir);
+                rdVector_Copy3(&sithAIUtil_mkPointCurRVec, &newDir);
             }
 
             rdVector_ScaleAdd3(pDestPoint, &newDir, *pDownCos, pPos);
@@ -1879,12 +1879,12 @@ int J3DAPI sithAIUtil_RetryMakeRandPoint(SithAIControlBlock* pLocal, rdVector3* 
     if ( (sithAIUtil_mkPoinCurFlags & 6) != 0 )
     {
         rdVector_Neg3Acc(&sithAIUtil_mkPointCurPYR);
-        rdVector_Rotate3(&dir, &sithAIUtil_vec_585490, &sithAIUtil_mkPointCurPYR);
+        rdVector_Rotate3(&dir, &sithAIUtil_mkPointCurDir, &sithAIUtil_mkPointCurPYR);
         sithAIUtil_mkPoinCurFlags &= ~6;
     }
     else if ( (sithAIUtil_mkPoinCurFlags & 1) != 0 )
     {
-        rdVector_Neg3(&dir, &sithAIUtil_vec_585718);
+        rdVector_Neg3(&dir, &sithAIUtil_mkPointCurRVec);
         sithAIUtil_mkPoinCurFlags &= ~1;
     }
     else

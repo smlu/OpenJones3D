@@ -45,7 +45,7 @@
 #define sithMulti_numRemovedStaticThings J3D_DECL_FAR_VAR(sithMulti_numRemovedStaticThings, size_t)
 #define sithMulti_msecLastSyncScoreTime J3D_DECL_FAR_VAR(sithMulti_msecLastSyncScoreTime, unsigned int)
 #define sithMulti_msecWelcomeUpdateInterval J3D_DECL_FAR_VAR(sithMulti_msecWelcomeUpdateInterval, unsigned int)
-#define sithMulti_dword_17F10EC J3D_DECL_FAR_VAR(sithMulti_dword_17F10EC, int)
+#define sithMulti_msecSyncTime J3D_DECL_FAR_VAR(sithMulti_msecSyncTime, int)
 
 static void sithMulti_FinishWelcomingPlayer(void);
 
@@ -108,7 +108,7 @@ void sithMulti_ResetGlobals(void)
     memset(&sithMulti_msecLastSyncScoreTime, 0, sizeof(sithMulti_msecLastSyncScoreTime));
     memset(&sithMulti_msecWelcomeUpdateInterval, 0, sizeof(sithMulti_msecWelcomeUpdateInterval));
     memset(&sithMulti_g_serverId, 0, sizeof(sithMulti_g_serverId));
-    memset(&sithMulti_dword_17F10EC, 0, sizeof(sithMulti_dword_17F10EC));
+    memset(&sithMulti_msecSyncTime, 0, sizeof(sithMulti_msecSyncTime));
     memset(&sithMulti_g_message, 0, sizeof(sithMulti_g_message));
 }
 
@@ -125,7 +125,7 @@ void sithMulti_CloseGame()
     sithMessage_CloseGame();
 
     memset(&sithMulti_g_serverId, 0, sizeof(sithMulti_g_serverId));
-    memset(&sithMulti_dword_17F10EC, 0, sizeof(sithMulti_dword_17F10EC));
+    memset(&sithMulti_msecSyncTime, 0, sizeof(sithMulti_msecSyncTime));
 }
 
 int J3DAPI sithMulti_CheckPlayers(int msecTime, SithEventParams* pParam)
@@ -349,8 +349,8 @@ signed int J3DAPI sithMulti_ProcessSyncPlayers(const SithMessage* pMsg)
     SITHDSS_STARTIN(pMsg);
 
     memset(&sithMulti_g_serverId, 0, sizeof(sithMulti_g_serverId));
-    memset(&sithMulti_dword_17F10EC, 0, sizeof(sithMulti_dword_17F10EC));
-    sithMulti_dword_17F10EC = stdPlatform_GetTimeMsec();
+    memset(&sithMulti_msecSyncTime, 0, sizeof(sithMulti_msecSyncTime));
+    sithMulti_msecSyncTime = stdPlatform_GetTimeMsec();
 
     sithMulti_g_serverId = SITHDSS_POPUINT32();
 

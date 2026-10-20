@@ -1279,10 +1279,9 @@ int J3DAPI sithDSS_SyncGameState(DPID idTo, unsigned int outstream)
     SITHDSS_PUSHINT32(sithPlayer_g_pLocalPlayer->curItemID);
     SITHDSS_PUSHINT32(sithPlayer_g_pLocalPlayer->curWeaponID);
 
-    // Note: sithInventory_g_aUnknown is the power keybind array, unknown3 is the bActivated member
-    for ( int n = 0; n < (int)STD_ARRAYLEN(sithInventory_g_aUnknown); ++n )
+    for ( int n = 0; n < (int)STD_ARRAYLEN(sithInventory_g_aPowerKeybinds); ++n )
     {
-        SITHDSS_PUSHINT32(sithInventory_g_aUnknown[n].unknown3);
+        SITHDSS_PUSHINT32(sithInventory_g_aPowerKeybinds[n].bActivated);
     }
 
     SITHDSS_PUSHINT32(sithInventory_g_bSendDeactivateMessage);
@@ -1307,11 +1306,11 @@ int J3DAPI sithDSS_SyncGameState(DPID idTo, unsigned int outstream)
     SITHDSS_PUSHINT32(sithThing_GetThingIndex(sithPlayerControls_GetVehicleBoardedThing()));
 
     // Note: Cur collided surface, model and model face are named as cur ledge surface, ledge thing model and model face
-    SITHDSS_PUSHINT16((int16_t)(sithSurface_GetSurfaceIndex(sithPlayerActions_g_pCurLedgeSurface)));
-    SITHDSS_PUSHINT16((int16_t)(sithModel_GetModelIndex(sithPlayerActions_g_pCurLedgeThingModel)));
-    if ( sithPlayerActions_g_pCurLedgeThingModel )
+    SITHDSS_PUSHINT16((int16_t)(sithSurface_GetSurfaceIndex(sithPlayerActions_g_pCurCollidedSurface)));
+    SITHDSS_PUSHINT16((int16_t)(sithModel_GetModelIndex(sithPlayerActions_g_pCurCollidedModel)));
+    if ( sithPlayerActions_g_pCurCollidedModel )
     {
-        SITHDSS_PUSHINT16((int16_t)(sithPlayerActions_g_pCurLedgeThingModelFace - sithPlayerActions_g_pCurLedgeThingModel->aGeos[0].aMeshes->aFaces));
+        SITHDSS_PUSHINT16((int16_t)(sithPlayerActions_g_pCurCollidedModelFace - sithPlayerActions_g_pCurCollidedModel->aGeos[0].aMeshes->aFaces));
     }
 
     SITHDSS_PUSHINT32(sithPlayer_g_bPlayerInPor);
@@ -1370,10 +1369,9 @@ int J3DAPI sithDSS_ProcessSyncGameState(const SithMessage* pMsg)
     sithPlayer_g_pLocalPlayer->curItemID   = SITHDSS_POPINT32();
     sithPlayer_g_pLocalPlayer->curWeaponID = SITHDSS_POPINT32();
 
-    // Note: sithInventory_g_aUnknown is the power keybind array, unknown3 is the bActivated member
-    for ( int i = 0; i < (int)STD_ARRAYLEN(sithInventory_g_aUnknown); ++i )
+    for ( int i = 0; i < (int)STD_ARRAYLEN(sithInventory_g_aPowerKeybinds); ++i )
     {
-        sithInventory_g_aUnknown[i].unknown3 = SITHDSS_POPINT32();
+        sithInventory_g_aPowerKeybinds[i].bActivated = SITHDSS_POPINT32();
     }
 
     sithInventory_g_bSendDeactivateMessage = SITHDSS_POPINT32();
@@ -1401,13 +1399,13 @@ int J3DAPI sithDSS_ProcessSyncGameState(const SithMessage* pMsg)
 
     // Note: Cur collided surface, model and model face are named as cur ledge surface, ledge thing model and model face
     int16_t idx16 = SITHDSS_POPINT16();
-    sithPlayerActions_g_pCurLedgeSurface = sithSurface_GetSurfaceEx(sithWorld_g_pCurrentWorld, idx16);
+    sithPlayerActions_g_pCurCollidedSurface = sithSurface_GetSurfaceEx(sithWorld_g_pCurrentWorld, idx16);
     idx16 = SITHDSS_POPINT16();
-    sithPlayerActions_g_pCurLedgeThingModel = sithModel_GetModelByIndex(idx16);
-    if ( sithPlayerActions_g_pCurLedgeThingModel )
+    sithPlayerActions_g_pCurCollidedModel = sithModel_GetModelByIndex(idx16);
+    if ( sithPlayerActions_g_pCurCollidedModel )
     {
         idx16 = SITHDSS_POPINT16();
-        sithPlayerActions_g_pCurLedgeThingModelFace = &sithPlayerActions_g_pCurLedgeThingModel->aGeos[0].aMeshes->aFaces[idx16];
+        sithPlayerActions_g_pCurCollidedModelFace = &sithPlayerActions_g_pCurCollidedModel->aGeos[0].aMeshes->aFaces[idx16];
     }
 
     sithPlayer_g_bPlayerInPor       = SITHDSS_POPINT32();
@@ -1532,7 +1530,7 @@ int J3DAPI sithDSS_ProcessVehicleControlsState(const SithMessage* pMsg)
 
 int J3DAPI sithDSS_SendEndSection(DPID idTo, unsigned int outstream)
 {
-    SITHDSS_STARTOUT(SITHDSS_UNKNOWN_44); // Original name: SITHDSS_ENDSECTION
+    SITHDSS_STARTOUT(SITHDSS_ENDSECTION);
     SITHDSS_ENDOUT;
     return sithMessage_SendMessage(&sithMulti_g_message, idTo, outstream, DPSEND_GUARANTEED);
 }

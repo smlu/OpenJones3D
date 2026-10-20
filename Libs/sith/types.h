@@ -1539,7 +1539,7 @@ struct sSithThingSwapEntry
 
 typedef struct sSithQuetzSnapShot
 {
-    float unknown0;
+    float time;
     float angle1;
     float angle2;
     float angle3;
@@ -1549,10 +1549,10 @@ typedef struct sSithQuetzSnapShot
 
 typedef struct sSithQuetzStrike
 {
-    int unknown0;
-    float unknown1;
+    int mode;
+    float curTime;
     int snapShot;
-    int unknown3;
+    int numSnapShots;
     SithQuetzSnapShot aSnapShots[15];
 } SithQuetzStrike;
 
@@ -2879,7 +2879,7 @@ typedef struct sSithAIWaypoint
     size_t numUsedLinks;
     int aWpntLinks[8];
     SithAIWaypointLayerFlag flags;
-    size_t unknown11; // rank
+    size_t rank;
 } SithAIWaypoint;
 static_assert(sizeof(SithAIWaypoint) == 48, "sizeof(SithAIWaypoint) == 48");
 
@@ -3149,13 +3149,13 @@ typedef struct sSithAIWaypointDistance
     float distance;
 } SithAIWaypointDistance;
 
-typedef struct sSithInventoryUnknown
+typedef struct sSithPowerKeybind
 {
     int bEnabled;
-    int unknown2;
-    int unknown3;
-} SithInventoryUnknown;
-static_assert(sizeof(SithInventoryUnknown) == 12, "sizeof(SithInventoryUnknown) == 12");
+    int binding;
+    int bActivated;
+} SithPowerKeybind;
+static_assert(sizeof(SithPowerKeybind) == 12, "sizeof(SithPowerKeybind) == 12");
 
 J3D_EXTERN_C_END
 #endif //SITH_TYPES_H

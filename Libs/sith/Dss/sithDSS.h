@@ -98,7 +98,7 @@ typedef enum eSithDSSType
     SITHDSS_MOVEPOS             = 40,
     SITHDSS_CHECKMEMBERSHIPLIST = 41,
     SITHDSS_QUIT                = 42,
-    SITHDSS_UNKNOWN_44          = 44,
+    SITHDSS_ENDSECTION          = 44,
     SITHDSS_VOICESTATE          = 45,
     SITHDSS_VEHICLECONTROLSTATE = 46,
     SITHDSS_HUDSTATE            = 47,
