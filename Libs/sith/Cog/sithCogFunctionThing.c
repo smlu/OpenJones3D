@@ -2478,6 +2478,7 @@ void J3DAPI sithCogFunctionThing_TrackToMode(SithCog* pCog)
     {
         STDLOG_ERROR("Cog %s: Bad thing in TrackToMode().\n", pCog->aName);
         sithCogExec_PushInt(pCog, -1);
+        return; // Fixed: Return after the error result, otherwise a second value is pushed or the invalid thing is dereferenced (original Indy3D.exe v1.0 0x00471330)
     }
 
     if ( trackNum >= RDPUPPET_MAX_TRACKS )
