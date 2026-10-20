@@ -139,12 +139,14 @@ void J3DAPI sithCogFunctionAI_AIGetGoalThing(SithCog* pCog)
     if ( !pThing )
     {
         SITHLOG_ERROR("Cog %s: Bad thing passed to AIGetGoalThing\n", pCog->aName);
+        sithCogExec_PushInt(pCog, -1); // Fixed: Push -1 on error (original Indy3D.exe v1.0 0x004691C0)
         return;
     }
 
     if ( pThing->controlType != SITH_CT_AI || !pThing->controlInfo.aiControl.pLocal )
     {
         SITHLOG_ERROR("Cog %s: thing %s is not AI controlled in AIGetGoalThing\n", pCog->aName, pThing->aName);
+        sithCogExec_PushInt(pCog, -1); // Fixed: Push -1 on error (original Indy3D.exe v1.0 0x004691C0)
         return;
     }
 
