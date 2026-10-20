@@ -81,6 +81,7 @@ Gob* J3DAPI stdGob_Load(const char* pFilename, int numFileHandles, int bMMapFile
     STD_ZEROMEM(pGob, sizeof(Gob));
     if ( !stdGob_LoadEntry(pGob, pFilename, numFileHandles, bMMapFile) )
     {
+        // Fixed: Free the Gob wrapper on load failure; the original leaked it.
         stdMemory_Free(pGob);
         return NULL;
     }
@@ -99,6 +100,7 @@ int J3DAPI stdGob_LoadEntry(Gob* pGob, const char* pFilename, int numFileHandles
     pGob->numHandles = numFileHandles;
     pGob->pCurHandle = NULL;
 
+    // Added: Reject non-positive handle counts; the original accepted any count.
     if ( pGob->numHandles <= 0 )
     {
         STDLOG_ERROR("Error: Invalid Gob file handle count.\n");
@@ -165,6 +167,7 @@ int J3DAPI stdGob_LoadEntry(Gob* pGob, const char* pFilename, int numFileHandles
 
     STD_ZEROMEM(pGob->aHandles, sizeof(GobFileHandle) * pGob->numHandles);
 
+    // Added: The file size check and the directory bounds checks below are not in the original, which trusted the directory; gobs it loaded may now be rejected.
     size_t gobSize = stdGob_pHS->pFileSize(pGob->aFilePath);
     if ( gobSize < sizeof(GobFileHeader) )
     {
@@ -174,6 +177,7 @@ int J3DAPI stdGob_LoadEntry(Gob* pGob, const char* pFilename, int numFileHandles
 
     GobFileHeader fileHeader;
     size_t bytesRead = stdGob_pHS->pFileRead(pGob->hGobFile, &fileHeader, sizeof(GobFileHeader));
+    // Altered: The original asserted on a short header read; fail the load instead.
     if ( bytesRead != sizeof(GobFileHeader) )
     {
         STDLOG_ERROR("Error reading Gob file header.\n");
@@ -200,6 +204,8 @@ int J3DAPI stdGob_LoadEntry(Gob* pGob, const char* pFilename, int numFileHandles
     }
 
     stdGob_pHS->pFileSeek(pGob->hGobFile, fileHeader.dirOffset, 0);
+
+    // Added: Check the entry count read and its range against the file size; the original used the count unchecked.
     if ( stdGob_pHS->pFileRead(pGob->hGobFile, &pGob->directory.numEntries, sizeof(pGob->directory.numEntries)) != sizeof(pGob->directory.numEntries) )
     {
         STDLOG_ERROR("Error reading Gob directory entry count.\n");
@@ -233,12 +239,14 @@ int J3DAPI stdGob_LoadEntry(Gob* pGob, const char* pFilename, int numFileHandles
     for ( uint32_t i = 0; i < pGob->directory.numEntries; ++i )
     {
         bytesRead = stdGob_pHS->pFileRead(pGob->hGobFile, pCurEntry, sizeof(tGobFileEntry));
+        // Altered: The original asserted on a short entry read; fail the load instead.
         if ( bytesRead != sizeof(tGobFileEntry) )
         {
             STDLOG_ERROR("Error reading Gob directory entry.\n");
             goto error;
         }
 
+        // Added: Force-terminate the entry name and reject entries that lie outside the file (not in the original).
         pCurEntry->aName[STD_ARRAYLEN(pCurEntry->aName) - 1] = '\0';
         if ( !stdGob_IsEntryInBounds(pCurEntry, gobSize) )
         {
@@ -253,6 +261,7 @@ int J3DAPI stdGob_LoadEntry(Gob* pGob, const char* pFilename, int numFileHandles
     return 1;
 
 error:
+    // Fixed: Release partially loaded state on failure; the original returned 0 and leaked it.
     stdGob_FreeEntry(pGob);
     return 0;
 }
@@ -457,6 +466,7 @@ int J3DAPI stdGob_FileEOF(GobFileHandle* pHandle)
     // Added: Validate the Gob handle's entry before checking EOF, as it is required for bounds checking.
     STD_GUARD(pHandle->pEntry, 1);
 
+    // Altered: The original reported EOF at offset >= size - 1, i.e. one byte early.
     return pHandle->offset >= pHandle->pEntry->size;
 }
 
@@ -506,6 +516,7 @@ const char* J3DAPI stdGob_FileGets(GobFileHandle* pGobFileHandle, char* pStr, si
     // Added: Validate the Gob handle's entry and parent Gob before reading, as they are required for bounds checking and seek offset calculation.
     STD_GUARD(pGobFileHandle->pEntry && pGobFileHandle->pGob, NULL);
 
+    // Altered: The original returned NULL once offset >= size - 1, so the last byte of an entry was never returned.
     // Fixed: Reject invalid offsets before calculating remaining bytes.
     if ( pGobFileHandle->offset < 0 || pGobFileHandle->pEntry->size < 0 || pGobFileHandle->offset >= pGobFileHandle->pEntry->size )
     {

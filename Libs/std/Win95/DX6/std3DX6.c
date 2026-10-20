@@ -951,6 +951,7 @@ void J3DAPI std3D_AllocSystemTexture(tSystemTexture* pTexture, tVBuffer** apVBuf
 
     STD_ZEROMEM(pTexture, sizeof(tSystemTexture));
 
+    // Added: Also reject NULL mipmap arrays and a zero mip level count; the original only checked std3D_numTextureFormats.
     if ( !std3D_numTextureFormats || !apVBuffers || !numMipLevels )
     {
         return;
@@ -1033,10 +1034,12 @@ void J3DAPI std3D_AllocSystemTexture(tSystemTexture* pTexture, tVBuffer** apVBuf
         bSurfaceLocked = true;
 
         // Fixed: Copy only bytes available in both rows; a DirectDraw pitch can be wider than the source VBuffer row.
+        // The original copied dwWidth * 2 bytes per row (assumes 16 bpp) and did not clear the rest of the surface.
         tColorMode colorMode = apVBuffers[mmNum]->rasterInfo.colorInfo.colorMode;
         if ( colorMode > STDCOLOR_PAL && colorMode <= STDCOLOR_RGBA )
         {
             pLockedVBuffer = apVBuffers[mmNum];
+            // Added: Check the VBuffer lock result; the original ignored it.
             if ( !stdDisplay_VBufferLock(pLockedVBuffer) )
             {
                 STDLOG_ERROR("Error locking source VBuffer mip level %zu.\n", mmNum);
@@ -1212,6 +1215,7 @@ void J3DAPI std3D_AllocSystemTexture(tSystemTexture* pTexture, tVBuffer** apVBuf
     return;
 
 error:
+    // Fixed: Release every locked surface, texture and surface reference on failure; the original released only the source surface.
     if ( bVBufferLocked && pLockedVBuffer )
     {
         stdDisplay_VBufferUnlock(pLockedVBuffer);

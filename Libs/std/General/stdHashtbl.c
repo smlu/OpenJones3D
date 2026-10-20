@@ -45,6 +45,7 @@ unsigned int J3DAPI CalculateHash(const char* pData, signed int hashSize)
     STD_GUARD(pData && hashSize > 0, 0);
 
     // Fixed: Use unsigned arithmetic for the historical 65599 hash to avoid signed overflow UB.
+    //        Not equivalent to the original (signed chars, abs of the signed remainder): different buckets and iteration order.
     uint32_t hashValue = 0;
     while ( *pData )
     {
