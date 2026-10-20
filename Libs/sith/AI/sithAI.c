@@ -102,6 +102,7 @@ void sithAI_Shutdown(void)
     if ( !bStartup )
     {
         SITHLOG_ERROR("Warning: System already shutdown!\n");
+        return;
     }
 
     SITH_ASSERTREL(aRegisteredInstincts && pRegisteredInstinctHashtbl);
