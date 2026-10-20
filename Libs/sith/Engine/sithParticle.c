@@ -220,7 +220,7 @@ void J3DAPI sithParticle_Update(SithThing* pThing, float secDeltaTime)
 
     if ( (pParticle->flags & SITHPARTICLE_FLAG_TIMEOUT_RATE) != 0 )
     {
-        size_t dverts = J3DMIN((int32_t)(pThing->thingInfo.particleInfo.timeoutRate * 0.15000001f), 1);
+        int32_t dverts = J3DMAX((int32_t)(pThing->thingInfo.particleInfo.timeoutRate * 0.15000001f), 1); // Fixed: Was J3DMIN which limited the growth to at most 1 vertex per update and wrapped negative values (original Indy3D.exe v1.0 0x004AE670)
         pThing->renderData.data.pParticle->numVertices += dverts;
         if ( pThing->renderData.data.pParticle->numVertices > pThing->thingInfo.particleInfo.numParticles )
         {
