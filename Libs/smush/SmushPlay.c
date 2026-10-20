@@ -1,5 +1,4 @@
 // SmushPlay.c: the glue between the game and the INSANE movie-player library (original 0x004E30B0-0x004E33F0).
-#define SMUSHPLAY_IMPLEMENTATION
 #include "SmushPlay.h"
 #include <j3dcore/j3d.h>
 #include <j3dcore/j3dhook.h>

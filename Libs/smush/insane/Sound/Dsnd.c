@@ -22,8 +22,7 @@
 #include <smush/insane/Sound/Engine.h>
 #include <smush/insane/Sound/Mixer.h>
 #include <smush/insane/Timer/Timer.h>
-
-void* smushplay_GetHwnd(void); // SmushPlay.c
+#include <smush/SmushPlay.h>
 
 static LecModule dsnd_module = { dsnd_Register, dsnd_Unregister, dsnd_Startup, dsnd_Shutdown };
 static SndDriver dsnd_interface = { dsnd_Start, dsnd_Stop, dsnd_SetVolume, dsnd_GetVolume, (int (*)(int))sound_Null, dsnd_GetRate };

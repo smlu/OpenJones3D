@@ -256,7 +256,7 @@ bool InstallHooks(void)
     JonesHud_InstallHooks();
     JonesMain_InstallHooks();
 
-    // Smush_InstallHooks(); // Enabled at integration, together with the hooks of the SmushPlay_* trampolines
+    Smush_InstallHooks();
 
     Sound_InstallHooks();
 
@@ -401,7 +401,7 @@ bool ResetGlobals(void)
     JonesFile_ResetGlobals();
     JonesHud_ResetGlobals();
     JonesMain_ResetGlobals();
-    // Smush_ResetGlobals(); // Enabled at integration, together with Smush_InstallHooks
+    Smush_ResetGlobals();
     Sound_ResetGlobals();
     jonesCog_ResetGlobals();
     jonesConfig_ResetGlobals();
