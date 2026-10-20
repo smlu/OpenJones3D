@@ -718,7 +718,7 @@ int J3DAPI sithGamesave_SaveFile(const char* pFilename)
     // Init NDS file header
     NdsHeader header = { 0 };
     header.version = SITHSAVEGAME_FILEVERSION;
-    STD_STRCPY(header.aDate, "Oct 28 1999"); // TODO: use current date
+    STD_STRCPY(header.aDate, "Oct 29 1999"); // TODO: use current date
     STD_STRCPY(header.aLevelFilename, sithWorld_g_pCurrentWorld->aName);
     STD_STRCPY(header.aPreviousLevelFilename, sithGamesave_aPrevLevelFilename);
 
