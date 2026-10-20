@@ -102,6 +102,7 @@ void sithAI_Shutdown(void)
     if ( !bStartup )
     {
         SITHLOG_ERROR("Warning: System already shutdown!\n");
+        return; // Fixed: Return after the warning, the original does not free the instinct registry a second time (original Indy3D.exe v1.0 0x00429EF0)
     }
 
     SITH_ASSERTREL(aRegisteredInstincts && pRegisteredInstinctHashtbl);
