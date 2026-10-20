@@ -36,6 +36,7 @@
 
 #include <std/General/stdConffile.h>
 #include <std/General/stdHashtbl.h>
+#include <std/General/stdMath.h>
 #include <std/General/stdMemory.h>
 #include <std/General/stdUtil.h>
 #include <std/Win95/stdComm.h>
@@ -737,19 +738,7 @@ void J3DAPI sithCog_GetSymbolRefInitializer(const SithWorld* pWorld, const SithC
 
         case SITHCOG_SYM_REF_COG:
         {
-            int numCogs;
-            if ( objectIdx < -1 )
-            {
-                numCogs = -1;
-            }
-            else if ( (size_t)objectIdx > pWorld->numCogs )
-            {
-                numCogs = pWorld->numCogs;
-            }
-            else
-            {
-                numCogs = pSymbol->value.val.intValue;
-            }
+            int numCogs = STDMATH_CLAMP(objectIdx, -1, (int)pWorld->numCogs);
 
             objectIdx = numCogs;
             if ( numCogs >= 0 )
