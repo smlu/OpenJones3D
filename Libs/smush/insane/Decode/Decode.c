@@ -2,7 +2,6 @@
 #include <smush/insane/Decode/Decode.h>
 #include <j3dcore/j3d.h>
 #include <j3dcore/j3dhook.h>
-#include <smush/RTI/addresses.h>
 #include <smush/RTI/symbols.h>
 
 #include <stddef.h>
@@ -156,14 +155,16 @@ int J3DAPI decode_Convert(uint8_t* pSrc, LecBitmapHeader* pSrcBitmap, int n, voi
     int chunk;
     int buf;
 
-    if (pSrcBitmap->bpp == pDstBitmap->bpp && pSrcBitmap->colorMode == pDstBitmap->colorMode
+    if ( pSrcBitmap->bpp == pDstBitmap->bpp && pSrcBitmap->colorMode == pDstBitmap->colorMode
         && ((pSrcBitmap->colorMode != 1 && pSrcBitmap->colorMode != 2)
             || (pSrcBitmap->format.redPosShift == pDstBitmap->format.redPosShift
                 && pSrcBitmap->format.greenPosShift == pDstBitmap->format.greenPosShift
-                && pSrcBitmap->format.bluePosShift == pDstBitmap->format.bluePosShift))) {
+                && pSrcBitmap->format.bluePosShift == pDstBitmap->format.bluePosShift)) )
+    {
         framestream_Copy(pDst, pSrc, n * pDstBitmap->pixelSize);
         return 0;
     }
+
     if ( pTable )
     {
         if ( pSrcBitmap->colorMode == 0 && pSrcBitmap->pixelSize == 1 )
@@ -263,12 +264,12 @@ int J3DAPI decode_ToRGBA(uint8_t* pSrc, LecBitmapHeader* pBitmap, int n, void* p
         rMask = (uint8_t)decode_masks[pBitmap->format.redBPP];
         gMask = (uint8_t)decode_masks[pBitmap->format.greenBPP];
         bMask = (uint8_t)decode_masks[pBitmap->format.blueBPP];
-        rShift = (char)pBitmap->format.redPosShift;
-        gShift = (char)pBitmap->format.greenPosShift;
-        bShift = (char)pBitmap->format.bluePosShift;
-        rShiftR = (char)pBitmap->format.redPosShiftRight;
-        gShiftR = (char)pBitmap->format.greenPosShiftRight;
-        bShiftR = (char)pBitmap->format.bluePosShiftRight;
+        rShift = (int8_t)pBitmap->format.redPosShift;
+        gShift = (int8_t)pBitmap->format.greenPosShift;
+        bShift = (int8_t)pBitmap->format.bluePosShift;
+        rShiftR = (int8_t)pBitmap->format.redPosShiftRight;
+        gShiftR = (int8_t)pBitmap->format.greenPosShiftRight;
+        bShiftR = (int8_t)pBitmap->format.bluePosShiftRight;
         if ( pBitmap->pixelSize == 2 )
         {
             for ( pIn = pSrc; n != 0; n-- )
@@ -330,14 +331,14 @@ int J3DAPI decode_ToRGBA(uint8_t* pSrc, LecBitmapHeader* pBitmap, int n, void* p
         gMask = (uint8_t)decode_masks[pBitmap->format.greenBPP];
         bMask = (uint8_t)decode_masks[pBitmap->format.blueBPP];
         aMask = (uint8_t)decode_masks[pBitmap->format.alphaBPP];
-        rShift = (char)pBitmap->format.redPosShift;
-        gShift = (char)pBitmap->format.greenPosShift;
-        bShift = (char)pBitmap->format.bluePosShift;
-        aShift = (char)pBitmap->format.alphaPosShift;
-        rShiftR = (char)pBitmap->format.redPosShiftRight;
-        gShiftR = (char)pBitmap->format.greenPosShiftRight;
-        bShiftR = (char)pBitmap->format.bluePosShiftRight;
-        aShiftR = (char)pBitmap->format.alphaPosShiftRight;
+        rShift = (int8_t)pBitmap->format.redPosShift;
+        gShift = (int8_t)pBitmap->format.greenPosShift;
+        bShift = (int8_t)pBitmap->format.bluePosShift;
+        aShift = (int8_t)pBitmap->format.alphaPosShift;
+        rShiftR = (int8_t)pBitmap->format.redPosShiftRight;
+        gShiftR = (int8_t)pBitmap->format.greenPosShiftRight;
+        bShiftR = (int8_t)pBitmap->format.bluePosShiftRight;
+        aShiftR = (int8_t)pBitmap->format.alphaPosShiftRight;
         if ( pBitmap->pixelSize == 2 )
         {
             for ( pIn = pSrc; n != 0; n-- )
@@ -420,12 +421,12 @@ int J3DAPI decode_Begin(uint8_t* pDst, LecBitmapHeader* pBitmap, int n, void* pP
         rMask = (uint8_t)decode_masks[pBitmap->format.redBPP];
         gMask = (uint8_t)decode_masks[pBitmap->format.greenBPP];
         bMask = (uint8_t)decode_masks[pBitmap->format.blueBPP];
-        rShift = (char)pBitmap->format.redPosShift;
-        gShift = (char)pBitmap->format.greenPosShift;
-        bShift = (char)pBitmap->format.bluePosShift;
-        rShiftR = (char)pBitmap->format.redPosShiftRight;
-        gShiftR = (char)pBitmap->format.greenPosShiftRight;
-        bShiftR = (char)pBitmap->format.bluePosShiftRight;
+        rShift = (int8_t)pBitmap->format.redPosShift;
+        gShift = (int8_t)pBitmap->format.greenPosShift;
+        bShift = (int8_t)pBitmap->format.bluePosShift;
+        rShiftR = (int8_t)pBitmap->format.redPosShiftRight;
+        gShiftR = (int8_t)pBitmap->format.greenPosShiftRight;
+        bShiftR = (int8_t)pBitmap->format.bluePosShiftRight;
         if ( pBitmap->pixelSize == 1 )
         {
             pOut = pDst;
@@ -494,14 +495,14 @@ int J3DAPI decode_Begin(uint8_t* pDst, LecBitmapHeader* pBitmap, int n, void* pP
         gMask = (uint8_t)decode_masks[pBitmap->format.greenBPP];
         bMask = (uint8_t)decode_masks[pBitmap->format.blueBPP];
         aMask = (uint8_t)decode_masks[pBitmap->format.alphaBPP];
-        rShift = (char)pBitmap->format.redPosShift;
-        gShift = (char)pBitmap->format.greenPosShift;
-        bShift = (char)pBitmap->format.bluePosShift;
-        aShift = (char)pBitmap->format.alphaPosShift;
-        rShiftR = (char)pBitmap->format.redPosShiftRight;
-        gShiftR = (char)pBitmap->format.greenPosShiftRight;
-        bShiftR = (char)pBitmap->format.bluePosShiftRight;
-        aShiftR = (char)pBitmap->format.alphaPosShiftRight;
+        rShift = (int8_t)pBitmap->format.redPosShift;
+        gShift = (int8_t)pBitmap->format.greenPosShift;
+        bShift = (int8_t)pBitmap->format.bluePosShift;
+        aShift = (int8_t)pBitmap->format.alphaPosShift;
+        rShiftR = (int8_t)pBitmap->format.redPosShiftRight;
+        gShiftR = (int8_t)pBitmap->format.greenPosShiftRight;
+        bShiftR = (int8_t)pBitmap->format.bluePosShiftRight;
+        aShiftR = (int8_t)pBitmap->format.alphaPosShiftRight;
         if ( pBitmap->pixelSize == 2 )
         {
             pOut = pDst;

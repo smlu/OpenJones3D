@@ -62,8 +62,8 @@ static_assert(sizeof(Bl16Motion) == 4, "sizeof(Bl16Motion) == 4");
 /* The glyph tables (per from-edge/to-edge pair, the pixel offsets of the two halves of a 4x4 or 8x8 glyph); read by Bloc16Asm. */
 typedef struct sBl16Small
 {
-    int16_t off1[16];               /* 0x00 */
-    int16_t off2[16];               /* 0x20 */
+    uint16_t off1[16];               /* 0x00 */
+    uint16_t off2[16];               /* 0x20 */
     uint8_t idx1[16];               /* 0x40 */
     uint8_t idx2[16];               /* 0x50 */
     uint8_t n1;                     /* 0x60 */
@@ -74,8 +74,8 @@ static_assert(sizeof(Bl16Small) == 0x80, "sizeof(Bl16Small) == 0x80");
 
 typedef struct sBl16Big
 {
-    int16_t off1[64];               /* 0x000 */
-    int16_t off2[64];               /* 0x080 */
+    uint16_t off1[64];               /* 0x000 */
+    uint16_t off2[64];               /* 0x080 */
     uint8_t idx1[64];               /* 0x100 */
     uint8_t idx2[64];               /* 0x140 */
     uint8_t n1;                     /* 0x180 */

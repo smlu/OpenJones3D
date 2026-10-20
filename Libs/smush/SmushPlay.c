@@ -187,11 +187,11 @@ void SmushPlay_SysShutdown(void)
     ((int (*)(LecBatch*))smushplay_pShare->pfn14)(smushplay_aServices);
 }
 
-void J3DAPI SmushPlay_SetGlobalVolume(int volume)
+void J3DAPI SmushPlay_SetGlobalVolume(size_t volume)
 {
-    if ( volume >= 0 && volume < 128 )
+    if ( (int)volume >= 0 && (int)volume < 128 ) // Original compares signed
     {
-        smushplay_volume = volume;
+        smushplay_volume = (int)volume;
     }
 }
 

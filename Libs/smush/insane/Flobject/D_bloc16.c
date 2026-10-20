@@ -2,7 +2,6 @@
 #include <smush/insane/Flobject/D_bloc16.h>
 #include <j3dcore/j3d.h>
 #include <j3dcore/j3dhook.h>
-#include <smush/RTI/addresses.h>
 #include <smush/RTI/symbols.h>
 
 #include <stdarg.h>
@@ -349,25 +348,25 @@ void J3DAPI dbloc16_MakeTables(int width)
 
     dbloc16_lastWidth = width;
     for ( int i = 0; i < 255; i++ ) {
-        dbloc16_offsets[i] = dbloc16_motion[i].y * width + dbloc16_motion[i].x;
+        dbloc16_offsets[i] = (int16_t)(dbloc16_motion[i].y * width + dbloc16_motion[i].x);
     }
 
     for ( int i = 0; i < 256; i++ )
     {
         for ( int j = 0; j < dbloc16_small[i].n1; j++ ) {
-            dbloc16_small[i].off1[j] = (dbloc16_small[i].idx1[j] >> 2) * width + (dbloc16_small[i].idx1[j] & 3);
+            dbloc16_small[i].off1[j] = (uint16_t)((dbloc16_small[i].idx1[j] >> 2) * width + (dbloc16_small[i].idx1[j] & 3));
         }
 
         for ( int j = 0; j < dbloc16_small[i].n2; j++ ) {
-            dbloc16_small[i].off2[j] = (dbloc16_small[i].idx2[j] >> 2) * width + (dbloc16_small[i].idx2[j] & 3);
+            dbloc16_small[i].off2[j] = (uint16_t)((dbloc16_small[i].idx2[j] >> 2) * width + (dbloc16_small[i].idx2[j] & 3));
         }
 
         for ( int j = 0; j < dbloc16_big[i].n1; j++ ) {
-            dbloc16_big[i].off1[j] = (dbloc16_big[i].idx1[j] >> 3) * width + (dbloc16_big[i].idx1[j] & 7);
+            dbloc16_big[i].off1[j] = (uint16_t)((dbloc16_big[i].idx1[j] >> 3) * width + (dbloc16_big[i].idx1[j] & 7));
         }
 
         for ( int j = 0; j < dbloc16_big[i].n2; j++ ) {
-            dbloc16_big[i].off2[j] = (dbloc16_big[i].idx2[j] >> 3) * width + (dbloc16_big[i].idx2[j] & 7);
+            dbloc16_big[i].off2[j] = (uint16_t)((dbloc16_big[i].idx2[j] >> 3) * width + (dbloc16_big[i].idx2[j] & 7));
         }
     }
 }
@@ -454,16 +453,12 @@ void J3DAPI dbloc16_MakeGlyphs(int size)
             int x2 = pEdgeX[y];
             for ( i = 0; i < n; i++ )
             {
-                int px, py;
+                int px = x1;
+                int py = y1;
                 if ( n > 1 )
                 {
                     px = (x1 * i + ((n - 1) >> 1) + x2 * (n - 1 - i)) / (n - 1);
                     py = (y1 * i + ((n - 1) >> 1) + y2 * (n - 1 - i)) / (n - 1);
-                }
-                else
-                {
-                    px = x1;
-                    py = y1;
                 }
 
                 glyph[py * size + px] = 1;
@@ -500,12 +495,12 @@ void J3DAPI dbloc16_MakeGlyphs(int size)
                 {
                     if ( glyph[i] != 0 )
                     {
-                        dbloc16_big[entry].idx1[dbloc16_big[entry].n1] = i;
+                        dbloc16_big[entry].idx1[dbloc16_big[entry].n1] = (uint8_t)i;
                         dbloc16_big[entry].n1++;
                     }
                     else
                     {
-                        dbloc16_big[entry].idx2[dbloc16_big[entry].n2] = i;
+                        dbloc16_big[entry].idx2[dbloc16_big[entry].n2] = (uint8_t)i;
                         dbloc16_big[entry].n2++;
                     }
                 }
@@ -517,12 +512,12 @@ void J3DAPI dbloc16_MakeGlyphs(int size)
                 {
                     if ( glyph[i] != 0 )
                     {
-                        dbloc16_small[entry].idx1[dbloc16_small[entry].n1] = i;
+                        dbloc16_small[entry].idx1[dbloc16_small[entry].n1] = (uint8_t)i;
                         dbloc16_small[entry].n1++;
                     }
                     else
                     {
-                        dbloc16_small[entry].idx2[dbloc16_small[entry].n2] = i;
+                        dbloc16_small[entry].idx2[dbloc16_small[entry].n2] = (uint8_t)i;
                         dbloc16_small[entry].n2++;
                     }
                 }

@@ -2,7 +2,6 @@
 #include <smush/insane/Flobject/Bloc16Asm.h>
 #include <j3dcore/j3d.h>
 #include <j3dcore/j3dhook.h>
-#include <smush/RTI/addresses.h>
 #include <smush/RTI/symbols.h>
 
 #include <string.h>
@@ -94,20 +93,20 @@ static void dbloc16_FillBlock(uint8_t* pBlock, uint16_t color, int lineSize, int
 }
 
 // Draws a two-colour glyph: the low word of colors at the n1 pixel offsets off1, the high word at the n2 offsets off2.
-// Offsets are unsigned pixel offsets from the block (movzx). Each loop runs at least once (dec/jg), so a count of 0 still
+// Offsets are unsigned pixel offsets from the block. Each loop runs at least once (dec/jg), so a count of 0 still
 // draws the first offset.
-static void dbloc16_DrawGlyph(uint8_t* pBlock, const int16_t* pOff1, uint8_t n1, const int16_t* pOff2, uint8_t n2, uint32_t colors)
+static void dbloc16_DrawGlyph(uint8_t* pBlock, const uint16_t* pOff1, uint8_t n1, const uint16_t* pOff2, uint8_t n2, uint32_t colors)
 {
     int count = n1;
     do
     {
-        dbloc16_Store16(pBlock + (uint16_t)*pOff1++ * 2, (uint16_t)colors);
+        dbloc16_Store16(pBlock + *pOff1++ * 2, (uint16_t)colors);
     } while ( --count > 0 );
 
     count = n2;
     do
     {
-        dbloc16_Store16(pBlock + (uint16_t)*pOff2++ * 2, (uint16_t)(colors >> 16));
+        dbloc16_Store16(pBlock + *pOff2++ * 2, (uint16_t)(colors >> 16));
     } while ( --count > 0 );
 }
 

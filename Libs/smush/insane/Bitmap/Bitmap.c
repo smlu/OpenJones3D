@@ -2,7 +2,6 @@
 #include <smush/insane/Bitmap/Bitmap.h>
 #include <j3dcore/j3d.h>
 #include <j3dcore/j3dhook.h>
-#include <smush/RTI/addresses.h>
 #include <smush/RTI/symbols.h>
 #include <smush/insane/Memory/Memory.h>
 #include <smush/insane/Lec/LecShare.h>
