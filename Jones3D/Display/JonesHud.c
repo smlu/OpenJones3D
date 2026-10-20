@@ -1201,7 +1201,7 @@ void JonesHud_Process(void) // maybe this function should be called something el
                     {
                         healthState = (300.0f * sithPlayer_g_pLocalPlayerThing->thingInfo.actorInfo.health / maxHealth);
                     }
-                    JonesHud_RenderHealthIndicatorHit(roundf(healthState));
+                    JonesHud_RenderHealthIndicatorHit((float)(int)healthState); // Fixed: Truncate the health state like the original, was rounding to nearest (original Indy3D.exe v1.0 0x00414500)
                 }
 
                 // DRAW endurance indicator
