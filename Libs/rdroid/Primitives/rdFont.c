@@ -434,12 +434,14 @@ void J3DAPI rdFont_DrawTextLineEx(const char* pText, float x, float y, float z, 
                 textWidth += (double)pFont->aGlyphs[curChar].baselineOriginX * swidth * fontScale; // Altered: Added multiply by fontScale
             }
 
-            if ( bAlignCenter )
+            // Fixed: The offset is truncated to whole pixels and right alignment wins when both center and right are set (original Indy3D.exe v1.0 0x004C4BF0)
+            double offsetX = textWidth;
+            if ( bAlignCenter && !bAlignRight )
             {
-                textWidth /= 2.0f;
+                offsetX /= 2.0f;
             }
 
-            curPosX = curPosX - textWidth;
+            curPosX = curPosX - (double)(int)offsetX;
         }
 
         for ( size_t i = 0; i < textLen; ++i )
@@ -511,11 +513,14 @@ void J3DAPI rdFont_DrawTextLineClippedEx(const char* pText, float x, float y, fl
                 }
                 textWidth += (double)pFont->aGlyphs[curChar].baselineOriginX * swidth * fontScale; // Altered: Added multiply by fontScale
             }
-            if ( bAlignCenter )
+            // Fixed: The offset is truncated to whole pixels and right alignment wins when both center and right are set (original Indy3D.exe v1.0 0x004C5090)
+            double offsetX = textWidth;
+            if ( bAlignCenter && !bAlignRight )
             {
-                textWidth /= 2.0f;
+                offsetX /= 2.0f;
             }
-            curPosX = curPosX - textWidth;
+
+            curPosX = curPosX - (double)(int)offsetX;
         }
 
         for ( size_t i = 0; i < textLen; ++i )
