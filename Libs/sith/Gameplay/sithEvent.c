@@ -160,9 +160,10 @@ void sithEvent_Process(void)
 
         size_t taskNum = sithEvent_g_pFirstQueuedEvent->taskNum;
         SITH_ASSERTREL(aTasks[taskNum].pfProcess); // TODO: Would make much more sense to make this check when event is created
+
+        sithEvent_g_pFirstQueuedEvent = pEvent->pNextEvent; // Fixed: Advance the queue before calling the task, as the original, was advancing it after the call so a task which added or removed events could corrupt the queue (original Indy3D.exe v1.0 0x004527D0)
         aTasks[taskNum].pfProcess(0, &pEvent->params);
 
-        sithEvent_g_pFirstQueuedEvent = pEvent->pNextEvent;
         sithEvent_FreeEvent(pEvent);
     }
 }
