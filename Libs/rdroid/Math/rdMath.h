@@ -39,9 +39,9 @@ bool J3DAPI rdMath_PointsCollinear(const rdVector3* p1, const rdVector3* p2, con
 
 void J3DAPI rdMath_ClipVector3(rdVector3* out, const rdVector3* vect, float minVal)
 {
-    out->x = (fabsf(vect->x) >= minVal) ? vect->x : 0.0f;
-    out->y = (fabsf(vect->y) >= minVal) ? vect->y : 0.0f;
-    out->z = (fabsf(vect->z) >= minVal) ? vect->z : 0.0f;
+    out->x = (fabsf(vect->x) > minVal) ? vect->x : 0.0f;
+    out->y = (fabsf(vect->y) > minVal) ? vect->y : 0.0f;
+    out->z = (fabsf(vect->z) > minVal) ? vect->z : 0.0f;
 }
 
 void J3DAPI rdMath_ClipVector3Acc(rdVector3* vect, float minVal)
