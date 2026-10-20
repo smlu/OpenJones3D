@@ -4077,6 +4077,7 @@ int J3DAPI sithThing_ParseThingArg(const StdConffileArg* pArg, SithWorld* pWorld
         }
         case SITHTHING_ARG_COLLIDE:
         {
+            errno = 0; // Fixed: Reset errno, a stale ERANGE rejected valid values
             SithCollideType coltype = strtoul(pArg->argValue, NULL, 10); // Changed: use strtoul instead atoi
             if ( coltype > SITH_COLLIDE_FACE || (errno == ERANGE) )      // Added: Conversion range error check
             {
@@ -4111,6 +4112,7 @@ int J3DAPI sithThing_ParseThingArg(const StdConffileArg* pArg, SithWorld* pWorld
         }
         case SITHTHING_ARG_SIZE:
         {
+            errno = 0; // Fixed: Reset errno, a stale ERANGE rejected valid values
             float size = strtof(pArg->argValue, NULL); // Changed: use strtof instead atof
             if ( size < 0.0f || (errno == ERANGE) )    // Added: Conversion range error check
             {
@@ -4134,6 +4136,7 @@ int J3DAPI sithThing_ParseThingArg(const StdConffileArg* pArg, SithWorld* pWorld
         }
         case SITHTHING_ARG_TIMER:
         {
+            errno = 0; // Fixed: Reset errno, a stale ERANGE rejected valid values
             float secLifeLeft = strtof(pArg->argValue, NULL); // Changed: use strtof instead atof
             if ( secLifeLeft < 0.0f || (errno == ERANGE) )    // Added: Conversion range error check
             {
@@ -4287,6 +4290,7 @@ int J3DAPI sithThing_ParseThingArg(const StdConffileArg* pArg, SithWorld* pWorld
                 return SITHTHING_PARSEARG_PARSED;
             }
 
+            errno = 0; // Fixed: Reset errno, a stale ERANGE rejected valid values
             float movesize = strtof(pArg->argValue, NULL); // Changed: use strtof instead atof
             if ( movesize < 0.0f || (errno == ERANGE) )    // Added: Conversion range error check
             {
@@ -4314,6 +4318,7 @@ int J3DAPI sithThing_ParseThingArg(const StdConffileArg* pArg, SithWorld* pWorld
         }
         case SITHTHING_ARG_USERVAL:
         {
+            errno = 0; // Fixed: Reset errno, a stale ERANGE rejected valid values
             float userval = strtof(pArg->argValue, NULL); // Changed: use strtof instead atof
             if ( userval < 0.0f || (errno == ERANGE) )    // Added: Conversion range error check
             {
@@ -4325,6 +4330,7 @@ int J3DAPI sithThing_ParseThingArg(const StdConffileArg* pArg, SithWorld* pWorld
         }
         case SITHTHING_ARG_COLLHEIGHT:
         {
+            errno = 0; // Fixed: Reset errno, a stale ERANGE rejected valid values
             float height = strtof(pArg->argValue, NULL); // Changed: use strtof instead atof
             if ( height < 0.0f || (errno == ERANGE) )    // Added: Conversion range error check
             {
@@ -4337,6 +4343,7 @@ int J3DAPI sithThing_ParseThingArg(const StdConffileArg* pArg, SithWorld* pWorld
         }
         case SITHTHING_ARG_COLLWIDTH:
         {
+            errno = 0; // Fixed: Reset errno, a stale ERANGE rejected valid values
             float width = strtof(pArg->argValue, NULL); // Changed: use strtof instead atof
             if ( width < 0.0f || (errno == ERANGE) )    // Added: Conversion range error check
             {

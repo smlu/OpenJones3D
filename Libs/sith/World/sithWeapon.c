@@ -528,6 +528,7 @@ int J3DAPI sithWeapon_ParseArg(const StdConffileArg* pArg, SithThing* pThing, in
         }
         case SITHTHING_ARG_DAMAGE:
         {
+            errno = 0; // Fixed: Reset errno, a stale ERANGE rejected valid values
             float damage = strtof(pArg->argValue, NULL); // Changed: Use strtof instead atof
             if ( errno == ERANGE )
             { // Added
@@ -538,6 +539,7 @@ int J3DAPI sithWeapon_ParseArg(const StdConffileArg* pArg, SithThing* pThing, in
         }
         case SITHTHING_ARG_MINDAMAGE:
         {
+            errno = 0; // Fixed: Reset errno, a stale ERANGE rejected valid values
             float minDamage = strtof(pArg->argValue, NULL); // Changed: Use strtof instead atof
             if ( errno == ERANGE )
             { // Added
@@ -561,6 +563,7 @@ int J3DAPI sithWeapon_ParseArg(const StdConffileArg* pArg, SithThing* pThing, in
         }
         case SITHTHING_ARG_FORCE:
         {
+            errno = 0; // Fixed: Reset errno, a stale ERANGE rejected valid values
             float force = strtof(pArg->argValue, NULL); // Changed: Use strtof instead atof
             if ( errno == ERANGE )
             { // Added
@@ -571,6 +574,7 @@ int J3DAPI sithWeapon_ParseArg(const StdConffileArg* pArg, SithThing* pThing, in
         }
         case SITHTHING_ARG_RANGE:
         {
+            errno = 0; // Fixed: Reset errno, a stale ERANGE rejected valid values
             float range = strtof(pArg->argValue, NULL); // Changed: Use strtof instead atof
             if ( errno == ERANGE )
             { // Added
@@ -581,6 +585,7 @@ int J3DAPI sithWeapon_ParseArg(const StdConffileArg* pArg, SithThing* pThing, in
         }
         case SITHTHING_ARG_RATE:
         {
+            errno = 0; // Fixed: Reset errno, a stale ERANGE rejected valid values
             float rate = strtof(pArg->argValue, NULL); // Changed: Use strtof instead atof
             if ( errno == ERANGE )
             { // Added
