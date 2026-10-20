@@ -180,7 +180,7 @@ int J3DAPI sithMaterial_ReadMaterialsListText(SithWorld* pWorld, int bSkip)
             SITHLOG_ERROR("Syntax error - expected world materials XX on line %d.\n", stdConffile_GetLineNumber());
         }
 
-        return 0;
+        return 1; // Fixed: Return error, was returning 0 (success) (original Indy3D.exe v1.0 0x0045D650)
     }
 
     sithWorld_UpdateLoadProgress(5.0f); // Note, original this call was made between conffile ReadLine and line scan
