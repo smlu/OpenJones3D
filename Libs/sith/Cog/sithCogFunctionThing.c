@@ -1902,6 +1902,8 @@ void J3DAPI sithCogFunctionThing_GetInventoryCog(SithCog* pCog)
         sithCogExec_PushInt(pCog, pInventory->pCog->idx);
         return;
     }
+
+    sithCogExec_PushInt(pCog, -1); // Fixed: Push -1 when the inventory type has no cog (original Indy3D.exe v1.0 0x004705A0)
 }
 
 void J3DAPI sithCogFunctionThing_GetThingVelocity(SithCog* pCog)
