@@ -273,6 +273,7 @@
   - Fixed `stdMath_Tan` for angles from 180 to 270 degrees (quadrant 2): the base table value was looked up in reverse, so the tangent started near the table asymptote instead of 0. ()
   - Fixed two entries of the tangent table of `stdMath` (indexes 4072 and 4075) which were one ulp off the original values. ()
   - Fixed `stdControl_RegisterAxis` rounding the axis deadzone threshold instead of truncating it as the original does (DirectX 6 and DirectX 9). ()
+  - Fixed `SITH_RAND` scaling `rand()` by the double constant `1.0 / RAND_MAX` instead of the float constant of the original, which changed the last bits of the random values and returned exactly 1.0 for `rand() == RAND_MAX` where the original stays below 1.0 at double/extended precision. ()
 
 ### Graphics:
   - Fixed an issue where active textures used in the current render frame were being removed from the cache prematurely in low VRAM situations (f37ecb7)
