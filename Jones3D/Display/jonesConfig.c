@@ -2218,7 +2218,9 @@ int J3DAPI jonesConfig_LoadControlScheme(const char* pFilePath, JonesControlsSch
                 bindNum++;
                 JONESCONTROL_ACTION_UPDATENUMBINDINGS(pConfig->aActions[actionIdx], bKeyboard, bController);
 
-                if ( JONESCONTROL_ACTION_GETNUMBINDS(pConfig->aActions[actionIdx]) > JONESCONTROL_ACTION_MAXBINDS ) // TODO: is this a bug? Shouldn't it be GT or EQ?
+                // Fixed: Test the raw binding count, the clamped count (GETNUMBINDS) can never exceed the maximum, so the error path was unreachable (original Indy3D.exe v1.0 0x00402D70)
+                // TODO: [BUG] The binding at index bindNum is stored before this test, so the 9th binding is written one entry past the action row
+                if ( (uint8_t)(pConfig->aActions[actionIdx][0] & 0xFF) > JONESCONTROL_ACTION_MAXBINDS )
                 {
                     static_assert(STD_ARRAYLEN(pConfig->aActions[actionIdx]) == 9, "STD_ARRAYLEN(pConfig->aActions[actionIdx]) == 9");
                     // We've exceeded the number of key mappings
