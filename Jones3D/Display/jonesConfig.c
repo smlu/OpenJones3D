@@ -1251,8 +1251,8 @@ int jonesConfig_InitKeySetsPath(void)
 
     if ( pKeySets )
     {
-        size_t len = strlen(aInstallPath) + 1;
-        if ( len == 1 )
+        size_t len = strlen(aInstallPath); // Fixed: Length without the terminator, + 1 made the trailing backslash test read the null terminator and always add another backslash (original Indy3D.exe v1.0 0x00401660)
+        if ( len == 0 )
         {
             STD_FORMAT(jonesConfig_aKeySetsDirPath, "..\\\\%s", pKeySets);
             stdMemory_Free(pKeySets);
