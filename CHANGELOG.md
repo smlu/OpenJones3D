@@ -303,6 +303,7 @@
   - Fixed `sithCogParse_Load` rejecting a COG script whose `flags` value cannot be converted (reported as "Unexpected EOF"); the original ignores the conversion result and loads the script with zero flags. ()
   - Fixed `sithMessage_SendMessage` not writing a message to the file stream when the stream mask includes both the network and the file stream (not reached by the stock code). ()
   - Fixed `stdMath_ClipNearZero` returning NaN unchanged; it now returns 0 for NaN like the original. ()
+  - Fixed `STDMATH_CLAMP` passing NaN through; it now turns NaN into the lower bound like the original. ()
   - Fixed overlapping COG stack shifts on overflow by using `memmove` in `sithCogExec_PushStack`. [PR #55](https://github.com/smlu/OpenJones3D/pull/55)
   - Added an optional runtime guard in `sithCamera_Update` to skip cinematic camera updates while either focus thing is missing. [PR #54](https://github.com/smlu/OpenJones3D/pull/54)
   - Fixed an out-of-bounds write in `sithEvent_ResetFreeBufferTable` that could cause startup hangs in optimized Clang builds. [PR #45](https://github.com/smlu/OpenJones3D/pull/45)
