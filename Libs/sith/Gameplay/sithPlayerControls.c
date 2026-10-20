@@ -2281,17 +2281,7 @@ void J3DAPI sithPlayerControls_ProcessSwimMove(SithThing* pThing, float secDelta
         pPhysics->angularVelocity.yaw = 0.0f;
     }
 
-    //
-    // Transform thrust based on head rotation
-    //
-    if ( !rdVector_IsZero3(&pPhysics->thrust)
-        && !rdVector_IsZero3(&pActor->headPYR)
-        && (pPhysics->flags & SITH_PF_ONWATERSURFACE) == 0 )
-    {
-        rdMatrix34 mat;
-        rdMatrix_BuildRotate34(&mat, &pActor->headPYR);
-        rdMatrix_TransformVector34Acc(&pPhysics->thrust, &mat);
-    }
+    // Fixed: Removed the head rotation of the thrust. The original also requires a flying state which is never set in this function, so the thrust is never rotated (original Indy3D.exe v1.0 0x0042FCC0)
 }
 
 void J3DAPI sithPlayerControls_ProcessHangMove(SithThing* pThing, float secDeltaTime)
