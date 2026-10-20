@@ -1251,8 +1251,8 @@ int jonesConfig_InitKeySetsPath(void)
 
     if ( pKeySets )
     {
-        size_t len = strlen(aInstallPath) + 1;
-        if ( len == 1 )
+        size_t len = strlen(aInstallPath);
+        if ( len == 0 )
         {
             STD_FORMAT(jonesConfig_aKeySetsDirPath, "..\\\\%s", pKeySets);
             stdMemory_Free(pKeySets);
