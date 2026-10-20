@@ -447,6 +447,7 @@
   - Fixed `sithPlayerActions_HopBack` always playing the first sound of the jump mode instead of a random one. ()
   - Fixed `sithFX_CreateChalkMark` scaling the random chalk mark pick by the array length instead of length - 1, which could index one past the end of the chalk mark template names. ()
   - Fixed `sithPlayerControls_ProcessJewelFlyMove` not stopping the vertical velocity when no vertical key is pressed and the player cannot move down, while flying with the jewel. ()
+  - Fixed `sithPlayerControls_ProcessPushPullMove` giving the back (pull) key priority over the forward (push) key when both are held; the push now wins like in the original. ()
 
 ## v0.3.1
 ### General:
