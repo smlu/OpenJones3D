@@ -2415,7 +2415,7 @@ void J3DAPI sithThing_PlayCogDamageSound(SithThing* pThing, SithDamageType hitTy
 
     if ( hSnd )
     {
-        sithSoundMixer_PlaySoundThing(hSnd, pThing, 1.0f, 0.15f, 5.8f, (SoundPlayFlag)0);
+        sithSoundMixer_PlaySoundThing(hSnd, pThing, 1.0f, J3D_QOL_VALUE(0.15f, 0.5f), J3D_QOL_VALUE(5.8f, 2.5f), (SoundPlayFlag)0); // Altered: Sound radii are 0.15 and 5.8, the original uses 0.5 and 2.5 (original Indy3D.exe v1.0 0x00434860)
     }
 }
 
