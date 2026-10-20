@@ -153,9 +153,7 @@ static void stdMathTest_OriginalSinCos(float angle, float* pSinOut, float* pCosO
     }
 }
 
-// NOTE: Test-local reference for preserved tan behavior. The old decompiled helper had a
-// negative table offset in quadrant 2; this keeps the preserved reverse-base behavior
-// without depending on an unsafe read before stdMath_aTanTable.
+// NOTE: Test-local reference for the original tan behavior (Indy3D.exe v1.0 0x4C1780).
 static float stdMathTest_OriginalTan(float angle)
 {
     double v1;
@@ -223,8 +221,8 @@ static float stdMathTest_OriginalTan(float angle)
                 v13 = stdMath_aTanTable[v10 - 2 * STDMATH_TEST_TAN_TABLE_SIZE];
             else
                 v13 = -stdMath_aTanTable[STDMATH_TEST_TAN_TABLE_LAST_IDX - (v8 - (3 * STDMATH_TEST_TAN_TABLE_SIZE - 1))];
-            v9 = (v13 - stdMath_aTanTable[STDMATH_TEST_TAN_TABLE_LAST_IDX - (v8 - 2 * STDMATH_TEST_TAN_TABLE_SIZE)]) * v3
-                + stdMath_aTanTable[STDMATH_TEST_TAN_TABLE_LAST_IDX - (v8 - 2 * STDMATH_TEST_TAN_TABLE_SIZE)];
+            v9 = (v13 - stdMath_aTanTable[v8 - 2 * STDMATH_TEST_TAN_TABLE_SIZE]) * v3
+                + stdMath_aTanTable[v8 - 2 * STDMATH_TEST_TAN_TABLE_SIZE];
             break;
 
         case 3:
@@ -565,7 +563,7 @@ TEST(stdMath, TestSinCosNullOutputGuard)
 
 TEST(stdMath, TestTanTableSweep)
 {
-    // NOTE: Exact preservation sweep, including the original quadrant-2 table behavior.
+    // NOTE: Exact preservation sweep against the original tan lookup, all four quadrants.
     const float fractions[] = { 0.0f, 0.25f, 0.5f, 0.75f };
     const float wrappedAngles[] = {
         360.0f,
@@ -609,8 +607,6 @@ TEST(stdMath, TestTanHalfDegreeSweep)
 
 TEST(stdMath, TestTanStdLibApprox)
 {
-    // NOTE: Excludes the preserved quadrant-2 bug; TestTanQuadrant2Bug
-    // documents that behavior explicitly.
     const float angles[] = {
         -720.0f,
         -405.0f,
@@ -624,6 +620,9 @@ TEST(stdMath, TestTanStdLibApprox)
         60.0f,
         120.0f,
         135.0f,
+        200.0f,
+        225.0f,
+        250.0f,
         300.0f,
         315.0f,
         360.0f,
@@ -639,16 +638,20 @@ TEST(stdMath, TestTanStdLibApprox)
     }
 }
 
-TEST(stdMath, TestTanQuadrant2Bug)
+// Regression: quadrant 2 (180..270 degrees) used a reverse table lookup for the base value, so tan(180) returned
+// a value near the table asymptote instead of 0
+TEST(stdMath, TestTanQuadrant2)
 {
-    const float angle = 180.0f;
-    float currentTan = stdMath_Tan(angle);
-    float originalTan = stdMathTest_OriginalTan(angle);
+    TEST_ASSERT_FLOAT_WITHIN(0.001f, 0.0f, stdMath_Tan(180.0f));
+    TEST_ASSERT_FLOAT_WITHIN(0.001f, 1.0f, stdMath_Tan(225.0f));
+    TEST_ASSERT_FLOAT_WITHIN(0.001f, tanf(STDMATH_RADIANSF(200.0f)), stdMath_Tan(200.0f));
+    TEST_ASSERT_TRUE(stdMath_Tan(269.9f) > 500.0f);
 
-    // NOTE: Original reverse lookup makes tan(180) return near the table asymptote
-    // instead of zero. Update this when the TODO: [BUG] in stdMath_Tan is fixed.
-    stdMathTest_AssertFloatBitsEqual(originalTan, currentTan);
-    TEST_ASSERT_TRUE(fabsf(currentTan - tanf(STDMATH_RADIANSF(angle))) > 1000.0f);
+    const float angles[] = { 180.0f, 180.5f, 200.0f, 225.0f, 250.0f, 269.9f, -135.0f, -180.0f };
+    for ( size_t i = 0; i < STD_ARRAYLEN(angles); ++i )
+    {
+        stdMathTest_AssertTanMatchesOriginal(angles[i]);
+    }
 }
 
 TEST(stdMath, TestTanNonFinite)
@@ -801,7 +804,7 @@ TEST_GROUP_RUNNER(stdMath)
     RUN_TEST_CASE(stdMath, TestTanTableSweep);
     RUN_TEST_CASE(stdMath, TestTanHalfDegreeSweep);
     RUN_TEST_CASE(stdMath, TestTanStdLibApprox);
-    RUN_TEST_CASE(stdMath, TestTanQuadrant2Bug);
+    RUN_TEST_CASE(stdMath, TestTanQuadrant2);
     RUN_TEST_CASE(stdMath, TestTanNonFinite);
     RUN_TEST_CASE(stdMath, TestArcSinClamp);
     RUN_TEST_CASE(stdMath, TestArcSinStdLibApprox);

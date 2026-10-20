@@ -382,9 +382,7 @@ float J3DAPI stdMath_Tan(float angle)
 
         case 2:
         {
-            // TODO: [BUG] This preserved original reverse lookup makes tan(180..270) start near the
-            // asymptote instead of 0. Use TAN_TABLE_GET(index - 2 * TAN_TABLE_SIZE) to fix it.
-            baseLookup = TAN_TABLE_GET_REVERSE((index - 2 * TAN_TABLE_SIZE));
+            baseLookup = TAN_TABLE_GET(index - 2 * TAN_TABLE_SIZE); // Fixed: Was a reverse lookup, which made tan(180..270) start near the asymptote instead of 0 (original Indy3D.exe v1.0 0x004C1780)
             if ( nextIndex < 3 * TAN_TABLE_SIZE )
             {
                 tanValue = TAN_TABLE_GET(nextIndex - 2 * TAN_TABLE_SIZE);
