@@ -774,23 +774,33 @@ void J3DAPI sithVehicleControls_ProcessMineCarMove(SithThing* pThing, float secD
             {
                 sithVehicleControls_curMineCarState.secElapsedBrakingTime = 0.0f;
 
-                if ( pPhysics->thrust.y < (double)forwardThrustThreshold && pPhysics->thrust.y >(double)backwardThrustThreshold )
+                float thrustY = pPhysics->thrust.y;
+                if ( thrustY < (double)forwardThrustThreshold && thrustY >(double)backwardThrustThreshold )
                 {
                     sithVehicleControls_curMineCarState.moveState = SITHMINECARCONTROLS_MOVE_ACCELERATING;
                 }
 
-                if ( pPhysics->thrust.y == 0.0f )
+                if ( thrustY == 0.0f )
                 {
-                    pPhysics->thrust.y = thrustDelta;
+                    pPhysics->thrust.y = thrustDelta; // Note: The original keeps the old thrust (zero) in the local copy used for the check below
                 }
                 else
                 {
-                    pPhysics->thrust.y += thrustDelta;
-                    pPhysics->thrust.y = STDMATH_CLAMP(pPhysics->thrust.y, maxBackwardThrust, maxForwardThrust);
+                    thrustY += thrustDelta;
+                    if ( thrustY > maxForwardThrust )
+                    {
+                        thrustY = maxForwardThrust;
+                    }
+                    else if ( thrustY < maxBackwardThrust )
+                    {
+                        thrustY = maxBackwardThrust;
+                    }
+
+                    pPhysics->thrust.y = thrustY;
                 }
 
                 if ( sithVehicleControls_curMineCarState.moveState == SITHMINECARCONTROLS_MOVE_ACCELERATING
-                    && (pPhysics->thrust.y >= (double)forwardThrustThreshold || pPhysics->thrust.y <= (double)backwardThrustThreshold) )
+                    && (thrustY >= (double)forwardThrustThreshold || thrustY <= (double)backwardThrustThreshold) )
                 {
                     sithVehicleControls_curMineCarState.moveState = SITHMINECARCONTROLS_MOVE_CRUISING;
                 }

@@ -502,6 +502,7 @@
   - Fixed `sithPhysics_UpdateExhaustFx` (mine cart and jeep exhaust smoke) placing the smoke puffs without the vehicle speed factor in their spawn offset, scaling the puff life scatter and the puff size and alpha in a different operation order than the original, and drawing the random numbers of the puff alpha in the wrong order. ()
   - Fixed `sithPlayerControls_ProcessPlayerDebugControls` stopping the processing of the player controls while the debug key is held and no player position key is pressed; the original continues with the normal controls. ()
   - Fixed `sithPlayerControls_CanStrafeMove` transforming the vertex of a thing face with the translation of the thing orientation matrix; the original transforms it as a vector and adds the thing position. ()
+  - Fixed `sithVehicleControls_ProcessMineCarMove` ending the accelerating state of the mine cart using the new thrust after the first acceleration step from standstill, where the original tests the old (zero) thrust. ()
 
 ## v0.3.1
 ### General:
