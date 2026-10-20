@@ -6417,7 +6417,7 @@ void J3DAPI jonesConfig_EditControlScheme_AddAssignment(HWND hDlg, HWND hListCtr
         {
             item.mask   = LVIF_PARAM;
             item.lParam = MAKELONG(data.actionId, data.controlId);
-            ListView_GetItem(hListCtrl, &item);
+            ListView_SetItem(hListCtrl, &item);
         }
         else
         {
