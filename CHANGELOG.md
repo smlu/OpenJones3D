@@ -456,6 +456,7 @@
   - Fixed `JonesHud_GetKey` resetting the menu move duration on every key read, which disabled the speed up of the inventory menu when a direction key is held. ()
   - Fixed the key assignment dialog (`jonesConfig_AssignControlKey_ReadKey`) rejecting the number keys for the fists, whip, Mauser, PPSh-41, pistol, Simonov, Tokarev and TOZ-34 actions; they are accepted for all weapon actions from fists to grenade as in the original. ()
   - Fixed the key assignment dialog (`jonesConfig_AssignControlKey_ReadKey`) showing the "number keys only for weapons" message and clearing the key name after an accepted number key. ()
+  - Fixed editing the assignment of an action that has no bindings in the controls dialog (`jonesConfig_EditControlScheme_EditAssignment`), which was silently ignored after the key was chosen. ()
 
 ## v0.3.1
 ### General:
