@@ -619,10 +619,11 @@ SithCollisionType J3DAPI sithIntersect_CheckSphereFaceIntersectionEx(const rdVec
         return sithIntersect_CheckFaceVerticesIntersection(&hitPos, radius, pFace, aVertices, NULL);
     }
 
-    SithCollisionType hitType = sithIntersect_CheckFaceVerticesIntersection(&hitPos, radius, pFace, aVertices, &hitPos);
+    rdVector3 vertexHitPos;
+    SithCollisionType hitType = sithIntersect_CheckFaceVerticesIntersection(&hitPos, radius, pFace, aVertices, &vertexHitPos);
     if ( hitType == SITHCOLLISION_FACEEDGE || hitType == SITHCOLLISION_FACEVERTEX )
     {
-        rdVector_Sub3(hitNorm, startPos, &hitPos);
+        rdVector_Sub3(hitNorm, startPos, &vertexHitPos);
         rdVector_Normalize3Acc(hitNorm);
     }
     else
