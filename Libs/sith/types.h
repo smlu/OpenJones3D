@@ -2331,10 +2331,10 @@ typedef struct sSithPathMoveInfo
     rdVector3 goalPYR;
     rdVector3 rotateToPYR;
     float rotDelta;
-    size_t numBlockedMoves; // serialized as uint16_t
+    size_t numBlockedMoves; // serialized as int16_t
     int currentFrame; // can be -1, serialized as int16_t
-    size_t nextFrame; // serialized as uint16_t
-    size_t goalFrame; // serialized as uint16_t
+    size_t nextFrame; // serialized as int16_t
+    size_t goalFrame; // serialized as int16_t
 } SithPathMoveInfo;
 static_assert(sizeof(SithPathMoveInfo) == 144, "sizeof(SithPathMoveInfo) == 144");
 

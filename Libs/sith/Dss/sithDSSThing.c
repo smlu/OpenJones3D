@@ -1623,7 +1623,7 @@ int J3DAPI sithDSSThing_ProcessThingFullDescription(const SithMessage* pMsg)
     {
         SithPathMoveInfo* pPath = &pThing->moveInfo.pathMovement;
 
-        pPath->mode = SITHDSS_POPUINT16();
+        pPath->mode = SITHDSS_POPINT16(); // Fixed: Read sign extended as the original does, was zero extended (original Indy3D.exe v1.0 0x0047CDD0)
 
         SITHDSS_POPVEC3(&pPath->vecDeltaPos);
         pPath->moveTimeRemaining = SITHDSS_POPFLOAT();
@@ -1634,10 +1634,11 @@ int J3DAPI sithDSSThing_ProcessThingFullDescription(const SithMessage* pMsg)
         SITHDSS_POPVEC3(&pPath->goalPYR);
         pPath->rotDelta = SITHDSS_POPFLOAT();
 
-        pPath->numBlockedMoves = SITHDSS_POPUINT16();
+        // Fixed: Read sign extended as the original does, were zero extended (original Indy3D.exe v1.0 0x0047CDD0)
+        pPath->numBlockedMoves = SITHDSS_POPINT16();
         pPath->currentFrame    = SITHDSS_POPINT16();
-        pPath->nextFrame       = SITHDSS_POPUINT16();
-        pPath->goalFrame       = SITHDSS_POPUINT16();
+        pPath->nextFrame       = SITHDSS_POPINT16();
+        pPath->goalFrame       = SITHDSS_POPINT16();
 
         SITHDSS_POPVEC3(&pPath->curOrient.rvec);
         SITHDSS_POPVEC3(&pPath->curOrient.lvec);
@@ -1645,7 +1646,7 @@ int J3DAPI sithDSSThing_ProcessThingFullDescription(const SithMessage* pMsg)
         SITHDSS_POPVEC3(&pPath->curOrient.dvec);
         SITHDSS_POPVEC3(&pPath->rotateToPYR);
 
-        pPath->numFrames  = SITHDSS_POPUINT16();
+        pPath->numFrames  = SITHDSS_POPUINT16(); // Note: The original reads numFrames sign extended. It is kept zero extended as the frame count validation below would wrap with a negative count.
         if ( pPath->numFrames > 0 )
         {
             // Fixed: Reject corrupt path frame counts before reading past the DSS payload.

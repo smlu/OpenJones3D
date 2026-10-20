@@ -256,6 +256,7 @@
   - Removed registration of the additional COG functions `DebugPrint`, `DebugFlex`, `DebugInt`, `DebugVector`, `DebugLocalSymbols`, `DebugWaitForKey`, `EnablePrint`, and `IsPrintEnabled`, introduced in v0.3, to preserve retail savegame compatibility. (3f2fdc7)
     This preserves the script-local symbol counts and ordering used by positional COG state restoration.
   - Fixed `sithSector_ReadSectorsListText` and `sithSector_ReadSectorsListBinary` to clear the `NOGRAVITY` sector flag from level data as the original does; sectors marked in level files no longer become gravity free. ()
+  - Fixed `sithDSSThing_ProcessThingFullDescription` reading the path movement `mode`, `numBlockedMoves`, `nextFrame` and `goalFrame` zero extended instead of sign extended; a stored `-1` is now restored as `-1` as in the original instead of `65535`. ()
 
 ### Graphics:
   - Fixed an issue where active textures used in the current render frame were being removed from the cache prematurely in low VRAM situations (f37ecb7)
