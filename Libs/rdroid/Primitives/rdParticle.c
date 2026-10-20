@@ -399,8 +399,8 @@ int J3DAPI rdParticle_Draw(const rdThing* pParticle, const rdMatrix34* pOrient)
         }
 
         rdCacheProcEntry* pPoly = NULL;
-        bAlpha = bAlpha && rdParticle_aFaceVerts[0].y < 1.5f;
-        if ( bAlpha )
+        bool bAlphaPoly = bAlpha && rdParticle_aFaceVerts[0].y < 1.5f; // Fixed: Per particle local, assigning the shared flag made all following particles opaque after the first far one (original Indy3D.exe v1.0 0x004D9C20)
+        if ( bAlphaPoly )
         {
             pPoly = rdCache_GetAlphaProcEntry();
         }
@@ -441,7 +441,7 @@ int J3DAPI rdParticle_Draw(const rdThing* pParticle, const rdMatrix34* pOrient)
             pPoly->flags &= ~RD_FF_FOG_ENABLED;
         }
 
-        if ( bAlpha )
+        if ( bAlphaPoly )
         {
             pPoly->flags |= RD_FF_ZWRITE_DISABLED;
             rdCache_AddAlphaProcFace(STD_ARRAYLEN(rdParticle_aFaceVerts));
