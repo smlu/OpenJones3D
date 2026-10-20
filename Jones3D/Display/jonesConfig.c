@@ -4966,6 +4966,7 @@ int J3DAPI jonesConfig_ShowControlOptions(HWND hWnd)
         if ( config.numSchemes <= config.selectedShemeIdx )
         {
             // Maybe add log
+            jonesConfig_FreeControlConfigEntry(&config); // Fixed: Free the copied control config, it leaked on this path
             return 2; // cancel
         }
 
