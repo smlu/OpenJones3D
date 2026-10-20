@@ -425,6 +425,7 @@
   - Fixed `sithThing_PurgeGarbageThings` checking the purge limit with a pre-increment, which checked one slot fewer per call than the original. ()
   - Fixed `sithExplosion_CreateSpriteThing` testing the explosion flags instead of the explosion info pointer before setting the sprite roll angle, so sprites of explosions without flags now get their roll angle reset. ()
   - Fixed `sithCogFunction_SetTimerEx` truncating the delay in milliseconds toward zero instead of flooring it. ()
+  - Fixed `sithAIClass_LoadEntry` truncating instinct integer arguments toward zero instead of flooring them. ()
 
 ## v0.3.1
 ### General:
