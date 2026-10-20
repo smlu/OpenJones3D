@@ -2181,7 +2181,7 @@ void J3DAPI sithPhysics_UpdateMineCarPhysics(SithThing* pThing, float secDeltaTi
             if ( pPhysics->thrust.y < 0.0f ) // Backward thrust
             {
                 // Backward thrust while moving forward - brake
-                thrustDelta = -pPhysics->thrust.y * scaledDeltaTime;
+                thrustDelta = pPhysics->thrust.y * scaledDeltaTime;
                 if ( fabsf(thrustDelta) > speed )
                 {
                     rdVector_Zero3(&pPhysics->velocity);

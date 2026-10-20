@@ -405,6 +405,7 @@
   - Applied official 1.2 update fix to `sithActor_DamageActor`: the player no longer plays a damage sound when damaged by itself with damage types `0x1000`, `0x2000` or `0x4000`. (46c577f)
   - Applied official 1.2 update fix to `sithWhip_CreatePlayerWhip`: the whip thing pointer is cleared when the whip template or the player hand mesh is missing, instead of keeping its previous value. (8ce2ddc)
   - Fixed `sithInventory_CreateBackpack`, `sithInventory_PickupBackpack` and `sithInventory_GetBackpackItemValue` to store and read the backpack item amount inline as the original does, instead of dereferencing the float bits as an item pointer (crash when a backpack is created or picked up). ()
+  - Fixed `sithPhysics_UpdateMineCarPhysics` braking sign: a minecart moving forward with backward thrust now decelerates instead of accelerating. ()
 
 ## v0.3.1
 ### General:
