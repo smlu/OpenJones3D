@@ -2184,7 +2184,6 @@ void J3DAPI sithPlayerControls_ProcessSwimMove(SithThing* pThing, float secDelta
             return;
         }
 
-        pPhysics->thrust.z = 0.0f;
     }
     else
     {
