@@ -629,7 +629,7 @@ void sithControl_UnbindJoystickAxes(void)
             for ( size_t bindIndex = 0; bindIndex < pBinding->numBindings && !bFound; ++bindIndex )
             {
                 int32_t bAxisControl = pBinding->aBindings[bindIndex].flags & SITHCONTROLBIND_AXISCONTROL;
-                if ( (!bAxisControl && STDCONTROL_ISJOYSTICKBUTTON(pBinding->aBindings[bindIndex].controlId))
+                if ( (!bAxisControl && STDCONTROL_ISJOYSTICKCID(pBinding->aBindings[bindIndex].controlId))
                     || (bAxisControl && STDCONTROL_ISJOYSTICKAXIS(pBinding->aBindings[bindIndex].controlId)) ) // Joystick axis
                 {
                     sithControl_UnbindFunctionIndex(funcId, bindIndex);
