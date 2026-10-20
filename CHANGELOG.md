@@ -449,6 +449,7 @@
   - Fixed `sithPlayerControls_ProcessJewelFlyMove` not stopping the vertical velocity when no vertical key is pressed and the player cannot move down, while flying with the jewel. ()
   - Fixed `sithPlayerControls_ProcessPushPullMove` giving the back (pull) key priority over the forward (push) key when both are held; the push now wins like in the original. ()
   - Fixed `sithPlayerControls_ProcessSwimMove` rotating the swim thrust by the head angles, which the original never does, so swimming direction followed the head instead of the body. ()
+  - Fixed `sithPlayerControls_ProcessClimbMove` ignoring the jump, climb and strafe keys while the action key (pull up) is held, even when no pull up was possible. ()
 
 ## v0.3.1
 ### General:
