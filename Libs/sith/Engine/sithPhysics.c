@@ -2704,17 +2704,21 @@ void J3DAPI sithPhysics_UpdateExhaustFx(SithThing* pThing, const SithVehicleExha
         rdVector3 smokeVel = { 0 };
 
         float scatterX = (float)((SITH_RAND() - 0.5f) * pExhaustInfo->scatterX) + pExhaustInfo->dirX;
-        rdVector_Scale3(&smokeVel, &pThing->orient.rvec, scatterX * speed);
+        scatterX = scatterX * speed;
+        rdVector_Scale3(&smokeVel, &pThing->orient.rvec, scatterX);
 
         float scatterZ = (float)(SITH_RAND() * (pExhaustInfo->scatterZ - pExhaustInfo->dirZ)) + pExhaustInfo->dirZ;
-        rdVector_MultAcc3(&smokeVel, &pThing->orient.uvec, scatterZ * speed);
+        scatterZ = scatterZ * speed;
+        rdVector_MultAcc3(&smokeVel, &pThing->orient.uvec, scatterZ);
 
         // Move exhaust position back along exhaust direction
         rdVector_MultAcc3(&exhaustPos, &exhaustDir, -pExhaustInfo->spacing);
 
         rdVector3 smokePos = exhaustPos;
-        rdVector_MultAcc3(&smokePos, &pThing->orient.rvec, scatterX * smokeTime);
-        rdVector_MultAcc3(&smokePos, &pThing->orient.uvec, scatterZ * smokeTime);
+        scatterX = scatterX * smokeTime; // Fixed: The offset along the right direction includes the speed factor (original Indy3D.exe v1.0 0x00483CC0)
+        rdVector_MultAcc3(&smokePos, &pThing->orient.rvec, scatterX);
+        scatterZ = scatterZ * smokeTime; // Fixed: The offset along the up direction includes the speed factor (original Indy3D.exe v1.0 0x00483CC0)
+        rdVector_MultAcc3(&smokePos, &pThing->orient.uvec, scatterZ);
 
         // Create exhaust sprite
         SithThing* pSmoke = sithThing_CreateThingAtPos(pSmokeTmpl, &smokePos, &pThing->orient, pThing->pInSector, NULL);
@@ -2724,25 +2728,33 @@ void J3DAPI sithPhysics_UpdateExhaustFx(SithThing* pThing, const SithVehicleExha
         }
 
         // Calculate lifetime
-        float life = pExhaustInfo->lifeFactor * speed + pExhaustInfo->life - smokeTime;
-        life += (SITH_RANDF() - 0.5f) * pExhaustInfo->lifeRandFactor * life;
-        pSmoke->msecLifeLeft = (uint32_t)(life * 1000.0f);
+        float life = pExhaustInfo->lifeFactor * speed + pExhaustInfo->life;
+        life = life - smokeTime;
+
+        float lifeScatter = pExhaustInfo->lifeRandFactor * life; // Fixed: Scale the random factor by the life first, then by the random value (original Indy3D.exe v1.0 0x00483CC0)
+        lifeScatter = (SITH_RANDF() - 0.5f) * lifeScatter;
+        life = life + lifeScatter;
+        pSmoke->msecLifeLeft = (int)(life * 1000.0f);
 
         // Calculate sprite sizes
-        float animProgress = smokeTime / maxLifeTime;
+        float sizeRate  = (pExhaustInfo->sizeEnd - pExhaustInfo->sizeStart) / maxLifeTime;
+        float alphaRate = (pExhaustInfo->alphaEnd - pExhaustInfo->alphaStart) / maxLifeTime;
 
-        float startMinSize = pExhaustInfo->sizeStart + (pExhaustInfo->sizeEnd - pExhaustInfo->sizeStart) * animProgress;
-        float startAlpha   = pExhaustInfo->alphaStart + (pExhaustInfo->alphaEnd - pExhaustInfo->alphaStart) * animProgress;
+        float startSizeX = sizeRate * smokeTime + pExhaustInfo->sizeStart;
+        float startSizeY = sizeRate * smokeTime + pExhaustInfo->sizeStart;
+        float startAlpha = alphaRate * smokeTime + pExhaustInfo->alphaStart;
 
+        // Note: The random values are drawn in the order of the original, start x, start y, end x, end y and start alpha
         rdVector3 startSize;
-        startSize.x = startMinSize + (float)((SITH_RAND() - 0.5f) * pExhaustInfo->sizeRandFactor);
-        startSize.y = startMinSize + (float)((SITH_RAND() - 0.5f) * pExhaustInfo->sizeRandFactor);
-        startSize.z = startAlpha + (float)((SITH_RAND() - 0.5f) * pExhaustInfo->alphaRandFactor);
+        startSize.x = (float)((SITH_RAND() - 0.5f) * pExhaustInfo->sizeRandFactor) + startSizeX;
+        startSize.y = (float)((SITH_RAND() - 0.5f) * pExhaustInfo->sizeRandFactor) + startSizeY;
 
         rdVector3 endSize;
-        endSize.x = pExhaustInfo->sizeEnd + (float)((SITH_RAND() - 0.5f) * pExhaustInfo->sizeRandFactor);
-        endSize.y = pExhaustInfo->sizeEnd + (float)((SITH_RAND() - 0.5f) * pExhaustInfo->sizeRandFactor);
+        endSize.x = (float)((SITH_RAND() - 0.5f) * pExhaustInfo->sizeRandFactor) + pExhaustInfo->sizeEnd;
+        endSize.y = (float)((SITH_RAND() - 0.5f) * pExhaustInfo->sizeRandFactor) + pExhaustInfo->sizeEnd;
         endSize.z = pExhaustInfo->alphaEnd;
+
+        startSize.z = (float)((SITH_RAND() - 0.5f) * pExhaustInfo->alphaRandFactor) + startAlpha;
 
         sithAnimate_StartAnimateSpriteSize(pSmoke, &startSize, &endSize, life);
         pSmoke->moveInfo.physics.velocity = smokeVel;
