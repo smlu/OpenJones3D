@@ -230,6 +230,7 @@ startup and a stable module-level CTest entry.
 | `stdDisruptiveSystemTests` | `std.DisruptiveSystem` | Opt-in fullscreen/device changes | Available |
 | `soundTests` | `sound` | Deterministic lip-sync generation and lookup, AudioLib codec and header vectors | Available |
 | `sithTests` | `sith` | World thing/template I/O, voice lip-sync and track/jeep physics helpers | Available |
+| `sithDSSTests` | `sith.DSS` | Original-engine vectors of the DSS save/network serialization functions | Available |
 
 Name CTest entries after the owning module when the executable covers that whole module, such as `std`. When an executable covers only a subarea, use the owning module first and a short area name second, separated by a dot, such as `j3dcore.Macros`. Use labels that match the owning module, such as `j3dcore`, `std`, `rdroid`, `sith`, `sound`, or `Jones3D`.
 
@@ -840,21 +841,23 @@ build. See [Microsoft's AddressSanitizer guidance](https://learn.microsoft.com/e
 
 ### 🧩 Additional Module Commands
 
-The `soundTests` and `sithTests` targets are available and included in a full
-build. Use the matching target and CTest entry for a focused rebuild and run:
+The `soundTests`, `sithTests` and `sithDSSTests` targets are available and included
+in a full build. Use the matching target and CTest entry for a focused rebuild and run:
 
 ```bat
 cmake --build build\codex\dx9-win32 --config Debug --target soundTests
 ctest --test-dir build\codex\dx9-win32 -C Debug --output-on-failure -R "^sound$"
 cmake --build build\codex\dx9-win32 --config Debug --target sithTests
 ctest --test-dir build\codex\dx9-win32 -C Debug --output-on-failure -R "^sith$"
+cmake --build build\codex\dx9-win32 --config Debug --target sithDSSTests
+ctest --test-dir build\codex\dx9-win32 -C Debug --output-on-failure -R "^sith\.DSS$"
 ```
 
 These focused commands supplement the validation selected under
 [Backend Validation Scope](#backend-validation-scope).
 
-The fixture descriptions below cover the available `soundTests` and
-`sithTests` targets.
+The fixture descriptions below cover the available `soundTests`, `sithTests` and
+`sithDSSTests` targets.
 
 <a name="audiolib-fixtures"></a>
 
@@ -928,3 +931,25 @@ original calls. Coverage includes every 4 x 4 lookup-table cell, the shipped
 Y-only table layout, repeated-head variation, missing and existing M-sound
 heads, targeted swap cleanup, dying speakers, and the original global timing
 and cross-speaker state behavior.
+
+<a name="sithdss-fixtures"></a>
+
+### 📨 sithDSS Fixtures
+
+The `sithDSS` fixtures compare the save/network message writers and readers of `sithDSS.c` with
+original-engine vectors captured from retail v1.0 `Indy3D.exe` and stored in
+`Libs/sith/Dss/Tests/tv/sithDSS` (provenance, regeneration, case lists and the
+documented differences are in that directory's `README.md`). The writers and readers
+run on a synthetic world (sectors, surfaces, things, AI blocks, puppets, cameras and
+the gameplay globals) that is built by the same source code in the capture harness and
+in the tests. The engine functions the DSS code calls with side effects are replaced by
+shared stubs that record their arguments, so a case result holds the return value, the
+complete message handed to `sithMessage_SendMessage`, the engine calls made and every
+byte of the state that changed. Each case is run with two different fills of the unused
+parts of the world and of the message buffers to reject accesses outside the data the
+function is given. The engine globals of the original executable are redirected to
+static memory in this suite, and the suite links its image at a fixed high base so the
+normalized addresses of the synthetic state cannot collide with generated values.
+The one expected difference (an intentional playback speed fix in
+`sithDSS_ProcessPuppetStatus`) makes the matching test report as ignored while it
+exists.
