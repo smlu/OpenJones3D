@@ -463,6 +463,7 @@
   - Fixed `sithControl_UnbindJoystickAxes` leaving joystick POV hat direction bindings bound when the joystick bindings are reset, because `STDCONTROL_ISJOYSTICKBUTTON` no longer matches POV control ids. ()
   - Fixed `sithControl_GetKeyAsAxisNormalized`, `sithControl_GetKeyAsAxis` and `sithControl_sub_44F334` no longer matching joystick POV hat bindings in the joystick disabled checks and the binding enumeration. ()
   - Fixed `jonesConfig_LoadControlScheme` never reporting "too many bindings" for an action with more than 8 bindings in a control scheme file; the clamped binding count could not exceed the limit, so the loader kept writing bindings past the end of the action. ()
+  - Fixed the save game dialog hook (`jonesConfig_SaveGameDialogHookProc`) falling into the CDN_INITDONE code after accepting a new file name, which created the dialog fonts a second time and leaked the previous one. ()
 
 ## v0.3.1
 ### General:

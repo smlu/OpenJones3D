@@ -3762,6 +3762,8 @@ UINT_PTR CALLBACK jonesConfig_SaveGameDialogHookProc(HWND hDlg, UINT uMsg, WPARA
                         SetWindowLongPtr(hDlg, DWL_MSGRESULT, 1);
                         return 1;
                     }
+
+                    return 0; // Fixed: Don't fall through into the CDN_INITDONE case for a valid new file name, which created the dialog font again and leaked the previous one (original Indy3D.exe v1.0 0x00405010)
                 }
                 case CDN_INITDONE:
                 {
