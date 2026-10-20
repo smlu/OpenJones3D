@@ -1,5 +1,6 @@
 #ifndef SOUND_TYPES_H
 #define SOUND_TYPES_H
+#include <stddef.h>
 #include <stdint.h>
 #include <Mmreg.h>
 #include <j3dcore/j3d.h>
@@ -129,10 +130,12 @@ typedef struct sSoundFade
     int bPitch;
     float startValue;
     float endValue;
-    uint32_t msecStartTime;
-    uint32_t msecEndTime;
+    int32_t msecStartTime; // Fixed: Was uint32_t, the original uses signed times (original Indy3D.exe v1.0 0x004DC6C0)
+    int32_t msecEndTime;   // Fixed: Was uint32_t
 } SoundFade;
 static_assert(sizeof(SoundFade) == 24, "sizeof(SoundFade) == 24");
+static_assert(offsetof(SoundFade, msecStartTime) == 16, "offsetof(SoundFade, msecStartTime) == 16");
+static_assert(offsetof(SoundFade, msecEndTime) == 20, "offsetof(SoundFade, msecEndTime) == 20");
 
 struct sSoundThingInfo
 {
