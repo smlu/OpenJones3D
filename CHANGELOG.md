@@ -378,6 +378,7 @@
   - Fixed `sithParticle_Update` timeout-rate particles growing by at most one vertex per update (used min instead of max with 1). ()
   - Fixed `rdMatrix_BuildFromLook34` using swapped cross product operands when the look vector is parallel to the z axis, which rotated the resulting matrix 180 degrees about the look axis (things or projectiles pointing straight up or down). ()
   - Fixed `rdLight_CalcFaceIntensity` writing the distance attenuation back into its parameter, which attenuated every following light by all earlier ones; each light is now attenuated on its own. ()
+  - Fixed `rdParticle_Draw` overwriting the per-thing RGBA material flag with the per-particle distance test, so after one particle beyond the alpha distance all remaining particles of the thing were drawn opaque. ()
   - Fixed an out-of-bounds read after the last polygon in `rdCache_SendFaceListToHardware`. [PR #52](https://github.com/smlu/OpenJones3D/pull/52)
 
 ### Game play:
