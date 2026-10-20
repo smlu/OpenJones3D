@@ -1162,7 +1162,7 @@ void J3DAPI sithPhysics_UpdateDetachedPlayerPhysics(SithThing* pThing, float sec
 
     // Player physics runs at 50 FPS - accumulate time and process in fixed timesteps
     float totalTime = secDeltaTime + pPhysics->physicsRolloverFrames;
-    size_t nFrames  = (size_t)truncf(totalTime * sithPhysics_fixedFramerate);
+    size_t nFrames  = (size_t)truncf(totalTime * sithPhysics_fixedFramerate); // TODO: [BUG] The original floors into an unsigned count (Indy3D.exe v1.0 0x0047FE50); a negative accumulated time wraps to 0xFFFFFFFF steps
     pPhysics->physicsRolloverFrames = totalTime - (float)nFrames * sithPhysics_fixedTimestep;
 
     for ( size_t i = 0; i < nFrames; ++i )
