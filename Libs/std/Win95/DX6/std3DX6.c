@@ -693,7 +693,7 @@ void J3DAPI std3D_DrawRenderList(tSysTexture* pTex, Std3DRenderState rdflags, LP
                 {
                     if ( depth >= 0.0 )
                     {
-                        pCurVert->specular = (int)((1.0 - depth) * 255.0) << 24;
+                        pCurVert->specular = lrintf((1.0f - depth) * 255.0f) << 24;
                     }
                     else
                     {
