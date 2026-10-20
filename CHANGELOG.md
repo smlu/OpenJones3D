@@ -475,6 +475,7 @@
   - Fixed `jonesConfig_Shutdown` leaving the deleted dialog icon bitmap handles in the table, so the handles could be deleted again after a restart of the module. ()
   - Fixed the game statistics dialog level name table lacking the summary page entry, which made the title fallback of the summary page read past the end of the table. ()
   - Fixed `jonesInventory_UpdateLevelStatisticTime` narrowing the hours of the level and total game time statistics to 8 bits, which made the played time wrap to zero after 256 hours. ()
+  - Fixed the save and load game file dialogs building their file filter string by formatting a buffer into itself (`jonesConfig_GetSaveGameFilePath`, `jonesConfig_GetLoadGameFilePath`), which is undefined behavior. ()
 
 ## v0.3.1
 ### General:
