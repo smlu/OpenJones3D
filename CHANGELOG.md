@@ -427,6 +427,7 @@
   - Fixed `sithCogFunction_SetTimerEx` truncating the delay in milliseconds toward zero instead of flooring it. ()
   - Fixed `sithAIClass_LoadEntry` truncating instinct integer arguments toward zero instead of flooring them. ()
   - Fixed `sithCogFunctionThing_SetThingStateChange` storing the two COG arguments in swapped fields, which gave COG-driven AI state changes the wrong type and parameter. ()
+  - Fixed `sithCogFunction_FindNewSectorFromThing` pushing no result when the thing is invalid, which unbalanced the COG stack; it now returns -1. ()
 
 ## v0.3.1
 ### General:

@@ -1928,6 +1928,7 @@ void J3DAPI sithCogFunction_FindNewSectorFromThing(SithCog* pCog)
     if ( !pThing || !pThing->pInSector )
     {
         SITHLOG_ERROR("BAD THING REF IN FindNewSectorFromThing\n");
+        sithCogExec_PushInt(pCog, -1);
         return;
     }
 
