@@ -166,6 +166,8 @@ int J3DAPI sithSector_ReadSectorsListText(SithWorld* pWorld, int bSkip)
             goto syntax_error;
         }
 
+        pSec->flags &= ~SITH_SECTOR_NOGRAVITY;
+
         // ambient light
         float red, green, blue;
         if ( nRead = stdConffile_ScanLine(" ambient light %f %f %f", &red, &green, &blue), nRead != 3 )
@@ -478,7 +480,7 @@ int J3DAPI sithSector_ReadSectorsListBinary(tFileHandle fh, SithWorld* pWorld)
         SithSector* pSec = &pWorld->aSectors[i];
         const CndSectorInfo* pSecInfo = &aSecInfos[i];
 
-        pSec->flags = pSecInfo->flags;
+        pSec->flags = pSecInfo->flags & ~SITH_SECTOR_NOGRAVITY;
 
         rdVector_Copy4(&pSec->ambientLight, &pSecInfo->ambientLight);
         rdVector_Copy4(&pSec->extraLight, &pSecInfo->extraLight);
