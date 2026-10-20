@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <stddef.h>
 #include <j3dcore/j3d.h>
+#include <smush/RTI/addresses.h>
 #include <smush/insane/lec.h>
 #include <smush/insane/Util/List.h>
 

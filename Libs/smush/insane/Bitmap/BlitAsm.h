@@ -1,6 +1,7 @@
 #ifndef SMUSH_INSANE_BITMAP_BLITASM_H
 #define SMUSH_INSANE_BITMAP_BLITASM_H
 #include <j3dcore/j3d.h>
+#include <smush/RTI/addresses.h>
 
 /*
  * BlitAsm.asm: blit_Masm(pSrc, pDst, srcX, srcY, dstX, dstY, width, height, srcPitch, dstPitch) copies a width x height

@@ -2,6 +2,7 @@
 #define SMUSH_INSANE_ANIMATE_FRAME_H
 #include <assert.h>
 #include <j3dcore/j3d.h>
+#include <smush/RTI/addresses.h>
 #include <smush/insane/lec.h>
 #include <smush/insane/Memory/Memory.h>
 

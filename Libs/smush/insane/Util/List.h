@@ -2,6 +2,7 @@
 #define SMUSH_INSANE_UTIL_LIST_H
 #include <assert.h>
 #include <j3dcore/j3d.h>
+#include <smush/RTI/addresses.h>
 
 /*
  * INSANE's doubly linked list: a list is two linked nodes, a head and a tail sentinel; iteration runs from head.pNext

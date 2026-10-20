@@ -53,7 +53,8 @@ void decode_RleEnd(void)
 
 uint8_t decode_RleByte(void)
 {
-    uint8_t c = 0; // Fixed: initialize c (the original returns an undefined value for an invalid state)
+    // TODO: [BUG] The original returns an undefined value for an invalid state
+    uint8_t c = 0; // Fixed: Init to 0
 
     if ( decode_state == 2 )
     {

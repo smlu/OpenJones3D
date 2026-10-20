@@ -50,9 +50,9 @@ void J3DAPI mixer_Feed(void* pSrc, int offset, int n, int bytes, int a5, int vol
     J3D_UNUSED(a5);
 
     // TODO: [BUG] The original leaves these uninitialized for a format above 5 (unreachable: callers pass 0-5)
-    int bits     = 0;
-    int channels = 0;
-    int isSigned = 0;
+    int bits     = 0; // Fixed: Init to 0
+    int channels = 0; // Fixed: Init to 0
+    int isSigned = 0; // Fixed: Init to 0
 
     switch ( format )
     {

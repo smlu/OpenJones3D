@@ -2,6 +2,7 @@
 #define SMUSH_INSANE_SOUND_MIXER_H
 #include <assert.h>
 #include <j3dcore/j3d.h>
+#include <smush/RTI/addresses.h>
 #include <smush/insane/Bitmap/Bitmap.h>
 #include <smush/insane/Memory/Memory.h>
 #include <smush/insane/Sound/Dsnd.h>

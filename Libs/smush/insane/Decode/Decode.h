@@ -1,6 +1,7 @@
 #ifndef SMUSH_INSANE_DECODE_DECODE_H
 #define SMUSH_INSANE_DECODE_DECODE_H
 #include <j3dcore/j3d.h>
+#include <smush/RTI/addresses.h>
 #include <smush/insane/Bitmap/Bitmap.h>
 
 /*

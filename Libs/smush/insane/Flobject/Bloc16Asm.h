@@ -1,6 +1,7 @@
 #ifndef SMUSH_INSANE_FLOBJECT_BLOC16ASM_H
 #define SMUSH_INSANE_FLOBJECT_BLOC16ASM_H
 #include <j3dcore/j3d.h>
+#include <smush/RTI/addresses.h>
 #include <stdint.h>
 #include <smush/insane/Flobject/D_bloc16.h>
 

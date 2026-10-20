@@ -1,6 +1,7 @@
 #ifndef SMUSH_INSANE_BITMAP_MEMFILL_H
 #define SMUSH_INSANE_BITMAP_MEMFILL_H
 #include <j3dcore/j3d.h>
+#include <smush/RTI/addresses.h>
 
 /*
  * MemFill.asm: blit_MemCopyB replicates the low byte of value into a dword and stores size bytes, in 20000-byte
