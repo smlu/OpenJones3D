@@ -131,6 +131,7 @@ void sithAI_Close(void)
     if ( !sithAI_g_bOpen )
     {
         SITHLOG_ERROR("Warning: System already closed!\n");
+        return; // Fixed: Return after the warning, the original does not reset the AIs when the system is not open (original Indy3D.exe v1.0 0x00429FF0)
     }
 
     sithAI_ResetAllAIs();
