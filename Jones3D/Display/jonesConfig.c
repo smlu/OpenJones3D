@@ -6800,9 +6800,9 @@ void J3DAPI jonesConfig_AssignControlKey_ReadKey(HWND hWnd)
                     case DIK_9:
                     case DIK_0:
                     {
-                        if ( pData->actionId >= JONESCONTROL_ACTION_BAZOOKA && pData->actionId <= JONESCONTROL_ACTION_GRENADE ) // 16 - fist; 27 - grenade
+                        if ( pData->actionId >= JONESCONTROL_ACTION_FISTS && pData->actionId <= JONESCONTROL_ACTION_GRENADE ) // Fixed: Number keys are allowed for all weapon actions (fists to grenade), was bazooka to grenade only (original Indy3D.exe v1.0 0x0040A230)
                         {
-                           // Got Key close dialog
+                            // Got Key close dialog
                             stdControl_SetActivation(jonesConfig_assignKey_bControlsActive);
                             bGotKy = 1;
                             KillTimer(hWnd, 1u);
