@@ -1085,7 +1085,7 @@ void J3DAPI sithFX_CreateChalkMark(const rdVector3* pPos, const SithSurface* pAt
     bool bSearch = false; // Added init to false
     do
     {
-        tplNum = (size_t)(SITH_RAND() * (float)STD_ARRAYLEN(sithFX_aChalkMarkNames));
+        tplNum = (size_t)(SITH_RAND() * (float)(STD_ARRAYLEN(sithFX_aChalkMarkNames) - 1));
         bSearch = false;
         for ( size_t i = 0; i < sithFX_g_numChalkMarks && !bSearch && sithFX_g_aChalkMarks[i]; i++ )
         {
