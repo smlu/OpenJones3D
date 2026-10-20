@@ -3761,6 +3761,8 @@ UINT_PTR CALLBACK jonesConfig_SaveGameDialogHookProc(HWND hDlg, UINT uMsg, WPARA
                         SetWindowLongPtr(hDlg, DWL_MSGRESULT, 1);
                         return 1;
                     }
+
+                    return 0;
                 }
                 case CDN_INITDONE:
                 {
