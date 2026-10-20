@@ -2166,13 +2166,13 @@ int J3DAPI jonesConfig_LoadControlScheme(const char* pFilePath, JonesControlsSch
             size_t argNum = 0;
             if ( !stdConffile_ReadArgs() )
             {
-                break;
+                goto error;
             }
 
             int actionIdx = jonesConfig_ParseArgumentIndex(&argNum, &stdConffile_g_entry, jonesConfig_maxActionWords, jonesConfig_aJonesControlActionNames, STD_ARRAYLEN(jonesConfig_aJonesControlActionNames));
             if ( actionIdx == -1 )
             {
-                break;
+                goto error;
             }
 
             bindNum = 1; // Note, at index 0 the num of bindings state is stored
