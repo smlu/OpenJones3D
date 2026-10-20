@@ -722,6 +722,7 @@ void J3DAPI sithCogFunctionAI_IsAITargetInSight(SithCog* pCog)
         || !pThing->controlInfo.aiControl.pLocal )
     {
         SITHLOG_ERROR("Cog %s: Invalid AI THING in IsAITargetInSight.\n", pCog->aName);
+        sithCogExec_PushInt(pCog, 0);
         return;
     }
 
