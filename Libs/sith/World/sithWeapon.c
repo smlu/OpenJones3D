@@ -532,7 +532,8 @@ int J3DAPI sithWeapon_ParseArg(const StdConffileArg* pArg, SithThing* pThing, in
         {
             errno = 0; // Fixed: Reset errno, a stale ERANGE rejected valid values
             float damage = strtof(pArg->argValue, NULL); // Changed: Use strtof instead atof
-            if ( errno == ERANGE )
+            // Fixed: Only reject overflow, the original (float)atof accepted underflowing values
+            if ( errno == ERANGE && fabsf(damage) > 1.0f )
             { // Added
                 goto syntax_error;
             }
@@ -543,7 +544,8 @@ int J3DAPI sithWeapon_ParseArg(const StdConffileArg* pArg, SithThing* pThing, in
         {
             errno = 0; // Fixed: Reset errno, a stale ERANGE rejected valid values
             float minDamage = strtof(pArg->argValue, NULL); // Changed: Use strtof instead atof
-            if ( errno == ERANGE )
+            // Fixed: Only reject overflow, the original (float)atof accepted underflowing values
+            if ( errno == ERANGE && fabsf(minDamage) > 1.0f )
             { // Added
                 goto syntax_error;
             }
@@ -567,7 +569,8 @@ int J3DAPI sithWeapon_ParseArg(const StdConffileArg* pArg, SithThing* pThing, in
         {
             errno = 0; // Fixed: Reset errno, a stale ERANGE rejected valid values
             float force = strtof(pArg->argValue, NULL); // Changed: Use strtof instead atof
-            if ( errno == ERANGE )
+            // Fixed: Only reject overflow, the original (float)atof accepted underflowing values
+            if ( errno == ERANGE && fabsf(force) > 1.0f )
             { // Added
                 goto syntax_error;
             }
@@ -578,7 +581,8 @@ int J3DAPI sithWeapon_ParseArg(const StdConffileArg* pArg, SithThing* pThing, in
         {
             errno = 0; // Fixed: Reset errno, a stale ERANGE rejected valid values
             float range = strtof(pArg->argValue, NULL); // Changed: Use strtof instead atof
-            if ( errno == ERANGE )
+            // Fixed: Only reject overflow, the original (float)atof accepted underflowing values
+            if ( errno == ERANGE && fabsf(range) > 1.0f )
             { // Added
                 goto syntax_error;
             }
@@ -589,7 +593,8 @@ int J3DAPI sithWeapon_ParseArg(const StdConffileArg* pArg, SithThing* pThing, in
         {
             errno = 0; // Fixed: Reset errno, a stale ERANGE rejected valid values
             float rate = strtof(pArg->argValue, NULL); // Changed: Use strtof instead atof
-            if ( errno == ERANGE )
+            // Fixed: Only reject overflow, the original (float)atof accepted underflowing values
+            if ( errno == ERANGE && fabsf(rate) > 1.0f )
             { // Added
                 goto syntax_error;
             }
