@@ -412,6 +412,7 @@
   - Fixed `sithAnimate_UpdateSlideSkyAnim` advancing the horizon sky offset twice per update, which made the horizon sky scroll at twice the original speed. ()
   - Fixed `sithExplosion_UpdateExpandFade` clearing only the fade flag instead of both the expand and fade flags, which left explosions stuck in the expand/fade state so that later explosions skipped their first-time setup. ()
   - Fixed `sithExplosion_Update` variable light: the explosion light color is now the emit color plus the max light scaled by the remaining blast time, instead of the emit color multiplied by it. ()
+  - Fixed `sithThing_PlayCogDamageSound` to keep the original sound radii (0.5 and 2.5) for the impact and machete hit sounds outside of QOL builds. ()
 
 ## v0.3.1
 ### General:
