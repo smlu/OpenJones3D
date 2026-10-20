@@ -76,11 +76,11 @@ float stdMath_SmoothDamp(float current, float target, float rate, float deltaTim
 
 float stdMath_ClipNearZero(float val)
 {
-    if ( fabsf(val) <= STDMATH_ZERO_EPSILON )
+    if ( fabsf(val) > STDMATH_ZERO_EPSILON )
     {
-        return 0.0f;
+        return val;
     }
-    return val;
+    return 0.0f;
 }
 
 /**
