@@ -2377,16 +2377,18 @@ void J3DAPI sithPlayerControls_ProcessHangMove(SithThing* pThing, float secDelta
 
             pThing->forceMoveStartPos = pThing->pos;
             pThing->collide.movesize = 0.0f;
-            sithPuppet_PlayForceMoveMode(pThing, SITHPUPPETSUBMODE_HANGSHIMLEFT, NULL);
-            sithSoundClass_PlayModeFirst(pThing, SITHSOUNDCLASS_CLIMBHANDLEFT);
 
             if ( pLedgeSurf )
             {
+                sithPuppet_PlayForceMoveMode(pThing, SITHPUPPETSUBMODE_HANGSHIMLEFT, NULL);
                 sithThing_AttachThingToClimbSurface(pThing, pLedgeSurf);
+                sithSoundClass_PlayModeFirst(pThing, SITHSOUNDCLASS_CLIMBHANDLEFT);
                 sithPlayerActions_g_pCurHitLedgeSurface = pLedgeSurf;
             }
             else
             {
+                sithSoundClass_PlayModeFirst(pThing, SITHSOUNDCLASS_CLIMBHANDLEFT);
+                sithPuppet_PlayForceMoveMode(pThing, SITHPUPPETSUBMODE_HANGSHIMLEFT, NULL);
                 sithThing_AttachThingToThingFace(pThing, pLedgeThing, pLedgeFace, pLedgeMesh->apVertices, 1);
                 sithPlayerActions_g_pCurHitLedgeModelFace = pLedgeFace;
                 sithPlayerActions_g_pCurHitLedgeModel     = pLedgeModel;
