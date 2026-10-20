@@ -3764,7 +3764,10 @@ int J3DAPI sithThing_ValidateThingMeshAttach(const SithThing* pAttachThing)
 
 void J3DAPI sithThing_DetachThing(SithThing* pThing)
 {
-    SITH_ASSERTREL(sithThing_ValidateThingPointer(sithWorld_g_pCurrentWorld, pThing));
+    if ( sithWorld_g_pCurrentWorld ) // Fixed: Restored the world guard, the validation dereferenced a NULL world (original Indy3D.exe v1.0 0x00436F00)
+    {
+        SITH_ASSERTREL(sithThing_ValidateThingPointer(sithWorld_g_pCurrentWorld, pThing));
+    }
 
     if ( (pThing->attach.flags & (SITH_ATTACH_THING | SITH_ATTACH_THINGFACE)) != 0 )
     {

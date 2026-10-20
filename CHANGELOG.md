@@ -413,6 +413,7 @@
   - Fixed the `strtof`/`strtoul` conversion range checks in `sithActor_ParseArg`, `sithWeapon_ParseArg`, `sithItem_ParseArg` and `sithThing_ParseThingArg` to reset `errno` before each conversion, so a stale `ERANGE` no longer rejects valid values (template stats could silently be lost at load). ()
   - Fixed the blood splatter sprite end size in `sithWeapon_GenBloodSplatterEx` outside of QOL builds: the third component of the end size (the sprite alpha, not a depth) is 1.0 as in the original, was 0.8. ()
   - Fixed the bad argument log message in `sithThing_ParseThingArg` passing the file name and line number in swapped order (crash on a malformed thing argument). ()
+  - Fixed `sithThing_DetachThing` to validate the thing pointer only when a world is loaded, as the original does, instead of dereferencing a NULL world. ()
 
 ## v0.3.1
 ### General:
