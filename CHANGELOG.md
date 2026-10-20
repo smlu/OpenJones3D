@@ -382,6 +382,7 @@
   - Fixed `rdCache_SendFaceListToHardware` writing the clamped texture cel back into the batch cel number, which split the draw calls of faces using the current material cel (-1) into one batch per face, and clamped the cel with unsigned comparisons. ()
   - Fixed `std3D_Open` (DirectX 6) leaving the color key of the color key texture formats NULL; they now use the original color key {0, 0}, which avoids a NULL dereference in `stdColor_ColorConvertOneRow` and sets the same source color key on texture surfaces as the original. ()
   - Fixed `sithRender_CollectVisibleThingSector` registering sectors without things in the visible thing sector list (legacy collection mode), which wasted list slots and counted them in the visible thing sector statistic. ()
+  - Fixed `std3D_DrawRenderList` truncating the table-less vertex fog alpha instead of rounding it to nearest like the original, which made the fog alpha 1/255 lower for about half of the values (DirectX 6 and DirectX 9). ()
 
 ### Game play:
   - Fixed bug in `sithPlayer_Update` where force move animation could be stopped when required distance to move was almost zero (127aa92)
