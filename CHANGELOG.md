@@ -282,6 +282,7 @@
   - Fixed `sithDSS_ProcessPuppetStatus` reading puppet track low and high priorities sign extended instead of zero extended as the original does. ()
   - Fixed `sithMaterial_ReadMaterialsListText` returning success when the `world materials` line is missing or malformed; it now reports an error as the original does. ()
   - Fixed `sithCogExec_PopInt` converting float values by truncating toward zero instead of flooring them, so negative non-integer COG arguments (e.g. -1.5) became -1 instead of -2. ()
+  - Fixed `sithCogParse_GetNextNode` growing the syntax tree by only 8 bytes per node instead of the node size, which corrupted the heap for scripts with more than about 8000 nodes. ()
   - Fixed overlapping COG stack shifts on overflow by using `memmove` in `sithCogExec_PushStack`. [PR #55](https://github.com/smlu/OpenJones3D/pull/55)
   - Added an optional runtime guard in `sithCamera_Update` to skip cinematic camera updates while either focus thing is missing. [PR #54](https://github.com/smlu/OpenJones3D/pull/54)
   - Fixed an out-of-bounds write in `sithEvent_ResetFreeBufferTable` that could cause startup hangs in optimized Clang builds. [PR #45](https://github.com/smlu/OpenJones3D/pull/45)
