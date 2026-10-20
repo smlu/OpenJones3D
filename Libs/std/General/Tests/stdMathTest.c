@@ -654,6 +654,13 @@ TEST(stdMath, TestTanQuadrant2)
     }
 }
 
+// Regression: two float literals of the tan table were one ulp off the original table
+TEST(stdMath, TestTanTableOriginalValues)
+{
+    TEST_ASSERT_EQUAL_HEX32(0x42d94aa7u, stdMathTest_FloatBits(stdMath_aTanTable[4072]));
+    TEST_ASSERT_EQUAL_HEX32(0x42f855a9u, stdMathTest_FloatBits(stdMath_aTanTable[4075]));
+}
+
 TEST(stdMath, TestTanNonFinite)
 {
     stdMathTest_AssertIsNaN(stdMath_Tan(NAN));
@@ -805,6 +812,7 @@ TEST_GROUP_RUNNER(stdMath)
     RUN_TEST_CASE(stdMath, TestTanHalfDegreeSweep);
     RUN_TEST_CASE(stdMath, TestTanStdLibApprox);
     RUN_TEST_CASE(stdMath, TestTanQuadrant2);
+    RUN_TEST_CASE(stdMath, TestTanTableOriginalValues);
     RUN_TEST_CASE(stdMath, TestTanNonFinite);
     RUN_TEST_CASE(stdMath, TestArcSinClamp);
     RUN_TEST_CASE(stdMath, TestArcSinStdLibApprox);
