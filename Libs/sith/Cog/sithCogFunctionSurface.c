@@ -268,6 +268,7 @@ void J3DAPI sithCogFunctionSurface_SetWallCel(SithCog* pCog)
     if ( !pSurf || pSurf->face.pMaterial == NULL )
     {
         SITHLOG_ERROR("Cog %s: Illegal surface index in SetWallCel call.\n", pCog->aName);
+        sithCogExec_PushInt(pCog, -1); // Fixed: Push -1 on error (original Indy3D.exe v1.0 0x00467F10)
         return;
     }
 
