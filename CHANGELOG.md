@@ -410,6 +410,7 @@
   - Fixed `sithPhysics_UpdateMineCarPhysics` braking sign: a minecart moving forward with backward thrust now decelerates instead of accelerating. ()
   - Fixed `sithPhysics_PowerOffMineCar` clearing all thing flags except `EMITLIGHT` when leaving the minecart; it now only clears `EMITLIGHT` to turn off the rear light. ()
   - Fixed `sithAnimate_UpdateSlideSkyAnim` advancing the horizon sky offset twice per update, which made the horizon sky scroll at twice the original speed. ()
+  - Fixed `sithExplosion_UpdateExpandFade` clearing only the fade flag instead of both the expand and fade flags, which left explosions stuck in the expand/fade state so that later explosions skipped their first-time setup. ()
 
 ## v0.3.1
 ### General:

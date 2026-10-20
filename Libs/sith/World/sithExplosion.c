@@ -151,7 +151,7 @@ void J3DAPI sithExplosion_UpdateExpandFade(SithExplosionInfo* pExplode)
                 if ( sithTime_g_msecGameTime >= pExplode->msecExpandTime && (pExplode->flags & SITH_EF_EXPAND) != 0 && (pExplode->flags & SITH_EF_FADE) != 0 )
                 {
                     sithAnimate_StartAnimateSpriteSize(pExplode->pSprite, &start, &end, secAnimTime);
-                    pExplode->flags &= ~SITH_EF_FADE | SITH_EF_EXPAND;
+                    pExplode->flags &= ~(SITH_EF_EXPAND | SITH_EF_FADE);
                 }
             }
             else if ( sithTime_g_msecGameTime >= pExplode->msecExpandTime && (pExplode->flags & SITH_EF_EXPAND) != 0 )
