@@ -12,6 +12,7 @@ include(smush_codec.cmake)   # Codec: D_bloc16, D_wave, Bloc16Asm, Decode, Decod
 include(smush_stream.cmake)  # Stream/File/Anim: Cdstream, Framestream, Stdfile, Stdio, Zfilio, Readauto, Frame, Pcplay
 include(smush_core.cmake)    # Core/Bitmap: SmushPlay, LecShare, Timer, Memory, List, Bitmap, Blit, BlitAsm, MemCopy, MemFill
 include(smush_asm.cmake)     # Assembly translations: Bloc16Asm, DecodeAsm, MixerAsm, BlitAsm, MemCopy, MemFill (original-engine vectors)
+include(smush_vec.cmake)     # C modules: Mixer, D_bloc16, Decode, LecShare, Framestream, Stdfile, Zfilio (original-engine vectors)
 
 add_executable(smushTests
     ${SMUSH_TEST_SOURCES}
