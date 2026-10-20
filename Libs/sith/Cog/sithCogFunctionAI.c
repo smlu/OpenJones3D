@@ -168,17 +168,15 @@ void J3DAPI sithCogFunctionAI_AIGetGoalLVec(SithCog* pCog)
     if ( !pThing )
     {
         SITHLOG_ERROR("Cog %s: Bad THING passed to AIGetGoalLVec\n", pCog->aName);
+        sithCogExec_PushVector(pCog, &rdroid_g_zeroVector3); // Fixed: Push the zero vector on error (original Indy3D.exe v1.0 0x004692B0)
         return;
     }
 
-    if ( pThing->controlType == SITH_CT_AI )
+    if ( pThing->controlType != SITH_CT_AI || !pThing->controlInfo.aiControl.pLocal ) // Fixed: Also reject non-AI things, which used the control info of another control type (original Indy3D.exe v1.0 0x004692B0)
     {
-        if ( !pThing->controlInfo.aiControl.pLocal )
-        {
-            SITHLOG_ERROR("Cog %s: THING %s is not AI controlled in AIGetGoalLVec\n", pCog->aName, pThing->aName);
-            sithCogExec_PushVector(pCog, &rdroid_g_zeroVector3);
-            return;
-        }
+        SITHLOG_ERROR("Cog %s: THING %s is not AI controlled in AIGetGoalLVec\n", pCog->aName, pThing->aName);
+        sithCogExec_PushVector(pCog, &rdroid_g_zeroVector3);
+        return;
     }
 
     sithCogExec_PushVector(pCog, &pThing->controlInfo.aiControl.pLocal->goalLVec);
