@@ -5371,8 +5371,8 @@ void J3DAPI sithCogFunctionThing_MoveThingToPos(SithCog* pCog)
 
 void J3DAPI sithCogFunctionThing_SetThingStateChange(SithCog* pCog)
 {
+    int param         = sithCogExec_PopInt(pCog);
     int type          = sithCogExec_PopInt(pCog);
-    int state         = sithCogExec_PopInt(pCog);
     SithThing* pThing = sithCogExec_PopThing(pCog);
 
     if ( !pThing )
@@ -5388,7 +5388,7 @@ void J3DAPI sithCogFunctionThing_SetThingStateChange(SithCog* pCog)
     }
 
     pThing->thingInfo.actorInfo.stateChange.type             = type;
-    pThing->thingInfo.actorInfo.stateChange.params.moveFlags = (SithActorSpecialMoveFlags)state; // Note could be also armedMode, depending on the type
+    pThing->thingInfo.actorInfo.stateChange.params.moveFlags = (SithActorSpecialMoveFlags)param; // Note could be also armedMode, depending on the type
 }
 
 void J3DAPI sithCogFunctionThing_StartQuetzAnim(SithCog* pCog)
