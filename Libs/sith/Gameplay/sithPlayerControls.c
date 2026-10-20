@@ -5179,7 +5179,7 @@ void J3DAPI sithPlayerControls_ProcessPushPullMove(SithThing* pThing, float secD
     //
     // Handle pull object move
     //
-    if ( sithControl_GetKey(SITHCONTROL_BACK, NULL) )
+    if ( !sithControl_GetKey(SITHCONTROL_FORWARD, NULL) )
     {
         // Check height difference for pull - can't pull objects that are higher
         if ( searchRadius > 0.05f && pThing->pos.z > sithPlayerControls_pMovableThing->pos.z )
