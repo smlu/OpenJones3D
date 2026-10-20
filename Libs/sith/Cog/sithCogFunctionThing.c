@@ -356,7 +356,7 @@ void J3DAPI sithCogFunctionThing_AnimateSpriteSize(SithCog* pCog)
     }
     else
     {
-        // Added: Set sprite size instantly when deltaTime is 0
+        // Added: Set sprite size instantly when deltaTime <= 0 and return -1; the original created the animation for any deltaTime and returned its id
         pSprite->thingInfo.spriteInfo.width  = vecEnd.x;
         pSprite->thingInfo.spriteInfo.height = vecEnd.y;
         pSprite->thingInfo.spriteInfo.alpha  = vecEnd.z;

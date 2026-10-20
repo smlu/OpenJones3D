@@ -1447,6 +1447,8 @@ void J3DAPI sithPuppet_SetMoveModeEx(SithThing* pThing, SithPuppetMoveMode newMo
 
     if ( pThing->pPuppetClass && pThing->pPuppetState )
     {
+        // Added: Keep the current tracks when the mode is unchanged and bRemoveTracks is false (no such case in the original).
+        //        Note, this early return also skips resetting bControlsDisabled.
         if ( pThing->pPuppetState->moveMode == newMode && !bRemoveTracks )
         {
             return;
