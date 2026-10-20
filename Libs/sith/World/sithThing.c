@@ -3756,7 +3756,10 @@ int J3DAPI sithThing_ValidateThingMeshAttach(const SithThing* pAttachThing)
 
 void J3DAPI sithThing_DetachThing(SithThing* pThing)
 {
-    SITH_ASSERTREL(sithThing_ValidateThingPointer(sithWorld_g_pCurrentWorld, pThing));
+    if ( sithWorld_g_pCurrentWorld )
+    {
+        SITH_ASSERTREL(sithThing_ValidateThingPointer(sithWorld_g_pCurrentWorld, pThing));
+    }
 
     if ( (pThing->attach.flags & (SITH_ATTACH_THING | SITH_ATTACH_THINGFACE)) != 0 )
     {
