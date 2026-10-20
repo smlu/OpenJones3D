@@ -429,6 +429,7 @@
   - Fixed `sithCogFunctionThing_StartQuetzAnim` accepting negative modes without logging an error or pushing the -1 result. ()
   - Fixed `sithCogFunctionAI_AIGetGoalThing` pushing no result for an invalid or non-AI thing, which unbalanced the COG stack; it now returns -1. ()
   - Fixed `sithCogFunctionAI_AIGetGoalLVec` pushing no vector for an invalid thing and reading the AI control data of non-AI controlled things; both now return the zero vector. ()
+  - Fixed `sithCogFunctionAI_IsAITargetInSight` pushing no result for an invalid AI thing, which unbalanced the COG stack; it now returns 0. ()
 
 ## v0.3.1
 ### General:
