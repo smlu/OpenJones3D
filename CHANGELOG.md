@@ -467,6 +467,7 @@
   - Fixed adding a first binding to an unbound action in the controls dialog (`jonesConfig_EditControlScheme_AddAssignment`) not storing the new control in the list item, which made later edits and deletes of that row use the wrong binding. ()
   - Fixed `jonesConfig_LoadControlScheme` accepting a truncated or malformed control scheme (.kfg) file as successfully loaded; the scheme is now rejected and cleared like the original. ()
   - Fixed `jonesConfig_ShowGameOverDialog` returning the game over music channel to `JonesHud_ShowGameOverDialog` in builds without QOL improvements, where the original never does; with QOL improvements the channel is still returned so the game over music is stopped. ()
+  - Fixed `sithControl_UnbindJoystickAxes` leaving joystick POV hat direction bindings bound when the joystick bindings are reset, because `STDCONTROL_ISJOYSTICKBUTTON` no longer matches POV control ids. ()
 
 ## v0.3.1
 ### General:
