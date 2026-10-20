@@ -7,8 +7,8 @@
 #include <std/General/stdUtil.h>
 
 // These helpers are not exposed by the header
-void J3DAPI sithPhysics_MoveToTrackFaceFront(SithThing* pThing, SithPhysicsTrackFaceData* pData, float* secDeltaTime, rdVector3* a4, rdVector3* a5, float a6);
-void J3DAPI sithPhysics_ResetJeepWheels(SithThing* pThing, SithJeepState* a2);
+void J3DAPI sithPhysics_MoveToTrackFaceFront(SithThing* pThing, SithPhysicsTrackFaceData* pData, float* pSecDeltaTime, rdVector3* pStartPos, rdVector3* pOutPos, float speed);
+void J3DAPI sithPhysics_ResetJeepWheels(SithThing* pThing, SithJeepState* pState);
 
 TEST_GROUP(sithPhysics);
 

@@ -737,18 +737,18 @@ void J3DAPI sithAIUtil_AISetWpntFlags(unsigned int wpntIdx, SithAIWaypointLayerF
     sithAIUtil_aAIWpnts[wpntIdx].flags |= uFlags;
 }
 
-void J3DAPI sithAIUtil_AIClearWpntFlags(unsigned int tIdx, SithAIWaypointLayerFlag flags)
+void J3DAPI sithAIUtil_AIClearWpntFlags(unsigned int wpntIdx, SithAIWaypointLayerFlag flags)
 {
-    if ( tIdx >= STD_ARRAYLEN(sithAIUtil_aAIWpnts) )
+    if ( wpntIdx >= STD_ARRAYLEN(sithAIUtil_aAIWpnts) )
     {
-        SITHLOG_ERROR("AISetWpnt: Index (%d) out of allowed range (0 - %d).\n", tIdx, STD_ARRAYLEN(sithAIUtil_aAIWpnts));
+        SITHLOG_ERROR("AISetWpnt: Index (%d) out of allowed range (0 - %d).\n", wpntIdx, STD_ARRAYLEN(sithAIUtil_aAIWpnts));
         return;
     }
 
     unsigned int uFlags = flags;
     uFlags = STDMATH_CLAMP(uFlags, 0x100, 0xFFFFFF00);
 
-    sithAIUtil_aAIWpnts[tIdx].flags &= ~uFlags;
+    sithAIUtil_aAIWpnts[wpntIdx].flags &= ~uFlags;
 }
 
 void J3DAPI sithAIUtil_AISetActiveWpntLayer(SithAIWaypointLayerFlag layer)
@@ -1173,7 +1173,7 @@ void J3DAPI sithAIUtil_CheckWpntMoveAlign(SithAIControlBlock* pLocal)
     }
 }
 
-int J3DAPI sithAIUtil_AIFindNearestWpnt(SithThing* pThing, int a2)
+int J3DAPI sithAIUtil_AIFindNearestWpnt(SithThing* pThing, int bCheckPath)
 {
     SithWorld* pWorld = sithWorld_g_pCurrentWorld;
     int idWpnt = 0;
@@ -1224,7 +1224,7 @@ int J3DAPI sithAIUtil_AIFindNearestWpnt(SithThing* pThing, int a2)
     idWpnt = sithAIUtil_aWpntDistances[0].num;
     float pathDist;
     rdVector3 hitNorm;
-    if ( a2 )
+    if ( bCheckPath )
     {
         found = 0;
         for ( i = 0; i < numDist; ++i )
@@ -1854,7 +1854,7 @@ int J3DAPI sithAIUtil_MakeRandPoint(SithAIControlBlock* pLocal, rdVector3* pPos,
     return bValid;
 }
 
-int J3DAPI sithAIUtil_RetryMakeRandPoint(SithAIControlBlock* pLocal, rdVector3* pPos, float a3, rdVector3* pDirection, rdVector3* pDestPoint)
+int J3DAPI sithAIUtil_RetryMakeRandPoint(SithAIControlBlock* pLocal, rdVector3* pPos, float downCos, rdVector3* pDirection, rdVector3* pDestPoint)
 {
     rdVector3 dir;
 
@@ -1894,12 +1894,12 @@ int J3DAPI sithAIUtil_RetryMakeRandPoint(SithAIControlBlock* pLocal, rdVector3* 
         return 0;
     }
 
-    rdVector_ScaleAdd3(pDestPoint, &dir, a3, pPos);
+    rdVector_ScaleAdd3(pDestPoint, &dir, downCos, pPos);
     rdVector_Copy3(pDirection, &dir);
     return 1;
 }
 
-int J3DAPI sithAIUtil_CheckPathToPos(SithAIControlBlock* pLocal, SithSector* pStartSector, rdVector3* startPos, int flags, float minMoveDist, float moveDist, float radius, rdVector3* pDirection, rdVector3* a9)
+int J3DAPI sithAIUtil_CheckPathToPos(SithAIControlBlock* pLocal, SithSector* pStartSector, rdVector3* startPos, int flags, float minMoveDist, float moveDist, float radius, rdVector3* pDirection, rdVector3* pEndPos)
 {
     SITH_ASSERTREL(pLocal && pLocal->pOwner);
     SithThing* pOwner = pLocal->pOwner;
@@ -1985,9 +1985,9 @@ int J3DAPI sithAIUtil_CheckPathToPos(SithAIControlBlock* pLocal, SithSector* pSt
                 return 0;
             }
 
-            if ( a9 )
+            if ( pEndPos )
             {
-                rdVector_Copy3(a9, &endPos);
+                rdVector_Copy3(pEndPos, &endPos);
             }
         }
 
@@ -2114,9 +2114,9 @@ int J3DAPI sithAIUtil_CheckPathToPos(SithAIControlBlock* pLocal, SithSector* pSt
         }
 
         int i = aScores[0] < aScores[1];
-        if ( a9 )
+        if ( pEndPos )
         {
-            rdVector_Copy3(a9, &aEndPos[i]);
+            rdVector_Copy3(pEndPos, &aEndPos[i]);
         }
 
         return aResults[i];
@@ -2169,7 +2169,7 @@ int J3DAPI sithAIUtil_SweepMoveToPathPos(SithAIControlBlock* pLocal, rdVector3* 
     return 0;
 }
 
-int J3DAPI sithAIUtil_MakeRoamPos(SithAIControlBlock* pLocal, rdVector3* pPos, float minDist, float moveDist, int bSomeBool, int maxRetries, rdVector3* pDestPos)
+int J3DAPI sithAIUtil_MakeRoamPos(SithAIControlBlock* pLocal, rdVector3* pPos, float minDist, float moveDist, int bAllow3D, int maxRetries, rdVector3* pDestPos)
 {
     size_t numRetries = 0;
     rdVector3 dir;
@@ -2178,7 +2178,7 @@ int J3DAPI sithAIUtil_MakeRoamPos(SithAIControlBlock* pLocal, rdVector3* pPos, f
     int currentflags;
 retry:
     currentflags = 0xC002;
-    if ( bSomeBool )
+    if ( bAllow3D )
     {
         currentflags |= 4;
     }
@@ -2190,7 +2190,7 @@ retry:
 
     int curresult;
 check:
-    if ( bSomeBool )
+    if ( bAllow3D )
     {
         currentflags = 0x10;
     }
