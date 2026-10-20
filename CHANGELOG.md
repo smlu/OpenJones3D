@@ -381,6 +381,7 @@
   - Fixed `rdParticle_Draw` overwriting the per-thing RGBA material flag with the per-particle distance test, so after one particle beyond the alpha distance all remaining particles of the thing were drawn opaque. ()
   - Fixed `rdClip_Face3GTOrtho` leaving the previous UV pointer unset for one clip plane, which gave wrong texture coordinates for polygons clipped by an orthographic camera. ()
   - Fixed `rdClip_Face3TOrtho` incrementing the clip index twice for each vertex kept by the far plane, which corrupted the clipped polygon for orthographic cameras. ()
+  - Fixed `rdCache_SendFaceListToHardware` writing the clamped texture cel back into the batch cel number, which split the draw calls of faces using the current material cel (-1) into one batch per face, and clamped the cel with unsigned comparisons. ()
   - Fixed an out-of-bounds read after the last polygon in `rdCache_SendFaceListToHardware`. [PR #52](https://github.com/smlu/OpenJones3D/pull/52)
 
 ### Game play:
