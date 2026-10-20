@@ -506,6 +506,7 @@
   - Fixed `sithVehicleControls_ProcessMineCarMove` ending the accelerating state of the mine cart using the new thrust after the first acceleration step from standstill, where the original tests the old (zero) thrust. ()
   - Fixed `sithPlayerControls_ProcessHangMove` starting the hang shimmy left animation, sound and surface attach in a different order than the original. ()
   - Fixed `sithPlayerControls_ProcessSwimMove` resetting the vertical swim thrust of the player while on the water surface; the original only resets it when not on the surface. ()
+  - Fixed `JonesHud_Process` rounding the health state passed to the health indicator to the nearest integer where the original truncates, which made the indicator and the hit overlay step one unit early. ()
 
 ## v0.3.1
 ### General:
