@@ -2081,7 +2081,7 @@ void J3DAPI Sound_FadeVolume(tSoundChannelHandle hChannel, float volume, float s
 
     // No free fades, so find the one with the longest time remaining
     SoundFade* pFade = NULL;
-    uint32_t nRemaining = 999999999;
+    int32_t nRemaining = 999999999;
     for ( size_t i = STD_ARRAYLEN(Sound_aFades); i > 0; i-- )
     {
         SoundFade* pCurFade = &Sound_aFades[i - 1];
@@ -2091,9 +2091,9 @@ void J3DAPI Sound_FadeVolume(tSoundChannelHandle hChannel, float volume, float s
             break;
         }
 
-        if ( (pCurFade->msecEndTime - curTime) > nRemaining )
+        if ( (int32_t)(pCurFade->msecEndTime - curTime) > nRemaining )
         {
-            nRemaining = pCurFade->msecEndTime - curTime;
+            nRemaining = (int32_t)(pCurFade->msecEndTime - curTime);
             pFade = pCurFade;
         }
     }
@@ -2277,7 +2277,7 @@ void J3DAPI Sound_FadePitch(tSoundChannelHandle hChannel, float pitch, float sec
 
     // No free fades, so find the one with the longest time remaining
     SoundFade* pFade = NULL;
-    uint32_t nRemaining = 999999999;
+    int32_t nRemaining = 999999999;
     for ( size_t i = STD_ARRAYLEN(Sound_aFades); i > 0; i-- )
     {
         SoundFade* pCurFade = &Sound_aFades[i - 1];
@@ -2287,9 +2287,9 @@ void J3DAPI Sound_FadePitch(tSoundChannelHandle hChannel, float pitch, float sec
             break;
         }
 
-        if ( (pCurFade->msecEndTime - curTime) > nRemaining )
+        if ( (int32_t)(pCurFade->msecEndTime - curTime) > nRemaining )
         {
-            nRemaining = pCurFade->msecEndTime - curTime;
+            nRemaining = (int32_t)(pCurFade->msecEndTime - curTime);
             pFade = pCurFade;
         }
     }
