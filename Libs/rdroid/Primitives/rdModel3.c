@@ -254,7 +254,8 @@ int J3DAPI rdModel3_LoadEntry(const char* pFilename, rdModel3* pModel3)
             goto syntax_error;
         }
 
-        if ( nRead = stdConffile_ScanLine(" meshes %d", &pGeo->numMeshes), nRead != 1 )
+        size_t numMeshes = 0;
+        if ( nRead = stdConffile_ScanLine(" meshes %d", &numMeshes), nRead != 1 )
         {
             if ( nRead < 0 )
             {
@@ -265,11 +266,12 @@ int J3DAPI rdModel3_LoadEntry(const char* pFilename, rdModel3* pModel3)
 
         // TODO: maybe check numMeshes range, if 0 should continue
 
-        pGeo->aMeshes = (rdModel3Mesh*)STDMALLOC(sizeof(rdModel3Mesh) * pGeo->numMeshes);
+        pGeo->aMeshes = (rdModel3Mesh*)STDMALLOC(sizeof(rdModel3Mesh) * numMeshes);
         if ( !pGeo->aMeshes )
         {
             goto alloc_error;
         }
+        pGeo->numMeshes = numMeshes;
 
         for ( size_t meshNum = 0; meshNum < pGeo->numMeshes; meshNum++ )
         {
