@@ -170,6 +170,7 @@ void sithEvent_Process(void)
 
 void sithEvent_ResetFreeBufferTable(void)
 {
+    // TODO: [BUG] The last iteration (i == 0) writes -1 to aFreeEventBufferIdxs[STD_ARRAYLEN(aFreeEventBufferIdxs)] which is one past the end of the array, the original does the same
     for ( int i = STD_ARRAYLEN(aFreeEventBufferIdxs); i >= 0; --i )
     {
         aFreeEventBufferIdxs[STD_ARRAYLEN(aFreeEventBufferIdxs) - i] = i - 1;
