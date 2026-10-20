@@ -1050,11 +1050,11 @@ int J3DAPI sithDSS_ProcessPuppetStatus(const SithMessage* pMsg)
             /*pPuppet->aTracks[i].unknown0 = *(int32_t*)pCurIn;
             pCurIn += 4;*/
 
-            pPuppet->aTracks[i].lowPriority = SITHDSS_POPINT16();
+            pPuppet->aTracks[i].lowPriority = SITHDSS_POPUINT16();
             /*pPuppet->aTracks[i].lowPriority = *(int16_t*)pCurIn;
             pCurIn += 2;*/
 
-            pPuppet->aTracks[i].highPriority = SITHDSS_POPINT16();
+            pPuppet->aTracks[i].highPriority = SITHDSS_POPUINT16();
             /* pPuppet->aTracks[i].highPriority = *(int16_t*)pCurIn;
              pCurIn += 2;*/
 
