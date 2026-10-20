@@ -713,11 +713,6 @@ void J3DAPI sithMulti_SyncScores()
     sithMulti_bSyncScores = 1;
 }
 
-//int J3DAPI sithMulti_GetPlayerIndexByID(DPID idPlayer)
-//{
-//    return J3D_TRAMPOLINE_CALL(sithMulti_GetPlayerIndexByID, idPlayer);
-//}
-
 void J3DAPI sithMulti_ProcessKilledPlayer(const SithPlayer* pPlayer, const SithThing* pPlayerThing, const SithThing* pKiller)
 {
     wchar_t awMessage[128];
