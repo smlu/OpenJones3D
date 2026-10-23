@@ -99,13 +99,13 @@ int J3DAPI bitmap_Create(LecBitmapHeader** ppBitmap, int width, int height, int 
                 break;
             }
 
-            // TODO: [BUG] The format has "%s" for the line number, which is an int, so the log call reads an invalid string address.
-            lec_Log("%s, line %s:  Type %d not supported", INSANE_FILE, __LINE__, type);
+            // Fixed: The original formats the integer line number with "%s", so the log call reads an invalid string address
+            lec_Log("%s, line %d:  Type %d not supported", INSANE_FILE, __LINE__, type);
             return -1;
 
         default:
-            // TODO: [BUG] See above, the line number is formatted as a string.
-            lec_Log("%s, line %s:  Type %d not supported", INSANE_FILE, __LINE__, type);
+            // Fixed: See above, the line number was formatted as a string
+            lec_Log("%s, line %d:  Type %d not supported", INSANE_FILE, __LINE__, type);
             return -1;
     }
 
@@ -295,11 +295,10 @@ int J3DAPI bitmap_CreateEx(LecBitmapHeader** ppBitmap, int width, int height, in
 
 void J3DAPI bitmap_Destroy(LecBitmapHeader** ppBitmap)
 {
-    char* pBlock = (char*)*ppBitmap - 8;
-
-    // TODO: [BUG] pBlock is never NULL, even for a NULL bitmap: the check is made on the pointer already moved to the block start.
-    if ( pBlock )
+    // Fixed: The original tests the pointer already moved to the block start (never NULL, even for a NULL bitmap) and frees address -8. Test the bitmap pointer
+    if ( *ppBitmap )
     {
+        char* pBlock = (char*)*ppBitmap - 8;
         bitmap_pMemory->Free(pBlock, INSANE_FILE, __LINE__);
     }
 
