@@ -535,7 +535,13 @@ int J3DAPI sithMulti_ProcessChat(const SithMessage* pMsg)
     size_t len = SITHDSS_POPUINT32();
     len = len < SITHMULTI_CHAT_MAXLEN ? len : SITHMULTI_CHAT_MAXLEN;
 
-    // TODO: [BUG] len can be 0: len - 1 wraps; the original strncpy then overruns aText (here the copy is clamped) and aText[len - 1] writes before aText
+    // Fixed: Reject an empty text, len - 1 wraps for len 0 and the original copies and terminates the text outside of aText.
+    if ( len == 0 )
+    {
+        SITHLOG_ERROR("Got chat message with empty text, ignored.\n");
+        return 0;
+    }
+
     char aText[SITHMULTI_CHAT_MAXLEN + 4];
     SITHDSS_POPSTRING(aText, len);
     aText[len + 1] = 0;
