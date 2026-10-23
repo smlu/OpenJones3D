@@ -311,6 +311,7 @@
   - Fixed `rdMath_DeltaAngleNormalized` passing NaN dot products through the clamp and returning the positive angle for a NaN direction test; a NaN dot product now gives 180 degrees and a NaN direction test gives the negated angle, like the original. (7f91823)
   - Fixed `rdModel3_LoadEntry` storing the mesh count of a geoset before allocating the mesh array; a failed allocation (corrupt count) left a non-zero count with a NULL array and crashed when the model entry was freed instead of failing cleanly. (7f91823)
   - Fixed `sithMulti_ProcessWelcome` indexing the player array with the unchecked player number of the message; a number outside the 24 player slots now rejects the message instead of writing out of bounds (multiplayer is dormant in the retail game). ()
+  - Fixed `sithMulti_ProcessSyncPlayers` looping over the player array with the unchecked player count of the message; a count above the 24 player slots now rejects the message instead of writing out of bounds (multiplayer is dormant in the retail game). ()
   - Fixed overlapping COG stack shifts on overflow by using `memmove` in `sithCogExec_PushStack`. [PR #55](https://github.com/smlu/OpenJones3D/pull/55)
   - Added an optional runtime guard in `sithCamera_Update` to skip cinematic camera updates while either focus thing is missing. [PR #54](https://github.com/smlu/OpenJones3D/pull/54)
   - Fixed an out-of-bounds write in `sithEvent_ResetFreeBufferTable` that could cause startup hangs in optimized Clang builds. [PR #45](https://github.com/smlu/OpenJones3D/pull/45)
