@@ -1001,6 +1001,39 @@ TEST(SmushCore, Bitmap_CreateEx)
     SmushCoreTest_ShutdownBitmap();
 }
 
+TEST(SmushCore, Bitmap_Create_UnsupportedType_Fixed)
+{
+    BitmapInterface* pBitmaps = SmushCoreTest_InitBitmap();
+    TEST_ASSERT_NOT_NULL(pBitmaps);
+
+    // Fix: the original logged the line number with "%s" and read an invalid string address (access violation) for an unsupported type
+    LecBitmapHeader* pBitmap = (LecBitmapHeader*)&g_alloc;
+    TEST_ASSERT_EQUAL_INT(-1, pBitmaps->Create(&pBitmap, 4, 3, 99));
+    TEST_ASSERT_TRUE(pBitmap == (LecBitmapHeader*)&g_alloc);
+    TEST_ASSERT_EQUAL_INT(0, g_alloc.nAllocs);
+
+    SmushCoreTest_ShutdownBitmap();
+}
+
+TEST(SmushCore, Bitmap_Destroy_Null_Fixed)
+{
+    BitmapInterface* pBitmaps = SmushCoreTest_InitBitmap();
+    TEST_ASSERT_NOT_NULL(pBitmaps);
+
+    // Fix: the original tested the pointer already moved to the block start, so a NULL bitmap freed address -8
+    LecBitmapHeader* pBitmap = NULL;
+    pBitmaps->Destroy(&pBitmap);
+    TEST_ASSERT_NULL(pBitmap);
+    TEST_ASSERT_EQUAL_INT(0, g_alloc.nFrees);
+
+    TEST_ASSERT_EQUAL_INT(0, pBitmaps->Create(&pBitmap, 4, 3, 3));
+    pBitmaps->Destroy(&pBitmap);
+    TEST_ASSERT_NULL(pBitmap);
+    TEST_ASSERT_EQUAL_INT(1, g_alloc.nFrees);
+
+    SmushCoreTest_ShutdownBitmap();
+}
+
 /* ---- Timer ---- */
 
 static volatile LONG g_timerCalls[TIMER_COUNT + 2];
@@ -1288,6 +1321,8 @@ TEST_GROUP_RUNNER(SmushCore)
     RUN_TEST_CASE(SmushCore, Bitmap_Create_Indexed);
     RUN_TEST_CASE(SmushCore, Bitmap_Create_AllocFailure);
     RUN_TEST_CASE(SmushCore, Bitmap_CreateEx);
+    RUN_TEST_CASE(SmushCore, Bitmap_Create_UnsupportedType_Fixed);
+    RUN_TEST_CASE(SmushCore, Bitmap_Destroy_Null_Fixed);
     RUN_TEST_CASE(SmushCore, Timer_Register_PublishesInterface);
     RUN_TEST_CASE(SmushCore, Timer_Alloc_Free);
     RUN_TEST_CASE(SmushCore, Timer_Startup_Shutdown);
