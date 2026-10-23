@@ -206,6 +206,12 @@ static void sithDSSTest_PrintDeltas(const char* pTitle, const uint8_t* pRec, siz
     }
 }
 
+// Optional hook of sithDSSTest_RunCases: builds the record the reconstruction is expected to produce for a case from the
+// record of the original, for the cases in which a deliberate fix (marked Fixed: in the sources) changes the engine calls.
+// Returns 0 if the original record applies unchanged.
+typedef int (*SithDSSTestAdjustFn)(const SithDSSTestFixCase* pCase, DssvBuf* pOut);
+static SithDSSTestAdjustFn sithDSSTest_pfnAdjustExpected;
+
 // Runs the cases of aCases that are present in the fixture and whose name starts with one of the two prefixes
 static unsigned sithDSSTest_RunCases(const DssvCase* aCases, unsigned numCases, const SithDSSTestFixture* pFix,
     const char* pPrefixA, const char* pPrefixB, char* pFailText, size_t failTextSize)
@@ -236,22 +242,31 @@ static unsigned sithDSSTest_RunCases(const DssvCase* aCases, unsigned numCases, 
         in.length = fc->inLength;
         in.data   = fc->pInData;
 
+        const uint8_t* pExp = fc->pRec;
+        size_t expSize      = fc->recSize;
+        DssvBuf adjusted    = { 0 };
+        if ( sithDSSTest_pfnAdjustExpected && sithDSSTest_pfnAdjustExpected(fc, &adjusted) )
+        {
+            pExp    = adjusted.p;
+            expSize = adjusted.size;
+        }
+
         // Every case is run with both fill patterns the capture used to reject out of bounds accesses
         for ( uint32_t fill = 0xA5; fill != 0; fill = (fill == 0xA5 ? 0x5A : 0) )
         {
             DssvBuf rec = { 0 };
             dssv_RunCase(c, fill, fc->bHasIn ? &in : NULL, &rec);
-            if ( rec.size != fc->recSize || memcmp(rec.p, fc->pRec, rec.size) != 0 )
+            if ( rec.size != expSize || memcmp(rec.p, pExp, rec.size) != 0 )
             {
                 ++numFailed;
                 char aDesc[768];
-                sithDSSTest_Describe(aDesc, sizeof(aDesc), fc->pRec, fc->recSize, rec.p, rec.size);
+                sithDSSTest_Describe(aDesc, sizeof(aDesc), pExp, expSize, rec.p, rec.size);
                 size_t len = strlen(pFailText);
                 snprintf(pFailText + len, failTextSize - len, "\n  %s (fill %02x): %s", fc->aName, fill, aDesc);
                 if ( GetEnvironmentVariableA("SITHDSS_VERBOSE", NULL, 0) != 0 )
                 {
                     printf("  %s\n", fc->aName);
-                    sithDSSTest_PrintDeltas("expected", fc->pRec, fc->recSize);
+                    sithDSSTest_PrintDeltas("expected", pExp, expSize);
                     sithDSSTest_PrintDeltas("actual  ", rec.p, rec.size);
                 }
                 dssvB_free(&rec);
@@ -259,6 +274,8 @@ static unsigned sithDSSTest_RunCases(const DssvCase* aCases, unsigned numCases, 
             }
             dssvB_free(&rec);
         }
+
+        dssvB_free(&adjusted);
     }
 
     TEST_ASSERT_TRUE_MESSAGE(numCasesFound > 0, pPrefixA);
@@ -303,6 +320,7 @@ TEST_TEAR_DOWN(sithDSS)
     _CrtSetDebugFillThreshold(sithDSSTest_previousDebugFillThreshold);
 #endif
     sithDSSTest_FreeFixture(&sithDSSTest_dssFixture);
+    sithDSSTest_pfnAdjustExpected = NULL;
     sith_g_pHS = NULL;
 }
 
@@ -319,7 +337,33 @@ SITHDSSTEST_FAMILY(SurfaceStatus, "SurfaceStatus_", "ProcessSurfaceStatus_")
 SITHDSSTEST_FAMILY(SectorStatus, "SectorStatus_", "ProcessSectorStatus_")
 SITHDSSTEST_FAMILY(SectorFlags, "SectorFlags_", "ProcessSectorFlags_")
 SITHDSSTEST_FAMILY(SyncSeenSectors, "SyncSeenSectors", "ProcessSyncSeenSecors")
-SITHDSSTEST_FAMILY(AIStatus, "AIStatus_", "ProcessAIStatus_")
+// sithDSS_ProcessAIStatus frees the frames array it replaces (marked Fixed: in the source; the original leaks it). The record
+// of the original therefore gets one more engine call in the cases that allocate new frames: the free of the old array,
+// which is the frames array of the AI of the synthetic world, before the allocation.
+static int sithDSSTest_AdjustAIStatus(const SithDSSTestFixCase* pCase, DssvBuf* pOut)
+{
+    uint32_t evSize = sithDSSTest_Rd32(pCase->pRec + 12);
+    if ( strncmp(pCase->aName, "ProcessAIStatus_", 16) != 0 || evSize == 0 || pCase->pRec[16] != DSSV_EV_MALLOC )
+    {
+        return 0;
+    }
+
+    dssvB_put(pOut, pCase->pRec, 12);
+    dssvB_u32(pOut, evSize + 5);
+    dssvB_u8(pOut, DSSV_EV_FREE);
+    dssvB_u32(pOut, 0xDEAD0000u); // dssv_Id of a pointer that is not an entity of the world
+    dssvB_put(pOut, pCase->pRec + 16, pCase->recSize - 16);
+    return 1;
+}
+
+TEST(sithDSS, TestOriginalAIStatus)
+{
+    sithDSSTest_pfnAdjustExpected = sithDSSTest_AdjustAIStatus;
+    unsigned numFailed = sithDSSTest_RunCases(dssv_aDSSCases, (unsigned)DSSV_NUMDSSCASES, &sithDSSTest_dssFixture, "AIStatus_", "ProcessAIStatus_", sithDSSTest_aFailText, sizeof(sithDSSTest_aFailText));
+    sithDSSTest_pfnAdjustExpected = NULL;
+    TEST_ASSERT_EQUAL_UINT_MESSAGE(0, numFailed, sithDSSTest_aFailText);
+}
+
 SITHDSSTEST_FAMILY(Inventory, "Inventory_", "ProcessInventory_")
 SITHDSSTEST_FAMILY(AnimStatus, "AnimStatus_", "ProcessAnimStatus_")
 SITHDSSTEST_FAMILY(SyncTaskEvents, "SyncTaskEvents_", "ProcessSyncTaskEvents_")

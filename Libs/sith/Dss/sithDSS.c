@@ -501,7 +501,13 @@ int J3DAPI sithDSS_ProcessAIStatus(const SithMessage* pMsg)
     pLocal->msecPauseMoveUntil = SITHDSS_POPINT32();
     pLocal->numFrames          = SITHDSS_POPINT32();
 
-    // TODO: [BUG] Previously allocated aFrames is not freed, it leaks
+    // Fixed: Free the previously allocated frames before replacing them, the original leaks the old array with every message.
+    if ( pLocal->numFrames && pLocal->aFrames )
+    {
+        STDFREE(pLocal->aFrames);
+        pLocal->aFrames = NULL;
+    }
+
     if ( pLocal->numFrames && (pLocal->aFrames = (rdVector3*)STDMALLOC(sizeof(rdVector3) * pLocal->numFrames)) != NULL )
     {
         pLocal->sizeFrames = pLocal->numFrames;
