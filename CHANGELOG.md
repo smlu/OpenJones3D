@@ -144,6 +144,7 @@
   - Fixed `animframe_Startup` dereferencing a failed decoder subscription; the decoder is skipped instead. ()
   - Fixed `stdfile_gets` of the movie player returning an unterminated string for a line that fills the buffer (it now reads at most size - 1 characters and always terminates, like `fgets`). ()
   - Fixed `zfilio_Configure` leaving the extension argument unread when the extension table is full, which made the next tag read take the string pointer and fail the call. ()
+  - Fixed `zfilio_open` reading an uninitialized uncompressed size for gz files shorter than 4 bytes and `zfilio_seek` returning no value for gz files; the size starts at 0 and the seek returns 0. ()
 
 ### Engine:
   - Added check for zero size in lip sync data generation to prevent allocation errors (f79736b)

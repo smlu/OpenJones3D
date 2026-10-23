@@ -230,6 +230,7 @@ static int Test_FilioRead(int fh, void* pBuf, int size)
 {
     MockFile* pFile = &Test_files[fh - 1];
     int n           = size;
+    if ( pFile->pos < 0 ) { return 0; }
     if ( pFile->pos + n > pFile->size ) { n = pFile->size - pFile->pos; }
     if ( n < 0 ) { n = 0; }
     memcpy(pBuf, pFile->data + pFile->pos, n);
@@ -1206,6 +1207,28 @@ TEST(SmushStream, zfilio_GzFileTracksLogicalPosition)
     TEST_ASSERT_EQUAL_INT(Test_numAllocs, Test_numFrees);
 }
 
+TEST(SmushStream, zfilio_GzShortFileSizeAndSeekResult_Fixed)
+{
+    SmushStreamTest_StartZfilio();
+    uint8_t data[2] = { 0x11, 0x22 };
+    Test_AddFile("short.gz", data, 2);
+
+    // Fix: the uncompressed size is 0 if the probe of the last 4 bytes reads fewer bytes (the original leaves it uninitialized)
+    ZfileHandle* pFile = zfilio_open("short.gz", "rb");
+    TEST_ASSERT_NOT_NULL(pFile);
+    TEST_ASSERT_EQUAL_INT(1, pFile->isGz);
+    TEST_ASSERT_EQUAL_INT(0, pFile->gzSize);
+
+    // Fix: zfilio_seek of a gz file returns 0 (the original returns no value) and so does a seek on a closed handle
+    TEST_ASSERT_EQUAL_INT(0, zfilio_seek(pFile, 1, 0));
+    TEST_ASSERT_EQUAL_INT(1, zfilio_tell(pFile));
+    void* hFile  = pFile->hFile;
+    pFile->hFile = NULL;
+    TEST_ASSERT_EQUAL_INT(0, zfilio_seek(pFile, 1, 0));
+    pFile->hFile = hFile;
+    zfilio_close(pFile);
+}
+
 TEST(SmushStream, zfilio_PlainFilesPassThroughToChainedFilio)
 {
     SmushStreamTest_StartZfilio();
@@ -1684,6 +1707,7 @@ TEST_GROUP_RUNNER(SmushStream)
     RUN_TEST_CASE(SmushStream, zfilio_ConfigureAddsExtensionsAndRejectsUnknownTags);
     RUN_TEST_CASE(SmushStream, zfilio_ConfigureLimitsExtensionCount);
     RUN_TEST_CASE(SmushStream, zfilio_GzFileTracksLogicalPosition);
+    RUN_TEST_CASE(SmushStream, zfilio_GzShortFileSizeAndSeekResult_Fixed);
     RUN_TEST_CASE(SmushStream, zfilio_PlainFilesPassThroughToChainedFilio);
     RUN_TEST_CASE(SmushStream, animframe_StartupRequiresBitmapAndMemory);
     RUN_TEST_CASE(SmushStream, animframe_StartupFailedDecoderSubscription_Fixed);
