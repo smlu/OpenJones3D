@@ -4,11 +4,13 @@
 
 void TEST_sithDSS_GROUP_RUNNER(void);
 void TEST_sithDSSThing_GROUP_RUNNER(void);
+void TEST_sithDSSFix_GROUP_RUNNER(void);
 
 static void SithDSSTest_RunAllTests(void)
 {
     TEST_sithDSS_GROUP_RUNNER();
     TEST_sithDSSThing_GROUP_RUNNER();
+    TEST_sithDSSFix_GROUP_RUNNER();
 }
 
 int main(int argc, const char* argv[])
