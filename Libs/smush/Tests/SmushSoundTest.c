@@ -1109,8 +1109,8 @@ static void SstExpect(SstKind kind, const uint8_t* pSrc, int count, int n, int l
     uint32_t step = ((uint32_t)count << 16) / (uint32_t)n;
     if ( step == 0x8000 )
     {
-        // Doubling: each source sample is followed by the mean with its neighbour; the mono kernels take the sample two ahead
-        // instead of the next one (TODO: [BUG] preserved from the original), the last sample is repeated.
+        // Doubling: each source sample is followed by the mean with its neighbour; the original's mono kernels take the sample two
+        // ahead instead of the next one (the QOL build takes the next one), the last sample is repeated.
         for ( int f = 0; f < n; f++ )
         {
             int k = f / 2;
@@ -1118,7 +1118,7 @@ static void SstExpect(SstKind kind, const uint8_t* pSrc, int count, int n, int l
             for ( int c = 0; c < (stereo ? 2 : 1); c++ )
             {
                 int idx = stereo ? 2 * k + c : k;
-                int idxNext = stereo ? 2 * k + 2 + c : k + 2;
+                int idxNext = stereo ? 2 * k + 2 + c : k + J3D_QOL_VALUE(1, 2);
                 int v;
                 if ( !bMean ) {
                     v = SstRef(kind, pSrc, idx);
