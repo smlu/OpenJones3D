@@ -2259,6 +2259,34 @@ TEST(sithThingBinary, TestParseArgFloatRange)
     TEST_ASSERT_EQUAL_FLOAT(7.0f, thing.userval);
 }
 
+TEST(sithThingBinary, TestParseArgCollideRange)
+{
+    // The collide type is parsed unsigned: values above SITH_COLLIDE_FACE and negative values are rejected like in the original.
+    static SithThing thing;
+    memset(&thing, 0, sizeof(thing));
+
+    StdConffileArg arg = { "collide", "1" };
+    TEST_ASSERT_EQUAL_INT(0, sithThing_ParseThingArg(&arg, &sithThingTest_staticWorld, &thing, SITHTHING_ARG_COLLIDE));
+    TEST_ASSERT_EQUAL_INT(SITH_COLLIDE_SPHERE, thing.collide.type);
+
+    arg.argValue = "3";
+    TEST_ASSERT_EQUAL_INT(0, sithThing_ParseThingArg(&arg, &sithThingTest_staticWorld, &thing, SITHTHING_ARG_COLLIDE));
+    TEST_ASSERT_EQUAL_INT(SITH_COLLIDE_FACE, thing.collide.type);
+
+    arg.argValue = "0";
+    TEST_ASSERT_EQUAL_INT(0, sithThing_ParseThingArg(&arg, &sithThingTest_staticWorld, &thing, SITHTHING_ARG_COLLIDE));
+    TEST_ASSERT_EQUAL_INT(SITH_COLLIDE_NONE, thing.collide.type);
+
+    static const char* const aInvalid[] = { "4", "-1", "-2", "-2147483648", "4294967295", "99999999999" };
+    for ( size_t i = 0; i < sizeof(aInvalid) / sizeof(aInvalid[0]); ++i )
+    {
+        thing.collide.type = SITH_COLLIDE_SPHERE;
+        arg.argValue = (char*)aInvalid[i];
+        TEST_ASSERT_NOT_EQUAL_MESSAGE(0, sithThing_ParseThingArg(&arg, &sithThingTest_staticWorld, &thing, SITHTHING_ARG_COLLIDE), aInvalid[i]);
+        TEST_ASSERT_EQUAL_INT_MESSAGE(SITH_COLLIDE_SPHERE, thing.collide.type, aInvalid[i]);
+    }
+}
+
 TEST(sithThingBinary, TestStaticListFailures)
 {
     // Covers malformed text, allocation failures, skipped placements, and binary wrapper failures.
@@ -2340,6 +2368,7 @@ TEST_GROUP_RUNNER(sithThingBinary)
     RUN_TEST_CASE(sithThingBinary, TestStaticListPerformanceAndSkip);
     RUN_TEST_CASE(sithThingBinary, TestStaticListFailures);
     RUN_TEST_CASE(sithThingBinary, TestParseArgFloatRange);
+    RUN_TEST_CASE(sithThingBinary, TestParseArgCollideRange);
 }
 
 //
@@ -2438,9 +2467,9 @@ TEST(sithThingParseArg, TestCollide)
     TEST_ASSERT_EQUAL_INT(SITHTHING_TEST_PARSEARG_PARSED, sithThingTest_ParseArg(SITHTHING_ARG_COLLIDE, "collide", "2"));
     TEST_ASSERT_EQUAL_INT(2, sithThingTest_parseThing.collide.type);
 
-    // TODO: [BUG] in sithThing_ParseThingArg: "-1" wraps to a negative collide type and passes the upper bound check
-    TEST_ASSERT_EQUAL_INT(SITHTHING_TEST_PARSEARG_PARSED, sithThingTest_ParseArg(SITHTHING_ARG_COLLIDE, "collide", "-1"));
-    TEST_ASSERT_EQUAL_INT(-1, sithThingTest_parseThing.collide.type);
+    // A negative value is rejected (it converts to a large unsigned value)
+    TEST_ASSERT_EQUAL_INT(SITHTHING_TEST_PARSEARG_BADSYNTAX, sithThingTest_ParseArg(SITHTHING_ARG_COLLIDE, "collide", "-1"));
+    TEST_ASSERT_EQUAL_INT(2, sithThingTest_parseThing.collide.type);
 }
 
 TEST(sithThingParseArg, TestMove)
