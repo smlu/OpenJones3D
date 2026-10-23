@@ -2195,7 +2195,11 @@ int J3DAPI jonesConfig_LoadControlScheme(const char* pFilePath, JonesControlsSch
                 uint8_t bKeyboard = 0;
 
                 int keyIdx = jonesConfig_ParseArgumentIndex(&argNum, &stdConffile_g_entry, jonesConfig_maxControlWords, jonesConfig_aControlKeyStrings, STD_ARRAYLEN(jonesConfig_aControlKeyStrings));
-                pConfig->aActions[actionIdx][bindNum] = keyIdx;
+                // Fixed: Store the binding only inside the action row, the original stores the 9th binding one entry past the row before the binding count is tested below.
+                if ( bindNum < STD_ARRAYLEN(pConfig->aActions[actionIdx]) )
+                {
+                    pConfig->aActions[actionIdx][bindNum] = keyIdx;
+                }
 
                 if ( keyIdx != -1 )
                 {
@@ -2206,7 +2210,10 @@ int J3DAPI jonesConfig_LoadControlScheme(const char* pFilePath, JonesControlsSch
                     // We couldn't find control key num, try searching by control mouse button num, gamepad & joystick button num
                     --argNum; // Has to be decremented as jonesConfig_ParseArgumentIndex increments it
                     int controllerKey = jonesConfig_ParseJoystickControlId(&argNum, &stdConffile_g_entry);
-                    pConfig->aActions[actionIdx][bindNum] = controllerKey;
+                    if ( bindNum < STD_ARRAYLEN(pConfig->aActions[actionIdx]) ) // Fixed: See above
+                    {
+                        pConfig->aActions[actionIdx][bindNum] = controllerKey;
+                    }
 
                     if ( controllerKey == -1 )
                     {
@@ -2220,7 +2227,6 @@ int J3DAPI jonesConfig_LoadControlScheme(const char* pFilePath, JonesControlsSch
                 bindNum++;
                 JONESCONTROL_ACTION_UPDATENUMBINDINGS(pConfig->aActions[actionIdx], bKeyboard, bController);
 
-                // TODO: [BUG] The binding at index bindNum is stored before this test, so the 9th binding is written one entry past the action row
                 if ( (uint8_t)(pConfig->aActions[actionIdx][0] & 0xFF) > JONESCONTROL_ACTION_MAXBINDS )
                 {
                     static_assert(STD_ARRAYLEN(pConfig->aActions[actionIdx]) == 9, "STD_ARRAYLEN(pConfig->aActions[actionIdx]) == 9");
