@@ -153,6 +153,7 @@
   - Fixed `animframe_Startup` dereferencing a failed decoder subscription; the decoder is skipped instead. ()
   - Fixed `stdfile_gets` of the movie player returning an unterminated string for a line that fills the buffer (it now reads at most size - 1 characters and always terminates, like `fgets`). ()
   - Fixed `zfilio_Configure` leaving the extension argument unread when the extension table is full, which made the next tag read take the string pointer and fail the call. ()
+  - Fixed `zfilio_open` reading an uninitialized uncompressed size for gz files shorter than 4 bytes and `zfilio_seek` returning no value for gz files; the size starts at 0 and the seek returns 0. ()
   - Fixed GitHub Actions test triggering on develop and pull requests, with separate build and test status badges for DirectX 6/9. (1026ad0)
   - Applied official 1.2 update fix to `jonesConfig_ControlToString`: key names in the control configuration dialog are now queried from the system keyboard layout with `GetKeyNameTextA` instead of a hardcoded English table. (ead3679)
   - Applied official 1.2 update fix to `jonesConfig_StoreDialog_HandleWM_COMMAND`: closing the store dialog with a balance of exactly 0 now shows the purchase confirmation instead of leaving silently. (ead3679)
