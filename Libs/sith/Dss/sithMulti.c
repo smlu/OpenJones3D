@@ -223,7 +223,13 @@ int J3DAPI sithMulti_ProcessWelcome(const SithMessage* pMsg)
 
     SITHLOG_STATUS("Processing welcome from player %d (id=%x).\n", playerNum, playerId);
 
-    // TODO: [BUG] playerNum is read from the message and used as an index into sithPlayer_g_aPlayers without a range check
+    // Fixed: Reject a player number outside of the player array, the original indexes sithPlayer_g_aPlayers with it unchecked.
+    if ( (unsigned int)playerNum >= SITHPLAYER_MAX_PLAYERS )
+    {
+        SITHLOG_ERROR("Got welcome from invalid player number %d, ignored.\n", playerNum);
+        return 0;
+    }
+
     wchar_t awName[SITHMULTI_PLAYERNAME_LEN];
     SITHDSS_POPWSTRING(awName, STD_ARRAYLEN(awName));
     STD_WSTRCPY(sithPlayer_g_aPlayers[playerNum].awName, awName);

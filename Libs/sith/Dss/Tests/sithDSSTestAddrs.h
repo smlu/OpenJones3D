@@ -15,6 +15,7 @@
 #include <sith/types.h>
 #include <sith/Gameplay/sithPlayer.h>
 #include <sith/RTI/addresses.h>
+#include <std/RTI/addresses.h>
 
 typedef struct
 {
@@ -59,6 +60,8 @@ typedef struct
     int lastChalkMarkNum;
     SithThing* aChalkMarks[10];
     SithCog* pMasterCog;
+    size_t numPlayers;
+    char aGenBuffer[2048];
 } SithDSSTestGlobals;
 
 extern SithDSSTestGlobals sithDSSTest_g;
@@ -104,6 +107,8 @@ extern SithDSSTestGlobals sithDSSTest_g;
 #undef sithFX_g_lastChalkMarkNum_ADDR
 #undef sithFX_g_aChalkMarks_ADDR
 #undef sithCog_g_pMasterCog_ADDR
+#undef sithPlayer_g_numPlayers_ADDR
+#undef std_g_genBuffer_ADDR
 
 #define sithMulti_g_message_ADDR ((uintptr_t)&sithDSSTest_g.message)
 #define sithMulti_g_serverId_ADDR ((uintptr_t)&sithDSSTest_g.serverId)
@@ -146,5 +151,7 @@ extern SithDSSTestGlobals sithDSSTest_g;
 #define sithFX_g_lastChalkMarkNum_ADDR ((uintptr_t)&sithDSSTest_g.lastChalkMarkNum)
 #define sithFX_g_aChalkMarks_ADDR ((uintptr_t)&sithDSSTest_g.aChalkMarks)
 #define sithCog_g_pMasterCog_ADDR ((uintptr_t)&sithDSSTest_g.pMasterCog)
+#define sithPlayer_g_numPlayers_ADDR ((uintptr_t)&sithDSSTest_g.numPlayers)
+#define std_g_genBuffer_ADDR ((uintptr_t)&sithDSSTest_g.aGenBuffer)
 
 #endif // SITHDSSTESTADDRS_H

@@ -450,3 +450,78 @@ TEST_GROUP_RUNNER(sithDSSThing)
     RUN_TEST_CASE(sithDSSThing, TestOriginalDestroyThing);
     RUN_TEST_CASE(sithDSSThing, TestOriginalMoveToPos);
 }
+
+// ---------------------------------------------------------------------------------------------------------------
+// Hand-written tests of deliberate deviations from the original (marked Fixed: in the sources). The original-engine
+// vectors above do not contain these inputs (see tv/sithDSS/README.md), so the cases are built here.
+// ---------------------------------------------------------------------------------------------------------------
+TEST_GROUP(sithDSSFix);
+
+static SithMessage sithDSSFixTest_msg;
+static SithDSSTestGlobals sithDSSFixTest_savedGlobals;
+static char sithDSSFixTest_aConsoleText[256];
+static unsigned sithDSSFixTest_numConsolePrints;
+
+// Replaces sithConsole_PrintString in the tested sources (see sithMultiSeams.def)
+void J3DAPI dssv_sithConsole_PrintString(const char* pString)
+{
+    snprintf(sithDSSFixTest_aConsoleText, sizeof(sithDSSFixTest_aConsoleText), "%s", pString);
+    ++sithDSSFixTest_numConsolePrints;
+}
+
+TEST_SETUP(sithDSSFix)
+{
+    dssv_InitHostServices();
+    sith_g_pHS = &dssv_hostServices;
+    memset(&sithDSSTest_g, 0, sizeof(sithDSSTest_g));
+    memset(&sithDSSFixTest_msg, 0, sizeof(sithDSSFixTest_msg));
+    dssv_numAsserts = dssv_numErrors = dssv_numStatus = dssv_numMallocs = 0;
+    sithDSSFixTest_aConsoleText[0] = 0;
+    sithDSSFixTest_numConsolePrints = 0;
+}
+
+TEST_TEAR_DOWN(sithDSSFix)
+{
+    sith_g_pHS = NULL;
+}
+
+static void sithDSSFixTest_SaveGlobals(void)
+{
+    memcpy(&sithDSSFixTest_savedGlobals, &sithDSSTest_g, sizeof(sithDSSTest_g));
+}
+
+static void sithDSSFixTest_AssertGlobalsUnchanged(void)
+{
+    TEST_ASSERT_EQUAL_MEMORY(&sithDSSFixTest_savedGlobals, &sithDSSTest_g, sizeof(sithDSSTest_g));
+}
+
+static void sithDSSFixTest_BuildWelcome(int playerNum)
+{
+    SITHDSS_STARTOUTEX(&sithDSSFixTest_msg, SITHDSS_WELCOME);
+    SITHDSS_PUSHINT32(playerNum);
+    SITHDSS_PUSHINT32(0x1234); // player id, not the local player
+    memset(pCurDSSMsgData_, 'A', 32); // player name
+    pCurDSSMsgData_ += 32;
+    SITHDSS_ENDOUT;
+}
+
+// sithMulti_ProcessWelcome indexed sithPlayer_g_aPlayers with the player number of the message unchecked
+TEST(sithDSSFix, WelcomeRejectsInvalidPlayerNum)
+{
+    static const int aBad[] = { SITHPLAYER_MAX_PLAYERS, SITHPLAYER_MAX_PLAYERS + 1, 1000, -1, INT_MIN };
+    for ( size_t i = 0; i < sizeof(aBad) / sizeof(aBad[0]); ++i )
+    {
+        dssv_numErrors = 0;
+        sithDSSFixTest_SaveGlobals();
+        sithDSSFixTest_BuildWelcome(aBad[i]);
+
+        TEST_ASSERT_EQUAL_INT_MESSAGE(0, sithMulti_ProcessWelcome(&sithDSSFixTest_msg), "invalid player number accepted");
+        TEST_ASSERT_EQUAL_UINT(1, dssv_numErrors);
+        sithDSSFixTest_AssertGlobalsUnchanged();
+    }
+}
+
+TEST_GROUP_RUNNER(sithDSSFix)
+{
+    RUN_TEST_CASE(sithDSSFix, WelcomeRejectsInvalidPlayerNum);
+}

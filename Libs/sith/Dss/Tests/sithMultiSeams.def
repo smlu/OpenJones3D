@@ -1,0 +1,3 @@
+// Engine functions that sithMulti.c calls and that the sithMulti tests (sithDSSTest.c) replace with stubs. Not used by
+// the capture harness. Each name N is replaced by dssv_N in the tested sources (see CMakeLists.txt).
+DSSV_SEAM(sithConsole_PrintString)
