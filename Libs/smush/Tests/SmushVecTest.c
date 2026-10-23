@@ -487,7 +487,12 @@ TEST(SmushVec, TestOriginalStdfile)
 
 TEST(SmushVec, TestOriginalZfilio)
 {
-    SmushVecTest_Run("File/ZfilioVec.tv", SmushVec_RunZfilio, NULL, 0);
+    // zfilio_Configure consumes the extension argument that is dropped when the table is full (the original leaves it for the next tag
+    // read and fails with -1): the two records of the full table case differ
+    static const SmushVecTestKnown aKnown[] = {
+        { "zfilio_Configure full", "zfilio_Configure consumes the dropped extension argument" },
+    };
+    SmushVecTest_Run("File/ZfilioVec.tv", SmushVec_RunZfilio, aKnown, STD_ARRAYLEN(aKnown));
 }
 
 TEST_GROUP_RUNNER(SmushVec)

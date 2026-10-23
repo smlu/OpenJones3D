@@ -171,12 +171,18 @@ int J3DAPI zfilio_Configure(int tag, ...)
                 {
                     zfilio_extensions[zfilio_extCount++] = va_arg(args, const char*);
                 }
-                else if ( zfilio_pDebug )
+                else
                 {
-                    zfilio_pDebug->Print("Too many zfilio extension set");
+                    if ( zfilio_pDebug )
+                    {
+                        zfilio_pDebug->Print("Too many zfilio extension set");
+                    }
+
+                    // Fixed: The original leaves the dropped extension argument unread when the table is full, so the next tag read takes it,
+                    //        which fails the call (and with it the remaining tags). Consume the argument
+                    (void)va_arg(args, const char*);
                 }
 
-                // TODO: [BUG] The extension argument is not consumed when the table is full, so the next tag read takes it
                 break;
 
             default:
