@@ -298,6 +298,7 @@
   - Fixed `rdMath_DeltaAngleNormalized` passing NaN dot products through the clamp and returning the positive angle for a NaN direction test; a NaN dot product now gives 180 degrees and a NaN direction test gives the negated angle, like the original. (1cad8e3)
   - Fixed `rdModel3_LoadEntry` storing the mesh count of a geoset before allocating the mesh array; a failed allocation (corrupt count) left a non-zero count with a NULL array and crashed when the model entry was freed instead of failing cleanly. (7415137)
   - Fixed `sithMulti_ProcessWelcome` indexing the player array with the unchecked player number of the message; a number outside the 24 player slots now rejects the message instead of writing out of bounds (multiplayer is dormant in the retail game). ()
+  - Fixed `sithMulti_ProcessSyncPlayers` looping over the player array with the unchecked player count of the message; a count above the 24 player slots now rejects the message instead of writing out of bounds (multiplayer is dormant in the retail game). ()
 
 ### Graphics:
   - Fixed an issue where active textures used in the current render frame were being removed from the cache prematurely in low VRAM situations (f37ecb7)

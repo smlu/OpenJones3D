@@ -521,7 +521,48 @@ TEST(sithDSSFix, WelcomeRejectsInvalidPlayerNum)
     }
 }
 
+static void sithDSSFixTest_BuildSyncPlayers(unsigned numPlayers)
+{
+    SITHDSS_STARTOUTEX(&sithDSSFixTest_msg, SITHDSS_SYNCPLAYERS);
+    SITHDSS_PUSHUINT32(0x7001); // server id
+    SITHDSS_PUSHUINT16((uint16_t)numPlayers);
+    memset(pCurDSSMsgData_, 0, 4 * SITHPLAYER_MAX_PLAYERS); // flags of the players, none set
+    SITHDSS_ENDOUT;
+}
+
+// sithMulti_ProcessSyncPlayers looped over sithPlayer_g_aPlayers with the player count of the message unchecked
+TEST(sithDSSFix, SyncPlayersRejectsTooManyPlayers)
+{
+    static const unsigned aBad[] = { SITHPLAYER_MAX_PLAYERS + 1, 100, 0xFFFF };
+    for ( size_t i = 0; i < sizeof(aBad) / sizeof(aBad[0]); ++i )
+    {
+        dssv_numErrors = 0;
+        sithDSSTest_g.numPlayers = 3;
+        memset(&sithDSSTest_g.aPlayers, 0x5A, sizeof(sithDSSTest_g.aPlayers));
+        sithDSSFixTest_SaveGlobals();
+        sithDSSFixTest_BuildSyncPlayers(aBad[i]);
+
+        TEST_ASSERT_EQUAL_INT_MESSAGE(0, sithMulti_ProcessSyncPlayers(&sithDSSFixTest_msg), "invalid player count accepted");
+        TEST_ASSERT_EQUAL_UINT(1, dssv_numErrors);
+
+        // The message is ignored: the player count and the players stay as they were (the server id is stored before the count is read)
+        TEST_ASSERT_EQUAL_UINT(3, sithDSSTest_g.numPlayers);
+        TEST_ASSERT_EQUAL_MEMORY(&sithDSSFixTest_savedGlobals.aPlayers, &sithDSSTest_g.aPlayers, sizeof(sithDSSTest_g.aPlayers));
+    }
+}
+
+// The full player array is still accepted
+TEST(sithDSSFix, SyncPlayersAcceptsMaxPlayers)
+{
+    sithDSSFixTest_BuildSyncPlayers(SITHPLAYER_MAX_PLAYERS);
+    TEST_ASSERT_EQUAL_INT(1, sithMulti_ProcessSyncPlayers(&sithDSSFixTest_msg));
+    TEST_ASSERT_EQUAL_UINT(SITHPLAYER_MAX_PLAYERS, sithDSSTest_g.numPlayers);
+    TEST_ASSERT_EQUAL_UINT(0, dssv_numErrors);
+}
+
 TEST_GROUP_RUNNER(sithDSSFix)
 {
     RUN_TEST_CASE(sithDSSFix, WelcomeRejectsInvalidPlayerNum);
+    RUN_TEST_CASE(sithDSSFix, SyncPlayersRejectsTooManyPlayers);
+    RUN_TEST_CASE(sithDSSFix, SyncPlayersAcceptsMaxPlayers);
 }

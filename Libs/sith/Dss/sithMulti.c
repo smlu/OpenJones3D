@@ -347,8 +347,15 @@ signed int J3DAPI sithMulti_ProcessSyncPlayers(const SithMessage* pMsg)
 
     sithMulti_g_serverId = SITHDSS_POPUINT32();
 
-    // TODO: [BUG] numPlayers is read from the message and not limited to SITHPLAYER_MAX_PLAYERS, the loop below can write past sithPlayer_g_aPlayers
-    sithPlayer_g_numPlayers = SITHDSS_POPUINT16();
+    // Fixed: Reject a player count that exceeds the player array, the original loops over sithPlayer_g_aPlayers with it unchecked.
+    uint16_t numPlayers = SITHDSS_POPUINT16();
+    if ( numPlayers > SITHPLAYER_MAX_PLAYERS )
+    {
+        SITHLOG_ERROR("Got sync players with invalid player count %d, ignored.\n", numPlayers);
+        return 0;
+    }
+
+    sithPlayer_g_numPlayers = numPlayers;
 
     for ( size_t i = 0; i < sithPlayer_g_numPlayers; ++i )
     {
