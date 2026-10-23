@@ -28,6 +28,7 @@
 // Test-only resets of the private statics (Engine.c, Dsnd.c under J3D_TEST)
 void Engine_TestReset(void);
 void Dsnd_TestReset(void);
+void Dsnd_TestSetOwned(LPDIRECTSOUNDBUFFER pPrimary);
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Mocks
@@ -1885,6 +1886,21 @@ TEST(SmushSoundDsnd, StopFreesTimerMixerAndBuffer)
     TEST_ASSERT_EQUAL_INT(-1, dsnd_GetPlayPos()); // No buffer any more
 }
 
+TEST(SmushSoundDsnd, ReleaseFreesDirectSoundCreatedByTheDriver_Fixed)
+{
+    TEST_ASSERT_EQUAL_INT(0, dsnd_Configure(5, &SstDS.base, 0));
+    Dsnd_TestSetOwned(&SstBuf.base); // As after dsnd_Init created the DirectSound object and the primary buffer
+
+    // Fix: the original cleared the ownership flag with the primary buffer and never released the DirectSound object of the driver
+    dsnd_Release();
+    TEST_ASSERT_EQUAL_INT(1, SstBuf.numRelease);
+    TEST_ASSERT_EQUAL_INT(1, SstDS.numRelease);
+
+    // Released only once
+    dsnd_Release();
+    TEST_ASSERT_EQUAL_INT(1, SstDS.numRelease);
+}
+
 TEST_GROUP_RUNNER(SmushSoundDsnd)
 {
     RUN_TEST_CASE(SmushSoundDsnd, RegisterPublishesModuleAndDriver);
@@ -1900,6 +1916,7 @@ TEST_GROUP_RUNNER(SmushSoundDsnd)
     RUN_TEST_CASE(SmushSoundDsnd, CallbackCopiesWrappedRegionsThroughScratch);
     RUN_TEST_CASE(SmushSoundDsnd, GetPlayPosReturnsBlockIndex);
     RUN_TEST_CASE(SmushSoundDsnd, StopFreesTimerMixerAndBuffer);
+    RUN_TEST_CASE(SmushSoundDsnd, ReleaseFreesDirectSoundCreatedByTheDriver_Fixed);
 }
 
 TEST_GROUP_RUNNER(SmushSound)
