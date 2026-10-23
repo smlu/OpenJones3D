@@ -473,10 +473,10 @@ LecEntry* J3DAPI LecShare_Find(const char* pName)
     int n = lec_state.count;
     LecEntry* p = &lec_state.entries[n - 1];
 
-    // TODO: [BUG] NameCmp is called with the name of free entries (NULL) as well, which crashes if the table has a free slot.
     while ( n-- != 0 )
     {
-        if ( LecShare_NameCmp(p->pName, pName) == 0 )
+        // Fixed: The original compares the name of free entries (NULL) as well, which faults if the table has a free slot
+        if ( p->pName && LecShare_NameCmp(p->pName, pName) == 0 )
         {
             return p;
         }
