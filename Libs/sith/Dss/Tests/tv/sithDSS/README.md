@@ -254,7 +254,10 @@ earlier cases are byte-identical in the regenerated files.
   `sithDSS_ProcessPuppetStatus`, armed/move modes and track counts) have no original
   behavior to compare with and are not part of the corpus.
 - Counts that overflow fixed arrays (`sithDSS_ProcessSyncGameState` chalk marks,
-  `sithDSSThing_ProcessStateUpdate` backpack items, both preserved original bugs).
+  `sithDSSThing_ProcessStateUpdate` backpack items, both original bugs). The
+  reconstruction rejects the chalk mark count (`Fixed:`), which has no original
+  behavior to compare with; the hand-written test `SyncGameStateRejectsTooManyChalkMarks`
+  of `sithDSSTest.c` covers it. The backpack count is still the preserved original bug.
 - Edge values that change the amount of data a reader consumes (mode bits, flags or
   counts that add fields, a negative marker guid on a create-at-marker message, a
   `numFrames` that does not match the frames in the message) over-read the message

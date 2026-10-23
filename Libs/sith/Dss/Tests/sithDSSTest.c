@@ -630,6 +630,86 @@ TEST(sithDSSFix, ChatNamesOnlyListedSenders)
     }
 }
 
+// Runs a writer case and keeps its message in dssv_lastMsg
+static void sithDSSFixTest_RunWriter(const DssvCase* pCase)
+{
+    DssvBuf rec = { 0 };
+    dssv_RunCase(pCase, 0xA5, NULL, &rec);
+    dssvB_free(&rec);
+    TEST_ASSERT_TRUE_MESSAGE(dssv_lastMsg.valid, pCase->name);
+}
+
+// Feeds dssv_lastMsg (as edited by the test) to a reader case and returns the result of the reader
+static uint32_t sithDSSFixTest_RunReader(const DssvCase* pCase)
+{
+    DssvMsgIn in;
+    in.type   = dssv_lastMsg.type;
+    in.length = dssv_lastMsg.length;
+    in.data   = dssv_lastMsg.data;
+
+    DssvBuf rec = { 0 };
+    dssv_RunCase(pCase, 0xA5, &in, &rec);
+    uint32_t ret = sithDSSTest_Rd32(rec.p);
+    dssvB_free(&rec);
+    return ret;
+}
+
+// Offset of the first 32 bit word with the given value in the message of the last writer
+static size_t sithDSSFixTest_FindWord(uint32_t word)
+{
+    size_t off = 0;
+    while ( off + 4 <= dssv_lastMsg.length && sithDSSTest_Rd32(dssv_lastMsg.data + off) != word )
+    {
+        ++off;
+    }
+
+    TEST_ASSERT_TRUE_MESSAGE(off + 4 <= dssv_lastMsg.length, "word not found in message");
+    return off;
+}
+
+static void sithDSSFixTest_SetWord(size_t off, uint32_t word)
+{
+    memcpy(dssv_lastMsg.data + off, &word, sizeof(word));
+}
+
+static int sithDSSFixTest_WriteGameStateChalk(DssvCtx* cx)
+{
+    sithFX_g_numChalkMarks    = 3;
+    sithFX_g_lastChalkMarkNum = 0x12345678; // marks the chalk mark count in the message
+    return dssvc_SyncGameState(cx);
+}
+
+// sithDSS_ProcessSyncGameState stored the chalk marks of the message past the end of aChalkMarks
+TEST(sithDSSFix, SyncGameStateRejectsTooManyChalkMarks)
+{
+    static const DssvCase writer = { "Fix_SyncGameState_chalk", sithDSSFixTest_WriteGameStateChalk, 0, NULL, DSSV_NOMUT };
+    static const DssvCase reader = { "Fix_ProcessSyncGameState_chalk", dssvc_ProcessSyncGameState, 0, NULL, DSSV_NOMUT };
+
+    sithDSSFixTest_RunWriter(&writer);
+    size_t countOff = sithDSSFixTest_FindWord(0x12345678) - 4;
+    TEST_ASSERT_EQUAL_UINT32(3, sithDSSTest_Rd32(dssv_lastMsg.data + countOff));
+
+    static const uint32_t aBad[] = { 11, 100, 0x7FFFFFFF, 0xFFFFFFFF };
+    for ( size_t i = 0; i < sizeof(aBad) / sizeof(aBad[0]); ++i )
+    {
+        sithDSSFixTest_SetWord(countOff, aBad[i]);
+        TEST_ASSERT_EQUAL_UINT32_MESSAGE(0, sithDSSFixTest_RunReader(&reader), "invalid chalk mark count accepted");
+        TEST_ASSERT_EQUAL_UINT(1, dssv_numErrors);
+
+        // The chalk marks of the state are kept (the reader case starts with 3 marks)
+        TEST_ASSERT_EQUAL_INT(3, sithFX_g_numChalkMarks);
+        for ( size_t k = 3; k < STD_ARRAYLEN(sithFX_g_aChalkMarks); ++k )
+        {
+            TEST_ASSERT_NULL(sithFX_g_aChalkMarks[k]);
+        }
+    }
+
+    // The full array is accepted
+    sithDSSFixTest_SetWord(countOff, 10);
+    TEST_ASSERT_EQUAL_UINT32(1, sithDSSFixTest_RunReader(&reader));
+    TEST_ASSERT_EQUAL_INT(10, sithFX_g_numChalkMarks);
+}
+
 TEST_GROUP_RUNNER(sithDSSFix)
 {
     RUN_TEST_CASE(sithDSSFix, WelcomeRejectsInvalidPlayerNum);
@@ -638,4 +718,5 @@ TEST_GROUP_RUNNER(sithDSSFix)
     RUN_TEST_CASE(sithDSSFix, ChatRejectsEmptyText);
     RUN_TEST_CASE(sithDSSFix, ChatPrintsServerText);
     RUN_TEST_CASE(sithDSSFix, ChatNamesOnlyListedSenders);
+    RUN_TEST_CASE(sithDSSFix, SyncGameStateRejectsTooManyChalkMarks);
 }

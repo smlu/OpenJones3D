@@ -1438,10 +1438,17 @@ int J3DAPI sithDSS_ProcessSyncGameState(const SithMessage* pMsg)
     sithPlayerControls_g_bCutsceneMode            = SITHDSS_POPUINT8();
     sithPuppet_g_bPlayerLeapForward               = SITHDSS_POPUINT8();
 
-    sithFX_g_numChalkMarks    = SITHDSS_POPINT32();
+    // Fixed: Reject a chalk mark count outside of aChalkMarks, the original reads it unchecked and writes past the array.
+    int numChalkMarks = SITHDSS_POPINT32();
+    if ( (unsigned int)numChalkMarks > STD_ARRAYLEN(sithFX_g_aChalkMarks) )
+    {
+        SITHLOG_ERROR("Bad chalk mark count %d in DSS::SyncGameState.\n", numChalkMarks);
+        return 0;
+    }
+
+    sithFX_g_numChalkMarks    = numChalkMarks;
     sithFX_g_lastChalkMarkNum = SITHDSS_POPINT32();
 
-    // TODO: [BUG] Number of chalk marks read from the stream is not checked against the size of aChalkMarks
     for ( int i = 0; i < sithFX_g_numChalkMarks; ++i )
     {
         thingIdx = SITHDSS_POPINT32();
