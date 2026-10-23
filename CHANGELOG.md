@@ -148,6 +148,7 @@
   - Fixed `dsnd_Release` never releasing the DirectSound object created by the smush sound driver (the ownership flag was cleared before the test). ()
   - Fixed `sound_Play` of the smush sound engine building the 24-bit length of a VOC block from a single byte read three times instead of the three length bytes. ()
   - Fixed the smush mixer mono kernels averaging with the sample two ahead instead of the next sample when doubling the sample rate, which also read one sample past the end of the source (QOL build). ()
+  - Fixed `dbloc16_DecodeFrame` returning an uninitialized result when no frame was blitted; it returns 0. ()
 
 ### Engine:
   - Added check for zero size in lip sync data generation to prevent allocation errors (f79736b)
