@@ -247,6 +247,11 @@ earlier cases are byte-identical in the regenerated files.
   (`Fixed:` in `sithDSS_ProcessSyncGameState`). `TestOriginalSyncGameState` expects
   exactly these six reader cases to differ and is reported as ignored; the writer
   cases still match, and `SyncGameStateRejectsBadLastChalkMark` covers the check.
+- `ProcessAIStatus_*` cases that allocate new frames: the original leaks the array it
+  replaces; the reconstruction frees it first (`Fixed:` in `sithDSS_ProcessAIStatus`).
+  `TestOriginalAIStatus` compares against the fixture record with one engine call
+  inserted, the free of the old frames array before the allocation, and requires
+  everything else (state changes, results, other calls) to be identical.
 - None for `sithDSSThing_MoveToPos` any more: the original evaluates
   `velocity * 0.25 + newPos - pos` in x87 extended precision and rounds once, and the
   reconstruction computes the direction in double and rounds once, which reproduces
