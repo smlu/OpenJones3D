@@ -1446,8 +1446,16 @@ int J3DAPI sithDSS_ProcessSyncGameState(const SithMessage* pMsg)
         return 0;
     }
 
+    // Fixed: Reject a last chalk mark number outside of -1 (none) and the array, sithFX_CreateChalkMark continues after it and the original indexes aChalkMarks with it unchecked.
+    int lastChalkMarkNum = SITHDSS_POPINT32();
+    if ( lastChalkMarkNum < -1 || lastChalkMarkNum >= (int)STD_ARRAYLEN(sithFX_g_aChalkMarks) )
+    {
+        SITHLOG_ERROR("Bad last chalk mark number %d in DSS::SyncGameState.\n", lastChalkMarkNum);
+        return 0;
+    }
+
     sithFX_g_numChalkMarks    = numChalkMarks;
-    sithFX_g_lastChalkMarkNum = SITHDSS_POPINT32();
+    sithFX_g_lastChalkMarkNum = lastChalkMarkNum;
 
     for ( int i = 0; i < sithFX_g_numChalkMarks; ++i )
     {

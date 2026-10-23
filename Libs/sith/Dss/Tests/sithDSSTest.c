@@ -324,7 +324,17 @@ SITHDSSTEST_FAMILY(Inventory, "Inventory_", "ProcessInventory_")
 SITHDSSTEST_FAMILY(AnimStatus, "AnimStatus_", "ProcessAnimStatus_")
 SITHDSSTEST_FAMILY(SyncTaskEvents, "SyncTaskEvents_", "ProcessSyncTaskEvents_")
 SITHDSSTEST_FAMILY(SyncCameras, "SyncCameras_", "ProcessSyncCameras_")
-SITHDSSTEST_FAMILY(SyncGameState, "SyncGameState_", "ProcessSyncGameState_")
+// The synthetic state of the vectors holds a last chalk mark number up to 99, which the reconstruction rejects when the
+// game state is read (marked Fixed: in sithDSS_ProcessSyncGameState; the original stores it unchecked). The six
+// reader cases therefore differ on purpose, see tv/sithDSS/README.md; the writer cases still match.
+TEST(sithDSS, TestOriginalSyncGameState)
+{
+    static const char* const aKnown[] = { "ProcessSyncGameState_full", "ProcessSyncGameState_empty", "ProcessSyncGameState_tenchalkmarks",
+                                          "ProcessSyncGameState_edge_cogIntMax", "ProcessSyncGameState_edge_cogIntMin", "ProcessSyncGameState_edge_cogMinus2" };
+    unsigned numFailed = sithDSSTest_RunCases(dssv_aDSSCases, (unsigned)DSSV_NUMDSSCASES, &sithDSSTest_dssFixture, "SyncGameState_", "ProcessSyncGameState_", sithDSSTest_aFailText, sizeof(sithDSSTest_aFailText));
+    sithDSSTest_ExpectKnownDifferences(numFailed, sithDSSTest_aFailText, aKnown, sizeof(aKnown) / sizeof(aKnown[0]),
+        "sithDSS_ProcessSyncGameState rejects the last chalk mark numbers of the vectors (intentional); see tv/sithDSS/README.md.");
+}
 SITHDSSTEST_FAMILY(VehicleControlState, "SyncVehicleControlState", "ProcessVehicleControlsState")
 SITHDSSTEST_FAMILY(EndSection, "sub_4B3760", "sub_4B3790")
 
@@ -675,7 +685,7 @@ static void sithDSSFixTest_SetWord(size_t off, uint32_t word)
 static int sithDSSFixTest_WriteGameStateChalk(DssvCtx* cx)
 {
     sithFX_g_numChalkMarks    = 3;
-    sithFX_g_lastChalkMarkNum = 0x12345678; // marks the chalk mark count in the message
+    sithFX_g_lastChalkMarkNum = 0x12345678; // marks the chalk mark count in the message (the number follows the count)
     return dssvc_SyncGameState(cx);
 }
 
@@ -688,6 +698,7 @@ TEST(sithDSSFix, SyncGameStateRejectsTooManyChalkMarks)
     sithDSSFixTest_RunWriter(&writer);
     size_t countOff = sithDSSFixTest_FindWord(0x12345678) - 4;
     TEST_ASSERT_EQUAL_UINT32(3, sithDSSTest_Rd32(dssv_lastMsg.data + countOff));
+    sithDSSFixTest_SetWord(countOff + 4, 5); // a valid last chalk mark number
 
     static const uint32_t aBad[] = { 11, 100, 0x7FFFFFFF, 0xFFFFFFFF };
     for ( size_t i = 0; i < sizeof(aBad) / sizeof(aBad[0]); ++i )
@@ -710,6 +721,35 @@ TEST(sithDSSFix, SyncGameStateRejectsTooManyChalkMarks)
     TEST_ASSERT_EQUAL_INT(10, sithFX_g_numChalkMarks);
 }
 
+// sithDSS_ProcessSyncGameState stored the last chalk mark number unchecked, sithFX indexes aChalkMarks after it
+TEST(sithDSSFix, SyncGameStateRejectsBadLastChalkMark)
+{
+    static const DssvCase writer = { "Fix_SyncGameState_lastchalk", sithDSSFixTest_WriteGameStateChalk, 0, NULL, DSSV_NOMUT };
+    static const DssvCase reader = { "Fix_ProcessSyncGameState_lastchalk", dssvc_ProcessSyncGameState, 0, NULL, DSSV_NOMUT };
+
+    sithDSSFixTest_RunWriter(&writer);
+    size_t lastOff = sithDSSFixTest_FindWord(0x12345678);
+
+    static const uint32_t aBad[] = { 0xFFFFFFFE, 0xFFFFFF9C, 0x80000000, 10, 100, 0x7FFFFFFF };
+    for ( size_t i = 0; i < sizeof(aBad) / sizeof(aBad[0]); ++i )
+    {
+        sithDSSFixTest_SetWord(lastOff, aBad[i]);
+        dssv_numErrors = 0;
+        TEST_ASSERT_EQUAL_UINT32_MESSAGE(0, sithDSSFixTest_RunReader(&reader), "invalid last chalk mark number accepted");
+        TEST_ASSERT_EQUAL_UINT(1, dssv_numErrors);
+        TEST_ASSERT_EQUAL_INT(3, sithFX_g_numChalkMarks); // not stored
+    }
+
+    // -1 (none) and the last slot are accepted
+    static const uint32_t aGood[] = { 0xFFFFFFFF, 0, 9 };
+    for ( size_t i = 0; i < sizeof(aGood) / sizeof(aGood[0]); ++i )
+    {
+        sithDSSFixTest_SetWord(lastOff, aGood[i]);
+        TEST_ASSERT_EQUAL_UINT32(1, sithDSSFixTest_RunReader(&reader));
+        TEST_ASSERT_EQUAL_INT((int)aGood[i], sithFX_g_lastChalkMarkNum);
+    }
+}
+
 TEST_GROUP_RUNNER(sithDSSFix)
 {
     RUN_TEST_CASE(sithDSSFix, WelcomeRejectsInvalidPlayerNum);
@@ -719,4 +759,5 @@ TEST_GROUP_RUNNER(sithDSSFix)
     RUN_TEST_CASE(sithDSSFix, ChatPrintsServerText);
     RUN_TEST_CASE(sithDSSFix, ChatNamesOnlyListedSenders);
     RUN_TEST_CASE(sithDSSFix, SyncGameStateRejectsTooManyChalkMarks);
+    RUN_TEST_CASE(sithDSSFix, SyncGameStateRejectsBadLastChalkMark);
 }

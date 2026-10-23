@@ -240,6 +240,13 @@ earlier cases are byte-identical in the regenerated files.
   replaces a value of zero or less with 1.0 (an intentional `Added:` change in
   `sithDSS_ProcessPuppetStatus`). `TestOriginalPuppetStatus` expects exactly these two
   cases to differ and is reported as ignored.
+- `ProcessSyncGameState_full`, `ProcessSyncGameState_empty`, `ProcessSyncGameState_tenchalkmarks`,
+  `ProcessSyncGameState_edge_cogIntMax`, `ProcessSyncGameState_edge_cogIntMin`, `ProcessSyncGameState_edge_cogMinus2`:
+  the synthetic state of the capture holds a last chalk mark number up to 99; the
+  original stores it as read, the reconstruction rejects numbers below -1 and above 9
+  (`Fixed:` in `sithDSS_ProcessSyncGameState`). `TestOriginalSyncGameState` expects
+  exactly these six reader cases to differ and is reported as ignored; the writer
+  cases still match, and `SyncGameStateRejectsBadLastChalkMark` covers the check.
 - None for `sithDSSThing_MoveToPos` any more: the original evaluates
   `velocity * 0.25 + newPos - pos` in x87 extended precision and rounds once, and the
   reconstruction computes the direction in double and rounds once, which reproduces

@@ -302,6 +302,7 @@
   - Fixed `sithMulti_ProcessChat` wrapping the text length for a chat message with length 0, which copied and terminated the text outside of its buffer; such a message is now rejected (multiplayer is dormant in the retail game). ()
   - Fixed `sithMulti_ProcessChat` looking up the sender name with any non-negative player number of the message, which read outside of the player array; only a sender inside the 24 player slots is named now, the text of any other sender is printed without a name (multiplayer is dormant in the retail game). ()
   - Fixed `sithDSS_ProcessSyncGameState` storing the chalk marks of a save game or network message without checking their count against the 10 chalk mark slots, which wrote past the chalk mark array; a message with a count above 10 (or negative) is now rejected. ()
+  - Fixed `sithDSS_ProcessSyncGameState` storing the last chalk mark number of a save game or network message unchecked, which made the chalk mark creation index before the chalk mark array; a number below -1 or above 9 is now rejected. ()
 
 ### Graphics:
   - Fixed an issue where active textures used in the current render frame were being removed from the cache prematurely in low VRAM situations (f37ecb7)
