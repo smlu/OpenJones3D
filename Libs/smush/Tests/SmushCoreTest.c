@@ -716,6 +716,25 @@ TEST(SmushCore, Memory_Debug_Realloc)
     LecShare_UnregisterAll();
 }
 
+TEST(SmushCore, Memory_Debug_ReallocNull_Fixed)
+{
+    MemoryDebugInterface* pMem = SmushCoreTest_InitDebugMemory();
+    TEST_ASSERT_NOT_NULL(pMem);
+
+    // Fix: the original dereferenced the NULL block; like realloc it is a plain allocation now
+    uint8_t* p = pMem->Realloc(NULL, 24, "file.c", 1);
+    TEST_ASSERT_NOT_NULL(p);
+    SmushCoreTest_TrackBlock(p);
+    char* pRaw = (char*)p - 4;
+    TEST_ASSERT_EQUAL_INT(24, *(int*)pRaw);
+    TEST_ASSERT_TRUE(*(char**)(pRaw + 24 + 4) == pRaw);
+
+    memset(p, 0, 24);
+    pMem->Free(p, "file.c", 2);
+    SmushCoreTest_UntrackBlock(p);
+    LecShare_UnregisterAll();
+}
+
 TEST(SmushCore, Memory_Debug_OverwrittenGuardStillFreed)
 {
     MemoryDebugInterface* pMem = SmushCoreTest_InitDebugMemory();
@@ -1314,6 +1333,7 @@ TEST_GROUP_RUNNER(SmushCore)
     RUN_TEST_CASE(SmushCore, Memory_Register_PublishesServices);
     RUN_TEST_CASE(SmushCore, Memory_Debug_AllocFree);
     RUN_TEST_CASE(SmushCore, Memory_Debug_Realloc);
+    RUN_TEST_CASE(SmushCore, Memory_Debug_ReallocNull_Fixed);
     RUN_TEST_CASE(SmushCore, Memory_Debug_OverwrittenGuardStillFreed);
     RUN_TEST_CASE(SmushCore, Bitmap_Startup_NoMemory);
     RUN_TEST_CASE(SmushCore, Bitmap_Create_Rgb565);
