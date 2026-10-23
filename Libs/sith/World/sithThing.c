@@ -4073,15 +4073,14 @@ int J3DAPI sithThing_ParseThingArg(const StdConffileArg* pArg, SithWorld* pWorld
         case SITHTHING_ARG_COLLIDE:
         {
             errno = 0; // Fixed: Reset errno, a stale ERANGE rejected valid values
-            // Altered: Parse with strtoul instead of atoi, and only the upper bound is checked below. The original rejected values < SITH_COLLIDE_NONE too.
-            // TODO: [BUG] SithCollideType is a signed enum, so a negative value (e.g. "-1") wraps to a negative enum and passes the check.
-            SithCollideType coltype = strtoul(pArg->argValue, NULL, 10);
+            // Altered: Parse with strtoul instead of atoi. The value is compared as unsigned, so a negative value (e.g. "-1") is rejected like in the original.
+            unsigned long coltype = strtoul(pArg->argValue, NULL, 10);
             if ( coltype > SITH_COLLIDE_FACE || (errno == ERANGE) )      // Added: Conversion range error check
             {
                 goto syntax_error;
             }
 
-            pThing->collide.type = coltype;
+            pThing->collide.type = (SithCollideType)coltype;
             return SITHTHING_PARSEARG_PARSED;
         }
         case SITHTHING_ARG_MOVE:
