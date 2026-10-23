@@ -283,12 +283,16 @@ void J3DAPI sithAIMove_UpdateMineCar(SithAIControlBlock* pLocal, float secDeltaT
     rdVector_Cross3(&rvec, &aimDir, &pThing->orient.uvec);
     rdVector_Normalize3Acc(&rvec);
 
-    // TODO: [BUG] The original never assigns the local moveState (sithAIMove_UpdateTurn sets it from sithAIMove_AIGetMoveState).
-    //       In the debug build its own stack slot is read but never written (garbage). In retail the compiler shares the slot
-    //       with the pLocal argument, which later holds angle: moveState is zero only when angle is +0.0f, and nonzero (the
-    //       pLocal pointer) when the actor looks straight up or down and angle is never computed. Emulated as retail.
-    // TODO: moveState should probably be initialized with sithAIMove_AIGetMoveState(pLocal), but further investigation is needed to determine the correct value.
+#ifdef J3D_QOL_IMPROVEMENTS
+    // Fixed: Query the move state of the actor like sithAIMove_UpdateTurn does, the original never assigns it (see below).
+    SithAIMoveState moveState = sithAIMove_AIGetMoveState(pLocal);
+#else
+    // The original never assigns the local moveState (sithAIMove_UpdateTurn sets it from sithAIMove_AIGetMoveState).
+    // In the debug build its own stack slot is read but never written (garbage). In retail the compiler shares the slot
+    // with the pLocal argument, which later holds angle: moveState is zero only when angle is +0.0f, and nonzero (the
+    // pLocal pointer) when the actor looks straight up or down and angle is never computed. Emulated as retail.
     int moveState = 1;
+#endif
 
     float upDot = fabsf(rdVector_Dot3(&pThing->orient.uvec, &toLook));
 
@@ -305,7 +309,9 @@ void J3DAPI sithAIMove_UpdateMineCar(SithAIControlBlock* pLocal, float secDeltaT
         rdMath_ProjectPointOntoPlaneNormalized(&lookDir, &toLook, &pThing->orient.uvec, &rdroid_g_zeroVector3);
 
         float angle = rdMath_DeltaAngleNormalized(&lookDir, &aimDir, &pThing->orient.uvec);
-        moveState   = angle == 0.0f && !signbit(angle) ? SITHAIMOVE_STATE_NONE : 1;
+#ifndef J3D_QOL_IMPROVEMENTS
+        moveState = angle == 0.0f && !signbit(angle) ? SITHAIMOVE_STATE_NONE : 1; // Legacy: see moveState above
+#endif
 
         float turnRate = pActorInfo->maxRotVelocity * secDeltaTime;
         float maxStep  = pActorInfo->maxRotVelocity * 0.07f;
