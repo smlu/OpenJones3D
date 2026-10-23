@@ -146,6 +146,7 @@
   - Expanded `stdMath` regression coverage with complete sine/tangent table fixtures and numerical boundary cases. (fda1288)
   - Updated `sithThing` binary serialization tests to allow a 0.00001-degree tolerance for recalculated Euler angles while retaining byte-exact checks for other fields and preserving existing golden vectors. (f4ed097)
   - Added GitHub Actions unit-test workflows for DirectX 6/9 and updated the existing CI builds to use Visual Studio 2026 with four build profiles per backend. (2868c76)
+  - Fixed `SmushPlay_PlayMovie` copying the movie file name into a 260 byte stack buffer without a bound; the name is now truncated to the buffer. ()
   - Fixed GitHub Actions test triggering on develop and pull requests, with separate build and test status badges for DirectX 6/9. (1026ad0)
   - Applied official 1.2 update fix to `jonesConfig_ControlToString`: key names in the control configuration dialog are now queried from the system keyboard layout with `GetKeyNameTextA` instead of a hardcoded English table. (ead3679)
   - Applied official 1.2 update fix to `jonesConfig_StoreDialog_HandleWM_COMMAND`: closing the store dialog with a balance of exactly 0 now shows the purchase confirmation instead of leaving silently. (ead3679)
