@@ -1474,7 +1474,8 @@ void J3DAPI jonesConfig_ControlToString(size_t controlId, char* pDest)
             case DIK_M:
             case DIK_PERIOD:
             case DIK_SLASH:
-                // TODO: [BUG] Result is not checked, on failure aKeyName is uninitialized (as in the original)
+                // Fixed: GetKeyNameTextA leaves the buffer untouched on failure, start with an empty name instead of using the uninitialized buffer.
+                aKeyName[0] = 0;
                 GetKeyNameTextA(((controlId & 0x7F) | ((controlId & 0x80) << 1)) << 16, aKeyName, sizeof(aKeyName) - 1);
                 stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, aKeyName);
                 stdUtil_ToUpper(pDest); // Note, original calls _strupr
