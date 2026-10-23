@@ -189,10 +189,14 @@ int animframe_Startup(void)
         void* pName = animframe_pShare->Enumerate("FLOBDEC", i);
         if ( pName )
         {
-            // TODO: [BUG] A failed subscription is dereferenced below
             animframe_decoders[i] = (FlobDecoder*)animframe_pShare->Subscribe("FLOBDEC.temp", pName);
-            animframe_tags[i]     = animframe_decoders[i]->GetTag();
-            animframe_flags[i]    = animframe_decoders[i]->GetFlags();
+
+            // Fixed: The original does not test the subscription and dereferences a failed (NULL) one. Leave the decoder unused
+            if ( animframe_decoders[i] )
+            {
+                animframe_tags[i]  = animframe_decoders[i]->GetTag();
+                animframe_flags[i] = animframe_decoders[i]->GetFlags();
+            }
         }
     }
 

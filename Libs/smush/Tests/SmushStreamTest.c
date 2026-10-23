@@ -44,6 +44,7 @@ static size_t Test_numSubscriptions;
 static char Test_lastError[128];
 static int Test_numErrors;
 static int Test_numUnsubscribed;
+static int Test_failDecoderSubscribe; // FLOBDEC.temp subscriptions fail
 
 static int Test_Publish(const char* pName, void* pInterface)
 {
@@ -66,6 +67,11 @@ static void Test_Unpublish(const char* pName)
 
 static void* Test_Subscribe(const char* pName, void* pParam)
 {
+    if ( strcmp(pName, "FLOBDEC.temp") == 0 && Test_failDecoderSubscribe )
+    {
+        return NULL;
+    }
+
     if ( strcmp(pName, "READANIM.chainto") == 0 || strcmp(pName, "FLOBDEC.temp") == 0 )
     {
         return pParam;
@@ -279,6 +285,7 @@ static void SmushStreamTest_Reset(void)
     Test_numPublished = Test_numSubscriptions = 0;
     Test_lastError[0]                         = 0;
     Test_numErrors = Test_numUnsubscribed = 0;
+    Test_failDecoderSubscribe = 0;
     Test_numAllocs = Test_numFrees = 0;
     Test_numFileOpens = Test_numFileCloses = Test_numFileFlushes = 0;
 }
@@ -1266,6 +1273,21 @@ TEST(SmushStream, animframe_StartupRequiresBitmapAndMemory)
     TEST_ASSERT_EQUAL_STRING("AnimFrame Module: Cannot allocate memory services.", Test_lastError);
 }
 
+TEST(SmushStream, animframe_StartupFailedDecoderSubscription_Fixed)
+{
+    // Fix: the original dereferenced the failed (NULL) decoder subscription in the startup
+    Test_failDecoderSubscribe = 1;
+    SmushStreamTest_StartFrame();
+    Test_failDecoderSubscribe = 0;
+
+    // The decoder is not used: its chunks are skipped
+    uint8_t data[] = { 'D', 'E', 'C', '1', 0, 0, 0, 3, 1, 2, 3, 0 };
+    TEST_ASSERT_EQUAL_INT(0, animframe_Parse(data, sizeof(data)));
+    TEST_ASSERT_EQUAL_INT(0, Test_decoderParses);
+    animframe_ResetDecoders();
+    TEST_ASSERT_EQUAL_INT(0, Test_decoderResets);
+}
+
 TEST(SmushStream, animframe_ParseDispatchesChunksToDecoderByTag)
 {
     SmushStreamTest_StartFrame();
@@ -1628,6 +1650,7 @@ TEST_GROUP_RUNNER(SmushStream)
     RUN_TEST_CASE(SmushStream, zfilio_GzFileTracksLogicalPosition);
     RUN_TEST_CASE(SmushStream, zfilio_PlainFilesPassThroughToChainedFilio);
     RUN_TEST_CASE(SmushStream, animframe_StartupRequiresBitmapAndMemory);
+    RUN_TEST_CASE(SmushStream, animframe_StartupFailedDecoderSubscription_Fixed);
     RUN_TEST_CASE(SmushStream, animframe_ParseDispatchesChunksToDecoderByTag);
     RUN_TEST_CASE(SmushStream, animframe_DecodeMapsDecoderResultToOutputFlags);
     RUN_TEST_CASE(SmushStream, animframe_DecodeRejectsBadChunkHeaders);
