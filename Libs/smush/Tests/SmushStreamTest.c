@@ -1157,8 +1157,9 @@ TEST(SmushStream, zfilio_ConfigureLimitsExtensionCount)
     }
 
     // The table is full: the extension is dropped (the debug service, absent here, would print). The original does not consume
-    // the dropped argument, so the next tag read takes the string pointer: the call fails.
-    TEST_ASSERT_EQUAL_INT(-1, zfilio_Configure(1, ".snm", 0));
+    // the dropped argument, so the next tag read takes the string pointer and the call fails with -1.
+    // Fix: the dropped argument is consumed, the call ends at the terminating tag
+    TEST_ASSERT_EQUAL_INT(0, zfilio_Configure(1, ".snm", 1, ".znm", 0));
     uint8_t data[4] = { 0 };
     Test_AddFile("a.snm", data, 4);
     ZfileHandle* pFile = zfilio_open("a.snm", "rb");
