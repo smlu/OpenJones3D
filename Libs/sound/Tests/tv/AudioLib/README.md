@@ -151,7 +151,10 @@ cases kept their order and bytes.
   `Compress*.tv` store the original return value.
 - With `bNativeByteOrder == 0`, `AudioLib_CompressBlock` byte-swaps samples as
   unsigned values, so negative samples are not sign extended. The corpus includes
-  negative big-endian samples and the tests compare the original's bytes.
+  negative big-endian samples and the tests compare the original's bytes. The
+  QOL build sign extends the swapped samples, so it skips the big-endian cases of
+  this corpus that contain a negative sample (`CompressBlockSwappedMatchesNative_Fixed` covers the fix); the
+  legacy build (`JONES3D_QOL_IMPROVEMENTS=OFF`) compares all of them.
 - `AudioLib_Uncompress` takes the compressor state from the stream header; the
   supplied state is overwritten.
 

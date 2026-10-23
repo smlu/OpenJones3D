@@ -151,6 +151,7 @@
   - Fixed `dbloc16_DecodeFrame` returning an uninitialized result when no frame was blitted; it returns 0. ()
   - Fixed `dbloc16_Free` keeping the pointer to the freed pixels of the last decoded frame, which a later out-of-sequence frame could match with a new bitmap after a resize. ()
   - Fixed `dbloc16_DecodeFrame` ignoring a failed allocation of its frame bitmaps and faulting on the missing bitmaps; the frame is dropped instead. ()
+  - Fixed `AudioLib_CompressBlock` coding negative samples of byte swapped (big-endian) input as large positive ones because the swapped sample was not sign extended (QOL build). ()
 
 ### Engine:
   - Added check for zero size in lip sync data generation to prevent allocation errors (f79736b)

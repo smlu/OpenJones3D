@@ -1069,8 +1069,8 @@ int J3DAPI AudioLib_CompressBlock(tAudioCompressorState* pCompressorState, uint8
 
         for ( unsigned int i = 0; i < (unsigned int)numSamples; ++i, pSample += numChannels )
         {
-            // TODO: [BUG] The sample is not sign-extended when the input is byte swapped (bNativeByteOrder == 0), so negative samples are coded as large positive ones.
-            int sample = bNativeByteOrder ? *pSample : AudioLib_SwapU16(*(uint16_t*)pSample);
+            // Fixed: The original does not sign extend the sample when the input is byte swapped (bNativeByteOrder == 0), so negative samples are coded as large positive ones (QOL: the coded stream of byte swapped input differs)
+            int sample = bNativeByteOrder ? *pSample : J3D_QOL_VALUE((int16_t)AudioLib_SwapU16(*(uint16_t*)pSample), AudioLib_SwapU16(*(uint16_t*)pSample));
 
             // Step 1: step size and code width of the current step index. The escape code has all magnitude bits set.
             int step        = AudioLib_aStepTable[index];
