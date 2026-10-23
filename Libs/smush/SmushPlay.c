@@ -6,6 +6,9 @@
 #include <string.h>
 
 #include <smush/insane/animplay.h>
+
+#include <std/General/stdUtil.h>
+
 #include <smush/insane/Animate/Frame.h>
 #include <smush/insane/Animate/Pcplay.h>
 #include <smush/insane/Bitmap/Bitmap.h>
@@ -116,8 +119,8 @@ int J3DAPI SmushPlay_PlayMovie(const char* pFilename, int rate, int flags, int a
     char aPath[SMUSHPLAY_MAX_PATH];
     uint8_t aPalette[ANIMPLAY_PALETTE_SIZE]; // Persists between frames
 
-    // TODO: [BUG] Unbounded copy of the file name into the 260 byte buffer.
-    memcpy(aPath, pFilename, strlen(pFilename) + 1);
+    // Fixed: The original copies the whole file name into the 260 byte buffer without a bound. Truncate the name to the buffer
+    STD_STRCPY(aPath, pFilename);
 
     if ( rate == 0 )
     {

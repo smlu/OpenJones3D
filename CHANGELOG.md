@@ -137,6 +137,7 @@
   - Added `smush` unit tests for the core, bitmap, stream, codec and sound areas, with vectors captured from the original executable for the assembly routines and the C modules. (6ae2c86,9d82c33,3cb6658,7527a47,0f92b02,100743f)
   - Added sithThing, sithTemplate, and sithVoice unit tests, including retail-generated binary vectors and allocation/I/O failure coverage. (aa4e510)
   - Added GitHub Actions unit-test workflows for DirectX 6/9 and updated the existing CI builds to use Visual Studio 2026 with four build profiles per backend. (2995463)
+  - Fixed `SmushPlay_PlayMovie` copying the movie file name into a 260 byte stack buffer without a bound; the name is now truncated to the buffer. ()
 
 ### Engine:
   - Added check for zero size in lip sync data generation to prevent allocation errors (f79736b)
