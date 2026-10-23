@@ -1508,7 +1508,11 @@ int J3DAPI sithAIInstinct_PrimaryFire(SithAIControlBlock* pLocal, SithAIInstinct
 
     if ( (pLocal->mode & SITHAI_MODE_BERSERK) != 0 )
     {
-        curBurstNum *= rand() % (6 - abs(curBurstNum)) + abs(curBurstNum);
+        // Fixed: Skip the randomization for a burst count of 6, the original takes rand() modulo 6 - abs(curBurstNum) which is a division by zero.
+        if ( abs(curBurstNum) != 6 )
+        {
+            curBurstNum *= rand() % (6 - abs(curBurstNum)) + abs(curBurstNum);
+        }
     }
     else if ( curBurstNum < 0 )
     {

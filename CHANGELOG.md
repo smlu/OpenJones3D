@@ -320,6 +320,7 @@
   - Fixed `sithDSS_ProcessAIStatus` leaking the frames array of the AI when it is replaced by the frames of the message; the old array is freed before the new one is allocated. ()
   - Fixed `sithDSS_ProcessSyncGameState` loading the puppet track number of the flying jewel zero extended, so the stored value -1 (no track) became 65535; it is now loaded sign extended. ()
   - Fixed `sithPhysics_UpdateDetachedPlayerPhysics` (the player physics update) running about 4 billion fixed time steps when the accumulated time is negative; a negative time now takes no steps and is kept in the rollover. Not reachable in normal play (the frame time is clamped and the rollover stays in [0, step)); only a negative time from a caller or a corrupted rollover can trigger it. ()
+  - Fixed `sithAIInstinct_PrimaryFire` computing the randomized burst count (AI mode flag 0x100000) with a division by zero for an authored burst count of 6 (or -6); that count is used as authored now. ()
   - Fixed overlapping COG stack shifts on overflow by using `memmove` in `sithCogExec_PushStack`. [PR #55](https://github.com/smlu/OpenJones3D/pull/55)
   - Added an optional runtime guard in `sithCamera_Update` to skip cinematic camera updates while either focus thing is missing. [PR #54](https://github.com/smlu/OpenJones3D/pull/54)
   - Fixed an out-of-bounds write in `sithEvent_ResetFreeBufferTable` that could cause startup hangs in optimized Clang builds. [PR #45](https://github.com/smlu/OpenJones3D/pull/45)
