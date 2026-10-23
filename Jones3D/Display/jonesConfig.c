@@ -1276,7 +1276,7 @@ int jonesConfig_InitKeySetsPath(void)
     }
     else
     {
-        STDLOG_ERROR("Couldn't find string %s in lookup table.\n", 0); // TODO: [BUG] zero passed as %s
+        STDLOG_ERROR("Couldn't find string %s in lookup table.\n", "SITHSTRING_KEYSETS"); // Fixed: The original passes 0 for %s
         stdMemory_Free(pwKeySets); // pwKeySets is null value but is allocated on heap in sithString_GetString
         return 0;
     }

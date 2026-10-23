@@ -550,6 +550,7 @@
   - Fixed `jonesConfig_LoadControlScheme` storing the 9th binding of an action (the one that is reported as "too many bindings") one entry past the action row, overwriting the binding count of the next action or, for the last action, the scheme name; the 9th binding is no longer stored. ()
   - [QOL] Fixed `jonesConfig_LoadControlScheme` clearing only 9 bytes (less than 3 entries) of each action row when loading a control scheme fails; the whole row is cleared now. Builds without QOL improvements keep the original behavior. ()
   - Fixed `jonesConfig_ControlToString` showing an uninitialized key name in the control configuration dialog when the system cannot name a key (`GetKeyNameTextA` fails); the name is empty then. (code from the 1.2 update) ()
+  - Fixed `jonesConfig_InitKeySetsPath` passing 0 for the `%s` of the "Couldn't find string" error message (undefined behavior in the log call); the name of the string is passed. ()
 
 ## v0.3.1
 ### General:
