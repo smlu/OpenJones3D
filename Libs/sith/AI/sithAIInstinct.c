@@ -598,7 +598,12 @@ int J3DAPI sithAIInstinct_Listen(SithAIControlBlock* pLocal, SithAIInstinct* pIn
             {
                 bHunt = true;
 
+#ifdef J3D_QOL_IMPROVEMENTS
+                // Fixed: Use the loudness of the heard sound like the other paths, the original never sets it here.
+                loudness = pSectorInfo->aLevelAtTransmittingPos[SITHAIAWARENESS_NOISE];
+#else
                 // TODO: [BUG] The original never sets loudness on this path, but it is read below
+#endif
             }
             else if ( thingVis == SITHAI_SIGHT_VISIBLE )
             {
