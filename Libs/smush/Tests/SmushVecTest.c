@@ -37,6 +37,7 @@ typedef struct sSmushVecTestKnown
 {
     const char* pPrefix;
     const char* pReason;
+    int bExact; // the whole record name must match, not only its start
 } SmushVecTestKnown;
 
 typedef struct sSmushVecTestChecker
@@ -262,7 +263,8 @@ static const SmushVecTestKnown* SmushVecTest_FindKnown(const SmushVecTestChecker
 {
     for ( size_t i = 0; i < pChecker->numKnownPrefixes; ++i )
     {
-        if ( strncmp(pName, pChecker->aKnown[i].pPrefix, strlen(pChecker->aKnown[i].pPrefix)) == 0 )
+        if ( pChecker->aKnown[i].bExact ? strcmp(pName, pChecker->aKnown[i].pPrefix) == 0
+                                        : strncmp(pName, pChecker->aKnown[i].pPrefix, strlen(pChecker->aKnown[i].pPrefix)) == 0 )
         {
             return &pChecker->aKnown[i];
         }
@@ -470,6 +472,15 @@ TEST(SmushVec, TestOriginalStdfile)
         { "stdfile printf exponent", "printf float rounding and exponent digits (VC5 CRT vs UCRT); stdfile_eof call order" },
         { "stdfile output", "printf float rounding and exponent digits (VC5 CRT vs UCRT); stdfile_eof call order" },
         { "stdfile calls", "printf float rounding and exponent digits (VC5 CRT vs UCRT); stdfile_eof call order" },
+        // stdfile_gets terminates the string and reads at most size - 1 characters (the original leaves a line that fills the buffer unterminated); the records
+        // of the buffer sizes that cannot hold every line of the test file differ
+        { "stdfile gets size 1", "stdfile_gets terminates the string and reads at most size - 1 characters", 1 },
+        { "stdfile gets size 2", "stdfile_gets terminates the string and reads at most size - 1 characters", 1 },
+        { "stdfile gets size 3", "stdfile_gets terminates the string and reads at most size - 1 characters", 1 },
+        { "stdfile gets size 5", "stdfile_gets terminates the string and reads at most size - 1 characters", 1 },
+        { "stdfile gets size 11", "stdfile_gets terminates the string and reads at most size - 1 characters", 1 },
+        { "stdfile gets size 12", "stdfile_gets terminates the string and reads at most size - 1 characters", 1 },
+        { "stdfile gets size 16", "stdfile_gets terminates the string and reads at most size - 1 characters", 1 },
     };
     SmushVecTest_Run("File/StdfileVec.tv", SmushVec_RunStdfile, aKnown, STD_ARRAYLEN(aKnown));
 }

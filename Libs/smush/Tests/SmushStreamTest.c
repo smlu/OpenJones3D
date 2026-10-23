@@ -402,6 +402,40 @@ TEST(SmushStream, stdfile_GetsStopsAtNewlineAndEof)
     TEST_ASSERT_NULL(stdfile_gets(fh, line, sizeof(line)));
 }
 
+TEST(SmushStream, stdfile_GetsFullBuffer_Fixed)
+{
+    const char text[] = "abcdefgh\nij";
+    Test_AddFile("t.txt", text, 11);
+    SmushStreamTest_StartStdfile();
+    int fh = stdfile_open("t.txt", "rb");
+
+    // A line longer than the buffer: the original reads size characters and leaves the string unterminated.
+    // Fix: at most size - 1 characters are read and the string is terminated
+    char line[6];
+    memset(line, 'x', sizeof(line));
+    TEST_ASSERT_EQUAL_PTR(line, stdfile_gets(fh, line, 4));
+    TEST_ASSERT_EQUAL_MEMORY("abc", line, 3);
+    TEST_ASSERT_EQUAL_UINT8(0, line[3]);
+    TEST_ASSERT_EQUAL_UINT8('x', line[4]);
+    TEST_ASSERT_EQUAL_INT(3, stdfile_tell(fh));
+
+    // The newline in the last slot: the original stores it without a terminator
+    stdfile_seek(fh, 5, 0);
+    memset(line, 'x', sizeof(line));
+    TEST_ASSERT_EQUAL_PTR(line, stdfile_gets(fh, line, 4));
+    TEST_ASSERT_EQUAL_MEMORY("fgh", line, 3);
+    TEST_ASSERT_EQUAL_UINT8(0, line[3]);
+
+    // A buffer of one character holds the empty string, an empty buffer is untouched
+    stdfile_seek(fh, 0, 0);
+    memset(line, 'x', sizeof(line));
+    TEST_ASSERT_EQUAL_PTR(line, stdfile_gets(fh, line, 0));
+    TEST_ASSERT_EQUAL_UINT8('x', line[0]);
+    TEST_ASSERT_EQUAL_PTR(line, stdfile_gets(fh, line, 1));
+    TEST_ASSERT_EQUAL_UINT8(0, line[0]);
+    TEST_ASSERT_EQUAL_UINT8('x', line[1]);
+}
+
 TEST(SmushStream, stdfile_PrintfWritesFormattedText)
 {
     Test_AddFile("o.txt", NULL, 0);
@@ -1620,6 +1654,7 @@ TEST_GROUP_RUNNER(SmushStream)
     RUN_TEST_CASE(SmushStream, stdfile_SizeKeepsPositionAndEofComparesToSize);
     RUN_TEST_CASE(SmushStream, stdfile_GetcPutc);
     RUN_TEST_CASE(SmushStream, stdfile_GetsStopsAtNewlineAndEof);
+    RUN_TEST_CASE(SmushStream, stdfile_GetsFullBuffer_Fixed);
     RUN_TEST_CASE(SmushStream, stdfile_PrintfWritesFormattedText);
     RUN_TEST_CASE(SmushStream, stdio_RegistersFilioModule);
     RUN_TEST_CASE(SmushStream, stdio_WritesReadsSeeksAndTellsRealFile);

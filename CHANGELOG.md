@@ -142,6 +142,7 @@
   - Fixed `memory_debugRealloc` faulting on a NULL block; like `realloc` it now allocates a new block. ()
   - Fixed `LecShare_Find` comparing the NULL name of free table entries, which faulted when an entry was unpublished before a searched one. ()
   - Fixed `animframe_Startup` dereferencing a failed decoder subscription; the decoder is skipped instead. ()
+  - Fixed `stdfile_gets` of the movie player returning an unterminated string for a line that fills the buffer (it now reads at most size - 1 characters and always terminates, like `fgets`). ()
 
 ### Engine:
   - Added check for zero size in lip sync data generation to prevent allocation errors (f79736b)

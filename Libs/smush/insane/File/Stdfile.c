@@ -128,8 +128,10 @@ int J3DAPI stdfile_size(int fh)
 
 char* J3DAPI stdfile_gets(int fh, char* pBuf, int size)
 {
-    // TODO: [BUG] The result is not null-terminated when size characters are read without hitting a newline (or end of file), or when the '\n' lands in the last slot
-    for ( int i = 0; i < size; ++i )
+    // Fixed: The original reads size characters and leaves the result unterminated when no newline (or end of file) ends the line before the last slot,
+    //        or when the '\n' lands in the last slot. Like fgets read at most size - 1 characters and always terminate the string (the number of characters consumed from the file differs)
+    int numChars = size - 1;
+    for ( int i = 0; i < numChars; ++i )
     {
         int c = stdfile_getc(fh);
         if ( c == EOF )
@@ -140,15 +142,20 @@ char* J3DAPI stdfile_gets(int fh, char* pBuf, int size)
             }
 
             pBuf[i] = 0;
-            break;
+            return pBuf;
         }
 
         pBuf[i] = (char)c;
         if ( c == '\n' && i + 1 < size )
         {
             pBuf[i + 1] = 0;
-            break;
+            return pBuf;
         }
+    }
+
+    if ( size > 0 )
+    {
+        pBuf[numChars] = 0;
     }
 
     return pBuf;
