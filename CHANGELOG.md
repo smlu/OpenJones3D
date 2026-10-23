@@ -141,6 +141,7 @@
   - Fixed `bitmap_Create` formatting the line number of its "Type not supported" log message with `%s` (invalid string address read) and `bitmap_Destroy` freeing address -8 for a NULL bitmap. ()
   - Fixed `memory_debugRealloc` faulting on a NULL block; like `realloc` it now allocates a new block. ()
   - Fixed `LecShare_Find` comparing the NULL name of free table entries, which faulted when an entry was unpublished before a searched one. ()
+  - Fixed `animframe_Startup` dereferencing a failed decoder subscription; the decoder is skipped instead. ()
 
 ### Engine:
   - Added check for zero size in lip sync data generation to prevent allocation errors (f79736b)
