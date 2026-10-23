@@ -146,6 +146,7 @@
   - Fixed `zfilio_Configure` leaving the extension argument unread when the extension table is full, which made the next tag read take the string pointer and fail the call. ()
   - Fixed `zfilio_open` reading an uninitialized uncompressed size for gz files shorter than 4 bytes and `zfilio_seek` returning no value for gz files; the size starts at 0 and the seek returns 0. ()
   - Fixed `dsnd_Release` never releasing the DirectSound object created by the smush sound driver (the ownership flag was cleared before the test). ()
+  - Fixed `sound_Play` of the smush sound engine building the 24-bit length of a VOC block from a single byte read three times instead of the three length bytes. ()
 
 ### Engine:
   - Added check for zero size in lip sync data generation to prevent allocation errors (f79736b)

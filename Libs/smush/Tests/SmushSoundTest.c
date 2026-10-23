@@ -401,22 +401,30 @@ static void SstPutBE16(uint8_t* p, uint32_t v)
     p[1] = (uint8_t)v;
 }
 
-// Builds a `Crea` block whose sample data follows its header. The retail code reads the 24-bit block length from the byte at +1
-// three times, so the only non-zero length a caller can express is lenByte * 0x010101 (65793 samples for 1), or 0.
+// Builds a `Crea` block whose sample data follows its header and numSamples is the 24-bit block length. SstMakeVoc builds
+// lenByte * 0x010101 samples (65793 samples for 1), or 0.
 #define SST_VOC_OFFSET 0x1A
 #define SST_VOC_LEN    0x010101
-static uint8_t* SstMakeVoc(int lenByte, int* pNumSamples)
+static uint8_t* SstMakeVocLen(int numSamples)
 {
-    int numSamples = lenByte * 0x010101;
     uint8_t* pData = calloc(1, 0x40 + (size_t)numSamples);
     memcpy(pData, "Crea", 4);
     pData[0x14] = SST_VOC_OFFSET;
     pData[0x15] = 0;
-    pData[SST_VOC_OFFSET + 1] = (uint8_t)lenByte;
+    pData[SST_VOC_OFFSET + 1] = (uint8_t)numSamples;
+    pData[SST_VOC_OFFSET + 2] = (uint8_t)(numSamples >> 8);
+    pData[SST_VOC_OFFSET + 3] = (uint8_t)(numSamples >> 16);
     for ( int i = 0; i < numSamples; i++ ) {
         pData[SST_VOC_OFFSET + 6 + i] = (uint8_t)(i * 7 + 3);
     }
 
+    return pData;
+}
+
+static uint8_t* SstMakeVoc(int lenByte, int* pNumSamples)
+{
+    int numSamples = lenByte * 0x010101;
+    uint8_t* pData = SstMakeVocLen(numSamples);
     *pNumSamples = numSamples;
     return pData;
 }
@@ -641,6 +649,24 @@ TEST(SmushSoundEngine, PlayVocFeedsSamplesToMixer)
     TEST_ASSERT_EQUAL_INT(0, sound_GetPosition(SOUND_NOTRACK));
     sound_Callback(100, SstFeedFn);
     TEST_ASSERT_EQUAL_INT(3, SstNumFeeds);
+    free(pVoc);
+}
+
+TEST(SmushSoundEngine, PlayVocUses24BitLength_Fixed)
+{
+    TEST_ASSERT_EQUAL_INT(0, SstEngineStartup());
+
+    // Fix: the block length is built from the bytes at +1..+3 (little endian); the original used the byte at +1 three times, so
+    // 300 samples (2C 01 00) were read as 0x2C2C2C
+    uint8_t* pVoc = SstMakeVocLen(300);
+    SstSnd->Play(pVoc, 5, 100, 0, 0);
+    sound_Callback(1000, SstFeedFn);
+    TEST_ASSERT_EQUAL_INT(1, SstNumFeeds);
+    TEST_ASSERT_EQUAL_INT(300, SstFeeds[0].bytes);
+    TEST_ASSERT_EQUAL_MEMORY(pVoc + SST_VOC_OFFSET + 6, SstFeeds[0].head, 8);
+    sound_Callback(1000, SstFeedFn); // All samples were fed: the track ends
+    TEST_ASSERT_EQUAL_INT(1, SstNumFeeds);
+    TEST_ASSERT_EQUAL_INT(-1, sound_GetVolume(5));
     free(pVoc);
 }
 
@@ -983,6 +1009,7 @@ TEST_GROUP_RUNNER(SmushSoundEngine)
     RUN_TEST_CASE(SmushSoundEngine, CallbackAdvancesTimerBySampleCount);
     RUN_TEST_CASE(SmushSoundEngine, SyncTimerCompensatesForClockDrift);
     RUN_TEST_CASE(SmushSoundEngine, PlayVocFeedsSamplesToMixer);
+    RUN_TEST_CASE(SmushSoundEngine, PlayVocUses24BitLength_Fixed);
     RUN_TEST_CASE(SmushSoundEngine, EmptyVocStopsTheTrack);
     RUN_TEST_CASE(SmushSoundEngine, PlayIgnoredWhenDriverDidNotStart);
     RUN_TEST_CASE(SmushSoundEngine, PlayIgnoresUnknownTag);
