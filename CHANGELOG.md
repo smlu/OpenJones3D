@@ -305,6 +305,7 @@
   - Fixed `sithDSS_ProcessSyncGameState` storing the last chalk mark number of a save game or network message unchecked, which made the chalk mark creation index before the chalk mark array; a number below -1 or above 9 is now rejected. ()
   - Fixed `sithDSSThing_ProcessStateUpdate` storing the backpack items of an item thing without checking their count against the 32 backpack slots, which wrote past the backpack array; a state update with a count above 32 (or negative) is now rejected. ()
   - Fixed `sithDSS_ProcessAIStatus` leaking the frames array of the AI when it is replaced by the frames of the message; the old array is freed before the new one is allocated. ()
+  - Fixed `sithDSS_ProcessSyncGameState` loading the puppet track number of the flying jewel zero extended, so the stored value -1 (no track) became 65535; it is now loaded sign extended. ()
 
 ### Graphics:
   - Fixed an issue where active textures used in the current render frame were being removed from the cache prematurely in low VRAM situations (f37ecb7)
