@@ -74,6 +74,18 @@ static SoundInterface mock_sound;
 
 static int mock_failBitmapCreate;
 
+// One-slot recycler: the pixels of the last destroyed bitmap are handed to the next created bitmap that fits, like a heap
+// that reuses a freed block
+static void* mock_pFreedPixels;
+static size_t mock_freedPixelsSize;
+
+static void Mock_FlushFreedPixels(void)
+{
+    free(mock_pFreedPixels);
+    mock_pFreedPixels    = NULL;
+    mock_freedPixelsSize = 0;
+}
+
 static int mock_CreateBitmap(LecBitmapHeader** ppBitmap, int width, int height, int type)
 {
     J3D_UNUSED(type);
@@ -81,8 +93,19 @@ static int mock_CreateBitmap(LecBitmapHeader** ppBitmap, int width, int height, 
         return -101;
     }
 
+    size_t pixelsSize = (size_t)width * height * 2 + 64;
     LecBitmapHeader* pBitmap = calloc(1, sizeof(LecBitmapHeader));
-    pBitmap->pPixels   = calloc(1, (size_t)width * height * 2 + 64);
+    if ( mock_pFreedPixels && mock_freedPixelsSize >= pixelsSize )
+    {
+        pBitmap->pPixels = mock_pFreedPixels;
+        memset(pBitmap->pPixels, 0, pixelsSize);
+        mock_pFreedPixels    = NULL;
+        mock_freedPixelsSize = 0;
+    }
+    else {
+        pBitmap->pPixels = calloc(1, pixelsSize);
+    }
+
     pBitmap->width     = width;
     pBitmap->height    = height;
     pBitmap->pixelSize = 2;
@@ -94,7 +117,9 @@ static int mock_CreateBitmap(LecBitmapHeader** ppBitmap, int width, int height, 
 
 static void mock_DestroyBitmap(LecBitmapHeader** ppBitmap)
 {
-    free((*ppBitmap)->pPixels);
+    Mock_FlushFreedPixels();
+    mock_pFreedPixels    = (*ppBitmap)->pPixels;
+    mock_freedPixelsSize = (size_t)(*ppBitmap)->width * (*ppBitmap)->height * 2 + 64;
     free(*ppBitmap);
     *ppBitmap = NULL;
 }
@@ -151,6 +176,7 @@ TEST_SETUP(SmushCodec)
     mock_sound.Play = mock_Play;
     mock_numPublished = mock_numUnpublished = mock_numErrors = mock_numAllocs = mock_numFrees = mock_numPlays = 0;
     mock_failBitmapCreate = 0;
+    Mock_FlushFreedPixels();
 }
 
 TEST_TEAR_DOWN(SmushCodec)
@@ -757,6 +783,35 @@ TEST(SmushCodec, DBloc16DecodeWithoutBlitReturnsZero_Fixed)
     dbloc16_Unregister();
 }
 
+TEST(SmushCodec, DBloc16ResizeForgetsLastFrame_Fixed)
+{
+    dbloc16_Register(&mock_share, NULL);
+    dbloc16_Startup();
+    Bl16Interface* pInterface = Mock_Find("FLOBDEC=insane_blocky16");
+    dbloc16_Configure(1, blitTest_Callback, 0);
+    blit_count = 0;
+
+    LecBitmapHeader dst = { 0 };
+    dst.pixelSize = 2;
+    dst.bpp       = 16;
+    dst.colorMode = 1;
+
+    Bl16Header* pHdr1 = DBloc16Test_MakeFrame(16, 8, 0, 0, 16 * 8 * 2);
+    TEST_ASSERT_EQUAL_INT(42, pInterface->Decode(&dst, 0, 0, 0, NULL, (uint8_t*)pHdr1, 0, 0, 0, 0));
+    TEST_ASSERT_EQUAL_INT(1, blit_count);
+
+    // Fix: a frame out of sequence after a resize shows nothing. The original keeps the pointer to the freed pixels of the last
+    // frame, and the mock allocator hands those pixels to the first new bitmap (as a heap does), so the original blits it
+    Bl16Header* pHdr2 = DBloc16Test_MakeFrame(8, 8, 2, 7, 64);
+    TEST_ASSERT_EQUAL_INT(0, pInterface->Decode(&dst, 0, 0, 0, NULL, (uint8_t*)pHdr2, 0, 0, 0, 0));
+    TEST_ASSERT_EQUAL_INT(1, blit_count);
+
+    free(pHdr1);
+    free(pHdr2);
+    dbloc16_Shutdown();
+    dbloc16_Unregister();
+}
+
 TEST(SmushCodec, DBloc16ScaleDoublesRows)
 {
     // 2x upscale of a 4x4 source into an 8-wide destination: the first destination row repeats the second
@@ -819,6 +874,7 @@ TEST_GROUP_RUNNER(SmushCodec)
     RUN_TEST_CASE(SmushCodec, DBloc16MakeTables);
     RUN_TEST_CASE(SmushCodec, DBloc16Codec2SkipsFramesOutOfSequence);
     RUN_TEST_CASE(SmushCodec, DBloc16DecodeWithoutBlitReturnsZero_Fixed);
+    RUN_TEST_CASE(SmushCodec, DBloc16ResizeForgetsLastFrame_Fixed);
     RUN_TEST_CASE(SmushCodec, DBloc16ScaleDoublesRows);
     RUN_TEST_CASE(SmushCodec, DBloc16ScalePalMatchesScale);
 }

@@ -317,6 +317,8 @@ void dbloc16_Free(void)
         dbloc16_pLut = NULL;
     }
 
+    // Fixed: The original keeps the pointer to the freed pixels of the last decoded frame, which a later frame can match with the pixels of a new bitmap
+    dbloc16_pLast  = NULL;
     dbloc16_pShown = NULL;
     dbloc16_size   = 0;
 }
