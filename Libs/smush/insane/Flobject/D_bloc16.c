@@ -547,7 +547,7 @@ void J3DAPI dbloc16_MakeGlyphs(int size)
 
 int J3DAPI dbloc16_DecodeFrame(LecBitmapHeader* pBitmap, MixerRect* pClip, int x, int y, void* pPalette, Bl16Header* pHdr, int flags)
 {
-    int rc = 0; // Fixed: Init to 0 (see the TODO at the return)
+    int rc = 0; // Fixed: Init to 0, the original returns an uninitialized rc when no frame was blitted (pBitmap is NULL, nothing decoded yet, or the blit callback was not given a known bitmap)
 
     int width      = pHdr->width;
     int height     = pHdr->height;
@@ -717,7 +717,7 @@ int J3DAPI dbloc16_DecodeFrame(LecBitmapHeader* pBitmap, MixerRect* pClip, int x
     }
 
     dbloc16_prevSeq = pHdr->seq;
-    return rc; // TODO: [BUG] rc is uninitialized when no frame was blitted (pBitmap is NULL, nothing decoded yet, or the blit callback was not given a known bitmap)
+    return rc;
 }
 
 void J3DAPI dbloc16_BuildLut(LecBitmapHeader* pBitmap)

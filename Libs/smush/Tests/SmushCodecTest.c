@@ -72,9 +72,15 @@ static void mock_Play(uint8_t* pData, int id, int volume, int pan, int priority)
 
 static SoundInterface mock_sound;
 
+static int mock_failBitmapCreate;
+
 static int mock_CreateBitmap(LecBitmapHeader** ppBitmap, int width, int height, int type)
 {
     J3D_UNUSED(type);
+    if ( mock_failBitmapCreate ) {
+        return -101;
+    }
+
     LecBitmapHeader* pBitmap = calloc(1, sizeof(LecBitmapHeader));
     pBitmap->pPixels   = calloc(1, (size_t)width * height * 2 + 64);
     pBitmap->width     = width;
@@ -144,6 +150,7 @@ TEST_SETUP(SmushCodec)
     memset(&mock_sound, 0, sizeof(mock_sound));
     mock_sound.Play = mock_Play;
     mock_numPublished = mock_numUnpublished = mock_numErrors = mock_numAllocs = mock_numFrees = mock_numPlays = 0;
+    mock_failBitmapCreate = 0;
 }
 
 TEST_TEAR_DOWN(SmushCodec)
@@ -732,6 +739,24 @@ TEST(SmushCodec, DBloc16Codec2SkipsFramesOutOfSequence)
     dbloc16_Unregister();
 }
 
+TEST(SmushCodec, DBloc16DecodeWithoutBlitReturnsZero_Fixed)
+{
+    dbloc16_Register(&mock_share, NULL);
+    dbloc16_Startup();
+    Bl16Interface* pInterface = Mock_Find("FLOBDEC=insane_blocky16");
+    dbloc16_Configure(1, blitTest_Callback, 0);
+    blit_count = 0;
+
+    // Fix: the result is 0 (the original returns an uninitialized value) when nothing is blitted: no destination bitmap,
+    // and a frame out of sequence after the buffers were created
+    Bl16Header* pHdr = DBloc16Test_MakeFrame(8, 8, 0, 0, 8 * 8 * 2);
+    TEST_ASSERT_EQUAL_INT(0, pInterface->Decode(NULL, 0, 0, 0, NULL, (uint8_t*)pHdr, 0, 0, 0, 0));
+    TEST_ASSERT_EQUAL_INT(0, blit_count);
+    free(pHdr);
+    dbloc16_Shutdown();
+    dbloc16_Unregister();
+}
+
 TEST(SmushCodec, DBloc16ScaleDoublesRows)
 {
     // 2x upscale of a 4x4 source into an 8-wide destination: the first destination row repeats the second
@@ -793,6 +818,7 @@ TEST_GROUP_RUNNER(SmushCodec)
     RUN_TEST_CASE(SmushCodec, DBloc16DecodeRawFrameBlits);
     RUN_TEST_CASE(SmushCodec, DBloc16MakeTables);
     RUN_TEST_CASE(SmushCodec, DBloc16Codec2SkipsFramesOutOfSequence);
+    RUN_TEST_CASE(SmushCodec, DBloc16DecodeWithoutBlitReturnsZero_Fixed);
     RUN_TEST_CASE(SmushCodec, DBloc16ScaleDoublesRows);
     RUN_TEST_CASE(SmushCodec, DBloc16ScalePalMatchesScale);
 }

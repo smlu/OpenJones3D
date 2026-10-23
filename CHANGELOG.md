@@ -157,6 +157,7 @@
   - Fixed `dsnd_Release` never releasing the DirectSound object created by the smush sound driver (the ownership flag was cleared before the test). ()
   - Fixed `sound_Play` of the smush sound engine building the 24-bit length of a VOC block from a single byte read three times instead of the three length bytes. ()
   - Fixed the smush mixer mono kernels averaging with the sample two ahead instead of the next sample when doubling the sample rate, which also read one sample past the end of the source (QOL build). ()
+  - Fixed `dbloc16_DecodeFrame` returning an uninitialized result when no frame was blitted; it returns 0. ()
   - Fixed GitHub Actions test triggering on develop and pull requests, with separate build and test status badges for DirectX 6/9. (1026ad0)
   - Applied official 1.2 update fix to `jonesConfig_ControlToString`: key names in the control configuration dialog are now queried from the system keyboard layout with `GetKeyNameTextA` instead of a hardcoded English table. (ead3679)
   - Applied official 1.2 update fix to `jonesConfig_StoreDialog_HandleWM_COMMAND`: closing the store dialog with a balance of exactly 0 now shows the purchase confirmation instead of leaving silently. (ead3679)
