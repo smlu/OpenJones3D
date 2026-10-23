@@ -548,6 +548,7 @@
   - [QOL] Fixed `sithAIInstinct_Listen` using the bits of the instinct pointer as the loudness of a heard sound while the AI is hunting (a tiny positive float); the loudness of the sound is used now like for the other reactions. Builds without QOL improvements keep the original behavior. ()
   - [QOL] Fixed `sithAIInstinct_SnakeMungeTestCheck` (snake AI path test) combining the path check flags with the bit pattern of the float distance argument instead of starting from zero, which added random flags to the check. Builds without QOL improvements keep the original behavior. ()
   - Fixed `jonesConfig_LoadControlScheme` storing the 9th binding of an action (the one that is reported as "too many bindings") one entry past the action row, overwriting the binding count of the next action or, for the last action, the scheme name; the 9th binding is no longer stored. ()
+  - [QOL] Fixed `jonesConfig_LoadControlScheme` clearing only 9 bytes (less than 3 entries) of each action row when loading a control scheme fails; the whole row is cleared now. Builds without QOL improvements keep the original behavior. ()
 
 ## v0.3.1
 ### General:

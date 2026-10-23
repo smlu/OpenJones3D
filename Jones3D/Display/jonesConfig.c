@@ -2267,7 +2267,8 @@ error:
     memset(pConfig->aName, 0, sizeof(pConfig->aName));
     for ( size_t i = 0; i < bindNum; ++i ) // TODO: Hmm is it ok using binNum here? Shouldn't it use actionCount, or just memset the whole array?
     {
-        memset(pConfig->aActions[i], 0, STD_ARRAYLEN(pConfig->aActions[i])); // TODO: [BUG] Clears 9 bytes, not 9 entries, as the original
+        // Fixed: Clear the whole action row, the original clears 9 bytes, which is not even 3 of the 9 entries.
+        memset(pConfig->aActions[i], 0, J3D_QOL_VALUE(sizeof(pConfig->aActions[i]), STD_ARRAYLEN(pConfig->aActions[i])));
     }
     // Old code
     /*if ( bindNum > 0 )
