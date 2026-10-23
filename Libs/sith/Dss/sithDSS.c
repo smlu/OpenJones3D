@@ -1438,7 +1438,8 @@ int J3DAPI sithDSS_ProcessSyncGameState(const SithMessage* pMsg)
     thingIdx = SITHDSS_POPINT32();
     sithPlayerActions_g_pPlasma = sithThing_GetThingByIndex(thingIdx);
 
-    sithPlayerActions_g_jewelFlyingPuppetTrackNum = SITHDSS_POPUINT16();
+    // Fixed: Read the track number sign extended, it is written as int16 and the original loads -1 (no track) as 65535.
+    sithPlayerActions_g_jewelFlyingPuppetTrackNum = SITHDSS_POPINT16();
     sithPlayerActions_g_bJewelFlying              = SITHDSS_POPUINT8();
     sithPlayerActions_g_bPlayerInvisible          = SITHDSS_POPUINT8();
     sithPlayerControls_g_bCutsceneMode            = SITHDSS_POPUINT8();

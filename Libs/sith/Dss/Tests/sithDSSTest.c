@@ -832,6 +832,47 @@ TEST(sithDSSFix, StateUpdateRejectsTooManyBackpackItems)
     }
 }
 
+static int sithDSSFixTest_trackNum;
+
+static int sithDSSFixTest_WriteGameStateTrack(DssvCtx* cx)
+{
+    sithPlayerActions_g_jewelFlyingPuppetTrackNum = sithDSSFixTest_trackNum;
+    sithFX_g_lastChalkMarkNum = 5; // the reader rejects numbers outside of -1..9
+    return dssvc_SyncGameState(cx);
+}
+
+// sithDSS_ProcessSyncGameState loaded the int16 puppet track number of the flying jewel zero extended, -1 became 65535
+TEST(sithDSSFix, SyncGameStateLoadsNegativeJewelTrack)
+{
+    static const DssvCase writer = { "Fix_SyncGameState_track", sithDSSFixTest_WriteGameStateTrack, 0, NULL, DSSV_NOMUT };
+    static const DssvCase reader = { "Fix_ProcessSyncGameState_track", dssvc_ProcessSyncGameState, 0, NULL, DSSV_NOMUT };
+
+    // Find the track number in the message: the only bytes that differ between messages written with different numbers
+    uint8_t aRefMsg[sizeof(dssv_lastMsg.data)];
+    sithDSSFixTest_trackNum = 0x1234;
+    sithDSSFixTest_RunWriter(&writer);
+    uint32_t length = dssv_lastMsg.length;
+    memcpy(aRefMsg, dssv_lastMsg.data, length);
+
+    sithDSSFixTest_trackNum = -1;
+    sithDSSFixTest_RunWriter(&writer);
+    TEST_ASSERT_EQUAL_UINT32(length, dssv_lastMsg.length);
+
+    size_t off = 0;
+    while ( off < length && aRefMsg[off] == dssv_lastMsg.data[off] ) { ++off; }
+    TEST_ASSERT_TRUE_MESSAGE(off + 2 <= length, "track number not found in message");
+    TEST_ASSERT_EQUAL_UINT8(0xFF, dssv_lastMsg.data[off]);
+    TEST_ASSERT_EQUAL_UINT8(0xFF, dssv_lastMsg.data[off + 1]);
+
+    TEST_ASSERT_EQUAL_UINT32(1, sithDSSFixTest_RunReader(&reader));
+    TEST_ASSERT_EQUAL_INT(-1, sithPlayerActions_g_jewelFlyingPuppetTrackNum);
+
+    // Positive numbers are unchanged
+    memcpy(dssv_lastMsg.data, aRefMsg, length);
+    TEST_ASSERT_EQUAL_UINT32(1, sithDSSFixTest_RunReader(&reader));
+    TEST_ASSERT_EQUAL_INT(0x1234, sithPlayerActions_g_jewelFlyingPuppetTrackNum);
+}
+
 TEST_GROUP_RUNNER(sithDSSFix)
 {
     RUN_TEST_CASE(sithDSSFix, WelcomeRejectsInvalidPlayerNum);
@@ -843,4 +884,5 @@ TEST_GROUP_RUNNER(sithDSSFix)
     RUN_TEST_CASE(sithDSSFix, SyncGameStateRejectsTooManyChalkMarks);
     RUN_TEST_CASE(sithDSSFix, SyncGameStateRejectsBadLastChalkMark);
     RUN_TEST_CASE(sithDSSFix, StateUpdateRejectsTooManyBackpackItems);
+    RUN_TEST_CASE(sithDSSFix, SyncGameStateLoadsNegativeJewelTrack);
 }
