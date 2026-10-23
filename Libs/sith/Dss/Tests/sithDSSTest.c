@@ -560,9 +560,48 @@ TEST(sithDSSFix, SyncPlayersAcceptsMaxPlayers)
     TEST_ASSERT_EQUAL_UINT(0, dssv_numErrors);
 }
 
+static void sithDSSFixTest_BuildChat(int playerCount, uint32_t len, const char* pText, size_t textSize)
+{
+    SITHDSS_STARTOUTEX(&sithDSSFixTest_msg, SITHDSS_CHAT);
+    SITHDSS_PUSHINT32(0); // sender count, unused
+    SITHDSS_PUSHINT32(playerCount);
+    SITHDSS_PUSHUINT32(len);
+    memcpy(pCurDSSMsgData_, pText, textSize);
+    pCurDSSMsgData_ += textSize;
+    SITHDSS_ENDOUT;
+}
+
+// sithMulti_ProcessChat wrapped len - 1 for an empty text and copied and terminated the text outside of its buffer
+TEST(sithDSSFix, ChatRejectsEmptyText)
+{
+    sithDSSFixTest_BuildChat(-1, 0, "hello", 6);
+    TEST_ASSERT_EQUAL_INT(0, sithMulti_ProcessChat(&sithDSSFixTest_msg));
+    TEST_ASSERT_EQUAL_UINT(1, dssv_numErrors);
+    TEST_ASSERT_EQUAL_UINT(0, sithDSSFixTest_numConsolePrints);
+}
+
+// A chat message of a negative player count (server message) prints the text as it is
+TEST(sithDSSFix, ChatPrintsServerText)
+{
+    sithDSSFixTest_BuildChat(-1, 6, "hello", 6);
+    TEST_ASSERT_EQUAL_INT(1, sithMulti_ProcessChat(&sithDSSFixTest_msg));
+    TEST_ASSERT_EQUAL_UINT(0, dssv_numErrors);
+    TEST_ASSERT_EQUAL_UINT(1, sithDSSFixTest_numConsolePrints);
+    TEST_ASSERT_EQUAL_STRING("hello", sithDSSFixTest_aConsoleText);
+
+    // len includes the terminator, the shortest accepted text (len 1) is the empty string
+    sithDSSFixTest_numConsolePrints = 0;
+    sithDSSFixTest_BuildChat(-1, 1, "x", 2);
+    TEST_ASSERT_EQUAL_INT(1, sithMulti_ProcessChat(&sithDSSFixTest_msg));
+    TEST_ASSERT_EQUAL_UINT(1, sithDSSFixTest_numConsolePrints);
+    TEST_ASSERT_EQUAL_STRING("", sithDSSFixTest_aConsoleText);
+}
+
 TEST_GROUP_RUNNER(sithDSSFix)
 {
     RUN_TEST_CASE(sithDSSFix, WelcomeRejectsInvalidPlayerNum);
     RUN_TEST_CASE(sithDSSFix, SyncPlayersRejectsTooManyPlayers);
     RUN_TEST_CASE(sithDSSFix, SyncPlayersAcceptsMaxPlayers);
+    RUN_TEST_CASE(sithDSSFix, ChatRejectsEmptyText);
+    RUN_TEST_CASE(sithDSSFix, ChatPrintsServerText);
 }
