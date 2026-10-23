@@ -3618,8 +3618,13 @@ int J3DAPI sithAIInstinct_SnakeMungeTestCheck(SithAIControlBlock* pLocal, rdVect
         return 0;
     }
 
+#ifdef J3D_QOL_IMPROVEMENTS
+    // Fixed: Start the path check flags from zero, the original never initializes them before ORing the flags into them.
+    SithAIUtilPathFlags pathFlags = 0;
+#else
     // TODO: [BUG] The original never initializes the path flags before ORing the flags into them
     SithAIUtilPathFlags pathFlags;
+#endif
     pathFlags |= SITHAIUTIL_PATHFLAG_IGNOREPLAYER | SITHAIUTIL_PATHFLAG_IGNORETHINGS | SITHAIUTIL_PATHFLAG_GOALVISIBLE | SITHAIUTIL_PATHFLAG_STRAIGHT;
 
     rdVector3 curHitPos;
