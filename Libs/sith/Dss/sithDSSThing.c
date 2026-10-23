@@ -455,10 +455,16 @@ int J3DAPI sithDSSThing_ProcessStateUpdate(const SithMessage* pMsg)
             pThing->thingInfo.itemInfo.flags = SITHDSS_POPUINT32();
             if ( (pThing->thingInfo.itemInfo.flags & SITH_ITEM_BACKPACK) != 0 )
             {
+                // Fixed: Reject a backpack item count outside of aBackpackItems, the original reads it unchecked and writes past the array.
                 // Note: numItems is serialized as 16 bits
-                pThing->thingInfo.itemInfo.numItems = SITHDSS_POPUINT16();
+                size_t numItems = SITHDSS_POPUINT16();
+                if ( numItems > STD_ARRAYLEN(pThing->thingInfo.itemInfo.aBackpackItems) )
+                {
+                    SITHLOG_ERROR("Bad backpack item count %zu in DSS::StateUpdate.\n", numItems);
+                    return 0;
+                }
 
-                // TODO: [BUG] numItems is not validated against the size of aBackpackItems and can overflow it with a malformed message
+                pThing->thingInfo.itemInfo.numItems = numItems;
                 for ( size_t i = 0; i < pThing->thingInfo.itemInfo.numItems; ++i )
                 {
                     pThing->thingInfo.itemInfo.aBackpackItems[i].typeId = SITHDSS_POPINT16();

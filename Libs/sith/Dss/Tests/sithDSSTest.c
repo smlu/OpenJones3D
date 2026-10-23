@@ -750,6 +750,44 @@ TEST(sithDSSFix, SyncGameStateRejectsBadLastChalkMark)
     }
 }
 
+// sithDSSThing_ProcessStateUpdate stored the backpack items of the message past the end of aBackpackItems
+TEST(sithDSSFix, StateUpdateRejectsTooManyBackpackItems)
+{
+    // The writer case of the vectors: an item with a backpack of 3 items (type ids 10, 13, 16)
+    static const DssvCase writer = { "Fix_UpdateState_backpack", dssvc_UpdateState, 3, NULL, DSSV_NOMUT };
+    static const DssvCase reader = { "Fix_ProcessStateUpdate_backpack", dssvc_ProcessStateUpdate, 0, NULL, DSSV_NOMUT };
+
+    sithDSSFixTest_RunWriter(&writer);
+
+    // Find the item count: int16 3 followed by the type id 10 of the first item
+    size_t countOff = 0;
+    while ( countOff + 4 <= dssv_lastMsg.length && !(dssv_lastMsg.data[countOff] == 3 && dssv_lastMsg.data[countOff + 1] == 0
+                                                     && dssv_lastMsg.data[countOff + 2] == 10 && dssv_lastMsg.data[countOff + 3] == 0) )
+    {
+        ++countOff;
+    }
+    TEST_ASSERT_TRUE_MESSAGE(countOff + 4 <= dssv_lastMsg.length, "item count not found in message");
+
+    static const uint16_t aBad[] = { 33, 1000, 0x7FFF, 0xFFFF };
+    for ( size_t i = 0; i < sizeof(aBad) / sizeof(aBad[0]); ++i )
+    {
+        memcpy(dssv_lastMsg.data + countOff, &aBad[i], sizeof(aBad[i]));
+        dssv_numErrors = 0;
+        TEST_ASSERT_EQUAL_UINT32_MESSAGE(0, sithDSSFixTest_RunReader(&reader), "invalid backpack item count accepted");
+        TEST_ASSERT_EQUAL_UINT(1, dssv_numErrors);
+        TEST_ASSERT_NOT_EQUAL((int16_t)aBad[i], dssv_arena.things[2].thingInfo.itemInfo.numItems);
+    }
+
+    // The original message and a full backpack are accepted
+    static const uint16_t aGood[] = { 3, 32 };
+    for ( size_t i = 0; i < sizeof(aGood) / sizeof(aGood[0]); ++i )
+    {
+        memcpy(dssv_lastMsg.data + countOff, &aGood[i], sizeof(aGood[i]));
+        TEST_ASSERT_EQUAL_UINT32(1, sithDSSFixTest_RunReader(&reader));
+        TEST_ASSERT_EQUAL_INT(aGood[i], dssv_arena.things[2].thingInfo.itemInfo.numItems);
+    }
+}
+
 TEST_GROUP_RUNNER(sithDSSFix)
 {
     RUN_TEST_CASE(sithDSSFix, WelcomeRejectsInvalidPlayerNum);
@@ -760,4 +798,5 @@ TEST_GROUP_RUNNER(sithDSSFix)
     RUN_TEST_CASE(sithDSSFix, ChatNamesOnlyListedSenders);
     RUN_TEST_CASE(sithDSSFix, SyncGameStateRejectsTooManyChalkMarks);
     RUN_TEST_CASE(sithDSSFix, SyncGameStateRejectsBadLastChalkMark);
+    RUN_TEST_CASE(sithDSSFix, StateUpdateRejectsTooManyBackpackItems);
 }
