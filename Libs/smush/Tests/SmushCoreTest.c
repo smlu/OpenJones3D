@@ -421,6 +421,23 @@ TEST(SmushCore, LecShare_Find)
     TEST_ASSERT_NULL(LecShare_Find("SVC=gamma"));
 }
 
+TEST(SmushCore, LecShare_Find_FreeSlot_Fixed)
+{
+    SmushCoreTest_InitModules();
+    LecShare* pShare = LecShare_Init(SmushCoreTest_ErrorFn, NULL, "", "");
+    TEST_ASSERT_EQUAL_INT(0, pShare->Publish("ONE=a", &g_svcAlpha));
+    TEST_ASSERT_EQUAL_INT(0, pShare->Publish("TWO=b", &g_svcBeta));
+    TEST_ASSERT_EQUAL_INT(0, pShare->Publish("THREE=c", &g_modA));
+
+    // Fix: the search runs from the last entry down, the original compared the NULL name of the freed middle entry and faulted
+    TEST_ASSERT_EQUAL_INT(0, LecShare_Unpublish("TWO=b"));
+    LecEntry* pEntry = LecShare_Find("ONE=a");
+    TEST_ASSERT_NOT_NULL(pEntry);
+    TEST_ASSERT_TRUE(pEntry->pInterface == &g_svcAlpha);
+    TEST_ASSERT_NULL(LecShare_Find("TWO=b"));
+    TEST_ASSERT_NOT_NULL(LecShare_Find("THREE=c"));
+}
+
 TEST(SmushCore, LecShare_BatchSubscribe)
 {
     SmushCoreTest_InitModules();
@@ -1321,6 +1338,7 @@ TEST_GROUP_RUNNER(SmushCore)
     RUN_TEST_CASE(SmushCore, LecShare_Publish_TableFull);
     RUN_TEST_CASE(SmushCore, LecShare_Enumerate);
     RUN_TEST_CASE(SmushCore, LecShare_Find);
+    RUN_TEST_CASE(SmushCore, LecShare_Find_FreeSlot_Fixed);
     RUN_TEST_CASE(SmushCore, LecShare_BatchSubscribe);
     RUN_TEST_CASE(SmushCore, LecShare_BatchSubscribe_Failure);
     RUN_TEST_CASE(SmushCore, LecShare_Startup_Shutdown_Order);
