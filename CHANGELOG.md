@@ -159,6 +159,7 @@
   - Fixed the smush mixer mono kernels averaging with the sample two ahead instead of the next sample when doubling the sample rate, which also read one sample past the end of the source (QOL build). ()
   - Fixed `dbloc16_DecodeFrame` returning an uninitialized result when no frame was blitted; it returns 0. ()
   - Fixed `dbloc16_Free` keeping the pointer to the freed pixels of the last decoded frame, which a later out-of-sequence frame could match with a new bitmap after a resize. ()
+  - Fixed `dbloc16_DecodeFrame` ignoring a failed allocation of its frame bitmaps and faulting on the missing bitmaps; the frame is dropped instead. ()
   - Fixed GitHub Actions test triggering on develop and pull requests, with separate build and test status badges for DirectX 6/9. (1026ad0)
   - Applied official 1.2 update fix to `jonesConfig_ControlToString`: key names in the control configuration dialog are now queried from the system keyboard layout with `GetKeyNameTextA` instead of a hardcoded English table. (ead3679)
   - Applied official 1.2 update fix to `jonesConfig_StoreDialog_HandleWM_COMMAND`: closing the store dialog with a balance of exactly 0 now shows the purchase confirmation instead of leaving silently. (ead3679)

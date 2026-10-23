@@ -557,7 +557,12 @@ int J3DAPI dbloc16_DecodeFrame(LecBitmapHeader* pBitmap, MixerRect* pClip, int x
     if ( dbloc16_pBitmap0 == NULL || width != dbloc16_pBitmap0->width || ((height + 7) & ~7) != dbloc16_pBitmap0->height )
     {
         dbloc16_Free();
-        dbloc16_Alloc(width, (height + 7) & ~7, pHdr->depth ? pHdr->depth : 8);
+
+        // Fixed: The original ignores a failed allocation and uses the bitmaps that were not created below (NULL access). Nothing is decoded then
+        if ( dbloc16_Alloc(width, (height + 7) & ~7, pHdr->depth ? pHdr->depth : 8) != 0 )
+        {
+            return 0;
+        }
     }
 
     int offset1 = (int)(dbloc16_pBuf1 - dbloc16_pCur);

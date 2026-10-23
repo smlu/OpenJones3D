@@ -812,6 +812,35 @@ TEST(SmushCodec, DBloc16ResizeForgetsLastFrame_Fixed)
     dbloc16_Unregister();
 }
 
+TEST(SmushCodec, DBloc16DecodeFailedAllocationDecodesNothing_Fixed)
+{
+    dbloc16_Register(&mock_share, NULL);
+    dbloc16_Startup();
+    Bl16Interface* pInterface = Mock_Find("FLOBDEC=insane_blocky16");
+    dbloc16_Configure(1, blitTest_Callback, 0);
+    blit_count = 0;
+
+    LecBitmapHeader dst = { 0 };
+    dst.pixelSize = 2;
+    dst.bpp       = 16;
+    dst.colorMode = 1;
+
+    // Fix: the original went on with the bitmaps that failed to be created and faulted
+    mock_failBitmapCreate = 1;
+    Bl16Header* pHdr = DBloc16Test_MakeFrame(8, 8, 0, 0, 8 * 8 * 2);
+    TEST_ASSERT_EQUAL_INT(0, pInterface->Decode(&dst, 0, 0, 0, NULL, (uint8_t*)pHdr, 0, 0, 0, 0));
+    TEST_ASSERT_EQUAL_INT(0, blit_count);
+
+    // The next frame allocates again
+    mock_failBitmapCreate = 0;
+    TEST_ASSERT_EQUAL_INT(42, pInterface->Decode(&dst, 0, 0, 0, NULL, (uint8_t*)pHdr, 0, 0, 0, 0));
+    TEST_ASSERT_EQUAL_INT(1, blit_count);
+
+    free(pHdr);
+    dbloc16_Shutdown();
+    dbloc16_Unregister();
+}
+
 TEST(SmushCodec, DBloc16ScaleDoublesRows)
 {
     // 2x upscale of a 4x4 source into an 8-wide destination: the first destination row repeats the second
@@ -875,6 +904,7 @@ TEST_GROUP_RUNNER(SmushCodec)
     RUN_TEST_CASE(SmushCodec, DBloc16Codec2SkipsFramesOutOfSequence);
     RUN_TEST_CASE(SmushCodec, DBloc16DecodeWithoutBlitReturnsZero_Fixed);
     RUN_TEST_CASE(SmushCodec, DBloc16ResizeForgetsLastFrame_Fixed);
+    RUN_TEST_CASE(SmushCodec, DBloc16DecodeFailedAllocationDecodesNothing_Fixed);
     RUN_TEST_CASE(SmushCodec, DBloc16ScaleDoublesRows);
     RUN_TEST_CASE(SmushCodec, DBloc16ScalePalMatchesScale);
 }
