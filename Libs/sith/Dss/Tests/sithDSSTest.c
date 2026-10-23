@@ -597,6 +597,39 @@ TEST(sithDSSFix, ChatPrintsServerText)
     TEST_ASSERT_EQUAL_STRING("", sithDSSFixTest_aConsoleText);
 }
 
+// sithMulti_ProcessChat indexed sithPlayer_g_aPlayers with any non-negative sender of the message
+TEST(sithDSSFix, ChatNamesOnlyListedSenders)
+{
+    sithDSSTest_g.numPlayers = 3;
+    memset(&sithDSSTest_g.aPlayers, 0xA5, sizeof(sithDSSTest_g.aPlayers));
+    sithDSSTest_g.aPlayers[2].awName[0] = L'B';
+    sithDSSTest_g.aPlayers[2].awName[1] = L'o';
+    sithDSSTest_g.aPlayers[2].awName[2] = L'b';
+    sithDSSTest_g.aPlayers[2].awName[3] = 0;
+    sithDSSTest_g.aPlayers[3].awName[0] = L'E';
+    sithDSSTest_g.aPlayers[3].awName[1] = L'v';
+    sithDSSTest_g.aPlayers[3].awName[2] = L'e';
+    sithDSSTest_g.aPlayers[3].awName[3] = 0;
+
+    sithDSSFixTest_BuildChat(2, 4, "hi!", 4);
+    TEST_ASSERT_EQUAL_INT(1, sithMulti_ProcessChat(&sithDSSFixTest_msg));
+    TEST_ASSERT_EQUAL_STRING("Bob says 'hi!'", sithDSSFixTest_aConsoleText);
+
+    // A slot behind the player count is still inside the array, the name of the slot is printed as in the original
+    sithDSSFixTest_BuildChat(3, 4, "hi!", 4);
+    TEST_ASSERT_EQUAL_INT(1, sithMulti_ProcessChat(&sithDSSFixTest_msg));
+    TEST_ASSERT_EQUAL_STRING("Eve says 'hi!'", sithDSSFixTest_aConsoleText);
+
+    static const int aOutside[] = { SITHPLAYER_MAX_PLAYERS, 1000, INT_MAX };
+    for ( size_t i = 0; i < sizeof(aOutside) / sizeof(aOutside[0]); ++i )
+    {
+        sithDSSFixTest_aConsoleText[0] = 0;
+        sithDSSFixTest_BuildChat(aOutside[i], 4, "hi!", 4);
+        TEST_ASSERT_EQUAL_INT(1, sithMulti_ProcessChat(&sithDSSFixTest_msg));
+        TEST_ASSERT_EQUAL_STRING("hi!", sithDSSFixTest_aConsoleText);
+    }
+}
+
 TEST_GROUP_RUNNER(sithDSSFix)
 {
     RUN_TEST_CASE(sithDSSFix, WelcomeRejectsInvalidPlayerNum);
@@ -604,4 +637,5 @@ TEST_GROUP_RUNNER(sithDSSFix)
     RUN_TEST_CASE(sithDSSFix, SyncPlayersAcceptsMaxPlayers);
     RUN_TEST_CASE(sithDSSFix, ChatRejectsEmptyText);
     RUN_TEST_CASE(sithDSSFix, ChatPrintsServerText);
+    RUN_TEST_CASE(sithDSSFix, ChatNamesOnlyListedSenders);
 }
