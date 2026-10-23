@@ -300,6 +300,7 @@
   - Fixed `sithMulti_ProcessWelcome` indexing the player array with the unchecked player number of the message; a number outside the 24 player slots now rejects the message instead of writing out of bounds (multiplayer is dormant in the retail game). ()
   - Fixed `sithMulti_ProcessSyncPlayers` looping over the player array with the unchecked player count of the message; a count above the 24 player slots now rejects the message instead of writing out of bounds (multiplayer is dormant in the retail game). ()
   - Fixed `sithMulti_ProcessChat` wrapping the text length for a chat message with length 0, which copied and terminated the text outside of its buffer; such a message is now rejected (multiplayer is dormant in the retail game). ()
+  - Fixed `sithMulti_ProcessChat` looking up the sender name with any non-negative player number of the message, which read outside of the player array; only a sender inside the 24 player slots is named now, the text of any other sender is printed without a name (multiplayer is dormant in the retail game). ()
 
 ### Graphics:
   - Fixed an issue where active textures used in the current render frame were being removed from the cache prematurely in low VRAM situations (f37ecb7)

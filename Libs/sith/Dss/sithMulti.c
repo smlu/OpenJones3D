@@ -546,8 +546,8 @@ int J3DAPI sithMulti_ProcessChat(const SithMessage* pMsg)
     SITHDSS_POPSTRING(aText, len);
     aText[len + 1] = 0;
 
-    // TODO: [BUG] playerCount is only checked for being negative, not against sithPlayer_g_numPlayers
-    if ( playerCount >= 0 )
+    // Fixed: Only a sender inside the player array is named, the original indexes sithPlayer_g_aPlayers with any non-negative value.
+    if ( playerCount >= 0 && (size_t)playerCount < SITHPLAYER_MAX_PLAYERS )
     {
         SITHCONSOLE_PRINTF("%S says '%s'", sithPlayer_g_aPlayers[playerCount].awName, aText);
     }
