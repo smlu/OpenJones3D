@@ -1,8 +1,12 @@
 These synthetic test vectors exercise std/General file parsers without using
-original game assets.
+original game assets. The numeric engine constants below are separate from
+these synthetic parser inputs.
 
 Binary formats are stored as normal binary files:
 
+- `stdMath/sin_table.bin` and `stdMath/tan_table.bin` preserve the lookup-table
+  bytes independently of the compiled decimal literals. See `stdMath/README.md`
+  for their source, checksums, and numerical-fixture scope.
 - `stdBmp/valid_2x2_24bpp.bmp` is a minimal bottom-up BI_RGB 24 bpp BMP
   based on the public BMP/DIB header layout: 14-byte file header, 40-byte
   BITMAPINFOHEADER, `BM` signature, BGR pixel bytes, and DWORD-aligned rows.

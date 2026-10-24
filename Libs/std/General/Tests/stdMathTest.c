@@ -1,8 +1,11 @@
 #include <unity_fixture.h>
 
+#include <float.h>
+#include <limits.h>
 #include <stdint.h>
 #include <string.h>
 
+#include <std/General/std.h>
 #include <std/General/stdMath.h>
 #include <std/General/stdUtil.h>
 #include <j3dcore/Tests/j3dTest.h>
@@ -33,8 +36,8 @@ TEST_TEAR_DOWN(stdMath)
     StdGeneralTest_Shutdown();
 }
 
-// NOTE: Test-local copy of the decompiled original, kept out of production code.
-static void stdMathTest_OriginalSinCos(float angle, float* pSinOut, float* pCosOut)
+// A separate traversal checks quadrant boundaries and interpolation independently.
+static void stdMathTest_ReferenceSinCos(float angle, float* pSinOut, float* pCosOut)
 {
     float normalized;
     float v4;
@@ -153,10 +156,8 @@ static void stdMathTest_OriginalSinCos(float angle, float* pSinOut, float* pCosO
     }
 }
 
-// NOTE: Test-local reference for preserved tan behavior. The old decompiled helper had a
-// negative table offset in quadrant 2; this keeps the preserved reverse-base behavior
-// without depending on an unsafe read before stdMath_aTanTable.
-static float stdMathTest_OriginalTan(float angle)
+// The third quadrant uses the same forward samples as the first quadrant.
+static float stdMathTest_ReferenceTan(float angle)
 {
     double v1;
     float v3;
@@ -223,8 +224,8 @@ static float stdMathTest_OriginalTan(float angle)
                 v13 = stdMath_aTanTable[v10 - 2 * STDMATH_TEST_TAN_TABLE_SIZE];
             else
                 v13 = -stdMath_aTanTable[STDMATH_TEST_TAN_TABLE_LAST_IDX - (v8 - (3 * STDMATH_TEST_TAN_TABLE_SIZE - 1))];
-            v9 = (v13 - stdMath_aTanTable[STDMATH_TEST_TAN_TABLE_LAST_IDX - (v8 - 2 * STDMATH_TEST_TAN_TABLE_SIZE)]) * v3
-                + stdMath_aTanTable[STDMATH_TEST_TAN_TABLE_LAST_IDX - (v8 - 2 * STDMATH_TEST_TAN_TABLE_SIZE)];
+            v9 = (v13 - stdMath_aTanTable[v8 - 2 * STDMATH_TEST_TAN_TABLE_SIZE]) * v3
+                + stdMath_aTanTable[v8 - 2 * STDMATH_TEST_TAN_TABLE_SIZE];
             break;
 
         case 3:
@@ -262,7 +263,6 @@ static uint32_t stdMathTest_FloatBits(float value)
     return bits;
 }
 
-#ifdef J3D_DEBUG
 static float stdMathTest_FloatFromBits(uint32_t bits)
 {
     float value;
@@ -270,7 +270,6 @@ static float stdMathTest_FloatFromBits(uint32_t bits)
     memcpy(&value, &bits, sizeof(value));
     return value;
 }
-#endif
 
 static void stdMathTest_AssertIsNaN(float value)
 {
@@ -287,23 +286,53 @@ static void stdMathTest_AssertFloatBitsEqual(float expected, float actual)
     TEST_ASSERT_EQUAL_HEX32(stdMathTest_FloatBits(expected), stdMathTest_FloatBits(actual));
 }
 
-static void stdMathTest_AssertSinCosMatchesOriginal(float angle)
+static void stdMathTest_AssertLookupTable(const char* pRelativePath, const float* pTable)
+{
+    uint8_t aData[4096 * sizeof(uint32_t)];
+    tFileHandle fh = stdFileOpen(StdGeneralTest_GetTestVectorPath(pRelativePath), "rb");
+    TEST_ASSERT_NOT_EQUAL(0u, fh);
+
+    uint8_t extra;
+    size_t numRead   = stdFileRead(fh, aData, sizeof(aData));
+    size_t extraRead = stdFileRead(fh, &extra, sizeof(extra));
+    int closeResult  = stdFileClose(fh);
+    TEST_ASSERT_EQUAL_size_t(sizeof(aData), numRead);
+    TEST_ASSERT_EQUAL_size_t(0, extraRead);
+    TEST_ASSERT_EQUAL_INT(0, closeResult);
+
+    for ( size_t i = 0; i < STD_ARRAYLEN(aData) / sizeof(uint32_t); ++i )
+    {
+        const uint8_t* pValue = &aData[i * sizeof(uint32_t)];
+        uint32_t expected    = (uint32_t)pValue[0] | (uint32_t)pValue[1] << 8
+                             | (uint32_t)pValue[2] << 16 | (uint32_t)pValue[3] << 24;
+        TEST_ASSERT_EQUAL_HEX32_MESSAGE(expected, stdMathTest_FloatBits(pTable[i]), pRelativePath);
+    }
+}
+
+TEST(stdMath, TestLookupTables)
+{
+    // Compare all entries, not rounded decimal approximations or a few landmarks.
+    stdMathTest_AssertLookupTable("stdMath/sin_table.bin", stdMath_aSinTable);
+    stdMathTest_AssertLookupTable("stdMath/tan_table.bin", stdMath_aTanTable);
+}
+
+static void stdMathTest_AssertSinCosMatchesReference(float angle)
 {
     float expectedSin;
     float expectedCos;
     float actualSin;
     float actualCos;
 
-    stdMathTest_OriginalSinCos(angle, &expectedSin, &expectedCos);
+    stdMathTest_ReferenceSinCos(angle, &expectedSin, &expectedCos);
     stdMath_SinCos(angle, &actualSin, &actualCos);
 
     stdMathTest_AssertFloatBitsEqual(expectedSin, actualSin);
     stdMathTest_AssertFloatBitsEqual(expectedCos, actualCos);
 }
 
-static void stdMathTest_AssertTanMatchesOriginal(float angle)
+static void stdMathTest_AssertTanMatchesReference(float angle)
 {
-    stdMathTest_AssertFloatBitsEqual(stdMathTest_OriginalTan(angle), stdMath_Tan(angle));
+    stdMathTest_AssertFloatBitsEqual(stdMathTest_ReferenceTan(angle), stdMath_Tan(angle));
 }
 
 static void stdMathTest_AssertDist3D(float expected, float x, float y, float z)
@@ -398,6 +427,41 @@ TEST(stdMath, TestFlexPowerZeroNegativeExponent)
     stdMathTest_AssertIsInf(stdMath_FlexPower(0.0f, -1));
 }
 
+TEST(stdMath, TestNegativePowers)
+{
+    // Reciprocating an already-overflowed positive power loses valid subnormals.
+    const struct
+    {
+        float base;
+        int exponent;
+        uint32_t expected;
+    } aCases[] = {
+        { 2.0f, -128, 0x00200000u },
+        { 2.0f, -127, 0x00400000u },
+        { 2.0f, -149, 0x00000001u },
+        { 2.0f, -150, 0x00000000u },
+        { -2.0f, -149, 0x80000001u },
+        { -2.0f, -151, 0x80000000u },
+        { 0.5f, -127, 0x7F000000u },
+        { -0.5f, -127, 0xFF000000u },
+        { 0.5f, -128, 0x7F800000u },
+        { 0.0f, -1, 0x7F800000u },
+        { -0.0f, -1, 0xFF800000u },
+        { -0.0f, -2, 0x7F800000u },
+        { -INFINITY, -1, 0x80000000u },
+        { INFINITY, -2, 0x00000000u },
+        { 1.0f, INT_MIN, 0x3F800000u },
+        { -1.0f, INT_MIN, 0x3F800000u },
+        { -1.0f, -INT_MAX, 0xBF800000u },
+        { 2.0f, INT_MIN, 0x00000000u },
+    };
+    for ( size_t i = 0; i < STD_ARRAYLEN(aCases); ++i )
+    {
+        TEST_ASSERT_EQUAL_HEX32(aCases[i].expected, stdMathTest_FloatBits(stdMath_FlexPower(aCases[i].base, aCases[i].exponent)));
+    }
+    stdMathTest_AssertIsNaN(stdMath_FlexPower(NAN, -3));
+}
+
 TEST(stdMath, TestNormalizeAngle)
 {
     TEST_ASSERT_FLOAT_WITHIN(0.00001f, 0.0f, stdMath_NormalizeAngle(0.0f));
@@ -416,27 +480,71 @@ TEST(stdMath, TestNormalizeAngleNonFinite)
     stdMathTest_AssertIsNaN(stdMath_NormalizeAngle(-INFINITY));
 }
 
-#ifdef J3D_DEBUG
-TEST(stdMath, TestNormalizeAngleAssertFailure)
+TEST(stdMath, TestAngleBounds)
 {
-    const char* pExpectedAssert = "normAngle >= 0.0 && normAngle <= 360.0";
-    float positiveAngle = stdMathTest_FloatFromBits(0x5CB5F66Cu);
-    float negativeAngle = stdMathTest_FloatFromBits(0xF8F309E5u);
-    float normalizedAngle;
+    // Large finite values must not escape the range used for table indexing.
+    const struct
+    {
+        uint32_t input;
+        float expected;
+    } aCases[] = {
+        { 0x5CB5F66Cu, 320.0f },
+        { 0xF8F309E5u, 352.0f },
+        { 0x7F7FFFFFu, 0.0f },
+        { 0xFF7FFFFFu, 0.0f },
+    };
 
-    // NOTE: These huge finite values expose the debug post-condition assert after
-    // floating-point modulo precision loss pushes the result outside [0, 360].
-    normalizedAngle = stdMath_NormalizeAngle(positiveAngle);
-    TEST_ASSERT_TRUE(normalizedAngle < 0.0f || normalizedAngle > 360.0f);
-    TEST_ASSERT_EQUAL_INT(1, J3DTest_GetAssertCount());
-    J3DTest_AssertLastAssert(pExpectedAssert, "stdMath.c");
+    for ( size_t i = 0; i < STD_ARRAYLEN(aCases); ++i )
+    {
+        float input      = stdMathTest_FloatFromBits(aCases[i].input);
+        float normalized = stdMath_NormalizeAngle(input);
+        stdMathTest_AssertFloatBitsEqual(aCases[i].expected, normalized);
+        TEST_ASSERT_EQUAL_INT(0, J3DTest_GetAssertCount());
 
-    normalizedAngle = stdMath_NormalizeAngle(negativeAngle);
-    TEST_ASSERT_TRUE(normalizedAngle < 0.0f || normalizedAngle > 360.0f);
-    TEST_ASSERT_EQUAL_INT(2, J3DTest_GetAssertCount());
-    J3DTest_AssertLastAssert(pExpectedAssert, "stdMath.c");
+        float expectedSin;
+        float expectedCos;
+        float actualSin;
+        float actualCos;
+        stdMath_SinCos(aCases[i].expected, &expectedSin, &expectedCos);
+        stdMath_SinCos(input, &actualSin, &actualCos);
+        stdMathTest_AssertFloatBitsEqual(expectedSin, actualSin);
+        stdMathTest_AssertFloatBitsEqual(expectedCos, actualCos);
+        stdMathTest_AssertFloatBitsEqual(stdMath_Tan(aCases[i].expected), stdMath_Tan(input));
+    }
+
+    // Probe exponent/sign combinations without ever supplying a non-finite angle.
+    for ( uint32_t i = 0; i < 65536u; ++i )
+    {
+        uint32_t bits = i * 0x9E3779B9u;
+        if ( (bits & 0x7F800000u) == 0x7F800000u )
+        {
+            continue;
+        }
+
+        float normalized = stdMath_NormalizeAngle(stdMathTest_FloatFromBits(bits));
+        TEST_ASSERT_TRUE(isfinite(normalized));
+        TEST_ASSERT_TRUE(normalized >= 0.0f && normalized < 360.0f);
+        stdMathTest_AssertFloatBitsEqual(normalized, stdMath_NormalizeAngle(normalized));
+    }
+    TEST_ASSERT_EQUAL_INT(0, J3DTest_GetAssertCount());
 }
-#endif
+
+TEST(stdMath, TestAngleBoundaries)
+{
+    const float aCenters[] = { -720.0f, -360.0f, -270.0f, -180.0f, -90.0f, 0.0f, 90.0f, 180.0f, 270.0f, 360.0f, 720.0f };
+    for ( size_t i = 0; i < STD_ARRAYLEN(aCenters); ++i )
+    {
+        const float aInputs[] = { nextafterf(aCenters[i], -INFINITY), aCenters[i], nextafterf(aCenters[i], INFINITY) };
+        for ( size_t j = 0; j < STD_ARRAYLEN(aInputs); ++j )
+        {
+            float normalized = stdMath_NormalizeAngle(aInputs[j]);
+            TEST_ASSERT_TRUE(normalized >= 0.0f && normalized < 360.0f);
+            stdMathTest_AssertSinCosMatchesReference(aInputs[j]);
+        }
+    }
+    stdMathTest_AssertFloatBitsEqual(-0.0f, stdMath_NormalizeAngle(-0.0f));
+    stdMathTest_AssertFloatBitsEqual(0.0f, stdMath_NormalizeAngle(-360.0f));
+}
 
 TEST(stdMath, TestNormalizeAngleAcute)
 {
@@ -472,13 +580,13 @@ TEST(stdMath, TestSinCosTableSweep)
         {
             float angle = stdMathTest_SinAngleForIndex((float)index + fractions[i]);
 
-            stdMathTest_AssertSinCosMatchesOriginal(angle);
+            stdMathTest_AssertSinCosMatchesReference(angle);
         }
     }
 
     for ( size_t i = 0; i < STD_ARRAYLEN(wrappedAngles); ++i )
     {
-        stdMathTest_AssertSinCosMatchesOriginal(wrappedAngles[i]);
+        stdMathTest_AssertSinCosMatchesReference(wrappedAngles[i]);
     }
 }
 
@@ -489,7 +597,7 @@ TEST(stdMath, TestSinCosHalfDegreeSweep)
     {
         float angle = (float)halfDegrees * 0.5f;
 
-        stdMathTest_AssertSinCosMatchesOriginal(angle);
+        stdMathTest_AssertSinCosMatchesReference(angle);
     }
 }
 
@@ -565,7 +673,7 @@ TEST(stdMath, TestSinCosNullOutputGuard)
 
 TEST(stdMath, TestTanTableSweep)
 {
-    // NOTE: Exact preservation sweep, including the original quadrant-2 table behavior.
+    // Cover every table interval, including forward interpolation in the third quadrant.
     const float fractions[] = { 0.0f, 0.25f, 0.5f, 0.75f };
     const float wrappedAngles[] = {
         360.0f,
@@ -586,13 +694,13 @@ TEST(stdMath, TestTanTableSweep)
         {
             float angle = stdMathTest_TanAngleForIndex((float)index + fractions[i]);
 
-            stdMathTest_AssertTanMatchesOriginal(angle);
+            stdMathTest_AssertTanMatchesReference(angle);
         }
     }
 
     for ( size_t i = 0; i < STD_ARRAYLEN(wrappedAngles); ++i )
     {
-        stdMathTest_AssertTanMatchesOriginal(wrappedAngles[i]);
+        stdMathTest_AssertTanMatchesReference(wrappedAngles[i]);
     }
 }
 
@@ -603,14 +711,12 @@ TEST(stdMath, TestTanHalfDegreeSweep)
     {
         float angle = (float)halfDegrees * 0.5f;
 
-        stdMathTest_AssertTanMatchesOriginal(angle);
+        stdMathTest_AssertTanMatchesReference(angle);
     }
 }
 
 TEST(stdMath, TestTanStdLibApprox)
 {
-    // NOTE: Excludes the preserved quadrant-2 bug; TestTanQuadrant2Bug
-    // documents that behavior explicitly.
     const float angles[] = {
         -720.0f,
         -405.0f,
@@ -624,6 +730,11 @@ TEST(stdMath, TestTanStdLibApprox)
         60.0f,
         120.0f,
         135.0f,
+        180.0f,
+        180.5f,
+        200.0f,
+        225.0f,
+        260.0f,
         300.0f,
         315.0f,
         360.0f,
@@ -639,16 +750,23 @@ TEST(stdMath, TestTanStdLibApprox)
     }
 }
 
-TEST(stdMath, TestTanQuadrant2Bug)
+TEST(stdMath, TestTanQuadrants)
 {
-    const float angle = 180.0f;
-    float currentTan = stdMath_Tan(angle);
-    float originalTan = stdMathTest_OriginalTan(angle);
+    // A reversed base sample returns an asymptote at 180 instead of zero.
+    const float aAngles[] = { -180.0f, 0.0f, 180.0f, 360.0f, 540.0f };
+    for ( size_t i = 0; i < STD_ARRAYLEN(aAngles); ++i )
+    {
+        stdMathTest_AssertFloatBitsEqual(0.0f, stdMath_Tan(aAngles[i]));
+    }
+    stdMathTest_AssertFloatBitsEqual(1.0f, stdMath_Tan(225.0f));
 
-    // NOTE: Original reverse lookup makes tan(180) return near the table asymptote
-    // instead of zero. Update this when the TODO: [BUG] in stdMath_Tan is fixed.
-    stdMathTest_AssertFloatBitsEqual(originalTan, currentTan);
-    TEST_ASSERT_TRUE(fabsf(currentTan - tanf(STDMATH_RADIANSF(angle))) > 1000.0f);
+    const float aCenters[] = { 90.0f, 180.0f, 270.0f, 360.0f };
+    for ( size_t i = 0; i < STD_ARRAYLEN(aCenters); ++i )
+    {
+        stdMathTest_AssertTanMatchesReference(nextafterf(aCenters[i], -INFINITY));
+        stdMathTest_AssertTanMatchesReference(aCenters[i]);
+        stdMathTest_AssertTanMatchesReference(nextafterf(aCenters[i], INFINITY));
+    }
 }
 
 TEST(stdMath, TestTanNonFinite)
@@ -666,6 +784,49 @@ TEST(stdMath, TestArcSinClamp)
     TEST_ASSERT_FLOAT_WITHIN(0.001f, -90.0f, stdMath_ArcSin2(-1.000001f));
     TEST_ASSERT_FLOAT_WITHIN(0.001f, 90.0f, stdMath_ArcSin3(1.000001f));
     TEST_ASSERT_FLOAT_WITHIN(0.001f, -90.0f, stdMath_ArcSin3(-1.000001f));
+}
+
+TEST(stdMath, TestArcSinPrecision)
+{
+    // Pin intermediate rounding and both sides of the range-reduction boundary.
+    const struct
+    {
+        uint32_t input;
+        uint32_t expected[3];
+    } aCases[] = {
+        { 0xBF800000u, { 0xC2B40000u, 0xC2B40000u, 0xC2B40000u } },
+        { 0xBF7FFFFFu, { 0xC2B3F5DFu, 0xC2B3F5DFu, 0xC2B3F5DFu } },
+        { 0xBF666666u, { 0xC2800818u, 0xC280475Au, 0xC2804F93u } },
+        { 0xBF3504F4u, { 0xC234B450u, 0xC23429FBu, 0xC2340BF1u } },
+        { 0xBF3504F3u, { 0xC2334BB1u, 0xC233D606u, 0xC233F411u } },
+        { 0xBF000000u, { 0xC1F15F6Du, 0xC1F03E5Eu, 0xC1F00BC2u } },
+        { 0xBDFCD6DEu, { 0xC0E31669u, 0xC0E2EF21u, 0xC0E2EEBBu } },
+        { 0x358637BDu, { 0x387050E1u, 0x387050E1u, 0x387050E1u } },
+        { 0x3DFCD6DEu, { 0x40E31669u, 0x40E2EF21u, 0x40E2EEBBu } },
+        { 0x3F000000u, { 0x41F15F6Du, 0x41F03E5Eu, 0x41F00BC2u } },
+        { 0x3F3504F2u, { 0x42334BB0u, 0x4233D605u, 0x4233F40Fu } },
+        { 0x3F3504F3u, { 0x42334BB1u, 0x4233D606u, 0x4233F411u } },
+        { 0x3F3504F4u, { 0x4234B450u, 0x423429FBu, 0x42340BF1u } },
+        { 0x3F666666u, { 0x42800818u, 0x4280475Au, 0x42804F93u } },
+        { 0x3F7FFFFFu, { 0x42B3F5DFu, 0x42B3F5DFu, 0x42B3F5DFu } },
+        { 0x3F800000u, { 0x42B40000u, 0x42B40000u, 0x42B40000u } },
+    };
+    for ( size_t i = 0; i < STD_ARRAYLEN(aCases); ++i )
+    {
+        float input = stdMathTest_FloatFromBits(aCases[i].input);
+        TEST_ASSERT_EQUAL_HEX32(aCases[i].expected[0], stdMathTest_FloatBits(stdMath_ArcSin1(input)));
+        TEST_ASSERT_EQUAL_HEX32(aCases[i].expected[1], stdMathTest_FloatBits(stdMath_ArcSin2(input)));
+        TEST_ASSERT_EQUAL_HEX32(aCases[i].expected[2], stdMathTest_FloatBits(stdMath_ArcSin3(input)));
+    }
+
+    // Zero must remain zero; its sign is not part of the inverse-trig contract.
+    const float aZeros[] = { 0.0f, -0.0f };
+    for ( size_t i = 0; i < STD_ARRAYLEN(aZeros); ++i )
+    {
+        TEST_ASSERT_EQUAL_FLOAT(0.0f, stdMath_ArcSin1(aZeros[i]));
+        TEST_ASSERT_EQUAL_FLOAT(0.0f, stdMath_ArcSin2(aZeros[i]));
+        TEST_ASSERT_EQUAL_FLOAT(0.0f, stdMath_ArcSin3(aZeros[i]));
+    }
 }
 
 TEST(stdMath, TestArcSinStdLibApprox)
@@ -733,6 +894,39 @@ TEST(stdMath, TestArcTan4)
     }
 }
 
+TEST(stdMath, TestArcTanPrecision)
+{
+    // Axis, quadrant, and unequal-component cases catch changes hidden by tolerances.
+    const struct
+    {
+        uint32_t x;
+        uint32_t y;
+        uint32_t expected;
+    } aCases[] = {
+        { 0x3F800000u, 0x00000000u, 0x80000000u },
+        { 0x00000000u, 0x3F800000u, 0xC2B40000u },
+        { 0xBF800000u, 0x00000000u, 0xC3340000u },
+        { 0x00000000u, 0xBF800000u, 0x42B40000u },
+        { 0x3F800000u, 0x3F800000u, 0xC2346098u },
+        { 0xBF800000u, 0x3F800000u, 0xC306E7DAu },
+        { 0xBF800000u, 0xBF800000u, 0x4306E7DAu },
+        { 0x3F800000u, 0xBF800000u, 0x42346098u },
+        { 0x40400000u, 0x40E00000u, 0xC2859ACCu },
+        { 0xC0400000u, 0x40E00000u, 0xC2E26534u },
+        { 0xC0400000u, 0xC0E00000u, 0x42E26534u },
+        { 0x40400000u, 0xC0E00000u, 0x42859ACCu },
+        { 0x3DFCD6DEu, 0x3F43F35Cu, 0xC2A1ACE2u },
+        { 0x3F800000u, 0x358637BDu, 0xB8800000u },
+        { 0x358637BDu, 0x3F800000u, 0xC2B3FFF8u },
+    };
+    for ( size_t i = 0; i < STD_ARRAYLEN(aCases); ++i )
+    {
+        float x = stdMathTest_FloatFromBits(aCases[i].x);
+        float y = stdMathTest_FloatFromBits(aCases[i].y);
+        TEST_ASSERT_EQUAL_HEX32(aCases[i].expected, stdMathTest_FloatBits(stdMath_ArcTan4(x, y)));
+    }
+}
+
 TEST(stdMath, TestDist2D)
 {
     TEST_ASSERT_FLOAT_WITHIN(0.00001f, 0.0f, stdMath_Dist2D1(0.0f, 0.0f));
@@ -777,19 +971,57 @@ TEST(stdMath, TestSmoothDamp)
     TEST_ASSERT_FLOAT_WITHIN(0.00001f, 3.67879441f, movedBackward);
 }
 
+TEST(stdMath, TestDampingRange)
+{
+    // Opposite finite endpoints can overflow a float subtraction before interpolation.
+    const float aEndpoints[][2] = {
+        { -FLT_MAX, FLT_MAX },
+        { FLT_MAX, -FLT_MAX },
+        { FLT_MAX, FLT_MAX },
+        { -FLT_MAX, -FLT_MAX },
+        { FLT_MAX * 0.75f, FLT_MAX },
+        { -FLT_MAX * 0.75f, -FLT_MAX },
+    };
+    const float aTimesteps[] = { 0.0f, FLT_TRUE_MIN, 0.000001f, 0.25f, 1.0f, 10.0f, 21.0f };
+    for ( size_t i = 0; i < STD_ARRAYLEN(aEndpoints); ++i )
+    {
+        float current = aEndpoints[i][0];
+        float target  = aEndpoints[i][1];
+        for ( size_t j = 0; j < STD_ARRAYLEN(aTimesteps); ++j )
+        {
+            double t       = -expm1(-(double)aTimesteps[j]);
+            float expected = (float)((double)current + ((double)target - current) * t);
+            float actual   = stdMath_SmoothDamp(current, target, 1.0f, aTimesteps[j]);
+            TEST_ASSERT_TRUE(isfinite(actual));
+            TEST_ASSERT_TRUE(actual >= fminf(current, target) && actual <= fmaxf(current, target));
+            TEST_ASSERT_FLOAT_WITHIN(FLT_MAX * 0.000002f, expected, actual);
+        }
+    }
+
+    float combined = stdMath_SmoothDamp(-FLT_MAX, FLT_MAX, 1.0f, 1.0f);
+    float stepped  = -FLT_MAX;
+    for ( size_t i = 0; i < 16; ++i )
+    {
+        stepped = stdMath_SmoothDamp(stepped, FLT_MAX, 1.0f, 0.0625f);
+        TEST_ASSERT_TRUE(isfinite(stepped) && stepped >= -FLT_MAX && stepped <= FLT_MAX);
+    }
+    TEST_ASSERT_FLOAT_WITHIN(FLT_MAX * 0.000005f, combined, stepped);
+}
+
 TEST_GROUP_RUNNER(stdMath)
 {
+    RUN_TEST_CASE(stdMath, TestLookupTables);
     RUN_TEST_CASE(stdMath, TestConstantAndHelperMacros);
     RUN_TEST_CASE(stdMath, TestDoubleConversionMacros);
     RUN_TEST_CASE(stdMath, TestClipNearZero);
     RUN_TEST_CASE(stdMath, TestExpm1f);
     RUN_TEST_CASE(stdMath, TestFlexPower);
     RUN_TEST_CASE(stdMath, TestFlexPowerZeroNegativeExponent);
+    RUN_TEST_CASE(stdMath, TestNegativePowers);
     RUN_TEST_CASE(stdMath, TestNormalizeAngle);
     RUN_TEST_CASE(stdMath, TestNormalizeAngleNonFinite);
-#ifdef J3D_DEBUG
-    RUN_TEST_CASE(stdMath, TestNormalizeAngleAssertFailure);
-#endif
+    RUN_TEST_CASE(stdMath, TestAngleBounds);
+    RUN_TEST_CASE(stdMath, TestAngleBoundaries);
     RUN_TEST_CASE(stdMath, TestNormalizeAngleAcute);
     RUN_TEST_CASE(stdMath, TestSinCosTableSweep);
     RUN_TEST_CASE(stdMath, TestSinCosHalfDegreeSweep);
@@ -801,13 +1033,16 @@ TEST_GROUP_RUNNER(stdMath)
     RUN_TEST_CASE(stdMath, TestTanTableSweep);
     RUN_TEST_CASE(stdMath, TestTanHalfDegreeSweep);
     RUN_TEST_CASE(stdMath, TestTanStdLibApprox);
-    RUN_TEST_CASE(stdMath, TestTanQuadrant2Bug);
+    RUN_TEST_CASE(stdMath, TestTanQuadrants);
     RUN_TEST_CASE(stdMath, TestTanNonFinite);
     RUN_TEST_CASE(stdMath, TestArcSinClamp);
+    RUN_TEST_CASE(stdMath, TestArcSinPrecision);
     RUN_TEST_CASE(stdMath, TestArcSinStdLibApprox);
     RUN_TEST_CASE(stdMath, TestArcSinNaN);
     RUN_TEST_CASE(stdMath, TestArcTan4);
+    RUN_TEST_CASE(stdMath, TestArcTanPrecision);
     RUN_TEST_CASE(stdMath, TestDist2D);
     RUN_TEST_CASE(stdMath, TestDist3D);
     RUN_TEST_CASE(stdMath, TestSmoothDamp);
+    RUN_TEST_CASE(stdMath, TestDampingRange);
 }

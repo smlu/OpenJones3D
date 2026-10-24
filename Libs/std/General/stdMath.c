@@ -29,16 +29,19 @@ static_assert(TAN_TABLE_SIZE == 4096, "TAN_TABLE_SIZE == 4096");
 // For larger inputs they use asin(x) = pi/2 - asin(sqrt(1 - x*x)).
 // Taylor terms come from asin(x) = x + x^3/6 + 3*x^5/40 + 5*x^7/112 + ...
 // The non-Taylor values are fitted coefficients preserved from the original engine.
-#define ARCSIN1_FITTED_CUBIC_COEFF    0.212749    // Original fitted x^3 coefficient for x + c*x^3.
-#define ARCSIN2_FITTED_QUINTIC_COEFF  0.105502    // Original fitted x^5 coefficient after x + x^3/6.
-#define ARCSIN_TAYLOR_CUBIC_DIVISOR   6.0         // Taylor x^3 coefficient is 1/6.
-#define ARCSIN3_TAYLOR_QUINTIC_COEFF  0.075000003 // Taylor x^5 coefficient is 3/40, preserving original rounding.
-#define ARCSIN3_FITTED_SEPTIC_COEFF   0.066797003 // Original fitted x^7 coefficient, not the Taylor 5/112 term.
+#define ARCSIN1_FITTED_CUBIC_COEFF    0.212749f // Original fitted x^3 coefficient for x + c*x^3.
+#define ARCSIN2_FITTED_QUINTIC_COEFF  0.105502f // Original fitted x^5 coefficient after x + x^3/6.
+#define ARCSIN_TAYLOR_CUBIC_DIVISOR   6.0f      // Taylor x^3 coefficient is 1/6.
+#define ARCSIN3_TAYLOR_QUINTIC_COEFF  0.075f    // Taylor x^5 coefficient is 3/40, rounded to float.
+#define ARCSIN3_FITTED_SEPTIC_COEFF   0.066797f // Original fitted x^7 coefficient, not the Taylor 5/112 term.
+#define ARCSIN_RANGE_SPLIT            0.70710677f // Nearest float to sqrt(1/2), where range reduction begins.
+#define ARCTRIG_DEGREES_PER_RADIAN    57.295784f // Original float scale, distinct from recomputing 180/pi.
+
 // Arc-tangent reduces to ratio <= 1, then uses atan(x)'s alternating Taylor series.
 // The x^9 coefficient is fitted instead of using the raw Taylor 1/9 term.
-#define ARCTAN_TAYLOR_CUBIC_DIVISOR   3.0       // atan Taylor x^3 coefficient is -1/3.
-#define ARCTAN_TAYLOR_QUINTIC_DIVISOR 5.0       // atan Taylor x^5 coefficient is +1/5.
-#define ARCTAN_TAYLOR_SEPTIC_DIVISOR  7.0       // atan Taylor x^7 coefficient is -1/7.
+#define ARCTAN_TAYLOR_CUBIC_DIVISOR   3.0f      // atan Taylor x^3 coefficient is -1/3.
+#define ARCTAN_TAYLOR_QUINTIC_DIVISOR 5.0f      // atan Taylor x^5 coefficient is +1/5.
+#define ARCTAN_TAYLOR_SEPTIC_DIVISOR  7.0f      // atan Taylor x^7 coefficient is -1/7.
 #define ARCTAN_FITTED_NONIC_COEFF     0.063235f // Original fitted x^9 coefficient, not the Taylor +1/9 term.
 
 static float stdMath_ClampArcTrigInput(float num)
@@ -87,21 +90,33 @@ float J3DAPI stdMath_FlexPower(float base, int exponent)
         return 1.0f;
     }
 
-    // Fixed: Support negative exponents without overflowing INT_MIN.
-    bool bNegativeExponent = exponent < 0;
-    unsigned int count = bNegativeExponent
-        ? (unsigned int)(-(exponent + 1)) + 1u
-        : (unsigned int)exponent;
-
-    float ret = 1.0f;
-    for ( unsigned int i = 0; i < count; ++i )
+    // Fixed: Invert first and use double intermediates so negative powers retain
+    // subnormal results and the sign of zero; repeated squaring also handles INT_MIN.
+    if ( exponent < 0 )
     {
-        ret = ret * base;
+        unsigned int count = (unsigned int)(-(exponent + 1)) + 1u;
+        double factor      = 1.0 / (double)base;
+        double result      = 1.0;
+        while ( count != 0 )
+        {
+            if ( (count & 1u) != 0 )
+            {
+                result *= factor;
+            }
+
+            count >>= 1;
+            if ( count != 0 )
+            {
+                factor *= factor;
+            }
+        }
+        return (float)result;
     }
 
-    if ( bNegativeExponent )
+    float ret = base;
+    for ( int i = 1; i < exponent; ++i )
     {
-        return ret != 0.0f ? 1.0f / ret : INFINITY;
+        ret = ret * base;
     }
 
     return ret;
@@ -121,36 +136,27 @@ float stdMath_NormalizeAngle(float angle)
         return NAN;
     }
 
-    // Fixed: Use double to fix float precision errors
-
-    double normAngle;
-    if ( angle >= 0.0f )
+    if ( angle >= 0.0f && angle < 360.0f )
     {
-        if ( angle < 360.0f )
-        {
-            return angle;
-        }
-        normAngle = (double)angle - floor((double)angle / 360.0) * 360.0;
-    }
-    else
-    {
-        if ( -angle >= 360.0f )
-        {
-            normAngle = 360.0 - (-(double)angle - floor(-(double)angle / 360.0) * 360.0);
-        }
-        else
-        {
-            normAngle = 360.0f + angle;
-        }
+        return angle;
     }
 
-    if ( normAngle == 360.0 )
+    // Fixed: Use a remainder instead of subtracting rounded large multiples of 360.
+    double normAngle = fmod((double)angle, 360.0);
+    if ( normAngle < 0.0 )
     {
-        normAngle = 0.0;
+        normAngle += 360.0;
+    }
+
+    // Fixed: Rounding a value just below 360 to float must not expose index 16384.
+    float normalized = (float)normAngle;
+    if ( normalized == 360.0f || normalized == 0.0f )
+    {
+        normalized = 0.0f;
     }
 
     STD_ASSERT(normAngle >= 0.0 && normAngle <= 360.0);
-    return (float)normAngle;
+    return normalized;
 }
 
 float J3DAPI stdMath_NormalizeAngleAcute(float angle)
@@ -382,9 +388,7 @@ float J3DAPI stdMath_Tan(float angle)
 
         case 2:
         {
-            // TODO: [BUG] This preserved original reverse lookup makes tan(180..270) start near the
-            // asymptote instead of 0. Use TAN_TABLE_GET(index - 2 * TAN_TABLE_SIZE) to fix it.
-            baseLookup = TAN_TABLE_GET_REVERSE((index - 2 * TAN_TABLE_SIZE));
+            baseLookup = TAN_TABLE_GET(index - 2 * TAN_TABLE_SIZE);
             if ( nextIndex < 3 * TAN_TABLE_SIZE )
             {
                 tanValue = TAN_TABLE_GET(nextIndex - 2 * TAN_TABLE_SIZE);
@@ -419,20 +423,20 @@ float J3DAPI stdMath_ArcSin1(float num)
     // Fixed: Clamp input before sqrt(1 - x*x) to avoid NaN from tiny overshoots.
     num = stdMath_ClampArcTrigInput(num);
 
-    double asinval;
-    double absNum = fabs(num);
+    float asinval;
+    float absNum = num < 0.0f ? -num : num;
     // Approximate positive asin and restore the original sign at the end.
-    if ( absNum <= M_SQRT1_2 )
+    if ( absNum <= ARCSIN_RANGE_SPLIT )
     {
-        asinval = STDMATH_TODEGREES(pow(absNum, 3) * ARCSIN1_FITTED_CUBIC_COEFF + absNum);
+        asinval = (absNum + stdMath_FlexPower(absNum, 3) * ARCSIN1_FITTED_CUBIC_COEFF) * ARCTRIG_DEGREES_PER_RADIAN;
     }
     else
     {
-        double sqrtComplement = sqrt(1.0 - absNum * absNum);
-        asinval = 90.0 - STDMATH_TODEGREES(pow(sqrtComplement, 3) * ARCSIN1_FITTED_CUBIC_COEFF + sqrtComplement);
+        float sqrtComplement = sqrtf(1.0f - absNum * absNum);
+        asinval = 90.0f - (sqrtComplement + stdMath_FlexPower(sqrtComplement, 3) * ARCSIN1_FITTED_CUBIC_COEFF) * ARCTRIG_DEGREES_PER_RADIAN;
     }
 
-    return (float)(num < 0.0 ? -asinval : asinval);
+    return num < 0.0f ? -asinval : asinval;
 }
 
 float J3DAPI stdMath_ArcSin2(float num)
@@ -440,22 +444,22 @@ float J3DAPI stdMath_ArcSin2(float num)
     // Fixed: Clamp input before sqrt(1 - x*x) to avoid NaN from tiny overshoots.
     num = stdMath_ClampArcTrigInput(num);
 
-    double asinval;
-    double absnum = fabs(num);
+    float asinval;
+    float absnum = num < 0.0f ? -num : num;
     // Same range reduction as ArcSin1, with one extra odd-polynomial term.
-    if ( absnum <= M_SQRT1_2 )
+    if ( absnum <= ARCSIN_RANGE_SPLIT )
     {
-        double term1 = pow(absnum, 3) / ARCSIN_TAYLOR_CUBIC_DIVISOR + absnum;
-        asinval = STDMATH_TODEGREES(pow(absnum, 5) * ARCSIN2_FITTED_QUINTIC_COEFF + term1);
+        float term1 = absnum + stdMath_FlexPower(absnum, 3) / ARCSIN_TAYLOR_CUBIC_DIVISOR;
+        asinval = (term1 + stdMath_FlexPower(absnum, 5) * ARCSIN2_FITTED_QUINTIC_COEFF) * ARCTRIG_DEGREES_PER_RADIAN;
     }
     else
     {
-        double sqrtComplement = sqrt(1.0 - absnum * absnum);
-        double term1 = pow(sqrtComplement, 3) / ARCSIN_TAYLOR_CUBIC_DIVISOR + sqrtComplement;
-        asinval = 90.0 - STDMATH_TODEGREES(pow(sqrtComplement, 5) * ARCSIN2_FITTED_QUINTIC_COEFF + term1);
+        float sqrtComplement = sqrtf(1.0f - absnum * absnum);
+        float term1          = sqrtComplement + stdMath_FlexPower(sqrtComplement, 3) / ARCSIN_TAYLOR_CUBIC_DIVISOR;
+        asinval = 90.0f - (term1 + stdMath_FlexPower(sqrtComplement, 5) * ARCSIN2_FITTED_QUINTIC_COEFF) * ARCTRIG_DEGREES_PER_RADIAN;
     }
 
-    return (float)(num < 0.0 ? -asinval : asinval);
+    return num < 0.0f ? -asinval : asinval;
 }
 
 float J3DAPI stdMath_ArcSin3(float num)
@@ -463,34 +467,36 @@ float J3DAPI stdMath_ArcSin3(float num)
     // Fixed: Clamp input before sqrt(1 - x*x) to avoid NaN from tiny overshoots.
     num = stdMath_ClampArcTrigInput(num);
 
-    double asinval = fabs(num);
+    float asinval = num < 0.0f ? -num : num;
     // Highest-order arc-sine approximation used here: x, x^3, x^5, and fitted x^7.
-    if ( asinval <= M_SQRT1_2 )
+    if ( asinval <= ARCSIN_RANGE_SPLIT )
     {
-        double term1 = pow(asinval, 3) / ARCSIN_TAYLOR_CUBIC_DIVISOR + asinval;
-        double term2 = pow(asinval, 5) * ARCSIN3_TAYLOR_QUINTIC_COEFF + term1;
-        asinval = STDMATH_TODEGREES(pow(asinval, 7) * ARCSIN3_FITTED_SEPTIC_COEFF + term2);
+        float term1 = asinval + stdMath_FlexPower(asinval, 3) / ARCSIN_TAYLOR_CUBIC_DIVISOR;
+        float term2 = term1 + stdMath_FlexPower(asinval, 5) * ARCSIN3_TAYLOR_QUINTIC_COEFF;
+        asinval = (term2 + stdMath_FlexPower(asinval, 7) * ARCSIN3_FITTED_SEPTIC_COEFF) * ARCTRIG_DEGREES_PER_RADIAN;
     }
     else
     {
-        double sqrtVal = sqrt(1.0 - asinval * asinval);
-        double term    = pow(sqrtVal, 3) / ARCSIN_TAYLOR_CUBIC_DIVISOR + sqrtVal;
+        float sqrtVal = sqrtf(1.0f - asinval * asinval);
+        float term    = sqrtVal + stdMath_FlexPower(sqrtVal, 3) / ARCSIN_TAYLOR_CUBIC_DIVISOR;
 
-        term    = pow(sqrtVal, 5) * ARCSIN3_TAYLOR_QUINTIC_COEFF + term;
-        asinval = 90.0 - STDMATH_TODEGREES(pow(sqrtVal, 7) * ARCSIN3_FITTED_SEPTIC_COEFF + term);
+        term    = term + stdMath_FlexPower(sqrtVal, 5) * ARCSIN3_TAYLOR_QUINTIC_COEFF;
+        asinval = 90.0f - (term + stdMath_FlexPower(sqrtVal, 7) * ARCSIN3_FITTED_SEPTIC_COEFF) * ARCTRIG_DEGREES_PER_RADIAN;
     }
 
-    return (float)(num < 0.0 ? -asinval : asinval);
+    return num < 0.0f ? -asinval : asinval;
 }
 
 float stdMath_ArcTan4(float x, float y)
 {
     if ( y == 0.0f && x == 0.0f )
+    {
         return 0.0f;
+    }
 
-    double absX = fabs(x);
-    double absY = fabs(y);
-    double ratio = 0.0;
+    float absX = x < 0.0f ? -x : x;
+    float absY = y < 0.0f ? -y : y;
+    float ratio;
 
     if ( absY <= absX )
     {
@@ -500,24 +506,24 @@ float stdMath_ArcTan4(float x, float y)
     {
         ratio = absX / absY;
     }
-    ratio = fabs(ratio);
+    ratio = ratio < 0.0f ? -ratio : ratio;
 
     // Approximate atan(ratio) in radians, then convert to engine degrees.
-    double angle = ratio - pow(ratio, 3) / ARCTAN_TAYLOR_CUBIC_DIVISOR;
-    angle = pow(ratio, 5) / ARCTAN_TAYLOR_QUINTIC_DIVISOR + angle;
-    angle = angle - pow(ratio, 7) / ARCTAN_TAYLOR_SEPTIC_DIVISOR;
-    angle = STDMATH_TODEGREES(pow(ratio, 9) * ARCTAN_FITTED_NONIC_COEFF + angle);
+    float angle = ratio - stdMath_FlexPower(ratio, 3) / ARCTAN_TAYLOR_CUBIC_DIVISOR;
+    angle = angle + stdMath_FlexPower(ratio, 5) / ARCTAN_TAYLOR_QUINTIC_DIVISOR;
+    angle = angle - stdMath_FlexPower(ratio, 7) / ARCTAN_TAYLOR_SEPTIC_DIVISOR;
+    angle = (angle + stdMath_FlexPower(ratio, 9) * ARCTAN_FITTED_NONIC_COEFF) * ARCTRIG_DEGREES_PER_RADIAN;
 
     // Reconstruct the quadrant and sign after reducing the original vector to ratio <= 1.
     if ( absX >= absY )
     {
-        angle = 90.0 - angle;
+        angle = 90.0f - angle;
     }
 
-    angle = 90.0 - angle;
+    angle = 90.0f - angle;
     if ( x < 0.0f )
     {
-        angle = 180.0 - angle;
+        angle = 180.0f - angle;
     }
 
     if ( y >= 0.0f )
@@ -525,7 +531,7 @@ float stdMath_ArcTan4(float x, float y)
         angle = -angle;
     }
 
-    return (float)angle;
+    return angle;
 }
 
 float stdMath_Dist2D1(float x, float y)
@@ -614,11 +620,12 @@ float stdMath_SmoothDamp(float current, float target, float rate, float deltaTim
     float t = -stdMath_Expm1f(exponent);
 
     // if very close to target, snap to it
-    float diff = target - current;
-    if ( stdMath_ClipNearZero(diff) == 0.0f )
+    // Keep finite endpoints finite even when their difference exceeds the float range.
+    double diff = (double)target - current;
+    if ( fabs(diff) <= STDMATH_ZERO_EPSILON )
     {
         return target;
     }
 
-    return current + diff * t;
+    return (float)((double)current + diff * t);
 }
