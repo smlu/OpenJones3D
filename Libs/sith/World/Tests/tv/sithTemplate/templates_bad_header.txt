@@ -1,0 +1,2 @@
+world objects 1
+end

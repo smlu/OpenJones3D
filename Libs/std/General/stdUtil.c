@@ -183,7 +183,7 @@ wchar_t* J3DAPI stdUtil_ToWString(const char* pString)
 
     wchar_t* pwString = (wchar_t*)STDMALLOC(sizeof(wchar_t) * (len + 1u)); // Note, extra 2 bytes for storing null
     STD_ASSERTREL(pwString != NULL);
-    // Added: Keep release builds from dereferencing a failed allocation.
+    // Added: Handle allocation failure before writing the converted string.
     if ( !pwString )
     {
         return NULL;
@@ -210,7 +210,7 @@ char* J3DAPI stdUtil_ToAString(const wchar_t* pwString)
 
     char* pString = (char*)STDMALLOC(len + 1); // Note, extra byte for storing null
     STD_ASSERTREL(pString != NULL);
-    // Added: Keep release builds from dereferencing a failed allocation.
+    // Added: Handle allocation failure before writing the converted string.
     if ( !pString )
     {
         return NULL;

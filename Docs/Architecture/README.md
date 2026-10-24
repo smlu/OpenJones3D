@@ -49,6 +49,8 @@ The main architecture lives in these source trees:
 - [`Libs/w32util/`](../../Libs/w32util) contains Windows-specific utility helpers, most notably registry access.
 - [`Libs/j3dcore/`](../../Libs/j3dcore) contains the reconstruction-specific hook/trampoline infrastructure.
 
+Tests are colocated with the source area they cover in a local `Tests` directory, for example `Libs/j3dcore/Tests`, `Libs/std/Tests`, `Libs/std/General/Tests`, or `Libs/sith/World/Tests`. The j3dcore tests cover core `j3d.h` macros and also host shared test support used by higher modules. See [../Testing.md](../Testing.md) for the test layout and Unity Fixture conventions.
+
 ## Original Runtime Versus OpenJones3D
 
 When reading the rest of these notes, it helps to keep three categories in mind:
@@ -72,3 +74,4 @@ The detailed comparison points live in [QOL-And-Compatibility.md](QOL-And-Compat
 - For the COG language, messages, host functions, flags, and value sets, see [../COG/README.md](../COG/README.md).
 - For resource file formats such as `3DO`, `KEY`, `MAT`, `PUP`, `AI`, `SND`, `SPR`, and `UNI`, see [../Formats/README.md](../Formats/README.md).
 - For runtime configuration keys, see [../Jones.cfg.md](../Jones.cfg.md).
+- For test placement and Unity Fixture conventions, see [../Testing.md](../Testing.md).

@@ -1,0 +1,5 @@
+MSGS 3
+"ZERO" 0 "Zero"
+"NEGATIVE" -7 "Negative"
+"POSITIVE" +42 "Positive"
+END

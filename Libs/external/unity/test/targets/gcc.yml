@@ -1,0 +1,139 @@
+# =========================================================================
+#   Unity - A Test Framework for C
+#   ThrowTheSwitch.org
+#   Copyright (c) 2007-26 Mike Karlesky, Mark VanderVoord, & Greg Williams
+#   SPDX-License-Identifier: MIT
+# =========================================================================
+
+# This file provides a base configuration for working with the gcc
+# toolchain, targetting native compilation, using mostly default settings,
+# with many warnings enabled for self-validation. It can be modified or 
+# mixed to customize for your project needs.
+
+---
+:tools:
+  :test_compiler:
+    :name: gcc_compiler
+    :executable: gcc
+    :arguments:
+    - "-c"
+    - "-Wall"
+    - "-Wno-address"
+    - "-std=c99"
+    - "-pedantic"
+    - "-Wextra"
+    - "-Werror"
+    - "-Wpointer-arith"
+    - "-Wcast-align"
+    - "-Wwrite-strings"
+    - "-Wswitch-default"
+    - "-Wunreachable-code"
+    - "-Winit-self"
+    - "-Wmissing-field-initializers"
+    - "-Wno-unknown-pragmas"
+    - "-Wstrict-prototypes"
+    - "-Wundef"
+    - "-Wold-style-definition"
+    - '-I"${5}"'
+    - "-D${6}"
+    - "${1}"
+    - "-o ${2}"
+    :version: --version
+  :test_linker:
+    :name: gcc_linker
+    :executable: gcc
+    :arguments:
+    - "${1}"
+    - "-lm"
+    - "-o ${2}"
+    :version: --version
+  :test_fixture:
+    :name: gcc_fixture
+    :executable: ''
+    :version: --version
+    :optional: true
+    :arguments:
+      - ${1}
+      - ${2}
+  :gcov_compiler:
+    :name: gcov_compiler
+    :executable: gcc
+    :arguments:
+    - "-g"
+    - "-fprofile-arcs"
+    - "-ftest-coverage"
+    - "-Wall"
+    - "-Wno-address"
+    - "-std=c99"
+    - "-pedantic"
+    - "-Wextra"
+    - "-Werror"
+    - "-Wpointer-arith"
+    - "-Wcast-align"
+    - "-Wwrite-strings"
+    - "-Wswitch-default"
+    - "-Wunreachable-code"
+    - "-Winit-self"
+    - "-Wmissing-field-initializers"
+    - "-Wno-unknown-pragmas"
+    - "-Wstrict-prototypes"
+    - "-Wundef"
+    - "-Wold-style-definition"
+    - '-I"${5}"'
+    - "-D${6}"
+    - "-DGCOV_COMPILER"
+    - "-DCODE_COVERAGE"
+    - "-c ${1}"
+    - "-o ${2}"
+    - "-MMD"
+    - "-MF \"${4}\""
+    :version: --version
+  :gcov_linker:
+    :name: gcov_linker
+    :executable: gcc
+    :arguments:
+    - "-g"
+    - "-fprofile-arcs"
+    - "-ftest-coverage"
+    - "${1}"
+    - "${5}"
+    - "-lm"
+    - "-o ${2}"
+    - "${4}"
+    :version: --version
+  :gcov_fixture:
+    :name: gcov_fixture
+    :optional: true
+    :executable: '${1}'
+    :arguments: []
+    :version: --version
+  :gcov_summary:
+    :name: gcov_summary
+    :executable: gcov
+    :arguments:
+     - "-n"
+     - "-p"
+     - "-b"
+     - "-o \"${2}\""
+     - "\"${1}\""
+    :version: --version
+  :gcov_report:
+    :name: gcov_report
+    :executable: gcov
+    :arguments:
+     - "-b"
+     - "-c"
+     - "-r"
+     - "-s \"${2}\""
+     - "-x"
+     - "\"${1}\""
+    :version: --version
+:extension:
+  :object: ".o"
+  :executable: ".exe"
+:defines:
+  :test:
+  - UNITY_INCLUDE_DOUBLE
+  - UNITY_SUPPORT_TEST_CASES
+  - UNITY_SUPPORT_64
+  - UNITY_POINTER_WIDTH=64

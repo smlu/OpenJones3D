@@ -80,6 +80,10 @@ static_assert(STDMEMORYBLOCK_ZONE_ALLOCSIZE == 31744, "STDMEMORYBLOCK_ZONE_ALLOC
 static bool bStartup = false;
 static bool bOpen    = false;
 
+#ifdef J3D_LOCAL_RTI
+tMemoryState stdMemory_g_curState;
+#endif
+
 static tMemoryBlock stdMemory_aZoneData[STDMEMORYBLOCK_MAXBLOCKS] = { 0 }; // Array of memory blocks; Altered: Init to 0
 
 void stdMemory_InstallHooks(void)
@@ -99,7 +103,9 @@ void stdMemory_InstallHooks(void)
 
 void stdMemory_ResetGlobals(void)
 {
+#ifndef J3D_LOCAL_RTI
     memset(&stdMemory_g_curState, 0, sizeof(stdMemory_g_curState));
+#endif
 }
 
 int stdMemory_Startup(void)

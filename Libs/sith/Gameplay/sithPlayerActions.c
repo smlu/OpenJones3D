@@ -29,7 +29,6 @@
 
 #include <sound/Sound.h>
 
-
 uint32_t sithPlayerActions_msecCurActivateTime = 0; // Altered: Init to 0
 static const float sithPlayerActions_raftActivateSearchRadius = 0.07f;
 
@@ -126,7 +125,6 @@ int J3DAPI sithPlayerActions_Activate(SithThing* pThing)
         return 0;
     }
 
-
     SithSurface* pSurfaceCollided = NULL;
     if ( pThing != sithPlayer_g_pLocalPlayerThing
         || sithInventory_GetCurrentItem(pThing) != SITHWEAPON_CHALK
@@ -182,7 +180,6 @@ int J3DAPI sithPlayerActions_Activate(SithThing* pThing)
                         && pThingCollided->type != SITH_THING_WEAPON
                         && (pThing->controlType != SITH_CT_AI || pThingCollided->type != SITH_THING_PLAYER) )
                     {
-
                         if ( (sithMain_g_sith_mode.debugModeFlags & SITHDEBUG_TRACKSHOTS) != 0 )
                         {
                             // Note: OG code was at line no.: 264
@@ -200,7 +197,7 @@ int J3DAPI sithPlayerActions_Activate(SithThing* pThing)
                                 break;
                             }
 
-                            // If cur weapon is IMP1 and imp1 stand is activated, COG script will disable fire 
+                            // If cur weapon is IMP1 and imp1 stand is activated, COG script will disable fire
                             if ( pThingCollided->renderData.type == RD_THING_MODEL3 && pThingCollided->renderData.data.pModel3 )
                             {
                                 if ( streqi(pThingCollided->renderData.data.pModel3->aName, "imp_stands.3do") )
@@ -258,7 +255,6 @@ int J3DAPI sithPlayerActions_Activate(SithThing* pThing)
                             && pCollision->pThingCollided->type != SITH_THING_WEAPON
                             && (pThing->controlType != SITH_CT_AI || pCollision->pThingCollided->type != SITH_THING_PLAYER) )
                         {
-
                             if ( (sithMain_g_sith_mode.debugModeFlags & SITHDEBUG_TRACKSHOTS) != 0 )
                             {
                                 // Note: OG code was at line no.: 344
@@ -436,7 +432,7 @@ int J3DAPI sithPlayerActions_Activate(SithThing* pThing)
                         sithInventory_SetSwimmingInventory(pRaftPlayerThing, /*bItemsAvailable=*/0);
                         pRaftPlayerThing->alpha = 1.0f;
 
-                        // Enable raft repair kit 
+                        // Enable raft repair kit
                         sithInventory_SetInventoryDisabled(pRaftPlayerThing, 56u, 0);
 
                         sithVehicleControls_StartBoardCutscene(pRaftPlayerThing); // User0 - startCutscene
@@ -755,7 +751,6 @@ void J3DAPI sithPlayerActions_PullItem(SithThing* pThing, SithThing* pItem, cons
     pThing->moveStatus        = SITHPLAYERMOVE_PULLING;
     pThing->forceMoveStartPos = pThing->pos;
     pThing->collide.movesize /= 2.0f;
-
 
     int trackNum = sithPuppet_PlayForceMoveMode(pThing, SITHPUPPETSUBMODE_PULLITEM, NULL);
     if ( trackNum == -1 )
@@ -1729,8 +1724,8 @@ int J3DAPI sithPlayerActions_CheckFloorAtPos(SithThing* pThing, rdVector3* pPos,
                 }
                 else
                 {
-                    // Surface is a wall, cliff 
-                    // check if we're running into the surface or away (e.g.: standing on a top of a cliff returns 0, but walking into the cliff returns 3 
+                    // Surface is a wall, cliff
+                    // check if we're running into the surface or away (e.g.: standing on a top of a cliff returns 0, but walking into the cliff returns 3
                     rdVector3 surfaceNormal = pCollision->pSurfaceCollided->face.normal;
                     surfaceNormal.z = 0.0f;
                     rdVector_Normalize3Acc(&surfaceNormal);
@@ -1764,7 +1759,7 @@ int J3DAPI sithPlayerActions_CheckFloorAtPos(SithThing* pThing, rdVector3* pPos,
             if ( (pCollision->pThingCollided->flags & SITH_TF_STANDON) != 0
                 || pCollision->pThingCollided->type == SITH_THING_ITEM )
             {
-                // TODO: To improve engine maybe test for slope should be performed 
+                // TODO: To improve engine maybe test for slope should be performed
                 result = 1;
                 if ( pbSurfaceChange )
                 {
@@ -1814,7 +1809,7 @@ float J3DAPI sithPlayerActions_FindLedge(SithThing* pThing, const rdVector3* pPY
         return -1.0f;
     }
 
-    // Try to find ledge surface in player's direction but at position 0.9m higher 
+    // Try to find ledge surface in player's direction but at position 0.9m higher
     // than current player position, i.e. approximate position of up outstretched hands
     rdVector3 startPos = pThing->pos;
     startPos.z += 0.090000004f;
@@ -1935,9 +1930,9 @@ float J3DAPI sithPlayerActions_FindLedge(SithThing* pThing, const rdVector3* pPY
         }
 
         rdVector3 moveNorm = RDVECTOR_NEG3(rdroid_g_zVector3); // Down direction
-        sithCollision_SearchForCollisions(pStartSector, pThing, &startPos, &moveNorm, 0.21f, pThing->collide.movesize, 0xA00); // Total down move dist of sphere's center is 2.1m. 
+        sithCollision_SearchForCollisions(pStartSector, pThing, &startPos, &moveNorm, 0.21f, pThing->collide.movesize, 0xA00); // Total down move dist of sphere's center is 2.1m.
                                                                                                                                // Combined with 0.2m radius, the total distance is 2.3m.
-                                                                                                                               // i.e.: indy should be at least 10 cm (OG was 40 cm) higher from the ground 
+                                                                                                                               // i.e.: indy should be at least 10 cm (OG was 40 cm) higher from the ground
                                                                                                                                //       when stretched out in hang position (2.2m).
 
         bool bSolidSurfFound = false;
@@ -1998,8 +1993,8 @@ float J3DAPI sithPlayerActions_FindLedge(SithThing* pThing, const rdVector3* pPY
 
 int J3DAPI sithPlayerActions_CanClimbOn1m(SithThing* pThing)
 {
-    // 1.) Find vertical surface at curPos - thingHeight + 0.97m in radius of players direction at move distance of player move size + 0.1m 
-    // 
+    // 1.) Find vertical surface at curPos - thingHeight + 0.97m in radius of players direction at move distance of player move size + 0.1m
+    //
     //                      -----------------
     //                      |
     // start pos         -. |
@@ -2072,7 +2067,7 @@ int J3DAPI sithPlayerActions_CanClimbOn1m(SithThing* pThing)
 
     // 2.) Now check there is no obstacle at the top of the vertical surface to prevent climbing
     // i.e.: there should be no collision 1.15m up from current startPos
-    // 
+    //
     // start pos         -.
     //    X--------------> )
     //    |    0.7m      -'
@@ -2121,8 +2116,8 @@ int J3DAPI sithPlayerActions_CanClimbOn1m(SithThing* pThing)
 
 int J3DAPI sithPlayerActions_CanClimbOn2m(SithThing* pThing)
 {
-    // 1.) Find ledge surface or claimable crate at curPos - thingHeight + 1.5m in radius of players direction at move distance of player move size + 0.1m 
-    // 
+    // 1.) Find ledge surface or claimable crate at curPos - thingHeight + 1.5m in radius of players direction at move distance of player move size + 0.1m
+    //
     //                      -----------------
     //                      |
     // start pos         -. |
@@ -2162,7 +2157,7 @@ int J3DAPI sithPlayerActions_CanClimbOn2m(SithThing* pThing)
                 break;
             }
         }
-        // TODO: Check also for 3DO Model's face flag RD_FF_3DO_LEDGE 
+        // TODO: Check also for 3DO Model's face flag RD_FF_3DO_LEDGE
         else if ( (pCollision->type & SITHCOLLISION_THING) != 0
             && pCollision->pThingCollided
             && (pCollision->pThingCollided->flags & SITH_TF_CLIMBCRATE) != 0
@@ -2180,7 +2175,7 @@ int J3DAPI sithPlayerActions_CanClimbOn2m(SithThing* pThing)
     {
         // 2.) Now check there is no obstacle at the top of the ledge surface or crate thing object to prevent climbing
         // i.e.: there should be no collision 1.15m up from current startPos
-        // 
+        //
         // start pos         -.
         //    X--------------> )
         //    | ms + 0.5m    -'
@@ -2229,7 +2224,7 @@ int J3DAPI sithPlayerActions_CanClimbOn2m(SithThing* pThing)
 
     // Check that the thing can climb on to found climb surf/thing from current thing position up 2m
     // 3.) Now check there is no obstacle from current player position upward 2m
-        // 
+        //
         //   .-.
         //  (   )
         //    |
@@ -2282,7 +2277,6 @@ int J3DAPI sithPlayerActions_CanClimbOn2m(SithThing* pThing)
 
     return 1;
 }
-
 
 int J3DAPI sithPlayerActions_CheckClimbDownWall(SithThing* pThing)
 {
@@ -2465,7 +2459,7 @@ int J3DAPI sithPlayerActions_GrabLedge(SithThing* pThing, float distance, SithSu
     if ( pLedgeSurf )
     {
         // Find highest Z coordinate of surface vertices
-        // Note, OG in-place calculation was done 
+        // Note, OG in-place calculation was done
         float ledgeTopZ = sithPlayerActions_GetLedgeSurfaceGrabPosZ(pLedgeSurf);
 
         // Calculate distance from player to surface plane
@@ -2628,7 +2622,7 @@ int J3DAPI sithPlayerActions_CanPullUp(SithThing* pThing)
         return 0;
     }
 
-    // 3.) Search for any blocking thing or surface for 0.7m 
+    // 3.) Search for any blocking thing or surface for 0.7m
     //     at the top position (1.78m from current position) in the direction of current player direction
     rdVector3 topPos = pThing->pos;
     topPos.z += 0.178f;
@@ -2671,7 +2665,7 @@ int J3DAPI sithPlayerActions_CanPullUp(SithThing* pThing)
         return 0;
     }
 
-    // 4.) Do another search for any blocking thing or surface for 0.7m 
+    // 4.) Do another search for any blocking thing or surface for 0.7m
     //     at the top position (1.78m + 0.69m from current position) in the direction of current player direction
     topPos.z += 0.068999998f;
     pStartSec = sithCollision_FindSectorInRadius(pThing->pInSector, &pThing->pos, &topPos, 0.0f);

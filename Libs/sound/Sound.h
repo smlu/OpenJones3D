@@ -1,6 +1,7 @@
 #ifndef SOUND_SOUND_H
 #define SOUND_SOUND_H
 #include <j3dcore/j3d.h>
+#include <sound/AudioLib.h>
 #include <sound/types.h>
 #include <sound/RTI/addresses.h>
 
@@ -13,6 +14,11 @@ J3D_EXTERN_C_START
 #define SOUND_INVALISOUNDINFOINDEX  0u
 
 #define SOUND_ALLTHINGSOUNDHANDLE   0u // Handle for all thing sounds, used in functions to modify thing sounds, e.g. Sound_SetVolumeThing
+
+// Added: Describe the four-level subset of AudioLib's seven-bit mouth coordinates returned by Sound_GenerateLipSync.
+#define SOUND_LIPSYNC_MOUTH_LEVELS     4u
+#define SOUND_LIPSYNC_MOUTH_LEVEL_STEP (AUDIOLIB_LIPSYNC_MOUTH_POSITION_COUNT / SOUND_LIPSYNC_MOUTH_LEVELS)
+#define SOUND_LIPSYNC_GETMOUTHLEVEL(mouthPosition) ((mouthPosition) / SOUND_LIPSYNC_MOUTH_LEVEL_STEP)
 
 int J3DAPI Sound_Initialize(tHostServices* pHS);
 void Sound_Uninitialize(void);
@@ -100,6 +106,18 @@ void Sound_SoundDump(void); // Added: From debug version
 SoundInfo* J3DAPI Sound_GetSoundInfo(tSoundHandle hSnd);
 tSoundChannel* J3DAPI Sound_GetChannel(tSoundChannelHandle hChannel);
 tSoundChannel* J3DAPI Sound_GetChannelBySoundHandle(tSoundHandle hSnd);
+
+#if defined(J3D_TEST)
+typedef void (J3DAPI* SoundTestUncompressFunc)(tAudioCompressorState* pCompressorState, uint8_t* pOutSndData, const uint8_t* pCompressedData, unsigned int size);
+
+// Added: Test-only state and dependency controls for deterministic lip-sync unit tests.
+void Sound_TestResetLipSyncState(void);
+void Sound_TestSetChannels(tSoundChannel* pChannels, size_t numChannels);
+void Sound_TestSetSoundBank(size_t bankNum, SoundInfo* pSoundInfos, size_t numSounds, uint8_t* pSoundCache, size_t cacheSize);
+void Sound_TestSetNoLipSync(int bNoLipSync);
+void Sound_TestSetCurrentPosition(size_t position);
+void Sound_TestSetUncompressFunc(SoundTestUncompressFunc pfUncompress);
+#endif
 
 // Helper hooking functions
 void Sound_InstallHooks(void);

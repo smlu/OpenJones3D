@@ -1,0 +1,3 @@
+world things 1
+0 base_template bad_sector 0 0 0 0 0 0 7
+end

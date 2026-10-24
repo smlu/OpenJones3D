@@ -34,7 +34,8 @@ void J3DAPI sithCogFunctionSound_PlaySoundThing(SithCog* pCog)
     // Convert distances to IM units
     minRadius = minRadius >= 0.0f ? minRadius * 0.1f : 0.5f;
     maxRadius = maxRadius >= 0.0f ? maxRadius * 0.1f : 2.5f;
-    if ( maxRadius <= minRadius ) {
+    if ( maxRadius <= minRadius )
+    {
         maxRadius = minRadius;
     }
 
@@ -138,10 +139,10 @@ void J3DAPI sithCogFunctionSound_PlaySoundPos(SithCog* pCog)
 
     minRadius = minRadius >= 0.0f ? minRadius * 0.1f : 0.5f;
     maxRadius = maxRadius >= 0.0f ? maxRadius * 0.1f : 2.5f;
-    if ( maxRadius <= minRadius ) {
+    if ( maxRadius <= minRadius )
+    {
         maxRadius = minRadius;
     }
-
 
     playflags |= SOUNDPLAY_ABSOLUTE_POS;
     tSoundChannelHandle hChannel = sithSoundMixer_PlaySoundPos(hSnd, &pos, 0, volume, minRadius, maxRadius, playflags);
@@ -474,5 +475,4 @@ void sithCogFunctionSound_InstallHooks(void)
 
 void sithCogFunctionSound_ResetGlobals(void)
 {
-
 }

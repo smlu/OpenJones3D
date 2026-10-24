@@ -1,0 +1,11 @@
+# Synthetic template section covering blank, inherited, hint, and missing-base templates.
+
+world templates 5
+
+tpl_camera none type=camera size=0.5 collide=1 timer=2.25 light=(0.1/0.2/0.3/4.5) perflevel=1
+tpl_camera_large tpl_camera size=0.75 collheight=1.25 collwidth=0.5 perflevel=2
+tpl_hint none type=hint size=0.25 userval=7.5 perflevel=0
+tpl_ghost missing_base type=ghost thingflags=400 timer=0.5 perflevel=3
+tpl_invalid none size=1.0
+
+end

@@ -164,6 +164,7 @@ static const char* J3DAPI stdDisplay_DDGetStatus(HRESULT status);
 
 static int J3DAPI stdDisplay_InitDirectDraw(HWND hwnd);
 static void J3DAPI stdDisplay_ReleaseDirectDraw();
+static void J3DAPI stdDisplay_RestoreDesktopMode(HWND hwnd);
 static BOOL PASCAL stdDisplay_DDEnumCallback(GUID* lpGUID, LPSTR szDriverName, LPSTR szDriverDescription, LPVOID lpContext);
 static HRESULT PASCAL stdDisplay_EnumVideoModesCallback(LPDDSURFACEDESC2 lpDDSurfaceDesc, LPVOID lpContext);
 
@@ -240,42 +241,42 @@ void stdDisplay_ResetGlobals(void)
 }
 
 // Added
+static void J3DAPI stdDisplay_Memset32(void* pDest, uint32_t value, size_t count)
+{
+    uint32_t* pDwords = (uint32_t*)pDest;
+    for ( size_t i = 0; i < count; ++i )
+    {
+        pDwords[i] = value;
+    }
+}
+
+// Added
 static void J3DAPI stdDisplay_SetPixels16(uint16_t* pPixels16, uint16_t pixel, size_t size)
 {
-    int v3;
-    uint16_t* pCurPixel;
-    unsigned int count;
-    int v6;
-
-    pCurPixel = pPixels16;
-    count = size;
     if ( (size & 1) != 0 )
     {
-        while ( count )
+        for ( size_t i = 0; i < size; ++i )
         {
-            *pCurPixel++ = pixel;
-            --count;
+            pPixels16[i] = pixel;
         }
     }
     else
     {
-        // The size is multiple of 2 so we can copy 2 pixels (32 bit) at a time
-        v3 = (uint16_t)(pixel & 0xFFFFU);
-        v6 = v3 << 16;
-        v6 |= (uint16_t)(pixel & 0xFFFFU);
-        memset(pPixels16, v6, (size / 2) * sizeof(int)); // Note, divide by 2 because 2 copy 2 uint16_t at a time in form of 32 bit number 
+        uint32_t dwordPixel = ((uint32_t)pixel << 16) | pixel;
+        stdDisplay_Memset32(pPixels16, dwordPixel, size >> 1);
     }
 }
 
 // Added
 static void J3DAPI stdDisplay_SetPixels32(uint32_t* pPixels32, uint32_t pixel, size_t size)
 {
-    memset(pPixels32, pixel, size * sizeof(pixel));
+    stdDisplay_Memset32(pPixels32, pixel, size);
 }
 
 int stdDisplay_Startup(void)
 {
-    STDLOG_STATUS("Starting stdDisplay system using DirectDraw 9 GAPI ...\n");
+    // Added: Log the DirectDraw 6 backend initialized by this implementation.
+    STDLOG_STATUS("Starting stdDisplay system using DirectDraw 6 GAPI ...\n");
 
     if ( stdDisplay_bStartup )
     {
@@ -286,8 +287,11 @@ int stdDisplay_Startup(void)
     memset(&stdDisplay_g_backBuffer, 0u, sizeof(stdDisplay_g_backBuffer));
     memset(&stdDisplay_zBuffer, 0u, sizeof(stdDisplay_zBuffer));
 
-    stdDisplay_bStartup   = true;
-    stdDisplay_numDevices = 0;
+    // Fixed: Start each display lifecycle without mode state retained from a previous shutdown.
+    stdDisplay_bOpen       = false;
+    stdDisplay_bModeSet    = false;
+    stdDisplay_bFullscreen = false;
+    stdDisplay_numDevices  = 0;
 
     HRESULT ddres = DirectDrawEnumerate(stdDisplay_DDEnumCallback, NULL);
     if ( ddres != DD_OK )
@@ -300,6 +304,7 @@ int stdDisplay_Startup(void)
     stdDisplay_primaryVideoMode.rasterInfo.width  = 640;
     stdDisplay_primaryVideoMode.rasterInfo.height = 480;
 
+    stdDisplay_bStartup = true;
     STDLOG_STATUS("Found %d Display Devices.\n", stdDisplay_numDevices);
     return 1;
 }
@@ -317,9 +322,12 @@ void stdDisplay_Shutdown(void)
     memset(&stdDisplay_zBuffer, 0, sizeof(stdDisplay_zBuffer));
 
     stdDisplay_pCurVideoMode = NULL;
-    stdDisplay_numDevices    = 0;
-    stdDisplay_numVideoModes = 0;
-    stdDisplay_bStartup      = false;
+    stdDisplay_numDevices     = 0;
+    stdDisplay_numVideoModes  = 0;
+    stdDisplay_bOpen          = false;
+    stdDisplay_bModeSet       = false;
+    stdDisplay_bFullscreen    = false;
+    stdDisplay_bStartup       = false;
 }
 
 int J3DAPI stdDisplay_Open(size_t deviceNum)
@@ -331,7 +339,8 @@ int J3DAPI stdDisplay_Open(size_t deviceNum)
         stdDisplay_Close();
     }
 
-    if ( deviceNum > stdDisplay_numDevices )
+    // Fixed: The first index past the device array is invalid as well.
+    if ( deviceNum >= stdDisplay_numDevices )
     {
         return 0;
     }
@@ -407,6 +416,11 @@ int J3DAPI stdDisplay_SetMode(size_t modeNum, int bFullscreen, size_t numBackBuf
         HWND hwnd = stdWin95_GetWindow();
         if ( stdDisplay_SetFullscreenMode(hwnd, &stdDisplay_aVideoModes[modeNum], numBackBuffers) )
         {
+            // Fixed: Unwind partially created surfaces and exclusive mode when fullscreen setup fails.
+            stdDisplay_ReleaseBuffers();
+            stdDisplay_RestoreDesktopMode(hwnd);
+            stdDisplay_bFullscreen   = false;
+            stdDisplay_pCurVideoMode = NULL;
             return 1;
         }
     }
@@ -416,6 +430,10 @@ int J3DAPI stdDisplay_SetMode(size_t modeNum, int bFullscreen, size_t numBackBuf
         HWND hwnd = stdWin95_GetWindow();
         if ( !stdDisplay_SetWindowMode(hwnd, &stdDisplay_primaryVideoMode) )
         {
+            // Fixed: Release any primary or offscreen surface created before windowed setup failed.
+            stdDisplay_bFullscreen = false;
+            stdDisplay_ReleaseBuffers();
+            stdDisplay_pCurVideoMode = NULL;
             return 1;
         }
     }
@@ -431,13 +449,13 @@ int J3DAPI stdDisplay_SetMode(size_t modeNum, int bFullscreen, size_t numBackBuf
     stdDisplay_bModeSet      = true;
     stdDisplay_bFullscreen   = bFullscreen;
 
-    stdDisplay_VBufferFill(&stdDisplay_g_backBuffer, 0, NULL); // 0 - BLACK 
+    stdDisplay_VBufferFill(&stdDisplay_g_backBuffer, 0, NULL); // 0 - BLACK
     stdDisplay_Update();
 
     if ( bFullscreen )
     {
         // TODO: Why filling back buffer again? Maybe front buffer should be filled
-        stdDisplay_VBufferFill(&stdDisplay_g_backBuffer, 0, NULL); // 0 - BLACK 
+        stdDisplay_VBufferFill(&stdDisplay_g_backBuffer, 0, NULL); // 0 - BLACK
     }
 
     return 0;
@@ -445,9 +463,16 @@ int J3DAPI stdDisplay_SetMode(size_t modeNum, int bFullscreen, size_t numBackBuf
 
 void stdDisplay_ClearMode(void)
 {
+    bool bWasFullscreen = stdDisplay_bFullscreen;
     if ( stdDisplay_bModeSet )
     {
         stdDisplay_ReleaseBuffers();
+    }
+
+    // Fixed: Clearing a fullscreen mode must also restore the desktop and normal cooperative level.
+    if ( bWasFullscreen && stdDisplay_lpDD )
+    {
+        stdDisplay_RestoreDesktopMode(stdWin95_GetWindow());
     }
 
     if ( stdDisplay_hFont )
@@ -456,7 +481,9 @@ void stdDisplay_ClearMode(void)
         stdDisplay_hFont = NULL;
     }
 
-    stdDisplay_bModeSet = false;
+    stdDisplay_pCurVideoMode = NULL;
+    stdDisplay_bModeSet      = false;
+    stdDisplay_bFullscreen   = false;
 }
 
 size_t stdDisplay_GetNumDevices(void)
@@ -612,6 +639,8 @@ tVBuffer* J3DAPI stdDisplay_VBufferNew(const tRasterInfo* pRasterInfo, int bUseV
         if ( ddres != DD_OK )
         {
             STDLOG_ERROR("Error %s when creating a DirectDraw vbuffer surface.\n", stdDisplay_DDGetStatus(ddres));
+            // Fixed: Free the VBuffer wrapper when DirectDraw surface creation fails.
+            stdMemory_Free(vbuffer);
             return NULL;
         }
 
@@ -619,6 +648,9 @@ tVBuffer* J3DAPI stdDisplay_VBufferNew(const tRasterInfo* pRasterInfo, int bUseV
         if ( ddres != DD_OK )
         {
             STDLOG_ERROR("Error %s when getting desc of surface.\n", stdDisplay_DDGetStatus(ddres));
+            // Fixed: Release the partial surface and wrapper when its description cannot be queried.
+            IDirectDrawSurface4_Release(vbuffer->surface.pSysSurface);
+            stdMemory_Free(vbuffer);
             return NULL;
         }
 
@@ -638,6 +670,8 @@ tVBuffer* J3DAPI stdDisplay_VBufferNew(const tRasterInfo* pRasterInfo, int bUseV
         vbuffer->pPixels      = (uint8_t*)STDMALLOC(vbuffer->rasterInfo.size);
         if ( !vbuffer->pPixels )
         {
+            // Fixed: Free the VBuffer wrapper when allocating its software pixels fails.
+            stdMemory_Free(vbuffer);
             return NULL;
         }
 
@@ -675,6 +709,8 @@ int J3DAPI stdDisplay_VBufferLock(tVBuffer* pVBuffer)
 
     if ( pVBuffer->type == VBUFFER_SOFTWARE )
     {
+        // Added: Software vbuffers own RAM for their full lifetime; assert the invariant before updating the lock ref count.
+        STD_ASSERT(pVBuffer->pPixels);
         ++pVBuffer->lockRefCount;
     }
     else if ( pVBuffer->type == VBUFFER_HARDWARE )
@@ -683,6 +719,13 @@ int J3DAPI stdDisplay_VBufferLock(tVBuffer* pVBuffer)
             && (pVBuffer->surface.desc.ddsCaps.dwCaps & DDSCAPS_MODEX) != 0 )
         {
             return 0;
+        }
+
+        // Fixed: Reuse the active VBuffer lock instead of locking the DirectDraw surface more than once.
+        if ( pVBuffer->lockRefCount )
+        {
+            ++pVBuffer->lockRefCount;
+            return 1;
         }
 
         pVBuffer->pPixels = stdDisplay_LockSurface(&pVBuffer->surface);
@@ -695,6 +738,12 @@ int J3DAPI stdDisplay_VBufferLock(tVBuffer* pVBuffer)
     }
 
     return 1;
+}
+
+// Added: DirectDraw does not require a separate surface path for read-only VBuffer access.
+int stdDisplay_VBufferLockReadOnly(tVBuffer* pVBuffer)
+{
+    return stdDisplay_VBufferLock(pVBuffer);
 }
 
 int J3DAPI stdDisplay_VBufferUnlock(tVBuffer* pVBuffer)
@@ -720,10 +769,19 @@ int J3DAPI stdDisplay_VBufferUnlock(tVBuffer* pVBuffer)
         return 0;
     }
 
+    // Fixed: Keep the DirectDraw surface locked until the final nested VBuffer unlock.
+    if ( pVBuffer->lockRefCount > 1 )
+    {
+        --pVBuffer->lockRefCount;
+        return 1;
+    }
+
     int result = stdDisplay_UnlockSurface(&pVBuffer->surface);
     if ( !result )
     {
         --pVBuffer->lockRefCount;
+        // Fixed: Do not retain the transient DirectDraw lock pointer after unlocking the surface.
+        pVBuffer->pPixels = NULL;
     }
 
     return result;
@@ -771,13 +829,13 @@ int J3DAPI stdDisplay_VBufferFill(tVBuffer* pVBuffer, uint32_t color, const StdR
                 uint16_t* pPixels16 = (uint16_t*)&pVBuffer->pPixels[2 * pVBuffer->rasterInfo.rowWidth * pRect->top + 2 * pRect->left];
                 for ( int32_t height = 0; height < pRect->bottom; ++height )
                 {
-                    stdDisplay_SetPixels16(pPixels16, color, pRect->right);
+                    stdDisplay_SetPixels16(pPixels16, (uint16_t)color, pRect->right);
                     pPixels16 = (uint16_t*)((char*)pPixels16 + pVBuffer->rasterInfo.rowSize);
                 }
             }
             else
             {
-                stdDisplay_SetPixels16((uint16_t*)pVBuffer->pPixels, color, (size_t)(pVBuffer->rasterInfo.size / 2));
+                stdDisplay_SetPixels16((uint16_t*)pVBuffer->pPixels, (uint16_t)color, (size_t)(pVBuffer->rasterInfo.size / 2));
             }
 
             break;
@@ -970,6 +1028,30 @@ int J3DAPI stdDisplay_CreateZBuffer(const tSysPixelFormat* pPixelFormat, int bSy
         return 1;
     }
 
+    // Fixed: Release an existing attached Z-buffer before replacing it during a repeated std3D open cycle.
+    if ( stdDisplay_zBuffer.pSysSurface )
+    {
+        if ( !stdDisplay_g_backBuffer.surface.pSysSurface )
+        {
+            STDLOG_ERROR("Error replacing zBuffer without a back buffer.\n");
+            return 1;
+        }
+
+        HRESULT ddres = IDirectDrawSurface4_DeleteAttachedSurface(
+            stdDisplay_g_backBuffer.surface.pSysSurface,
+            0,
+            stdDisplay_zBuffer.pSysSurface
+        );
+        if ( ddres != DD_OK )
+        {
+            STDLOG_ERROR("Error %s when detaching the previous zBuffer.\n", stdDisplay_DDGetStatus(ddres));
+            return 1;
+        }
+
+        IDirectDrawSurface4_Release(stdDisplay_zBuffer.pSysSurface);
+        STD_ZEROMEM(&stdDisplay_zBuffer, sizeof(stdDisplay_zBuffer));
+    }
+
     memset(&stdDisplay_zBuffer.desc, 0, sizeof(stdDisplay_zBuffer.desc));
     stdDisplay_zBuffer.desc.dwHeight = stdDisplay_g_backBuffer.rasterInfo.height;
     stdDisplay_zBuffer.desc.dwWidth  = stdDisplay_g_backBuffer.rasterInfo.width;
@@ -991,6 +1073,9 @@ int J3DAPI stdDisplay_CreateZBuffer(const tSysPixelFormat* pPixelFormat, int bSy
     if ( ddres != DD_OK )
     {
         STDLOG_ERROR("Error %s when attaching zbuffer.\n", stdDisplay_DDGetStatus(ddres));
+        // Fixed: Release the new surface when attaching it to the back buffer fails.
+        IDirectDrawSurface4_Release(stdDisplay_zBuffer.pSysSurface);
+        STD_ZEROMEM(&stdDisplay_zBuffer, sizeof(stdDisplay_zBuffer));
         return 1;
     }
 
@@ -998,6 +1083,20 @@ int J3DAPI stdDisplay_CreateZBuffer(const tSysPixelFormat* pPixelFormat, int bSy
     if ( ddres != DD_OK )
     {
         STDLOG_ERROR("Error %s when getting zbuffer surface description.\n", stdDisplay_DDGetStatus(ddres));
+        // Fixed: Detach and release the Z-buffer when querying its description fails.
+        HRESULT detachResult = IDirectDrawSurface4_DeleteAttachedSurface(
+            stdDisplay_g_backBuffer.surface.pSysSurface,
+            0,
+            stdDisplay_zBuffer.pSysSurface
+        );
+        if ( detachResult != DD_OK )
+        {
+            STDLOG_ERROR("Error %s when detaching the invalid zBuffer.\n", stdDisplay_DDGetStatus(detachResult));
+            return 1;
+        }
+
+        IDirectDrawSurface4_Release(stdDisplay_zBuffer.pSysSurface);
+        STD_ZEROMEM(&stdDisplay_zBuffer, sizeof(stdDisplay_zBuffer));
         return 1;
     }
 
@@ -1007,8 +1106,9 @@ int J3DAPI stdDisplay_CreateZBuffer(const tSysPixelFormat* pPixelFormat, int bSy
 int J3DAPI stdDisplay_InitDirectDraw(HWND hwnd)
 {
     J3D_UNUSED(hwnd);
-    HRESULT ddres;
+
     LPDIRECTDRAW lpDD = NULL;
+    HRESULT ddres;
     if ( stdDisplay_pCurDevice->bGuidNotSet )
     {
         ddres = DirectDrawCreate(NULL, &lpDD, NULL);
@@ -1028,15 +1128,11 @@ int J3DAPI stdDisplay_InitDirectDraw(HWND hwnd)
     if ( ddres != DD_OK )
     {
         STDLOG_ERROR("Error getting DirectDraw4 %s.\n", stdDisplay_DDGetStatus(ddres));
-        return 0;
+        goto error;
     }
 
-    ddres = IDirectDraw_Release(lpDD);
-    if ( ddres != DD_OK )
-    {
-        STDLOG_ERROR("Error Release %s.\n", stdDisplay_DDGetStatus(ddres));
-        return 0;
-    }
+    // Fixed: IUnknown::Release returns a reference count, not an HRESULT.
+    IDirectDraw_Release(lpDD);
     lpDD = NULL;
 
     stdDisplay_numVideoModes = 0;
@@ -1044,28 +1140,59 @@ int J3DAPI stdDisplay_InitDirectDraw(HWND hwnd)
     if ( ddres != DD_OK )
     {
         STDLOG_ERROR("Error %s when enumerating video modes.\n", stdDisplay_DDGetStatus(ddres));
-        return 0;
+        goto error;
     }
 
     return 1;
+
+error:
+    // Fixed: Release whichever DirectDraw interface was acquired before initialization failed.
+    if ( lpDD )
+    {
+        IDirectDraw_Release(lpDD);
+    }
+
+    if ( stdDisplay_lpDD )
+    {
+        IDirectDraw4_Release(stdDisplay_lpDD);
+        stdDisplay_lpDD = NULL;
+    }
+
+    return 0;
+}
+
+// Fixed: Restore the desktop mode while still exclusive before returning DirectDraw to normal cooperative level.
+static void J3DAPI stdDisplay_RestoreDesktopMode(HWND hwnd)
+{
+    if ( !stdDisplay_lpDD )
+    {
+        return;
+    }
+
+    if ( (stdDisplay_coopLevelFlags & DDSCL_EXCLUSIVE) != 0 )
+    {
+        HRESULT ddres = IDirectDraw4_RestoreDisplayMode(stdDisplay_lpDD);
+        if ( ddres != DD_OK )
+        {
+            STDLOG_ERROR("Error %s when restoring the video mode.\n", stdDisplay_DDGetStatus(ddres));
+        }
+    }
+
+    HRESULT ddres = IDirectDraw4_SetCooperativeLevel(stdDisplay_lpDD, hwnd, DDSCL_NORMAL);
+    if ( ddres != DD_OK )
+    {
+        STDLOG_ERROR("Error %s when setting normal cooperative level.\n", stdDisplay_DDGetStatus(ddres));
+        return;
+    }
+
+    stdDisplay_coopLevelFlags = DDSCL_NORMAL;
 }
 
 void J3DAPI stdDisplay_ReleaseDirectDraw()
 {
     if ( stdDisplay_lpDD )
     {
-        HRESULT ddres = IDirectDraw4_SetCooperativeLevel(stdDisplay_lpDD, 0, DDSCL_NORMAL);
-        if ( ddres != DD_OK )
-        {
-            STDLOG_ERROR("Error %s when setting coop level.\n", stdDisplay_DDGetStatus(ddres));
-        }
-
-        ddres = IDirectDraw4_RestoreDisplayMode(stdDisplay_lpDD);
-        if ( ddres != DD_OK )
-        {
-            STDLOG_ERROR("Error %s when restoring the video mode.\n", stdDisplay_DDGetStatus(ddres));
-        }
-
+        stdDisplay_RestoreDesktopMode(NULL);
         IDirectDraw4_Release(stdDisplay_lpDD);
         stdDisplay_lpDD = NULL;
     }
@@ -1265,18 +1392,20 @@ int J3DAPI stdDisplay_SetWindowMode(HWND hWnd, StdVideoMode* pDisplayMode)
 {
     unsigned int width  = pDisplayMode->rasterInfo.width;
     unsigned int height = pDisplayMode->rasterInfo.height;
+
     if ( !SetWindowPos(hWnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE) )
     {
         return 0;
     }
 
-    stdDisplay_coopLevelFlags = DDSCL_NORMAL;
     HRESULT ddres = IDirectDraw4_SetCooperativeLevel(stdDisplay_lpDD, hWnd, DDSCL_NORMAL);
     if ( ddres != DD_OK )
     {
         STDLOG_ERROR("Error %s when setting cooperative level.\n", stdDisplay_DDGetStatus(ddres));
-        return ddres;
+        // Fixed: This function uses zero for failure; returning the HRESULT made its caller treat an error as success.
+        return 0;
     }
+    stdDisplay_coopLevelFlags = DDSCL_NORMAL;
 
     // Set front buffer
     // We also set pDisplayMode in this scope
@@ -1349,7 +1478,6 @@ int J3DAPI stdDisplay_SetWindowMode(HWND hWnd, StdVideoMode* pDisplayMode)
             memset(pCI, 0, sizeof(*pCI)); // Added: init to zero
             pCI->colorMode  = STDCOLOR_RGB;
             pCI->bpp       = stdDisplay_g_frontBuffer.surface.desc.ddpfPixelFormat.dwRGBBitCount;
-
 
             DDPIXELFORMAT* pFormat = &stdDisplay_g_frontBuffer.surface.desc.ddpfPixelFormat;
             stdColor_CalcColorBits(pFormat->dwRBitMask, &pCI->redBPP, &pCI->redPosShift, &pCI->redPosShiftRight);
@@ -1455,13 +1583,14 @@ int J3DAPI stdDisplay_SetWindowMode(HWND hWnd, StdVideoMode* pDisplayMode)
 
 int J3DAPI stdDisplay_SetFullscreenMode(HWND hwnd, const StdVideoMode* pDisplayMode, size_t numBackBuffers)
 {
-    stdDisplay_coopLevelFlags = DDSCL_EXCLUSIVE | DDSCL_FULLSCREEN;
-    HRESULT ddres = IDirectDraw4_SetCooperativeLevel(stdDisplay_lpDD, hwnd, stdDisplay_coopLevelFlags);
+    int coopLevelFlags = DDSCL_EXCLUSIVE | DDSCL_FULLSCREEN;
+    HRESULT ddres = IDirectDraw4_SetCooperativeLevel(stdDisplay_lpDD, hwnd, coopLevelFlags);
     if ( ddres != DD_OK )
     {
         STDLOG_ERROR("Error %s when setting cooperative level.\n", stdDisplay_DDGetStatus(ddres));
         return ddres;
     }
+    stdDisplay_coopLevelFlags = coopLevelFlags;
 
     STDLOG_STATUS("Set video mode %d %d %d.\n", pDisplayMode->rasterInfo.width, pDisplayMode->rasterInfo.height, pDisplayMode->rasterInfo.colorInfo.bpp);
 
@@ -1565,8 +1694,22 @@ void J3DAPI stdDisplay_ReleaseBuffers()
 {
     if ( stdDisplay_zBuffer.pSysSurface )
     {
-        IDirectDrawSurface4_DeleteAttachedSurface(stdDisplay_g_backBuffer.surface.pSysSurface, 0, stdDisplay_zBuffer.pSysSurface);
+        if ( stdDisplay_g_backBuffer.surface.pSysSurface )
+        {
+            HRESULT ddres = IDirectDrawSurface4_DeleteAttachedSurface(stdDisplay_g_backBuffer.surface.pSysSurface, 0, stdDisplay_zBuffer.pSysSurface);
+            if ( ddres != DD_OK )
+            {
+                STDLOG_ERROR("Error %s when detaching the zBuffer.\n", stdDisplay_DDGetStatus(ddres));
+            }
+        }
+
         IDirectDrawSurface4_Release(stdDisplay_zBuffer.pSysSurface);
+    }
+
+    // Fixed: Release the reference returned for both attached and standalone back-buffer surfaces before clearing it.
+    if ( stdDisplay_g_backBuffer.surface.pSysSurface )
+    {
+        IDirectDrawSurface4_Release(stdDisplay_g_backBuffer.surface.pSysSurface);
     }
 
     if ( stdDisplay_g_frontBuffer.surface.pSysSurface )
@@ -1767,11 +1910,9 @@ int J3DAPI stdDisplay_ColorFillSurface(tVSurface* pSurf, uint32_t dwFillColor, c
         rect.top    = pRect->top;
         rect.right  = pRect->right + rect.left;
         rect.bottom = pRect->bottom + pRect->top;
-
     }
     else
     {
-
         rect.left   = 0;
         rect.top    = 0;
         rect.right  = pSurf->desc.dwWidth;
@@ -1901,8 +2042,9 @@ HDC stdDisplay_GetBackBufferDC(void)
 
     HDC hdc = NULL;
     HRESULT ddres = IDirectDrawSurface4_GetDC(stdDisplay_g_backBuffer.surface.pSysSurface, &hdc);
-    if ( ddres != DD_OK )
-    { // TODO: BUG should be ddres == DD_OK
+    // Fixed: Return the device context only when DirectDraw reports success.
+    if ( ddres == DD_OK )
+    {
         return hdc;
     }
 
@@ -1950,34 +2092,33 @@ int stdDisplay_CanRenderWindowed(void)
     return caps.dwCaps2 & DDCAPS2_CANRENDERWINDOWED;
 }
 
-
 int J3DAPI stdDisplay_SetBufferClipper(int bFrontBuffer)
 {
-    IDirectDrawClipper* pClipper;
-
     if ( !stdDisplay_bFullscreen )
     {
         return 0;
     }
 
-    if ( bFrontBuffer )
+    LPDIRECTDRAWSURFACE4 pSysSurface = bFrontBuffer
+        ? stdDisplay_g_frontBuffer.surface.pSysSurface
+        : stdDisplay_g_backBuffer.surface.pSysSurface;
+
+    IDirectDrawClipper* pClipper = NULL;
+    HRESULT ddres = IDirectDrawSurface4_GetClipper(pSysSurface, &pClipper);
+    if ( ddres == DD_OK && pClipper )
     {
-        IDirectDrawSurface4_GetClipper(stdDisplay_g_frontBuffer.surface.pSysSurface, &pClipper);
-        if ( pClipper )
-        {
-            return 1; // Clipper already set for buffer
-        }
-    }
-    else
-    {
-        IDirectDrawSurface4_GetClipper(stdDisplay_g_backBuffer.surface.pSysSurface, &pClipper);
-        if ( pClipper )
-        {
-            return 1; // Clipper already set for buffer
-        }
+        // Fixed: GetClipper adds a reference even when the surface already owns the clipper.
+        IDirectDrawClipper_Release(pClipper);
+        return 1; // Clipper already set for buffer
     }
 
-    HRESULT ddres = IDirectDraw4_CreateClipper(stdDisplay_lpDD, 0, &pClipper, 0);
+    if ( ddres != DD_OK && ddres != DDERR_NOCLIPPERATTACHED )
+    {
+        STDLOG_ERROR("Error %s when getting the DirectDraw clipper.\n", stdDisplay_DDGetStatus(ddres));
+        return 0;
+    }
+
+    ddres = IDirectDraw4_CreateClipper(stdDisplay_lpDD, 0, &pClipper, 0);
     if ( ddres != DD_OK )
     {
         STDLOG_ERROR("Error %s when creating DirectDraw clipper.\n", stdDisplay_DDGetStatus(ddres));
@@ -1992,15 +2133,11 @@ int J3DAPI stdDisplay_SetBufferClipper(int bFrontBuffer)
         return 0;
     }
 
-    LPDIRECTDRAWSURFACE4 pSysSurface = stdDisplay_g_frontBuffer.surface.pSysSurface;
-    if ( !bFrontBuffer )
-    {
-        pSysSurface = stdDisplay_g_backBuffer.surface.pSysSurface;
-    }
-
     ddres = IDirectDrawSurface4_SetClipper(pSysSurface, pClipper);
     if ( ddres != DD_OK )
     {
+        // Fixed: Release the newly created clipper when attaching it fails.
+        IDirectDrawClipper_Release(pClipper);
         STDLOG_ERROR("Error %s when attaching clipper to primary surface.\n", stdDisplay_DDGetStatus(ddres));
         return 0;
     }
@@ -2029,7 +2166,7 @@ int stdDisplay_IsFullscreen(void)
     return stdDisplay_bFullscreen;
 }
 
-int J3DAPI stdDisplay_LockBackBuffer(void** pSurface, uint32_t* pWidth, uint32_t* pHeight, int32_t* pPitch)
+static int stdDisplay_LockBackBufferInternal(void** pSurface, uint32_t* pWidth, uint32_t* pHeight, int32_t* pPitch, DWORD flags)
 {
     if ( !stdDisplay_bOpen || !stdDisplay_bModeSet )
     {
@@ -2042,7 +2179,7 @@ int J3DAPI stdDisplay_LockBackBuffer(void** pSurface, uint32_t* pWidth, uint32_t
         stdDisplay_g_backBuffer.surface.pSysSurface,
         NULL,
         &dddesc,
-        DDLOCK_NOSYSLOCK | DDLOCK_WRITEONLY | DDLOCK_WAIT,
+        DDLOCK_NOSYSLOCK | DDLOCK_WAIT | flags,
         NULL
     );
 
@@ -2063,10 +2200,9 @@ int J3DAPI stdDisplay_LockBackBuffer(void** pSurface, uint32_t* pWidth, uint32_t
             stdDisplay_g_backBuffer.surface.pSysSurface,
             NULL,
             &dddesc,
-            DDLOCK_NOSYSLOCK | DDLOCK_WRITEONLY | DDLOCK_WAIT,
+            DDLOCK_NOSYSLOCK | DDLOCK_WAIT | flags,
             NULL
         );
-
     }
 
     if ( ddres == DD_OK )
@@ -2080,6 +2216,17 @@ int J3DAPI stdDisplay_LockBackBuffer(void** pSurface, uint32_t* pWidth, uint32_t
 
     STDLOG_ERROR("Error %s when locking back buffer.\n", stdDisplay_DDGetStatus(ddres));
     return 1;
+}
+
+int J3DAPI stdDisplay_LockBackBuffer(void** pSurface, uint32_t* pWidth, uint32_t* pHeight, int32_t* pPitch)
+{
+    return stdDisplay_LockBackBufferInternal(pSurface, pWidth, pHeight, pPitch, DDLOCK_WRITEONLY);
+}
+
+int stdDisplay_LockBackBufferReadOnly(void** pSurface, uint32_t* pWidth, uint32_t* pHeight, int32_t* pPitch)
+{
+    // Fixed: Readback locks must not claim write-only access to the DirectDraw surface.
+    return stdDisplay_LockBackBufferInternal(pSurface, pWidth, pHeight, pPitch, DDLOCK_READONLY);
 }
 
 void stdDisplay_UnlockBackBuffer(void)
@@ -2099,6 +2246,17 @@ uint32_t J3DAPI stdDisplay_EncodeFromRGB565(uint16_t pixel)
     ColorInfo colorInfo;
     memcpy(&colorInfo, &stdDisplay_pCurVideoMode->rasterInfo.colorInfo, sizeof(colorInfo));
 
+#ifdef J3D_QOL_IMPROVEMENTS
+    // Altered: Expand RGB565 components to 8-bit using bit replication.
+    uint8_t red = (uint8_t)(((pixel >> 11) & 0x1F) << 3);
+    red |= (uint8_t)(red >> 5);
+
+    uint8_t green = (uint8_t)(((pixel >> 5) & 0x3F) << 2);
+    green |= (uint8_t)(green >> 6);
+
+    uint8_t blue = (uint8_t)((pixel & 0x1F) << 3);
+    blue |= (uint8_t)(blue >> 5);
+#else
     uint8_t red = 8 * (pixel >> 11);
     if ( (red & 8) != 0 )
     {
@@ -2116,6 +2274,7 @@ uint32_t J3DAPI stdDisplay_EncodeFromRGB565(uint16_t pixel)
     {
         blue = blue | 7;
     }
+#endif
 
     return (red >> (colorInfo.redPosShiftRight & 0xFF) << (colorInfo.redPosShift & 0xFF))
         | (green >> (colorInfo.greenPosShiftRight & 0xFF) << (colorInfo.greenPosShift & 0xFF))

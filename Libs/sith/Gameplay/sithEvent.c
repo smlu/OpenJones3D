@@ -169,7 +169,8 @@ void sithEvent_Process(void)
 
 void sithEvent_ResetFreeBufferTable(void)
 {
-    for ( int i = STD_ARRAYLEN(aFreeEventBufferIdxs); i >= 0; --i )
+    // Fixed: i > 0 instead of i >= 0. The last iteration (i == 0) wrote -1 to aFreeEventBufferIdxs[256], one past the end
+    for ( int i = STD_ARRAYLEN(aFreeEventBufferIdxs); i > 0; --i )
     {
         aFreeEventBufferIdxs[STD_ARRAYLEN(aFreeEventBufferIdxs) - i] = i - 1;
     }

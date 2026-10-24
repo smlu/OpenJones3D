@@ -33,8 +33,11 @@ J3D_EXTERN_C_START
 #define STDREALLOC(data, size) \
     stdMemory_Realloc((data), (size), J3D_FILE, __LINE__)
 
-#define stdMemory_g_curState J3D_DECL_FAR_VAR(stdMemory_g_curState, tMemoryState)
-// extern tMemoryState stdMemory_g_curState;
+#ifdef J3D_LOCAL_RTI
+extern tMemoryState stdMemory_g_curState;
+#else
+#   define stdMemory_g_curState J3D_DECL_FAR_VAR(stdMemory_g_curState, tMemoryState)
+#endif
 
 int  stdMemory_Startup(void);
 void  stdMemory_Shutdown(void);

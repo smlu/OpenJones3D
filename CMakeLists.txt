@@ -1,4 +1,6 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.15)
+
+cmake_policy(SET CMP0091 NEW)
 
 project(OpenJones3D VERSION 0.4.0)
 
@@ -16,7 +18,7 @@ set(CMAKE_POLICY_DEFAULT_CMP0077 NEW) # option() honors normal variables (variab
 function(jones3d_print_config_entry label value)
     set(jones3d_dot_fill "........................................")
     string(LENGTH "${label}" label_len)
-    math(EXPR pad_len "28 - ${label_len}")
+    math(EXPR pad_len "32 - ${label_len}")
     if (pad_len LESS 1)
         set(pad_len 1)
     endif()
@@ -34,9 +36,12 @@ function(jones3d_print_config_option label value)
 endfunction()
 
 option(JONES3D_BUILD_PROGRAMS "Build programs" ON)
+option(JONES3D_BUILD_TESTS "Build tests" ON)
+option(JONES3D_BUILD_SYSTEM_TESTS "Build system/device tests" ON)
+option(JONES3D_BUILD_DISRUPTIVE_SYSTEM_TESTS "Build opt-in system tests that can switch fullscreen modes or disrupt devices" OFF)
 option(JONES3D_QOL_IMPROVEMENTS "Enable quality-of-life improvements" ON)
 option(JONES3D_SPEEDRUN_BUILD "Enable vanilla bugs and glitches used in speedruns" OFF)
-option(JONES3D_RUNTIME_GUARDS "Enable runtime safety guards for hardened release behavior" ON)
+option(JONES3D_RUNTIME_GUARDS "Enable runtime safety guards for hardened release behavior" OFF)
 
 # --- GAPI options ---
 # Add an option to enable DirectX 9 support. Default is ON.
@@ -59,6 +64,16 @@ endif()
 
 if (JONES3D_RUNTIME_GUARDS)
     set(J3D_RUNTIME_GUARDS ON)
+endif()
+
+if (JONES3D_BUILD_TESTS)
+    enable_testing()
+else()
+    set(JONES3D_BUILD_SYSTEM_TESTS OFF)
+endif()
+
+if (NOT JONES3D_BUILD_SYSTEM_TESTS)
+    set(JONES3D_BUILD_DISRUPTIVE_SYSTEM_TESTS OFF)
 endif()
 
 if(JONES3D_USE_DIRECTX9)
@@ -86,14 +101,19 @@ else()
     endif()
 endif()
 
-# Configure the version header file
+# Keep configuration-specific headers in the build tree so DX6 and DX9 builds can coexist.
+set(JONES3D_GENERATED_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
+file(MAKE_DIRECTORY "${JONES3D_GENERATED_INCLUDE_DIR}/j3dcore")
 configure_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/LIBS/j3dcore/j3d.h.in"
-    "${CMAKE_CURRENT_SOURCE_DIR}/LIBS/j3dcore/j3d.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Libs/j3dcore/j3d.h.in"
+    "${JONES3D_GENERATED_INCLUDE_DIR}/j3dcore/j3d.h"
 )
+include_directories(BEFORE "${JONES3D_GENERATED_INCLUDE_DIR}")
 
-# Set global property for MSVC runtime library (CMake 3.15+)
-set(CMAKE_MSVC_RUNTIME_LIBRARY "$<$<CONFIG:Release>:MultiThreaded>$<$<CONFIG:MinSizeRel>:MultiThreaded>")
+# Use the static CRT for optimized configurations and the debug DLL CRT for Debug.
+set(CMAKE_MSVC_RUNTIME_LIBRARY
+    "$<$<CONFIG:Debug>:MultiThreadedDebugDLL>$<$<CONFIG:Release>:MultiThreaded>$<$<CONFIG:RelWithDebInfo>:MultiThreaded>$<$<CONFIG:MinSizeRel>:MultiThreaded>"
+)
 
 if (MSVC)
     # Clion IDE can't read the preprocessor macro below and needs special treatment
@@ -159,6 +179,9 @@ jones3d_print_config_option("QOL improvements" JONES3D_QOL_IMPROVEMENTS)
 jones3d_print_config_option("Runtime guards" JONES3D_RUNTIME_GUARDS)
 jones3d_print_config_option("Speedrun build" JONES3D_SPEEDRUN_BUILD)
 jones3d_print_config_option("Build programs" JONES3D_BUILD_PROGRAMS)
+jones3d_print_config_option("Build tests" JONES3D_BUILD_TESTS)
+jones3d_print_config_option("Build system tests" JONES3D_BUILD_SYSTEM_TESTS)
+jones3d_print_config_option("Build disruptive system tests" JONES3D_BUILD_DISRUPTIVE_SYSTEM_TESTS)
 jones3d_print_config_option("Post-build copy" JONES3D_ENABLE_POST_BUILD_COPY)
 if (JONES3D_ENABLE_POST_BUILD_COPY)
     if (JONES3D_POST_BUILD_COPY_DIR)

@@ -236,7 +236,6 @@ int sithStartup(void)
     return 0;
 }
 
-
 void sithShutdown(void)
 {
     if ( sith_bStartup )

@@ -18,11 +18,13 @@
 
 J3D_EXTERN_C_START
 
-#define std3D_g_fogDensity J3D_DECL_FAR_VAR(std3D_g_fogDensity, float)
-// extern float std3D_g_fogDensity ;
-
-#define std3D_g_maxVertices J3D_DECL_FAR_VAR(std3D_g_maxVertices, size_t)
-// extern size_t std3D_g_maxVertices;
+#ifdef J3D_LOCAL_RTI
+extern float std3D_g_fogDensity;
+extern size_t std3D_g_maxVertices;
+#else
+#   define std3D_g_fogDensity J3D_DECL_FAR_VAR(std3D_g_fogDensity, float)
+#   define std3D_g_maxVertices J3D_DECL_FAR_VAR(std3D_g_maxVertices, size_t)
+#endif
 
 int std3D_Startup(void);
 void std3D_Shutdown(void);
@@ -80,6 +82,11 @@ bool std3D_IsShaderSystemActive(void);
 bool std3D_IsAnisotropicFilteringSupported(void); // Checks if underlying GAPI supports anisotropic texute filtering. Note, device might still not support it.
 bool std3D_IsMipmapAutoGenSupported(void);        // Checks if underlying GAPI supports automatic generation of Mipmaps. Note, device might still not support it.
 bool std3D_IsMSAASupported(void);                 // Checks if underlying GAPI supports Multisample anti-aliasing (MSAA). Note, device might still not support it.
+
+#if defined(J3D_TEST) && defined(J3D_DIRECTX9)
+// Added: Let system tests exercise the otherwise disabled dynamic-buffer rendering path.
+void std3D_TestSetUseBuffers(bool bUseBuffers);
+#endif
 
 // Helper hooking functions
 void std3D_InstallHooks(void);

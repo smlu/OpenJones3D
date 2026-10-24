@@ -15,6 +15,7 @@ static_assert(SIN_TABLE_SIZE == 4096, "SIN_TABLE_SIZE == 4096");
 #define SIN_TABLE_LAST_IDX (SIN_TABLE_SIZE - 1)
 #define SIN_TABLE_GET(idx) stdMath_aSinTable[((idx) )]
 #define SIN_TABLE_GET_REVERSE(idx) stdMath_aSinTable[SIN_TABLE_LAST_IDX - ((idx) % SIN_TABLE_SIZE)]
+#define SIN_TABLE_DEGREES_TO_INDEX ((float)SIN_TABLE_SIZE / 90.0f) // STD_ARRAYLEN(stdMath_aSinTable) over 90 degrees.
 
 #define TAN_TABLE_SIZE STD_ARRAYLEN(stdMath_aTanTable)
 static_assert(TAN_TABLE_SIZE == 4096, "TAN_TABLE_SIZE == 4096");
@@ -22,6 +23,23 @@ static_assert(TAN_TABLE_SIZE == 4096, "TAN_TABLE_SIZE == 4096");
 #define TAN_TABLE_LAST_IDX (TAN_TABLE_SIZE - 1)
 #define TAN_TABLE_GET(idx) stdMath_aTanTable[(idx) % TAN_TABLE_SIZE]
 #define TAN_TABLE_GET_REVERSE(idx) stdMath_aTanTable[TAN_TABLE_LAST_IDX - ((idx) % TAN_TABLE_SIZE)]
+#define TAN_TABLE_FULL_CYCLE_SIZE (4 * TAN_TABLE_SIZE) // 4 * STD_ARRAYLEN(stdMath_aTanTable) covers 360 degrees.
+
+// The arc-sine functions approximate asin(x) with odd polynomials on [0, sqrt(1/2)].
+// For larger inputs they use asin(x) = pi/2 - asin(sqrt(1 - x*x)).
+// Taylor terms come from asin(x) = x + x^3/6 + 3*x^5/40 + 5*x^7/112 + ...
+// The non-Taylor values are fitted coefficients preserved from the original engine.
+#define ARCSIN1_FITTED_CUBIC_COEFF    0.212749    // Original fitted x^3 coefficient for x + c*x^3.
+#define ARCSIN2_FITTED_QUINTIC_COEFF  0.105502    // Original fitted x^5 coefficient after x + x^3/6.
+#define ARCSIN_TAYLOR_CUBIC_DIVISOR   6.0         // Taylor x^3 coefficient is 1/6.
+#define ARCSIN3_TAYLOR_QUINTIC_COEFF  0.075000003 // Taylor x^5 coefficient is 3/40, preserving original rounding.
+#define ARCSIN3_FITTED_SEPTIC_COEFF   0.066797003 // Original fitted x^7 coefficient, not the Taylor 5/112 term.
+// Arc-tangent reduces to ratio <= 1, then uses atan(x)'s alternating Taylor series.
+// The x^9 coefficient is fitted instead of using the raw Taylor 1/9 term.
+#define ARCTAN_TAYLOR_CUBIC_DIVISOR   3.0       // atan Taylor x^3 coefficient is -1/3.
+#define ARCTAN_TAYLOR_QUINTIC_DIVISOR 5.0       // atan Taylor x^5 coefficient is +1/5.
+#define ARCTAN_TAYLOR_SEPTIC_DIVISOR  7.0       // atan Taylor x^7 coefficient is -1/7.
+#define ARCTAN_FITTED_NONIC_COEFF     0.063235f // Original fitted x^9 coefficient, not the Taylor +1/9 term.
 
 static float stdMath_ClampArcTrigInput(float num)
 {
@@ -139,126 +157,11 @@ float J3DAPI stdMath_NormalizeAngleAcute(float angle)
 {
     float normAngle = stdMath_NormalizeAngle(angle);
     if ( normAngle > 180.0f )
+    {
         return -(360.0f - normAngle);
+    }
     return normAngle;
 }
-
-// TODO: Remove
-void stdMath_SinCos2(float angle, float* pSinOut, float* pCosOut)
-{
-    float normalized; // st7
-    float v4; // st7
-    float v5; // st7
-    float v6; // [esp+Ch] [ebp-20h]
-    float a1; // [esp+10h] [ebp-1Ch]
-    int32_t v8; // [esp+14h] [ebp-18h]
-    float v9; // [esp+18h] [ebp-14h]
-    float v10; // [esp+18h] [ebp-14h]
-    float v11; // [esp+18h] [ebp-14h]
-    float v12; // [esp+18h] [ebp-14h]
-    float v13; // [esp+18h] [ebp-14h]
-    int32_t quantized; // [esp+1Ch] [ebp-10h]
-    int32_t quantized_plus1; // [esp+20h] [ebp-Ch]
-    float normalized_; // [esp+24h] [ebp-8h]
-    float v17; // [esp+28h] [ebp-4h]
-    float v18; // [esp+28h] [ebp-4h]
-    float v19; // [esp+28h] [ebp-4h]
-    float v20; // [esp+28h] [ebp-4h]
-    float v21; // [esp+28h] [ebp-4h]
-    float v22; // [esp+28h] [ebp-4h]
-    float v23; // [esp+28h] [ebp-4h]
-    float v24; // [esp+28h] [ebp-4h]
-
-    //_stdMath_SinCos(angle, pSinOut, pCosOut);
-    //return;
-
-    normalized = stdMath_NormalizeAngle(angle);
-    normalized_ = normalized;
-    if ( normalized >= 90.0 )
-    {
-        if ( normalized_ >= 180.0 )
-        {
-            if ( normalized_ >= 270.0 )
-                v8 = 3;
-            else
-                v8 = 2;
-        }
-        else
-        {
-            v8 = 1;
-        }
-    }
-    else
-    {
-        v8 = 0;
-    }
-    a1 = normalized_ * 45.511112f;
-    v6 = a1 - floorf(a1);
-    quantized = (int32_t)a1;
-
-    quantized_plus1 = quantized + 1;
-    switch ( v8 )
-    {
-        case 0:
-            if ( quantized_plus1 < 4096 )
-                v17 = stdMath_aSinTable[quantized_plus1];
-            else
-                v17 = stdMath_aSinTable[4095 - (quantized - 4095)];
-            *pSinOut = (v17 - stdMath_aSinTable[quantized]) * v6 + stdMath_aSinTable[quantized];
-            if ( quantized_plus1 < 4096 )
-                v18 = stdMath_aSinTable[4095 - quantized_plus1];
-            else
-                v18 = -stdMath_aSinTable[quantized_plus1 - 0x1000];
-            *pCosOut = (v18 - stdMath_aSinTable[4095 - quantized]) * v6 + stdMath_aSinTable[4095 - quantized];
-            break;
-        case 1:
-            if ( quantized_plus1 < 0x2000 )
-                v19 = stdMath_aSinTable[4095 - (quantized - 4095)];
-            else
-                v19 = -stdMath_aSinTable[quantized_plus1 - 0x2000];
-            v9 = stdMath_aSinTable[4095 - (quantized - 4096)];
-            *pSinOut = (v19 - v9) * v6 + v9;
-            if ( quantized_plus1 < 0x2000 )
-                v4 = -stdMath_aSinTable[quantized_plus1 - 0x1000];
-            else
-                v4 = -stdMath_aSinTable[4095 - (quantized - 0x1FFF)];
-            v20 = v4;
-            v10 = -stdMath_aSinTable[quantized - 0x1000];
-            *pCosOut = (v20 - v10) * v6 + v10;
-            break;
-        case 2:
-            if ( quantized_plus1 < 0x3000 )
-                v5 = -stdMath_aSinTable[quantized_plus1 - 0x2000];
-            else
-                v5 = -stdMath_aSinTable[4095 - (quantized - 12287)];
-            v21 = v5;
-            v11 = -stdMath_aSinTable[quantized - 0x2000];
-            *pSinOut = (v21 - v11) * v6 + v11;
-            if ( quantized_plus1 < 0x3000 )
-                v22 = -stdMath_aSinTable[4095 - (quantized - 0x1FFF)];
-            else
-                v22 = stdMath_aSinTable[quantized_plus1 - 0x3000];
-            v12 = -stdMath_aSinTable[4095 - (quantized - 0x2000)];
-            *pCosOut = (v22 - v12) * v6 + v12;
-            break;
-        case 3:
-            if ( quantized_plus1 < 0x4000 )
-                v23 = -stdMath_aSinTable[4095 - (quantized - 0x2FFF)];
-            else
-                v23 = stdMath_aSinTable[quantized_plus1 - 0x4000];
-            v13 = -stdMath_aSinTable[4095 - (quantized - 0x3000)];
-            *pSinOut = (v23 - v13) * v6 + v13;
-            if ( quantized_plus1 < 0x4000 )
-                v24 = stdMath_aSinTable[quantized_plus1 - 0x3000];
-            else
-                v24 = stdMath_aSinTable[4095 - (quantized - 0x3FFF)];
-            *pCosOut = (v24 - stdMath_aSinTable[quantized - 0x3000]) * v6 + stdMath_aSinTable[quantized - 0x3000];
-            break;
-        default:
-            return;
-    }
-}
-// TODO: Remove
 
 void stdMath_SinCos(float angle, float* pSinOut, float* pCosOut)
 {
@@ -283,36 +186,52 @@ void stdMath_SinCos(float angle, float* pSinOut, float* pCosOut)
 
     float normAngle = stdMath_NormalizeAngle(angle);
 
+    // Split the normalized angle into a quadrant; each quadrant maps to the same sin table.
     int32_t quadrant = 0;
     if ( normAngle >= 270.0f )
+    {
         quadrant = 3;
+    }
     else if ( normAngle >= 180.0f )
+    {
         quadrant = 2;
+    }
     else if ( normAngle >= 90.0f )
+    {
         quadrant = 1;
+    }
 
-    float indexFloat = normAngle * 45.511112f; // SIN_TABLE_SIZE / 90
-    float fracPart = indexFloat - floorf(indexFloat);
-    int32_t index = (int32_t)indexFloat;
+    // Convert degrees to a fractional table index, then linearly interpolate adjacent samples.
+    float indexFloat  = normAngle * SIN_TABLE_DEGREES_TO_INDEX;
+    float fracPart    = indexFloat - floorf(indexFloat);
+    int32_t index     = (int32_t)indexFloat;
     int32_t nextIndex = index + 1;
 
     float sinLookup = 0.0f, sinValue = 0.0f,
-        cosLookup=  0.0f, cosValue = 0.0f;
+        cosLookup   = 0.0f, cosValue = 0.0f;
     switch ( quadrant )
     {
         case 0:
         {
             sinLookup = SIN_TABLE_GET(index);
             if ( nextIndex < SIN_TABLE_SIZE )
+            {
                 sinValue = SIN_TABLE_GET(nextIndex);
+            }
             else
+            {
                 sinValue = SIN_TABLE_GET_REVERSE(index - SIN_TABLE_LAST_IDX);
+            }
 
             cosLookup = SIN_TABLE_GET_REVERSE(index);
             if ( nextIndex < SIN_TABLE_SIZE )
+            {
                 cosValue = SIN_TABLE_GET_REVERSE(nextIndex);
+            }
             else
+            {
                 cosValue = -SIN_TABLE_GET(nextIndex - SIN_TABLE_SIZE);
+            }
         }
         break;
 
@@ -320,15 +239,23 @@ void stdMath_SinCos(float angle, float* pSinOut, float* pCosOut)
         {
             sinLookup = SIN_TABLE_GET_REVERSE(index - SIN_TABLE_SIZE);
             if ( nextIndex < 2 * SIN_TABLE_SIZE )
+            {
                 sinValue = SIN_TABLE_GET_REVERSE(index - SIN_TABLE_LAST_IDX);
+            }
             else
+            {
                 sinValue = -SIN_TABLE_GET(nextIndex - 2 * SIN_TABLE_SIZE);
+            }
 
             cosLookup = -SIN_TABLE_GET(index - SIN_TABLE_SIZE);
             if ( nextIndex < 2 * SIN_TABLE_SIZE )
+            {
                 cosValue = -SIN_TABLE_GET(nextIndex - SIN_TABLE_SIZE);
+            }
             else
+            {
                 cosValue = -SIN_TABLE_GET_REVERSE((index - (2 * SIN_TABLE_SIZE - 1)));
+            }
         }
         break;
 
@@ -336,15 +263,23 @@ void stdMath_SinCos(float angle, float* pSinOut, float* pCosOut)
         {
             sinLookup = -SIN_TABLE_GET(index - 2 * SIN_TABLE_SIZE);
             if ( nextIndex < 3 * SIN_TABLE_SIZE )
+            {
                 sinValue = -SIN_TABLE_GET(nextIndex - 2 * SIN_TABLE_SIZE);
+            }
             else
+            {
                 sinValue = -SIN_TABLE_GET_REVERSE((index - (3 * SIN_TABLE_SIZE - 1)));
+            }
 
             cosLookup = -SIN_TABLE_GET_REVERSE((index - 2 * SIN_TABLE_SIZE));
             if ( nextIndex < 3 * SIN_TABLE_SIZE )
+            {
                 cosValue = -SIN_TABLE_GET_REVERSE((index - (2 * SIN_TABLE_SIZE - 1)));
+            }
             else
+            {
                 cosValue = SIN_TABLE_GET(nextIndex - 3 * SIN_TABLE_SIZE);
+            }
         }
         break;
 
@@ -352,116 +287,30 @@ void stdMath_SinCos(float angle, float* pSinOut, float* pCosOut)
         {
             sinLookup = -SIN_TABLE_GET_REVERSE((index - 3 * SIN_TABLE_SIZE));
             if ( nextIndex < 4 * SIN_TABLE_SIZE )
+            {
                 sinValue = -SIN_TABLE_GET_REVERSE((index - (3 * SIN_TABLE_SIZE - 1)));
+            }
             else
+            {
                 sinValue = SIN_TABLE_GET(nextIndex - 4 * SIN_TABLE_SIZE);
+            }
 
             cosLookup = SIN_TABLE_GET(index - 3 * SIN_TABLE_SIZE);
             if ( nextIndex < 4 * SIN_TABLE_SIZE )
+            {
                 cosValue = SIN_TABLE_GET(nextIndex - 3 * SIN_TABLE_SIZE);
+            }
             else
+            {
                 cosValue = SIN_TABLE_GET_REVERSE(index - (4 * SIN_TABLE_SIZE - 1));
+            }
         }
         break;
     }
 
     *pSinOut = (sinValue - sinLookup) * fracPart + sinLookup;
     *pCosOut = (cosValue - cosLookup) * fracPart + cosLookup;
-
-    // TEST scope remove
-#ifdef J3D_DEBUG
-    float sn, css;
-    stdMath_SinCos2(angle, &sn, &css); // TODO: remove
-    if ( sn != *pSinOut || css != *pCosOut )
-    {
-        STDLOG_ERROR("SinCos result differ from original for angle: %.f. sin=%.f osin=%.f cos=%.f ocos=%.f", angle, *pSinOut, sn, *pCosOut, css);
-    }
-    STD_ASSERT(sn == *pSinOut && css == *pCosOut);
-#endif
-// TEST scope remove
 }
-
-// TODO: Remove
-float stdMath_Tan2(float a1)
-{
-    double v1; // st7
-    float v3; // [esp+Ch] [ebp-20h]
-    float a1a; // [esp+10h] [ebp-1Ch]
-    int32_t v5; // [esp+14h] [ebp-18h]
-    float v6; // [esp+18h] [ebp-14h]
-    float v7; // [esp+18h] [ebp-14h]
-    int32_t v8; // [esp+1Ch] [ebp-10h]
-    float v9; // [esp+20h] [ebp-Ch]
-    int32_t v10; // [esp+24h] [ebp-8h]
-    float v11; // [esp+28h] [ebp-4h]
-    float v12; // [esp+28h] [ebp-4h]
-    float v13; // [esp+28h] [ebp-4h]
-    float v14; // [esp+28h] [ebp-4h]
-    float v15; // [esp+34h] [ebp+8h]
-
-    v1 = stdMath_NormalizeAngle(a1);
-    v15 = v1;
-    if ( v1 >= 90.0 )
-    {
-        if ( v15 >= 180.0 )
-        {
-            if ( v15 >= 270.0 )
-                v5 = 3;
-            else
-                v5 = 2;
-        }
-        else
-        {
-            v5 = 1;
-        }
-    }
-    else
-    {
-        v5 = 0;
-    }
-    a1a = v15 / 360.0 * 16384.0;
-    v3 = a1a - floorf(a1a);
-    v8 = (__int64)a1a;
-    v10 = v8 + 1;
-    switch ( v5 )
-    {
-        case 0:
-            if ( v10 < 0x1000 )
-                v11 = stdMath_aTanTable[v10];
-            else
-                v11 = -stdMath_aTanTable[0xFFF - (v8 - 0xFFF)];
-            v9 = (v11 - stdMath_aTanTable[v8]) * v3 + stdMath_aTanTable[v8];
-            break;
-        case 1:
-            if ( v10 < 0x2000 )
-                v12 = -stdMath_aTanTable[0xFFF - (v8 - 0xFFF)];
-            else
-                v12 = stdMath_aTanTable[v10 - 0x2000];
-            v6 = -stdMath_aTanTable[0xFFF - (v8 - 0x1000)];
-            v9 = (v12 - v6) * v3 + v6;
-            break;
-        case 2:
-            if ( v10 < 0x3000 )
-                v13 = stdMath_aTanTable[v10 - 0x3000];
-            else
-                v13 = -stdMath_aTanTable[0xFFF - (v8 - 0x2FFF)];
-            v9 = (v13 - stdMath_aTanTable[0xFFF - (v8 - 0x2000)]) * v3 + stdMath_aTanTable[0xFFF - (v8 - 0x2000)];
-            break;
-        case 3:
-            if ( v10 < 0x4000 )
-                v14 = -stdMath_aTanTable[0xFFF - (v8 - 0x2FFF)];
-            else
-                v14 = stdMath_aTanTable[v10 - 0x4000];
-            v7 = -stdMath_aTanTable[0xFFF - (v8 - 0x3000)];
-            v9 = (v14 - v7) * v3 + v7;
-            break;
-        default:
-            v9 = 0.0; // added
-            return v9;
-    }
-    return v9;
-}
-// TODO: Remove
 
 float J3DAPI stdMath_Tan(float angle)
 {
@@ -479,17 +328,25 @@ float J3DAPI stdMath_Tan(float angle)
 
     float normAngle = stdMath_NormalizeAngle(angle);
 
+    // Split the normalized angle into a quadrant; tangent mirrors/sign-flips the same table.
     int32_t quadrant = 0;
     if ( normAngle >= 270.0f )
+    {
         quadrant = 3;
+    }
     else if ( normAngle >= 180.0f )
+    {
         quadrant = 2;
+    }
     else if ( normAngle >= 90.0f )
+    {
         quadrant = 1;
+    }
 
-    float indexFloat = normAngle / 360.0f * 16384.0f; // 16384.0f - 4 * TAN_TABLE_SIZE
-    float fracPart = indexFloat - floorf(indexFloat);
-    int32_t index = (int32_t)indexFloat;
+    // Map the full 360-degree cycle into four table-sized quadrants and interpolate.
+    float indexFloat  = normAngle / 360.0f * (float)TAN_TABLE_FULL_CYCLE_SIZE;
+    float fracPart    = indexFloat - floorf(indexFloat);
+    int32_t index     = (int32_t)indexFloat;
     int32_t nextIndex = index + 1;
 
     float tanValue = 0.0f, baseLookup = 0.0f;
@@ -499,9 +356,13 @@ float J3DAPI stdMath_Tan(float angle)
         {
             baseLookup = TAN_TABLE_GET(index);
             if ( nextIndex < TAN_TABLE_SIZE )
+            {
                 tanValue = TAN_TABLE_GET(nextIndex);
+            }
             else
+            {
                 tanValue = -TAN_TABLE_GET_REVERSE((index - TAN_TABLE_LAST_IDX));
+            }
         }
         break;
 
@@ -509,19 +370,29 @@ float J3DAPI stdMath_Tan(float angle)
         {
             baseLookup = -TAN_TABLE_GET_REVERSE((index - TAN_TABLE_SIZE));
             if ( nextIndex < 2 * TAN_TABLE_SIZE )
+            {
                 tanValue = -TAN_TABLE_GET_REVERSE((index - TAN_TABLE_LAST_IDX));
+            }
             else
+            {
                 tanValue = TAN_TABLE_GET(nextIndex - 2 * TAN_TABLE_SIZE);
+            }
         }
         break;
 
         case 2:
         {
+            // TODO: [BUG] This preserved original reverse lookup makes tan(180..270) start near the
+            // asymptote instead of 0. Use TAN_TABLE_GET(index - 2 * TAN_TABLE_SIZE) to fix it.
             baseLookup = TAN_TABLE_GET_REVERSE((index - 2 * TAN_TABLE_SIZE));
             if ( nextIndex < 3 * TAN_TABLE_SIZE )
+            {
                 tanValue = TAN_TABLE_GET(nextIndex - 2 * TAN_TABLE_SIZE);
+            }
             else
+            {
                 tanValue = -TAN_TABLE_GET_REVERSE((index - (3 * TAN_TABLE_SIZE - 1)));
+            }
         }
         break;
 
@@ -529,24 +400,17 @@ float J3DAPI stdMath_Tan(float angle)
         {
             baseLookup = -TAN_TABLE_GET_REVERSE((index - 3 * TAN_TABLE_SIZE));
             if ( nextIndex < 4 * TAN_TABLE_SIZE )
+            {
                 tanValue = -TAN_TABLE_GET_REVERSE((index - (3 * TAN_TABLE_SIZE - 1)));
+            }
             else
+            {
                 tanValue = TAN_TABLE_GET(nextIndex - 4 * TAN_TABLE_SIZE);
+            }
         }
         break;
     }
 
-    // TODO: Remove
-#ifdef J3D_DEBUG
-    float tan = ((tanValue - baseLookup) * fracPart + baseLookup);
-    float otan = stdMath_Tan2(angle);
-    if ( tan != otan )
-    {
-        STDLOG_ERROR("stdMath_Tan2 result differ from original for angle: %.f. tan=%.f otan=%.f", angle, tan, otan);
-    }
-    STD_ASSERT(tan == otan);
-#endif
-// TODO: Remove
     return (tanValue - baseLookup) * fracPart + baseLookup;
 }
 
@@ -557,14 +421,15 @@ float J3DAPI stdMath_ArcSin1(float num)
 
     double asinval;
     double absNum = fabs(num);
+    // Approximate positive asin and restore the original sign at the end.
     if ( absNum <= M_SQRT1_2 )
     {
-        asinval = STDMATH_TODEGREES(pow(absNum, 3) * 0.212749 + absNum);
+        asinval = STDMATH_TODEGREES(pow(absNum, 3) * ARCSIN1_FITTED_CUBIC_COEFF + absNum);
     }
     else
     {
         double sqrtComplement = sqrt(1.0 - absNum * absNum);
-        asinval = 90.0 - STDMATH_TODEGREES(pow(sqrtComplement, 3) * 0.212749 + sqrtComplement);
+        asinval = 90.0 - STDMATH_TODEGREES(pow(sqrtComplement, 3) * ARCSIN1_FITTED_CUBIC_COEFF + sqrtComplement);
     }
 
     return (float)(num < 0.0 ? -asinval : asinval);
@@ -577,16 +442,17 @@ float J3DAPI stdMath_ArcSin2(float num)
 
     double asinval;
     double absnum = fabs(num);
+    // Same range reduction as ArcSin1, with one extra odd-polynomial term.
     if ( absnum <= M_SQRT1_2 )
     {
-        double term1 = pow(absnum, 3) / 6.0 + absnum;
-        asinval = STDMATH_TODEGREES(pow(absnum, 5) * 0.105502 + term1);
+        double term1 = pow(absnum, 3) / ARCSIN_TAYLOR_CUBIC_DIVISOR + absnum;
+        asinval = STDMATH_TODEGREES(pow(absnum, 5) * ARCSIN2_FITTED_QUINTIC_COEFF + term1);
     }
     else
     {
         double sqrtComplement = sqrt(1.0 - absnum * absnum);
-        double term1 = pow(sqrtComplement, 3) / 6.0 + sqrtComplement;
-        asinval = 90.0 - STDMATH_TODEGREES(pow(sqrtComplement, 5) * 0.105502 + term1);
+        double term1 = pow(sqrtComplement, 3) / ARCSIN_TAYLOR_CUBIC_DIVISOR + sqrtComplement;
+        asinval = 90.0 - STDMATH_TODEGREES(pow(sqrtComplement, 5) * ARCSIN2_FITTED_QUINTIC_COEFF + term1);
     }
 
     return (float)(num < 0.0 ? -asinval : asinval);
@@ -598,18 +464,20 @@ float J3DAPI stdMath_ArcSin3(float num)
     num = stdMath_ClampArcTrigInput(num);
 
     double asinval = fabs(num);
+    // Highest-order arc-sine approximation used here: x, x^3, x^5, and fitted x^7.
     if ( asinval <= M_SQRT1_2 )
     {
-        double term1 = pow(asinval, 3) / 6.0 + asinval;
-        double term2 = pow(asinval, 5) * 0.075000003 + term1;
-        asinval = STDMATH_TODEGREES(pow(asinval, 7) * 0.066797003 + term2);
+        double term1 = pow(asinval, 3) / ARCSIN_TAYLOR_CUBIC_DIVISOR + asinval;
+        double term2 = pow(asinval, 5) * ARCSIN3_TAYLOR_QUINTIC_COEFF + term1;
+        asinval = STDMATH_TODEGREES(pow(asinval, 7) * ARCSIN3_FITTED_SEPTIC_COEFF + term2);
     }
     else
     {
         double sqrtVal = sqrt(1.0 - asinval * asinval);
-        double term = pow(sqrtVal, 3) / 6.0 + sqrtVal;
-        term        = pow(sqrtVal, 5) * 0.075000003 + term;
-        asinval     = 90.0 - STDMATH_TODEGREES(pow(sqrtVal, 7) * 0.066797003 + term);
+        double term    = pow(sqrtVal, 3) / ARCSIN_TAYLOR_CUBIC_DIVISOR + sqrtVal;
+
+        term    = pow(sqrtVal, 5) * ARCSIN3_TAYLOR_QUINTIC_COEFF + term;
+        asinval = 90.0 - STDMATH_TODEGREES(pow(sqrtVal, 7) * ARCSIN3_FITTED_SEPTIC_COEFF + term);
     }
 
     return (float)(num < 0.0 ? -asinval : asinval);
@@ -634,11 +502,13 @@ float stdMath_ArcTan4(float x, float y)
     }
     ratio = fabs(ratio);
 
-    double angle = ratio - pow(ratio, 3) / 3.0;
-    angle = pow(ratio, 5) / 5.0 + angle;
-    angle = angle - pow(ratio, 7) / 7.0;
-    angle = STDMATH_TODEGREES(pow(ratio, 9) * 0.063235f + angle);
+    // Approximate atan(ratio) in radians, then convert to engine degrees.
+    double angle = ratio - pow(ratio, 3) / ARCTAN_TAYLOR_CUBIC_DIVISOR;
+    angle = pow(ratio, 5) / ARCTAN_TAYLOR_QUINTIC_DIVISOR + angle;
+    angle = angle - pow(ratio, 7) / ARCTAN_TAYLOR_SEPTIC_DIVISOR;
+    angle = STDMATH_TODEGREES(pow(ratio, 9) * ARCTAN_FITTED_NONIC_COEFF + angle);
 
+    // Reconstruct the quadrant and sign after reducing the original vector to ratio <= 1.
     if ( absX >= absY )
     {
         angle = 90.0 - angle;
