@@ -1,6 +1,7 @@
 #include <unity_fixture.h>
 
 #include <limits.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -22,12 +23,12 @@
 #include <std/General/stdHashtbl.h>
 #include <std/General/stdUtil.h>
 
-#define SITHTHING_TEST_BINARY_HANDLE  ((tFileHandle)1u)
-#define SITHTHING_TEST_FILE_CAPACITY (64u * 1024u)
-#define SITHTHING_TEST_MAX_HASH_ITEMS 80u
-#define SITHTHING_TEST_MAX_HASHTABLES  4u
-#define SITHTHING_TEST_NO_FAILURE    0u
-#define SITHTHING_TEST_PATHSIZE      1024u
+#define SITHTHING_TEST_BINARY_HANDLE    ((tFileHandle)1u)
+#define SITHTHING_TEST_FILE_CAPACITY    (64u * 1024u)
+#define SITHTHING_TEST_MAX_HASH_ITEMS    80u
+#define SITHTHING_TEST_MAX_HASHTABLES     4u
+#define SITHTHING_TEST_NO_FAILURE         0u
+#define SITHTHING_TEST_PATHSIZE        1024u
 
 typedef struct sSithThingTestFile
 {
@@ -108,10 +109,10 @@ int sithWorld_g_bLoading;
 #endif
 
 const rdMatrix34 rdroid_g_identMatrix34 = {
-    { { 1.0f }, { 0.0f }, { 0.0f } },
-    { { 0.0f }, { 1.0f }, { 0.0f } },
-    { { 0.0f }, { 0.0f }, { 1.0f } },
-    { { 0.0f }, { 0.0f }, { 0.0f } }
+    { { 1.0f },{ 0.0f },{ 0.0f } },
+    { { 0.0f },{ 1.0f },{ 0.0f } },
+    { { 0.0f },{ 0.0f },{ 1.0f } },
+    { { 0.0f },{ 0.0f },{ 0.0f } }
 };
 
 static SithWorld sithThingTest_world;
@@ -627,11 +628,30 @@ static size_t sithThingTest_LoadGoldenData(const char* pFileName, uint8_t* pData
     return size;
 }
 
-static void sithThingTest_AssertMatchesGolden(const char* pFileName)
+static void sithThingTest_AssertMatchesGolden(const char* pFileName, size_t numThings)
 {
     size_t goldenSize = sithThingTest_LoadGoldenData(pFileName, sithThingTest_aGoldenData, sizeof(sithThingTest_aGoldenData));
     TEST_ASSERT_EQUAL_size_t_MESSAGE(goldenSize, sithThingTest_file.size, pFileName);
-    TEST_ASSERT_EQUAL_MEMORY_MESSAGE(sithThingTest_aGoldenData, sithThingTest_file.aData, goldenSize, pFileName);
+    TEST_ASSERT_LESS_OR_EQUAL_size_t(goldenSize / sizeof(CndThingInfo), numThings);
+
+    // The writer recalculates angles through approximate inverse trig; compare
+    // those numerically, while retaining byte identity for every other field.
+    size_t pos = 0;
+    for ( size_t i = 0; i < numThings; ++i )
+    {
+        size_t anglePos = i * sizeof(CndThingInfo) + offsetof(CndThingInfo, pyr);
+        TEST_ASSERT_EQUAL_MEMORY_MESSAGE(&sithThingTest_aGoldenData[pos], &sithThingTest_file.aData[pos], anglePos - pos, pFileName);
+
+        rdVector3 expectedAngles, actualAngles;
+        STD_COPYMEM(&expectedAngles, &sithThingTest_aGoldenData[anglePos], sizeof(expectedAngles));
+        STD_COPYMEM(&actualAngles, &sithThingTest_file.aData[anglePos], sizeof(actualAngles));
+        TEST_ASSERT_FLOAT_WITHIN_MESSAGE(0.00001f, expectedAngles.x, actualAngles.x, pFileName);
+        TEST_ASSERT_FLOAT_WITHIN_MESSAGE(0.00001f, expectedAngles.y, actualAngles.y, pFileName);
+        TEST_ASSERT_FLOAT_WITHIN_MESSAGE(0.00001f, expectedAngles.z, actualAngles.z, pFileName);
+        pos = anglePos + sizeof(expectedAngles);
+    }
+
+    TEST_ASSERT_EQUAL_MEMORY_MESSAGE(&sithThingTest_aGoldenData[pos], &sithThingTest_file.aData[pos], goldenSize - pos, pFileName);
 }
 
 static void sithThingTest_LoadGoldenFile(const char* pFileName)
@@ -1435,12 +1455,12 @@ TEST(sithThingBinary, TestWritesAllThingData)
     // Serializes all 15 thing types and validates every emitted binary block.
     static const int32_t aExpectedCounts[SITHTHING_TEST_NUMCOUNTS] = { 2, 3, 3, 2, 1, 1, 1, 1, 1, 3, 2 };
 
-    // Require byte identity with the full retail golden vector before inspecting its layout.
+    // Check the golden fields and calculated angles before inspecting the layout.
     sithThingTest_InitThings(/*bUseResources=*/1, /*bUseSector=*/1);
     TEST_ASSERT_EQUAL_INT(0, sithThing_WriteThingsListBinary(1u, &sithThingTest_world, STD_ARRAYLEN(sithThingTest_aThings), sithThingTest_aThings));
     TEST_ASSERT_FALSE(sithThingTest_file.bOverflow);
     TEST_ASSERT_EQUAL_size_t(0u, sithThingTest_numLiveAllocs);
-    sithThingTest_AssertMatchesGolden("all_fields.bin");
+    sithThingTest_AssertMatchesGolden("all_fields.bin", STD_ARRAYLEN(sithThingTest_aThings));
 
     // Parse the output independently of the reader to verify block counts and field placement.
     SithThingTestBinaryView view;
@@ -1539,10 +1559,10 @@ TEST(sithThingBinary, TestWritesAllThingData)
 TEST(sithThingBinary, TestRoundTripsAllThingData)
 {
     // Round-trips all thing types through the resource-free retail golden vector.
-    // First confirm that the writer still produces the expected source bytes.
+    // First confirm that the writer still produces the expected source fields.
     sithThingTest_InitThings(/*bUseResources=*/0, /*bUseSector=*/0);
     TEST_ASSERT_EQUAL_INT(0, sithThing_WriteThingsListBinary(1u, &sithThingTest_world, STD_ARRAYLEN(sithThingTest_aThings), sithThingTest_aThings));
-    sithThingTest_AssertMatchesGolden("core.bin");
+    sithThingTest_AssertMatchesGolden("core.bin", STD_ARRAYLEN(sithThingTest_aThings));
     sithThingTest_LoadGoldenFile("core.bin");
 
     // Read known-good bytes into fresh things and run the supplied initializer for every entry.
@@ -1573,7 +1593,7 @@ TEST(sithThingBinary, TestRestoresResourcesAndSector)
     // Verifies that serialized names are resolved back to resources and sector links.
     sithThingTest_InitThings(/*bUseResources=*/1, /*bUseSector=*/1);
     TEST_ASSERT_EQUAL_INT(0, sithThing_WriteThingsListBinary(1u, &sithThingTest_world, STD_ARRAYLEN(sithThingTest_aThings), sithThingTest_aThings));
-    sithThingTest_AssertMatchesGolden("all_fields.bin");
+    sithThingTest_AssertMatchesGolden("all_fields.bin", STD_ARRAYLEN(sithThingTest_aThings));
     sithThingTest_LoadGoldenFile("all_fields.bin");
 
     // Provide the runtime objects that the reader must find while restoring the vector.
@@ -1749,7 +1769,7 @@ TEST(sithThingBinary, TestEmptyList)
     STD_ZEROMEM(&sithThingTest_world, sizeof(sithThingTest_world));
     TEST_ASSERT_EQUAL_INT(0, sithThing_WriteThingsListBinary(1u, &sithThingTest_world, 0u, NULL));
     TEST_ASSERT_EQUAL_size_t(sizeof(int32_t) * SITHTHING_TEST_NUMCOUNTS, sithThingTest_file.size);
-    sithThingTest_AssertMatchesGolden("empty.bin");
+    sithThingTest_AssertMatchesGolden("empty.bin", 0u);
 
     for ( size_t i = 0; i < sithThingTest_file.size; ++i )
     {
@@ -1780,7 +1800,7 @@ TEST(sithThingBinary, TestPreservesBoundedNames)
     thing.aName[STD_ARRAYLEN(thing.aName) - 1u] = '\0';
 
     TEST_ASSERT_EQUAL_INT(0, sithThing_WriteThingsListBinary(1u, &world, 1u, &thing));
-    sithThingTest_AssertMatchesGolden("max_names.bin");
+    sithThingTest_AssertMatchesGolden("max_names.bin", 1u);
 
     SithThingTestBinaryView view;
     STD_ZEROMEM(&view, sizeof(view));
@@ -1808,7 +1828,7 @@ TEST(sithThingBinary, TestPreservesInheritedWeaponExplosion)
     sithThingTest_SetIdentity(&sourceThing.orient);
 
     TEST_ASSERT_EQUAL_INT(0, sithThing_WriteThingsListBinary(1u, &world, 1u, &sourceThing));
-    sithThingTest_AssertMatchesGolden("inherited_weapon.bin");
+    sithThingTest_AssertMatchesGolden("inherited_weapon.bin", 1u);
 
     // The binary override stays empty because it is identical to the base-template value.
     SithThingTestBinaryView view;
@@ -2045,7 +2065,7 @@ TEST(sithThingBinary, TestParsesAndSerializesEmptyGolden)
 
     sithThingTest_ResetFile();
     TEST_ASSERT_EQUAL_INT(0, sithThing_WriteThingsListBinary(SITHTHING_TEST_BINARY_HANDLE, &sithThingTest_world, 0u, NULL));
-    sithThingTest_AssertMatchesGolden("empty.bin");
+    sithThingTest_AssertMatchesGolden("empty.bin", 0u);
 }
 
 TEST(sithThingBinary, TestParsesAndSerializesMaxNamesGolden)
@@ -2062,7 +2082,7 @@ TEST(sithThingBinary, TestParsesAndSerializesMaxNamesGolden)
 
     sithThingTest_ResetFile();
     TEST_ASSERT_EQUAL_INT(0, sithThing_WriteThingsListBinary(SITHTHING_TEST_BINARY_HANDLE, &world, 1u, &thing));
-    sithThingTest_AssertMatchesGolden("max_names.bin");
+    sithThingTest_AssertMatchesGolden("max_names.bin", 1u);
 }
 
 TEST(sithThingBinary, TestParsesAndSerializesInheritedWeaponGolden)
@@ -2082,7 +2102,7 @@ TEST(sithThingBinary, TestParsesAndSerializesInheritedWeaponGolden)
 
     sithThingTest_ResetFile();
     TEST_ASSERT_EQUAL_INT(0, sithThing_WriteThingsListBinary(SITHTHING_TEST_BINARY_HANDLE, &world, 1u, &thing));
-    sithThingTest_AssertMatchesGolden("inherited_weapon.bin");
+    sithThingTest_AssertMatchesGolden("inherited_weapon.bin", 1u);
 }
 
 static void sithThingTest_CreateStaticBinary(void)

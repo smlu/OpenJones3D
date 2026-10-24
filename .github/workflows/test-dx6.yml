@@ -77,12 +77,12 @@ jobs:
       shell: pwsh
       run: |
         $buildDir = "$env:GITHUB_WORKSPACE/build"
-        $testRegex = '^(j3dcore\.Macros|std|sound|sith)$'
+        $testRegex = '^(j3dcore\.Macros|rdroid\.Math|std|sound|sith)$'
         $listing = ctest --test-dir $buildDir -C ${{ matrix.build_type }} `
           -R $testRegex --show-only=json-v1
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
         $actual = @(($listing | ConvertFrom-Json).tests | ForEach-Object { $_.name })
-        foreach ($expected in @('j3dcore.Macros', 'std', 'sound', 'sith')) {
+        foreach ($expected in @('j3dcore.Macros', 'rdroid.Math', 'std', 'sound', 'sith')) {
           if ($actual -notcontains $expected) {
             throw "Required CTest suite '$expected' was not discovered."
           }

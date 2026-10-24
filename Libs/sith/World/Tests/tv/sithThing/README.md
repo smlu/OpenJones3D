@@ -36,3 +36,9 @@ bba543b2521434b6ba5755437f705f3ac1a9e0170ff4f33385051e1140a2ecbc  max_names.bin
 
 The retail executable and temporary injected oracle are intentionally not part
 of the permanent test suite. Tests consume only these committed vectors.
+
+The writer recalculates each thing's Euler angles with approximate inverse trig.
+Tests compare those calculated fields within `0.00001` degrees to permit small
+evaluation-rounding differences. Every other serialized byte remains an exact
+comparison with the unchanged vectors. Dedicated math tests pin the arithmetic
+separately from the binary format.

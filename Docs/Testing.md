@@ -225,6 +225,7 @@ startup and a stable module-level CTest entry.
 | Executable | CTest entry | Coverage | Integration |
 | --- | --- | --- | --- |
 | `j3dcoreTests` | `j3dcore.Macros` | Core macros | Available |
+| `rdroidTests` | `rdroid.Math` | Vector and matrix debug-source numerical fidelity | Available |
 | `stdTests` | `std` | General and deterministic Win95 services | Available |
 | `stdSystemTests` | `std.System` | Win95 windows and DirectX devices | Available |
 | `stdDisruptiveSystemTests` | `std.DisruptiveSystem` | Opt-in fullscreen/device changes | Available |
@@ -840,10 +841,12 @@ build. See [Microsoft's AddressSanitizer guidance](https://learn.microsoft.com/e
 
 ### 🧩 Additional Module Commands
 
-The `soundTests` and `sithTests` targets are available and included in a full
+The `rdroidTests`, `soundTests`, and `sithTests` targets are available and included in a full
 build. Use the matching target and CTest entry for a focused rebuild and run:
 
 ```bat
+cmake --build build\codex\dx9-win32 --config Debug --target rdroidTests
+ctest --test-dir build\codex\dx9-win32 -C Debug --output-on-failure -R "^rdroid\.Math$"
 cmake --build build\codex\dx9-win32 --config Debug --target soundTests
 ctest --test-dir build\codex\dx9-win32 -C Debug --output-on-failure -R "^sound$"
 cmake --build build\codex\dx9-win32 --config Debug --target sithTests
@@ -852,6 +855,25 @@ ctest --test-dir build\codex\dx9-win32 -C Debug --output-on-failure -R "^sith$"
 
 These focused commands supplement the validation selected under
 [Backend Validation Scope](#backend-validation-scope).
+
+The `rdroid.Math` suite compares vector normalization, reciprocal scaling,
+axis-angle construction, and angle extraction against source-level arithmetic
+oracles transcribed from `Jones3DRE/v1.0-dbg/indy3d-dbg.exe.c`. It checks exact
+float representations (and NaN classification), including rounding-sensitive
+inputs, zero/underflow/overflow behavior, singularities, range clamps, and the
+existing near-axis guards. These oracles validate debug-source reconstruction,
+not execution of the original x87 binary or bitwise parity with optimized retail
+builds. They do not require game assets or invoke the original executable.
+
+The `stdMath` group inside `stdTests` checks all sine/tangent table entries
+against standalone binary fixtures, third-quadrant tangent interpolation,
+finite-angle normalization across exponent ranges, inverse-trig polynomial
+rounding, negative-power subnormals and signed zero, and damping with extreme
+finite endpoints. Its inverse-trig cases pin binary32 C arithmetic, not x87
+runtime parity. Reference provenance belongs in the
+[math fixture documentation](../Libs/std/General/Tests/tv/stdMath/README.md),
+not in test names or binary-address comments. Normal runs do not require the
+original executable.
 
 The fixture descriptions below cover the available `soundTests` and
 `sithTests` targets.
@@ -898,6 +920,9 @@ allocation failure, short I/O, and malformed block counts. Synthetic static-worl
 text sections additionally exercise text placement parsing, skip behavior,
 performance filtering, wrapper serialization, binary restoration, runtime ID
 assignment, and wrapper failure propagation without loading game assets.
+Recalculated Euler angles use an absolute tolerance of `0.00001` degrees;
+all other serialized fields remain byte-exact against the unchanged vectors.
+The math suites separately validate the numerical evaluation and constants.
 
 <a name="sithtemplate-fixtures"></a>
 
