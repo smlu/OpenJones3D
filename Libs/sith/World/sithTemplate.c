@@ -161,7 +161,7 @@ int J3DAPI sithTemplate_GetTemplateIndex(const SithThing* pTemplate)
     return -1;
 }
 
-// TODO: Uncomment after stdConffile_WriteLine function is implemented.
+// TODO: Uncomment after sithWrite_WriteThingArgs function is implemented.
 //int J3DAPI sithTemplate_WriteThingTemplateListText(const SithWorld* pWorld)
 //{
 //    SithThing baseTpl = { 0 }; // Altered: Init to 0

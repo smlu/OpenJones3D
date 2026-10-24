@@ -7,8 +7,10 @@
 **[📥 Latest Releases](https://github.com/smlu/OpenJones3D/releases)** • **[🕹️ Running](#running)** • **[⚙️ Building](#building)** • **[📜 Changelog](CHANGELOG.md)**
 
 [![License: AGPL v3](https://img.shields.io/badge/license-AGPL%20v3-0f766e?style=flat-square)](LICENSE)
-[![DX9 Build](https://img.shields.io/github/actions/workflow/status/smlu/OpenJones3D/build-dx9.yml?style=flat-square&label=DX9%20Build)](https://github.com/smlu/OpenJones3D/actions/workflows/build-dx9.yml)
-[![DX6 Build](https://img.shields.io/github/actions/workflow/status/smlu/OpenJones3D/build-dx6.yml?style=flat-square&label=DX6%20Build)](https://github.com/smlu/OpenJones3D/actions/workflows/build-dx6.yml)
+[![DX9 Build](https://img.shields.io/github/check-runs/smlu/OpenJones3D/develop?nameFilter=DX9%20Build&style=flat-square&label=DX9%20Build)](https://github.com/smlu/OpenJones3D/actions/workflows/build-dx9.yml)
+[![DX9 Tests](https://img.shields.io/github/check-runs/smlu/OpenJones3D/develop?nameFilter=DX9%20Tests&style=flat-square&label=DX9%20Tests)](https://github.com/smlu/OpenJones3D/actions/workflows/build-dx9.yml)
+[![DX6 Build](https://img.shields.io/github/check-runs/smlu/OpenJones3D/develop?nameFilter=DX6%20Build&style=flat-square&label=DX6%20Build)](https://github.com/smlu/OpenJones3D/actions/workflows/build-dx6.yml)
+[![DX6 Tests](https://img.shields.io/github/check-runs/smlu/OpenJones3D/develop?nameFilter=DX6%20Tests&style=flat-square&label=DX6%20Tests)](https://github.com/smlu/OpenJones3D/actions/workflows/build-dx6.yml)
 
 </div>
 
@@ -23,10 +25,10 @@ This repository does **NOT** include any original game assets. To run or test th
 ## ✨ Highlights
 
 **Renderer and display**
-- DirectX 9 renderer port from the original **DirectX 6.1c** backend.
-- HLSL shader support with VBO and IBO rendering paths.
+- **DirectX 9** renderer port from the original DirectX 6.1c backend.
+- **HLSL shader** support with VBO and IBO rendering paths.
 - Better modern Windows compatibility, including GDI-related fixes.
-- Widescreen support and resolutions above 2048.
+- **Widescreen support** and resolutions above 2048.
 
 **Graphics and UI**
 
@@ -82,7 +84,7 @@ For the complete list of changes and fixes, see [CHANGELOG.md](CHANGELOG.md).
 ### 📋 Requirements
 
 - Visual Studio 2022 or newer with C++ desktop development tools
-- CMake 3.10 or newer
+- CMake 3.21 or newer for the Visual Studio 2022 generator (project minimum: 3.15)
 - Windows SDK
 - DirectX 6.1 SDK only if you want the legacy DirectX 6.1c build
 
@@ -122,9 +124,27 @@ cmake --build build --config Release
 | `JONES3D_USE_DIRECTX9` | `ON` | Builds with the DirectX 9 backend. Set to `OFF` to build the legacy DirectX 6.1c backend. |
 | `JONES3D_QOL_IMPROVEMENTS` | `ON` | Enables modern quality-of-life fixes and enhancements. Setting it to `OFF` switches the build into the legacy behavior profile. |
 | `JONES3D_SPEEDRUN_BUILD` | `OFF` | Enables vanilla quirks and glitches commonly used in speedruns. This is also enabled automatically when QOL improvements are disabled. |
+| `JONES3D_RUNTIME_GUARDS` | `OFF` | Enables opt-in release safety guards. Assertions remain available independently; enable guards for a hardened profile. |
 | `JONES3D_BUILD_PROGRAMS` | `ON` | Builds the helper tools under `Programs`. |
+| `JONES3D_BUILD_TESTS` | `ON` | Builds the Unity/CTest test executables. |
+| `JONES3D_BUILD_SYSTEM_TESTS` | `ON` | Builds local system/device tests requiring graphics/input services. |
+| `JONES3D_BUILD_DISRUPTIVE_SYSTEM_TESTS` | `OFF` | Builds opt-in system tests that may switch fullscreen modes or disturb desktop input focus. |
 | `JONES3D_ENABLE_POST_BUILD_COPY` | `OFF` | Copies `Jones3D.exe`, `Jones3D.dll`, and `Jones3D.pdb` to a target directory after a successful build. |
 | `JONES3D_POST_BUILD_COPY_DIR` | empty | Destination directory used by `JONES3D_ENABLE_POST_BUILD_COPY`. |
+
+### 🧪 Tests
+
+Tests use Unity Fixture with CTest. The deterministic `j3dcore.Macros` and `std`
+suites use the `unit` label. Run them after building with:
+
+```bat
+ctest --test-dir <build-dir> -C <configuration> --output-on-failure -L unit
+```
+
+Local system tests can open a visible render window while comparing deterministic
+BMP masks for Direct3D display and `std3D` coverage. See
+[Docs/Testing.md](Docs/Testing.md) for commands, system-test switches, and visual
+test-vector notes.
 
 ## 📚 Documentation
 
@@ -132,6 +152,7 @@ cmake --build build --config Release
 - [Docs/COG/README.md](Docs/COG/README.md) for COG scripting language notes and host-function reference pages
 - [Docs/Formats/README.md](Docs/Formats/README.md) for engine resource format notes
 - [Docs/Architecture/README.md](Docs/Architecture/README.md) for detailed engine architecture notes
+- [Docs/Testing.md](Docs/Testing.md) for test requirements, execution, and fixture conventions
 
 <a id="engine-architecture"></a>
 ## 🏗 High-Level Overview of Engine Architecture
@@ -241,7 +262,7 @@ rdroid: 100.00% (219/219)
     rdCache:        100.00% (14/14)
     rdFace:         100.00% (2/2)
 
-sith: 88.90% (1666/1874)
+sith: 89.01% (1668/1874)
     sithAI:                 100.00% (27/27)
     sithAIAwareness:        100.00% (8/8)
     sithAIClass:            100.00% (12/12)
@@ -303,13 +324,13 @@ sith: 88.90% (1666/1874)
     sithSprite:             100.00% (15/15)
     sithSurface:            100.00% (20/20)
     sithTemplate:           100.00% (15/15)
-    sithThing:               95.38% (62/65)
+    sithThing:               98.46% (64/65)
     sithVoice:              100.00% (20/20)
     sithWeapon:             100.00% (48/48)
     sithWorld:              100.00% (23/23)
 
-sound: 92.24% (107/116)
-    AudioLib:        10.00% (1/10)
+sound: 93.97% (109/116)
+    AudioLib:        30.00% (3/10)
     Driver:         100.00% (37/37)
     Sound:          100.00% (69/69)
 
@@ -356,4 +377,4 @@ Jones3D: 100.00% (378/378)
     JonesControl:   100.00% (4/4)
     jonesInventory: 100.00% (15/15)
 
-Overall Progress: 92.53% | Implemented 2689 out of 2906 functions
+Overall Progress: 92.67% | Implemented 2693 out of 2906 functions

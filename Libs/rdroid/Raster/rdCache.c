@@ -417,8 +417,9 @@ LABEL_4:
             ++pCurPoly;
             ++polyNum;
 
-            if ( 3 * (pCurPoly->numVertices - 2) + totalIndices >= std3D_g_maxVertices // i.e. totalIndices + num required triangle indices for next poly >= std3D_g_maxVertices
-                || polyNum >= numPolys
+            // Fixed: Check polyNum first; after the last poly, pCurPoly points past the end of the list
+            if ( polyNum >= numPolys
+                || 3 * (pCurPoly->numVertices - 2) + totalIndices >= std3D_g_maxVertices // i.e. totalIndices + num required triangle indices for next poly >= std3D_g_maxVertices
                 || pCurMat != pCurPoly->pMaterial
                 || curMatCelNum != pCurPoly->matCelNum
                 || fflags != pCurPoly->flags )

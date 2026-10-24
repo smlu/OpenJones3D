@@ -134,6 +134,13 @@ bool J3DAPI stdConfig_Startup(const char* pConfigPath)
     return true;
 
 error:
+    if ( stdConfig_hJson )
+    {
+        // Fixed: Release a partially initialized JSON config when startup fails.
+        stdJSON_Free(stdConfig_hJson);
+        stdConfig_hJson = NULL;
+    }
+
     if ( stdConfig_pKeyMappingTable )
     {
         stdHashtbl_Free(stdConfig_pKeyMappingTable);

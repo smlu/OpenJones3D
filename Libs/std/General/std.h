@@ -31,15 +31,17 @@ J3D_EXTERN_C_START
 #define STD_ASSERTREL(condition) \
     J3D_ASSERTREL(condition, std_g_pHS)
 
+#ifdef J3D_LOCAL_RTI
+extern const char std_g_aEmptyString[8];
+extern char std_g_genBuffer[2048];
+extern tHostServices* std_g_pHS;
+#else
+#   define std_g_aEmptyString J3D_DECL_FAR_ARRAYVAR(std_g_aEmptyString, const char(*)[8])
 
-#define std_g_aEmptyString J3D_DECL_FAR_ARRAYVAR(std_g_aEmptyString, const char(*)[8])
-// extern const char std_g_aEmptyString[8];
+#   define std_g_genBuffer J3D_DECL_FAR_ARRAYVAR(std_g_genBuffer, char(*)[2048])
 
-#define std_g_genBuffer J3D_DECL_FAR_ARRAYVAR(std_g_genBuffer, char(*)[2048])
-// extern char std_g_genBuffer[2048];
-
-#define std_g_pHS J3D_DECL_FAR_VAR(std_g_pHS, tHostServices*)
-// extern tHostServices *std_g_pHS;
+#   define std_g_pHS J3D_DECL_FAR_VAR(std_g_pHS, tHostServices*)
+#endif
 
 void J3DAPI stdStartup(tHostServices* pHS);
 void stdShutdown(void);

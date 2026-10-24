@@ -227,10 +227,7 @@ tLinkListNode* J3DAPI stdHashtbl_FindNode(const tHashTable* pTable, const char* 
     STD_GUARD(pName && pNodeIdx, NULL);
 
     // Added: guard for empty table or missing node array.
-    if ( !pTable->paNodes || !pTable->numNodes )
-    {
-        return NULL;
-    }
+    STD_GUARD(pTable->paNodes && pTable->numNodes, NULL);
 
     *pNodeIdx = pTable->pfHashFunc(pName, pTable->numNodes);
     for ( tLinkListNode* pCurNode = &pTable->paNodes[*pNodeIdx]; pCurNode && pCurNode->name; pCurNode = pCurNode->next )
@@ -290,10 +287,7 @@ void J3DAPI stdHashtbl_PrintTableDiagnostics(tHashTable* pTable)
     STD_GUARD_VOID(pTable);
 
     // Added: Guard against empty table or missing node array to avoid misleading diagnostics and potential crashes.
-    if ( !pTable->numNodes )
-    {
-        return;
-    }
+    STD_GUARD_VOID(pTable->numNodes && pTable->paNodes);
 
     std_g_pHS->pDebugPrint("\nHASHTABLE Diagnostics\n");
     std_g_pHS->pDebugPrint("---------------------\n");

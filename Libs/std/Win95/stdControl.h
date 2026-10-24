@@ -11,7 +11,10 @@
 #       define DIRECTINPUT_VERSION 0x0800
 #  endif
 #include <dinput.h>
-#endif 
+#  if defined(J3D_TEST)
+#       include <Xinput.h>
+#  endif
+#endif
 
 #include <stdbool.h>
 
@@ -38,7 +41,7 @@ J3D_EXTERN_C_START
 #define STDCONTROL_GETAID(axis) (axis & ~(STDCONTROL_AID_POSITIVE_AXIS | STDCONTROL_AID_NEGATIVE_AXIS | STDCONTROL_AID_LOW_SENSITIVITY))
 
 // ------------------------- JOYSTICK -----------------------
-#define STDCONTROL_JOYSTICK_FIRSTCID   STDCONTROL_MAX_KEYBOARD_BUTTONS 
+#define STDCONTROL_JOYSTICK_FIRSTCID   STDCONTROL_MAX_KEYBOARD_BUTTONS
 
 #define STDCONTROL_JOYSTICK_FIRSTKID   STDCONTROL_JOYSTICK_FIRSTCID // First button CID
 #define STDCONTROL_JOYSTICK_LASTKID    STDCONTROL_JOYSTICK_GETBUTTON(STDCONTROL_MAX_JOYSTICK_DEVICES - 1, STDCONTROL_NUM_JOYSTICK_BUTTONS -1) // Last button CID
@@ -56,7 +59,7 @@ J3D_EXTERN_C_START
 #define STDCONTROL_JOYSTICK_GETPOVINDEX(cid)               ((cid - STDCONTROL_JOYSTICK_FIRSTCID) % STDCONTROL_TOTAL_JOYSTICK_CONTROLS % STDCONTROL_NUM_JOYSTICK_BUTTONS / STDCONTROL_MAX_JOYSTICK_POVCONTROLERS) // Get POV controller index number from CID, i.e. control num
 #define STDCONTROL_JOYSTICK_GETPOVDIRECTIONINDEX(cid)      ((cid - STDCONTROL_JOYSTICK_FIRSTCID) % STDCONTROL_NUM_JOYSTICK_BUTTONS % STDCONTROL_NUM_JOYSTICK_POVDIRECTIONS) // Get POV direction index number from CID
 
-// Joystick macro for getting control ID (CID) for POV direction button 
+// Joystick macro for getting control ID (CID) for POV direction button
 #define STDCONTROL_JOYSTICK_GETPOVLEFT(joyNum, povNum)  STDCONTROL_JOYSTICK_GETPOV(joyNum, povNum, STDCONTROL_JOYSTICK_POVDIRLEFT)
 #define STDCONTROL_JOYSTICK_GETPOVUP(joyNum, povNum)    STDCONTROL_JOYSTICK_GETPOV(joyNum, povNum, STDCONTROL_JOYSTICK_POVDIRUP)
 #define STDCONTROL_JOYSTICK_GETPOVRIGHT(joyNum, povNum) STDCONTROL_JOYSTICK_GETPOV(joyNum, povNum, STDCONTROL_JOYSTICK_POVDIRRIGHT)
@@ -104,7 +107,7 @@ J3D_EXTERN_C_START
 #endif
 
 // ------------------------- MISC CONSTANTS -----------------------
-#define STDCONTROL_MAX_AXES                   (STDCONTROL_MAX_JOYSTICK_AXES + 3) // 51; 3 - mouse axes 
+#define STDCONTROL_MAX_AXES                   (STDCONTROL_MAX_JOYSTICK_AXES + 3) // 51; 3 - mouse axes
 #define STDCONTROL_MAX_KEYBOARD_BUTTONS       256u // aka max keyboard kids
 #define STDCONTROL_MAX_MOUSE_BUTTONS            4u
 #define STDCONTROL_NUM_JOYSTICK_BUTTONS        32u // number of joy buttons per device
@@ -122,8 +125,11 @@ J3D_EXTERN_C_START
 
 // Check for joystick controller ids
 #define STDCONTROL_ISJOYSTICKAXIS(aid) ((STDCONTROL_GETAID(aid) < STDCONTROL_AID_MOUSE_X))
-#define STDCONTROL_ISJOYSTICKBUTTON(kid) ((STDCONTROL_GETAID(kid) >= STDCONTROL_JOYSTICK_FIRSTKID) && (STDCONTROL_GETAID(kid) <= STDCONTROL_JOYSTICK_LASTKID))
-#define STDCONTROL_ISJOYSTICKPOV(cid) ((STDCONTROL_GETAID(cid) >= STDCONTROL_JOYSTICK_FIRTPOVCID) && (STDCONTROL_GETAID(cid) <= STDCONTROL_JOYSTICK_LASTPOVCID))
+// Fixed: The original flat range checks reported joystick POV ids as buttons and later-device button ids as POV controls because controls are interleaved per joystick device.
+#define STDCONTROL_ISJOYSTICKCID(cid) ((STDCONTROL_GETAID(cid) >= STDCONTROL_JOYSTICK_FIRSTCID) && (STDCONTROL_GETAID(cid) < (STDCONTROL_JOYSTICK_FIRSTCID + STDCONTROL_JOYSTICK_TOTALCIDS)))
+#define STDCONTROL_JOYSTICK_GETLOCALCID(cid) ((STDCONTROL_GETAID(cid) - STDCONTROL_JOYSTICK_FIRSTCID) % STDCONTROL_TOTAL_JOYSTICK_CONTROLS)
+#define STDCONTROL_ISJOYSTICKBUTTON(kid) (STDCONTROL_ISJOYSTICKCID(kid) && STDCONTROL_JOYSTICK_GETLOCALCID(kid) < STDCONTROL_NUM_JOYSTICK_BUTTONS)
+#define STDCONTROL_ISJOYSTICKPOV(cid) (STDCONTROL_ISJOYSTICKCID(cid) && STDCONTROL_JOYSTICK_GETLOCALCID(cid) >= STDCONTROL_NUM_JOYSTICK_BUTTONS)
 
 // In-place regression tests
 static_assert(STDCONTROL_JOYSTICK_NUMAXES == 6, "STDCONTROL_JOYSTICK_NUM_AXIS == 6");
@@ -174,6 +180,9 @@ static_assert(STDCONTROL_JOYSTICK_GETBUTTON(1, 0) == 304, "STDCONTROL_JOYSTICK_G
 static_assert(STDCONTROL_JOYSTICK_GETBUTTON(1, 1) == 305, "STDCONTROL_JOYSTICK_GETBUTTON(1, 1) == 305");
 static_assert(STDCONTROL_JOYSTICK_GETBUTTON(7, 31) == 623, "STDCONTROL_JOYSTICK_GETBUTTON(7, 31) == 623");
 static_assert(STDCONTROL_ISJOYSTICKBUTTON(256) == true, "STDCONTROL_ISJOYSTICKBUTTON(256) == true");
+static_assert(STDCONTROL_ISJOYSTICKBUTTON(288) == false, "STDCONTROL_ISJOYSTICKBUTTON(288) == false");
+static_assert(STDCONTROL_ISJOYSTICKBUTTON(303) == false, "STDCONTROL_ISJOYSTICKBUTTON(303) == false");
+static_assert(STDCONTROL_ISJOYSTICKBUTTON(304) == true, "STDCONTROL_ISJOYSTICKBUTTON(304) == true");
 static_assert(STDCONTROL_ISJOYSTICKBUTTON(623) == true, "STDCONTROL_ISJOYSTICKBUTTON(623) == true");
 static_assert(STDCONTROL_ISJOYSTICKBUTTON(0) == false, "STDCONTROL_ISJOYSTICKBUTTON(0) == false");
 static_assert(STDCONTROL_ISJOYSTICKBUTTON(255) == false, "STDCONTROL_ISJOYSTICKBUTTON(255) == false");
@@ -223,6 +232,8 @@ static_assert(STDCONTROL_JOYSTICK_GETPOVDIRECTIONINDEX(288) == 0, "STDCONTROL_GE
 static_assert(STDCONTROL_JOYSTICK_GETPOVDIRECTIONINDEX(287) == 3, "STDCONTROL_GETPOVDIRECTIONINDEX(287) == 3");
 static_assert(STDCONTROL_JOYSTICK_GETPOVDIRECTIONINDEX(639) == 3, "STDCONTROL_GETPOVDIRECTIONINDEX(639) == 3");
 static_assert(STDCONTROL_ISJOYSTICKPOV(288) == true, "STDCONTROL_ISJOYSTICKPOV(288) == true");
+static_assert(STDCONTROL_ISJOYSTICKPOV(303) == true, "STDCONTROL_ISJOYSTICKPOV(303) == true");
+static_assert(STDCONTROL_ISJOYSTICKPOV(304) == false, "STDCONTROL_ISJOYSTICKPOV(304) == false");
 static_assert(STDCONTROL_ISJOYSTICKPOV(639) == true, "STDCONTROL_ISJOYSTICKPOV(639) == true");
 static_assert(STDCONTROL_ISJOYSTICKPOV(0) == false, "STDCONTROL_ISJOYSTICKPOV(0) == false");
 static_assert(STDCONTROL_ISJOYSTICKPOV(0) == false, "STDCONTROL_ISJOYSTICKPOV(0) == false");
@@ -292,7 +303,7 @@ int J3DAPI stdControl_ReadAxisAsKeyEx(size_t axis, int* pbPressed, float lowValu
 int J3DAPI stdControl_ReadKey(size_t keyNum, int* pbPressed);
 
 int stdControl_ControlsActive(void);
-int J3DAPI stdControl_SetActivation(int bActive); // returns 0 if mouse control was successfully processed 
+int J3DAPI stdControl_SetActivation(int bActive); // returns 0 if mouse control was successfully processed
 
 int stdControl_ToggleMouse(void);
 int J3DAPI stdControl_EnableMouse(int bEnable);
@@ -316,6 +327,28 @@ size_t stdControl_GetNumJoysticks(void);
 const char* J3DAPI stdControl_GetJoysticDescription(int joyNum); // Added: From debug version
 
 int J3DAPI stdControl_IsGamePad(int joyNum);
+
+#if defined(J3D_TEST)
+void stdControl_TestResetInputState(void);
+void stdControl_TestBeginRead(uint32_t currentReadTime, uint32_t lastReadTime);
+void stdControl_TestSetControlsActive(bool bActive);
+void stdControl_TestSetAxisState(size_t axis, int value);
+int stdControl_TestGetAxisState(size_t axis);
+bool stdControl_TestGetAxis(size_t axis, StdControlAxis* pAxis);
+uint32_t stdControl_TestGetReadDeltaTime(void);
+float stdControl_TestGetSecFPS(void);
+void stdControl_TestApplyKeyboardState(const uint8_t* aKeyState, size_t numKeys);
+void stdControl_TestApplyJoystickState(size_t joyNum, const DIJOYSTATE* pState, size_t numPovs);
+void stdControl_TestApplyMouseState(const DIMOUSESTATE* pState, bool bApplyButtons);
+
+#  if defined(J3D_DIRECTX9)
+bool stdControl_TestIsXInputJoystickIndex(int joyNum, size_t numDirectInputDevices);
+bool stdControl_TestRegisterXInputDevice(DWORD userIndex, const XINPUT_STATE* pState, const XINPUT_CAPABILITIES* pCaps);
+bool stdControl_TestApplyXInputState(size_t deviceIndex, const XINPUT_STATE* pState);
+bool stdControl_TestDisconnectXInputDevice(size_t deviceIndex);
+bool stdControl_TestIsXInputDeviceConnected(size_t deviceIndex);
+#  endif
+#endif
 
 // Helper hooking functions
 void stdControl_InstallHooks(void);

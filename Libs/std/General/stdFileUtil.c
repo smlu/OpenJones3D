@@ -19,7 +19,7 @@ void stdFileUtil_InstallHooks(void)
 void stdFileUtil_ResetGlobals(void)
 {}
 
-time_t FileTimeToUnixTime(const FILETIME* ft)
+static time_t FileTimeToUnixTime(const FILETIME* ft)
 {
     // Windows FILETIME starts on January 1, 1601
     // Unix time starts on January 1, 1970
@@ -103,8 +103,10 @@ int J3DAPI stdFileUtil_FindNext(FindFileData* ffData, tFoundFileInfo* pFileInfo)
         return 0;
     }
 
+    // Added: Release-build guard before writing search-result metadata.
+    STD_GUARD(pFileInfo, 0);
+
     int nFoundFiles = ffData->nFoundFiles;
-    ffData->nFoundFiles = nFoundFiles + 1;
     if ( nFoundFiles )
     {
         if ( !FindNextFile(ffData->handle, &findData) )
@@ -121,9 +123,12 @@ int J3DAPI stdFileUtil_FindNext(FindFileData* ffData, tFoundFileInfo* pFileInfo)
         }
     }
 
+    // Fixed: Count only successful results so a failed first search can be retried safely.
+    ffData->nFoundFiles = nFoundFiles + 1;
     STD_STRCPY(pFileInfo->aName, findData.cFileName);
 
-    pFileInfo->lastChanged  = FileTimeToUnixTime(&findData.ftLastWriteTime); // TODO: After all code that uses find file functions is defined change the type of `lastChanged` to time_t
+    // Altered: Keep the original 32-bit field conversion explicit until tFoundFileInfo can use time_t.
+    pFileInfo->lastChanged  = (uint32_t)FileTimeToUnixTime(&findData.ftLastWriteTime);
     pFileInfo->bIsDirectory = (findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
     return 1;
 }

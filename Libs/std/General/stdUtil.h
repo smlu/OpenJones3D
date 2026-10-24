@@ -30,7 +30,7 @@ J3D_EXTERN_C_START
 #define STD_ISWSTRARRAY(var) \
        _Generic(&(var), \
         wchar_t(*)[sizeof(var)/sizeof((var)[0])]: 1, \
-        const char(*)[sizeof(var)/sizeof((var)[0])]: 1, \
+        const wchar_t(*)[sizeof(var)/sizeof((var)[0])]: 1, \
         default: 0)
 
 /**

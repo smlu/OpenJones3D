@@ -73,6 +73,13 @@ void J3DAPI stdFnames_ChangeExtEx(char* pPath, size_t size, const char* pExt)
     // Added: Bounded extension replacement variant for fixed-size buffers.
     STD_GUARD_VOID(pPath && pExt && size);
 
+    size_t len = strnlen_s(pPath, size);
+    // Fixed: Validate termination before scanning the path for an extension.
+    if ( len >= size )
+    {
+        return;
+    }
+
     stdFnames_StripExtAndDot(pPath);
 
     // Added: Accept callers that pass either "ext" or ".ext".
@@ -81,12 +88,7 @@ void J3DAPI stdFnames_ChangeExtEx(char* pPath, size_t size, const char* pExt)
         ++pExt;
     }
 
-    size_t len = strnlen_s(pPath, size);
-    // Fixed: Do not append if the buffer is already unterminated within its bounds.
-    if ( len >= size )
-    {
-        return;
-    }
+    len = strnlen_s(pPath, size);
 
     if ( len < size - 1 )
     {
@@ -99,21 +101,17 @@ void J3DAPI stdFnames_ChangeExtEx(char* pPath, size_t size, const char* pExt)
 
 void J3DAPI stdFnames_ChangeExt(char* pPath, const char* pExt)
 {
-    // Altered: Preserve the original ABI while delegating extension changes to stdFnames_ChangeExtEx.
+    // Altered: Preserve the size-less original ABI while delegating fixed-buffer calls to stdFnames_ChangeExtEx.
     STD_GUARD_VOID(pPath && pExt);
 
+    // The legacy signature provides no object bound; callers with one should call stdFnames_ChangeExtEx directly.
     stdFnames_ChangeExtEx(pPath, strlen(pPath) + strlen(pExt) + 2u, pExt);
 }
 
 void J3DAPI stdFnames_Concat(char* path1, const char* path2, size_t size)
 {
     // Added: Release-build guard before concatenating path buffers.
-    STD_GUARD_VOID(path1 && path2);
-
-    if ( !size )
-    {
-        return;
-    }
+    STD_GUARD_VOID(path1 && path2 && size);
 
     size_t len = strnlen_s(path1, size);
     // Fixed: Empty base paths have no last character to inspect.

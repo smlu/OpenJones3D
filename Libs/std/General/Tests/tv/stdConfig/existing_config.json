@@ -1,0 +1,20 @@
+{
+  "version": "1.0.0",
+  "graphics": {
+    "window": true,
+    "width": 1024
+  },
+  "engine": {
+    "renderer": {
+      "fog": {
+        "density": 0.25
+      }
+    }
+  },
+  "controls": {
+    "configFile": "vector_controls.cfg"
+  },
+  "ui": {
+    "tint": "#11223344"
+  }
+}

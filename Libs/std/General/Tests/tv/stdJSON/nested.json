@@ -1,0 +1,34 @@
+{
+  "world": {
+    "levels": {
+      "temple": {
+        "rooms": {
+          "entry": {
+            "name": "Entry Hall",
+            "flags": {
+              "hasWater": false,
+              "hasPuzzle": true
+            }
+          },
+          "vault": {
+            "name": "Mirror Vault",
+            "stats": {
+              "difficulty": 7,
+              "ambient": 0.625
+            }
+          }
+        }
+      }
+    }
+  },
+  "matrix": {
+    "row0": {
+      "col0": 1,
+      "col1": 2
+    },
+    "row1": {
+      "col0": 3,
+      "col1": 4
+    }
+  }
+}

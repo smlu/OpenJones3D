@@ -716,6 +716,13 @@ Architectural extensions introduced there include:
 - wider texture-format and device-capability handling
 - modern fog/shader constant handling
 
+Fullscreen mode enumeration retains the advertised mode descriptions. Device
+creation uses a separate current-mode copy, so the surface format returned by
+Direct3D cannot overwrite an available mode. The current-mode and VBuffer
+metadata describe the actual created surfaces. For example, a host may accept
+an RGB565 fullscreen request but create a 32-bit swap chain; the enumerated
+16-bit mode remains available for later selections.
+
 The shader system owns:
 
 - compiled shader objects
