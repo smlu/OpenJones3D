@@ -502,7 +502,7 @@ void J3DAPI rdVector_InvScale2(rdVector2* dest, const rdVector2* src, float scal
 
 void J3DAPI rdVector_InvScale3(rdVector3* dest, const rdVector3* src, float scalar)
 {
-    double invScalar = 1.0 / scalar;
+    float invScalar = (float)(1.0 / scalar);
     dest->x = (float)(src->x * invScalar);
     dest->y = (float)(src->y * invScalar);
     dest->z = (float)(src->z * invScalar);
@@ -510,7 +510,7 @@ void J3DAPI rdVector_InvScale3(rdVector3* dest, const rdVector3* src, float scal
 
 void J3DAPI rdVector_InvScale4(rdVector4* dest, const rdVector4* src, float scalar)
 {
-    double invScalar = 1.0 / scalar;
+    float invScalar = (float)(1.0 / scalar);
     dest->x = (float)(src->x * invScalar);
     dest->y = (float)(src->y * invScalar);
     dest->z = (float)(src->z * invScalar);
@@ -525,7 +525,7 @@ void J3DAPI rdVector_InvScale2Acc(rdVector2* v, float scalar)
 
 void J3DAPI rdVector_InvScale3Acc(rdVector3* v, float scalar)
 {
-    double inv = 1.0 / scalar;
+    float inv = (float)(1.0 / scalar);
     v->x = (float)(v->x * inv);
     v->y = (float)(v->y * inv);
     v->z = (float)(v->z * inv);
@@ -533,7 +533,7 @@ void J3DAPI rdVector_InvScale3Acc(rdVector3* v, float scalar)
 
 void J3DAPI rdVector_InvScale4Acc(rdVector4* v, float scalar)
 {
-    double inv = 1.0 / scalar;
+    float inv = (float)(1.0 / scalar);
     v->x = (float)(v->x * inv);
     v->y = (float)(v->y * inv);
     v->z = (float)(v->z * inv);
@@ -610,7 +610,7 @@ float J3DAPI rdVector_Len2(const rdVector2* v)
 
 float J3DAPI rdVector_Len3(const rdVector3* vec)
 {
-    return sqrtf(vec->y * vec->y + vec->z * vec->z + vec->x * vec->x);
+    return sqrtf(vec->x * vec->x + vec->y * vec->y + vec->z * vec->z);
 }
 
 float J3DAPI rdVector_Len4(rdVector4* a)

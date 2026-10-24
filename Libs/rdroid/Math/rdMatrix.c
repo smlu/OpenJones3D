@@ -206,28 +206,32 @@ void J3DAPI rdMatrix_BuildFromVectorAngle34(rdMatrix34* mat, const rdVector3* ve
     }
     else // ( vec->z < 1.0f && vec->z > -1.0f )
     {
-        float oneMinusCos = 1.0f - cosAngle; // 2*sin(angle/2)^2
-        float xx = vec->x * vec->x;
-        float yy = vec->y * vec->y;
-        float zz = 1.0f - xx - yy;
-        float xy = vec->x * vec->y;
-        float xz = vec->x * vec->z;
-        float yz = vec->y * vec->z;
-        float xs = vec->x * sinAngle;
-        float ys = vec->y * sinAngle;
-        float zs = vec->z * sinAngle;
+        float oneMinusCos = (float)(1.0 - cosAngle); // 2*sin(angle/2)^2
+        float xy          = vec->y * vec->x;
+        float yz          = vec->z * vec->y;
+        float xz          = vec->z * vec->x;
+        float xs          = sinAngle * vec->x;
+        float ys          = vec->y * sinAngle;
+        float zs          = vec->z * sinAngle;
+        float xx          = vec->x * vec->x;
+        float yy          = vec->y * vec->y;
+        float zz          = (float)(1.0 - xx - yy);
+        float oneMinusZZ  = (float)(1.0 - zz);
+        float cosXX       = cosAngle * xx;
+        float cosYY       = cosAngle * yy;
+        float scaledXZ    = oneMinusCos * xz;
+        float scaledYZ    = oneMinusCos * yz;
 
-        double invZZ = 1.0 / (1.0 - (double)zz);
-        mat->rvec.x = (float)((cosAngle * xx * zz + cosAngle * yy) * invZZ) + xx;
-        mat->lvec.y = (float)((cosAngle * yy * zz + cosAngle * xx) * invZZ) + yy;
-        mat->uvec.z = zz + cosAngle * xx + cosAngle * yy;
+        mat->rvec.x = (cosXX * zz + cosYY) / oneMinusZZ + xx;
+        mat->lvec.y = (cosYY * zz + cosXX) / oneMinusZZ + yy;
+        mat->uvec.z = zz + cosXX + cosYY;
 
         mat->rvec.y = oneMinusCos * xy + zs;
         mat->lvec.x = oneMinusCos * xy - zs;
-        mat->rvec.z = oneMinusCos * xz - ys;
-        mat->lvec.z = oneMinusCos * yz + xs;
-        mat->uvec.x = oneMinusCos * xz + ys;
-        mat->uvec.y = oneMinusCos * yz - xs;
+        mat->rvec.z = scaledXZ - ys;
+        mat->lvec.z = scaledYZ + xs;
+        mat->uvec.x = scaledXZ + ys;
+        mat->uvec.y = scaledYZ - xs;
     }
 
     mat->dvec = rdroid_g_zeroVector3;//(rdVector3){ 0.0f, 0.0f, 0.0f };
@@ -284,7 +288,7 @@ void J3DAPI rdMatrix_ExtractAngles34(const rdMatrix34* mat, rdVector3* pyr)
 
     rdVector3 vecFwd;
     rdVector_Copy3(&vecFwd, &mat->lvec);
-    double fwdLenXY = sqrt(vecFwd.x * vecFwd.x + vecFwd.y * vecFwd.y);
+    float fwdLenXY = sqrtf(vecFwd.x * vecFwd.x + vecFwd.y * vecFwd.y);
 
     // Calculate Yaw (Y)
     if ( fwdLenXY >= 0.001 )
@@ -311,10 +315,10 @@ void J3DAPI rdMatrix_ExtractAngles34(const rdMatrix34* mat, rdVector3* pyr)
     pyr->pitch = 90.0f;
     if ( fwdLenXY >= 0.001 )
     {
-        float sinPitch = (float)((vecFwd.x * vecFwd.x + vecFwd.y * vecFwd.y) / fwdLenXY);
-        if ( sinPitch < 1.0f )
+        double sinPitch = (vecFwd.x * vecFwd.x + vecFwd.y * vecFwd.y + 0.0 * vecFwd.z) / fwdLenXY;
+        if ( sinPitch < 1.0 )
         {
-            pyr->pitch = 90.0f - stdMath_ArcSin3(sinPitch);
+            pyr->pitch = 90.0f - stdMath_ArcSin3((float)sinPitch);
         }
         else
         {
@@ -328,18 +332,19 @@ void J3DAPI rdMatrix_ExtractAngles34(const rdMatrix34* mat, rdVector3* pyr)
     }
 
     // Calculate Roll (Z)
-    float negUpY = -vecFwd.y;
-    double upXYLen = sqrt(negUpY * negUpY + vecFwd.x * vecFwd.x);
+    float negUpY  = -vecFwd.y;
+    float upXYLen = sqrtf(negUpY * negUpY + vecFwd.x * vecFwd.x);
 
     if ( fwdLenXY >= 0.001 )
     {
         pyr->roll = 0.0f;
-        float sinRoll = (float)((negUpY * negRightX + vecFwd.x * negRightY) / upXYLen);
-        if ( sinRoll < 1.0f )
+        double sinRoll     = (negUpY * negRightX + vecFwd.x * negRightY + 0.0 * negRightZ) / upXYLen;
+        float sinRollInput = (float)sinRoll;
+        if ( sinRoll < 1.0 )
         {
-            if ( sinRoll > -1.0f )
+            if ( sinRollInput > -1.0f )
             {
-                pyr->roll= 90.0f - stdMath_ArcSin3(sinRoll);
+                pyr->roll= 90.0f - stdMath_ArcSin3(sinRollInput);
             }
             else
             {
