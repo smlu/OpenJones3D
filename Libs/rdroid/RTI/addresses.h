@@ -268,7 +268,7 @@
 #define rdFont_bFontColorSet_ADDR 0x005E10D0
 #define rdCamera_g_camPYR_ADDR 0x005E10D8
 #define rdCamera_g_pCurCamera_ADDR 0x005E10E4
-#define rdCamera_dword_5E10E8_ADDR 0x005E10E8
+#define rdCamera_bOverlayDepthRange_ADDR 0x005E10E8
 #define rdCamera_g_camMatrix_ADDR 0x0183B9E0
 #define rdCache_aProcFaces_ADDR 0x005E10F8
 #define rdCache_aVertIntensities_ADDR 0x005E28F8

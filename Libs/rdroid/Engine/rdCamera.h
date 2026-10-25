@@ -54,7 +54,7 @@ int J3DAPI rdCamera_AddLight(rdCamera* pCamera, rdLight* pLight, const rdVector3
 int J3DAPI rdCamera_ClearLights(rdCamera* pCamera);
 
 void J3DAPI rdCamera_SetOverlayDepthRange(bool bEnable);
-bool rdCamera_sub_506861(void); // Added
+bool rdCamera_IsOverlayDepthRangeEnabled(void); // Added
 
 // Helper hooking functions
 void rdCamera_InstallHooks(void);

@@ -14,7 +14,7 @@
 
 #include <std/Win95/stdDisplay.h>
 
-bool rdCamera_dword_5E10E8 = false;
+static bool rdCamera_bOverlayDepthRange = false;
 
 void J3DAPI rdCamera_BuildFOV(rdCamera* pCamera);
 void J3DAPI rdCamera_BuildClipFrustrum(const rdCamera* pCamera, rdClipFrustum* pFrustum, float width, float height);
@@ -268,7 +268,7 @@ void J3DAPI rdCamera_BuildFOV(rdCamera* pCamera)
             float fscale         = RD_REF_APECTRATIO / (hwidth / hheight);
             pCamera->focalLength = pCamera->focalLength * fscale;
 
-            if ( rdCamera_dword_5E10E8 )
+            if ( rdCamera_bOverlayDepthRange )
             {
                 pCamera->invNearClipPlane = 1.0f / pCamera->pFrustum->nearPlane;
                 pCamera->invFarClipPlane  = 1.0f / (1.0f / pCamera->pFrustum->farPlane - pCamera->invNearClipPlane) * 0.1f;
@@ -337,7 +337,7 @@ int J3DAPI rdCamera_SetFrustrum(rdCamera* pCamera, rdClipFrustum* pFrustrum, int
     pFrustrum->nearPlane   = pCamera->pFrustum->nearPlane;
     pFrustrum->farPlane    = pCamera->pFrustum->farPlane;
 
-    if ( rdCamera_dword_5E10E8 )
+    if ( rdCamera_bOverlayDepthRange )
     {
         pCamera->invNearClipPlane = 1.0f / pCamera->pFrustum->nearPlane;
         pCamera->invFarClipPlane = 1.0f / (1.0f / pCamera->pFrustum->farPlane - pCamera->invNearClipPlane) * 0.1f;
@@ -521,10 +521,10 @@ int J3DAPI rdCamera_ClearLights(rdCamera* pCamera)
 
 void J3DAPI rdCamera_SetOverlayDepthRange(bool bEnable)
 {
-    rdCamera_dword_5E10E8 = bEnable;
+    rdCamera_bOverlayDepthRange = bEnable;
 }
 
-bool rdCamera_sub_506861(void)
+bool rdCamera_IsOverlayDepthRangeEnabled(void)
 {
-    return rdCamera_dword_5E10E8;
+    return rdCamera_bOverlayDepthRange;
 }
