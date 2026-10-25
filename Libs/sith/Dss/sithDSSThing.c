@@ -80,6 +80,10 @@ void sithDSSThing_InstallHooks(void)
     J3D_HOOKFUNC(sithDSSThing_MoveToPos);
 }
 
+// MoveToPos: time in seconds to predict the thing's position ahead and distance below which the thing is steered instead of snapped
+#define SITHDSS_MOVETOPOS_PREDICTTIME 0.25
+#define SITHDSS_MOVETOPOS_SMOOTHDIST  0.5f
+
 void sithDSSThing_ResetGlobals(void)
 {}
 
@@ -128,17 +132,17 @@ int J3DAPI sithDSSThing_ProcessPos(const SithMessage* pMsg)
         return 0;
     }
 
-    int index = SITHDSS_POPINT32();
-    SithThing* pThing = sithThing_GetGuidThing(index);
+    int guid = SITHDSS_POPINT32();
+    SithThing* pThing = sithThing_GetGuidThing(guid);
     if ( !pThing )
     {
-        SITHLOG_ERROR("Bad thing guid %d in DSS::Pos.\n", index);
+        SITHLOG_ERROR("Bad thing guid %d in DSS::Pos.\n", guid);
         return 0;
     }
 
     if ( !pThing->type || !pThing->pInSector )
     {
-        SITHLOG_ERROR("Bad thing guid %d in DSS::Pos.\n", index);
+        SITHLOG_ERROR("Bad thing guid %d in DSS::Pos.\n", guid);
         return 0;
     }
 
@@ -148,19 +152,19 @@ int J3DAPI sithDSSThing_ProcessPos(const SithMessage* pMsg)
         sithThing_DetachThing(pThing);
     }
 
-    index = SITHDSS_POPUINT16();
-    SithSector* pSector = sithSector_GetSectorEx(sithWorld_g_pCurrentWorld, index);
+    int sectorIdx = SITHDSS_POPUINT16();
+    SithSector* pSector = sithSector_GetSectorEx(sithWorld_g_pCurrentWorld, sectorIdx);
     if ( !pSector )
     {
-        SITHLOG_ERROR("Bad sector index %d in DSS::Pos.\n", index);
+        SITHLOG_ERROR("Bad sector index %d in DSS::Pos.\n", sectorIdx);
         return 0;
     }
 
     rdVector3 loc;
-    rdVector3 rotation;
+    rdVector3 pyr;
     SITHDSS_POPVEC3(&loc);
-    SITHDSS_POPVEC3(&rotation);
-    rdMatrix_BuildRotate34(&pThing->orient, &rotation);
+    SITHDSS_POPVEC3(&pyr);
+    rdMatrix_BuildRotate34(&pThing->orient, &pyr);
 
     if ( pThing->moveType == SITH_MT_PHYSICS )
     {
@@ -172,14 +176,15 @@ int J3DAPI sithDSSThing_ProcessPos(const SithMessage* pMsg)
     else
     {
         rdVector_Copy3(&pThing->pos, &loc);
-        sithThing_SetSector(pThing, pSector, 0);
+        sithThing_SetSector(pThing, pSector, /*bNotify=*/0);
     }
 
     if ( pThing->type == SITH_THING_PLAYER )
     {
-        memset(&rotation, 0, sizeof(rotation));
-        rotation.x = SITHDSS_POPFLOAT();
-        sithActor_SetHeadPYR(pThing, &rotation);
+        rdVector3 headPYR;
+        rdVector_Zero3(&headPYR);
+        headPYR.x = SITHDSS_POPFLOAT();
+        sithActor_SetHeadPYR(pThing, &headPYR);
     }
 
     SITHDSS_ENDIN;
@@ -237,10 +242,8 @@ int J3DAPI sithDSSThing_ProcessMovePos(const SithMessage* pMsg)
         return 0;
     }
 
-    rdVector3 pos;
-    SITHDSS_POPVEC3(&pos);
-    rdVector_Copy3(&pThing->pos, &pos);
-    sithThing_SetSector(pThing, pSector, 0);
+    SITHDSS_POPVEC3(&pThing->pos);
+    sithThing_SetSector(pThing, pSector, /*bNotify=*/0);
 
     rdVector3 pyr;
     SITHDSS_POPVEC3(&pyr);
@@ -383,34 +386,34 @@ int J3DAPI sithDSSThing_ProcessStateUpdate(const SithMessage* pMsg)
 {
     SITHDSS_STARTIN(pMsg);
 
-    int idx = SITHDSS_POPINT32();
-    SithThing* pThing = sithThing_GetGuidThing(idx);
+    int guid = SITHDSS_POPINT32();
+    SithThing* pThing = sithThing_GetGuidThing(guid);
     if ( !pThing )
     {
-        SITHLOG_ERROR("Thing guid %x not found.\n", idx);
+        SITHLOG_ERROR("Thing guid %x not found.\n", guid);
         return 0;
     }
 
     if ( !pThing->type || !pThing->pInSector )
     {
-        SITHLOG_STATUS("Warning - got state update for non-existant thing index %d.\n", idx);
+        SITHLOG_STATUS("Warning - got state update for non-existant thing index %d.\n", guid);
         return 0;
     }
 
     pThing->unknownFlags = SITHDSS_POPINT32();
     pThing->msecLifeLeft = SITHDSS_POPUINT32();
 
-    idx = SITHDSS_POPUINT16();
-    SithSector* pSector = sithSector_GetSectorEx(sithWorld_g_pCurrentWorld, idx);
+    int sectorIdx = SITHDSS_POPUINT16();
+    SithSector* pSector = sithSector_GetSectorEx(sithWorld_g_pCurrentWorld, sectorIdx);
     if ( !pSector )
     {
-        SITHLOG_ERROR("Bad sector index %d in DSS::Pos.\n", idx);
+        SITHLOG_ERROR("Bad sector index %d in DSS::Pos.\n", sectorIdx);
         return 0;
     }
 
     pThing->collide.type = SITHDSS_POPUINT16();
     SITHDSS_POPVEC3(&pThing->pos);
-    sithThing_SetSector(pThing, pSector, 0);
+    sithThing_SetSector(pThing, pSector, /*bNotify=*/0);
 
     SithThingFlag flags = SITHDSS_POPUINT32();
     if ( (pThing->flags & SITH_TF_REMOTE) != 0 )
@@ -455,7 +458,7 @@ int J3DAPI sithDSSThing_ProcessStateUpdate(const SithMessage* pMsg)
                 *(int16_t*)&pThing->thingInfo.itemInfo.numItems = SITHDSS_POPINT16();
                 int16_t numItems = *(int16_t*)&pThing->thingInfo.itemInfo.numItems;
 
-                // TODO: [BUG] numItems is not validated against the size of aBackpackItems (32) and can overflow it with a malformed message
+                // TODO: [BUG] numItems is not validated against the size of aBackpackItems and can overflow it with a malformed message
                 for ( int16_t i = 0; i < numItems; ++i )
                 {
                     pThing->thingInfo.itemInfo.aBackpackItems[i].typeId = SITHDSS_POPINT16();
@@ -491,7 +494,7 @@ int J3DAPI sithDSSThing_ProcessStateUpdate(const SithMessage* pMsg)
             aModelName[STD_ARRAYLEN(aModelName) - 1] = 0;
 
             int srcMeshNum = SITHDSS_POPINT32();
-            rdModel3* pModel = sithModel_Load(aModelName, 1);
+            rdModel3* pModel = sithModel_Load(aModelName, /*bSkipDefault=*/1);
             if ( pModel )
             {
                 sithThing_AddSwapEntry(pThing, meshNum, pModel, srcMeshNum);
@@ -538,22 +541,22 @@ int J3DAPI sithDSSThing_ProcessPlaySound(const SithMessage* pMsg)
     SoundPlayFlag playflags = SITHDSS_POPUINT32();
     float minRadius = SITHDSS_POPFLOAT();
     float maxRadius = SITHDSS_POPFLOAT();
-    int idx = SITHDSS_POPUINT16();
+    int soundIdx = SITHDSS_POPUINT16();
 
-    tSoundHandle hSnd = Sound_GetSoundHandle(idx);
+    tSoundHandle hSnd = Sound_GetSoundHandle(soundIdx);
     if ( !hSnd )
     {
-        SITHLOG_ERROR("Sound index %d not valid in DSS::PlaySound.\n", idx);
+        SITHLOG_ERROR("Sound index %d not valid in DSS::PlaySound.\n", soundIdx);
         return 0;
     }
 
     if ( (playflags & SOUNDPLAY_THING_POS) != 0 )
     {
-        idx = SITHDSS_POPINT32();
-        SithThing* pThing = sithThing_GetGuidThing(idx);
+        int guid = SITHDSS_POPINT32();
+        SithThing* pThing = sithThing_GetGuidThing(guid);
         if ( !pThing )
         {
-            SITHLOG_ERROR("Thing guid %d not found in DSS::PlaySound (sound=%s)\n", idx, Sound_GetSoundFilename(hSnd));
+            SITHLOG_ERROR("Thing guid %d not found in DSS::PlaySound (sound=%s)\n", guid, Sound_GetSoundFilename(hSnd));
             return 0;
         }
 
@@ -587,7 +590,7 @@ int J3DAPI sithDSSThing_PlaySoundMode(const SithThing* pThing, int16_t mode, int
     SITHDSS_PUSHINT16(mode);
 
     SITHDSS_ENDOUT;
-    return sithMessage_SendMessage(&sithMulti_g_message, (DPID)-1, SITHMESSAGE_STREAM_ALL, 0);
+    return sithMessage_SendMessage(&sithMulti_g_message, SITHMESSAGE_SENDTOJOINEDPLAYERS, SITHMESSAGE_STREAM_ALL, 0);
 }
 
 
@@ -641,11 +644,11 @@ int J3DAPI sithDSSThing_ProcessPlayKey(const SithMessage* pMsg)
 {
     SITHDSS_STARTIN(pMsg);
 
-    int index = SITHDSS_POPINT32();
-    SithThing* pThing = sithThing_GetGuidThing(index);
+    int guid = SITHDSS_POPINT32();
+    SithThing* pThing = sithThing_GetGuidThing(guid);
     if ( !pThing )
     {
-        SITHLOG_ERROR("Got DSS::PlayKey message for thing GUID %d - not found.\n", index);
+        SITHLOG_ERROR("Got DSS::PlayKey message for thing GUID %d - not found.\n", guid);
         return 0;
     }
 
@@ -655,22 +658,23 @@ int J3DAPI sithDSSThing_ProcessPlayKey(const SithMessage* pMsg)
         return 0;
     }
 
-    index = SITHDSS_POPINT32();
-    rdKeyframe* pKey = sithPuppet_GetKeyframeByIndex(index);
+    int keyIdx = SITHDSS_POPINT32();
+    rdKeyframe* pKey = sithPuppet_GetKeyframeByIndex(keyIdx);
     if ( !pKey )
     {
-        SITHLOG_ERROR("Key %d not found in DSS::PlayKey.\n", index);
+        SITHLOG_ERROR("Key %d not found in DSS::PlayKey.\n", keyIdx);
         return 0;
     }
 
-    int bLowPriority = SITHDSS_POPUINT16();
+    int lowPriority = SITHDSS_POPUINT16();
     rdKeyframeFlags flags = SITHDSS_POPINT32();
-    unsigned int curTrackGUID = SITHDSS_POPUINT32();
+    unsigned int trackGUID = SITHDSS_POPUINT32();
 
-    int trackNum = sithPuppet_PlayKey(pThing->renderData.pPuppet, pKey, bLowPriority, bLowPriority + 2, flags, NULL);
+    // Note: the high priority is the low priority + 2
+    int trackNum = sithPuppet_PlayKey(pThing->renderData.pPuppet, pKey, lowPriority, lowPriority + 2, flags, NULL);
     if ( trackNum >= 0 )
     {
-        pThing->renderData.pPuppet->aTracks[trackNum].guid = curTrackGUID;
+        pThing->renderData.pPuppet->aTracks[trackNum].guid = trackGUID;
     }
 
     SITHDSS_ENDIN;
@@ -762,7 +766,7 @@ int J3DAPI sithDSSThing_ProcessSetModel(const SithMessage* pMsg)
     SITHDSS_POPSTRING(aModelName, STD_ARRAYLEN(aModelName));
     aModelName[STD_ARRAYLEN(aModelName) - 1] = 0;
 
-    rdModel3* pModel = sithModel_Load(aModelName, 1);
+    rdModel3* pModel = sithModel_Load(aModelName, /*bSkipDefault=*/1);
     if ( !pModel )
     {
         return 0;
@@ -794,11 +798,11 @@ int J3DAPI sithDSSThing_ProcessStopKey(const SithMessage* pMsg)
 {
     SITHDSS_STARTIN(pMsg);
 
-    int id = SITHDSS_POPINT32();
-    SithThing* pThing = sithThing_GetGuidThing(id);
+    int guid = SITHDSS_POPINT32();
+    SithThing* pThing = sithThing_GetGuidThing(guid);
     if ( !pThing || !pThing->renderData.pPuppet )
     {
-        SITHLOG_ERROR("Bad thing guid %d in DSS::StopKey.\n", id);
+        SITHLOG_ERROR("Bad thing guid %d in DSS::StopKey.\n", guid);
         return 0;
     }
 
@@ -903,19 +907,21 @@ int J3DAPI sithDSSThing_ProcessFire(const SithMessage* pMsg)
 {
     SITHDSS_STARTIN(pMsg);
 
-    int idx = SITHDSS_POPINT32();
-    SithThing* pShooter = sithThing_GetGuidThing(idx);
+    int shooterGuid = SITHDSS_POPINT32();
+    SithThing* pShooter = sithThing_GetGuidThing(shooterGuid);
     if ( !pShooter )
     {
-        SITHLOG_ERROR("Bad shooter guid %d in DSS:Fire.\n", idx);
+        SITHLOG_ERROR("Bad shooter guid %d in DSS:Fire.\n", shooterGuid);
         return 0;
     }
 
     SithFireProjectileFlags flags = SITHDSS_POPUINT16();
-    idx = SITHDSS_POPUINT16();
-    SithThing* pTemplate = sithTemplate_GetTemplateByIndex(idx);
-    idx = SITHDSS_POPUINT16();
-    tSoundHandle hSnd = Sound_GetSoundHandle(idx);
+
+    int templateIdx = SITHDSS_POPUINT16();
+    SithThing* pTemplate = sithTemplate_GetTemplateByIndex(templateIdx);
+
+    int soundIdx = SITHDSS_POPUINT16();
+    tSoundHandle hSnd = Sound_GetSoundHandle(soundIdx);
     SithPuppetSubMode submode = SITHDSS_POPUINT16();
 
     rdVector3 firePos;
@@ -966,7 +972,7 @@ int J3DAPI sithDSSThing_ProcessDeath(const SithMessage* pMsg)
 
     int curguid = SITHDSS_POPINT32();
     int killerGuid = SITHDSS_POPINT32();
-    int bKillPlayer = SITHDSS_POPUINT8();
+    bool bKillPlayer = SITHDSS_POPUINT8() == 1;
 
     SithThing* pCurThing = sithThing_GetGuidThing(curguid);
     if ( !pCurThing )
@@ -983,7 +989,7 @@ int J3DAPI sithDSSThing_ProcessDeath(const SithMessage* pMsg)
             break;
 
         case SITH_THING_PLAYER:
-            if ( bKillPlayer == 1 )
+            if ( bKillPlayer )
             {
                 sithPlayer_KillPlayer(pCurThing);
             }
@@ -1845,12 +1851,13 @@ int J3DAPI sithDSSThing_ProcessPathMove(const SithMessage* pMsg)
     SITH_ASSERTREL(pMsg);
     SITHDSS_STARTIN(pMsg);
 
-    int moveClass = SITHDSS_POPINT32();
-    int curGuid = SITHDSS_POPINT32();
-    SithThing* pThing = sithThing_GetGuidThing(curGuid);
+    int command = SITHDSS_POPINT32();
+    int guid = SITHDSS_POPINT32();
+    SithThing* pThing = sithThing_GetGuidThing(guid);
     if ( !pThing || pThing->moveType != SITH_MT_PATH )
     {
-        goto error;
+        SITHLOG_ERROR("Bad format in DSS::PathMove message, GUID=%x.\n", guid);
+        return 0;
     }
 
     unsigned int moveFrame = SITHDSS_POPUINT32();
@@ -1861,44 +1868,41 @@ int J3DAPI sithDSSThing_ProcessPathMove(const SithMessage* pMsg)
     }
 
     pThing->moveFrame = moveFrame;
-    int sectIndex = SITHDSS_POPUINT16();
-    SithSector* pSector = sithSector_GetSectorEx(sithWorld_g_pCurrentWorld, sectIndex);
+    int sectorIdx = SITHDSS_POPUINT16();
+    SithSector* pSector = sithSector_GetSectorEx(sithWorld_g_pCurrentWorld, sectorIdx);
     if ( !pSector )
     {
-        goto error;
+        SITHLOG_ERROR("Bad format in DSS::PathMove message, GUID=%x.\n", guid);
+        return 0;
     }
 
     SITHDSS_POPVEC3(&pThing->pos);
-    sithThing_SetSector(pThing, pSector, 0);
+    sithThing_SetSector(pThing, pSector, /*bNotify=*/0);
 
-    rdVector3 curPyr;
-    SITHDSS_POPVEC3(&curPyr);
-    rdMatrix_BuildRotate34(&pThing->orient, &curPyr);
+    rdVector3 pyr;
+    SITHDSS_POPVEC3(&pyr);
+    rdMatrix_BuildRotate34(&pThing->orient, &pyr);
 
-    unsigned int curFrm = SITHDSS_POPUINT16();
+    unsigned int frame = SITHDSS_POPUINT16();
     float velocity = SITHDSS_POPFLOAT();
 
-    switch ( moveClass )
+    switch ( command )
     {
-        case 0:
-            sithPathMove_MoveToFrame(pThing, curFrm, velocity);
+        case SITHDSS_PATHMOVE_MOVETOFRAME:
+            sithPathMove_MoveToFrame(pThing, frame, velocity);
             break;
 
-        case 1:
-            sithPathMove_SkipToFrame(pThing, curFrm, velocity);
+        case SITHDSS_PATHMOVE_SKIPTOFRAME:
+            sithPathMove_SkipToFrame(pThing, frame, velocity);
             break;
 
-        case 2:
+        case SITHDSS_PATHMOVE_FINISH:
             sithPathMove_Finish(pThing);
             break;
     }
 
     SITHDSS_ENDIN;
     return 1;
-
-error:
-    SITHLOG_ERROR("Bad format in DSS::PathMove message, GUID=%x.\n", curGuid);
-    return 0;
 }
 
 
@@ -2090,16 +2094,16 @@ int J3DAPI sithDSSThing_ProcessTake(const SithMessage* pMsg)
 {
     SITHDSS_STARTIN(pMsg);
 
-    int guid = SITHDSS_POPINT32();
-    SithThing* pItem = sithThing_GetGuidThing(guid);
+    int itemGuid = SITHDSS_POPINT32();
+    SithThing* pItem = sithThing_GetGuidThing(itemGuid);
     if ( !pItem && stdComm_IsGameHost() )
     {
-        sithDSSThing_DestroyThing(guid, sithMessage_GetSenderID());
+        sithDSSThing_DestroyThing(itemGuid, sithMessage_GetSenderID());
         return 0;
     }
 
-    guid = SITHDSS_POPINT32();
-    SithThing* pThing = sithThing_GetGuidThing(guid);
+    int takerGuid = SITHDSS_POPINT32();
+    SithThing* pThing = sithThing_GetGuidThing(takerGuid);
     if ( !pItem || !pThing )
     {
         SITHLOG_ERROR("Bad thing or taker guid in DSS::Take.\n");
@@ -2119,10 +2123,10 @@ int J3DAPI sithDSSThing_ProcessTake(const SithMessage* pMsg)
         }
 
         ((SithMessage*)pMsg)->type = SITHDSS_TAKE2;
-        sithMessage_SendMessage((SithMessage*)pMsg, (DPID)-1, SITHMESSAGE_STREAM_NET, DPSEND_GUARANTEED);
+        sithMessage_SendMessage((SithMessage*)pMsg, SITHMESSAGE_SENDTOJOINEDPLAYERS, SITHMESSAGE_STREAM_NET, DPSEND_GUARANTEED);
     }
 
-    sithItem_SetItemTaken(pItem, pThing, 1);
+    sithItem_SetItemTaken(pItem, pThing, /*bNoMultiSync=*/1);
 
     SITHDSS_ENDIN;
     return 1;
@@ -2150,7 +2154,7 @@ int J3DAPI sithDSSThing_CreateThing(const SithThing* pTemplate, const SithThing*
     SITHDSS_PUSHINT32(pNewThing->guid);
 
     SITHDSS_ENDOUT;
-    return sithMessage_SendMessage(&sithMulti_g_message, (DPID)-1, outstream, sendFlags);
+    return sithMessage_SendMessage(&sithMulti_g_message, SITHMESSAGE_SENDTOJOINEDPLAYERS, outstream, sendFlags);
 }
 
 
@@ -2158,22 +2162,22 @@ int J3DAPI sithDSSThing_ProcessCreateThing(const SithMessage* pMsg)
 {
     SITHDSS_STARTIN(pMsg);
 
-    int id = SITHDSS_POPUINT16();
-    SithThing* pTemplate = sithTemplate_GetTemplateByIndex(id);
+    int templateIdx = SITHDSS_POPUINT16();
+    SithThing* pTemplate = sithTemplate_GetTemplateByIndex(templateIdx);
     if ( !pTemplate )
     {
-        SITHLOG_ERROR("Bad template index %d in DSS::CreateThing message.\n", id);
+        SITHLOG_ERROR("Bad template index %d in DSS::CreateThing message.\n", templateIdx);
         return 0;
     }
 
     SithThing* pThing;
-    id = SITHDSS_POPINT32();
-    if ( id >= 0 )
+    int markerGuid = SITHDSS_POPINT32();
+    if ( markerGuid >= 0 )
     {
-        SithThing* pMarker = sithThing_GetGuidThing(id);
+        SithThing* pMarker = sithThing_GetGuidThing(markerGuid);
         if ( !pMarker )
         {
-            SITHLOG_ERROR("Cannot find GUID %d to create template %s.\n", id, pTemplate->aName);
+            SITHLOG_ERROR("Cannot find GUID %d to create template %s.\n", markerGuid, pTemplate->aName);
             return 0;
         }
 
@@ -2181,11 +2185,11 @@ int J3DAPI sithDSSThing_ProcessCreateThing(const SithMessage* pMsg)
     }
     else
     {
-        id = SITHDSS_POPINT32();
-        SithSector* pSector = sithSector_GetSectorEx(sithWorld_g_pCurrentWorld, id);
+        int sectorIdx = SITHDSS_POPINT32();
+        SithSector* pSector = sithSector_GetSectorEx(sithWorld_g_pCurrentWorld, sectorIdx);
         if ( !pSector )
         {
-            SITHLOG_ERROR("Bad sector %d in DSS::CreateThing, template %s.\n", id, pTemplate->aName);
+            SITHLOG_ERROR("Bad sector %d in DSS::CreateThing, template %s.\n", sectorIdx, pTemplate->aName);
             return 0;
         }
 
@@ -2249,18 +2253,19 @@ void J3DAPI sithDSSThing_MoveToPos(SithThing* pThing, const rdVector3* pPos, Sit
     // Note: The original evaluates the predicted position minus the current position in x87 extended precision
     //       and rounds to float once when storing the direction. Double precision reproduces that exactly.
     rdVector3 dir;
-    dir.x = (float)((double)pThing->moveInfo.physics.velocity.x * 0.25 + (double)pPos->x - (double)pThing->pos.x);
-    dir.y = (float)((double)pThing->moveInfo.physics.velocity.y * 0.25 + (double)pPos->y - (double)pThing->pos.y);
-    dir.z = (float)((double)pThing->moveInfo.physics.velocity.z * 0.25 + (double)pPos->z - (double)pThing->pos.z);
+    dir.x = (float)((double)pThing->moveInfo.physics.velocity.x * SITHDSS_MOVETOPOS_PREDICTTIME + (double)pPos->x - (double)pThing->pos.x);
+    dir.y = (float)((double)pThing->moveInfo.physics.velocity.y * SITHDSS_MOVETOPOS_PREDICTTIME + (double)pPos->y - (double)pThing->pos.y);
+    dir.z = (float)((double)pThing->moveInfo.physics.velocity.z * SITHDSS_MOVETOPOS_PREDICTTIME + (double)pPos->z - (double)pThing->pos.z);
 
     float dist = rdVector_Len3(&dir);
-    if ( dist != 0.0f && dist < 0.5f )
+    if ( dist != 0.0f && dist < SITHDSS_MOVETOPOS_SMOOTHDIST )
     {
-        rdVector_Scale3(&pThing->moveInfo.physics.velocity, &dir, 4.0f);
+        // Close enough, steer the thing towards the position by velocity instead of snapping it
+        rdVector_Scale3(&pThing->moveInfo.physics.velocity, &dir, 1.0f / SITHDSS_MOVETOPOS_PREDICTTIME);
     }
     else
     {
         rdVector_Copy3(&pThing->pos, pPos);
-        sithThing_SetSector(pThing, pSector, 0);
+        sithThing_SetSector(pThing, pSector, /*bNotify=*/0);
     }
 }

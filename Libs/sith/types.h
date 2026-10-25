@@ -353,6 +353,14 @@ typedef enum eSithPathMoveMode
     SITH_PATHMOVE_PAUSED       = 0x80,
 } SithPathMoveMode;
 
+// Path move command of the DSS::PathMove message, see sithDSSThing_PathMove
+typedef enum eSithDSSPathMoveCommand
+{
+    SITHDSS_PATHMOVE_MOVETOFRAME = 0,
+    SITHDSS_PATHMOVE_SKIPTOFRAME = 1,
+    SITHDSS_PATHMOVE_FINISH      = 2,
+} SithDSSPathMoveCommand;
+
 typedef enum eSithPhysicsFlags
 {
     SITH_PF_USEGRAVITY          = 0x01,
