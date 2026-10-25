@@ -6,6 +6,8 @@
 
 #include <stdarg.h>
 #include <stddef.h>
+#include <stdlib.h>
+#include <std/types.h>
 #include <smush/insane/Bitmap/Bitmap.h>
 #include <smush/insane/Decode/Decode.h>
 #include <smush/insane/File/Framestream.h>
@@ -13,14 +15,27 @@
 #include <smush/insane/Memory/Memory.h>
 #include <smush/insane/Sound/Mixer.h>
 
-#define DBLOC16_ABS(a)    ((a) < 0 ? -(a) : (a))
 #define DBLOC16_MAX(a, b) ((a) > (b) ? (a) : (b))
+
+#define DBLOC16_NUMMOTIONS 255 // Codec 2's motion vectors
+#define DBLOC16_LUTSIZE    0x10000 // Entries of the colour conversion table
+#define DBLOC16_NUMEDGES   16 // Edge points of a glyph (the combinations of two make 256 glyphs)
+
+// Where an edge point of a glyph lies on the block
+typedef enum eBl16Edge
+{
+    BL16_EDGE_TOP,
+    BL16_EDGE_BOTTOM,
+    BL16_EDGE_LEFT,
+    BL16_EDGE_RIGHT,
+    BL16_EDGE_INNER,
+} Bl16Edge;
 
 static LecModule dbloc16_module = { dbloc16_Register, dbloc16_Unregister, dbloc16_Startup, dbloc16_Shutdown };
 static Bl16Interface dbloc16_interface = { dbloc16_Name, dbloc16_GetTag, dbloc16_GetFlags, dbloc16_Reset, dbloc16_Parse, dbloc16_Decode, dbloc16_Query1, dbloc16_Query };
 
 // Codec 2's 255 motion vectors (x, y); dbloc16_MakeTables turns them into pixel offsets for the frame width
-static const Bl16Motion dbloc16_motion[255] = {
+static const Bl16Motion dbloc16_motion[DBLOC16_NUMMOTIONS] = {
     { 0, 0 }, { -1, -43 }, { 6, -43 }, { -9, -42 }, { 13, -41 }, { -16, -40 }, { 19, -39 }, { -23, -36 },
     { 26, -34 }, { -2, -33 }, { 4, -33 }, { -29, -32 }, { -9, -32 }, { 11, -31 }, { -16, -29 }, { 32, -29 },
     { 18, -28 }, { -34, -26 }, { -22, -25 }, { -1, -25 }, { 3, -25 }, { -7, -24 }, { 8, -24 }, { 24, -23 },
@@ -57,10 +72,10 @@ static const Bl16Motion dbloc16_motion[255] = {
 static int dbloc16_lastWidth = -1;
 
 // The glyph edge points (x and y tables for the 4x4 and the 8x8 glyphs)
-static const int dbloc16_small1[16] = { 0, 1, 2, 3, 3, 3, 3, 2, 1, 0, 0, 0, 1, 2, 2, 1 };
-static const int dbloc16_small2[16] = { 0, 0, 0, 0, 1, 2, 3, 3, 3, 3, 2, 1, 1, 1, 2, 2 };
-static const int dbloc16_big1[16]   = { 0, 2, 5, 7, 7, 7, 7, 7, 7, 5, 2, 0, 0, 0, 0, 0 };
-static const int dbloc16_big2[16]   = { 0, 0, 0, 0, 1, 3, 4, 6, 7, 7, 7, 7, 6, 4, 3, 1 };
+static const int dbloc16_small1[DBLOC16_NUMEDGES] = { 0, 1, 2, 3, 3, 3, 3, 2, 1, 0, 0, 0, 1, 2, 2, 1 };
+static const int dbloc16_small2[DBLOC16_NUMEDGES] = { 0, 0, 0, 0, 1, 2, 3, 3, 3, 3, 2, 1, 1, 1, 2, 2 };
+static const int dbloc16_big1[DBLOC16_NUMEDGES] = { 0, 2, 5, 7, 7, 7, 7, 7, 7, 5, 2, 0, 0, 0, 0, 0 };
+static const int dbloc16_big2[DBLOC16_NUMEDGES] = { 0, 0, 0, 0, 1, 3, 4, 6, 7, 7, 7, 7, 6, 4, 3, 1 };
 
 static int dbloc16_prevSeq = -1;
 
@@ -87,7 +102,7 @@ static uint16_t* dbloc16_pBuf0;
 static Bl16Big dbloc16_big[BL16_NUMTABLES];
 static uint16_t* dbloc16_pBuf1;
 static Bl16Small dbloc16_small[BL16_NUMTABLES];
-static int16_t dbloc16_offsets[256];
+static int16_t dbloc16_offsets[BL16_NUMTABLES];
 
 void D_bloc16_InstallHooks(void)
 {
@@ -130,19 +145,19 @@ int J3DAPI dbloc16_Configure(int tag, ...)
     va_list args;
 
     va_start(args, tag);
-    while ( tag )
+    while ( tag != BL16_CONFIG_END )
     {
         switch ( tag )
         {
-            case 1:
+            case BL16_CONFIG_SETBLIT:
                 dbloc16_pBlit = va_arg(args, Bl16Blit);
                 break;
 
-            case 2:
+            case BL16_CONFIG_GETBLIT:
                 *va_arg(args, Bl16Blit*) = dbloc16_pBlit;
                 break;
 
-            case 3:
+            case BL16_CONFIG_GETSHOWN:
                 *va_arg(args, LecBitmapHeader**) = dbloc16_pShown;
                 break;
 
@@ -264,7 +279,7 @@ int J3DAPI dbloc16_Alloc(int width, int height, int depth)
                 framestream_CopyB(dbloc16_pBuf1, 0, dbloc16_size * 2);
                 framestream_CopyB(dbloc16_pCur, 0, dbloc16_size * 2);
 
-                dbloc16_pLut = dbloc16_pMemory->Alloc(0x20000, INSANE_FILE, __LINE__);
+                dbloc16_pLut = dbloc16_pMemory->Alloc(DBLOC16_LUTSIZE * sizeof(uint16_t), INSANE_FILE, __LINE__);
                 rc = dbloc16_pLut ? 0 : -1;
                 if ( rc == 0 ) {
                     return 0;
@@ -306,10 +321,10 @@ void dbloc16_Free(void)
     dbloc16_size   = 0;
 }
 
-int J3DAPI dbloc16_Decode(void* a1, int a2, int a3, int a4, void* a5, const uint8_t* pData, int size, int mode, int a9, int a10)
+int J3DAPI dbloc16_Decode(void* pBitmap, int clip, int x, int y, void* pPalette, const uint8_t* pData, int size, int flags, int unused9, int unused10)
 {
-    J3D_UNUSED(size); J3D_UNUSED(a9); J3D_UNUSED(a10);
-    return dbloc16_DecodeFrame(a1, (MixerRect*)a2, a3, a4, a5, (Bl16Header*)pData, mode);
+    J3D_UNUSED(size); J3D_UNUSED(unused9); J3D_UNUSED(unused10);
+    return dbloc16_DecodeFrame(pBitmap, (MixerRect*)clip, x, y, pPalette, (Bl16Header*)pData, flags);
 }
 
 int dbloc16_Query1(void)
@@ -319,7 +334,7 @@ int dbloc16_Query1(void)
 
 int J3DAPI dbloc16_Query(const Bl16Header* pData, int tag, int* pX, int* pY, int* pWidth, int* pHeight)
 {
-    if ( tag != 0x100 ) {
+    if ( tag != BL16_QUERY_BOUNDS ) {
         return -1;
     }
 
@@ -349,11 +364,11 @@ void J3DAPI dbloc16_MakeTables(int width)
     }
 
     dbloc16_lastWidth = width;
-    for ( int i = 0; i < 255; i++ ) {
+    for ( int i = 0; i < DBLOC16_NUMMOTIONS; i++ ) {
         dbloc16_offsets[i] = (int16_t)(dbloc16_motion[i].y * width + dbloc16_motion[i].x);
     }
 
-    for ( int i = 0; i < 256; i++ )
+    for ( int i = 0; i < BL16_NUMTABLES; i++ )
     {
         for ( int j = 0; j < dbloc16_small[i].n1; j++ ) {
             dbloc16_small[i].off1[j] = (uint16_t)((dbloc16_small[i].idx1[j] >> 2) * width + (dbloc16_small[i].idx1[j] & 3));
@@ -383,11 +398,11 @@ void J3DAPI dbloc16_MakeGlyphs(int size)
     {
         pEdgeX = dbloc16_big1;
         pEdgeY = dbloc16_big2;
-        for ( int i = 0; i < 256; i++ ) {
+        for ( int i = 0; i < BL16_NUMTABLES; i++ ) {
             dbloc16_big[i].n1 = 0;
         }
 
-        for ( int i = 0; i < 256; i++ ) {
+        for ( int i = 0; i < BL16_NUMTABLES; i++ ) {
             dbloc16_big[i].n2 = 0;
         }
     }
@@ -395,54 +410,54 @@ void J3DAPI dbloc16_MakeGlyphs(int size)
     {
         pEdgeX = dbloc16_small1;
         pEdgeY = dbloc16_small2;
-        for ( int i = 0; i < 256; i++ ) {
+        for ( int i = 0; i < BL16_NUMTABLES; i++ ) {
             dbloc16_small[i].n1 = 0;
         }
 
-        for ( int i = 0; i < 256; i++ ) {
+        for ( int i = 0; i < BL16_NUMTABLES; i++ ) {
             dbloc16_small[i].n2 = 0;
         }
     }
 
     int entry = 0;
-    for ( int x = 0; x < 16; x++ )
+    for ( int x = 0; x < DBLOC16_NUMEDGES; x++ )
     {
-        for ( int y = 0; y < 16; y++ )
+        for ( int y = 0; y < DBLOC16_NUMEDGES; y++ )
         {
-            int edge1;
+            Bl16Edge edge1;
             int y1 = pEdgeY[x];
             if ( y1 == 0 ) {
-                edge1 = 0;
+                edge1 = BL16_EDGE_TOP;
             }
             else if ( y1 == size - 1 ) {
-                edge1 = 1;
+                edge1 = BL16_EDGE_BOTTOM;
             }
             else if ( pEdgeX[x] == 0 ) {
-                edge1 = 2;
+                edge1 = BL16_EDGE_LEFT;
             }
             else if ( pEdgeX[x] == size - 1 ) {
-                edge1 = 3;
+                edge1 = BL16_EDGE_RIGHT;
             }
             else {
-                edge1 = 4;
+                edge1 = BL16_EDGE_INNER;
             }
 
-            int edge2;
+            Bl16Edge edge2;
             int y2 = pEdgeY[y];
             if ( y2 == 0 ) {
-                edge2 = 0;
+                edge2 = BL16_EDGE_TOP;
             }
             else if ( y2 == size - 1 ) {
-                edge2 = 1;
+                edge2 = BL16_EDGE_BOTTOM;
             }
             else if ( pEdgeX[y] == 0 ) {
-                edge2 = 2;
+                edge2 = BL16_EDGE_LEFT;
             }
             else if ( pEdgeX[y] == size - 1 ) {
-                edge2 = 3;
+                edge2 = BL16_EDGE_RIGHT;
             }
             else {
-                edge2 = 4;
+                edge2 = BL16_EDGE_INNER;
             }
 
             int i = size * size;
@@ -450,7 +465,7 @@ void J3DAPI dbloc16_MakeGlyphs(int size)
                 glyph[i] = 0;
             }
 
-            int n  = DBLOC16_MAX(DBLOC16_ABS(pEdgeX[x] - pEdgeX[y]), DBLOC16_ABS(pEdgeY[x] - pEdgeY[y])) + 1;
+            int n  = DBLOC16_MAX(abs(pEdgeX[x] - pEdgeX[y]), abs(pEdgeY[x] - pEdgeY[y])) + 1;
             int x1 = pEdgeX[x];
             int x2 = pEdgeX[y];
             for ( i = 0; i < n; i++ )
@@ -464,25 +479,25 @@ void J3DAPI dbloc16_MakeGlyphs(int size)
                 }
 
                 glyph[py * size + px] = 1;
-                if ( (edge1 == 2 && edge2 == 3) || (edge2 == 2 && edge1 == 3) || (edge1 == 0 && edge2 != 1) || (edge2 == 0 && edge1 != 1) )
+                if ( (edge1 == BL16_EDGE_LEFT && edge2 == BL16_EDGE_RIGHT) || (edge2 == BL16_EDGE_LEFT && edge1 == BL16_EDGE_RIGHT) || (edge1 == BL16_EDGE_TOP && edge2 != BL16_EDGE_BOTTOM) || (edge2 == BL16_EDGE_TOP && edge1 != BL16_EDGE_BOTTOM) )
                 {
                     for ( int k = py; k >= 0; k-- ) {
                         glyph[k * size + px] = 1;
                     }
                 }
-                else if ( (edge1 == 1 && edge2 != 0) || (edge2 == 1 && edge1 != 0) )
+                else if ( (edge1 == BL16_EDGE_BOTTOM && edge2 != BL16_EDGE_TOP) || (edge2 == BL16_EDGE_BOTTOM && edge1 != BL16_EDGE_TOP) )
                 {
                     for ( int k = py; k < size; k++ ) {
                         glyph[k * size + px] = 1;
                     }
                 }
-                else if ( (edge1 == 0 && edge2 == 1) || (edge2 == 0 && edge1 == 1) || (edge1 == 3 && edge2 != 2) || (edge2 == 3 && edge1 != 2) )
+                else if ( (edge1 == BL16_EDGE_TOP && edge2 == BL16_EDGE_BOTTOM) || (edge2 == BL16_EDGE_TOP && edge1 == BL16_EDGE_BOTTOM) || (edge1 == BL16_EDGE_RIGHT && edge2 != BL16_EDGE_LEFT) || (edge2 == BL16_EDGE_RIGHT && edge1 != BL16_EDGE_LEFT) )
                 {
                     for ( int k = px; k < size; k++ ) {
                         glyph[py * size + k] = 1;
                     }
                 }
-                else if ( (edge1 == 2 && edge2 != 3) || (edge2 == 2 && edge1 != 3) )
+                else if ( (edge1 == BL16_EDGE_LEFT && edge2 != BL16_EDGE_RIGHT) || (edge2 == BL16_EDGE_LEFT && edge1 != BL16_EDGE_RIGHT) )
                 {
                     for ( int k = px; k >= 0; k-- ) {
                         glyph[py * size + k] = 1;
@@ -560,12 +575,12 @@ int J3DAPI dbloc16_DecodeFrame(LecBitmapHeader* pBitmap, MixerRect* pClip, int x
 
     switch ( pHdr->codec )
     {
-        case 0:
+        case BL16_CODEC_RAW:
             framestream_Copy(dbloc16_pCur, pGfx, width * height * 2);
             dbloc16_pLast = dbloc16_pCur;
             break;
 
-        case 6:
+        case BL16_CODEC_PALETTE:
         {
             uint16_t* pDst = dbloc16_pCur;
             int n          = width * height;
@@ -576,17 +591,17 @@ int J3DAPI dbloc16_DecodeFrame(LecBitmapHeader* pBitmap, MixerRect* pClip, int x
             dbloc16_pLast = dbloc16_pCur;
         } break;
 
-        case 1:
+        case BL16_CODEC_SCALE:
             dbloc16_Scale(dbloc16_pCur, (uint16_t*)pGfx, width, height);
             dbloc16_pLast = dbloc16_pCur;
             break;
 
-        case 7:
+        case BL16_CODEC_SCALEPAL:
             dbloc16_ScalePal(dbloc16_pCur, pGfx, width, height, pHdr->palette);
             dbloc16_pLast = dbloc16_pCur;
             break;
 
-        case 8:
+        case BL16_CODEC_RLEPAL:
         {
             decode_RleInit(pGfx);
             uint16_t* pDst = dbloc16_pCur;
@@ -599,13 +614,13 @@ int J3DAPI dbloc16_DecodeFrame(LecBitmapHeader* pBitmap, MixerRect* pClip, int x
             dbloc16_pLast = dbloc16_pCur;
         } break;
 
-        case 5:
+        case BL16_CODEC_RLE:
             decode_Rle((uint8_t*)dbloc16_pCur, pGfx, pHdr->rleSize);
             dbloc16_pLast = dbloc16_pCur;
             break;
 
-        case 4:
-            if ( (flags & 4) && !pHdr->rotate )
+        case BL16_CODEC_COPYBUF0:
+            if ( (flags & BL16_MODE_SKIPUNROTATED) && !pHdr->rotate )
             {
                 dbloc16_prevSeq = pHdr->seq;
                 return 0;
@@ -615,8 +630,8 @@ int J3DAPI dbloc16_DecodeFrame(LecBitmapHeader* pBitmap, MixerRect* pClip, int x
             dbloc16_pLast = dbloc16_pCur;
             break;
 
-        case 3:
-            if ( (flags & 4) && !pHdr->rotate )
+        case BL16_CODEC_COPYBUF1:
+            if ( (flags & BL16_MODE_SKIPUNROTATED) && !pHdr->rotate )
             {
                 dbloc16_prevSeq = pHdr->seq;
                 return 0;
@@ -626,8 +641,8 @@ int J3DAPI dbloc16_DecodeFrame(LecBitmapHeader* pBitmap, MixerRect* pClip, int x
             dbloc16_pLast = dbloc16_pCur;
             break;
 
-        case 2:
-            if ( (flags & 4) && !pHdr->rotate )
+        case BL16_CODEC_BLOCKS:
+            if ( (flags & BL16_MODE_SKIPUNROTATED) && !pHdr->rotate )
             {
                 dbloc16_prevSeq = pHdr->seq;
                 return 0;
@@ -686,13 +701,13 @@ int J3DAPI dbloc16_DecodeFrame(LecBitmapHeader* pBitmap, MixerRect* pClip, int x
 
     if ( pHdr->seq == dbloc16_prevSeq + 1 )
     {
-        if ( pHdr->rotate == 1 )
+        if ( pHdr->rotate == BL16_ROTATE_SWAP )
         {
             uint16_t* pTmp = dbloc16_pCur;
             dbloc16_pCur   = dbloc16_pBuf1;
             dbloc16_pBuf1  = pTmp;
         }
-        else if ( pHdr->rotate == 2 )
+        else if ( pHdr->rotate == BL16_ROTATE_CYCLE )
         {
             uint16_t* pTmp = dbloc16_pBuf0;
             dbloc16_pBuf0  = dbloc16_pBuf1;
@@ -709,18 +724,18 @@ void J3DAPI dbloc16_BuildLut(LecBitmapHeader* pBitmap)
 {
     if ( dbloc16_pLut != NULL
         && pBitmap->pixelSize == 2
-        && (pBitmap->colorMode == 1 || pBitmap->colorMode == 2)
+        && (pBitmap->colorMode == STDCOLOR_RGB || pBitmap->colorMode == STDCOLOR_RGBA)
         && (pBitmap->format.redPosShift != dbloc16_pBitmap0->format.redPosShift || pBitmap->format.bluePosShift != dbloc16_pBitmap0->format.bluePosShift || pBitmap->format.greenPosShift != dbloc16_pBitmap0->format.greenPosShift)
         && (pBitmap->format.redPosShift != dbloc16_red || pBitmap->format.bluePosShift != dbloc16_blue || pBitmap->format.greenPosShift != dbloc16_green) )
     {
         dbloc16_red   = pBitmap->format.redPosShift;
         dbloc16_green = pBitmap->format.greenPosShift;
         dbloc16_blue  = pBitmap->format.bluePosShift;
-        for ( int i = 0; i < 0x10000; i++ ) {
+        for ( int i = 0; i < DBLOC16_LUTSIZE; i++ ) {
             dbloc16_pLut[i] = (uint16_t)i;
         }
 
-        decode_Convert((uint8_t*)dbloc16_pLut, dbloc16_pBitmap0, 0x10000, NULL, (uint8_t*)dbloc16_pLut, pBitmap, NULL);
+        decode_Convert((uint8_t*)dbloc16_pLut, dbloc16_pBitmap0, DBLOC16_LUTSIZE, NULL, (uint8_t*)dbloc16_pLut, pBitmap, NULL);
     }
 }
 

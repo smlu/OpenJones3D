@@ -4,10 +4,50 @@
 #include <j3dcore/j3dhook.h>
 #include <smush/RTI/symbols.h>
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <string.h>
+#include <std/General/stdUtil.h>
 #include <smush/insane/Memory/Memory.h>
 #include <smush/insane/Sound/Engine.h>
+
+#define DWAVE_PACKETSIZE 500000 // Size of the sound packet buffer
+#define DWAVE_QUANTROWS  64     // Quantization table entries per step
+#define DWAVE_MAXINDEX   (STD_ARRAYLEN(dwave_step) - 1)
+#define DWAVE_STARTED_MINTOTAL 100000 // Total size above which the decoder reports the audio as started
+
+#define DWAVE_VOLUME_MAX 0x7F
+#define DWAVE_PACKET_WORDVALUE 100
+#define DWAVE_PLAY_ID    -1
+#define DWAVE_PLAY_PAN   0
+#define DWAVE_PLAY_PRIORITY 0x40
+
+#define DWAVE_RET_NOSOUND 0x80 // Returned when the packet stream has not started (or is too short)
+
+// Layout of the sound packet handed to the sound engine (multi-byte sizes are big-endian)
+typedef enum eDWavePacket
+{
+    DWAVE_PACKET_SIZE   = 4,
+    DWAVE_PACKET_WORD8  = 8,
+    DWAVE_PACKET_INDEX  = 10,
+    DWAVE_PACKET_WORD12 = 12,
+    DWAVE_PACKET_VOLUME = 16,
+    DWAVE_PACKET_PAN    = 17,
+    DWAVE_PACKET_DATA   = 18, // Samples of a continuation packet
+
+    // The first packet embeds the sound's header chunk before its samples
+    DWAVE_PACKET_HEADERSIZE = 22,
+    DWAVE_PACKET_FORMAT     = 30,
+    DWAVE_PACKET_CHANNELS   = 34,
+    DWAVE_PACKET_BITS       = 35,
+    DWAVE_PACKET_FLAGS      = 36,
+    DWAVE_PACKET_TOTAL      = 40,
+    DWAVE_PACKET_DATATYPE   = 44,
+    DWAVE_PACKET_DATAKIND   = 45,
+    DWAVE_PACKET_VIMATAG    = 46,
+    DWAVE_PACKET_DATASIZE   = 50,
+    DWAVE_PACKET_FIRSTDATA  = 54, // Samples of the first packet
+} DWavePacket;
 
 #define DWAVE_SWAP32(v) (((((v) & 0xFF0000) | ((v) >> 16)) >> 8) | ((((v) << 16) | ((v) & 0xFF00)) << 8))
 
@@ -50,20 +90,22 @@ static int dwave_lastHeader = -1;
 static const int8_t* dwave_deltas[8] = { NULL, NULL, dwave_delta2, dwave_delta3, dwave_delta4, dwave_delta5, dwave_delta6, dwave_delta7 };
 
 static MemoryDebugInterface* dwave_pMemory = NULL;
+
+// The decoder state carried between packets: per channel the step index and the predicted sample
 static struct
 {
-    int8_t idx[2];
+    int8_t index[2];
     int16_t pred[2];
     uint16_t packets;
 } dwave_state = { 0 };
 
-static uint32_t dwave_total        = 0;
-static LecShare* dwave_pShare      = NULL;
-static uint16_t dwave_quant[89 * 64] = { 0 };
-static void* dwave_pParam          = NULL;
+static uint32_t dwave_total         = 0;
+static LecShare* dwave_pShare       = NULL;
+static uint16_t dwave_quant[STD_ARRAYLEN(dwave_step) * DWAVE_QUANTROWS] = { 0 };
+static void* dwave_pParam           = NULL;
 static SoundInterface* dwave_pSound = NULL;
-static char* dwave_pPacket         = NULL;
-static int dwave_tableReady        = 0;
+static uint8_t* dwave_pPacket       = NULL;
+static bool dwave_bTableReady       = false;
 
 void D_wave_InstallHooks(void)
 {
@@ -114,7 +156,7 @@ int dwave_Startup(void)
         return -1;
     }
 
-    dwave_pPacket = dwave_pMemory->Alloc(500000, INSANE_FILE, __LINE__);
+    dwave_pPacket = dwave_pMemory->Alloc(DWAVE_PACKETSIZE, INSANE_FILE, __LINE__);
     return dwave_pPacket ? 0 : -1;
 }
 
@@ -164,106 +206,104 @@ void dwave_Reset(void)
 int J3DAPI dwave_Parse(const uint8_t* pData, int size)
 {
     J3D_UNUSED(size);
-    uint32_t total = *(const uint32_t*)(pData + 8);
 
     dwave_state.packets = 0;
-    dwave_total         = total;
+    dwave_total         = *(const uint32_t*)(pData + 8);
     return 0;
 }
 
-uint32_t J3DAPI dwave_Decode(void* a1, int a2, int a3, int a4, void* a5, const uint8_t* pData, int size, int mode, int a9, int a10)
+uint32_t J3DAPI dwave_Decode(void* pBitmap, int clip, int x, int y, void* pPalette, const uint8_t* pData, int size, int flags, int unused9, int unused10)
 {
-    J3D_UNUSED(a1); J3D_UNUSED(a2); J3D_UNUSED(a3); J3D_UNUSED(a4); J3D_UNUSED(a5); J3D_UNUSED(size); J3D_UNUSED(mode); J3D_UNUSED(a9); J3D_UNUSED(a10);
-    uint32_t channels   = 1;
-    const uint8_t* src  = pData;
+    J3D_UNUSED(pBitmap); J3D_UNUSED(clip); J3D_UNUSED(x); J3D_UNUSED(y); J3D_UNUSED(pPalette);
+    J3D_UNUSED(size); J3D_UNUSED(flags); J3D_UNUSED(unused9); J3D_UNUSED(unused10);
 
-    uint32_t v = DWAVE_SWAP32(*(const uint32_t*)src);
-    src += 4;
-    if ( (int)v < 0 )
+    const uint8_t* pSrc = pData;
+
+    uint32_t numSamples = DWAVE_SWAP32(*(const uint32_t*)pSrc);
+    pSrc += 4;
+
+    // A negative sample count marks an extended header: a stream id (a new id restarts the packet count) and the real count
+    if ( (int)numSamples < 0 )
     {
-        uint32_t h = DWAVE_SWAP32(*(const uint32_t*)src);
-        src += 4;
-        if ( (int)h != dwave_lastHeader )
+        int header = (int)DWAVE_SWAP32(*(const uint32_t*)pSrc);
+        pSrc += 4;
+
+        if ( header != dwave_lastHeader )
         {
-            dwave_lastHeader    = h;
+            dwave_lastHeader    = header;
             dwave_state.packets = 0;
         }
 
-        v = DWAVE_SWAP32(*(const uint32_t*)src);
-        src += 4;
+        numSamples = DWAVE_SWAP32(*(const uint32_t*)pSrc);
+        pSrc += 4;
     }
 
-    uint8_t c = *src++;
-    dwave_state.idx[0] = c;
-    if ( (int8_t)c < 0 )
+    // A set high bit of the first step index marks stereo; the index is stored inverted
+    uint32_t numChannels = 1;
+    uint8_t stepIndex    = *pSrc++;
+    dwave_state.index[0] = stepIndex;
+    if ( (int8_t)stepIndex < 0 )
     {
-        dwave_state.idx[0] = ~c;
-        channels = 2;
+        dwave_state.index[0] = ~stepIndex;
+        numChannels          = 2;
     }
 
-    uint16_t w = *(const uint16_t*)src;
-    dwave_state.pred[0] = (w >> 8) | ((w & 0xFF) << 8);
-    src += 2;
-    if ( channels > 1 )
+    uint16_t sample     = *(const uint16_t*)pSrc;
+    dwave_state.pred[0] = (sample >> 8) | ((sample & 0xFF) << 8);
+    pSrc += 2;
+
+    if ( numChannels > 1 )
     {
-        dwave_state.idx[1] = *src++;
-        w = *(const uint16_t*)src;
-        dwave_state.pred[1] = (w >> 8) | ((w & 0xFF) << 8);
-        src += 2;
+        dwave_state.index[1] = *pSrc++;
+        sample               = *(const uint16_t*)pSrc;
+        dwave_state.pred[1]  = (sample >> 8) | ((sample & 0xFF) << 8);
+        pSrc += 2;
     }
 
     if ( dwave_pSound )
     {
-        uint32_t total = dwave_total;
-        uint32_t len;
+        uint8_t* pPacket = dwave_pPacket;
+        memcpy(pPacket, "PSAD", 4);
+
         if ( dwave_state.packets == 0 )
         {
-            memcpy(dwave_pPacket, "PSAD", 4);
-            len = v * channels * 2 + 0x2E;
-            *(uint32_t*)(dwave_pPacket + 4) = DWAVE_SWAP32(len);
-            *(int16_t*)(dwave_pPacket + 8)  = 100;
-            *(int16_t*)(dwave_pPacket + 10) = dwave_state.packets;
-            *(int16_t*)(dwave_pPacket + 12) = 100;
-            *(char*)(dwave_pPacket + 16)    = 0x7F;
-            *(char*)(dwave_pPacket + 17)    = 0;
-            len = total + 0x24;
-            *(uint32_t*)(dwave_pPacket + 22) = DWAVE_SWAP32(len);
-            *(uint32_t*)(dwave_pPacket + 30) = 0x0C000000;
-            *(char*)(dwave_pPacket + 34)     = 1;
-            *(char*)(dwave_pPacket + 35)     = 8;
-            *(uint32_t*)(dwave_pPacket + 36) = 0;
-            len = total;
-            *(uint32_t*)(dwave_pPacket + 40) = DWAVE_SWAP32(len);
-            *(char*)(dwave_pPacket + 44)     = 5;
-            *(char*)(dwave_pPacket + 45)     = 0;
-            if ( channels == 1 ) {
-                memcpy(dwave_pPacket + 46, "S6MZ", 4);
-            }
-            else {
-                memcpy(dwave_pPacket + 46, "S6SZ", 4);
-            }
+            *(uint32_t*)(pPacket + DWAVE_PACKET_SIZE) = DWAVE_SWAP32((uint32_t)(numSamples * numChannels * 2 + 0x2E));
+            *(int16_t*)(pPacket + DWAVE_PACKET_WORD8)  = DWAVE_PACKET_WORDVALUE;
+            *(int16_t*)(pPacket + DWAVE_PACKET_INDEX)  = dwave_state.packets;
+            *(int16_t*)(pPacket + DWAVE_PACKET_WORD12) = DWAVE_PACKET_WORDVALUE;
+            pPacket[DWAVE_PACKET_VOLUME] = DWAVE_VOLUME_MAX;
+            pPacket[DWAVE_PACKET_PAN]    = 0;
 
-            *(uint32_t*)(dwave_pPacket + 50) = DWAVE_SWAP32(len);
-            dwave_DecodeVima((int16_t*)(dwave_pPacket + 54), src, v, channels);
+            *(uint32_t*)(pPacket + DWAVE_PACKET_HEADERSIZE) = DWAVE_SWAP32((uint32_t)(dwave_total + 0x24));
+            *(uint32_t*)(pPacket + DWAVE_PACKET_FORMAT) = 0x0C000000;
+            pPacket[DWAVE_PACKET_CHANNELS]              = 1;
+            pPacket[DWAVE_PACKET_BITS]                  = 8;
+            *(uint32_t*)(pPacket + DWAVE_PACKET_FLAGS)  = 0;
+            *(uint32_t*)(pPacket + DWAVE_PACKET_TOTAL) = DWAVE_SWAP32((uint32_t)(dwave_total));
+            pPacket[DWAVE_PACKET_DATATYPE] = 5;
+            pPacket[DWAVE_PACKET_DATAKIND] = 0;
+            memcpy(pPacket + DWAVE_PACKET_VIMATAG, numChannels == 1 ? "S6MZ" : "S6SZ", 4);
+            *(uint32_t*)(pPacket + DWAVE_PACKET_DATASIZE) = DWAVE_SWAP32((uint32_t)(dwave_total));
+
+            dwave_DecodeVima((int16_t*)(pPacket + DWAVE_PACKET_FIRSTDATA), pSrc, numSamples, numChannels);
         }
         else
         {
-            memcpy(dwave_pPacket, "PSAD", 4);
-            len = v * channels * 2 + 10;
-            *(uint32_t*)(dwave_pPacket + 4) = DWAVE_SWAP32(len);
-            *(int16_t*)(dwave_pPacket + 8)  = 100;
-            *(int16_t*)(dwave_pPacket + 10) = dwave_state.packets;
-            *(int16_t*)(dwave_pPacket + 12) = 100;
-            *(char*)(dwave_pPacket + 16)    = 0x7F;
-            *(char*)(dwave_pPacket + 17)    = 0;
-            dwave_DecodeVima((int16_t*)(dwave_pPacket + 18), src, v, channels);
+            *(uint32_t*)(pPacket + DWAVE_PACKET_SIZE) = DWAVE_SWAP32((uint32_t)(numSamples * numChannels * 2 + 10));
+            *(int16_t*)(pPacket + DWAVE_PACKET_WORD8)  = DWAVE_PACKET_WORDVALUE;
+            *(int16_t*)(pPacket + DWAVE_PACKET_INDEX)  = dwave_state.packets;
+            *(int16_t*)(pPacket + DWAVE_PACKET_WORD12) = DWAVE_PACKET_WORDVALUE;
+            pPacket[DWAVE_PACKET_VOLUME] = DWAVE_VOLUME_MAX;
+            pPacket[DWAVE_PACKET_PAN]    = 0;
+
+            dwave_DecodeVima((int16_t*)(pPacket + DWAVE_PACKET_DATA), pSrc, numSamples, numChannels);
         }
 
-        dwave_pSound->Play((uint8_t*)dwave_pPacket, -1, 0x7F, 0, 0x40);
+        dwave_pSound->Play(pPacket, DWAVE_PLAY_ID, DWAVE_VOLUME_MAX, DWAVE_PLAY_PAN, DWAVE_PLAY_PRIORITY);
         dwave_state.packets++;
     }
 
-    return (dwave_state.packets != 0 && dwave_total > 100000) ? 0 : 0x80;
+    return (dwave_state.packets != 0 && dwave_total > DWAVE_STARTED_MINTOTAL) ? 0 : DWAVE_RET_NOSOUND;
 }
 
 int dwave_Query1(void)
@@ -277,97 +317,104 @@ int J3DAPI dwave_Query(const uint8_t* pData, int tag, int* pX, int* pY, int* pWi
     return -1;
 }
 
+// Decodes variable bit rate ADPCM (VIMA): per channel, every sample is a code of 4-7 bits (the width follows the step
+// index); the code's top bit is the sign, the rest selects a fraction of the step size. The all-ones magnitude is an escape
+// that carries the next 16-bit sample verbatim. The code width and magnitude then also move the step index.
 void J3DAPI dwave_DecodeVima(int16_t* pDst, const uint8_t* pSrc, uint32_t count, uint32_t channels)
 {
-    int bitPtr = 0;
-    const uint8_t* src = pSrc;
+    const uint8_t* pIn = pSrc;
 
-    if ( !dwave_tableReady )
+    if ( !dwave_bTableReady )
     {
-        for ( int start = 0, incer = 0; start < 64; start++, incer++ )
+        // dwave_quant[step][code]: the sum of the step size's halvings selected by the bits of the code
+        for ( int code = 0; code < DWAVE_QUANTROWS; code++ )
         {
-            for ( int pos = 0; pos < 89; pos++ )
+            for ( size_t step = 0; step < STD_ARRAYLEN(dwave_step); step++ )
             {
-                int put = 0;
-                uint16_t value = dwave_step[pos];
-                for ( uint32_t j = 0x20; j != 0; j >>= 1, value >>= 1 )
+                int sum        = 0;
+                uint16_t value = dwave_step[step];
+                for ( uint32_t mask = 0x20; mask != 0; mask >>= 1, value >>= 1 )
                 {
-                    if ( incer & j ) {
-                        put += value;
+                    if ( code & mask ) {
+                        sum += value;
                     }
                 }
 
-                dwave_quant[pos * 64 + start] = (uint16_t)put;
+                dwave_quant[step * DWAVE_QUANTROWS + code] = (uint16_t)sum;
             }
         }
 
-        dwave_tableReady = 1;
+        dwave_bTableReady = true;
     }
 
-    uint16_t bits = *src++;
-    bits = (bits << 8) | *src++;
+    // The bit window: 16 bits of the stream, refilled a byte at a time
+    int bitPos      = 0;
+    uint16_t window = *pIn++;
+    window          = (window << 8) | *pIn++;
+
     for ( uint32_t ch = 0; ch < channels; ch++ )
     {
         int16_t* pOut = pDst + ch;
-        int idx       = dwave_state.idx[ch];
+        int index     = dwave_state.index[ch];
         int pred      = dwave_state.pred[ch];
 
         for ( uint32_t n = count; n != 0; n-- )
         {
-            uint8_t numBits = dwave_bits[idx];
-            int highBit     = 1 << (numBits - 1);
-            uint8_t lowBits = (uint8_t)(highBit - 1);
+            uint8_t numBits = dwave_bits[index];
+            int signBit     = 1 << (numBits - 1);
+            uint8_t escape  = (uint8_t)(signBit - 1); // All magnitude bits set
 
-            bitPtr += numBits;
-            int val = ((bits & 0xFFFF) >> (16 - bitPtr)) & (highBit | lowBits);
-            if ( bitPtr > 7 )
+            bitPos += numBits;
+            int code = ((window & 0xFFFF) >> (16 - bitPos)) & (signBit | escape);
+            if ( bitPos > 7 )
             {
-                bits = ((bits & 0xFF) << 8) | *src++;
-                bitPtr -= 8;
+                window = ((window & 0xFF) << 8) | *pIn++;
+                bitPos -= 8;
             }
 
-            if ( val & highBit ) {
-                val ^= highBit;
+            if ( code & signBit ) {
+                code ^= signBit;
             }
             else {
-                highBit = 0;
+                signBit = 0;
             }
 
-            if ( val == lowBits )
+            if ( code == escape )
             {
-                pred = (int16_t)(bits << bitPtr) & 0xFFFFFF00;
-                bits = ((bits & 0xFF) << 8) | *src++;
-                pred |= (uint8_t)(bits >> (8 - bitPtr));
-                bits = ((bits & 0xFF) << 8) | *src++;
+                pred   = (int16_t)(window << bitPos) & 0xFFFFFF00;
+                window = ((window & 0xFF) << 8) | *pIn++;
+                pred  |= (uint8_t)(window >> (8 - bitPos));
+                window = ((window & 0xFF) << 8) | *pIn++;
             }
             else
             {
-                int delta = dwave_quant[(val << (7 - numBits)) | (idx << 6)];
-                if ( val ) {
-                    delta += dwave_step[idx] >> (numBits - 1);
+                int delta = dwave_quant[(code << (7 - numBits)) | (index * DWAVE_QUANTROWS)];
+                if ( code ) {
+                    delta += dwave_step[index] >> (numBits - 1);
                 }
 
-                pred += highBit ? -delta : delta;
-                if ( pred < -32768 ) {
-                    pred = -32768;
+                pred += signBit ? -delta : delta;
+                if ( pred < INT16_MIN ) {
+                    pred = INT16_MIN;
                 }
-                else if ( pred > 32767 ) {
-                    pred = 32767;
+                else if ( pred > INT16_MAX ) {
+                    pred = INT16_MAX;
                 }
             }
 
             *pOut = (int16_t)pred;
             pOut += channels;
-            idx += dwave_deltas[numBits][val];
-            if ( idx < 0 ) {
-                idx = 0;
+
+            index += dwave_deltas[numBits][code];
+            if ( index < 0 ) {
+                index = 0;
             }
-            else if ( idx > 88 ) {
-                idx = 88;
+            else if ( index > (int)DWAVE_MAXINDEX ) {
+                index = (int)DWAVE_MAXINDEX;
             }
         }
 
-        dwave_state.idx[ch]  = (int8_t)idx;
-        dwave_state.pred[ch] = (int16_t)pred;
+        dwave_state.index[ch] = (int8_t)index;
+        dwave_state.pred[ch]  = (int16_t)pred;
     }
 }

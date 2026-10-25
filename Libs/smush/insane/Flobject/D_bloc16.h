@@ -92,7 +92,7 @@ typedef struct sBl16Interface
     int  (*GetFlags)(void);
     void (*Reset)(void);
     int  (*Parse)(const Bl16Parse* pData, int size);
-    int  (*Decode)(void* a1, int a2, int a3, int a4, void* a5, const uint8_t* pData, int size, int mode, int a9, int a10);
+    int  (*Decode)(void* pBitmap, int clip, int x, int y, void* pPalette, const uint8_t* pData, int size, int flags, int unused9, int unused10);
     int  (*Query1)(void);
     int  (*Query)(const Bl16Header* pData, int tag, int* pX, int* pY, int* pWidth, int* pHeight);
 } Bl16Interface;
@@ -101,6 +101,41 @@ static_assert(sizeof(Bl16Interface) == 0x20, "sizeof(Bl16Interface) == 0x20");
 typedef int (*Bl16Blit)(LecBitmapHeader* pDst, MixerRect* pClip, int x, int y, LecBitmapHeader* pSrc, void* pPalette, void* pTable);
 
 #define BL16_NUMTABLES 256 /* glyph tables per width: dbloc16_small[256] (0x8000 bytes), dbloc16_big[256] (0x18400 bytes) */
+
+/* The frame's compression codec (Bl16Header.codec) */
+typedef enum eBl16Codec
+{
+    BL16_CODEC_RAW      = 0, /* 16-bit pixels */
+    BL16_CODEC_SCALE    = 1, /* Half-size 16-bit pixels, doubled with interpolation */
+    BL16_CODEC_BLOCKS   = 2, /* 8x8 blocks, see dbloc16_Codec2 */
+    BL16_CODEC_COPYBUF1 = 3, /* Repeats the delta buffer 1 */
+    BL16_CODEC_COPYBUF0 = 4, /* Repeats the delta buffer 0 */
+    BL16_CODEC_RLE      = 5, /* RLE compressed 16-bit pixels */
+    BL16_CODEC_PALETTE  = 6, /* 8-bit pixels through the frame's palette */
+    BL16_CODEC_SCALEPAL = 7, /* Half-size 8-bit pixels through the palette, doubled with interpolation */
+    BL16_CODEC_RLEPAL   = 8, /* RLE compressed 8-bit pixels through the palette */
+} Bl16Codec;
+
+/* How a decoded frame moves through the delta buffers (Bl16Header.rotate) */
+typedef enum eBl16Rotate
+{
+    BL16_ROTATE_NONE   = 0,
+    BL16_ROTATE_SWAP   = 1, /* Swaps the current and the delta buffer 1 */
+    BL16_ROTATE_CYCLE  = 2, /* Current -> buffer 1 -> buffer 0 -> current */
+} Bl16Rotate;
+
+/* dbloc16_Configure tags */
+typedef enum eBl16Config
+{
+    BL16_CONFIG_END       = 0,
+    BL16_CONFIG_SETBLIT   = 1,
+    BL16_CONFIG_GETBLIT   = 2,
+    BL16_CONFIG_GETSHOWN  = 3,
+} Bl16Config;
+
+#define BL16_QUERY_BOUNDS 0x100 /* dbloc16_Query: the frame's position and size */
+
+#define BL16_MODE_SKIPUNROTATED 4 /* Decode flag: frames that do not rotate the buffers are not decoded */
 
 int J3DAPI dbloc16_Register(LecShare* pShare, void* pParam);
 int J3DAPI dbloc16_Configure(int tag, ...);
@@ -114,7 +149,7 @@ void dbloc16_Reset(void);
 int J3DAPI dbloc16_Parse(const Bl16Parse* pData, int size);
 int J3DAPI dbloc16_Alloc(int width, int height, int depth);
 void dbloc16_Free(void);
-int J3DAPI dbloc16_Decode(void* a1, int a2, int a3, int a4, void* a5, const uint8_t* pData, int size, int mode, int a9, int a10);
+int J3DAPI dbloc16_Decode(void* pBitmap, int clip, int x, int y, void* pPalette, const uint8_t* pData, int size, int flags, int unused9, int unused10);
 int dbloc16_Query1(void); // Folded onto 0x004E8260; no address of its own, never hook
 int J3DAPI dbloc16_Query(const Bl16Header* pData, int tag, int* pX, int* pY, int* pWidth, int* pHeight);
 void J3DAPI dbloc16_MakeTables(int width);

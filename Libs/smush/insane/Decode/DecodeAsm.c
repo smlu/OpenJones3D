@@ -8,8 +8,6 @@
 
 void DecodeAsm_InstallHooks(void)
 {
-    // Uncomment only lines for functions that have full definition and doesn't call original function (non-thunk functions)
-
     J3D_HOOKFUNC(decode_Lut8);
     J3D_HOOKFUNC(decode_Lut16);
     J3D_HOOKFUNC(decode_RGBAto555);

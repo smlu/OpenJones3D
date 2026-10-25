@@ -19,7 +19,7 @@ typedef struct sDWaveInterface
     int  (*GetFlags)(void);
     void (*Reset)(void);
     int  (*Parse)(const uint8_t* pData, int size);
-    uint32_t (*Decode)(void* a1, int a2, int a3, int a4, void* a5, const uint8_t* pData, int size, int mode, int a9, int a10);
+    uint32_t (*Decode)(void* pBitmap, int clip, int x, int y, void* pPalette, const uint8_t* pData, int size, int flags, int unused9, int unused10);
     int  (*Query1)(void);
     int  (*Query)(const uint8_t* pData, int tag, int* pX, int* pY, int* pWidth, int* pHeight);
 } DWaveInterface;
@@ -34,7 +34,7 @@ int dwave_GetTag(void);
 int dwave_GetFlags(void);
 void dwave_Reset(void);
 int J3DAPI dwave_Parse(const uint8_t* pData, int size);
-uint32_t J3DAPI dwave_Decode(void* a1, int a2, int a3, int a4, void* a5, const uint8_t* pData, int size, int mode, int a9, int a10);
+uint32_t J3DAPI dwave_Decode(void* pBitmap, int clip, int x, int y, void* pPalette, const uint8_t* pData, int size, int flags, int unused9, int unused10);
 int dwave_Query1(void); // Folded onto 0x004E8260 (shared with dbloc16_Query1, dwave_Query); never hook (see RTI/addresses.h)
 int J3DAPI dwave_Query(const uint8_t* pData, int tag, int* pX, int* pY, int* pWidth, int* pHeight); // Folded onto 0x004E8260; no address of its own, never hook
 void J3DAPI dwave_DecodeVima(int16_t* pDst, const uint8_t* pSrc, uint32_t count, uint32_t channels);

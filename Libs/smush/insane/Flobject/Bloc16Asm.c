@@ -8,14 +8,27 @@
 
 void Bloc16Asm_InstallHooks(void)
 {
-    // Uncomment only lines for functions that have full definition and doesn't call original function (non-thunk functions)
-
     J3D_HOOKFUNC(dbloc16_Interpolate);
     J3D_HOOKFUNC(dbloc16_Codec2);
 }
 
 void Bloc16Asm_ResetGlobals(void)
 {}
+
+// The opcodes of the block stream. Opcodes up to DBLOC16_OP_MOTIONVECTOR copy from the previous frame
+typedef enum eDBloc16Op
+{
+    DBLOC16_OP_MOTIONVECTOR = 0xF5, // Followed by a 16-bit pixel offset; 0x00-0xF4 index the motion table
+    DBLOC16_OP_DELTACOPY    = 0xF6, // Copy from the delta frame
+    DBLOC16_OP_GLYPHPALETTE = 0xF7, // Glyph index and two palette indices; as a 2x2 block four palette indices
+    DBLOC16_OP_GLYPHLITERAL = 0xF8, // Glyph index and two colours; as a 2x2 block four colours
+    DBLOC16_OP_FILLPARAM0   = 0xF9, // Fill with one of the four colours of the frame's parameters (0xF9-0xFC)
+    DBLOC16_OP_FILLPALETTE  = 0xFD, // Fill with a palette colour
+    DBLOC16_OP_FILLLITERAL  = 0xFE, // Fill with a colour
+    DBLOC16_OP_SPLIT        = 0xFF, // Four blocks of half the size; as a 2x2 block four colours like DBLOC16_OP_GLYPHLITERAL
+} DBloc16Op;
+
+#define DBLOC16_BLOCKSIZE 8 // The frame is made of 8x8 pixel blocks, 16 bytes wide
 
 // The block decoder's state; the original keeps it in the assembly's own data block (0x0054DC70), which dbloc16_Codec2
 // fills on every call before it is read.
@@ -116,7 +129,7 @@ static int dbloc16_MotionOffset(const Bloc16Context* pCtx, const uint8_t** ppSrc
 {
     const uint8_t* pSrc = *ppSrc;
     int offset;
-    if ( *pSrc == 0xF5 )
+    if ( *pSrc == DBLOC16_OP_MOTIONVECTOR )
     {
         offset = (int16_t)dbloc16_Load16(pSrc + 1) * 2;
         *ppSrc = pSrc + 3;
@@ -135,13 +148,13 @@ static uint16_t dbloc16_FillColor(const Bloc16Context* pCtx, const uint8_t** ppS
 {
     const uint8_t* pSrc = *ppSrc;
     uint8_t op          = *pSrc;
-    if ( op == 0xFE ) // literal colour
+    if ( op == DBLOC16_OP_FILLLITERAL )
     {
         *ppSrc = pSrc + 3;
         return dbloc16_Load16(pSrc + 1);
     }
 
-    if ( op == 0xFD ) // palette colour
+    if ( op == DBLOC16_OP_FILLPALETTE )
     {
         *ppSrc = pSrc + 2;
         return pCtx->pPalette[pSrc[1]];
@@ -149,7 +162,7 @@ static uint16_t dbloc16_FillColor(const Bloc16Context* pCtx, const uint8_t** ppS
 
     // 0xF9-0xFC: one of the four colours of the frame's parameters
     *ppSrc = pSrc + 1;
-    return dbloc16_Load16(pCtx->pColors + (op - 0xF9) * 2);
+    return dbloc16_Load16(pCtx->pColors + (op - DBLOC16_OP_FILLPARAM0) * 2);
 }
 
 // The glyph opcodes 0xF7 (two palette colours) and 0xF8 (two literal colours): returns the glyph index and the colours
@@ -157,7 +170,7 @@ static uint16_t dbloc16_FillColor(const Bloc16Context* pCtx, const uint8_t** ppS
 static uint8_t dbloc16_GlyphColors(const Bloc16Context* pCtx, const uint8_t** ppSrc, uint32_t* pColors)
 {
     const uint8_t* pSrc = *ppSrc;
-    if ( *pSrc == 0xF8 )
+    if ( *pSrc == DBLOC16_OP_GLYPHLITERAL )
     {
         *pColors = dbloc16_Load32(pSrc + 2);
         *ppSrc   = pSrc + 6;
@@ -176,7 +189,7 @@ static const uint8_t* dbloc16_Block2(const Bloc16Context* pCtx, const uint8_t* p
 {
     int lineSize = pCtx->lineSize;
     uint8_t op   = *pSrc;
-    if ( op <= 0xF5 )
+    if ( op <= DBLOC16_OP_MOTIONVECTOR )
     {
         int offset = dbloc16_MotionOffset(pCtx, &pSrc);
         dbloc16_Store32(pBlock, dbloc16_Load32(pBlock + offset));
@@ -186,25 +199,25 @@ static const uint8_t* dbloc16_Block2(const Bloc16Context* pCtx, const uint8_t* p
 
     switch ( op )
     {
-        case 0xFF:
-        case 0xF8: // four literal pixels
+        case DBLOC16_OP_SPLIT:
+        case DBLOC16_OP_GLYPHLITERAL: // four literal pixels
             dbloc16_Store32(pBlock, dbloc16_Load32(pSrc + 1));
             dbloc16_Store32(pBlock + lineSize, dbloc16_Load32(pSrc + 5));
             return pSrc + 9;
 
-        case 0xF7: // four palette pixels
+        case DBLOC16_OP_GLYPHPALETTE: // four palette pixels
             dbloc16_Store16(pBlock, pCtx->pPalette[pSrc[1]]);
             dbloc16_Store16(pBlock + 2, pCtx->pPalette[pSrc[2]]);
             dbloc16_Store16(pBlock + lineSize, pCtx->pPalette[pSrc[3]]);
             dbloc16_Store16(pBlock + lineSize + 2, pCtx->pPalette[pSrc[4]]);
             return pSrc + 5;
 
-        case 0xF6: // copy from the delta frame
+        case DBLOC16_OP_DELTACOPY: // copy from the delta frame
             dbloc16_Store32(pBlock, dbloc16_Load32(pBlock + pCtx->deltaOffset));
             dbloc16_Store32(pBlock + lineSize, dbloc16_Load32(pBlock + lineSize + pCtx->deltaOffset));
             return pSrc + 1;
 
-        default: // 0xF9-0xFE
+        default: // Fills
             dbloc16_FillBlock(pBlock, dbloc16_FillColor(pCtx, &pSrc), lineSize, 2);
             return pSrc;
     }
@@ -215,7 +228,7 @@ static const uint8_t* dbloc16_Block4(const Bloc16Context* pCtx, const uint8_t* p
 {
     int lineSize = pCtx->lineSize;
     uint8_t op   = *pSrc;
-    if ( op <= 0xF5 )
+    if ( op <= DBLOC16_OP_MOTIONVECTOR )
     {
         int offset = dbloc16_MotionOffset(pCtx, &pSrc);
         dbloc16_CopyBlock(pBlock, offset, lineSize, 4);
@@ -224,14 +237,14 @@ static const uint8_t* dbloc16_Block4(const Bloc16Context* pCtx, const uint8_t* p
 
     switch ( op )
     {
-        case 0xFF: // four 2x2 blocks
+        case DBLOC16_OP_SPLIT: // four 2x2 blocks
             pSrc = dbloc16_Block2(pCtx, pSrc + 1, pBlock);
             pSrc = dbloc16_Block2(pCtx, pSrc, pBlock + 4);
             pSrc = dbloc16_Block2(pCtx, pSrc, pBlock + lineSize * 2);
             return dbloc16_Block2(pCtx, pSrc, pBlock + lineSize * 2 + 4);
 
-        case 0xF7:
-        case 0xF8:
+        case DBLOC16_OP_GLYPHPALETTE:
+        case DBLOC16_OP_GLYPHLITERAL:
         {
             uint32_t colors;
             const Bl16Small* pGlyph = &pCtx->pSmall[dbloc16_GlyphColors(pCtx, &pSrc, &colors)];
@@ -239,11 +252,11 @@ static const uint8_t* dbloc16_Block4(const Bloc16Context* pCtx, const uint8_t* p
             return pSrc;
         }
 
-        case 0xF6: // copy from the delta frame
+        case DBLOC16_OP_DELTACOPY: // copy from the delta frame
             dbloc16_CopyBlock(pBlock, pCtx->deltaOffset, lineSize, 4);
             return pSrc + 1;
 
-        default: // 0xF9-0xFE
+        default: // Fills
             dbloc16_FillBlock(pBlock, dbloc16_FillColor(pCtx, &pSrc), lineSize, 4);
             return pSrc;
     }
@@ -254,7 +267,7 @@ static const uint8_t* dbloc16_Block8(const Bloc16Context* pCtx, const uint8_t* p
 {
     int lineSize = pCtx->lineSize;
     uint8_t op   = *pSrc;
-    if ( op <= 0xF5 )
+    if ( op <= DBLOC16_OP_MOTIONVECTOR )
     {
         int offset = dbloc16_MotionOffset(pCtx, &pSrc);
         dbloc16_CopyBlock(pBlock, offset, lineSize, 8);
@@ -263,14 +276,14 @@ static const uint8_t* dbloc16_Block8(const Bloc16Context* pCtx, const uint8_t* p
 
     switch ( op )
     {
-        case 0xFF: // four 4x4 blocks
+        case DBLOC16_OP_SPLIT: // four 4x4 blocks
             pSrc = dbloc16_Block4(pCtx, pSrc + 1, pBlock);
             pSrc = dbloc16_Block4(pCtx, pSrc, pBlock + 8);
             pSrc = dbloc16_Block4(pCtx, pSrc, pBlock + lineSize * 4);
             return dbloc16_Block4(pCtx, pSrc, pBlock + lineSize * 4 + 8);
 
-        case 0xF7:
-        case 0xF8:
+        case DBLOC16_OP_GLYPHPALETTE:
+        case DBLOC16_OP_GLYPHLITERAL:
         {
             uint32_t colors;
             const Bl16Big* pGlyph = &pCtx->pBig[dbloc16_GlyphColors(pCtx, &pSrc, &colors)];
@@ -278,11 +291,11 @@ static const uint8_t* dbloc16_Block8(const Bloc16Context* pCtx, const uint8_t* p
             return pSrc;
         }
 
-        case 0xF6: // copy from the delta frame
+        case DBLOC16_OP_DELTACOPY: // copy from the delta frame
             dbloc16_CopyBlock(pBlock, pCtx->deltaOffset, lineSize, 8);
             return pSrc + 1;
 
-        default: // 0xF9-0xFE
+        default: // Fills
             dbloc16_FillBlock(pBlock, dbloc16_FillColor(pCtx, &pSrc), lineSize, 8);
             return pSrc;
     }
@@ -358,9 +371,9 @@ void J3DAPI dbloc16_Codec2(uint16_t* pDst, uint8_t* pSrc, int offset1, int offse
 
     // The block counts are bytes: 0 (a size of 0 or 2041-2048) runs 256 blocks, and sizes above 2048 wrap.
     // Each row of blocks advances by its blocks (16 bytes each) plus 7 lines, which is 8 lines only when width is a multiple of 8.
-    uint8_t numRows    = (uint8_t)(((uint32_t)height + 7) >> 3);
-    uint8_t numCols    = (uint8_t)(((uint32_t)width + 7) >> 3);
-    uint32_t rowSkip   = (uint32_t)ctx.lineSize * 7;
+    uint8_t numRows    = (uint8_t)(((uint32_t)height + DBLOC16_BLOCKSIZE - 1) / DBLOC16_BLOCKSIZE);
+    uint8_t numCols    = (uint8_t)(((uint32_t)width + DBLOC16_BLOCKSIZE - 1) / DBLOC16_BLOCKSIZE);
+    uint32_t rowSkip   = (uint32_t)ctx.lineSize * (DBLOC16_BLOCKSIZE - 1);
     uint8_t* pBlock    = (uint8_t*)pDst;
     const uint8_t* pIn = pSrc;
     do
@@ -369,7 +382,7 @@ void J3DAPI dbloc16_Codec2(uint16_t* pDst, uint8_t* pSrc, int offset1, int offse
         do
         {
             pIn = dbloc16_Block8(&ctx, pIn, pBlock);
-            pBlock += 16;
+            pBlock += DBLOC16_BLOCKSIZE * 2;
         } while ( --col != 0 );
 
         pBlock += rowSkip;

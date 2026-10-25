@@ -4,16 +4,28 @@
 #include <j3dcore/j3dhook.h>
 #include <smush/RTI/symbols.h>
 
-#include <stddef.h>
+#include <std/types.h>
 #include <smush/insane/Decode/DecodeAsm.h>
 #include <smush/insane/File/Framestream.h>
 
+// The RLE stream: a header byte holds (run length - 1) << 1 and bit 0 set for a repeated byte (which follows the header)
+// and clear for literal bytes.
+typedef enum eDecodeRleState
+{
+    DECODE_RLE_LITERAL = 0,
+    DECODE_RLE_REPEAT  = 1,
+    DECODE_RLE_HEADER  = 2, // Next byte is a run header
+} DecodeRleState;
+
+#define DECODE_CHUNKPIXELS   0x500 // Pixels converted per round through the RGBA buffer
+#define DECODE_RGBAPIXELSIZE 4
+
 static const int decode_masks[9] = { 0x00, 0x80, 0xC0, 0xE0, 0xF0, 0xF8, 0xFC, 0xFE, 0xFF };
 
-static uint8_t decode_buffer[2][0x1400];
+static uint8_t decode_buffer[2][DECODE_CHUNKPIXELS * DECODE_RGBAPIXELSIZE];
 
 static int decode_length;
-static int decode_state;
+static DecodeRleState decode_state;
 static uint8_t decode_value;
 static uint8_t* decode_pSrc;
 static int decode_flip;
@@ -44,7 +56,7 @@ void J3DAPI decode_Rle(uint8_t* pDst, uint8_t* pSrc, int n)
 
 void J3DAPI decode_RleInit(uint8_t* pSrc)
 {
-    decode_state = 2;
+    decode_state = DECODE_RLE_HEADER;
     decode_pSrc = pSrc;
 }
 
@@ -56,29 +68,29 @@ uint8_t decode_RleByte(void)
     // TODO: [BUG] The original returns an undefined value for an invalid state
     uint8_t c = 0; // Fixed: Init to 0
 
-    if ( decode_state == 2 )
+    if ( decode_state == DECODE_RLE_HEADER )
     {
         decode_length = (*decode_pSrc >> 1) + 1;
         if ( *decode_pSrc++ & 1 )
         {
-            decode_state = 1;
+            decode_state = DECODE_RLE_REPEAT;
             decode_value = *decode_pSrc++;
         }
         else {
-            decode_state = 0;
+            decode_state = DECODE_RLE_LITERAL;
         }
     }
     switch ( decode_state )
     {
-    case 1:
+    case DECODE_RLE_REPEAT:
         c = decode_value;
         break;
-    case 0:
+    case DECODE_RLE_LITERAL:
         c = *decode_pSrc++;
         break;
     }
     if ( --decode_length == 0 ) {
-        decode_state = 2;
+        decode_state = DECODE_RLE_HEADER;
     }
     return c;
 }
@@ -135,7 +147,7 @@ void J3DAPI decode_Run(uint8_t* pDst, LecBitmapHeader* pBitmap, int n, uint8_t* 
 
 int J3DAPI decode_MakeTable(LecBitmapHeader* pSrcBitmap, LecBitmapHeader* pDstBitmap, void* pTable, void* pPalette)
 {
-    if ( pSrcBitmap->colorMode == 0 && pSrcBitmap->pixelSize == 1 && pDstBitmap->colorMode != 0 )
+    if ( pSrcBitmap->colorMode == STDCOLOR_PAL && pSrcBitmap->pixelSize == 1 && pDstBitmap->colorMode != STDCOLOR_PAL )
     {
         if ( pSrcBitmap->indexed.pPalette ) {
             pPalette = pSrcBitmap->indexed.pPalette;
@@ -157,7 +169,7 @@ int J3DAPI decode_Convert(uint8_t* pSrc, LecBitmapHeader* pSrcBitmap, int n, voi
     int buf;
 
     if ( pSrcBitmap->bpp == pDstBitmap->bpp && pSrcBitmap->colorMode == pDstBitmap->colorMode
-        && ((pSrcBitmap->colorMode != 1 && pSrcBitmap->colorMode != 2)
+        && ((pSrcBitmap->colorMode != STDCOLOR_RGB && pSrcBitmap->colorMode != STDCOLOR_RGBA)
             || (pSrcBitmap->format.redPosShift == pDstBitmap->format.redPosShift
                 && pSrcBitmap->format.greenPosShift == pDstBitmap->format.greenPosShift
                 && pSrcBitmap->format.bluePosShift == pDstBitmap->format.bluePosShift)) )
@@ -168,22 +180,22 @@ int J3DAPI decode_Convert(uint8_t* pSrc, LecBitmapHeader* pSrcBitmap, int n, voi
 
     if ( pTable )
     {
-        if ( pSrcBitmap->colorMode == 0 && pSrcBitmap->pixelSize == 1 )
+        if ( pSrcBitmap->colorMode == STDCOLOR_PAL && pSrcBitmap->pixelSize == 1 )
         {
             decode_Lut8(pDst, pSrc, n, pDstBitmap->pixelSize, pTable);
             return 0;
         }
-        if ( pSrcBitmap->pixelSize == 2 && pDstBitmap->colorMode != 0 )
+        if ( pSrcBitmap->pixelSize == 2 && pDstBitmap->colorMode != STDCOLOR_PAL )
         {
             decode_Lut16(pDst, pSrc, n, pDstBitmap->pixelSize, pTable);
             return 0;
         }
     }
-    srcRGBA = pSrcBitmap->colorMode == 2 && pSrcBitmap->pixelSize == 4 && pSrcBitmap->format.redPosShift == 0
+    srcRGBA = pSrcBitmap->colorMode == STDCOLOR_RGBA && pSrcBitmap->pixelSize == 4 && pSrcBitmap->format.redPosShift == 0
         && pSrcBitmap->format.greenPosShift == 8 && pSrcBitmap->format.bluePosShift == 16;
-    dstRGBA = pDstBitmap->colorMode == 2 && pDstBitmap->pixelSize == 4 && pDstBitmap->format.redPosShift == 0
+    dstRGBA = pDstBitmap->colorMode == STDCOLOR_RGBA && pDstBitmap->pixelSize == 4 && pDstBitmap->format.redPosShift == 0
         && pDstBitmap->format.greenPosShift == 8 && pDstBitmap->format.bluePosShift == 16;
-    for ( chunk = n < 0x500 ? n : 0x500; chunk > 0; chunk = n < 0x500 ? n : 0x500 )
+    for ( chunk = n < DECODE_CHUNKPIXELS ? n : DECODE_CHUNKPIXELS; chunk > 0; chunk = n < DECODE_CHUNKPIXELS ? n : DECODE_CHUNKPIXELS )
     {
         if ( srcRGBA )
         {
@@ -220,7 +232,7 @@ int J3DAPI decode_ToRGBA(uint8_t* pSrc, LecBitmapHeader* pBitmap, int n, void* p
     uint8_t* pIn;
     uint8_t* pOut;
 
-    if ( pBitmap->colorMode == 1 && pBitmap->pixelSize == 2 )
+    if ( pBitmap->colorMode == STDCOLOR_RGB && pBitmap->pixelSize == 2 )
     {
         if ( pBitmap->format.redPosShift == 10 && pBitmap->format.greenPosShift == 5 && pBitmap->format.bluePosShift == 0 )
         {
@@ -238,7 +250,7 @@ int J3DAPI decode_ToRGBA(uint8_t* pSrc, LecBitmapHeader* pBitmap, int n, void* p
             return 0;
         }
     }
-    if ( pBitmap->colorMode == 0 )
+    if ( pBitmap->colorMode == STDCOLOR_PAL )
     {
         if ( pBitmap->indexed.pPalette ) {
             pPalette = pBitmap->indexed.pPalette;
@@ -246,10 +258,10 @@ int J3DAPI decode_ToRGBA(uint8_t* pSrc, LecBitmapHeader* pBitmap, int n, void* p
         if ( !pPalette ) {
             return -1;
         }
-        decode_Lut8(pDst, pSrc, n, 4, pPalette);
+        decode_Lut8(pDst, pSrc, n, DECODE_RGBAPIXELSIZE, pPalette);
         return 0;
     }
-    if ( pBitmap->colorMode == 1 )
+    if ( pBitmap->colorMode == STDCOLOR_RGB )
     {
         uint8_t rMask;
         uint8_t gMask;
@@ -312,7 +324,7 @@ int J3DAPI decode_ToRGBA(uint8_t* pSrc, LecBitmapHeader* pBitmap, int n, void* p
         }
         return -1;
     }
-    if ( pBitmap->colorMode == 2 )
+    if ( pBitmap->colorMode == STDCOLOR_RGBA )
     {
         uint8_t rMask;
         uint8_t gMask;
@@ -387,7 +399,7 @@ int J3DAPI decode_ToRGBA(uint8_t* pSrc, LecBitmapHeader* pBitmap, int n, void* p
 int J3DAPI decode_Begin(uint8_t* pDst, LecBitmapHeader* pBitmap, int n, void* pPalette, uint8_t* pSrc)
 {
     J3D_UNUSED(pPalette);
-    if ( pBitmap->colorMode == 1 && pBitmap->pixelSize == 2 )
+    if ( pBitmap->colorMode == STDCOLOR_RGB && pBitmap->pixelSize == 2 )
     {
         if ( pBitmap->format.redPosShift == 10 && pBitmap->format.greenPosShift == 5 && pBitmap->format.bluePosShift == 0 )
         {
@@ -405,7 +417,7 @@ int J3DAPI decode_Begin(uint8_t* pDst, LecBitmapHeader* pBitmap, int n, void* pP
             return 0;
         }
     }
-    if ( pBitmap->colorMode == 1 )
+    if ( pBitmap->colorMode == STDCOLOR_RGB )
     {
         uint8_t* pIn;
         uint8_t* pOut;
@@ -475,7 +487,7 @@ int J3DAPI decode_Begin(uint8_t* pDst, LecBitmapHeader* pBitmap, int n, void* pP
         }
         return 0;
     }
-    if ( pBitmap->colorMode == 2 )
+    if ( pBitmap->colorMode == STDCOLOR_RGBA )
     {
         uint8_t* pIn;
         uint8_t* pOut;
