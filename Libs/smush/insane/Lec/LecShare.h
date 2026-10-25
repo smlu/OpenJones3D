@@ -14,6 +14,10 @@
 J3D_EXTERN_C_START
 
 #define LECSHARE_MAXENTRIES 512
+#define LECSHARE_NAMESIZE   0x64   /* buffer size of a service name */
+#define LECSHARE_PARSESIZE  0x2000 /* buffer size of a provider list */
+#define LECSHARE_LOGLINES   20     /* log ring lines */
+#define LECSHARE_LOGLINELEN 200
 
 typedef struct sLecModuleEntry
 {
@@ -41,11 +45,11 @@ typedef struct sLecEntry
 } LecEntry;
 static_assert(sizeof(LecEntry) == 0xC, "sizeof(LecEntry) == 0xC");
 
-LecShare* J3DAPI LecShare_Init(LecErrorFn pError, LecModuleEntry* pModules, const char* pA, const char* pB);
+LecShare* J3DAPI LecShare_Init(LecErrorFn pError, LecModuleEntry* pModules, const char* pDefaults, const char* pOverrides);
 int LecShare_UnregisterAll(void);
 int LecShare_Startup(void);
 int LecShare_Shutdown(void);
-void J3DAPI LecShare_Reset(const char* pA, const char* pB);
+void J3DAPI LecShare_Reset(const char* pDefaults, const char* pOverrides);
 int J3DAPI LecShare_Publish(const char* pName, void* pInterface);
 int J3DAPI LecShare_Unpublish(const char* pName);
 void* J3DAPI LecShare_Subscribe(const char* pName, const char* pPreferred);

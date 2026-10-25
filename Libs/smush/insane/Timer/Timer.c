@@ -22,7 +22,7 @@ static TimerInterface timer_interface = {
     timer_Sync
 };
 
-static int timer_field54D84C = -1;
+static int timer_reserved = -1; // Only written, never read
 
 static void* timer_pServices;
 static int timer_rate;
@@ -30,8 +30,8 @@ static jmp_buf timer_jmpA;
 static jmp_buf timer_jmpB;
 static volatile int timer_ticks; // Volatile: timer_Wait reloads it on each iteration while the timer thread increments it (the original reloads it across the opaque timer_GetTicks call; not a behavior change)
 static LecShare* timer_pShare;
-static int timer_x0B8;
-static int timer_x0BC;
+static int timer_pollPrev;
+static int timer_pollCur;
 static TimerEntry timer_entries[TIMER_COUNT + 1];
 static HANDLE timer_hThread;
 static void* timer_pParam;
@@ -42,11 +42,11 @@ static int timer_inTick;
 static int timer_savedReent;
 static int timer_refs;
 static int timer_paused;
-static int timer_x364;
-static volatile int timer_x368;
-static int timer_x36C;
-static int timer_x370;
-static int timer_x374;
+static int timer_pollOff;
+static volatile int timer_inPoll;
+static int timer_hasJmpB;
+static int timer_runningDeferred;
+static int timer_pollSkip;
 
 int J3DAPI timer_Register(LecShare* pShare, void* pParam)
 {
@@ -54,7 +54,7 @@ int J3DAPI timer_Register(LecShare* pShare, void* pParam)
     timer_pParam = pParam;
     pShare->Publish("LECMODULE=insane_timer", &timer_module);
     timer_pShare->Publish("TIMER=insane", &timer_interface);
-    timer_rate = 300;
+    timer_rate = TIMER_DEFAULT_RATE;
     return 0;
 }
 
@@ -73,7 +73,7 @@ int timer_Startup(void)
         return -1;
     }
 
-    return timer_Start(1193180 / timer_rate, 0x10000);
+    return timer_Start(TIMER_PIT_FREQUENCY / timer_rate, 0x10000);
 }
 
 void timer_Shutdown(void)
@@ -82,10 +82,10 @@ void timer_Shutdown(void)
     timer_Stop();
 }
 
-int J3DAPI timer_Start(int a, int b)
+int J3DAPI timer_Start(int divisor, int limit)
 {
-    (void)a;
-    (void)b;
+    (void)divisor; // Unused, as in the original
+    (void)limit;
 
     if ( timer_refs++ == 0 )
     {
@@ -94,13 +94,13 @@ int J3DAPI timer_Start(int a, int b)
             timer_entries[i].pfn = NULL;
         }
 
-        timer_tickLen = 0x4DAE;
+        timer_tickLen = TIMER_TICKLEN;
         timer_hEvent  = CreateEvent(NULL, FALSE, FALSE, NULL);
 
         DWORD id;
         timer_hThread = CreateThread(NULL, 0, timer_Thread, NULL, 0, &id);
         SetThreadPriority(timer_hThread, THREAD_PRIORITY_TIME_CRITICAL);
-        timer_field54D84C = -1;
+        timer_reserved = -1;
     }
 
     return 0;
@@ -113,7 +113,7 @@ DWORD WINAPI timer_Thread(LPVOID pArg)
     CRITICAL_SECTION cs;
     InitializeCriticalSection(&cs);
 
-    ldiv_t step = ldiv(1000, 60);
+    ldiv_t step = ldiv(1000, TIMER_THREAD_RATE);
     int frac    = 0;
     int timeout = 0;
     int next    = timeGetTime();
@@ -123,9 +123,9 @@ DWORD WINAPI timer_Thread(LPVOID pArg)
         timer_Tick();
         frac += step.rem;
         next += step.quot;
-        if ( frac >= 60 )
+        if ( frac >= TIMER_THREAD_RATE )
         {
-            frac -= 60;
+            frac -= TIMER_THREAD_RATE;
             next++;
         }
 
@@ -226,7 +226,7 @@ void J3DAPI timer_Sync(int ticks)
     for ( int i = 1; i < TIMER_COUNT + 1; i++ )
     {
         TimerEntry* pEntry = &timer_entries[i];
-        if ( pEntry->pfn && (pEntry->flags & 8) )
+        if ( pEntry->pfn && (pEntry->flags & TIMER_FLAG_RESYNC) )
         {
             if ( ticks > 0 )
             {
@@ -249,24 +249,24 @@ void timer_Tick(void)
 
         for ( int i = 1; i < TIMER_COUNT + 1; i++ )
         {
-            int step = timer_tickLen;
-            if ( timer_entries[i].pfn )
+            TimerEntry* pEntry = &timer_entries[i];
+            if ( pEntry->pfn )
             {
-                timer_entries[i].elapsed += step;
-                timer_entries[i].total += step;
-                if ( (timer_entries[i].flags & 5) == 1 && timer_entries[i].interval != 0 )
+                pEntry->elapsed += timer_tickLen;
+                pEntry->total   += timer_tickLen;
+                if ( (pEntry->flags & (TIMER_FLAG_IMMEDIATE | TIMER_FLAG_DEFERRED)) == TIMER_FLAG_IMMEDIATE && pEntry->interval != 0 )
                 {
-                    while ( timer_entries[i].elapsed >= timer_entries[i].interval )
+                    while ( pEntry->elapsed >= pEntry->interval )
                     {
-                        timer_entries[i].elapsed -= timer_entries[i].interval;
-                        if ( timer_entries[i].flags & 2 )
+                        pEntry->elapsed -= pEntry->interval;
+                        if ( pEntry->flags & TIMER_FLAG_ONESHOT )
                         {
-                            timer_entries[i].interval = 0;
-                            timer_entries[i].pfn(i, timer_entries[i].param);
+                            pEntry->interval = 0;
+                            pEntry->pfn(i, pEntry->param);
                             break;
                         }
 
-                        timer_entries[i].pfn(i, timer_entries[i].param);
+                        pEntry->pfn(i, pEntry->param);
                     }
                 }
             }
@@ -274,59 +274,63 @@ void timer_Tick(void)
 
         for ( int i = 1; i < TIMER_COUNT + 1; i++ )
         {
-            if ( timer_entries[i].pfn && !(timer_entries[i].flags & 5) && timer_entries[i].interval != 0 && timer_entries[i].busy == 0 )
+            TimerEntry* pEntry = &timer_entries[i];
+            if ( pEntry->pfn
+                 && !(pEntry->flags & (TIMER_FLAG_IMMEDIATE | TIMER_FLAG_DEFERRED))
+                 && pEntry->interval != 0
+                 && pEntry->busy == 0 )
             {
-                timer_entries[i].busy = 1;
-                while ( timer_entries[i].elapsed >= timer_entries[i].interval )
+                pEntry->busy = 1;
+                while ( pEntry->elapsed >= pEntry->interval )
                 {
-                    timer_entries[i].elapsed -= timer_entries[i].interval;
-                    if ( timer_entries[i].flags & 2 )
+                    pEntry->elapsed -= pEntry->interval;
+                    if ( pEntry->flags & TIMER_FLAG_ONESHOT )
                     {
-                        timer_entries[i].interval = 0;
-                        timer_entries[i].pfn(i, timer_entries[i].param);
+                        pEntry->interval = 0;
+                        pEntry->pfn(i, pEntry->param);
                         break;
                     }
 
-                    timer_entries[i].pfn(i, timer_entries[i].param);
+                    pEntry->pfn(i, pEntry->param);
                 }
 
-                timer_entries[i].busy = 0;
+                pEntry->busy = 0;
             }
         }
 
         timer_inTick = 0;
         timer_reent  = timer_savedReent;
-        if ( timer_x368 == 0 && timer_x364 == 0 )
+        if ( timer_inPoll == 0 && timer_pollOff == 0 )
         {
-            timer_x368 = 1;
+            timer_inPoll = 1;
             timer_Poll();
-            timer_x368 = 0;
+            timer_inPoll = 0;
         }
     }
 }
 
 void timer_Poll(void)
 {
-    if ( timer_x374 == 0 || --timer_x374 == 0 )
+    if ( timer_pollSkip == 0 || --timer_pollSkip == 0 )
     {
         if ( setjmp(timer_jmpA) == 0 )
         {
-            if ( timer_x36C )
+            if ( timer_hasJmpB )
             {
-                // TODO: [BUG] timer_jmpB is never set with setjmp, so this path would jump through an empty buffer (timer_x36C is never set).
-                timer_x36C = 0;
-                timer_x370 = 1;
+                // TODO: [BUG] timer_jmpB is never set with setjmp, so this path would jump through an empty buffer (timer_hasJmpB is never set).
+                timer_hasJmpB         = 0;
+                timer_runningDeferred = 1;
                 longjmp(timer_jmpB, 1);
             }
             else
             {
-                timer_x36C = 0;
-                timer_x370 = 1;
+                timer_hasJmpB         = 0;
+                timer_runningDeferred = 1;
             }
 
             timer_RunDeferred();
-            timer_x370 = 0;
-            timer_x0B8 = timer_x0BC;
+            timer_runningDeferred = 0;
+            timer_pollPrev        = timer_pollCur;
             longjmp(timer_jmpA, 2);
         }
 
@@ -338,27 +342,29 @@ void timer_RunDeferred(void)
 {
     for ( int i = 1; i < TIMER_COUNT + 1; i++ )
     {
-        timer_entries[i].running = 1;
-        if ( !timer_entries[i].pfn || (timer_entries[i].flags & 5) != 4 || timer_entries[i].interval == 0 )
+        TimerEntry* pEntry = &timer_entries[i];
+
+        pEntry->running = 1;
+        if ( !pEntry->pfn || (pEntry->flags & (TIMER_FLAG_IMMEDIATE | TIMER_FLAG_DEFERRED)) != TIMER_FLAG_DEFERRED || pEntry->interval == 0 )
         {
-            timer_entries[i].running = 0;
+            pEntry->running = 0;
             continue;
         }
 
-        while ( timer_entries[i].elapsed >= timer_entries[i].interval )
+        while ( pEntry->elapsed >= pEntry->interval )
         {
-            timer_entries[i].elapsed -= timer_entries[i].interval;
-            if ( timer_entries[i].flags & 2 )
+            pEntry->elapsed -= pEntry->interval;
+            if ( pEntry->flags & TIMER_FLAG_ONESHOT )
             {
-                timer_entries[i].interval = 0;
-                timer_entries[i].pfn(i, timer_entries[i].param);
+                pEntry->interval = 0;
+                pEntry->pfn(i, pEntry->param);
                 break;
             }
 
-            timer_entries[i].pfn(i, timer_entries[i].param);
+            pEntry->pfn(i, pEntry->param);
         }
 
-        timer_entries[i].running = 0;
+        pEntry->running = 0;
     }
 }
 
@@ -389,28 +395,28 @@ void Timer_InstallHooks(void)
 
 void Timer_ResetGlobals(void)
 {
-    timer_field54D84C = -1;
-    timer_pServices   = NULL;
-    timer_rate        = 0;
+    timer_reserved = -1;
+    timer_pServices = NULL;
+    timer_rate      = 0;
     memset(&timer_jmpA, 0, sizeof(timer_jmpA));
     memset(&timer_jmpB, 0, sizeof(timer_jmpB));
-    timer_ticks = 0;
-    timer_pShare = NULL;
-    timer_x0B8 = 0;
-    timer_x0BC = 0;
+    timer_ticks    = 0;
+    timer_pShare   = NULL;
+    timer_pollPrev = 0;
+    timer_pollCur  = 0;
     memset(timer_entries, 0, sizeof(timer_entries));
-    timer_hThread    = NULL;
-    timer_pParam     = NULL;
-    timer_tickLen    = 0;
-    timer_hEvent     = NULL;
-    timer_reent      = 0;
-    timer_inTick     = 0;
-    timer_savedReent = 0;
-    timer_refs       = 0;
-    timer_paused     = 0;
-    timer_x364       = 0;
-    timer_x368       = 0;
-    timer_x36C       = 0;
-    timer_x370       = 0;
-    timer_x374       = 0;
+    timer_hThread         = NULL;
+    timer_pParam          = NULL;
+    timer_tickLen         = 0;
+    timer_hEvent          = NULL;
+    timer_reent           = 0;
+    timer_inTick          = 0;
+    timer_savedReent      = 0;
+    timer_refs            = 0;
+    timer_paused          = 0;
+    timer_pollOff         = 0;
+    timer_inPoll          = 0;
+    timer_hasJmpB         = 0;
+    timer_runningDeferred = 0;
+    timer_pollSkip        = 0;
 }

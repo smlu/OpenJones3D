@@ -11,7 +11,12 @@
 #include <string.h>
 #include <std/General/stdUtil.h>
 
-#define LEC_SEP(c) ((c) < 0x21 || (c) > 0x7F || (c) == ',' || (c) == ';')
+// Printable, non-space characters of a name
+#define LEC_ISNAMECHAR(c) ((c) >= 0x21 && (c) <= 0x7F)
+#define LEC_SEP(c)        (!LEC_ISNAMECHAR(c) || (c) == ',' || (c) == ';')
+
+#define LEC_MODULE_PREFIX     "LECMODULE"
+#define LEC_MODULE_PREFIX_LEN ((int)sizeof(LEC_MODULE_PREFIX) - 1)
 
 static LecShare lec_table = {
     LecShare_Publish,
@@ -25,14 +30,14 @@ static LecShare lec_table = {
     (void (*)(const char*, ...))LecShare_NullError
 };
 
-static char lec_nameBuf[0x64];
-static char lec_parseBuf[0x2000];
+static char lec_nameBuf[LECSHARE_NAMESIZE];
+static char lec_parseBuf[LECSHARE_PARSESIZE];
 
 static struct
 {
     int inited;
-    const char* pA;
-    const char* pB;
+    const char* pDefaults; // Provider list used when neither the caller nor the overrides name one
+    const char* pOverrides; // Provider list that wins over the caller's preference
     LecEntry* pCursor;
     int count;
     LecEntry entries[LECSHARE_MAXENTRIES];
@@ -40,18 +45,18 @@ static struct
 } lec_state;
 
 static int lec_enumIndex;
-static char lec_ring[20][200];
+static char lec_ring[LECSHARE_LOGLINES][LECSHARE_LOGLINELEN];
 static int lec_ringNext;
 static int lec_ringUsed;
 
-LecShare* J3DAPI LecShare_Init(LecErrorFn pError, LecModuleEntry* pModules, const char* pA, const char* pB)
+LecShare* J3DAPI LecShare_Init(LecErrorFn pError, LecModuleEntry* pModules, const char* pDefaults, const char* pOverrides)
 {
     if ( pError )
     {
         lec_table.ReportError = pError;
     }
 
-    LecShare_Reset(pA, pB);
+    LecShare_Reset(pDefaults, pOverrides);
     lec_state.inited = 0;
     lec_state.pSearch = NULL;
 
@@ -75,7 +80,7 @@ int LecShare_UnregisterAll(void)
 
     while ( n-- != 0 )
     {
-        if ( p->pName && LecShare_NameLen(p->pName) == 9 && LecShare_NameNCmp("LECMODULE", p->pName, LecShare_NameLen(p->pName)) == 0 )
+        if ( p->pName && LecShare_NameLen(p->pName) == LEC_MODULE_PREFIX_LEN && LecShare_NameNCmp(LEC_MODULE_PREFIX, p->pName, LecShare_NameLen(p->pName)) == 0 )
         {
             if ( ((LecModule*)p->pInterface)->Unregister )
             {
@@ -98,7 +103,7 @@ int LecShare_Startup(void)
     lec_state.pCursor = NULL;
     while ( n-- != 0 )
     {
-        if ( p->pName && LecShare_NameLen(p->pName) == 9 && LecShare_NameNCmp("LECMODULE", p->pName, LecShare_NameLen(p->pName)) == 0 )
+        if ( p->pName && LecShare_NameLen(p->pName) == LEC_MODULE_PREFIX_LEN && LecShare_NameNCmp(LEC_MODULE_PREFIX, p->pName, LecShare_NameLen(p->pName)) == 0 )
         {
             if ( ((LecModule*)p->pInterface)->Startup )
             {
@@ -137,7 +142,7 @@ int LecShare_Shutdown(void)
 
     while ( n-- != 0 )
     {
-        if ( p->pName && LecShare_NameLen(p->pName) == 9 && LecShare_NameNCmp("LECMODULE", p->pName, LecShare_NameLen(p->pName)) == 0 )
+        if ( p->pName && LecShare_NameLen(p->pName) == LEC_MODULE_PREFIX_LEN && LecShare_NameNCmp(LEC_MODULE_PREFIX, p->pName, LecShare_NameLen(p->pName)) == 0 )
         {
             if ( ((LecModule*)p->pInterface)->Shutdown )
             {
@@ -151,11 +156,11 @@ int LecShare_Shutdown(void)
     return 0;
 }
 
-void J3DAPI LecShare_Reset(const char* pA, const char* pB)
+void J3DAPI LecShare_Reset(const char* pDefaults, const char* pOverrides)
 {
     memset(&lec_state, 0, sizeof(lec_state));
-    lec_state.pA = pA;
-    lec_state.pB = pB;
+    lec_state.pDefaults  = pDefaults;
+    lec_state.pOverrides = pOverrides;
 }
 
 int J3DAPI LecShare_Publish(const char* pName, void* pInterface)
@@ -215,7 +220,7 @@ int J3DAPI LecShare_Unpublish(const char* pName)
 
 void* J3DAPI LecShare_Subscribe(const char* pName, const char* pPreferred)
 {
-    char buf[0x64];
+    char buf[LECSHARE_NAMESIZE];
     const char* pProvider = NULL;
 
     if ( !lec_state.inited )
@@ -224,9 +229,9 @@ void* J3DAPI LecShare_Subscribe(const char* pName, const char* pPreferred)
     }
 
     lec_state.pSearch = NULL;
-    if ( lec_state.pB )
+    if ( lec_state.pOverrides )
     {
-        pProvider = (const char*)(intptr_t)LecShare_Match(pName, lec_state.pB);
+        pProvider = (const char*)(intptr_t)LecShare_Match(pName, lec_state.pOverrides);
     }
 
     if ( !pProvider )
@@ -238,9 +243,9 @@ void* J3DAPI LecShare_Subscribe(const char* pName, const char* pPreferred)
 
         if ( !pProvider )
         {
-            if ( lec_state.pA )
+            if ( lec_state.pDefaults )
             {
-                pProvider = (const char*)(intptr_t)LecShare_Match(pName, lec_state.pA);
+                pProvider = (const char*)(intptr_t)LecShare_Match(pName, lec_state.pDefaults);
             }
         }
     }
@@ -256,7 +261,7 @@ void* J3DAPI LecShare_Subscribe(const char* pName, const char* pPreferred)
             return NULL;
         }
 
-        STD_STRNCPY(buf, (const char*)LecShare_Enumerate(buf, 0), 99);
+        STD_STRNCPY(buf, (const char*)LecShare_Enumerate(buf, 0), sizeof(buf) - 1);
     }
     else
     {
@@ -412,8 +417,8 @@ void* J3DAPI LecShare_Enumerate(const char* pName, int index)
 
     if ( pName )
     {
-        STD_STRNCPY(lec_nameBuf, pName, 99);
-        lec_nameBuf[99] = 0;
+        STD_STRNCPY(lec_nameBuf, pName, sizeof(lec_nameBuf) - 1);
+        lec_nameBuf[sizeof(lec_nameBuf) - 1] = 0;
     }
     else
     {
@@ -487,7 +492,7 @@ int J3DAPI LecShare_Match(const char* pName, const char* pList)
     const char* pResult = NULL;
     int found = 0;
 
-    size_t len = strlen(pList) < 0x1FFF ? strlen(pList) : 0x1FFF;
+    size_t len = strlen(pList) < sizeof(lec_parseBuf) - 1 ? strlen(pList) : sizeof(lec_parseBuf) - 1;
     STD_STRNCPY(lec_parseBuf, pList, len);
     lec_parseBuf[len] = 0;
 
@@ -511,7 +516,7 @@ int J3DAPI LecShare_Match(const char* pName, const char* pList)
             q = pName;
         }
 
-        int atEnd = !(*p && *p >= 0x21 && *p <= 0x7F && *p != '=');
+        int atEnd = !(*p && LEC_ISNAMECHAR(*p) && *p != '=');
         while ( *p && *p != '=' )
         {
             p++;
@@ -609,7 +614,7 @@ void J3DAPI LecShare_Strip(char* pName)
     {
         do
         {
-            if ( *pSrc >= 0x21 && *pSrc <= 0x7F )
+            if ( LEC_ISNAMECHAR(*pSrc) )
             {
                 // Added: don't write if the character is unchanged. The original code stripped (and so wrote) the caller's literal names in
                 // place, which are in writable memory in the original executable, but in read-only memory in this build.
@@ -677,7 +682,7 @@ void J3DAPI lec_Log(const char* pFormat, ...)
     vsnprintf(lec_ring[lec_ringNext], sizeof(lec_ring[0]), pFormat, args);
     va_end(args);
 
-    if ( lec_ringNext == 19 )
+    if ( lec_ringNext == LECSHARE_LOGLINES - 1 )
     {
         lec_ringNext = 0;
     }
@@ -686,7 +691,7 @@ void J3DAPI lec_Log(const char* pFormat, ...)
         lec_ringNext++;
     }
 
-    if ( lec_ringUsed < 19 )
+    if ( lec_ringUsed < LECSHARE_LOGLINES - 1 )
     {
         lec_ringUsed++;
     }

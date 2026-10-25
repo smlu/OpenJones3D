@@ -6,13 +6,14 @@
 
 #include <stdarg.h>
 #include <stddef.h>
+#include <stdio.h>
 #include <string.h>
 #include <smush/insane/Memory/Memory.h>
 #include <std/General/stdUtil.h>
 
 static int zfilio_extCount = 1;
 static const char* zfilio_extensions[ZFILIO_MAXEXTENSIONS] = { ".gz" };
-static int zfilio_flags = 1;
+static int zfilio_flags = ZFILIO_FLAG_REPORT;
 static LecModule zfilio_module = { zfilio_Register, zfilio_Unregister, zfilio_Startup, zfilio_Shutdown };
 static ZfilioInterface zfilio_interface = { zfilio_open, zfilio_close, zfilio_read, zfilio_write, zfilio_tell, zfilio_seek, zfilio_flush };
 
@@ -30,8 +31,14 @@ static ZfilioTestGz zfilio_test_gz;
 
 void Zfilio_TestSetGz(const ZfilioTestGz* pGz)
 {
-    if ( pGz ) { zfilio_test_gz = *pGz; }
-    else { memset(&zfilio_test_gz, 0, sizeof(zfilio_test_gz)); }
+    if ( pGz )
+    {
+        zfilio_test_gz = *pGz;
+    }
+    else
+    {
+        memset(&zfilio_test_gz, 0, sizeof(zfilio_test_gz));
+    }
 }
 #endif
 
@@ -39,48 +46,72 @@ void Zfilio_TestSetGz(const ZfilioTestGz* pGz)
 static gzFile Zfilio_gzopen(const char* pPath, const char* pMode)
 {
 #if defined(J3D_TEST)
-    if ( zfilio_test_gz.gzopen ) { return zfilio_test_gz.gzopen(pPath, pMode); }
+    if ( zfilio_test_gz.gzopen )
+    {
+        return zfilio_test_gz.gzopen(pPath, pMode);
+    }
 #endif
+
     return J3D_TRAMPOLINE_CALL(gzopen, pPath, pMode);
 }
 
 static int Zfilio_gzclose(gzFile file)
 {
 #if defined(J3D_TEST)
-    if ( zfilio_test_gz.gzclose ) { return zfilio_test_gz.gzclose(file); }
+    if ( zfilio_test_gz.gzclose )
+    {
+        return zfilio_test_gz.gzclose(file);
+    }
 #endif
+
     return J3D_TRAMPOLINE_CALL(gzclose, file);
 }
 
 static int Zfilio_gzread(gzFile file, void* pBuf, unsigned int len)
 {
 #if defined(J3D_TEST)
-    if ( zfilio_test_gz.gzread ) { return zfilio_test_gz.gzread(file, pBuf, len); }
+    if ( zfilio_test_gz.gzread )
+    {
+        return zfilio_test_gz.gzread(file, pBuf, len);
+    }
 #endif
+
     return J3D_TRAMPOLINE_CALL(gzread, file, pBuf, len);
 }
 
 static int Zfilio_gzwrite(gzFile file, const void* pBuf, unsigned int len)
 {
 #if defined(J3D_TEST)
-    if ( zfilio_test_gz.gzwrite ) { return zfilio_test_gz.gzwrite(file, pBuf, len); }
+    if ( zfilio_test_gz.gzwrite )
+    {
+        return zfilio_test_gz.gzwrite(file, pBuf, len);
+    }
 #endif
+
     return J3D_TRAMPOLINE_CALL(gzwrite, file, pBuf, len);
 }
 
 static int Zfilio_gzflush(gzFile file, int flush)
 {
 #if defined(J3D_TEST)
-    if ( zfilio_test_gz.gzflush ) { return zfilio_test_gz.gzflush(file, flush); }
+    if ( zfilio_test_gz.gzflush )
+    {
+        return zfilio_test_gz.gzflush(file, flush);
+    }
 #endif
+
     return J3D_TRAMPOLINE_CALL(gzflush, file, flush);
 }
 
 static long Zfilio_gzseek(gzFile file, long offset, int whence)
 {
 #if defined(J3D_TEST)
-    if ( zfilio_test_gz.gzseek ) { return zfilio_test_gz.gzseek(file, offset, whence); }
+    if ( zfilio_test_gz.gzseek )
+    {
+        return zfilio_test_gz.gzseek(file, offset, whence);
+    }
 #endif
+
     return J3D_TRAMPOLINE_CALL(gzseek, file, offset, whence);
 }
 
@@ -111,7 +142,7 @@ void Zfilio_ResetGlobals(void)
     zfilio_extCount = 1;
     memset((void*)zfilio_extensions, 0, sizeof(zfilio_extensions));
     zfilio_extensions[0] = ".gz";
-    zfilio_flags     = 1;
+    zfilio_flags     = ZFILIO_FLAG_REPORT;
     zfilio_pMemory   = NULL;
     zfilio_pServices = NULL;
     zfilio_pDebug    = NULL;
@@ -135,7 +166,7 @@ int J3DAPI zfilio_Configure(int tag, ...)
     {
         switch ( tag )
         {
-            case 1:
+            case ZFILIO_TAG_EXTENSION:
                 if ( zfilio_extCount < ZFILIO_MAXEXTENSIONS )
                 {
                     zfilio_extensions[zfilio_extCount++] = va_arg(args, const char*);
@@ -201,7 +232,7 @@ ZfileHandle* J3DAPI zfilio_open(const char* pPath, const char* pMode)
     ZfileHandle* pFile = zfilio_pMemory->Alloc(sizeof(ZfileHandle), INSANE_FILE, __LINE__);
     if ( !pFile )
     {
-        if ( zfilio_pDebug && (zfilio_flags & 1) )
+        if ( zfilio_pDebug && (zfilio_flags & ZFILIO_FLAG_REPORT) )
         {
             zfilio_pDebug->Print("Zfile Memory Alloc fail");
         }
@@ -211,7 +242,9 @@ ZfileHandle* J3DAPI zfilio_open(const char* pPath, const char* pMode)
 
     pFile->hFile = NULL;
     pFile->isGz  = 0;
-    if ( (*pMode == 'r' || *pMode == 'R') && pMode[1] != '+' && (pMode[1] == 0 || pMode[2] != '+') )
+    if ( (*pMode == 'r' || *pMode == 'R')
+         && pMode[1] != '+'
+         && (pMode[1] == 0 || pMode[2] != '+') )
     {
         for ( int i = 0; i < zfilio_extCount; ++i )
         {
@@ -229,8 +262,8 @@ ZfileHandle* J3DAPI zfilio_open(const char* pPath, const char* pMode)
                     // TODO: [BUG] The original leaves size uninitialized when the read returns fewer than 4 bytes
                     int size = 0; // Fixed: Init to 0
                     int fh   = zfilio_pFilio->Open(pPath, pMode);
-                    zfilio_pFilio->Seek(fh, -4, 2);
-                    zfilio_pFilio->Read(fh, &size, 4);
+                    zfilio_pFilio->Seek(fh, -(int)sizeof(size), SEEK_END);
+                    zfilio_pFilio->Read(fh, &size, sizeof(size));
                     pFile->gzSize = size;
                     zfilio_pFilio->Close(fh);
                     return pFile;
@@ -280,7 +313,7 @@ int J3DAPI zfilio_read(ZfileHandle* pFile, void* pBuf, int size)
         {
             if ( pFile->gzPos != pFile->pos )
             {
-                Zfilio_gzseek(pFile->hFile, pFile->pos, 0);
+                Zfilio_gzseek(pFile->hFile, pFile->pos, SEEK_SET);
                 pFile->gzPos = pFile->pos;
             }
 
@@ -339,15 +372,15 @@ int J3DAPI zfilio_seek(ZfileHandle* pFile, int offset, int whence)
         {
             switch ( whence )
             {
-                case 0:
+                case SEEK_SET:
                     pFile->pos = offset;
                     break;
 
-                case 1:
+                case SEEK_CUR:
                     pFile->pos += offset;
                     break;
 
-                case 2:
+                case SEEK_END:
                     pFile->pos = pFile->gzSize + offset;
                     break;
             }
@@ -368,7 +401,7 @@ void J3DAPI zfilio_flush(ZfileHandle* pFile)
     {
         if ( pFile->isGz )
         {
-            Zfilio_gzflush(pFile->hFile, 4);
+            Zfilio_gzflush(pFile->hFile, ZFILIO_Z_FINISH);
         }
         else
         {

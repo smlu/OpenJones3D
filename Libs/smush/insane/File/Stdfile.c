@@ -6,6 +6,7 @@
 
 #include <stdarg.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -119,9 +120,9 @@ void J3DAPI stdfile_flush(int fh)
 int J3DAPI stdfile_size(int fh)
 {
     int pos = stdfile_pChained->Tell(fh);
-    stdfile_pChained->Seek(fh, 0, 2);
+    stdfile_pChained->Seek(fh, 0, SEEK_END);
     int size = stdfile_pChained->Tell(fh);
-    stdfile_pChained->Seek(fh, pos, 0);
+    stdfile_pChained->Seek(fh, pos, SEEK_SET);
     return size;
 }
 
@@ -131,7 +132,7 @@ char* J3DAPI stdfile_gets(int fh, char* pBuf, int size)
     for ( int i = 0; i < size; ++i )
     {
         int c = stdfile_getc(fh);
-        if ( c == -1 )
+        if ( c == EOF )
         {
             if ( i == 0 )
             {
@@ -160,7 +161,7 @@ int J3DAPI stdfile_eof(int fh)
 
 int J3DAPI stdfile_printf(int fh, const char* pFormat, ...)
 {
-    char aBuf[500];
+    char aBuf[STDFILE_PRINTF_BUFSIZE];
 
     va_list args;
     va_start(args, pFormat);
@@ -175,18 +176,18 @@ int J3DAPI stdfile_getc(int fh)
     // The original reads the byte into the low byte of the handle parameter itself
     if ( stdfile_pChained->Read(fh, &fh, 1) )
     {
-        return fh & 0xFF;
+        return fh & UINT8_MAX;
     }
 
-    return -1;
+    return EOF;
 }
 
 int J3DAPI stdfile_putc(int fh, int c)
 {
     if ( stdfile_pChained->Write(fh, &c, 1) )
     {
-        return c & 0xFF;
+        return c & UINT8_MAX;
     }
 
-    return -1;
+    return EOF;
 }

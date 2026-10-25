@@ -12,7 +12,7 @@
 #include <smush/insane/Bitmap/MemCopy.h>
 #include <smush/insane/Bitmap/MemFill.h>
 
-static int framestream_lastFrame;
+static int framestream_lastFrame; // The last frame number framestream_Continue accepted (only written)
 
 void Framestream_InstallHooks(void)
 {
@@ -47,7 +47,7 @@ int J3DAPI framestream_Reset(FrameStream* pFrames)
     pFrames->frameCount = 1;
     pFrames->open       = 0;
     pFrames->stalled    = 0;
-    pFrames->mode       = 0;
+    pFrames->mode       = FRAMESTREAM_MODE_OFF;
     pFrames->hold       = 0;
     pFrames->paused     = 0;
     return 0;
@@ -58,12 +58,12 @@ void J3DAPI framestream_Close(FrameStream* pFrames)
     J3D_UNUSED(pFrames);
 }
 
-int J3DAPI framestream_Tick(FrameStream* pFrames, void* a2, int a3, int a4, int a5, void* a6, int* a7, int* a8, int a9, int a10, int a11)
+int J3DAPI framestream_Tick(FrameStream* pFrames, void* pBitmap, int a3, int a4, int a5, void* pPalette, int* pOutA, int* pOutB, int flags, int a10, int a11)
 {
     if ( pFrames->stalled )
     {
         pFrames->stalled = 0;
-        return -1;
+        return FRAMESTREAM_STATE_STALLED;
     }
 
     for ( ;; )
@@ -72,14 +72,14 @@ int J3DAPI framestream_Tick(FrameStream* pFrames, void* a2, int a3, int a4, int 
         {
             case FRAMESTREAM_TAG_FLHD:
                 framestream_Fetch(pFrames, pFrames->chunkSize);
-                if ( (intptr_t)pFrames->pCur == -1 )
+                if ( (intptr_t)pFrames->pCur == STREAMER_NOTREADY )
                 {
-                    return 5;
+                    return FRAMESTREAM_STATE_WAIT;
                 }
 
-                if ( (intptr_t)pFrames->pCur == -2 )
+                if ( (intptr_t)pFrames->pCur == STREAMER_BADSIZE )
                 {
-                    return -2;
+                    return FRAMESTREAM_STATE_ERROR;
                 }
 
                 animplay_pFrame->Parse(pFrames->pCur, pFrames->chunkSize);
@@ -88,14 +88,14 @@ int J3DAPI framestream_Tick(FrameStream* pFrames, void* a2, int a3, int a4, int 
 
             case FRAMESTREAM_TAG_ANNO:
                 framestream_Fetch(pFrames, pFrames->chunkSize);
-                if ( (intptr_t)pFrames->pCur == -1 )
+                if ( (intptr_t)pFrames->pCur == STREAMER_NOTREADY )
                 {
-                    return 5;
+                    return FRAMESTREAM_STATE_WAIT;
                 }
 
-                if ( (intptr_t)pFrames->pCur == -2 )
+                if ( (intptr_t)pFrames->pCur == STREAMER_BADSIZE )
                 {
-                    return -2;
+                    return FRAMESTREAM_STATE_ERROR;
                 }
 
                 pFrames->tag = FRAMESTREAM_TAG_NULL;
@@ -103,14 +103,14 @@ int J3DAPI framestream_Tick(FrameStream* pFrames, void* a2, int a3, int a4, int 
 
             case FRAMESTREAM_TAG_FRME:
                 framestream_Fetch(pFrames, pFrames->chunkSize);
-                if ( (intptr_t)pFrames->pCur == -1 )
+                if ( (intptr_t)pFrames->pCur == STREAMER_NOTREADY )
                 {
-                    return 5;
+                    return FRAMESTREAM_STATE_WAIT;
                 }
 
-                if ( (intptr_t)pFrames->pCur == -2 )
+                if ( (intptr_t)pFrames->pCur == STREAMER_BADSIZE )
                 {
-                    return -2;
+                    return FRAMESTREAM_STATE_ERROR;
                 }
 
                 pFrames->tag = FRAMESTREAM_TAG_NULL;
@@ -137,7 +137,7 @@ int J3DAPI framestream_Tick(FrameStream* pFrames, void* a2, int a3, int a4, int 
                     continue;
                 }
 
-                framestream_Present(pFrames, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11);
+                framestream_Present(pFrames, pBitmap, a3, a4, a5, pPalette, pOutA, pOutB, flags, a10, a11);
                 if ( pFrames->frame >= pFrames->frameCount - 1 && !pFrames->paused )
                 {
                     if ( animplay_pStreamer->IsActive(pFrames->pStream) == 0 && pFrames->hold == 0 )
@@ -149,43 +149,43 @@ int J3DAPI framestream_Tick(FrameStream* pFrames, void* a2, int a3, int a4, int 
                         pFrames->tag = FRAMESTREAM_TAG_NULL;
                     }
                 }
-                else if ( pFrames->mode == 1 )
+                else if ( pFrames->mode == FRAMESTREAM_MODE_SWAP )
                 {
                     pFrames->tag = FRAMESTREAM_TAG_SWAP;
                 }
-                else if ( pFrames->mode == 3 )
+                else if ( pFrames->mode == FRAMESTREAM_MODE_PENDING )
                 {
-                    pFrames->mode = 1;
+                    pFrames->mode = FRAMESTREAM_MODE_SWAP;
                 }
 
                 if ( pFrames->paused )
                 {
-                    return 2;
+                    return FRAMESTREAM_STATE_PAUSED;
                 }
 
-                if ( pFrames->frame < 10 )
+                if ( pFrames->frame < FRAMESTREAM_EARLYFRAMES )
                 {
-                    return 1;
+                    return FRAMESTREAM_STATE_EARLY;
                 }
 
-                return (pFrames->frame >= pFrames->frameCount - 1) ? 4 : 0;
+                return (pFrames->frame >= pFrames->frameCount - 1) ? FRAMESTREAM_STATE_END : FRAMESTREAM_STATE_FRAME;
 
             case FRAMESTREAM_TAG_SHDR:
                 framestream_Fetch(pFrames, pFrames->chunkSize);
-                if ( (intptr_t)pFrames->pCur == -1 )
+                if ( (intptr_t)pFrames->pCur == STREAMER_NOTREADY )
                 {
-                    return 5;
+                    return FRAMESTREAM_STATE_WAIT;
                 }
 
-                if ( (intptr_t)pFrames->pCur == -2 )
+                if ( (intptr_t)pFrames->pCur == STREAMER_BADSIZE )
                 {
-                    return -2;
+                    return FRAMESTREAM_STATE_ERROR;
                 }
 
                 pFrames->tag = FRAMESTREAM_TAG_NULL;
                 if ( pFrames->pCur != NULL )
                 {
-                    framestream_Header(pFrames, (const FrameHeader*)pFrames->pCur, a6, a8);
+                    framestream_Header(pFrames, (const FrameHeader*)pFrames->pCur, pPalette, pOutB);
                 }
 
                 continue;
@@ -197,15 +197,15 @@ int J3DAPI framestream_Tick(FrameStream* pFrames, void* a2, int a3, int a4, int 
                     pFrames->paused = 1;
                 }
 
-                framestream_Fetch(pFrames, 8);
-                if ( (intptr_t)pFrames->pCur == -1 )
+                framestream_Fetch(pFrames, FRAMESTREAM_CHUNKHDR_SIZE);
+                if ( (intptr_t)pFrames->pCur == STREAMER_NOTREADY )
                 {
-                    return 5;
+                    return FRAMESTREAM_STATE_WAIT;
                 }
 
-                if ( (intptr_t)pFrames->pCur == -2 )
+                if ( (intptr_t)pFrames->pCur == STREAMER_BADSIZE )
                 {
-                    return -2;
+                    return FRAMESTREAM_STATE_ERROR;
                 }
 
                 if ( pFrames->pCur != NULL )
@@ -222,7 +222,7 @@ int J3DAPI framestream_Tick(FrameStream* pFrames, void* a2, int a3, int a4, int 
                 pFrames->frame++;
                 if ( framestream_Continue(pFrames) == 0 )
                 {
-                    framestream_Present(pFrames, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11);
+                    framestream_Present(pFrames, pBitmap, a3, a4, a5, pPalette, pOutA, pOutB, flags, a10, a11);
                 }
 
                 if ( animplay_pStreamer->IsActive(pFrames->pStream) || (pFrames->hold && animplay_pFrame->Fetch(-8)) )
@@ -230,7 +230,7 @@ int J3DAPI framestream_Tick(FrameStream* pFrames, void* a2, int a3, int a4, int 
                     pFrames->tag = FRAMESTREAM_TAG_NULL;
                 }
 
-                return 4;
+                return FRAMESTREAM_STATE_END;
 
             case FRAMESTREAM_TAG_WAIT:
                 if ( animplay_pStreamer->IsActive(pFrames->pStream) || (pFrames->hold && animplay_pFrame->Fetch(-8)) )
@@ -238,26 +238,26 @@ int J3DAPI framestream_Tick(FrameStream* pFrames, void* a2, int a3, int a4, int 
                     pFrames->tag = FRAMESTREAM_TAG_NULL;
                 }
 
-                return 5;
+                return FRAMESTREAM_STATE_WAIT;
 
             case FRAMESTREAM_TAG_SWAP:
-                framestream_Present(pFrames, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11);
-                if ( pFrames->mode != 1 )
+                framestream_Present(pFrames, pBitmap, a3, a4, a5, pPalette, pOutA, pOutB, flags, a10, a11);
+                if ( pFrames->mode != FRAMESTREAM_MODE_SWAP )
                 {
-                    if ( pFrames->mode == 3 )
+                    if ( pFrames->mode == FRAMESTREAM_MODE_PENDING )
                     {
-                        pFrames->mode = 1;
+                        pFrames->mode = FRAMESTREAM_MODE_SWAP;
                     }
 
                     pFrames->tag = FRAMESTREAM_TAG_NULL;
                 }
 
-                return 3;
+                return FRAMESTREAM_STATE_SWAP;
 
             default:
                 animplay_pShare->ReportError("Read invalid frame header %c%c%c%c -- CD may be dirty or damaged.",
                     pFrames->tag >> 24, pFrames->tag >> 16, pFrames->tag >> 8, pFrames->tag);
-                return -2;
+                return FRAMESTREAM_STATE_ERROR;
         }
     }
 }
@@ -279,7 +279,7 @@ void J3DAPI framestream_Fetch(FrameStream* pFrames, int size)
     else
     {
         pFrames->pCur = (void*)(intptr_t)animplay_pStreamer->Advance(pFrames->pStream, size);
-        if ( (intptr_t)pFrames->pCur != -1 && pFrames->pCur == NULL )
+        if ( (intptr_t)pFrames->pCur != STREAMER_NOTREADY && pFrames->pCur == NULL )
         {
             pFrames->frame = -1;
             pFrames->open  = 0;
@@ -314,20 +314,20 @@ int J3DAPI framestream_Continue(FrameStream* pFrames)
     return 0;
 }
 
-int J3DAPI framestream_Present(FrameStream* pFrames, void* pBitmap, int a3, int a4, int a5, void* a6, int* a7, int* a8, int a9, int a10, int a11)
+int J3DAPI framestream_Present(FrameStream* pFrames, void* pBitmap, int a3, int a4, int a5, void* pPalette, int* pOutA, int* pOutB, int flags, int a10, int a11)
 {
-    if ( !((a9 | pFrames->outFlags) & 4) )
+    if ( !((flags | pFrames->outFlags) & FRAMESTREAM_FLAG_NOFILL) )
     {
         blit_Fill(pBitmap, 0);
     }
 
-    uint32_t result = animplay_pFrame->Decode(pBitmap, a3, a4, a5, a6, a7, a8, a9 | pFrames->outFlags, a10, a11, pFrames->pCur, pFrames->chunkSize);
-    if ( result & 1 )
+    uint32_t result = animplay_pFrame->Decode(pBitmap, a3, a4, a5, pPalette, pOutA, pOutB, flags | pFrames->outFlags, a10, a11, pFrames->pCur, pFrames->chunkSize);
+    if ( result & FRAMESTREAM_DECODE_STALL )
     {
         framestream_Stall(pFrames);
     }
 
-    if ( result & 2 )
+    if ( result & FRAMESTREAM_DECODE_REWIND )
     {
         animplay_ops.Rewind(pFrames);
     }
@@ -338,14 +338,14 @@ int J3DAPI framestream_Present(FrameStream* pFrames, void* pBitmap, int a3, int 
 void J3DAPI framestream_Header(FrameStream* pFrames, const FrameHeader* pHeader, void* pPalette, int* pFlags)
 {
     pFrames->outFlags = pFrames->flagsIn;
-    if ( !(pFrames->flagsIn & 0x2000) )
+    if ( !(pFrames->flagsIn & FRAMESTREAM_FLAG_NOPALETTE) )
     {
-        framestream_Copy(pPalette, pHeader->palette, 0x400);
-        *pFlags |= 3;
+        framestream_Copy(pPalette, pHeader->palette, sizeof(pHeader->palette));
+        *pFlags |= FRAMESTREAM_PALETTE_CHANGED;
     }
 
     pFrames->frameCount = pHeader->count;
-    if ( pHeader->rate && !(pFrames->outFlags & 8) )
+    if ( pHeader->rate && !(pFrames->outFlags & FRAMESTREAM_FLAG_KEEPRATE) )
     {
         animplay_ops.SetRate(pFrames, 1000000 / pHeader->rate);
         animplay_ops.Rewind(pFrames);
@@ -367,7 +367,7 @@ int J3DAPI framestream_Open(FrameStream* pFrames, const char* pName, int flags, 
 {
     pFrames->hold    = hold;
     pFrames->flagsIn = flags;
-    if ( animplay_pStreamer->SetFile(pFrames->pStream, pName, 8) )
+    if ( animplay_pStreamer->SetFile(pFrames->pStream, pName, FRAMESTREAM_CHUNKHDR_SIZE) )
     {
         return -1;
     }
@@ -386,18 +386,18 @@ void J3DAPI framestream_Seek(FrameStream* pFrames, int length, int to)
 
 int J3DAPI framestream_Mode(FrameStream* pFrames, int op)
 {
-    if ( op == 2 )
+    if ( op == FRAMESTREAM_OP_TOGGLE )
     {
-        pFrames->mode = (pFrames->mode == 0);
+        pFrames->mode = (pFrames->mode == FRAMESTREAM_MODE_OFF);
     }
-    else if ( op == 4 )
+    else if ( op == FRAMESTREAM_OP_ARM )
     {
         if ( pFrames->mode )
         {
-            pFrames->mode = 3;
+            pFrames->mode = FRAMESTREAM_MODE_PENDING;
         }
     }
-    else if ( op != 5 )
+    else if ( op != FRAMESTREAM_OP_QUERY )
     {
         pFrames->mode = op;
     }

@@ -5,6 +5,7 @@
 #include <smush/RTI/symbols.h>
 
 #include <stddef.h>
+#include <stdio.h>
 #include <string.h>
 #include <smush/insane/File/Framestream.h>
 #include <std/General/stdUtil.h>
@@ -103,7 +104,7 @@ int J3DAPI streamer_Create(Stream** ppStream, int ringSize, int frameSize)
         rc = pBuf ? 0 : -1;
         if ( rc == 0 )
         {
-            pStream->ringSize    = ringSize & ~0x7FF;
+            pStream->ringSize    = ringSize & ~(STREAMER_SECTOR_SIZE - 1);
             pStream->maxFrame    = frameSize;
             pStream->pEnd        = pBuf + pStream->ringSize;
             pStream->hFile       = 0;
@@ -152,16 +153,16 @@ void J3DAPI streamer_Reset(Stream* pStream)
     pStream->active  = 0;
     pStream->pRead   = pStream->pBuf;
     pStream->pWrite  = pStream->pBuf;
-    pStream->field18 = 0;
-    pStream->field2C = 0;
-    pStream->field20 = 0;
+    pStream->ready   = 0;
+    pStream->pending = 0;
+    pStream->skip    = 0;
     if ( pStream->hFile )
     {
         streamer_pFile->Close(pStream->hFile);
         pStream->hFile = 0;
     }
 
-    pStream->field10 = 0;
+    pStream->busy = 0;
 }
 
 void J3DAPI streamer_Fill(Stream* pStream, int limit)
@@ -175,14 +176,14 @@ void J3DAPI streamer_Fill(Stream* pStream, int limit)
         {
             avail = pStream->pEnd - pStream->pRead;
         }
-        else if ( pWrite == pStream->pBuf && pStream->pEnd - pStream->pRead > 0x800 )
+        else if ( pWrite == pStream->pBuf && pStream->pEnd - pStream->pRead > STREAMER_SECTOR_SIZE )
         {
-            avail = pStream->pEnd - pStream->pRead - 0x800;
+            avail = pStream->pEnd - pStream->pRead - STREAMER_SECTOR_SIZE;
         }
         else
         {
-            avail = (pWrite - pStream->pRead - 0x800) & ~0x7FF;
-            if ( avail < 0x800 )
+            avail = (pWrite - pStream->pRead - STREAMER_SECTOR_SIZE) & ~(STREAMER_SECTOR_SIZE - 1);
+            if ( avail < STREAMER_SECTOR_SIZE )
             {
                 return;
             }
@@ -213,15 +214,15 @@ void J3DAPI streamer_Fill(Stream* pStream, int limit)
             pStream->pRead = pNext;
             if ( pStream->active )
             {
-                pStream->field18 = 1;
+                pStream->ready = 1;
             }
         }
         else
         {
-            streamer_pFile->Seek(pStream->hFile, pStream->filePos, 0);
+            streamer_pFile->Seek(pStream->hFile, pStream->filePos, SEEK_SET);
             if ( pStream->pfnRetry )
             {
-                pStream->pfnRetry(0, NULL);
+                pStream->pfnRetry(STREAMER_RETRY_READ, NULL);
             }
         }
     }
@@ -253,7 +254,7 @@ int J3DAPI streamer_SetFile(Stream* pStream, const char* pName, int startOffset)
 
 int J3DAPI streamer_Prime(Stream* pStream)
 {
-    int rc = -1;
+    int rc = STREAMER_PRIME_IDLE;
     if ( pStream->reopen )
     {
         if ( pStream->name[0] )
@@ -261,10 +262,10 @@ int J3DAPI streamer_Prime(Stream* pStream)
             int hFile = streamer_pFile->Open(pStream->name, "rb");
             while ( !hFile )
             {
-                if ( !pStream->pfnRetry || pStream->pfnRetry(1, pStream->name) )
+                if ( !pStream->pfnRetry || pStream->pfnRetry(STREAMER_RETRY_OPEN, pStream->name) )
                 {
                     pStream->reopen = 0;
-                    return -2;
+                    return STREAMER_PRIME_FAILED;
                 }
 
                 hFile = streamer_pFile->Open(pStream->name, "rb");
@@ -277,19 +278,19 @@ int J3DAPI streamer_Prime(Stream* pStream)
             }
 
             pStream->hFile = hFile;
-            streamer_pFile->Seek(hFile, 0, 2);
+            streamer_pFile->Seek(hFile, 0, SEEK_END);
             pStream->fileSize = streamer_pFile->Tell(pStream->hFile);
         }
 
-        streamer_pFile->Seek(pStream->hFile, pStream->startOffset & ~0x7FF, 0);
-        pStream->field10++;
-        pStream->filePos = pStream->startOffset & ~0x7FF;
-        pStream->field20 = pStream->startOffset & 0x7FF;
+        streamer_pFile->Seek(pStream->hFile, pStream->startOffset & ~(STREAMER_SECTOR_SIZE - 1), SEEK_SET);
+        pStream->busy++;
+        pStream->filePos = pStream->startOffset & ~(STREAMER_SECTOR_SIZE - 1);
+        pStream->skip    = pStream->startOffset & (STREAMER_SECTOR_SIZE - 1);
         pStream->pStart  = pStream->pRead;
         pStream->active  = 1;
-        pStream->field18 = 0;
+        pStream->ready   = 0;
         pStream->reopen  = 0;
-        pStream->field10--;
+        pStream->busy--;
         rc = 0;
     }
 
@@ -298,7 +299,7 @@ int J3DAPI streamer_Prime(Stream* pStream)
 
 int J3DAPI streamer_IsActive(Stream* pStream)
 {
-    if ( pStream->field18 && pStream->active )
+    if ( pStream->ready && pStream->active )
     {
         return 1;
     }
@@ -308,21 +309,21 @@ int J3DAPI streamer_IsActive(Stream* pStream)
 
 int J3DAPI streamer_Advance(Stream* pStream, int n)
 {
-    if ( pStream->field10 || !pStream->hFile )
+    if ( pStream->busy || !pStream->hFile )
     {
-        return -1;
+        return STREAMER_NOTREADY;
     }
 
     if ( n > pStream->maxFrame )
     {
         streamer_pShare->ReportError("File Streamer:  Invalid frame size %ld", n);
-        return -2;
+        return STREAMER_BADSIZE;
     }
 
     if ( !streamer_wrap )
     {
-        pStream->pWrite += pStream->field2C;
-        pStream->field2C = 0;
+        pStream->pWrite += pStream->pending;
+        pStream->pending = 0;
         if ( pStream->pWrite >= pStream->pEnd )
         {
             pStream->pWrite -= pStream->ringSize;
@@ -335,12 +336,12 @@ int J3DAPI streamer_Advance(Stream* pStream, int n)
     {
         if ( pStream->active )
         {
-            pStream->field2C = 0;
+            pStream->pending = 0;
             pStream->pWrite  = pStream->pStart;
         }
 
         streamer_wrap = 0;
-        return -1;
+        return STREAMER_NOTREADY;
     }
 
     if ( pStream->active )
@@ -350,18 +351,18 @@ int J3DAPI streamer_Advance(Stream* pStream, int n)
         return 0;
     }
 
-    if ( pStream->field20 )
+    if ( pStream->skip )
     {
-        n += pStream->field20;
+        n += pStream->skip;
     }
 
     if ( !streamer_InRange(pStream, n) )
     {
-        return -1;
+        return STREAMER_NOTREADY;
     }
 
     streamer_wrap    = 0;
-    pStream->field2C = n;
+    pStream->pending = n;
 
     int len = pStream->pWrite - pStream->pEnd + n;
     if ( len > 0 )
@@ -369,10 +370,10 @@ int J3DAPI streamer_Advance(Stream* pStream, int n)
         framestream_Copy(pStream->pEnd, pStream->pBuf, len);
     }
 
-    if ( !pStream->active && pStream->field20 )
+    if ( !pStream->active && pStream->skip )
     {
-        int offset       = pStream->field20;
-        pStream->field20 = 0;
+        int offset    = pStream->skip;
+        pStream->skip = 0;
         return (int)(pStream->pWrite + offset);
     }
 
@@ -384,9 +385,9 @@ int J3DAPI streamer_Cancel(Stream* pStream)
     if ( pStream->active )
     {
         pStream->active  = 0;
-        pStream->field18 = 0;
+        pStream->ready   = 0;
         pStream->pWrite  = pStream->pStart;
-        pStream->field2C = 0;
+        pStream->pending = 0;
         return 0;
     }
 
@@ -417,7 +418,7 @@ int J3DAPI streamer_Percent(Stream* pStream)
         return 100;
     }
 
-    if ( pStream->filePos >= pStream->fileSize - 0x800 )
+    if ( pStream->filePos >= pStream->fileSize - STREAMER_SECTOR_SIZE )
     {
         return 100;
     }

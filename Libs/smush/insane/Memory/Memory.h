@@ -15,6 +15,10 @@
 
 J3D_EXTERN_C_START
 
+/* A debug block is [size][user data][pointer to the block start]: the size prefix and the back-pointer guard behind the data. */
+#define MEMORY_PREFIX_SIZE ((int)sizeof(int))
+#define MEMORY_GUARD_SIZE  ((int)sizeof(void*))
+
 typedef struct sMemoryInterface
 {
     void* (*Alloc)(size_t size);

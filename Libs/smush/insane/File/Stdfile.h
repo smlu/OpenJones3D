@@ -10,6 +10,8 @@
 
 J3D_EXTERN_C_START
 
+#define STDFILE_PRINTF_BUFSIZE 500
+
 typedef struct sStdFileInterface
 {
     int   (*Open)(const char* pPath, const char* pMode);

@@ -18,6 +18,12 @@ J3D_EXTERN_C_START
 
 #define ZFILIO_MAXEXTENSIONS 50
 
+#define ZFILIO_TAG_EXTENSION 1 /* zfilio_Configure: followed by a const char* extension; the list ends with a 0 tag */
+
+#define ZFILIO_FLAG_REPORT 1 /* print allocation failures through the debug service */
+
+#define ZFILIO_Z_FINISH 4 /* zlib's Z_FINISH, the gzflush mode */
+
 /* The executable's zlib 1.0.9 gz functions are reached through RTI/addresses.h (gzopen_ADDR etc.); gzFile is an opaque handle. */
 typedef void* gzFile;
 

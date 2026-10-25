@@ -15,6 +15,17 @@ J3D_EXTERN_C_START
 
 #define TIMER_COUNT 19
 
+#define TIMER_PIT_FREQUENCY 1193180 /* intervals are in ticks of the PC timer chip (Hz) */
+#define TIMER_DEFAULT_RATE  300
+#define TIMER_THREAD_RATE   60      /* Hz of the tick thread */
+#define TIMER_TICKLEN       0x4DAE  /* ticks added per thread tick (TIMER_PIT_FREQUENCY / TIMER_THREAD_RATE) */
+
+/* TimerEntry.flags */
+#define TIMER_FLAG_IMMEDIATE 1 /* call back from the tick thread without the busy guard */
+#define TIMER_FLAG_ONESHOT   2 /* fire once: the interval is cleared before the callback */
+#define TIMER_FLAG_DEFERRED  4 /* call back from timer_Poll (timer_RunDeferred) */
+#define TIMER_FLAG_RESYNC    8 /* timer_Sync adjusts the elapsed time */
+
 typedef void (*TimerCallback)(int index, int param);
 
 typedef struct sTimerInterface
@@ -35,7 +46,7 @@ typedef struct sTimerEntry
 {
     TimerCallback pfn;  /* 0x00 (NULL: the slot is free) */
     int interval;       /* 0x04 (ticks) */
-    uint32_t flags;     /* 0x08 (bit 1: periodic, bit 2: one-shot, bit 3 (4): deferred, bit 4 (8): resync) */
+    uint32_t flags;     /* 0x08 (TIMER_FLAG_*) */
     int param;          /* 0x0C */
     volatile int busy;  /* 0x10 (reentrancy flag shared by the timer thread and the main thread) */
     int elapsed;        /* 0x14 */
@@ -48,7 +59,7 @@ int J3DAPI timer_Register(LecShare* pShare, void* pParam);
 void timer_Unregister(void);
 int timer_Startup(void);
 void timer_Shutdown(void);
-int J3DAPI timer_Start(int a, int b);
+int J3DAPI timer_Start(int divisor, int limit);
 DWORD WINAPI timer_Thread(LPVOID pArg);
 void timer_Stop(void);
 void timer_Pause(void);

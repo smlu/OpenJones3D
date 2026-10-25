@@ -16,25 +16,40 @@
 
 J3D_EXTERN_C_START
 
+#define STREAMER_SECTOR_SIZE 0x800 /* the ring and file reads are sector (CD) aligned */
+#define STREAMER_NAME_SIZE   0xC8
+
+/* streamer_Advance returns the frame's address, or one of these codes (cast to a pointer by the caller). */
+#define STREAMER_NOTREADY (-1) /* no data available yet */
+#define STREAMER_BADSIZE  (-2) /* the requested frame is larger than the stream's frame size */
+
+/* streamer_Prime results (the others: 0 the file was (re)opened). */
+#define STREAMER_PRIME_IDLE   (-1) /* nothing to open */
+#define STREAMER_PRIME_FAILED (-2) /* the file could not be opened and the retry callback gave up */
+
+/* The values the stream's pfnRetry callback is called with. */
+#define STREAMER_RETRY_READ 0 /* a read failed (no file name) */
+#define STREAMER_RETRY_OPEN 1 /* the file could not be opened (disc missing) */
+
 /* The file ring buffer streamer_Create allocates (0x110 bytes); AnimPlay.pStream points at one. */
 struct sStream
 {
     char* pBuf;                                 /* 0x00 ring buffer base */
     char* pEnd;                                 /* 0x04 base + ringSize */
-    int ringSize;                               /* 0x08 (multiple of 0x800) */
+    int ringSize;                               /* 0x08 (multiple of STREAMER_SECTOR_SIZE) */
     int maxFrame;                               /* 0x0C */
-    int field10;                                /* 0x10 busy count: Prime raises it around its state update, Advance refuses while set */
+    int busy;                                   /* 0x10 busy count: Prime raises it around its state update, Advance refuses while set */
     int active;                                 /* 0x14 */
-    int field18;                                /* 0x18 */
+    int ready;                                  /* 0x18 set by Fill once data was read for the active start offset */
     char* pStart;                               /* 0x1C */
-    int field20;                                /* 0x20 */
+    int skip;                                   /* 0x20 bytes of the first sector before the start offset, skipped by the first Advance */
     char* pRead;                                /* 0x24 */
     char* pWrite;                               /* 0x28 */
-    int field2C;                                /* 0x2C */
+    int pending;                                /* 0x2C bytes handed out by the last Advance (the write position moves by this on the next one) */
     int hFile;                                  /* 0x30 */
     int filePos;                                /* 0x34 */
     int fileSize;                               /* 0x38 */
-    char name[0xC8];                            /* 0x3C */
+    char name[STREAMER_NAME_SIZE];             /* 0x3C */
     int startOffset;                            /* 0x104 */
     int reopen;                                 /* 0x108 */
     int (*pfnRetry)(int code, const char* pName); /* 0x10C */

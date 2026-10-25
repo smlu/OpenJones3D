@@ -22,10 +22,13 @@ int J3DAPI memory_Register(LecShare* pShare, void* pParam)
 {
     memory_pServices = pShare;
     memory_pData     = pParam;
-    memory_plain.Alloc   = malloc;
-    memory_plain.Free    = free;
-    memory_plain.Realloc = realloc;
+
+    memory_plain.Alloc     = malloc;
+    memory_plain.Free      = free;
+    memory_plain.Realloc   = realloc;
     memory_plain.pReserved = NULL;
+
+
     pShare->Publish("LECMODULE=insane_memory", &memory_module);
     memory_pServices->Publish("MEMORY=insane", &memory_plain);
     memory_pServices->Publish("MEMORY=insane_debug", &memory_debug);
@@ -57,7 +60,7 @@ void memory_Unregister(void)
 
 void* J3DAPI memory_debugAlloc(int size, const char* pFile, int line)
 {
-    char* pRaw = malloc(size + 8);
+    char* pRaw = malloc(size + MEMORY_PREFIX_SIZE + MEMORY_GUARD_SIZE);
     if ( !pRaw )
     {
         return NULL;
@@ -65,13 +68,13 @@ void* J3DAPI memory_debugAlloc(int size, const char* pFile, int line)
 
     memory_Track(pRaw, size, pFile, line, "Alloc");
     *(int*)pRaw = size;
-    memory_total += size + 4;
-    return pRaw + 4;
+    memory_total += size + MEMORY_PREFIX_SIZE;
+    return pRaw + MEMORY_PREFIX_SIZE;
 }
 
 int J3DAPI memory_Track(char* pRaw, int size, const char* pFile, int line, const char* pOp)
 {
-    *(char**)(pRaw + size + 4) = pRaw;
+    *(char**)(pRaw + size + MEMORY_PREFIX_SIZE) = pRaw;
     if ( memory_total > memory_maxTotal )
     {
         memory_maxTotal = memory_total;
@@ -104,9 +107,9 @@ int J3DAPI memory_Track(char* pRaw, int size, const char* pFile, int line, const
 
 void J3DAPI memory_debugFree(void* pBlock, const char* pFile, int line)
 {
-    char* pRaw = (char*)pBlock - 4;
+    char* pRaw = (char*)pBlock - MEMORY_PREFIX_SIZE;
 
-    memory_total -= *(int*)pRaw + 4;
+    memory_total -= *(int*)pRaw + MEMORY_PREFIX_SIZE;
     if ( !memory_Check(pRaw, *(int*)pRaw, pFile, line, "Free") )
     {
         free(pRaw);
@@ -115,7 +118,7 @@ void J3DAPI memory_debugFree(void* pBlock, const char* pFile, int line)
 
 int J3DAPI memory_Check(char* pRaw, int size, const char* pFile, int line, const char* pOp)
 {
-    int bOverwritten = *(char**)(pRaw + size + 4) != pRaw;
+    int bOverwritten = *(char**)(pRaw + size + MEMORY_PREFIX_SIZE) != pRaw;
 
     for ( MemoryRecord* pRecord = (MemoryRecord*)memory_list.head.pNext; &pRecord->link != &memory_list.tail; pRecord = (MemoryRecord*)pRecord->link.pNext )
     {
@@ -146,8 +149,8 @@ void* J3DAPI memory_debugRealloc(void* pBlock, int size, const char* pFile, int 
     // TODO: [BUG] A NULL pBlock is not handled: it is dereferenced below (and base is not set).
     if ( pRaw )
     {
-        pRaw -= 4;
-        base = memory_total - *(int*)pRaw - 4;
+        pRaw -= MEMORY_PREFIX_SIZE;
+        base = memory_total - *(int*)pRaw - MEMORY_PREFIX_SIZE;
     }
 
     if ( memory_Check(pRaw, *(int*)pRaw, pFile, line, "Re-Free") )
@@ -155,7 +158,7 @@ void* J3DAPI memory_debugRealloc(void* pBlock, int size, const char* pFile, int 
         return NULL;
     }
 
-    char* pNew = realloc(pRaw, size + 8);
+    char* pNew = realloc(pRaw, size + MEMORY_PREFIX_SIZE + MEMORY_GUARD_SIZE);
     if ( !pNew )
     {
         memory_Track(pRaw, *(int*)pRaw, pFile, line, "Re-UnAlloc");
@@ -164,8 +167,8 @@ void* J3DAPI memory_debugRealloc(void* pBlock, int size, const char* pFile, int 
 
     memory_Track(pNew, size, pFile, line, "Re-Alloc");
     *(int*)pNew = size;
-    memory_total = base + size + 4;
-    return pNew + 4;
+    memory_total = base + size + MEMORY_PREFIX_SIZE;
+    return pNew + MEMORY_PREFIX_SIZE;
 }
 
 void Memory_InstallHooks(void)

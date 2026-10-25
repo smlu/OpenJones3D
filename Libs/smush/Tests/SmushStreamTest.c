@@ -513,7 +513,7 @@ TEST(SmushStream, streamer_FillAdvanceAndPercent)
     TEST_ASSERT_EQUAL_INT(1, Test_files[0].isOpen);
     TEST_ASSERT_EQUAL_INT(0x3000, pStream->fileSize);
     TEST_ASSERT_EQUAL_INT(0x1000, pStream->filePos);
-    TEST_ASSERT_EQUAL_INT(8, pStream->field20);
+    TEST_ASSERT_EQUAL_INT(8, pStream->skip);
     TEST_ASSERT_TRUE(pStreamer->IsActive(pStream));
     TEST_ASSERT_EQUAL_MEMORY(data, pStream->pBuf, 0x1000);
 
@@ -524,8 +524,8 @@ TEST(SmushStream, streamer_FillAdvanceAndPercent)
     // The next advance returns the frame address, skipping the sector offset
     int pFrame = pStreamer->Advance(pStream, 16);
     TEST_ASSERT_EQUAL_PTR(pStream->pBuf + 8, (void*)(intptr_t)pFrame);
-    TEST_ASSERT_EQUAL_INT(0, pStream->field20);
-    TEST_ASSERT_EQUAL_INT(8 + 16, pStream->field2C);
+    TEST_ASSERT_EQUAL_INT(0, pStream->skip);
+    TEST_ASSERT_EQUAL_INT(8 + 16, pStream->pending);
 
     // A frame larger than the maximum is rejected with a message
     TEST_ASSERT_EQUAL_INT(-2, pStreamer->Advance(pStream, 0x1001));
