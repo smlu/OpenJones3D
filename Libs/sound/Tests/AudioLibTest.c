@@ -1476,25 +1476,27 @@ TEST(AudioLib, TestOriginalCompressWVSM)
 {
     // WVSM streams (channel argument 1 and 2) of 0 to 10000 bytes, which cover the 0x1000 block size boundary. The
     // returned size is compared too; it includes the 10 byte header twice, as in the original.
-    //
-    // NOTE: AudioLib_WVSMCompressBlock currently starts its sample bit length counters at 0 instead of the original 1 to
-    // avoid an out-of-bounds write. This moves every histogram bucket and so changes the selected shifts and the
-    // compressed bytes of most inputs. Those cases are listed here; the rest must match the original exactly.
-    static const char* const aKnownDifferences[] = {
-        "wvsm_size1024_noise_full",
-        "wvsm_size1024_square_20000",
-        "wvsm_size1024_ramp",
-        "wvsm_size4096_sine",
-        "wvsm_size4100_block_boundary",
-        "wvsm_size8192_two_blocks",
-        "wvsm_size10000_three_blocks",
-        "wvsm_mono_arg_size2048",
-    };
+    TEST_ASSERT_EQUAL_size_t(0, AudioLibTest_RunCompressVectors("CompressWVSM.tv", NULL, 0));
+}
 
-    size_t numDifferent = AudioLibTest_RunCompressVectors("CompressWVSM.tv", aKnownDifferences, STD_ARRAYLEN(aKnownDifferences));
-    if ( numDifferent )
+// Crash guard, not a regression test (the formerly differing original-engine vectors are the regression coverage):
+// the sample -32768 has a bit length of 17 (the count starts at 1), which wrote past the end of the histograms
+TEST(AudioLib, TestCompressWVSMFullScaleSamples)
+{
+    enum { SIZE = 1024 };
+    int16_t aSamples[SIZE / 2];
+    for ( size_t i = 0; i < STD_ARRAYLEN(aSamples); ++i )
     {
-        TEST_IGNORE_MESSAGE("AudioLib_WVSMCompressBlock differs from the original for the listed cases; see tv/AudioLib/README.md.");
+        aSamples[i] = (i & 1u) ? INT16_MAX : INT16_MIN;
+    }
+
+    for ( uint32_t numChannels = 1; numChannels <= 2; ++numChannels )
+    {
+        tAudioCompressorState state = { 0 };
+        uint8_t* pOutput = AudioLibTest_AllocOutput(SIZE * 3u + 256u);
+        int ret = AudioLib_Compress(&state, pOutput, (const uint8_t*)aSamples, SIZE, numChannels);
+        TEST_ASSERT_GREATER_THAN_INT(0, ret);
+        free(pOutput);
     }
 }
 
@@ -1603,6 +1605,7 @@ TEST_GROUP_RUNNER(AudioLib)
     RUN_TEST_CASE(AudioLib, TestOriginalUncompressBlock);
     RUN_TEST_CASE(AudioLib, TestOriginalCompress);
     RUN_TEST_CASE(AudioLib, TestOriginalCompressWVSM);
+    RUN_TEST_CASE(AudioLib, TestCompressWVSMFullScaleSamples);
     RUN_TEST_CASE(AudioLib, TestOriginalUncompress);
     RUN_TEST_CASE(AudioLib, TestOriginalWVSMUncompressBlock);
 }
