@@ -38,7 +38,7 @@ int J3DAPI sithAIInstinct_WallCrawl(SithAIControlBlock* pLocal, SithAIInstinct* 
 void J3DAPI sithAIInstinct_SnakeFindMovePos(SithAIControlBlock* pLocal, rdVector3* moveToPosLeft, rdVector3* moveToPosRight);
 int J3DAPI sithAIInstinct_SnakeMungeTestCheck(SithAIControlBlock* pLocal, rdVector3* pDirection, float distance, rdVector3* pOutPoint);
 signed int J3DAPI sithAIInstinct_SnakeFollow(SithAIControlBlock* pLocal, SithAIInstinct* pInstinct, SithAIInstinctState* pState, SithAIEventType event, SithThing* pThing);
-void J3DAPI sithAIInstinct_SnakePlaySlitherSound(const SithThing* pThing, float a2);
+void J3DAPI sithAIInstinct_SnakePlaySlitherSound(const SithThing* pThing, float slitherDir);
 
 // Helper hooking functions
 void sithAIInstinct_InstallHooks(void);

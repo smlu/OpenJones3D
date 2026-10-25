@@ -9,12 +9,6 @@
 
 J3D_EXTERN_C_START
 
-#define sithAIMove_g_flt_585464 J3D_DECL_FAR_VAR(sithAIMove_g_flt_585464, float)
-// extern float sithAIMove_g_flt_585464;
-
-#define sithAIMove_g_flt_585468 J3D_DECL_FAR_VAR(sithAIMove_g_flt_585468, float)
-// extern float sithAIMove_g_flt_585468;
-
 void J3DAPI sithAIMove_Update(SithThing* pThing, float secDeltatTime);
 void J3DAPI sithAIMove_UpdateMineCar(SithAIControlBlock* pLocal, float secDeltaTime);
 void J3DAPI sithAIMove_UpdateTurn(SithAIControlBlock* pLocal, float secDeltatTime);

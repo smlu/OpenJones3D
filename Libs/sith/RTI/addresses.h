@@ -2361,7 +2361,7 @@
 #define sithFX_fairyDustDeluxSizeFactor_ADDR 0x0058545C
 #define sithFX_secLastCreatedRowRipple_ADDR 0x00585460
 #define sithFX_g_aChalkMarks_ADDR 0x017F10C0
-#define sithAIInstinct_flt_539AB8_ADDR 0x00539AB8
+#define sithAIInstinct_snakeLastDotFwd_ADDR 0x00539AB8
 #define sithWhip_vecCameraOffsetWhipClimbAim_ADDR 0x0053A350
 #define sithWhip_vecCameraLookOffsetWhipClimbAim_ADDR 0x0053A360
 #define sithWhip_vecCameraOffsetWhipSwingAim_ADDR 0x0053A370
@@ -2486,8 +2486,8 @@
 #define sithCogFunctionAI_aThingsInView_ADDR 0x00585380
 #define sithCogFunctionAI_numThingsInView_ADDR 0x00585400
 #define sithCogFunctionAI_curThingInView_ADDR 0x00585404
-#define sithAIMove_g_flt_585464_ADDR 0x00585464
-#define sithAIMove_g_flt_585468_ADDR 0x00585468
+#define sithAIInstinct_snakeSlitherDir_ADDR 0x00585464
+#define sithAIInstinct_snakeFollowNearRange_ADDR 0x00585468
 #define sithAIMove_headTrackTargetStartDot_ADDR 0x0058546C
 #define sithAIMove_quetzStrikeNearHeadPitch_ADDR 0x00585470
 #define sithAIUtil_thingsInViewFovY_ADDR 0x00585478

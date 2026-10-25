@@ -141,10 +141,7 @@ void sithAIMove_InstallHooks(void)
 }
 
 void sithAIMove_ResetGlobals(void)
-{
-    memset(&sithAIMove_g_flt_585464, 0, sizeof(sithAIMove_g_flt_585464));
-    memset(&sithAIMove_g_flt_585468, 0, sizeof(sithAIMove_g_flt_585468));
-}
+{}
 
 void J3DAPI sithAIMove_Update(SithThing* pThing, float secDeltatTime)
 {
