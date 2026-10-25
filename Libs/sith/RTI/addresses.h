@@ -2051,6 +2051,10 @@
 #define sithThing_guidEntropy_ADDR 0x00529040
 #define sithThing_aWeaponCoefficients_ADDR 0x00529050
 #define sithThing_jeepHitMinVelocityZ_ADDR 0x005290B4
+#define sithThing_quetzStretchMinRatio_ADDR 0x005290B8
+#define sithThing_quetzScaleBase_ADDR 0x005290BC
+#define sithThing_quetzScalePerAttach_ADDR 0x005290C0
+#define sithThing_quetzMaxTurnRate_ADDR 0x005290C4
 #define sithThing_apUnsyncedThings_ADDR 0x0055EE18
 #define sithThing_pParseHashtbl_ADDR 0x0055EE58
 #define sithThing_prevQuetzAttachInfo_ADDR 0x0055EE5C
@@ -2061,7 +2065,7 @@
 #define sithThing_numUnsyncedThings_ADDR 0x005612AC
 #define sithThing_bThingStartup_ADDR 0x005612B0
 #define sithThing_pfUnknownFunc_ADDR 0x005612B4
-#define sithThing_dword_5612B8_ADDR 0x005612B8
+#define sithThing_bQuetzTurningSharp_ADDR 0x005612B8
 #define sithCamera_aCycleCamIndices_ADDR 0x0052A058
 #define sithCamera_vecExtCameraLookOffset_ADDR 0x0052A068
 #define sithCamera_vecExtCameraDefaultLookOffset_ADDR 0x0052A078

@@ -1620,24 +1620,24 @@ typedef struct sSithQuetzStrike
 
 typedef struct sSithQuetzAttachInfo
 {
-    float unknown0;
-    float unknown1;
-    float unknown2;
+    float offsetPrevY; // Y offset along the previous segment orientation
+    float offsetZ;     // Z offset in world space
+    float offsetY;     // Y offset along this segment orientation
     rdVector3 vecDirection;
     rdVector3 vecDirectionNextAttach;
-    float unknown9;
-    float unknown10;
-    rdVector3 vecUnknown11;
-    float unknown14;
+    float length;    // Segment length used to normalize travelled distance
+    float remaining; // Remaining length of the segment, counts down as the Quetz moves
+    rdVector3 rotation; // PYR rotation applied to the segment orientation
+    float uvecOffset;   // Offset along segment up vector used to probe collisions
 } SithQuetzAttachInfo;
 
 typedef struct sSithQuetzUserBlock
 {
     SithQuetzAttachInfo aAttachInfos[26];
     unsigned int numAttachInfos;
-    int unknown391;
+    int bResetSegment;
     int bPosFudged;
-    float unknown393;
+    float posFudge;
     SithQuetzStrike strike;
     int unknown488;
     int unknown489;

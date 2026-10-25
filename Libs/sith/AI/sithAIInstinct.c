@@ -3086,7 +3086,7 @@ int J3DAPI sithAIInstinct_SnakeMungeTestCheck(SithAIControlBlock* pLocal, rdVect
     float fudge = 0.0f;
     if ( pQuetz->bPosFudged )
     {
-        fudge = pQuetz->unknown393;
+        fudge = pQuetz->posFudge;
     }
 
     rdVector_ScaleAdd3(pOutPoint, pDirection, distance, &pThing->pos);
@@ -3392,7 +3392,7 @@ signed int J3DAPI sithAIInstinct_SnakeFollow(SithAIControlBlock* pLocal, SithAII
 
         if ( pLocal->pOwner->userblock.pQuetz )
         {
-            pLocal->pOwner->userblock.pQuetz->unknown391 = 1;
+            pLocal->pOwner->userblock.pQuetz->bResetSegment = 1;
         }
     }
 
