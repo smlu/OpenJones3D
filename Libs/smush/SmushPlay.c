@@ -5,6 +5,7 @@
 #include <smush/RTI/symbols.h>
 #include <string.h>
 
+#include <smush/insane/animplay.h>
 #include <smush/insane/Animate/Frame.h>
 #include <smush/insane/Animate/Pcplay.h>
 #include <smush/insane/Bitmap/Bitmap.h>
@@ -32,6 +33,10 @@
 #include <smush/insane/Timer/Timer.h>
 #include <smush/insane/Util/List.h>
 
+#define SMUSHPLAY_MAX_PATH     260
+#define SMUSHPLAY_DEFAULT_RATE 15   // Frames per second used if the caller passes 0
+#define SMUSHPLAY_MAX_VOLUME   127
+#define SMUSHPLAY_PLAYFLAGS    (ANIMPLAY_FLAG_SYNC | ANIMPLAY_FLAG_NOCLEAR | ANIMPLAY_FLAG_FIXEDRATE) // Flags always set for the game's movies
 
 static void* smushplay_pMemory;
 static SoundInterface* smushplay_pSound;
@@ -71,7 +76,7 @@ static LecModuleEntry smushplay_aModules[] = {
     { NULL, NULL }
 };
 
-static int smushplay_volume = 127;
+static int smushplay_volume = SMUSHPLAY_MAX_VOLUME;
 
 static HWND smushplay_hWnd;
 static AnimPlay* smushplay_pPlay;
@@ -103,31 +108,32 @@ int J3DAPI SmushPlay_SysStartup(HWND hwnd, tDirectSound* pDSound)
     return 0;
 }
 
-int J3DAPI SmushPlay_PlayMovie(const char* pFilename, int a1, int a3, int a4, int a5, int width, int height, int a8, int a9, int(__cdecl* pBlit)(const SmushBitmap* pBitmap, int a2), int a11, int a12, int a13)
+int J3DAPI SmushPlay_PlayMovie(const char* pFilename, int rate, int flags, int a4, int a5, int width, int height, int a8, int a9, int(__cdecl* pBlit)(const SmushBitmap* pBitmap, int a2), int loops, int ringSize, int frameSize)
 {
-    (void)a4;
-    (void)a5;
+    J3D_UNUSED(a4);
+    J3D_UNUSED(a5);
 
-    LecBitmapHeader* pBitmap;
-    char aPath[260];
-    uint8_t aPalette[1024];
+    char aPath[SMUSHPLAY_MAX_PATH];
+    uint8_t aPalette[ANIMPLAY_PALETTE_SIZE]; // Persists between frames
 
     // TODO: [BUG] Unbounded copy of the file name into the 260 byte buffer.
     memcpy(aPath, pFilename, strlen(pFilename) + 1);
 
-    if ( a1 == 0 )
+    if ( rate == 0 )
     {
-        a1 = 15; // rate
+        rate = SMUSHPLAY_DEFAULT_RATE;
     }
 
-    if ( smushplay_pBitmap->Create(&pBitmap, width, height, 3) )
+    LecBitmapHeader* pBitmap;
+    if ( smushplay_pBitmap->Create(&pBitmap, width, height, LECBITMAP_TYPE_RGB565) )
     {
         return 0;
     }
 
-    if ( a11 == 0 )
+    // A zero loop count becomes -1, for which the loop below does not run
+    if ( loops == 0 )
     {
-        a11 = -1; // count
+        loops = -1;
     }
 
     smushplay_pSound->SetVolume(SOUND_NOTRACK, smushplay_volume);
@@ -135,25 +141,25 @@ int J3DAPI SmushPlay_PlayMovie(const char* pFilename, int a1, int a3, int a4, in
     smushplay_bAbort = 0;
     dbloc16_Configure(1, smushplay_Blit);
 
-    // TODO: [BUG] The original returns an uninitialized rc if the loop doesn't run (count is -1 if 0 is passed in), here it is 0.
+    // TODO: [BUG] The original returns an uninitialized rc if the loop doesn't run (loops is -1 if 0 is passed in), here it is 0.
     int rc = 0; // Fixed: Init to 0
-    for ( int i = 0; i < a11; ++i )
+    for ( int i = 0; i < loops; ++i )
     {
-        rc = smushplay_pAnimPlay->Create(&smushplay_pPlay, aPath, a1, a12, a13, a3 | 0xD);
+        rc = smushplay_pAnimPlay->Create(&smushplay_pPlay, aPath, rate, ringSize, frameSize, flags | SMUSHPLAY_PLAYFLAGS);
         if ( rc == 0 )
         {
             int r;
             do
             {
-                int v1 = 0;
-                int v2 = 0;
-                r = smushplay_pAnimPlay->Pace(smushplay_pPlay, pBitmap, 0, 0, 0, aPalette, &v2, &v1, a8, a9);
+                int outA = 0;
+                int outB = 0;
+                r = smushplay_pAnimPlay->Pace(smushplay_pPlay, pBitmap, 0, 0, 0, aPalette, &outA, &outB, a8, a9);
                 if ( smushplay_bAbort )
                 {
-                    i = a11;
+                    i = loops;
                     break;
                 }
-            } while ( r >= 0 && r != 4 );
+            } while ( r >= 0 && r != ANIMPLAY_STATE_END );
 
             smushplay_pAnimPlay->Destroy(&smushplay_pPlay);
         }
@@ -166,10 +172,10 @@ int J3DAPI SmushPlay_PlayMovie(const char* pFilename, int a1, int a3, int a4, in
 
 int J3DAPI smushplay_Blit(int a1, int a2, int a3, int a4, void* pBitmap)
 {
-    (void)a1;
-    (void)a2;
-    (void)a3;
-    (void)a4;
+    J3D_UNUSED(a1);
+    J3D_UNUSED(a2);
+    J3D_UNUSED(a3);
+    J3D_UNUSED(a4);
 
     if ( smushplay_pfBlit )
     {
@@ -188,7 +194,7 @@ void SmushPlay_SysShutdown(void)
 
 void J3DAPI SmushPlay_SetGlobalVolume(size_t volume)
 {
-    if ( (int)volume >= 0 && (int)volume < 128 ) // Original compares signed
+    if ( (int)volume >= 0 && (int)volume <= SMUSHPLAY_MAX_VOLUME ) // Original compares signed
     {
         smushplay_volume = (int)volume;
     }
@@ -221,7 +227,7 @@ void SmushPlay_ResetGlobals(void)
     smushplay_pAnimPlay  = NULL;
     smushplay_pBitmap    = NULL;
     smushplay_pTimer     = NULL;
-    smushplay_volume     = 127;
+    smushplay_volume     = SMUSHPLAY_MAX_VOLUME;
     smushplay_hWnd       = NULL;
     smushplay_pPlay      = NULL;
     smushplay_bAbort     = 0;

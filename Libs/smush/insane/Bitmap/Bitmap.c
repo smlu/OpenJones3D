@@ -8,6 +8,11 @@
 #include <stddef.h>
 #include <string.h>
 
+// An allocated bitmap is a block: 8 bytes of allocator bookkeeping, the header, then the palette (indexed bitmaps) and the pixels
+#define LECBITMAP_BLOCKHEAD_SIZE 8
+#define LECBITMAP_PIXELS_OFFSET  (LECBITMAP_BLOCKHEAD_SIZE + (int)sizeof(LecBitmapHeader))
+#define LECBITMAP_PALETTE_SIZE   256
+
 static LecModule bitmap_module = { bitmap_Register, bitmap_Unregister, bitmap_Startup, bitmap_Shutdown };
 static BitmapInterface bitmap_interface = { bitmap_Create, bitmap_CreateEx, bitmap_Destroy };
 
@@ -60,34 +65,34 @@ int J3DAPI bitmap_Create(LecBitmapHeader** ppBitmap, int width, int height, int 
 
     switch ( type )
     {
-        case 1:
-            nColors = 0x100;
+        case LECBITMAP_TYPE_PALETTE8:
+            nColors = LECBITMAP_PALETTE_SIZE;
             // fall through
-        case 0:
+        case LECBITMAP_TYPE_INDEXED8:
             pixelSize = 1;
             break;
 
-        case 2:
-        case 3:
-        case 5:
-        case 7:
-        case 8:
-        case 10:
+        case LECBITMAP_TYPE_RGB555:
+        case LECBITMAP_TYPE_RGB565:
+        case LECBITMAP_TYPE_ARGB1555:
+        case LECBITMAP_TYPE_BGR555:
+        case LECBITMAP_TYPE_BGR565:
+        case LECBITMAP_TYPE_ABGR1555:
             pixelSize = 2;
             break;
 
-        case 4:
-        case 9:
+        case LECBITMAP_TYPE_RGB888:
+        case LECBITMAP_TYPE_BGR888:
             pixelSize = 3;
             break;
 
-        case 6:
-        case 11:
-        case 12:
+        case LECBITMAP_TYPE_ARGB8888:
+        case LECBITMAP_TYPE_ABGR8888:
+        case LECBITMAP_TYPE_RGBA8888:
             pixelSize = 4;
             break;
 
-        case -1:
+        case LECBITMAP_TYPE_DISPLAY:
             if ( bitmap_pMode != NULL )
             {
                 pixelSize = bitmap_pMode->GetFormat()->pixelSize;
@@ -105,180 +110,183 @@ int J3DAPI bitmap_Create(LecBitmapHeader** ppBitmap, int width, int height, int 
     }
 
     int pitch    = pixelSize * width;
-    char* pBlock = bitmap_pMemory->Alloc(pitch * height + nColors * 4 + 0x5C, INSANE_FILE, __LINE__);
+    char* pBlock = bitmap_pMemory->Alloc(pitch * height + nColors * (int)sizeof(uint32_t) + LECBITMAP_PIXELS_OFFSET, INSANE_FILE, __LINE__);
     if ( pBlock == NULL )
     {
         return -101;
     }
 
-    *ppBitmap = (LecBitmapHeader*)(pBlock + 8);
-    void* pPixels = pBlock + 0x5C;
+    LecBitmapHeader* pHeader = (LecBitmapHeader*)(pBlock + LECBITMAP_BLOCKHEAD_SIZE);
+    *ppBitmap = pHeader;
+    void* pPixels = pBlock + LECBITMAP_PIXELS_OFFSET;
 
-    (*ppBitmap)->pPixels   = pPixels;
-    (*ppBitmap)->width     = width;
-    (*ppBitmap)->pitch     = pitch;
-    (*ppBitmap)->height    = height;
-    (*ppBitmap)->pixelSize = pixelSize;
-    (*ppBitmap)->unknown7  = 0;
-    (*ppBitmap)->unknown6  = 0;
+    pHeader->pPixels   = pPixels;
+    pHeader->width     = width;
+    pHeader->pitch     = pitch;
+    pHeader->height    = height;
+    pHeader->pixelSize = pixelSize;
+    pHeader->unknown7  = 0;
+    pHeader->unknown6  = 0;
 
     switch ( type )
     {
-        case 1:
-            (*ppBitmap)->bpp              = 8;
-            (*ppBitmap)->colorMode        = 0;
-            (*ppBitmap)->indexed.nColors  = nColors;
-            (*ppBitmap)->indexed.pPalette = pPixels;
+        case LECBITMAP_TYPE_PALETTE8:
+            pHeader->bpp              = 8;
+            pHeader->colorMode        = STDCOLOR_PAL;
+            pHeader->indexed.nColors  = nColors;
+            pHeader->indexed.pPalette = pPixels;
             break;
 
-        case 0:
-            (*ppBitmap)->bpp              = 8;
-            (*ppBitmap)->colorMode        = 0;
-            (*ppBitmap)->indexed.nColors  = nColors;
-            (*ppBitmap)->indexed.pPalette = NULL;
+        case LECBITMAP_TYPE_INDEXED8:
+            pHeader->bpp              = 8;
+            pHeader->colorMode        = STDCOLOR_PAL;
+            pHeader->indexed.nColors  = nColors;
+            pHeader->indexed.pPalette = NULL;
             break;
 
-        case 5:
-        case 10:
-            (*ppBitmap)->bpp                       = 16;
-            (*ppBitmap)->colorMode                 = 2;
-            (*ppBitmap)->format.redBPP             = 5;
-            (*ppBitmap)->format.greenBPP           = 5;
-            (*ppBitmap)->format.blueBPP            = 5;
-            (*ppBitmap)->format.alphaBPP           = 1;
-            (*ppBitmap)->format.redPosShift        = (type == 5) ? 10 : 0;
-            (*ppBitmap)->format.greenPosShift      = 5;
-            (*ppBitmap)->format.bluePosShift       = (type != 5) ? 10 : 0;
-            (*ppBitmap)->format.alphaPosShift      = 15;
-            (*ppBitmap)->format.redPosShiftRight   = 3;
-            (*ppBitmap)->format.greenPosShiftRight = 3;
-            (*ppBitmap)->format.bluePosShiftRight  = 3;
-            (*ppBitmap)->format.alphaPosShiftRight = 7;
+        case LECBITMAP_TYPE_ARGB1555:
+        case LECBITMAP_TYPE_ABGR1555:
+            pHeader->bpp                       = 16;
+            pHeader->colorMode                 = STDCOLOR_RGBA;
+            pHeader->format.redBPP             = 5;
+            pHeader->format.greenBPP           = 5;
+            pHeader->format.blueBPP            = 5;
+            pHeader->format.alphaBPP           = 1;
+            pHeader->format.redPosShift        = (type == LECBITMAP_TYPE_ARGB1555) ? 10 : 0;
+            pHeader->format.greenPosShift      = 5;
+            pHeader->format.bluePosShift       = (type != LECBITMAP_TYPE_ARGB1555) ? 10 : 0;
+            pHeader->format.alphaPosShift      = 15;
+            pHeader->format.redPosShiftRight   = 3;
+            pHeader->format.greenPosShiftRight = 3;
+            pHeader->format.bluePosShiftRight  = 3;
+            pHeader->format.alphaPosShiftRight = 7;
             break;
 
-        case 2:
-        case 7:
-            (*ppBitmap)->bpp                       = 15;
-            (*ppBitmap)->colorMode                 = 1;
-            (*ppBitmap)->format.redBPP             = 5;
-            (*ppBitmap)->format.greenBPP           = 5;
-            (*ppBitmap)->format.blueBPP            = 5;
-            (*ppBitmap)->format.redPosShift        = (type == 2) ? 10 : 0;
-            (*ppBitmap)->format.greenPosShift      = 5;
-            (*ppBitmap)->format.bluePosShift       = (type != 2) ? 10 : 0;
-            (*ppBitmap)->format.redPosShiftRight   = 3;
-            (*ppBitmap)->format.greenPosShiftRight = 3;
-            (*ppBitmap)->format.bluePosShiftRight  = 3;
+        case LECBITMAP_TYPE_RGB555:
+        case LECBITMAP_TYPE_BGR555:
+            pHeader->bpp                       = 15;
+            pHeader->colorMode                 = STDCOLOR_RGB;
+            pHeader->format.redBPP             = 5;
+            pHeader->format.greenBPP           = 5;
+            pHeader->format.blueBPP            = 5;
+            pHeader->format.redPosShift        = (type == LECBITMAP_TYPE_RGB555) ? 10 : 0;
+            pHeader->format.greenPosShift      = 5;
+            pHeader->format.bluePosShift       = (type != LECBITMAP_TYPE_RGB555) ? 10 : 0;
+            pHeader->format.redPosShiftRight   = 3;
+            pHeader->format.greenPosShiftRight = 3;
+            pHeader->format.bluePosShiftRight  = 3;
             break;
 
-        case 3:
-        case 8:
-            (*ppBitmap)->bpp                       = 16;
-            (*ppBitmap)->colorMode                 = 1;
-            (*ppBitmap)->format.redBPP             = 5;
-            (*ppBitmap)->format.greenBPP           = 6;
-            (*ppBitmap)->format.blueBPP            = 5;
-            (*ppBitmap)->format.redPosShift        = (type == 3) ? 11 : 0;
-            (*ppBitmap)->format.greenPosShift      = 5;
-            (*ppBitmap)->format.bluePosShift       = (type != 3) ? 11 : 0;
-            (*ppBitmap)->format.redPosShiftRight   = 3;
-            (*ppBitmap)->format.greenPosShiftRight = 2;
-            (*ppBitmap)->format.bluePosShiftRight  = 3;
+        case LECBITMAP_TYPE_RGB565:
+        case LECBITMAP_TYPE_BGR565:
+            pHeader->bpp                       = 16;
+            pHeader->colorMode                 = STDCOLOR_RGB;
+            pHeader->format.redBPP             = 5;
+            pHeader->format.greenBPP           = 6;
+            pHeader->format.blueBPP            = 5;
+            pHeader->format.redPosShift        = (type == LECBITMAP_TYPE_RGB565) ? 11 : 0;
+            pHeader->format.greenPosShift      = 5;
+            pHeader->format.bluePosShift       = (type != LECBITMAP_TYPE_RGB565) ? 11 : 0;
+            pHeader->format.redPosShiftRight   = 3;
+            pHeader->format.greenPosShiftRight = 2;
+            pHeader->format.bluePosShiftRight  = 3;
             break;
 
-        case 6:
-        case 11:
-        case 12:
-            (*ppBitmap)->bpp                       = 32;
-            (*ppBitmap)->colorMode                 = 2;
-            (*ppBitmap)->format.redBPP             = 8;
-            (*ppBitmap)->format.greenBPP           = 8;
-            (*ppBitmap)->format.blueBPP            = 8;
-            (*ppBitmap)->format.alphaBPP           = 8;
-            (*ppBitmap)->format.redPosShift        = (type == 6) ? 16 : ((type != 11) ? 24 : 0);
-            (*ppBitmap)->format.greenPosShift      = (type != 12) ? 8 : 16;
-            (*ppBitmap)->format.bluePosShift       = (type != 6) ? 8 : 0;
-            (*ppBitmap)->format.alphaPosShift      = (type != 12) ? 24 : 0;
-            (*ppBitmap)->format.redPosShiftRight   = 0;
-            (*ppBitmap)->format.greenPosShiftRight = 0;
-            (*ppBitmap)->format.bluePosShiftRight  = 0;
-            (*ppBitmap)->format.alphaPosShiftRight = 0;
+        case LECBITMAP_TYPE_ARGB8888:
+        case LECBITMAP_TYPE_ABGR8888:
+        case LECBITMAP_TYPE_RGBA8888:
+            // TODO: [BUG] For ABGR8888 the blue shift is 8 like green (it would need 16), so the channels overlap.
+            pHeader->bpp                       = 32;
+            pHeader->colorMode                 = STDCOLOR_RGBA;
+            pHeader->format.redBPP             = 8;
+            pHeader->format.greenBPP           = 8;
+            pHeader->format.blueBPP            = 8;
+            pHeader->format.alphaBPP           = 8;
+            pHeader->format.redPosShift        = (type == LECBITMAP_TYPE_ARGB8888) ? 16 : ((type != LECBITMAP_TYPE_ABGR8888) ? 24 : 0);
+            pHeader->format.greenPosShift      = (type != LECBITMAP_TYPE_RGBA8888) ? 8 : 16;
+            pHeader->format.bluePosShift       = (type != LECBITMAP_TYPE_ARGB8888) ? 8 : 0;
+            pHeader->format.alphaPosShift      = (type != LECBITMAP_TYPE_RGBA8888) ? 24 : 0;
+            pHeader->format.redPosShiftRight   = 0;
+            pHeader->format.greenPosShiftRight = 0;
+            pHeader->format.bluePosShiftRight  = 0;
+            pHeader->format.alphaPosShiftRight = 0;
             break;
 
-        case 4:
-        case 9:
-            (*ppBitmap)->bpp                       = 24;
-            (*ppBitmap)->colorMode                 = 1;
-            (*ppBitmap)->format.redBPP             = 8;
-            (*ppBitmap)->format.greenBPP           = 8;
-            (*ppBitmap)->format.blueBPP            = 8;
-            (*ppBitmap)->format.redPosShift        = (type == 4) ? 16 : 0;
-            (*ppBitmap)->format.greenPosShift      = 8;
-            (*ppBitmap)->format.bluePosShift       = (type != 4) ? 16 : 0;
-            (*ppBitmap)->format.redPosShiftRight   = 0;
-            (*ppBitmap)->format.greenPosShiftRight = 0;
-            (*ppBitmap)->format.bluePosShiftRight  = 0;
+        case LECBITMAP_TYPE_RGB888:
+        case LECBITMAP_TYPE_BGR888:
+            pHeader->bpp                       = 24;
+            pHeader->colorMode                 = STDCOLOR_RGB;
+            pHeader->format.redBPP             = 8;
+            pHeader->format.greenBPP           = 8;
+            pHeader->format.blueBPP            = 8;
+            pHeader->format.redPosShift        = (type == LECBITMAP_TYPE_RGB888) ? 16 : 0;
+            pHeader->format.greenPosShift      = 8;
+            pHeader->format.bluePosShift       = (type != LECBITMAP_TYPE_RGB888) ? 16 : 0;
+            pHeader->format.redPosShiftRight   = 0;
+            pHeader->format.greenPosShiftRight = 0;
+            pHeader->format.bluePosShiftRight  = 0;
             break;
 
-        case -1:
-            (*ppBitmap)->bpp       = bitmap_pMode->GetFormat()->bpp;
-            (*ppBitmap)->colorMode = bitmap_pMode->GetFormat()->colorMode;
-            (*ppBitmap)->indexed   = bitmap_pMode->GetFormat()->indexed;
-            (*ppBitmap)->format    = bitmap_pMode->GetFormat()->format;
+        case LECBITMAP_TYPE_DISPLAY:
+            pHeader->bpp       = bitmap_pMode->GetFormat()->bpp;
+            pHeader->colorMode = bitmap_pMode->GetFormat()->colorMode;
+            pHeader->indexed   = bitmap_pMode->GetFormat()->indexed;
+            pHeader->format    = bitmap_pMode->GetFormat()->format;
             break;
     }
 
     return 0;
 }
 
-int J3DAPI bitmap_CreateEx(LecBitmapHeader** ppBitmap, int width, int height, int colorMode, int a5, int a6, const void* pFormat)
+int J3DAPI bitmap_CreateEx(LecBitmapHeader** ppBitmap, int width, int height, int colorMode, int pixelSize, int bpp, const void* pFormat)
 {
     int nColors = 0;
-    if ( colorMode == 0 )
+    if ( colorMode == STDCOLOR_PAL )
     {
         nColors = ((const int*)pFormat)[1];
     }
 
-    char* pBlock = bitmap_pMemory->Alloc(width * height * a5 + nColors * 4 + 0x5C, INSANE_FILE, __LINE__);
+    char* pBlock = bitmap_pMemory->Alloc(width * height * pixelSize + nColors * (int)sizeof(uint32_t) + LECBITMAP_PIXELS_OFFSET, INSANE_FILE, __LINE__);
     if ( pBlock == NULL )
     {
         return -101;
     }
 
-    *ppBitmap = (LecBitmapHeader*)(pBlock + 8);
-    void* pPixels = pBlock + 0x5C;
+    LecBitmapHeader* pHeader = (LecBitmapHeader*)(pBlock + LECBITMAP_BLOCKHEAD_SIZE);
+    *ppBitmap = pHeader;
+    void* pPixels = pBlock + LECBITMAP_PIXELS_OFFSET;
 
-    (*ppBitmap)->pPixels   = pPixels;
-    (*ppBitmap)->width     = width;
-    (*ppBitmap)->pitch     = width * a5;
-    (*ppBitmap)->height    = height;
-    (*ppBitmap)->pixelSize = a5;
-    (*ppBitmap)->bpp       = a6;
-    (*ppBitmap)->unknown7  = 0;
-    (*ppBitmap)->unknown6  = 0;
-    (*ppBitmap)->colorMode = colorMode;
+    pHeader->pPixels   = pPixels;
+    pHeader->width     = width;
+    pHeader->pitch     = width * pixelSize;
+    pHeader->height    = height;
+    pHeader->pixelSize = pixelSize;
+    pHeader->bpp       = bpp;
+    pHeader->unknown7  = 0;
+    pHeader->unknown6  = 0;
+    pHeader->colorMode = colorMode;
 
     switch ( colorMode )
     {
-        case 0:
-            (*ppBitmap)->indexed.nColors  = nColors;
-            (*ppBitmap)->indexed.pPalette = pPixels;
+        case STDCOLOR_PAL:
+            pHeader->indexed.nColors  = nColors;
+            pHeader->indexed.pPalette = pPixels;
             break;
 
         case 1:
         case 3:
         case 5:
-            memcpy(&(*ppBitmap)->format, pFormat, 9 * sizeof(int));
+            memcpy(&pHeader->format, pFormat, offsetof(BitmapFormat, alphaBPP));
             break;
 
         case 2:
         case 4:
         case 6:
-            memcpy(&(*ppBitmap)->format, pFormat, sizeof(BitmapFormat));
+            memcpy(&pHeader->format, pFormat, sizeof(BitmapFormat));
             break;
 
         case 7:
-            memcpy(&(*ppBitmap)->format, pFormat, 3 * sizeof(int));
+            memcpy(&pHeader->format, pFormat, offsetof(BitmapFormat, redPosShift));
             break;
     }
 

@@ -42,8 +42,6 @@ static_assert(sizeof(AnimPlayDebug) == 0x10, "sizeof(AnimPlayDebug) == 0x10");
 
 /* Pcplay.c's non-static state that Framestream.c reads. */
 extern LecShare* animplay_pShare;
-extern MemoryDebugInterface* animplay_pMemory;
-extern AnimPlayDebugService* animplay_pDebug;
 extern StreamerInterface* animplay_pStreamer;
 extern AnimFrameTable* animplay_pFrame;
 extern AnimPlayOps animplay_ops;
@@ -52,7 +50,7 @@ int J3DAPI animplay_Register(LecShare* pShare, void* pParam);
 void animplay_Unregister(void);
 int animplay_Startup(void);
 void animplay_Shutdown(void);
-int J3DAPI animplay_Play(int a1, int a2, int a3, int a4, int a5, int a6, int a7, int a8, int a9, int a10, int a11, int a12, int a13);
+int J3DAPI animplay_Play(int pName, int rate, int flags, int a4, int a5, int width, int height, int a8, int a9, int pfCallback, int loops, int ringSize, int frameSize);
 int J3DAPI animplay_Create(AnimPlay** ppPlay, const char* pName, int rate, int ringSize, int frameSize, int flags);
 int J3DAPI animplay_GetTime(AnimPlay* pPlay);
 int J3DAPI animplay_Pace(AnimPlay* pPlay, void* a2, int a3, int a4, int a5, void* a6, int* a7, int* a8, int a9, int a10);

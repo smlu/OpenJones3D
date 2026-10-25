@@ -52,7 +52,7 @@ static_assert(sizeof(SmushBitmap) == 0x54, "sizeof(SmushBitmap) == 0x54");
 int J3DAPI SmushPlay_SysStartup(HWND hwnd, tDirectSound* pDSound);
 void SmushPlay_SysShutdown(void);
 void J3DAPI SmushPlay_SetGlobalVolume(size_t volume);
-int J3DAPI SmushPlay_PlayMovie(const char* pFilename, int a1, int a3, int a4, int a5, int width, int height, int a8, int a9, int(__cdecl* pBlit)(const SmushBitmap* pBitmap, int a2), int a11, int a12, int a13);
+int J3DAPI SmushPlay_PlayMovie(const char* pFilename, int rate, int flags, int a4, int a5, int width, int height, int a8, int a9, int(__cdecl* pBlit)(const SmushBitmap* pBitmap, int a2), int loops, int ringSize, int frameSize);
 int J3DAPI smushplay_Blit(int a1, int a2, int a3, int a4, void* pBitmap);
 void* smushplay_GetHwnd(void);
 

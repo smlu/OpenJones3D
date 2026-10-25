@@ -12,7 +12,7 @@
 J3D_EXTERN_C_START
 
 void J3DAPI blit_Fill(LecBitmapHeader* pBitmap, int color);
-void J3DAPI blit_Wrapper(void* pDst, void* pSrc, int a3, int a4, int a5, int a6, int width, int height, int dstPitch, int srcPitch);
+void J3DAPI blit_Wrapper(void* pDst, void* pSrc, int dstX, int dstY, int srcX, int srcY, int width, int height, int dstPitch, int srcPitch);
 
 void Blit_InstallHooks(void);
 void Blit_ResetGlobals(void);

@@ -84,19 +84,19 @@ const char* J3DAPI readauto_Query(int code)
 {
     switch ( code )
     {
-        case 0:
+        case READAUTO_QUERY_NAME:
             return "Auto Reader";
 
-        case 1:
+        case READAUTO_QUERY_SHORTDESC:
             return "Reads an animation file automatically using published modules.";
 
-        case 2:
+        case READAUTO_QUERY_LONGDESC:
             return "This module searches the system for all published READANIM modules and queries them in sequence from earliest to latest "
                    "to see if any of them are compatible with a given file.  The check is first done using filenames only.  If none are "
                    "found to match, data-level comparisons are done.";
     }
 
-    if ( code < 100 || code >= 120 )
+    if ( code < READAUTO_QUERY_EXTENSIONS || code >= READAUTO_QUERY_EXTENSIONS_END )
     {
         return "";
     }
@@ -105,7 +105,7 @@ const char* J3DAPI readauto_Query(int code)
     int count         = readauto_pShare->Count("READANIM");
     for ( int i = 0; i < count; ++i )
     {
-        if ( code < 100 )
+        if ( code < READAUTO_QUERY_EXTENSIONS )
         {
             break;
         }
@@ -118,7 +118,7 @@ const char* J3DAPI readauto_Query(int code)
             {
                 if ( pReader != &readauto_interface )
                 {
-                    int k = 100;
+                    int k = READAUTO_QUERY_EXTENSIONS;
                     do
                     {
                         pText = pReader->Query(k);
@@ -127,7 +127,7 @@ const char* J3DAPI readauto_Query(int code)
                         {
                             --code;
                         }
-                    } while ( pText && *pText && code >= 100 );
+                    } while ( pText && *pText && code >= READAUTO_QUERY_EXTENSIONS );
                 }
 
                 readauto_pShare->Unsubscribe(pReader);
@@ -135,7 +135,7 @@ const char* J3DAPI readauto_Query(int code)
         }
     }
 
-    if ( code < 100 )
+    if ( code < READAUTO_QUERY_EXTENSIONS )
     {
         return pText;
     }
@@ -159,14 +159,13 @@ int J3DAPI readauto_Read(int a, int b, void* pFile)
 int J3DAPI readauto_Open(void** ppHandle, const char* pFile)
 {
     ReadAutoHandle* pHandle = readauto_pAlloc->Alloc(sizeof(ReadAutoHandle), INSANE_FILE, __LINE__);
-    int rc = pHandle ? 0 : -1;
-    if ( rc )
+    if ( !pHandle )
     {
-        return rc;
+        return -1;
     }
 
     int count = readauto_pShare->Count("READANIM");
-    for ( int pass = 0; pass < 2; ++pass )
+    for ( int pass = READAUTO_PASS_FILENAME; pass <= READAUTO_PASS_DATA; ++pass )
     {
         for ( int i = 0; i < count; ++i )
         {
@@ -178,7 +177,7 @@ int J3DAPI readauto_Open(void** ppHandle, const char* pFile)
                 {
                     if ( pHandle->pReader != &readauto_interface && pHandle->pReader->Recognize(pFile, pass) )
                     {
-                        rc = pHandle->pReader->Open(&pHandle->hReader, pFile);
+                        int rc = pHandle->pReader->Open(&pHandle->hReader, pFile);
                         if ( rc )
                         {
                             readauto_pShare->Unsubscribe(pHandle->pReader);

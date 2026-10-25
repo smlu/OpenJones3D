@@ -11,6 +11,23 @@
 
 J3D_EXTERN_C_START
 
+/* The text codes ReadAnimInterface.Query answers (see readanim.h) */
+enum
+{
+    READAUTO_QUERY_NAME            = 0,
+    READAUTO_QUERY_SHORTDESC       = 1,
+    READAUTO_QUERY_LONGDESC        = 2,
+    READAUTO_QUERY_EXTENSIONS      = 100, /* first of the chained readers' extension codes */
+    READAUTO_QUERY_EXTENSIONS_END  = 120,
+};
+
+/* The passes readauto_Open makes over the readers: first by file name, then by file data */
+enum
+{
+    READAUTO_PASS_FILENAME = 0,
+    READAUTO_PASS_DATA     = 1,
+};
+
 typedef struct sReadAutoHandle
 {
     ReadAnimInterface* pReader;

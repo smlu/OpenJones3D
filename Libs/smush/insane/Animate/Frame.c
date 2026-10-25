@@ -6,6 +6,7 @@
 
 #include <stddef.h>
 #include <string.h>
+#include <smush/insane/animplay.h>
 #include <smush/insane/File/Framestream.h>
 
 // The debug service's print function is printf-style
@@ -14,6 +15,37 @@ typedef void (*AnimFrameDebugPrintFunc)(const char* pFormat, ...);
 #define ANIMFRAME_DEBUG_PARSE   0x80000
 #define ANIMFRAME_DEBUG_BADHEAD 0x20000
 #define ANIMFRAME_DEBUG_UNKNOWN 0x40000
+
+#define ANIMFRAME_PALETTE_SIZE  ANIMPLAY_PALETTE_SIZE
+#define ANIMFRAME_PALETTE_COUNT 256
+#define ANIMFRAME_LOAD_HEADER   10 // Size of a 'load' chunk's header before its data
+#define ANIMFRAME_CHUNK_HEADER  8 // Chunk tag and big endian size
+
+// Decoder flags (FlobDecoder.GetFlags)
+#define ANIMFRAME_DECODERFLAG_STORE 0x10 // The decoder's chunks can be stored for 'ftch'
+
+// Bits of the decoder's Decode result
+#define ANIMFRAME_RESULT_DRAW    1
+#define ANIMFRAME_RESULT_PRESENT 2
+#define ANIMFRAME_RESULT_PALETTE 4
+#define ANIMFRAME_RESULT_REWIND  0x80
+
+// Bits of animframe_Decode's own result
+#define ANIMFRAME_DECODE_REWIND   2
+#define ANIMFRAME_DECODE_BADHEAD  0x8000
+
+#pragma pack(push, 1)
+// The payload of an 'npal' chunk
+typedef struct sAnimFrameNpal
+{
+    uint8_t unknown[8];
+    int32_t outFlags; // Or'd into the palette output flags
+    int16_t fade;     // 0 sets the palette at once, otherwise the number of steps to fade to it
+    int16_t first;    // First palette entry
+    int16_t count;    // Number of entries
+    uint8_t aEntries[];
+} AnimFrameNpal;
+#pragma pack(pop)
 
 static int animframe_lastDecoder = -1;
 static int animframe_cursor      = 8;
@@ -33,7 +65,7 @@ static int animframe_flags[ANIMFRAME_MAXDECODERS]             = { 0 };
 static FlobDecoder* animframe_decoders[ANIMFRAME_MAXDECODERS] = { 0 };
 static int animframe_tags[ANIMFRAME_MAXDECODERS]              = { 0 };
 static void* animframe_pParam                                 = NULL;
-static char animframe_palette[0x400]                          = { 0 };
+static char animframe_palette[ANIMFRAME_PALETTE_SIZE]                          = { 0 };
 static int animframe_debugMask                                = 0;
 static int animframe_count                                    = 0;
 static uint8_t* animframe_pOverlay                            = NULL;
@@ -128,22 +160,20 @@ int animframe_Startup(void)
     if ( animframe_overlaySize )
     {
         animframe_pOverlay = animframe_pMemory->Alloc(animframe_overlaySize, INSANE_FILE, __LINE__);
-        int rc = animframe_pOverlay ? 0 : -1;
-        if ( rc )
+        if ( animframe_pOverlay == NULL )
         {
             animframe_pShare->ReportError("AnimFrame Module: Can't allocate overlay buffer (%ld bytes)", animframe_overlaySize);
-            return rc;
+            return -1;
         }
     }
 
     if ( animframe_preloadSize )
     {
         animframe_pPreload = animframe_pMemory->Alloc(animframe_preloadSize, INSANE_FILE, __LINE__);
-        int rc = animframe_pPreload ? 0 : -1;
-        if ( rc )
+        if ( animframe_pPreload == NULL )
         {
             animframe_pShare->ReportError("AnimFrame Module: Can't allocate preload buffer (%ld bytes)", animframe_preloadSize);
-            return rc;
+            return -1;
         }
     }
 
@@ -230,12 +260,12 @@ int J3DAPI animframe_Parse(const uint8_t* pData, int size)
         {
             if ( tag != 0 && tag == (uint32_t)animframe_tags[i] && animframe_decoders[i] )
             {
-                animframe_decoders[i]->Parse(pData + 8, len);
+                animframe_decoders[i]->Parse(pData + ANIMFRAME_CHUNK_HEADER, len);
             }
         }
 
-        size += -8 - len;
-        pData += 8 + len;
+        size -= ANIMFRAME_CHUNK_HEADER + len;
+        pData += ANIMFRAME_CHUNK_HEADER + len;
         if ( len & 1 )
         {
             pData++;
@@ -267,11 +297,11 @@ uint32_t J3DAPI animframe_Decode(void* pBitmap, int a2, int a3, int a4, void* pP
         {
             if ( tag != 0 && tag == (uint32_t)animframe_tags[i] && animframe_decoders[i] )
             {
-                if ( seen && animframe_pOverlay && (animframe_flags[i] & 0x10) )
+                if ( seen && animframe_pOverlay && (animframe_flags[i] & ANIMFRAME_DECODERFLAG_STORE) )
                 {
-                    if ( len + 8 < (uint32_t)animframe_overlaySize )
+                    if ( len + ANIMFRAME_CHUNK_HEADER < (uint32_t)animframe_overlaySize )
                     {
-                        framestream_Copy(animframe_pOverlay, pData, len + 8);
+                        framestream_Copy(animframe_pOverlay, pData, len + ANIMFRAME_CHUNK_HEADER);
                         animframe_lastDecoder = i;
                     }
                     else
@@ -282,32 +312,32 @@ uint32_t J3DAPI animframe_Decode(void* pBitmap, int a2, int a3, int a4, void* pP
                     seen = 0;
                 }
 
-                uint32_t ret = animframe_decoders[i]->Decode(pBitmap, a2, a3, a4, pPalette, pData + 8, len, mode, a9, a10);
-                if ( ret & 1 )
+                uint32_t ret = animframe_decoders[i]->Decode(pBitmap, a2, a3, a4, pPalette, pData + ANIMFRAME_CHUNK_HEADER, len, mode, a9, a10);
+                if ( ret & ANIMFRAME_RESULT_DRAW )
                 {
                     *pOutA |= 1;
                 }
 
-                if ( ret & 2 )
+                if ( ret & ANIMFRAME_RESULT_PRESENT )
                 {
                     *pOutB |= 1;
                 }
 
-                if ( ret & 4 )
+                if ( ret & ANIMFRAME_RESULT_PALETTE )
                 {
                     *pOutB |= 2;
                 }
 
-                if ( ret & 0x80 )
+                if ( ret & ANIMFRAME_RESULT_REWIND )
                 {
-                    result |= 2;
+                    result |= ANIMFRAME_DECODE_REWIND;
                 }
 
                 break;
             }
         }
 
-        pData += 8;
+        pData += ANIMFRAME_CHUNK_HEADER;
         if ( i >= animframe_count )
         {
             switch ( tag )
@@ -322,17 +352,17 @@ uint32_t J3DAPI animframe_Decode(void* pBitmap, int a2, int a3, int a4, void* pP
                         uint32_t ret = animframe_decoders[animframe_lastDecoder]->Decode(pBitmap, a2, a3, a4, pPalette, animframe_pOverlay + 8,
                             (animframe_pOverlay[4] << 24) | (animframe_pOverlay[5] << 16) | (animframe_pOverlay[6] << 8) | animframe_pOverlay[7],
                             mode, a9, a10);
-                        if ( ret & 1 )
+                        if ( ret & ANIMFRAME_RESULT_DRAW )
                         {
                             *pOutA |= 1;
                         }
 
-                        if ( ret & 2 )
+                        if ( ret & ANIMFRAME_RESULT_PRESENT )
                         {
                             *pOutB |= 1;
                         }
 
-                        if ( ret & 4 )
+                        if ( ret & ANIMFRAME_RESULT_PALETTE )
                         {
                             *pOutB |= 2;
                         }
@@ -341,20 +371,24 @@ uint32_t J3DAPI animframe_Decode(void* pBitmap, int a2, int a3, int a4, void* pP
                     break;
 
                 case 'npal':
-                    if ( *(const int16_t*)(pData + 0xC) == 0 )
+                {
+                    const AnimFrameNpal* pNpal = (const AnimFrameNpal*)pData;
+                    if ( pNpal->fade == 0 )
                     {
-                        framestream_Copy((char*)pPalette + (*(const int16_t*)(pData + 0xE) << 4), pData + 0x12, *(const int16_t*)(pData + 0x10) << 2);
-                        *pOutB |= *(const int*)(pData + 8);
+                        // TODO: [BUG] The entry offset is first << 4 but an entry is 4 bytes, so entries after the first 16 land in the wrong place.
+                        framestream_Copy((char*)pPalette + (pNpal->first << 4), pNpal->aEntries, pNpal->count << 2);
+                        *pOutB |= pNpal->outFlags;
                         animframe_fade = 0;
                     }
                     else
                     {
-                        framestream_Copy(animframe_palette, pPalette, 0x400);
-                        framestream_Copy(animframe_palette + (*(const int16_t*)(pData + 0xE) << 4), pData + 0x12, *(const int16_t*)(pData + 0x10) << 2);
-                        animframe_fade = *(const int16_t*)(pData + 0xC);
+                        framestream_Copy(animframe_palette, pPalette, ANIMFRAME_PALETTE_SIZE);
+                        framestream_Copy(animframe_palette + (pNpal->first << 4), pNpal->aEntries, pNpal->count << 2);
+                        animframe_fade = pNpal->fade;
                     }
 
                     break;
+                }
 
                 case 'stor':
                     seen = 1;
@@ -368,15 +402,17 @@ uint32_t J3DAPI animframe_Decode(void* pBitmap, int a2, int a3, int a4, void* pP
                     }
 
                     // The tag characters are expected to be in the range '0'..'z'
-                    if ( (uint8_t)tag < '0' || (uint8_t)tag > 'z' || (uint8_t)(tag >> 8) < '0' || (uint8_t)(tag >> 8) > 'z'
-                        || (uint8_t)(tag >> 16) < '0' || (uint8_t)(tag >> 16) > 'z' || (uint8_t)(tag >> 24) < '0' || (uint8_t)(tag >> 24) > 'z' )
+                    if ( (uint8_t)tag < '0' || (uint8_t)tag > 'z'
+                        || (uint8_t)(tag >> 8) < '0' || (uint8_t)(tag >> 8) > 'z'
+                        || (uint8_t)(tag >> 16) < '0' || (uint8_t)(tag >> 16) > 'z'
+                        || (uint8_t)(tag >> 24) < '0' || (uint8_t)(tag >> 24) > 'z' )
                     {
                         if ( animframe_pDebug && (animframe_debugMask & ANIMFRAME_DEBUG_BADHEAD) )
                         {
                             ((AnimFrameDebugPrintFunc)animframe_pDebug->Print)("Bad Header Found '%c%c%c%c'\n", pData[-4], pData[-3], pData[-2], pData[-1]);
                         }
 
-                        return result | 0x8000;
+                        return result | ANIMFRAME_DECODE_BADHEAD;
                     }
 
                     break;
@@ -384,7 +420,7 @@ uint32_t J3DAPI animframe_Decode(void* pBitmap, int a2, int a3, int a4, void* pP
         }
 
         pData += len;
-        size -= len + 8;
+        size -= len + ANIMFRAME_CHUNK_HEADER;
         if ( len & 1 )
         {
             pData++;
@@ -398,7 +434,7 @@ uint32_t J3DAPI animframe_Decode(void* pBitmap, int a2, int a3, int a4, void* pP
         uint32_t* pTgt = (uint32_t*)animframe_palette;
 
         *pOutB |= 1;
-        for ( i = 0; i < 256; i++ )
+        for ( i = 0; i < ANIMFRAME_PALETTE_COUNT; i++ )
         {
             uint32_t c  = pCur[i];
             uint32_t b0 = c & 0xFF;
@@ -437,8 +473,8 @@ void J3DAPI animframe_Load(const int16_t* pData, int size)
     {
         if ( animframe_loaded + size < animframe_preloadSize )
         {
-            framestream_Copy(animframe_pPreload + animframe_loaded, (const char*)pData + 10, size - 10);
-            animframe_loaded += size - 10;
+            framestream_Copy(animframe_pPreload + animframe_loaded, (const char*)pData + ANIMFRAME_LOAD_HEADER, size - ANIMFRAME_LOAD_HEADER);
+            animframe_loaded += size - ANIMFRAME_LOAD_HEADER;
         }
 
         animframe_lastFragment = seq;

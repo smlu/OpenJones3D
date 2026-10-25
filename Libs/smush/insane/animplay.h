@@ -10,6 +10,33 @@
 
 J3D_EXTERN_C_START
 
+/* Return values of animplay_Pace / animplay_Step / framestream_Tick (names inferred from where Framestream.c returns them) */
+typedef enum eAnimPlayState
+{
+    ANIMPLAY_STATE_ERROR    = -2, /* invalid chunk header */
+    ANIMPLAY_STATE_STALLED  = -1,
+    ANIMPLAY_STATE_FRAME    = 0,  /* a frame was presented */
+    ANIMPLAY_STATE_STARTING = 1,  /* a frame was presented, one of the first 10 */
+    ANIMPLAY_STATE_PAUSED   = 2,  /* a frame was presented while paused on a hold */
+    ANIMPLAY_STATE_SWAP     = 3,
+    ANIMPLAY_STATE_END      = 4,  /* the last frame was presented */
+    ANIMPLAY_STATE_WAITING  = 5,  /* waiting for the streamer to deliver data */
+    ANIMPLAY_STATE_IDLE     = 6,  /* no tick has elapsed since the last step */
+} AnimPlayState;
+
+/* AnimPlay.flags (the bits Pcplay.c and Framestream.c test) */
+#define ANIMPLAY_FLAG_SYNC       0x0001 /* pause the voice when the picture falls behind */
+#define ANIMPLAY_FLAG_NOSKIP     0x0002 /* never skip frames when running late */
+#define ANIMPLAY_FLAG_NOCLEAR    0x0004 /* framestream_Present doesn't clear the bitmap first */
+#define ANIMPLAY_FLAG_FIXEDRATE  0x0008 /* ignore the rate in the stream's header */
+#define ANIMPLAY_FLAG_SKIPFRAMES 0x8000 /* set by animplay_Step while the player is running late */
+
+/* AnimPlay.lipFlags */
+#define ANIMPLAY_LIP_LATE       0x80
+#define ANIMPLAY_LIP_COUNT_MASK 0x7F
+
+#define ANIMPLAY_PALETTE_SIZE 0x400 /* 256 entries of 4 bytes */
+
 typedef struct sStream Stream; /* Cdstream.h */
 
 typedef struct sAnimPlay

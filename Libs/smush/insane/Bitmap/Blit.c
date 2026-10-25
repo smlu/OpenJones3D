@@ -11,7 +11,7 @@ void J3DAPI blit_Fill(LecBitmapHeader* pBitmap, int color)
 {
     if ( pBitmap->pitch > 0 )
     {
-        if ( pBitmap->colorMode == 0 )
+        if ( pBitmap->colorMode == STDCOLOR_PAL )
         {
             framestream_CopyB(pBitmap->pPixels, (uint8_t)color, pBitmap->pixelSize * pBitmap->height * pBitmap->pitch);
         }
@@ -27,9 +27,9 @@ void J3DAPI blit_Fill(LecBitmapHeader* pBitmap, int color)
     }
 }
 
-void J3DAPI blit_Wrapper(void* pDst, void* pSrc, int a3, int a4, int a5, int a6, int width, int height, int dstPitch, int srcPitch)
+void J3DAPI blit_Wrapper(void* pDst, void* pSrc, int dstX, int dstY, int srcX, int srcY, int width, int height, int dstPitch, int srcPitch)
 {
-    blit_Masm(pSrc, pDst, a5, a6, a3, a4, width, height, srcPitch, dstPitch);
+    blit_Masm(pSrc, pDst, srcX, srcY, dstX, dstY, width, height, srcPitch, dstPitch);
 }
 
 void Blit_InstallHooks(void)
