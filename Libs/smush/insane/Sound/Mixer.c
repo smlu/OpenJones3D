@@ -17,10 +17,17 @@ static int mixer_Swap16(int x)
     return (((uint16_t)x & 0xFF) << 8) | ((uint16_t)x >> 8);
 }
 
+#define MIXER_PANSTEPS 17 // Volume and pan steps of the pan table (0..16)
+
+// Resampling steps (source frames per output frame in 16.16 fixed point) that have an unrolled path
+#define MIXER_STEP_HALF   0x8000  // Upsample 2:1, averaging neighbours
+#define MIXER_STEP_UNITY  0x10000
+#define MIXER_STEP_DOUBLE 0x20000 // Downsample 2:1, skipping every other frame
+
 static int mixer_headroom = 4;
 static int mixer_channels = 0;
 static int16_t* mixer_pClip = NULL;
-static uint8_t mixer_pan[17][17];
+static uint8_t mixer_pan[MIXER_PANSTEPS][MIXER_PANSTEPS];
 static int mixer_size = 0;
 static int mixer_a4 = 0;
 static int32_t* mixer_pBuffer = NULL;
@@ -49,44 +56,44 @@ void J3DAPI mixer_Feed(void* pSrc, int offset, int n, int bytes, int a5, int vol
 {
     J3D_UNUSED(a5);
 
-    // TODO: [BUG] The original leaves these uninitialized for a format above 5 (unreachable: callers pass 0-5)
+    // TODO: [BUG] The original leaves these uninitialized for a format above 5 (unreachable: callers pass a SoundFormat)
     int bits     = 0; // Fixed: Init to 0
     int channels = 0; // Fixed: Init to 0
     int isSigned = 0; // Fixed: Init to 0
 
     switch ( format )
     {
-        case 0:
+        case SOUND_FORMAT_MONO8:
             channels = 1;
             bits = 8;
             isSigned = 1;
             break;
 
-        case 1:
+        case SOUND_FORMAT_STEREO8:
             channels = 2;
             bits = 8;
             isSigned = 1;
             break;
 
-        case 2:
+        case SOUND_FORMAT_MONO16U:
             channels = 1;
             bits = 16;
             isSigned = 0;
             break;
 
-        case 3:
+        case SOUND_FORMAT_STEREO16U:
             channels = 2;
             bits = 16;
             isSigned = 0;
             break;
 
-        case 4:
+        case SOUND_FORMAT_MONO16:
             channels = 1;
             bits = 16;
             isSigned = 1;
             break;
 
-        case 5:
+        case SOUND_FORMAT_STEREO16:
             channels = 2;
             bits = 16;
             isSigned = 1;
@@ -104,9 +111,9 @@ int J3DAPI mixer_Mix(int16_t* pDst, int n)
 int J3DAPI mixer_Setup(MemoryDebugInterface* pMemory, int channels, int size, int a4)
 {
     uint8_t* pPan = &mixer_pan[0][0];
-    for ( int i = 0; i < 17; i++ )
+    for ( int i = 0; i < MIXER_PANSTEPS; i++ )
     {
-        for ( int j = 0; j < 17; j++ ) {
+        for ( int j = 0; j < MIXER_PANSTEPS; j++ ) {
             *pPan++ = (uint8_t)((sin((j * 3.1415) * 0.03125) * i + 0.5) * 8.0);
         }
     }
@@ -166,8 +173,8 @@ void J3DAPI mixer_Add(void* pSrc, uint32_t count, int bits, int channels, uint32
             v++;
         }
 
-        if ( v >= 17 ) {
-            v = 16;
+        if ( v >= MIXER_PANSTEPS ) {
+            v = MIXER_PANSTEPS - 1;
         }
 
         int p = (pan >> 3) - 8;
@@ -243,7 +250,7 @@ void J3DAPI mixer_Mono8(uint8_t* pSrc, uint32_t count, uint32_t n, int offset, i
 
     switch ( step )
     {
-        case 0x8000:
+        case MIXER_STEP_HALF:
             count--;
             // TODO: [BUG] The mean uses the sample two ahead (pSrc[2]) instead of the next one; a mono stream has no interleaved channel.
             while ( count-- )
@@ -261,7 +268,7 @@ void J3DAPI mixer_Mono8(uint8_t* pSrc, uint32_t count, uint32_t n, int offset, i
             *pBuf++ += ((pSrc[0] ^ 0x80) << 8) * right;
             break;
 
-        case 0x10000:
+        case MIXER_STEP_UNITY:
             while ( n-- )
             {
                 *pBuf++ += ((pSrc[0] ^ 0x80) << 8) * left;
@@ -270,7 +277,7 @@ void J3DAPI mixer_Mono8(uint8_t* pSrc, uint32_t count, uint32_t n, int offset, i
             }
             break;
 
-        case 0x20000:
+        case MIXER_STEP_DOUBLE:
             while ( n-- )
             {
                 *pBuf++ += ((pSrc[0] ^ 0x80) << 8) * left;
@@ -301,7 +308,7 @@ void J3DAPI mixer_Stereo8(uint8_t* pSrc, uint32_t count, uint32_t n, int offset,
 
     switch ( step )
     {
-        case 0x8000:
+        case MIXER_STEP_HALF:
             count--;
             while ( count-- )
             {
@@ -319,14 +326,14 @@ void J3DAPI mixer_Stereo8(uint8_t* pSrc, uint32_t count, uint32_t n, int offset,
             *pBuf++ += ((pSrc[1] ^ 0x80) << 8) * volume;
             break;
 
-        case 0x10000:
+        case MIXER_STEP_UNITY:
             n <<= 1;
             while ( n-- ) {
                 *pBuf++ += ((*pSrc++ ^ 0x80) << 8) * volume;
             }
             break;
 
-        case 0x20000:
+        case MIXER_STEP_DOUBLE:
             while ( n-- )
             {
                 *pBuf++ += ((*pSrc++ ^ 0x80) << 8) * volume;
@@ -358,7 +365,7 @@ void J3DAPI mixer_Mono16(int16_t* pSrc, uint32_t count, uint32_t n, int offset, 
 
     switch ( step )
     {
-        case 0x8000:
+        case MIXER_STEP_HALF:
             count--;
             // TODO: [BUG] The mean uses the sample two ahead (pSrc[2]) instead of the next one; a mono stream has no interleaved channel.
             while ( count-- )
@@ -376,7 +383,7 @@ void J3DAPI mixer_Mono16(int16_t* pSrc, uint32_t count, uint32_t n, int offset, 
             *pBuf++ += pSrc[0] * right;
             break;
 
-        case 0x10000:
+        case MIXER_STEP_UNITY:
             while ( n-- )
             {
                 *pBuf++ += pSrc[0] * left;
@@ -385,7 +392,7 @@ void J3DAPI mixer_Mono16(int16_t* pSrc, uint32_t count, uint32_t n, int offset, 
             }
             break;
 
-        case 0x20000:
+        case MIXER_STEP_DOUBLE:
             while ( n-- )
             {
                 *pBuf++ += pSrc[0] * left;
@@ -416,7 +423,7 @@ void J3DAPI mixer_Stereo16(int16_t* pSrc, uint32_t count, uint32_t n, int offset
 
     switch ( step )
     {
-        case 0x8000:
+        case MIXER_STEP_HALF:
             count--;
             while ( count-- )
             {
@@ -434,14 +441,14 @@ void J3DAPI mixer_Stereo16(int16_t* pSrc, uint32_t count, uint32_t n, int offset
             *pBuf++ += pSrc[1] * volume;
             break;
 
-        case 0x10000:
+        case MIXER_STEP_UNITY:
             n <<= 1;
             while ( n-- ) {
                 *pBuf++ += *pSrc++ * volume;
             }
             break;
 
-        case 0x20000:
+        case MIXER_STEP_DOUBLE:
             while ( n-- )
             {
                 *pBuf++ += *pSrc++ * volume;
@@ -474,7 +481,7 @@ void J3DAPI mixer_MonoU16(uint16_t* pSrc, uint32_t count, uint32_t n, int offset
 
     switch ( step )
     {
-        case 0x8000:
+        case MIXER_STEP_HALF:
             count--;
             // TODO: [BUG] The mean uses the sample two ahead (pSrc[2]) instead of the next one; a mono stream has no interleaved channel.
             while ( count-- )
@@ -495,7 +502,7 @@ void J3DAPI mixer_MonoU16(uint16_t* pSrc, uint32_t count, uint32_t n, int offset
             *pBuf++ += s * right;
             break;
 
-        case 0x10000:
+        case MIXER_STEP_UNITY:
             while ( n-- )
             {
                 s = (int16_t)*pSrc++;
@@ -505,7 +512,7 @@ void J3DAPI mixer_MonoU16(uint16_t* pSrc, uint32_t count, uint32_t n, int offset
             }
             break;
 
-        case 0x20000:
+        case MIXER_STEP_DOUBLE:
             while ( n-- )
             {
                 s = (int16_t)(pSrc[0] ^ 0x8000);
@@ -539,7 +546,7 @@ void J3DAPI mixer_StereoU16(uint16_t* pSrc, uint32_t count, uint32_t n, int offs
 
     switch ( step )
     {
-        case 0x8000:
+        case MIXER_STEP_HALF:
             count--;
             while ( count-- )
             {
@@ -568,7 +575,7 @@ void J3DAPI mixer_StereoU16(uint16_t* pSrc, uint32_t count, uint32_t n, int offs
             *pBuf++ += s1 * volume;
             break;
 
-        case 0x10000:
+        case MIXER_STEP_UNITY:
             n <<= 1;
             while ( n-- )
             {
@@ -578,7 +585,7 @@ void J3DAPI mixer_StereoU16(uint16_t* pSrc, uint32_t count, uint32_t n, int offs
             }
             break;
 
-        case 0x20000:
+        case MIXER_STEP_DOUBLE:
             while ( n-- )
             {
                 s0 = (int16_t)*pSrc++;
@@ -618,7 +625,7 @@ void J3DAPI mixer_MonoSwap16(int16_t* pSrc, uint32_t count, uint32_t n, int offs
 
     switch ( step )
     {
-        case 0x8000:
+        case MIXER_STEP_HALF:
             count--;
             // TODO: [BUG] The mean uses the sample two ahead (pSrc[2]) instead of the next one; a mono stream has no interleaved channel.
             while ( count-- )
@@ -639,7 +646,7 @@ void J3DAPI mixer_MonoSwap16(int16_t* pSrc, uint32_t count, uint32_t n, int offs
             *pBuf++ += s * right;
             break;
 
-        case 0x10000:
+        case MIXER_STEP_UNITY:
             while ( n-- )
             {
                 *pBuf++ += mixer_Swap16(*pSrc) * left;
@@ -648,7 +655,7 @@ void J3DAPI mixer_MonoSwap16(int16_t* pSrc, uint32_t count, uint32_t n, int offs
             }
             break;
 
-        case 0x20000:
+        case MIXER_STEP_DOUBLE:
             while ( n-- )
             {
                 *pBuf++ += mixer_Swap16(*pSrc) * left;
@@ -679,7 +686,7 @@ void J3DAPI mixer_StereoSwap16(int16_t* pSrc, uint32_t count, uint32_t n, int of
 
     switch ( step )
     {
-        case 0x8000:
+        case MIXER_STEP_HALF:
             count--;
             while ( count-- )
             {
@@ -697,7 +704,7 @@ void J3DAPI mixer_StereoSwap16(int16_t* pSrc, uint32_t count, uint32_t n, int of
             *pBuf++ += mixer_Swap16(pSrc[1]) * volume;
             break;
 
-        case 0x10000:
+        case MIXER_STEP_UNITY:
             n <<= 1;
             while ( n-- ) {
                 // TODO: [BUG] pSrc is never advanced: every output sample is the first input sample (unused path, mixer_Feed never swaps).
@@ -705,7 +712,7 @@ void J3DAPI mixer_StereoSwap16(int16_t* pSrc, uint32_t count, uint32_t n, int of
             }
             break;
 
-        case 0x20000:
+        case MIXER_STEP_DOUBLE:
             while ( n-- )
             {
                 *pBuf++ += mixer_Swap16(*pSrc) * volume;

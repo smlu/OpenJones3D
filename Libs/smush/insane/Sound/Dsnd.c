@@ -5,6 +5,7 @@
 #include <smush/RTI/symbols.h>
 
 #include <stdarg.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include <string.h>
 
@@ -24,15 +25,22 @@
 #include <smush/insane/Timer/Timer.h>
 #include <smush/SmushPlay.h>
 
+#define DSND_DEFAULT_RATE     22050
+#define DSND_MIXER_HEADROOM   4
+#define DSND_MIXER_SIZE       0x400 // Mixer buffer size in frames
+#define DSND_MINBLOCKS        3     // Blocks of the secondary buffer
+#define DSND_MAXBLOCKS        16
+#define DSND_TIMERBLOCKFRAMES 1024  // The timer callback runs once per this many frames
+
 static LecModule dsnd_module = { dsnd_Register, dsnd_Unregister, dsnd_Startup, dsnd_Shutdown };
 static SndDriver dsnd_interface = { dsnd_Start, dsnd_Stop, dsnd_SetVolume, dsnd_GetVolume, (int (*)(int))sound_Null, dsnd_GetRate };
 
 static int dsnd_lastBlock = -1;
-static int dsnd_rate = 22050;
+static int dsnd_rate = DSND_DEFAULT_RATE;
 static int dsnd_volume = 127;
 static int dsnd_savedVolume = -5000;
-static WAVEFORMATEX dsnd_primaryFormat = { WAVE_FORMAT_PCM, 2, 22050, 88200, 4, 16, 0 };
-static WAVEFORMATEX dsnd_streamFormat  = { WAVE_FORMAT_PCM, 2, 22050, 88200, 4, 16, 0 };
+static WAVEFORMATEX dsnd_primaryFormat = { WAVE_FORMAT_PCM, 2, DSND_DEFAULT_RATE, DSND_DEFAULT_RATE * 4, 4, 16, 0 };
+static WAVEFORMATEX dsnd_streamFormat  = { WAVE_FORMAT_PCM, 2, DSND_DEFAULT_RATE, DSND_DEFAULT_RATE * 4, 4, 16, 0 };
 
 static void* dsnd_pMixerTable = NULL;
 static int dsnd_cfg3 = 0;
@@ -46,15 +54,15 @@ static TimerInterface* dsnd_pTimer = NULL;
 static int dsnd_playPos = 0;
 static int dsnd_cfg4 = 0;
 static void* dsnd_pParam = NULL;
-static char dsnd_scratch[DSND_BLOCKSIZE]; // One block of 0x600 stereo 16-bit frames, the size the callback mixes into it
+static char dsnd_scratch[DSND_BLOCKSIZE]; // One block of DSND_BLOCKFRAMES stereo 16-bit frames, the size the callback mixes into it
 static int dsnd_cfg2 = 0;
 static LPDIRECTSOUND dsnd_pDS = NULL;
 static LPDIRECTSOUNDBUFFER dsnd_pPrimary = NULL;
 static LPDIRECTSOUNDBUFFER dsnd_pSecondary = NULL;
-static int dsnd_busy = 0;
-static int dsnd_ownDS = 0;
+static bool dsnd_busy = false;
+static bool dsnd_ownDS = false;
 static int dsnd_hTimer = 0;
-static int dsnd_tablesReady = 0;
+static bool dsnd_tablesReady = false;
 
 int J3DAPI dsnd_Register(LecShare* pShare, void* pParam)
 {
@@ -77,25 +85,25 @@ int J3DAPI dsnd_Configure(int tag, ...)
     {
         switch ( tag )
         {
-            case 4:
+            case DSND_CONFIG_4:
                 dsnd_cfg4 = va_arg(args, int);
                 break;
 
-            case 2:
+            case DSND_CONFIG_2:
                 dsnd_cfg2 = va_arg(args, int);
                 break;
 
-            case 3:
+            case DSND_CONFIG_3:
                 dsnd_cfg3 = va_arg(args, int);
                 break;
 
-            case 1:
+            case DSND_CONFIG_1:
                 dsnd_cfg1 = va_arg(args, int);
                 break;
 
-            case 5:
+            case DSND_CONFIG_DSOUND:
                 dsnd_pDS = va_arg(args, LPDIRECTSOUND); // The DirectSound object of the game (IDirectSound8 in DX9 builds, the vtables share the used methods)
-                dsnd_ownDS = 0;
+                dsnd_ownDS = false;
                 break;
 
             default:
@@ -144,21 +152,21 @@ void dsnd_Shutdown(void)
 int J3DAPI dsnd_Start(int rate, int a2, void (*pfnFill)(int, SoundFeed))
 {
     J3D_UNUSED(a2);
-    if ( rate < 22050 ) {
-        rate = 22050;
+    if ( rate < DSND_DEFAULT_RATE ) {
+        rate = DSND_DEFAULT_RATE;
     }
 
     if ( dsnd_Init() ) {
         return -1;
     }
 
-    if ( mixer_Init(dsnd_pMixerTable, 4, 0x400, 0, 1, 1) ) {
+    if ( mixer_Init(dsnd_pMixerTable, DSND_MIXER_HEADROOM, DSND_MIXER_SIZE, 0, 1, 1) ) {
         return -1;
     }
 
     dsnd_pfnFill = pfnFill;
     dsnd_rate = rate;
-    dsnd_hTimer = dsnd_pTimer->Alloc(dsnd_Callback, 1193180 / (rate / 1024), 2, 0);
+    dsnd_hTimer = dsnd_pTimer->Alloc(dsnd_Callback, DSND_TICKRATE / (rate / DSND_TIMERBLOCKFRAMES), 2, 0);
     return 0;
 }
 
@@ -202,7 +210,7 @@ void J3DAPI dsnd_SetVolume(int volume)
             *pEntry++ = v / 63 - 1000;
         }
 
-        dsnd_tablesReady = 1;
+        dsnd_tablesReady = true;
     }
 
     dsnd_volume = volume & 0x7F;
@@ -216,7 +224,7 @@ int dsnd_GetVolume(void)
 
 int dsnd_GetRate(void)
 {
-    return 22050;
+    return DSND_DEFAULT_RATE;
 }
 
 void J3DAPI dsnd_Callback(int index, int param)
@@ -227,15 +235,14 @@ void J3DAPI dsnd_Callback(int index, int param)
     int cur = dsnd_GetPlayPos();
     if ( cur != -1 )
     {
-        int w = dsnd_lastBlock;
-        int n = dsnd_numBlocks;
-        if ( cur != (w + 1) % n )
+        int lastBlock = dsnd_lastBlock;
+        if ( cur != (lastBlock + 1) % dsnd_numBlocks )
         {
-            if ( w < 0 ) {
-                w = cur;
+            if ( lastBlock < 0 ) {
+                lastBlock = cur;
             }
 
-            dsnd_lastBlock = (w + 1) % n;
+            dsnd_lastBlock = (lastBlock + 1) % dsnd_numBlocks;
 
             LPVOID pPtr1, pPtr2;
             DWORD len1, len2;
@@ -245,7 +252,7 @@ void J3DAPI dsnd_Callback(int index, int param)
                 char* pDst;
                 if ( pPtr2 && len2 )
                 {
-                    chunk = 0x600;
+                    chunk = DSND_BLOCKFRAMES;
                     pDst = dsnd_scratch;
                 }
                 else
@@ -268,14 +275,14 @@ void J3DAPI dsnd_Callback(int index, int param)
         }
     }
 
-    dsnd_pTimer->SetInterval(dsnd_hTimer, 1193180 / (dsnd_rate / 1024));
+    dsnd_pTimer->SetInterval(dsnd_hTimer, DSND_TICKRATE / (dsnd_rate / DSND_TIMERBLOCKFRAMES));
 }
 
 int dsnd_Init(void)
 {
     if ( dsnd_pDS != NULL )
     {
-        dsnd_OpenSecondary(3);
+        dsnd_OpenSecondary(DSND_MINBLOCKS);
         return 0;
     }
 
@@ -320,8 +327,8 @@ int dsnd_Init(void)
         return -1;
     }
 
-    dsnd_OpenSecondary(3);
-    dsnd_ownDS = 1;
+    dsnd_OpenSecondary(DSND_MINBLOCKS);
+    dsnd_ownDS = true;
     return 0;
 }
 
@@ -333,17 +340,17 @@ void J3DAPI dsnd_Print(const char* pFormat, ...)
 
 void J3DAPI dsnd_OpenSecondary(int blocks)
 {
-    dsnd_busy = 1;
+    dsnd_busy = true;
     if ( dsnd_pSecondary ) {
         IDirectSoundBuffer_Release(dsnd_pSecondary);
     }
 
     dsnd_pSecondary = NULL;
-    if ( blocks < 3 ) {
-        blocks = 3;
+    if ( blocks < DSND_MINBLOCKS ) {
+        blocks = DSND_MINBLOCKS;
     }
-    else if ( blocks > 16 ) {
-        blocks = 16;
+    else if ( blocks > DSND_MAXBLOCKS ) {
+        blocks = DSND_MAXBLOCKS;
     }
 
     dsnd_numBlocks = blocks;
@@ -374,7 +381,7 @@ void J3DAPI dsnd_OpenSecondary(int blocks)
         IDirectSoundBuffer_Play(dsnd_pSecondary, 0, 0, DSBPLAY_LOOPING);
     }
 
-    dsnd_busy = 0;
+    dsnd_busy = false;
 }
 
 void dsnd_Release(void)
@@ -389,7 +396,7 @@ void dsnd_Release(void)
         IDirectSoundBuffer_SetVolume(dsnd_pPrimary, dsnd_savedVolume);
         IDirectSoundBuffer_Release(dsnd_pPrimary);
         dsnd_pPrimary = NULL;
-        dsnd_ownDS = 0;
+        dsnd_ownDS = false;
     }
 
     // TODO: [BUG] dsnd_ownDS was cleared above, so the DirectSound object the driver created itself is never released.
@@ -423,8 +430,8 @@ void Dsnd_TestReset(void)
     dsnd_pDS = NULL;
     dsnd_pPrimary = NULL;
     dsnd_pSecondary = NULL;
-    dsnd_busy = 0;
-    dsnd_ownDS = 0;
+    dsnd_busy = false;
+    dsnd_ownDS = false;
     dsnd_hTimer = 0;
     dsnd_numBlocks = 0;
 }

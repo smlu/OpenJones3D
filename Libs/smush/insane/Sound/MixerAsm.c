@@ -6,6 +6,9 @@
 
 #include <string.h>
 
+#define MIXERASM_TABLE16_SHIFT 9 // 256-word (512-byte) tables
+#define MIXERASM_TABLE8_SHIFT  8 // 256-byte tables
+
 void MixerAsm_InstallHooks(void)
 {
     // Uncomment only lines for functions that have full definition and doesn't call original function (non-thunk functions)
@@ -73,7 +76,7 @@ void J3DAPI mixer_MemFill(void* pDst, int value, int n)
 void J3DAPI mixer_Lut16(uint16_t* pDst, const uint8_t* pSrc, int n, const uint16_t* pTables, int tableIndex)
 {
     // Tables are 256 words (512 bytes) apart. The loop instruction runs at least once: n == 0 runs 2^32 times.
-    const uint16_t* pTable = (const uint16_t*)((const uint8_t*)pTables + ((uint32_t)tableIndex << 9));
+    const uint16_t* pTable = (const uint16_t*)((const uint8_t*)pTables + ((uint32_t)tableIndex << MIXERASM_TABLE16_SHIFT));
     uint32_t count         = (uint32_t)n;
     do
     {
@@ -83,7 +86,7 @@ void J3DAPI mixer_Lut16(uint16_t* pDst, const uint8_t* pSrc, int n, const uint16
 
 void J3DAPI mixer_Lut16Add(uint16_t* pDst, const uint8_t* pSrc, int n, const uint16_t* pTables, int tableIndex)
 {
-    const uint16_t* pTable = (const uint16_t*)((const uint8_t*)pTables + ((uint32_t)tableIndex << 9));
+    const uint16_t* pTable = (const uint16_t*)((const uint8_t*)pTables + ((uint32_t)tableIndex << MIXERASM_TABLE16_SHIFT));
     uint32_t count         = (uint32_t)n;
     do
     {
@@ -104,7 +107,7 @@ void J3DAPI mixer_Fill16(uint16_t* pDst, int value, int n)
 void J3DAPI mixer_Lut8(uint8_t* pDst, const uint8_t* pSrc, int n, const uint8_t* pTables, int tableIndex)
 {
     // Tables are 256 bytes apart. The loop instruction runs at least once: n == 0 runs 2^32 times.
-    const uint8_t* pTable = pTables + ((uint32_t)tableIndex << 8);
+    const uint8_t* pTable = pTables + ((uint32_t)tableIndex << MIXERASM_TABLE8_SHIFT);
     uint32_t count        = (uint32_t)n;
     do
     {
@@ -114,7 +117,7 @@ void J3DAPI mixer_Lut8(uint8_t* pDst, const uint8_t* pSrc, int n, const uint8_t*
 
 void J3DAPI mixer_Lut8Add(uint8_t* pDst, const uint8_t* pSrc, int n, const uint8_t* pTables, int tableIndex)
 {
-    const uint8_t* pTable = pTables + ((uint32_t)tableIndex << 8);
+    const uint8_t* pTable = pTables + ((uint32_t)tableIndex << MIXERASM_TABLE8_SHIFT);
     uint32_t count        = (uint32_t)n;
     do
     {
