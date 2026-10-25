@@ -2508,7 +2508,7 @@
 #define sithAIUtil_thingInViewTypeMask_ADDR 0x00585728
 #define sithAIUtil_aAIWpnts_ADDR 0x00585730
 #define sithAIUtil_secLastUpdate_ADDR 0x00586270
-#define sithAIUtil_mkPoinCurFlags_ADDR 0x00586274
+#define sithAIUtil_mkPointCurFlags_ADDR 0x00586274
 #define sithSprite_pHashtable_ADDR 0x0059BDA4
 #define sithExplosion_bExpandFadeSet_ADDR 0x0059BDA8
 #define sithParticle_pHashtable_ADDR 0x0059BDAC

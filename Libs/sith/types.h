@@ -28,6 +28,17 @@ J3D_EXTERN_C_START
 #define SITHAI_MAXINSTINCTS           16u
 #define SITHAI_MAXREGISTEREDINSTINCTS 32u
 #define SITHAI_MAXWPNTS               60u
+#define SITHAI_MAXWPNTLINKS           8u
+
+// Waypoint flags: the low byte holds the waypoint rank, the rest the waypoint layer flags (SithAIWaypointLayerFlag)
+#define SITHAI_WPNT_RANKMASK  0x000000FFu
+#define SITHAI_WPNT_FLAGSMASK 0xFFFFFF00u
+#define SITHAI_WPNT_MAXRANK   0xFFu
+
+// Waypoint owner's waypointNum: the low byte holds the previous waypoint and the next byte the waypoint the AI is moving to
+#define SITHAI_WPNTOWNER_PREVMASK  0x00FFu
+#define SITHAI_WPNTOWNER_NEXTMASK  0xFF00u
+#define SITHAI_WPNTOWNER_NEXTSHIFT 8
 
 #define SITH_STATICRESOURCE_INDEXMASK 0x8000
 
@@ -816,12 +827,21 @@ typedef enum eSithAIUtilFireFlags
     SITHAIUTIL_FIRE_STOP_ON_FIRE = 0x400,
 } SithAIUtilFireFlags;
 
-// Point creation flags of sithAIUtil_MakeRandPoint and sithAIUtil_AIGetMovePos
+// Target sight state calculated by sithAIUtil_GetDistanceToTarget and sithAIUtil_GetDistanceToTargetPos
+typedef enum eSithAISightState
+{
+    SITHAI_SIGHT_VISIBLE  = 0, // Target in sight
+    SITHAI_SIGHT_TOOFAR   = 1, // Target too far away (distance > sight distance)
+    SITHAI_SIGHT_OUTOFFOV = 2, // Target out of field of view
+    SITHAI_SIGHT_HIDDEN   = 3, // Target not in sight (invisible, blind viewer, underwater or line of sight blocked)
+} SithAISightState;
+
+// Point creation flags of sithAIUtil_MakeRandPoint, sithAIUtil_AIGetMovePos and the functions making path points
 typedef enum eSithAIUtilMkPointFlags
 {
     SITHAIUTIL_MKPOINT_SIDEWAYS       = 0x01,     // Point to the side of the direction (up x dir)
     SITHAIUTIL_MKPOINT_YAW            = 0x02,     // Rotate the direction by the yaw angle
-    SITHAIUTIL_MKPOINT_PITCH          = 0x04,     // Rotate the direction by the pitch angle
+    SITHAIUTIL_MKPOINT_PITCH          = 0x04,     // Rotate the direction by the pitch angle and keep the vertical component of the direction
     SITHAIUTIL_MKPOINT_TOWARDGOAL     = 0x100,    // Point towards the goal thing
     SITHAIUTIL_MKPOINT_AWAYFROMGOAL   = 0x200,    // Point away from the goal thing
     SITHAIUTIL_MKPOINT_TOWARDMOVEPOS  = 0x400,    // Point towards the move position
@@ -829,10 +849,33 @@ typedef enum eSithAIUtilMkPointFlags
     SITHAIUTIL_MKPOINT_AWAYFROMFLEE   = 0x1000,   // Point away from the flee-from thing
     SITHAIUTIL_MKPOINT_RANDANGLE      = 0x4000,   // Random angle up to the given angle
     SITHAIUTIL_MKPOINT_RANDSIDE       = 0x8000,   // Random rotation side
-    SITHAIUTIL_MKPOINT_TARGETDIST     = 0x10000,  // Distance from the reference position
-    SITHAIUTIL_MKPOINT_UNKNOWN_100000 = 0x100000, // Reference position is the actor's position
-    SITHAIUTIL_MKPOINT_UNKNOWN_200000 = 0x200000, // Reference position is the home position
+    SITHAIUTIL_MKPOINT_TARGETDIST     = 0x10000,  // Distance of the point is the distance to the plane crossing the reference position
+    SITHAIUTIL_MKPOINT_REFOWNER       = 0x100000, // Reference position is the actor's position
+    SITHAIUTIL_MKPOINT_REFHOME        = 0x200000, // Reference position is the home position
 } SithAIUtilMkPointFlags;
+
+// Path check flags of sithAIUtil_CheckPathToPos
+typedef enum eSithAIUtilPathFlags
+{
+    SITHAIUTIL_PATHFLAG_STRAIGHT      = 0x10,     // Check the path straight along the direction
+    SITHAIUTIL_PATHFLAG_SIDES         = 0x20,     // Check the paths to both sides of the direction and select the better one
+    SITHAIUTIL_PATHFLAG_PREFERGOAL    = 0x100,    // Side check prefers the side closer to the goal thing
+    SITHAIUTIL_PATHFLAG_AVOIDGOAL     = 0x200,    // Side check prefers the side further away from the goal thing
+    SITHAIUTIL_PATHFLAG_GOALVISIBLE   = 0x2000,  // End position must be visible from the goal thing
+    SITHAIUTIL_PATHFLAG_IGNOREPLAYER  = 0x20000,  // Player collision does not block the path
+    SITHAIUTIL_PATHFLAG_IGNORETHINGS  = 0x40000,  // Thing collision does not block the path
+    SITHAIUTIL_PATHFLAG_IGNOREFLOORS  = 0x80000,  // Floor surface collision does not block the path
+    SITHAIUTIL_PATHFLAG_TARGETVISIBLE = 0x800000, // End position must be visible from the target thing
+} SithAIUtilPathFlags;
+
+// Result of sithAIUtil_CheckPathToPos
+typedef enum eSithAIUtilPathResult
+{
+    SITHAIUTIL_PATH_BLOCKED = 0, // Path blocked before the minimal move distance
+    SITHAIUTIL_PATH_CLEAR   = 1, // Path is clear
+    SITHAIUTIL_PATH_WORLD   = 2, // Path ends at a surface
+    SITHAIUTIL_PATH_THING   = 4, // Path ends at a thing
+} SithAIUtilPathResult;
 
 // Result of the floor check of sithAIUtil_CheckPosition
 typedef enum eSithAIUtilFloorCheck
@@ -1114,6 +1157,8 @@ typedef enum eSithAIWaypointLayerFlag
     SITH_AIWPNT_LAYER3   = 0x8000,
     SITH_AIWPNT_LAYER4   = 0x10000,
     SITH_AIWPNT_LAYER5   = 0x20000,
+
+    SITH_AIWPNT_ALLLAYERS = SITH_AIWPNT_LAYER0 | SITH_AIWPNT_LAYER1 | SITH_AIWPNT_LAYER2 | SITH_AIWPNT_LAYER3 | SITH_AIWPNT_LAYER4 | SITH_AIWPNT_LAYER5,
 } SithAIWaypointLayerFlag;
 
 typedef enum eSithControlBindFlag
@@ -2509,7 +2554,7 @@ struct sSithAIControlBlock
     int unknown124;
     rdVector3 toTarget;
     float distance;
-    int targetSightState;
+    SithAISightState targetSightState;
     rdVector3 vecUnknown122;
     uint32_t msecAttackStart;
     rdVector3 weaponFirePos;
@@ -2518,7 +2563,7 @@ struct sSithAIControlBlock
     int unknown141;
     rdVector3 vecUnknown0;
     float targetDistance;
-    int targetSightState2;
+    SithAISightState targetSightState2;
     rdVector3 vecUnknown5;
     int unknown150;
     rdVector3 homePos;
@@ -2931,7 +2976,7 @@ struct sSithConsoleCommand
 typedef struct sSithAIWaypointOwner
 {
     int thingNum;
-    int waypointNum;
+    unsigned int waypointNum;
     float cosTurnAlignAngle;
 } SithAIWaypointOwner;
 
