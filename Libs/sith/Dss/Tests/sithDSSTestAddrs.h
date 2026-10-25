@@ -91,9 +91,9 @@ extern SithDSSTestGlobals sithDSSTest_g;
 #undef sithInventory_g_bInitInventory_ADDR
 #undef sithInventory_g_dword_56B750_ADDR
 #undef sithInventory_g_dword_56B754_ADDR
-#undef sithPlayerActions_g_pCurCollidedSurface_ADDR
-#undef sithPlayerActions_g_pCurCollidedModel_ADDR
-#undef sithPlayerActions_g_pCurCollidedModelFace_ADDR
+#undef sithPlayerActions_g_pCurHitLedgeSurface_ADDR
+#undef sithPlayerActions_g_pCurHitLedgeModel_ADDR
+#undef sithPlayerActions_g_pCurHitLedgeModelFace_ADDR
 #undef sithPlayerActions_g_pPlasma_ADDR
 #undef sithPlayerActions_g_jewelFlyingPuppetTrackNum_ADDR
 #undef sithPlayerActions_g_bJewelFlying_ADDR
@@ -133,9 +133,9 @@ extern SithDSSTestGlobals sithDSSTest_g;
 #define sithInventory_g_bInitInventory_ADDR ((uintptr_t)&sithDSSTest_g.bInitInventory)
 #define sithInventory_g_dword_56B750_ADDR ((uintptr_t)&sithDSSTest_g.dword_56B750)
 #define sithInventory_g_dword_56B754_ADDR ((uintptr_t)&sithDSSTest_g.dword_56B754)
-#define sithPlayerActions_g_pCurCollidedSurface_ADDR ((uintptr_t)&sithDSSTest_g.pCurCollidedSurface)
-#define sithPlayerActions_g_pCurCollidedModel_ADDR ((uintptr_t)&sithDSSTest_g.pCurCollidedModel)
-#define sithPlayerActions_g_pCurCollidedModelFace_ADDR ((uintptr_t)&sithDSSTest_g.pCurCollidedModelFace)
+#define sithPlayerActions_g_pCurHitLedgeSurface_ADDR ((uintptr_t)&sithDSSTest_g.pCurCollidedSurface)
+#define sithPlayerActions_g_pCurHitLedgeModel_ADDR ((uintptr_t)&sithDSSTest_g.pCurCollidedModel)
+#define sithPlayerActions_g_pCurHitLedgeModelFace_ADDR ((uintptr_t)&sithDSSTest_g.pCurCollidedModelFace)
 #define sithPlayerActions_g_pPlasma_ADDR ((uintptr_t)&sithDSSTest_g.pPlasma)
 #define sithPlayerActions_g_jewelFlyingPuppetTrackNum_ADDR ((uintptr_t)&sithDSSTest_g.jewelFlyingPuppetTrackNum)
 #define sithPlayerActions_g_bJewelFlying_ADDR ((uintptr_t)&sithDSSTest_g.bJewelFlying)

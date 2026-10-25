@@ -215,9 +215,9 @@ static void dssv_BuildGlobals(void)
     }
 
     DSSV_RESETCAMERAASPECT = dssv_RndI(2);
-    sithPlayerActions_g_pCurCollidedSurface       = &a->surfaces[2];
-    sithPlayerActions_g_pCurCollidedModel    = &a->models[1];
-    sithPlayerActions_g_pCurCollidedModelFace = &a->modelFaces[1][2];
+    sithPlayerActions_g_pCurHitLedgeSurface       = &a->surfaces[2];
+    sithPlayerActions_g_pCurHitLedgeModel    = &a->models[1];
+    sithPlayerActions_g_pCurHitLedgeModelFace = &a->modelFaces[1][2];
     sithPlayerActions_g_pPlasma                = &a->things[3];
     RU(sithPlayer_g_bPlayerInPor);
     RF(sithPlayer_g_impState);
@@ -269,9 +269,9 @@ static void dssv_WatchAll(void)
     DSSV_W(sithInventory_g_dword_56B750);
     DSSV_W(sithInventory_g_dword_56B754);
     DSSV_W(dssv_mirrorResetCameraAspect);
-    DSSV_W(sithPlayerActions_g_pCurCollidedSurface);
-    DSSV_W(sithPlayerActions_g_pCurCollidedModel);
-    DSSV_W(sithPlayerActions_g_pCurCollidedModelFace);
+    DSSV_W(sithPlayerActions_g_pCurHitLedgeSurface);
+    DSSV_W(sithPlayerActions_g_pCurHitLedgeModel);
+    DSSV_W(sithPlayerActions_g_pCurHitLedgeModelFace);
     DSSV_W(sithPlayerActions_g_pPlasma);
     DSSV_W(sithPlayer_g_bPlayerInPor);
     DSSV_W(sithPlayer_g_impState);

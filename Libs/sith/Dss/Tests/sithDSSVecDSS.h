@@ -225,8 +225,8 @@ static int dssvc_SyncGameState(DssvCtx* cx)
     if ( DSSV_VAR == 1 )
     {
         sithCog_g_pMasterCog = NULL;
-        sithPlayerActions_g_pCurCollidedModel = NULL;
-        sithPlayerActions_g_pCurCollidedSurface = NULL;
+        sithPlayerActions_g_pCurHitLedgeModel = NULL;
+        sithPlayerActions_g_pCurHitLedgeSurface = NULL;
         sithPlayerActions_g_pPlasma = NULL;
         dssv_pVehicleBoarded = NULL;
         sithFX_g_numChalkMarks = 0;

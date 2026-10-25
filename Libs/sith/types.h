@@ -1947,8 +1947,8 @@ typedef struct sSithMineCarState
     int bUpdateSparksLeft;
     float secTimeSparksRight;
     float secTimeSparksLeft;
-    float unknown9;
-    float unknown10;
+    float maxBlendFaceLength;
+    float blendLength;
     int bBraking;
 
     // Following are new fields added in OJ3D v0.4

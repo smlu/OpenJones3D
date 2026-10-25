@@ -713,7 +713,7 @@ SithInventoryType* J3DAPI sithInventory_GetInventoryType(SithThing* pThing, size
 
 // Following 3 functions were found in debug version
 
-int sithInventory_sub_45E072(void)
+int sithInventory_ClearPowerKeybinds(void)
 {
     for ( size_t i = 0; i < STD_ARRAYLEN(sithInventory_g_aPowerKeybinds); ++i )
     {
@@ -723,14 +723,14 @@ int sithInventory_sub_45E072(void)
     return 0;
 }
 
-void J3DAPI sithInventory_sub_45E0B0(size_t index, int a2)
+void J3DAPI sithInventory_SetPowerKeybind(size_t index, int binding)
 {
     sithInventory_g_aPowerKeybinds[index].bEnabled = 1;
-    sithInventory_g_aPowerKeybinds[index].binding = a2;
+    sithInventory_g_aPowerKeybinds[index].binding = binding;
     sithInventory_g_aPowerKeybinds[index].bActivated = 0;
 }
 
-int J3DAPI sithInventory_sub_45E0E4(size_t index)
+int J3DAPI sithInventory_GetPowerKeybind(size_t index)
 {
     if ( sithInventory_g_aPowerKeybinds[index].bEnabled == 1 )
     {

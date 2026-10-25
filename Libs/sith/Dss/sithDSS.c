@@ -1307,12 +1307,11 @@ int J3DAPI sithDSS_SyncGameState(DPID idTo, unsigned int outstream)
     SITHDSS_PUSHINT32(sithRender_bResetCameraAspect);
     SITHDSS_PUSHINT32(sithThing_GetThingIndex(sithPlayerControls_GetVehicleBoardedThing()));
 
-    // Note: Cur collided surface, model and model face are named as cur ledge surface, ledge thing model and model face
-    SITHDSS_PUSHINT16((int16_t)(sithSurface_GetSurfaceIndex(sithPlayerActions_g_pCurCollidedSurface)));
-    SITHDSS_PUSHINT16((int16_t)(sithModel_GetModelIndex(sithPlayerActions_g_pCurCollidedModel)));
-    if ( sithPlayerActions_g_pCurCollidedModel )
+    SITHDSS_PUSHINT16((int16_t)(sithSurface_GetSurfaceIndex(sithPlayerActions_g_pCurHitLedgeSurface)));
+    SITHDSS_PUSHINT16((int16_t)(sithModel_GetModelIndex(sithPlayerActions_g_pCurHitLedgeModel)));
+    if ( sithPlayerActions_g_pCurHitLedgeModel )
     {
-        SITHDSS_PUSHINT16((int16_t)(sithPlayerActions_g_pCurCollidedModelFace - sithPlayerActions_g_pCurCollidedModel->aGeos[0].aMeshes->aFaces));
+        SITHDSS_PUSHINT16((int16_t)(sithPlayerActions_g_pCurHitLedgeModelFace - sithPlayerActions_g_pCurHitLedgeModel->aGeos[0].aMeshes->aFaces));
     }
 
     SITHDSS_PUSHINT32(sithPlayer_g_bPlayerInPor);
@@ -1401,16 +1400,15 @@ int J3DAPI sithDSS_ProcessSyncGameState(const SithMessage* pMsg)
     int thingIdx = SITHDSS_POPINT32();
     sithPlayerControls_SetVehicleBoardedThing(sithThing_GetThingByIndex(thingIdx));
 
-    // Note: Cur collided surface, model and model face are named as cur ledge surface, ledge thing model and model face
     int16_t idx16 = SITHDSS_POPINT16();
-    sithPlayerActions_g_pCurCollidedSurface = sithSurface_GetSurfaceEx(sithWorld_g_pCurrentWorld, idx16);
+    sithPlayerActions_g_pCurHitLedgeSurface = sithSurface_GetSurfaceEx(sithWorld_g_pCurrentWorld, idx16);
 
     idx16 = SITHDSS_POPINT16();
-    sithPlayerActions_g_pCurCollidedModel = sithModel_GetModelByIndex(idx16);
-    if ( sithPlayerActions_g_pCurCollidedModel )
+    sithPlayerActions_g_pCurHitLedgeModel = sithModel_GetModelByIndex(idx16);
+    if ( sithPlayerActions_g_pCurHitLedgeModel )
     {
         idx16 = SITHDSS_POPINT16();
-        sithPlayerActions_g_pCurCollidedModelFace = &sithPlayerActions_g_pCurCollidedModel->aGeos[0].aMeshes->aFaces[idx16];
+        sithPlayerActions_g_pCurHitLedgeModelFace = &sithPlayerActions_g_pCurHitLedgeModel->aGeos[0].aMeshes->aFaces[idx16];
     }
 
     sithPlayer_g_bPlayerInPor       = SITHDSS_POPINT32();

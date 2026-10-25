@@ -898,9 +898,9 @@ void J3DAPI sithPlayerControls_ProcessLookControls(SithThing* pThing, float secD
 
 void J3DAPI sithPlayerControls_ProcessGeneralMove(SithThing* pThing, float secDeltaTime)
 {
-    sithPlayerActions_g_pCurCollidedModelFace = NULL;
-    sithPlayerActions_g_pCurCollidedModel     = NULL;
-    sithPlayerActions_g_pCurCollidedSurface        = NULL;
+    sithPlayerActions_g_pCurHitLedgeModelFace = NULL;
+    sithPlayerActions_g_pCurHitLedgeModel     = NULL;
+    sithPlayerActions_g_pCurHitLedgeSurface        = NULL;
 
     // Handle jump direction input when in jump ready state
     if ( pThing->thingInfo.actorInfo.bControlsDisabled )
@@ -2352,13 +2352,13 @@ void J3DAPI sithPlayerControls_ProcessHangMove(SithThing* pThing, float secDelta
             if ( pLedgeSurf )
             {
                 sithThing_AttachThingToClimbSurface(pThing, pLedgeSurf);
-                sithPlayerActions_g_pCurCollidedSurface = pLedgeSurf;
+                sithPlayerActions_g_pCurHitLedgeSurface = pLedgeSurf;
             }
             else
             {
                 sithThing_AttachThingToThingFace(pThing, pLedgeThing, pLedgeFace, pLedgeMesh->apVertices, /*bNoImpactUpdate=*/1);
-                sithPlayerActions_g_pCurCollidedModelFace = pLedgeFace;
-                sithPlayerActions_g_pCurCollidedModel     = pLedgeModel;
+                sithPlayerActions_g_pCurHitLedgeModelFace = pLedgeFace;
+                sithPlayerActions_g_pCurHitLedgeModel     = pLedgeModel;
             }
         }
     }
@@ -2387,13 +2387,13 @@ void J3DAPI sithPlayerControls_ProcessHangMove(SithThing* pThing, float secDelta
             if ( pLedgeSurf )
             {
                 sithThing_AttachThingToClimbSurface(pThing, pLedgeSurf);
-                sithPlayerActions_g_pCurCollidedSurface = pLedgeSurf;
+                sithPlayerActions_g_pCurHitLedgeSurface = pLedgeSurf;
             }
             else
             {
                 sithThing_AttachThingToThingFace(pThing, pLedgeThing, pLedgeFace, pLedgeMesh->apVertices, 1);
-                sithPlayerActions_g_pCurCollidedModelFace = pLedgeFace;
-                sithPlayerActions_g_pCurCollidedModel     = pLedgeModel;
+                sithPlayerActions_g_pCurHitLedgeModelFace = pLedgeFace;
+                sithPlayerActions_g_pCurHitLedgeModel     = pLedgeModel;
             }
         }
     }

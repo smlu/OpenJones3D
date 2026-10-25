@@ -820,7 +820,7 @@
 #define sithCollision_HandleThingHitSurface_ADDR 0x004A8B20
 #define sithCollision_ThingCollisionHandler_ADDR 0x004A8D90
 #define sithCollision_VehicleCollisionHandler_ADDR 0x004A95D0
-#define sithCollision_CollideHurt_ADDR 0x004AA1A0
+#define sithCollision_DeflectThingOffSurface_ADDR 0x004AA1A0
 #define sithCollision_FindItemThing_ADDR 0x004AA840
 #define sithCollision_PushThingCollision_ADDR 0x004AAAE0
 #define sithCollision_PushSurfaceCollision_ADDR 0x004AABD0
@@ -2209,9 +2209,9 @@
 #define sithInventory_g_aPowerKeybinds_ADDR 0x017F1D20
 #define sithPlayerActions_g_jewelFlyingPuppetTrackNum_ADDR 0x0052C888
 #define sithPlayerActions_climbPupTrackNum_ADDR 0x0055EDD4
-#define sithPlayerActions_g_pCurCollidedSurface_ADDR 0x0056B768
-#define sithPlayerActions_g_pCurCollidedModelFace_ADDR 0x0056B76C
-#define sithPlayerActions_g_pCurCollidedModel_ADDR 0x0056B770
+#define sithPlayerActions_g_pCurHitLedgeSurface_ADDR 0x0056B768
+#define sithPlayerActions_g_pCurHitLedgeModelFace_ADDR 0x0056B76C
+#define sithPlayerActions_g_pCurHitLedgeModel_ADDR 0x0056B770
 #define sithPlayerActions_g_pPlasma_ADDR 0x0056B774
 #define sithPlayerActions_g_bJewelFlying_ADDR 0x0056B778
 #define sithPlayerActions_g_bPlayerInvisible_ADDR 0x0056B77C
@@ -2282,7 +2282,7 @@
 #define sithPhysics_bUpdateTrackTruckEngineFx_ADDR 0x00538C94
 #define sithPhysics_jeepWheelProbeHeight_ADDR 0x00538CFC
 #define sithPhysics_jeepWheelContactDist_ADDR 0x00538D00
-#define sithPhysics_flt_538D04_ADDR 0x00538D04
+#define sithPhysics_jeepWheelSteepNormalZ_ADDR 0x00538D04
 #define sithPhysics_jeepSteepWheelLiftScale_ADDR 0x00538D08
 #define sithPhysics_jeepSteepWheelSlideScale_ADDR 0x00538D0C
 #define sithPhysics_jeepWheelDropSpeed_ADDR 0x00538D10
@@ -2292,10 +2292,10 @@
 #define sithPhysics_jeepHardLandingImpact_ADDR 0x00538D20
 #define sithPhysics_jeepSteepTurnScale_ADDR 0x00538D24
 #define sithPhysics_jeepPushOffSpeed_ADDR 0x00538D28
-#define sithPhysics_dword_538D2C_ADDR 0x00538D2C
-#define sithPhysics_dword_538D30_ADDR 0x00538D30
+#define sithPhysics_bJeepEngineFx_ADDR 0x00538D2C
+#define sithPhysics_bJeepDriveFx_ADDR 0x00538D30
 #define sithPhysics_bJeepMoveFx_ADDR 0x00538D34
-#define sithPhysics_dword_538D38_ADDR 0x00538D38
+#define sithPhysics_bJeepBumpFx_ADDR 0x00538D38
 #define sithPhysics_jeepDriveSndMinSpeed_ADDR 0x00538D3C
 #define sithPhysics_jeepAirSndMinPitch_ADDR 0x00538D40
 #define sithPhysics_jeepEngineStartSndVolume_ADDR 0x00538D48
@@ -2349,8 +2349,8 @@
 #define sithPhysics_jeepAirGravity_ADDR 0x00538E08
 #define sithPhysics_jeepAirGravityFastUp_ADDR 0x00538E0C
 #define sithPhysics_jeepCrashGravity_ADDR 0x00538E10
-#define sithPhysics_dword_58540C_ADDR 0x0058540C
-#define sithPhysics_flt_585410_ADDR 0x00585410
+#define sithPhysics_jeepSndGear_ADDR 0x0058540C
+#define sithPhysics_jeepSteepestSlopeThrustKeep_ADDR 0x00585410
 #define sithFX_g_lastChalkMarkNum_ADDR 0x00539458
 #define sithFX_aChalkMarkNames_ADDR 0x00539460
 #define sithFX_rowRippleLastPos_ADDR 0x00585430

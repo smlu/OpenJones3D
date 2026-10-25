@@ -76,7 +76,7 @@ void sithCollision_InstallHooks(void)
     J3D_HOOKFUNC(sithCollision_HandleThingHitSurface);
     J3D_HOOKFUNC(sithCollision_ThingCollisionHandler);
     J3D_HOOKFUNC(sithCollision_VehicleCollisionHandler);
-    J3D_HOOKFUNC(sithCollision_CollideHurt);
+    J3D_HOOKFUNC(sithCollision_DeflectThingOffSurface);
     J3D_HOOKFUNC(sithCollision_FindItemThing);
     J3D_HOOKFUNC(sithCollision_PushThingCollision);
     J3D_HOOKFUNC(sithCollision_PushSurfaceCollision);
@@ -1329,7 +1329,7 @@ int J3DAPI sithCollision_HandleThingHitSurface(SithThing* pThing, SithSurface* p
 
     absVelZ = fabsf(pThing->moveInfo.physics.velocity.z);
 
-    if ( !sithCollision_CollideHurt(pThing, &pCollision->hitNorm, pCollision->distance, 0, pSurface) )
+    if ( !sithCollision_DeflectThingOffSurface(pThing, &pCollision->hitNorm, pCollision->distance, 0, pSurface) )
     {
         return 0;
     }
@@ -1551,7 +1551,7 @@ int J3DAPI sithCollision_ThingCollisionHandler(SithThing* pSrcThing, SithThing* 
 
             if ( a5 )
             {
-                return sithCollision_CollideHurt(pThing, &hitNorm, pCollision->distance, 0, 0);
+                return sithCollision_DeflectThingOffSurface(pThing, &hitNorm, pCollision->distance, 0, 0);
             }
             else
             {
@@ -1578,7 +1578,7 @@ int J3DAPI sithCollision_ThingCollisionHandler(SithThing* pSrcThing, SithThing* 
             {
                 return 0;
             }
-            else if ( !sithCollision_CollideHurt(pThing, &hitNorm, pCollision->distance, 0, 0) )
+            else if ( !sithCollision_DeflectThingOffSurface(pThing, &hitNorm, pCollision->distance, 0, 0) )
             {
                 return 0;
             }
@@ -1976,7 +1976,7 @@ void J3DAPI sithCollision_VehicleCollisionHandler(SithThing* pThing, SithThing* 
     }
 }
 
-int J3DAPI sithCollision_CollideHurt(SithThing* pThing, const rdVector3* pHitNorm, float colDistance, int a4, const SithSurface* pHitSurf)
+int J3DAPI sithCollision_DeflectThingOffSurface(SithThing* pThing, const rdVector3* pHitNorm, float colDistance, int a4, const SithSurface* pHitSurf)
 {
     J3D_UNUSED(a4);
     float impactDot;

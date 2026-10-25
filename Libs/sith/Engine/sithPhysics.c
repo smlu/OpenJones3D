@@ -48,13 +48,13 @@
 
 #define SITHPHYSICS_CROUCH_THRUST_SCALE 0.80000001f
 
-#define sithPhysics_flt_538D04 J3D_DECL_FAR_VAR(sithPhysics_flt_538D04, float)
-#define sithPhysics_dword_538D2C J3D_DECL_FAR_VAR(sithPhysics_dword_538D2C, int)
-#define sithPhysics_dword_538D30 J3D_DECL_FAR_VAR(sithPhysics_dword_538D30, int)
+#define sithPhysics_jeepWheelSteepNormalZ J3D_DECL_FAR_VAR(sithPhysics_jeepWheelSteepNormalZ, float)
+#define sithPhysics_bJeepEngineFx J3D_DECL_FAR_VAR(sithPhysics_bJeepEngineFx, int)
+#define sithPhysics_bJeepDriveFx J3D_DECL_FAR_VAR(sithPhysics_bJeepDriveFx, int)
 #define sithPhysics_bJeepMoveFx J3D_DECL_FAR_VAR(sithPhysics_bJeepMoveFx, int)
-#define sithPhysics_dword_538D38 J3D_DECL_FAR_VAR(sithPhysics_dword_538D38, int)
-#define sithPhysics_dword_58540C J3D_DECL_FAR_VAR(sithPhysics_dword_58540C, int)
-#define sithPhysics_flt_585410 J3D_DECL_FAR_VAR(sithPhysics_flt_585410, float)
+#define sithPhysics_bJeepBumpFx J3D_DECL_FAR_VAR(sithPhysics_bJeepBumpFx, int)
+#define sithPhysics_jeepSndGear J3D_DECL_FAR_VAR(sithPhysics_jeepSndGear, int)
+#define sithPhysics_jeepSteepestSlopeThrustKeep J3D_DECL_FAR_VAR(sithPhysics_jeepSteepestSlopeThrustKeep, float)
 
 // Added
 static float sithPhysics_fixedFramerate = SITHPHYSICS_FIXED_FRAMERATE_DFLT;
@@ -350,23 +350,23 @@ void sithPhysics_InstallHooks(void)
 
 void sithPhysics_ResetGlobals(void)
 {
-    float sithPhysics_flt_538D04_tmp = 0.60000002f;
-    memcpy(&sithPhysics_flt_538D04, &sithPhysics_flt_538D04_tmp, sizeof(sithPhysics_flt_538D04));
+    float sithPhysics_jeepWheelSteepNormalZ_tmp = 0.60000002f;
+    memcpy(&sithPhysics_jeepWheelSteepNormalZ, &sithPhysics_jeepWheelSteepNormalZ_tmp, sizeof(sithPhysics_jeepWheelSteepNormalZ));
 
-    int sithPhysics_dword_538D2C_tmp = 1;
-    memcpy(&sithPhysics_dword_538D2C, &sithPhysics_dword_538D2C_tmp, sizeof(sithPhysics_dword_538D2C));
+    int sithPhysics_bJeepEngineFx_tmp = 1;
+    memcpy(&sithPhysics_bJeepEngineFx, &sithPhysics_bJeepEngineFx_tmp, sizeof(sithPhysics_bJeepEngineFx));
 
-    int sithPhysics_dword_538D30_tmp = 1;
-    memcpy(&sithPhysics_dword_538D30, &sithPhysics_dword_538D30_tmp, sizeof(sithPhysics_dword_538D30));
+    int sithPhysics_bJeepDriveFx_tmp = 1;
+    memcpy(&sithPhysics_bJeepDriveFx, &sithPhysics_bJeepDriveFx_tmp, sizeof(sithPhysics_bJeepDriveFx));
 
     int sithPhysics_bJeepMoveFx_tmp = 1;
     memcpy(&sithPhysics_bJeepMoveFx, &sithPhysics_bJeepMoveFx_tmp, sizeof(sithPhysics_bJeepMoveFx));
 
-    int sithPhysics_dword_538D38_tmp = 1;
-    memcpy(&sithPhysics_dword_538D38, &sithPhysics_dword_538D38_tmp, sizeof(sithPhysics_dword_538D38));
+    int sithPhysics_bJeepBumpFx_tmp = 1;
+    memcpy(&sithPhysics_bJeepBumpFx, &sithPhysics_bJeepBumpFx_tmp, sizeof(sithPhysics_bJeepBumpFx));
 
-    STD_ZEROMEM(&sithPhysics_dword_58540C, sizeof(sithPhysics_dword_58540C));
-    STD_ZEROMEM(&sithPhysics_flt_585410, sizeof(sithPhysics_flt_585410));
+    STD_ZEROMEM(&sithPhysics_jeepSndGear, sizeof(sithPhysics_jeepSndGear));
+    STD_ZEROMEM(&sithPhysics_jeepSteepestSlopeThrustKeep, sizeof(sithPhysics_jeepSteepestSlopeThrustKeep));
 }
 
 void J3DAPI sithPhysics_Startup(void)
@@ -2003,8 +2003,8 @@ void J3DAPI sithPhysics_InitMineCarState(SithThing* pThing, SithMineCarState* pS
     pState->secTimeSparksRight = 0.0f;
     pState->secTimeSparksLeft  = 0.0f;
     pState->surfDrag           = pThing->moveInfo.physics.surfDrag + 1.0f;
-    pState->unknown10          = 0.2f;
-    pState->unknown9           = 0.30000001f;
+    pState->blendLength          = 0.2f;
+    pState->maxBlendFaceLength           = 0.30000001f;
     pState->bBraking           = 0;
 }
 
@@ -2021,8 +2021,8 @@ void J3DAPI sithPhysics_InitTrackTruckState(SithThing* pThing, SithMineCarState*
     pState->secTimeSparksRight = 0.0f;
     pState->secTimeSparksLeft  = 0.0f;
     pState->surfDrag           = pThing->moveInfo.physics.surfDrag + 1.0f;
-    pState->unknown10          = 0.60000002f;
-    pState->unknown9           = 0.80000001f;
+    pState->blendLength          = 0.60000002f;
+    pState->maxBlendFaceLength           = 0.80000001f;
     pState->bBraking           = 0;
 }
 
@@ -3499,15 +3499,15 @@ void J3DAPI sithPhysics_ProcessMineCarTrackMove(SithThing* pThing, float secDelt
             goto stop_move;
         }
 
-        if ( faceLength > pState->unknown9 )
+        if ( faceLength > pState->maxBlendFaceLength )
         {
-            if ( pState->unknown10 * 0.5f < distToFront )
+            if ( pState->blendLength * 0.5f < distToFront )
             {
                 bBlend = false;
             }
             else
             {
-                faceLength = pState->unknown10;
+                faceLength = pState->blendLength;
             }
         }
 
@@ -3555,15 +3555,15 @@ void J3DAPI sithPhysics_ProcessMineCarTrackMove(SithThing* pThing, float secDelt
         }
 
         // Long faces only blend near the edge
-        if ( faceLength > pState->unknown9 )
+        if ( faceLength > pState->maxBlendFaceLength )
         {
-            if ( pState->unknown10 * 0.5f < distFromBack )
+            if ( pState->blendLength * 0.5f < distFromBack )
             {
                 bBlend = false;
             }
             else
             {
-                faceLength = pState->unknown10;
+                faceLength = pState->blendLength;
             }
         }
 
@@ -4403,7 +4403,7 @@ void J3DAPI sithPhysics_UpdateJeepPhysics(SithThing* pThing, float secDeltaTime)
                 const float slopeRange = sithPhysics_jeepSteepSlopeDot - sithPhysics_jeepSteepestSlopeDot;
                 const float steepness  = sithPhysics_jeepSteepSlopeDot - groundUpDot;
 
-                float thrustKeep = steepness * ((sithPhysics_flt_585410 - sithPhysics_jeepSlopeThrustKeep) / slopeRange) + sithPhysics_jeepSlopeThrustKeep;
+                float thrustKeep = steepness * ((sithPhysics_jeepSteepestSlopeThrustKeep - sithPhysics_jeepSlopeThrustKeep) / slopeRange) + sithPhysics_jeepSlopeThrustKeep;
                 thrustKeep = STDMATH_CLAMP(thrustKeep, sithPhysics_jeepSlopeMinScale, sithPhysics_jeepSlopeMaxScale);
 
                 float slideSpeed = steepness * ((sithPhysics_jeepSlopeMaxScale - sithPhysics_jeepSlopeMinScale) / slopeRange) + sithPhysics_jeepSlopeMinScale;
@@ -4905,7 +4905,7 @@ void J3DAPI sithPhysics_UpdateJeepWheelContact(SithThing* pThing, SithJeepWheelS
             pWheel->compressionDist = dist;
             if ( dist <= sithPhysics_jeepWheelContactDist )
             {
-                if ( pSurface->face.normal.z < sithPhysics_flt_538D04 )
+                if ( pSurface->face.normal.z < sithPhysics_jeepWheelSteepNormalZ )
                 {
                     // Steep surface
                     pWheel->contactState = 4;
@@ -5125,7 +5125,7 @@ void J3DAPI sithPhysics_UpdateJeepFx(SithThing* pThing, SithVehicleEngineFxState
     }
 
     // Engine
-    if ( !sithPhysics_dword_538D2C
+    if ( !sithPhysics_bJeepEngineFx
         || pThing->moveStatus == SITHPLAYERMOVE_JEEP_BOARDING
         || pThing->moveStatus == SITHPLAYERMOVE_JEEP_UNBOARDING ) // Note: The original tests UNBOARDING twice
     {
@@ -5160,9 +5160,9 @@ void J3DAPI sithPhysics_UpdateJeepFx(SithThing* pThing, SithVehicleEngineFxState
                 gearSpeed  = speed - sithPhysics_jeepGear2MinSpeed;
             }
 
-            if ( sithPhysics_dword_58540C != gear )
+            if ( sithPhysics_jeepSndGear != gear )
             {
-                sithPhysics_dword_58540C = gear;
+                sithPhysics_jeepSndGear = gear;
             }
 
             float volume = STDMATH_CLAMP(gearSpeed * ((maxVolume - minVolume) / speedRange) + minVolume, minVolume, maxVolume);
@@ -5180,7 +5180,7 @@ void J3DAPI sithPhysics_UpdateJeepFx(SithThing* pThing, SithVehicleEngineFxState
     }
 
     // Driving
-    if ( (!sithPhysics_dword_538D30 && !sithPhysics_bJeepMoveFx) || bAirborne || speed <= sithPhysics_jeepDriveSndMinSpeed )
+    if ( (!sithPhysics_bJeepDriveFx && !sithPhysics_bJeepMoveFx) || bAirborne || speed <= sithPhysics_jeepDriveSndMinSpeed )
     {
         if ( !sithSoundClass_IsModeFadingVol(pThing, SITHSOUNDCLASS_RWALKMETAL) )
         {
@@ -5206,7 +5206,7 @@ void J3DAPI sithPhysics_UpdateJeepFx(SithThing* pThing, SithVehicleEngineFxState
                 // Sliding sideways
                 volume = (1.0f - headingDot) * sithPhysics_jeepSlideSndVolumeScale + speed * sithPhysics_jeepDriveSndVolumePerSpeed + sithPhysics_jeepDriveMinSndVolume;
             }
-            else if ( sithPhysics_dword_538D30 )
+            else if ( sithPhysics_bJeepDriveFx )
             {
                 volume = speed * sithPhysics_jeepDriveSndVolumePerSpeed + sithPhysics_jeepDriveMinSndVolume;
             }
@@ -5221,7 +5221,7 @@ void J3DAPI sithPhysics_UpdateJeepFx(SithThing* pThing, SithVehicleEngineFxState
     }
 
     // Random bump sounds while a wheel is pressed into the ground
-    if ( sithPhysics_dword_538D38 && !bAirborne )
+    if ( sithPhysics_bJeepBumpFx && !bAirborne )
     {
         float bumpChance    = speed * sithPhysics_jeepBumpChancePerSpeed;
         bool bWheelInGround = false;
