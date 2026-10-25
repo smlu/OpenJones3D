@@ -442,6 +442,14 @@ typedef enum eSithAISubMode
     SITHAI_SUBMODE_WALLCRAWLLOCKED          = 0x8000000,
 } SithAISubMode;
 
+// The AI move state derived from the actor's move status, see sithAIMove_AIGetMoveState
+typedef enum eSithAIMoveState
+{
+    SITHAIMOVE_STATE_NONE       = 0, // Free to move and turn
+    SITHAIMOVE_STATE_ANIMATED   = 1, // Roll, strafe, slide, knock-out or walk/stand transition animation plays; actor still moves but its puppet submode is not changed
+    SITHAIMOVE_STATE_STATIONARY = 2, // Special turn or wall mount animation plays; actor neither moves nor turns
+} SithAIMoveState;
+
 typedef enum eSithAttachFlag
 {
     SITH_ATTACH_SURFACE        = 0x01,
@@ -807,6 +815,34 @@ typedef enum eSithAIUtilFireFlags
     SITHAIUTIL_FIRE_UNKNOWN_200  = 0x200,
     SITHAIUTIL_FIRE_STOP_ON_FIRE = 0x400,
 } SithAIUtilFireFlags;
+
+// Point creation flags of sithAIUtil_MakeRandPoint and sithAIUtil_AIGetMovePos
+typedef enum eSithAIUtilMkPointFlags
+{
+    SITHAIUTIL_MKPOINT_SIDEWAYS       = 0x01,     // Point to the side of the direction (up x dir)
+    SITHAIUTIL_MKPOINT_YAW            = 0x02,     // Rotate the direction by the yaw angle
+    SITHAIUTIL_MKPOINT_PITCH          = 0x04,     // Rotate the direction by the pitch angle
+    SITHAIUTIL_MKPOINT_TOWARDGOAL     = 0x100,    // Point towards the goal thing
+    SITHAIUTIL_MKPOINT_AWAYFROMGOAL   = 0x200,    // Point away from the goal thing
+    SITHAIUTIL_MKPOINT_TOWARDMOVEPOS  = 0x400,    // Point towards the move position
+    SITHAIUTIL_MKPOINT_ALONGMOVEDIR   = 0x800,    // Side point along the current move direction
+    SITHAIUTIL_MKPOINT_AWAYFROMFLEE   = 0x1000,   // Point away from the flee-from thing
+    SITHAIUTIL_MKPOINT_RANDANGLE      = 0x4000,   // Random angle up to the given angle
+    SITHAIUTIL_MKPOINT_RANDSIDE       = 0x8000,   // Random rotation side
+    SITHAIUTIL_MKPOINT_TARGETDIST     = 0x10000,  // Distance from the reference position
+    SITHAIUTIL_MKPOINT_UNKNOWN_100000 = 0x100000, // Reference position is the actor's position
+    SITHAIUTIL_MKPOINT_UNKNOWN_200000 = 0x200000, // Reference position is the home position
+} SithAIUtilMkPointFlags;
+
+// Result of the floor check of sithAIUtil_CheckPosition
+typedef enum eSithAIUtilFloorCheck
+{
+    SITHAIUTIL_FLOOR_BLOCKED = 0, // Disallowed sector or surface
+    SITHAIUTIL_FLOOR_OK      = 1, // Walkable floor or thing to stand on
+    SITHAIUTIL_FLOOR_WALL    = 2, // Surface that is not a floor or is too steep
+    SITHAIUTIL_FLOOR_THING   = 4, // Blocked by thing
+    SITHAIUTIL_FLOOR_NONE    = 8, // Nothing found within step height (cliff)
+} SithAIUtilFloorCheck;
 
 typedef enum eSithThingMoveStatus
 {
@@ -1547,9 +1583,19 @@ typedef struct sSithQuetzSnapShot
     float angle5;
 } SithQuetzSnapShot;
 
+typedef enum eSithQuetzStrikeMode
+{
+    SITHQUETZSTRIKE_MODE_NONE   = 0,
+    SITHQUETZSTRIKE_MODE_STRIKE = 1,
+    SITHQUETZSTRIKE_MODE_ANIM2  = 2,
+    SITHQUETZSTRIKE_MODE_ANIM3  = 3,
+    SITHQUETZSTRIKE_MODE_ANIM4  = 4,
+    SITHQUETZSTRIKE_MODE_ANIM5  = 5,
+} SithQuetzStrikeMode;
+
 typedef struct sSithQuetzStrike
 {
-    int mode;
+    SithQuetzStrikeMode mode;
     float curTime;
     int snapShot;
     int numSnapShots;

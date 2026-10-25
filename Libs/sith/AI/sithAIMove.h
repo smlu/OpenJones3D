@@ -15,23 +15,17 @@ J3D_EXTERN_C_START
 #define sithAIMove_g_flt_585468 J3D_DECL_FAR_VAR(sithAIMove_g_flt_585468, float)
 // extern float sithAIMove_g_flt_585468;
 
-#define sithAIMove_g_flt_58546C J3D_DECL_FAR_VAR(sithAIMove_g_flt_58546C, float)
-// extern float sithAIMove_g_flt_58546C;
-
-#define sithAIMove_g_flt_585470 J3D_DECL_FAR_VAR(sithAIMove_g_flt_585470, float)
-// extern float sithAIMove_g_flt_585470;
-
 void J3DAPI sithAIMove_Update(SithThing* pThing, float secDeltatTime);
 void J3DAPI sithAIMove_UpdateMineCar(SithAIControlBlock* pLocal, float secDeltaTime);
 void J3DAPI sithAIMove_UpdateTurn(SithAIControlBlock* pLocal, float secDeltatTime);
 void J3DAPI sithAIMove_UpdateMove(SithAIControlBlock* pLocal, float secDeltaTime);
 void J3DAPI sithAIMove_CheckMoveAlign(SithAIControlBlock* pLocal);
-double J3DAPI sithAIMove_GetGoalTolerance(SithAIControlBlock* pLocal, rdVector3* pPos, rdVector3* pMovePos);
+float J3DAPI sithAIMove_GetGoalTolerance(SithAIControlBlock* pLocal, rdVector3* pPos, rdVector3* pMovePos);
 int J3DAPI sithAIMove_CheckWalkMove(SithAIControlBlock* pLocal, float secDeltaTime);
 int J3DAPI sithAIMove_CheckFlyMove(SithAIControlBlock* pLocal, float secDeltaTime);
 int J3DAPI sithAIMove_CheckSwimMove(SithAIControlBlock* pLocal, float secDeltaTime);
 
-int J3DAPI sithAIMove_AIGetMoveState(const SithAIControlBlock* pLocal);
+SithAIMoveState J3DAPI sithAIMove_AIGetMoveState(const SithAIControlBlock* pLocal);
 int J3DAPI sithAIMove_AISpecialTurn(SithAIControlBlock* pLocal, float angle);
 
 float J3DAPI sithAIMove_UpdateAIMove(SithAIControlBlock* pLocal);

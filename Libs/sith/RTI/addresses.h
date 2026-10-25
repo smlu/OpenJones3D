@@ -2484,8 +2484,8 @@
 #define sithCogFunctionAI_curThingInView_ADDR 0x00585404
 #define sithAIMove_g_flt_585464_ADDR 0x00585464
 #define sithAIMove_g_flt_585468_ADDR 0x00585468
-#define sithAIMove_g_flt_58546C_ADDR 0x0058546C
-#define sithAIMove_g_flt_585470_ADDR 0x00585470
+#define sithAIMove_headTrackTargetStartDot_ADDR 0x0058546C
+#define sithAIMove_quetzStrikeNearHeadPitch_ADDR 0x00585470
 #define sithAIUtil_thingsInViewFovY_ADDR 0x00585478
 #define sithAIUtil_numVisitedSectors_ADDR 0x0058547C
 #define sithAIUtil_g_bRenderAIWpnts_ADDR 0x00585480
