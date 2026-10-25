@@ -1352,6 +1352,22 @@ typedef enum eSithMultiJoinStatus J3D_ENUM_TYPE(int32_t)
         SITHMULTI_JOIN_WRONGLEVEL    = 6,
 } SithMultiJoinStatus;
 
+typedef enum eSithMultiQuitState
+{
+    SITHMULTI_QUITSTATE_NONE    = 0,
+    SITHMULTI_QUITSTATE_QUIT    = 1,
+    SITHMULTI_QUITSTATE_EJECTED = 2, // Ejected from the game by the server
+} SithMultiQuitState;
+
+typedef enum eSithMultiWelcomeState
+{
+    SITHMULTI_WELCOME_NONE     = 0,
+    SITHMULTI_WELCOME_SECTORS  = 1,
+    SITHMULTI_WELCOME_SURFACES = 2,
+    SITHMULTI_WELCOME_THINGS   = 3,
+    SITHMULTI_WELCOME_REMOVALS = 4,
+} SithMultiWelcomeState;
+
 typedef enum sSithMinecarControlsUnboardState
 {
     SITHMINECARCONTROLS_UNBOARD_NONE      = 0,  // No unboard interaction (key held down)

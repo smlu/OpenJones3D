@@ -26,26 +26,36 @@
 #include <std/General/stdUtil.h>
 #include <std/Win95/stdComm.h>
 
-#define sithMulti_tickRate J3D_DECL_FAR_VAR(sithMulti_tickRate, size_t)
-#define sithMulti_numUpdatedSurfaces J3D_DECL_FAR_VAR(sithMulti_numUpdatedSurfaces, int)
-#define sithMulti_lastUpdateIdx J3D_DECL_FAR_VAR(sithMulti_lastUpdateIdx, int)
-#define sithMulti_playerWelcomeState J3D_DECL_FAR_VAR(sithMulti_playerWelcomeState, int)
-#define sithMulti_numUpdatedSectors J3D_DECL_FAR_VAR(sithMulti_numUpdatedSectors, int)
-#define sithMulti_aRemovedStaticThings J3D_DECL_FAR_ARRAYVAR(sithMulti_aRemovedStaticThings, int(*)[256])
-#define sithMulti_curWelcomePlayerNum J3D_DECL_FAR_VAR(sithMulti_curWelcomePlayerNum, unsigned int)
-#define sithMulti_numUpdatedThings J3D_DECL_FAR_VAR(sithMulti_numUpdatedThings, int)
-#define sithMulti_quitGameState J3D_DECL_FAR_VAR(sithMulti_quitGameState, int)
-#define sithMulti_checksum J3D_DECL_FAR_VAR(sithMulti_checksum, int)
-#define sithMulti_bWelcomingPlayer J3D_DECL_FAR_VAR(sithMulti_bWelcomingPlayer, int)
-#define sithMulti_newPlayerId J3D_DECL_FAR_VAR(sithMulti_newPlayerId, DPID)
-#define sithMulti_bSyncScores J3D_DECL_FAR_VAR(sithMulti_bSyncScores, int)
-#define sithMulti_pfNewPlayerJoinedCallback J3D_DECL_FAR_VAR(sithMulti_pfNewPlayerJoinedCallback, SithMultiNewPlayerJoinedCallback)
-#define sithMulti_msecPingStartTime J3D_DECL_FAR_VAR(sithMulti_msecPingStartTime, unsigned int)
-#define sithMulti_msecQuitGameTime J3D_DECL_FAR_VAR(sithMulti_msecQuitGameTime, unsigned int)
-#define sithMulti_numRemovedStaticThings J3D_DECL_FAR_VAR(sithMulti_numRemovedStaticThings, size_t)
-#define sithMulti_msecLastSyncScoreTime J3D_DECL_FAR_VAR(sithMulti_msecLastSyncScoreTime, unsigned int)
-#define sithMulti_msecWelcomeUpdateInterval J3D_DECL_FAR_VAR(sithMulti_msecWelcomeUpdateInterval, unsigned int)
-#define sithMulti_msecSyncTime J3D_DECL_FAR_VAR(sithMulti_msecSyncTime, int)
+#define SITHMULTI_MAX_REMOVEDSTATICTHINGS 256
+#define SITHMULTI_PLAYERNAME_LEN          16   // Length of the player name field in welcome/sync messages, in characters
+#define SITHMULTI_CHAT_MAXLEN             128  // Max length of the chat text in chat message
+#define SITHMULTI_PLAYER_TIMEOUT_MSEC     45000
+#define SITHMULTI_SYNCSCORES_INTERVAL     10000
+#define SITHMULTI_WELCOME_UPDATE_MSEC     60   // Interval at which the welcome of a new player advances
+#define SITHMULTI_EJECTED_QUIT_DELAY_MSEC 5000
+#define SITHMULTI_THINGGUID_UNIQUEMASK    0xFFFF0000u // Things with these guid bits set are not world-indexed things
+#define SITHMULTI_PLAYERMODEL_NAME        "gen_vi.3do"
+
+static size_t sithMulti_tickRate                          = 70;
+static int sithMulti_numUpdatedSurfaces                   = 0;
+static int sithMulti_lastUpdateIdx                        = 0;
+static SithMultiWelcomeState sithMulti_playerWelcomeState = SITHMULTI_WELCOME_NONE;
+static int sithMulti_numUpdatedSectors                    = 0;
+static int sithMulti_aRemovedStaticThings[SITHMULTI_MAX_REMOVEDSTATICTHINGS] = { 0 };
+static size_t sithMulti_numRemovedStaticThings            = 0;
+static unsigned int sithMulti_curWelcomePlayerNum         = 0;
+static int sithMulti_numUpdatedThings                     = 0;
+static SithMultiQuitState sithMulti_quitGameState         = SITHMULTI_QUITSTATE_NONE;
+static unsigned int sithMulti_msecQuitGameTime            = 0;
+static int sithMulti_checksum                             = 0;
+static bool sithMulti_bWelcomingPlayer                    = false;
+static DPID sithMulti_newPlayerId                         = 0;
+static unsigned int sithMulti_msecWelcomeUpdateInterval   = 0;
+static bool sithMulti_bSyncScores                         = false;
+static unsigned int sithMulti_msecLastSyncScoreTime       = 0;
+static unsigned int sithMulti_msecPingStartTime           = 0;
+static int sithMulti_msecSyncTime                         = 0;
+static SithMultiNewPlayerJoinedCallback sithMulti_pfNewPlayerJoinedCallback = NULL;
 
 static void sithMulti_FinishWelcomingPlayer(void);
 
@@ -86,29 +96,28 @@ void sithMulti_InstallHooks(void)
 
 void sithMulti_ResetGlobals(void)
 {
-    int sithMulti_tickRate_tmp = 70;
-    memcpy(&sithMulti_tickRate, &sithMulti_tickRate_tmp, sizeof(sithMulti_tickRate));
+    sithMulti_tickRate                = 70;
+    sithMulti_numUpdatedSurfaces      = 0;
+    sithMulti_lastUpdateIdx           = 0;
+    sithMulti_playerWelcomeState      = SITHMULTI_WELCOME_NONE;
+    sithMulti_numUpdatedSectors       = 0;
+    memset(sithMulti_aRemovedStaticThings, 0, sizeof(sithMulti_aRemovedStaticThings));
+    sithMulti_curWelcomePlayerNum     = 0;
+    sithMulti_numUpdatedThings        = 0;
+    sithMulti_quitGameState           = SITHMULTI_QUITSTATE_NONE;
+    sithMulti_checksum                = 0;
+    sithMulti_bWelcomingPlayer        = false;
+    sithMulti_newPlayerId             = 0;
+    sithMulti_bSyncScores             = false;
+    sithMulti_pfNewPlayerJoinedCallback = NULL;
+    sithMulti_msecPingStartTime       = 0;
+    sithMulti_msecQuitGameTime        = 0;
+    sithMulti_numRemovedStaticThings  = 0;
+    sithMulti_msecLastSyncScoreTime   = 0;
+    sithMulti_msecWelcomeUpdateInterval = 0;
+    sithMulti_msecSyncTime            = 0;
 
-    memset(&sithMulti_numUpdatedSurfaces, 0, sizeof(sithMulti_numUpdatedSurfaces));
-    memset(&sithMulti_lastUpdateIdx, 0, sizeof(sithMulti_lastUpdateIdx));
-    memset(&sithMulti_playerWelcomeState, 0, sizeof(sithMulti_playerWelcomeState));
-    memset(&sithMulti_numUpdatedSectors, 0, sizeof(sithMulti_numUpdatedSectors));
-    memset(&sithMulti_aRemovedStaticThings, 0, sizeof(sithMulti_aRemovedStaticThings));
-    memset(&sithMulti_curWelcomePlayerNum, 0, sizeof(sithMulti_curWelcomePlayerNum));
-    memset(&sithMulti_numUpdatedThings, 0, sizeof(sithMulti_numUpdatedThings));
-    memset(&sithMulti_quitGameState, 0, sizeof(sithMulti_quitGameState));
-    memset(&sithMulti_checksum, 0, sizeof(sithMulti_checksum));
-    memset(&sithMulti_bWelcomingPlayer, 0, sizeof(sithMulti_bWelcomingPlayer));
-    memset(&sithMulti_newPlayerId, 0, sizeof(sithMulti_newPlayerId));
-    memset(&sithMulti_bSyncScores, 0, sizeof(sithMulti_bSyncScores));
-    memset(&sithMulti_pfNewPlayerJoinedCallback, 0, sizeof(sithMulti_pfNewPlayerJoinedCallback));
-    memset(&sithMulti_msecPingStartTime, 0, sizeof(sithMulti_msecPingStartTime));
-    memset(&sithMulti_msecQuitGameTime, 0, sizeof(sithMulti_msecQuitGameTime));
-    memset(&sithMulti_numRemovedStaticThings, 0, sizeof(sithMulti_numRemovedStaticThings));
-    memset(&sithMulti_msecLastSyncScoreTime, 0, sizeof(sithMulti_msecLastSyncScoreTime));
-    memset(&sithMulti_msecWelcomeUpdateInterval, 0, sizeof(sithMulti_msecWelcomeUpdateInterval));
     memset(&sithMulti_g_serverId, 0, sizeof(sithMulti_g_serverId));
-    memset(&sithMulti_msecSyncTime, 0, sizeof(sithMulti_msecSyncTime));
     memset(&sithMulti_g_message, 0, sizeof(sithMulti_g_message));
 }
 
@@ -124,8 +133,8 @@ void sithMulti_CloseGame()
     sithEvent_RegisterTask(SITHMULTI_CHECKPLAYER_TASKID, NULL, 0, SITHEVENT_TASKDISABLED);
     sithMessage_CloseGame();
 
-    memset(&sithMulti_g_serverId, 0, sizeof(sithMulti_g_serverId));
-    memset(&sithMulti_msecSyncTime, 0, sizeof(sithMulti_msecSyncTime));
+    sithMulti_g_serverId  = 0;
+    sithMulti_msecSyncTime = 0;
 }
 
 int J3DAPI sithMulti_CheckPlayers(int msecTime, SithEventParams* pParam)
@@ -133,7 +142,9 @@ int J3DAPI sithMulti_CheckPlayers(int msecTime, SithEventParams* pParam)
     J3D_UNUSED(msecTime);
     J3D_UNUSED(pParam);
 
-    if ( sithWorld_g_pCurrentWorld && sithPlayer_g_pLocalPlayerThing && (sithMain_g_sith_mode.subModeFlags & SITH_SUBMODE_SYNC) == 0 )
+    if ( sithWorld_g_pCurrentWorld
+        && sithPlayer_g_pLocalPlayerThing
+        && (sithMain_g_sith_mode.subModeFlags & SITH_SUBMODE_SYNC) == 0 )
     {
         sithDSSThing_Pos(sithPlayer_g_pLocalPlayerThing, SITHMESSAGE_SENDTOJOINEDPLAYERS, 0);
     }
@@ -144,7 +155,7 @@ int J3DAPI sithMulti_CheckPlayers(int msecTime, SithEventParams* pParam)
         {
             if ( sithPlayer_g_aPlayers[i].playerNetId != sithMessage_g_localPlayerId
                 && (sithPlayer_g_aPlayers[i].flags & SITH_PLAYER_JOINEDGAME) != 0
-                && sithTime_g_msecGameTime > sithPlayer_g_aPlayers[i].msecLastCommTime + 45000 )
+                && sithTime_g_msecGameTime > sithPlayer_g_aPlayers[i].msecLastCommTime + SITHMULTI_PLAYER_TIMEOUT_MSEC )
             {
                 SITHLOG_ERROR("Haven't heard from player %d, kicking them out of the game.\n", i);
                 sithMulti_QuitPlayer(sithPlayer_g_aPlayers[i].playerNetId);
@@ -152,13 +163,13 @@ int J3DAPI sithMulti_CheckPlayers(int msecTime, SithEventParams* pParam)
             }
         }
 
-        if ( sithMulti_msecLastSyncScoreTime + 10000 < sithTime_g_clockTime )
+        if ( sithMulti_msecLastSyncScoreTime + SITHMULTI_SYNCSCORES_INTERVAL < sithTime_g_clockTime )
         {
             sithMulti_msecLastSyncScoreTime = sithTime_g_clockTime;
             sithMulti_SyncScores();
         }
     }
-    else if ( sithTime_g_msecGameTime > sithPlayer_g_aPlayers[0].msecLastCommTime + 45000 )
+    else if ( sithTime_g_msecGameTime > sithPlayer_g_aPlayers[0].msecLastCommTime + SITHMULTI_PLAYER_TIMEOUT_MSEC )
     {
         sithPlayer_g_aPlayers[0].msecLastCommTime = sithTime_g_msecGameTime;
         SITHLOG_ERROR("Haven't heard from server, exiting the game.\n");
@@ -217,9 +228,9 @@ signed int J3DAPI sithMulti_SendWelcome(DPID idPlayer, int playerNum, DPID idTo)
 
     SITHLOG_STATUS("Sending game welcome of player %d to playerID %x.\n", playerNum, idTo);
 
-    memset(pCurDSSMsgData_, 0, 32);
-    stdUtil_WStringNumCopy((wchar_t*)pCurDSSMsgData_, 16, sithPlayer_g_aPlayers[playerNum].awName, 15);
-    pCurDSSMsgData_ += 32;
+    wchar_t awName[SITHMULTI_PLAYERNAME_LEN] = { 0 };
+    STD_WSTRCPY(awName, sithPlayer_g_aPlayers[playerNum].awName);
+    SITHDSS_PUSHWSTRING(awName, STD_ARRAYLEN(awName));
 
     SITHDSS_ENDOUT;
     return sithMessage_SendMessage(&sithMulti_g_message, idTo, SITHMESSAGE_STREAM_NET, 1);
@@ -234,9 +245,10 @@ int J3DAPI sithMulti_ProcessWelcome(const SithMessage* pMsg)
     SITHLOG_STATUS("Processing welcome from player %d (id=%x).\n", playerNum, playerId);
 
     // TODO: [BUG] playerNum is read from the message and used as an index into sithPlayer_g_aPlayers without a range check
-    stdUtil_WStringNumCopy(sithPlayer_g_aPlayers[playerNum].awName, STD_ARRAYLEN(sithPlayer_g_aPlayers[playerNum].awName), (const wchar_t*)pCurDSSMsgData_, 15);
-    sithPlayer_g_aPlayers[playerNum].awName[15] = 0;
-    pCurDSSMsgData_ += 32;
+    wchar_t awName[SITHMULTI_PLAYERNAME_LEN];
+    SITHDSS_POPWSTRING(awName, STD_ARRAYLEN(awName));
+    awName[STD_ARRAYLEN(awName) - 1] = 0;
+    STD_WSTRCPY(sithPlayer_g_aPlayers[playerNum].awName, awName);
 
     if ( playerId == sithMessage_g_localPlayerId )
     {
@@ -316,13 +328,10 @@ void J3DAPI sithMulti_SyncPlayers(DPID idTo, uint32_t dpFlags)
         {
             SITHDSS_PUSHUINT32(sithPlayer_g_aPlayers[i].playerNetId);
 
-            char aName[64];
-            stdUtil_ToAStringEx(aName, sithPlayer_g_aPlayers[i].awName, 15);
-            aName[15] = 0;
-
-            memset(pCurDSSMsgData_, 0, 16);
-            stdUtil_StringNumCopy((char*)pCurDSSMsgData_, 16, aName, 15);
-            pCurDSSMsgData_ += 16;
+            char aName[SITHMULTI_PLAYERNAME_LEN] = { 0 };
+            stdUtil_ToAStringEx(aName, sithPlayer_g_aPlayers[i].awName, STD_ARRAYLEN(aName) - 1);
+            aName[STD_ARRAYLEN(aName) - 1] = 0;
+            SITHDSS_PUSHSTRING(aName, STD_ARRAYLEN(aName));
         }
     }
 
@@ -331,12 +340,14 @@ void J3DAPI sithMulti_SyncPlayers(DPID idTo, uint32_t dpFlags)
 
     for ( size_t i = 0; i < sithPlayer_g_numPlayers; ++i )
     {
-        if ( sithPlayer_g_aPlayers[i].playerNetId && sithMessage_g_localPlayerId && sithPlayer_g_aPlayers[i].playerNetId != sithMessage_g_localPlayerId )
+        if ( sithPlayer_g_aPlayers[i].playerNetId
+            && sithMessage_g_localPlayerId
+            && sithPlayer_g_aPlayers[i].playerNetId != sithMessage_g_localPlayerId )
         {
-            rdModel3* pModel = sithModel_Load("gen_vi.3do", 1);
+            rdModel3* pModel = sithModel_Load(SITHMULTI_PLAYERMODEL_NAME, 1);
             if ( !pModel )
             {
-                SITHLOG_ERROR("Model %s not found, using default.\n", "gen_vi.3do");
+                SITHLOG_ERROR("Model %s not found, using default.\n", SITHMULTI_PLAYERMODEL_NAME);
             }
 
             sithThing_SetThingModel(sithPlayer_g_aPlayers[i].pThing, pModel);
@@ -348,8 +359,6 @@ signed int J3DAPI sithMulti_ProcessSyncPlayers(const SithMessage* pMsg)
 {
     SITHDSS_STARTIN(pMsg);
 
-    memset(&sithMulti_g_serverId, 0, sizeof(sithMulti_g_serverId));
-    memset(&sithMulti_msecSyncTime, 0, sizeof(sithMulti_msecSyncTime));
     sithMulti_msecSyncTime = stdPlatform_GetTimeMsec();
 
     sithMulti_g_serverId = SITHDSS_POPUINT32();
@@ -365,32 +374,37 @@ signed int J3DAPI sithMulti_ProcessSyncPlayers(const SithMessage* pMsg)
         {
             sithPlayer_g_aPlayers[i].playerNetId = SITHDSS_POPUINT32();
 
-            if ( (sithPlayer_g_aPlayers[i].flags & SITH_PLAYER_JOINEDGAME) != 0 && (prevFlags & SITH_PLAYER_JOINEDGAME) == 0 && (sithMain_g_sith_mode.subModeFlags & SITH_SUBMODE_SYNC) == 0 )
+            if ( (sithPlayer_g_aPlayers[i].flags & SITH_PLAYER_JOINEDGAME) != 0
+                && (prevFlags & SITH_PLAYER_JOINEDGAME) == 0
+                && (sithMain_g_sith_mode.subModeFlags & SITH_SUBMODE_SYNC) == 0 )
             {
                 SITHLOG_STATUS("Got a new player but we missed the welcome packet, apparently.\n");
                 sithMulti_ProcessPlayerJoin(i);
             }
-            else if ( !sithPlayer_g_aPlayers[i].playerNetId && (prevFlags & SITH_PLAYER_JOINEDGAME) != 0 && (sithMain_g_sith_mode.subModeFlags & SITH_SUBMODE_SYNC) == 0 )
+            else if ( !sithPlayer_g_aPlayers[i].playerNetId
+                && (prevFlags & SITH_PLAYER_JOINEDGAME) != 0
+                && (sithMain_g_sith_mode.subModeFlags & SITH_SUBMODE_SYNC) == 0 )
             {
                 SITHLOG_STATUS("Noticed that player %d was removed by the server.  Removing locally.\n", i);
                 sithMulti_RemovePlayer(i);
             }
 
-            char aName[64];
-            STD_STRNCPY(aName, (const char*)pCurDSSMsgData_, 15);
-            aName[15] = 0;
-            pCurDSSMsgData_ += 16;
+            char aName[SITHMULTI_PLAYERNAME_LEN];
+            SITHDSS_POPSTRING(aName, STD_ARRAYLEN(aName));
+            aName[STD_ARRAYLEN(aName) - 1] = 0;
 
-            stdUtil_ToWStringEx(sithPlayer_g_aPlayers[i].awName, aName, 15);
-            sithPlayer_g_aPlayers[i].awName[15] = 0;
+            stdUtil_ToWStringEx(sithPlayer_g_aPlayers[i].awName, aName, STD_ARRAYLEN(aName) - 1);
+            sithPlayer_g_aPlayers[i].awName[STD_ARRAYLEN(aName) - 1] = 0;
         }
 
-        if ( sithPlayer_g_aPlayers[i].playerNetId && sithMessage_g_localPlayerId && sithPlayer_g_aPlayers[i].playerNetId != sithMessage_g_localPlayerId )
+        if ( sithPlayer_g_aPlayers[i].playerNetId
+            && sithMessage_g_localPlayerId
+            && sithPlayer_g_aPlayers[i].playerNetId != sithMessage_g_localPlayerId )
         {
-            rdModel3* pModel = sithModel_Load("gen_vi.3do", 1);
+            rdModel3* pModel = sithModel_Load(SITHMULTI_PLAYERMODEL_NAME, 1);
             if ( !pModel )
             {
-                SITHLOG_ERROR("Model %s not found, using default.\n", "gen_vi.3do");
+                SITHLOG_ERROR("Model %s not found, using default.\n", SITHMULTI_PLAYERMODEL_NAME);
                 return 1;
             }
 
@@ -413,9 +427,8 @@ int J3DAPI sithMulti_ProcessJoinRequest(const SithMessage* pMsg)
     }
 
     char aLevelName[64];
-    STD_STRNCPY(aLevelName, (const char*)pCurDSSMsgData_, 63);
-    aLevelName[63] = 0;
-    pCurDSSMsgData_ += 64;
+    SITHDSS_POPSTRING(aLevelName, STD_ARRAYLEN(aLevelName));
+    aLevelName[STD_ARRAYLEN(aLevelName) - 1] = 0;
 
     if ( _strcmpi(aLevelName, sithWorld_g_pCurrentWorld->aName) )
     {
@@ -464,7 +477,8 @@ int J3DAPI sithMulti_ProcessJoinRequest(const SithMessage* pMsg)
 
     for ( i = 0; i < sithPlayer_g_numPlayers; ++i )
     {
-        if ( (sithPlayer_g_aPlayers[i].flags & SITH_PLAYER_PLACED) != 0 && !sithPlayer_g_aPlayers[i].playerNetId )
+        if ( (sithPlayer_g_aPlayers[i].flags & SITH_PLAYER_PLACED) != 0
+            && !sithPlayer_g_aPlayers[i].playerNetId )
         {
             break;
         }
@@ -491,9 +505,10 @@ int J3DAPI sithMulti_ProcessJoinRequest(const SithMessage* pMsg)
     }
 
     sithPlayer_Reset(sithMulti_curWelcomePlayerNum);
-    stdUtil_WStringNumCopy(sithPlayer_g_aPlayers[sithMulti_curWelcomePlayerNum].awName, STD_ARRAYLEN(sithPlayer_g_aPlayers[sithMulti_curWelcomePlayerNum].awName), (const wchar_t*)pCurDSSMsgData_, 15);
-    sithPlayer_g_aPlayers[sithMulti_curWelcomePlayerNum].awName[15] = 0;
-    pCurDSSMsgData_ += 32;
+    wchar_t awName[SITHMULTI_PLAYERNAME_LEN];
+    SITHDSS_POPWSTRING(awName, STD_ARRAYLEN(awName));
+    awName[STD_ARRAYLEN(awName) - 1] = 0;
+    STD_WSTRCPY(sithPlayer_g_aPlayers[sithMulti_curWelcomePlayerNum].awName, awName);
 
     int clientChecksum = SITHDSS_POPINT32();
     SITHLOG_STATUS("My checksum=%x, client=%x.\n", sithMulti_checksum, clientChecksum);
@@ -527,10 +542,10 @@ int J3DAPI sithMulti_ProcessChat(const SithMessage* pMsg)
     SITHDSS_POPINT32(); // sender count, unused
     int playerCount = SITHDSS_POPINT32();
     size_t len = SITHDSS_POPUINT32();
-    len = len < 128 ? len : 128;
+    len = len < SITHMULTI_CHAT_MAXLEN ? len : SITHMULTI_CHAT_MAXLEN;
 
     // TODO: [BUG] len can be 0: len - 1 wraps; the original strncpy then overruns aText (here the copy is clamped) and aText[len - 1] writes before aText
-    char aText[132];
+    char aText[SITHMULTI_CHAT_MAXLEN + 4];
     STD_STRNCPY(aText, (const char*)pCurDSSMsgData_, len - 1);
     aText[len - 1] = 0;
     pCurDSSMsgData_ += len;
@@ -606,13 +621,13 @@ int J3DAPI sithMulti_ProcessQuit(const SithMessage* pMsg)
 
     if ( playerId == sithMessage_g_localPlayerId )
     {
-        if ( sithMulti_quitGameState == 2 )
+        if ( sithMulti_quitGameState == SITHMULTI_QUITSTATE_EJECTED )
         {
             return 1;
         }
 
         sithConsole_PrintWString(sithString_GetString("MULTI_EJECTED"));
-        sithMulti_QuitGame(sithTime_g_msecGameTime + 5000, 2);
+        sithMulti_QuitGame(sithTime_g_msecGameTime + SITHMULTI_EJECTED_QUIT_DELAY_MSEC, SITHMULTI_QUITSTATE_EJECTED);
     }
     else
     {
@@ -641,12 +656,15 @@ void J3DAPI sithMulti_Update(unsigned int msecDeltaTime)
     {
         switch ( sithMulti_quitGameState )
         {
-            case 2:
-                sithMulti_quitGameState = 0;
+            case SITHMULTI_QUITSTATE_EJECTED:
+                sithMulti_quitGameState = SITHMULTI_QUITSTATE_NONE;
                 break;
 
-            case 1:
-                sithMulti_quitGameState = 0;
+            case SITHMULTI_QUITSTATE_QUIT:
+                sithMulti_quitGameState = SITHMULTI_QUITSTATE_NONE;
+                break;
+
+            default:
                 break;
         }
 
@@ -660,7 +678,7 @@ void J3DAPI sithMulti_Update(unsigned int msecDeltaTime)
 
     if ( sithMulti_bSyncScores )
     {
-        sithMulti_bSyncScores = 0;
+        sithMulti_bSyncScores = false;
         sithMulti_SyncPlayers(SITHMESSAGE_SENDTOJOINEDPLAYERS, 0);
     }
 
@@ -676,29 +694,29 @@ void J3DAPI sithMulti_Update(unsigned int msecDeltaTime)
     }
 
     msecDeltaTime += sithMulti_msecWelcomeUpdateInterval;
-    unsigned int numUpdates = msecDeltaTime / 60;
-    sithMulti_msecWelcomeUpdateInterval = msecDeltaTime - 60 * numUpdates;
+    unsigned int numUpdates = msecDeltaTime / SITHMULTI_WELCOME_UPDATE_MSEC;
+    sithMulti_msecWelcomeUpdateInterval = msecDeltaTime - SITHMULTI_WELCOME_UPDATE_MSEC * numUpdates;
 
     for ( unsigned int i = 0; i < numUpdates; ++i )
     {
         switch ( sithMulti_playerWelcomeState )
         {
-            case 2:
+            case SITHMULTI_WELCOME_SURFACES:
                 sithMulti_UpdateSurfaces();
                 ++sithMulti_numUpdatedSurfaces;
                 break;
 
-            case 1:
+            case SITHMULTI_WELCOME_SECTORS:
                 sithMulti_UpdateSectors();
                 ++sithMulti_numUpdatedSectors;
                 break;
 
-            case 3:
+            case SITHMULTI_WELCOME_THINGS:
                 sithMulti_UpdateThings();
                 ++sithMulti_numUpdatedThings;
                 break;
 
-            case 4:
+            case SITHMULTI_WELCOME_REMOVALS:
                 sithMulti_UpdateRemovals();
                 break;
 
@@ -710,7 +728,7 @@ void J3DAPI sithMulti_Update(unsigned int msecDeltaTime)
 
 void J3DAPI sithMulti_SyncScores()
 {
-    sithMulti_bSyncScores = 1;
+    sithMulti_bSyncScores = true;
 }
 
 void J3DAPI sithMulti_ProcessKilledPlayer(const SithPlayer* pPlayer, const SithThing* pPlayerThing, const SithThing* pKiller)
@@ -757,12 +775,12 @@ void J3DAPI sithMulti_ProcessKilledPlayer(const SithPlayer* pPlayer, const SithT
 
 void J3DAPI sithMulti_QuitGame(unsigned int msecTime, int state)
 {
-    if ( sithMulti_quitGameState == state && msecTime >= sithMulti_msecQuitGameTime )
+    if ( sithMulti_quitGameState == (SithMultiQuitState)state && msecTime >= sithMulti_msecQuitGameTime )
     {
         return;
     }
 
-    sithMulti_quitGameState = state;
+    sithMulti_quitGameState = (SithMultiQuitState)state;
     sithMulti_msecQuitGameTime = msecTime;
 }
 
@@ -834,13 +852,13 @@ size_t J3DAPI sithMulti_Respawn(SithThing* pPlayer)
 
 void J3DAPI sithMulti_RemoveStaticThing(int guid)
 {
-    if ( sithMulti_numRemovedStaticThings < 256 )
+    if ( sithMulti_numRemovedStaticThings < STD_ARRAYLEN(sithMulti_aRemovedStaticThings) )
     {
         sithMulti_aRemovedStaticThings[sithMulti_numRemovedStaticThings++] = guid;
     }
     else
     {
-        SITHLOG_ERROR("Limit %d on # of removed static things exceeded!", 256);
+        SITHLOG_ERROR("Limit %d on # of removed static things exceeded!", SITHMULTI_MAX_REMOVEDSTATICTHINGS);
     }
 }
 
@@ -859,7 +877,7 @@ void J3DAPI sithMulti_UpdateSurfaces()
     if ( (size_t)sithMulti_lastUpdateIdx >= sithWorld_g_pCurrentWorld->numSurfaces )
     {
         SITHLOG_ERROR("Welcome of player %d switching to SECTORS.\n", sithMulti_newPlayerId);
-        sithMulti_playerWelcomeState = 1;
+        sithMulti_playerWelcomeState = SITHMULTI_WELCOME_SECTORS;
         sithMulti_lastUpdateIdx = 0;
     }
 }
@@ -885,7 +903,7 @@ void J3DAPI sithMulti_UpdateSectors()
     if ( (size_t)sithMulti_lastUpdateIdx >= sithWorld_g_pCurrentWorld->numSectors )
     {
         SITHLOG_ERROR("Welcome of player %d switching to THINGS.\n", sithMulti_newPlayerId);
-        sithMulti_playerWelcomeState = 3;
+        sithMulti_playerWelcomeState = SITHMULTI_WELCOME_THINGS;
         sithMulti_lastUpdateIdx = 0;
     }
 }
@@ -897,7 +915,7 @@ void J3DAPI sithMulti_UpdateThings()
         SithThing* pThing = &sithWorld_g_pCurrentWorld->aThings[sithMulti_lastUpdateIdx++];
         if ( sithThing_CanSyncThing(pThing) && pThing->type != SITH_THING_WEAPON && pThing->type != SITH_THING_EXPLOSION )
         {
-            if ( (pThing->guid & 0xFFFF0000) == 0 )
+            if ( (pThing->guid & SITHMULTI_THINGGUID_UNIQUEMASK) == 0 )
             {
                 sithDSSThing_UpdateState(pThing, sithMulti_newPlayerId, SITHMESSAGE_STREAM_NET);
             }
@@ -914,7 +932,7 @@ void J3DAPI sithMulti_UpdateThings()
     if ( sithMulti_lastUpdateIdx > sithWorld_g_pCurrentWorld->lastThingIdx )
     {
         SITHLOG_ERROR("Welcome of player %d switching to REMOVALS.\n", sithMulti_newPlayerId);
-        sithMulti_playerWelcomeState = 4;
+        sithMulti_playerWelcomeState = SITHMULTI_WELCOME_REMOVALS;
         sithMulti_lastUpdateIdx = 0;
     }
 }
@@ -952,11 +970,14 @@ void J3DAPI sithMulti_StartWelcomingPlayer(DPID playerId)
     SITH_ASSERTREL(playerId);
     SITHLOG_ERROR("Starting to welcome player %d.\n", playerId);
 
-    sithMulti_bWelcomingPlayer = 1;
-    sithMulti_newPlayerId = playerId;
-    sithMulti_playerWelcomeState = 2;
-    sithMulti_lastUpdateIdx = 0;
-    sithMulti_numUpdatedThings = sithMulti_numUpdatedSectors = sithMulti_numUpdatedSurfaces = 0;
+    sithMulti_bWelcomingPlayer   = true;
+    sithMulti_newPlayerId        = playerId;
+    sithMulti_playerWelcomeState = SITHMULTI_WELCOME_SURFACES;
+    sithMulti_lastUpdateIdx      = 0;
+
+    sithMulti_numUpdatedThings   = 0;
+    sithMulti_numUpdatedSectors  = 0;
+    sithMulti_numUpdatedSurfaces = 0;
 }
 
 void J3DAPI sithMulti_StopWelcomingPlayer(int bError)
@@ -968,10 +989,10 @@ void J3DAPI sithMulti_StopWelcomingPlayer(int bError)
         sithMulti_FinishJoining(SITHMULTI_JOIN_CANCEL, 0.0f, sithMulti_newPlayerId);
     }
 
-    sithMulti_bWelcomingPlayer = 0;
-    sithMulti_newPlayerId = 0;
-    sithMulti_playerWelcomeState = 2;
-    sithMulti_lastUpdateIdx = 0;
+    sithMulti_bWelcomingPlayer   = false;
+    sithMulti_newPlayerId        = 0;
+    sithMulti_playerWelcomeState = SITHMULTI_WELCOME_SURFACES;
+    sithMulti_lastUpdateIdx      = 0;
 }
 
 void sithMulti_OpenGame(void)
