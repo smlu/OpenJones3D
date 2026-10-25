@@ -183,7 +183,7 @@ int J3DAPI sithDSS_ProcessSurfaceStatus(const SithMessage* pMsg)
     return 1;
 }
 
-int J3DAPI sithDSS_SectorStatus(const SithSector* pSector, DPID a2, unsigned int outstream)
+int J3DAPI sithDSS_SectorStatus(const SithSector* pSector, DPID idTo, unsigned int outstream)
 {
     SITH_ASSERTREL(pSector);
 
@@ -203,7 +203,7 @@ int J3DAPI sithDSS_SectorStatus(const SithSector* pSector, DPID a2, unsigned int
     }
 
     SITHDSS_ENDOUT;
-    return sithMessage_SendMessage(&sithMulti_g_message, a2, outstream, DPSEND_GUARANTEED);
+    return sithMessage_SendMessage(&sithMulti_g_message, idTo, outstream, DPSEND_GUARANTEED);
 }
 
 int J3DAPI sithDSS_SyncSeenSectors(DPID idTo, unsigned int outstream)
@@ -218,8 +218,8 @@ int J3DAPI sithDSS_SyncSeenSectors(DPID idTo, unsigned int outstream)
     for ( size_t i = 0; i < sithWorld_g_pCurrentWorld->numSectors; ++i )
     {
         const SithSector* pSector = &sithWorld_g_pCurrentWorld->aSectors[i];
-        uint8_t bSeen = (pSector->flags & SITH_SECTOR_SEEN) != 0 ? 1 : 0;
-        SITHDSS_PUSHUINT8((uint8_t)bSeen);
+        bool bSeen = (pSector->flags & SITH_SECTOR_SEEN) != 0;
+        SITHDSS_PUSHUINT8(bSeen);
     }
 
     SITHDSS_ENDOUT;
@@ -239,7 +239,7 @@ int J3DAPI sithDSS_ProcessSyncSeenSecors(const SithMessage* pMsg)
     for ( size_t i = 0; i < sithWorld_g_pCurrentWorld->numSectors; ++i )
     {
         SithSector* pSector = &sithWorld_g_pCurrentWorld->aSectors[i];
-        uint8_t bSeen = SITHDSS_POPUINT8();
+        bool bSeen = SITHDSS_POPUINT8() != 0;
         if ( bSeen )
         {
             pSector->flags |= SITH_SECTOR_SEEN;
@@ -295,7 +295,7 @@ int J3DAPI sithDSS_ProcessSectorStatus(const SithMessage* pMsg)
     }
     else
     {
-        memset(&pSector->thrust, 0, sizeof(pSector->thrust));
+        rdVector_Zero3(&pSector->thrust);
     }
 
     SITHDSS_ENDIN;
@@ -558,32 +558,32 @@ int J3DAPI sithDSS_ProcessInventory(const SithMessage* pMsg)
 
     SITHDSS_STARTIN(pMsg);
 
-    int n = SITHDSS_POPUINT16();
-    SithThing* pThing = sithThing_GetThingByIndex(n);
+    int thingIdx = SITHDSS_POPUINT16();
+    SithThing* pThing = sithThing_GetThingByIndex(thingIdx);
     if ( !pThing
         || (pThing->type != SITH_THING_ACTOR && pThing->type != SITH_THING_PLAYER)
         || !pThing->thingInfo.actorInfo.pPlayer )
     {
-        goto error;
+        SITHLOG_ERROR("Error processing DSS::Inventory message.\n");
+        SITHDSS_ENDIN;
+        return 0;
     }
 
     SithInventoryItem* pCurItems = pThing->thingInfo.actorInfo.pPlayer->aItems;
-    n = SITHDSS_POPUINT16();
-    if ( n < 0 || n >= (int)SITHINVENTORY_MAXTYPES )
+
+    int inventoryId = SITHDSS_POPUINT16();
+    if ( inventoryId < 0 || inventoryId >= (int)SITHINVENTORY_MAXTYPES )
     {
-        goto error;
+        SITHLOG_ERROR("Error processing DSS::Inventory message.\n");
+        SITHDSS_ENDIN;
+        return 0;
     }
 
-    pCurItems[n].amount = SITHDSS_POPFLOAT();
-    pCurItems[n].status = SITHDSS_POPINT32();
+    pCurItems[inventoryId].amount = SITHDSS_POPFLOAT();
+    pCurItems[inventoryId].status = SITHDSS_POPINT32();
 
     SITHDSS_ENDIN;
     return 1;
-
-error:
-    SITHLOG_ERROR("Error processing DSS::Inventory message.\n");
-    SITHDSS_ENDIN;
-    return 0;
 }
 
 int J3DAPI sithDSS_AnimStatus(const SithAnimationSlot* pAnim, DPID idTo, unsigned int outstream)
@@ -1238,7 +1238,8 @@ int J3DAPI sithDSS_ProcessSyncCameras(const SithMessage* pMsg)
     SITHDSS_STARTIN(pMsg);
 
     size_t cameraNum = SITHDSS_POPUINT16();
-    cameraNum = STDMATH_CLAMP(cameraNum, 0, 6);
+    cameraNum = STDMATH_CLAMP(cameraNum, 0, SITHCAMERA_ORBCAMERANUM);
+
     sithCamera_g_pCurCamera       = &sithCamera_g_aCameras[cameraNum];
     sithCamera_g_bCurCameraSet    = SITHDSS_POPINT32();
     sithCamera_g_curCycleCamNum   = SITHDSS_POPINT32();
@@ -1251,9 +1252,10 @@ int J3DAPI sithDSS_ProcessSyncCameras(const SithMessage* pMsg)
     {
         SithCamera* pCamera = &sithCamera_g_aCameras[i];
         pCamera->pSector = NULL;
+
         pCamera->pPrimaryFocusThing   = sithThing_GetThingByIndex(SITHDSS_POPINT32());
         pCamera->pSecondaryFocusThing = sithThing_GetThingByIndex(SITHDSS_POPINT32());
-        pCamera->fov = SITHDSS_POPFLOAT();
+        pCamera->fov                  = SITHDSS_POPFLOAT();
     }
 
     SITHDSS_ENDIN;
@@ -1289,7 +1291,7 @@ int J3DAPI sithDSS_SyncGameState(DPID idTo, unsigned int outstream)
     SITHDSS_PUSHINT32(sithInventory_g_dword_56B750);
     SITHDSS_PUSHINT32(sithInventory_g_dword_56B754);
 
-    for ( int n = 2; n < 11; ++n )
+    for ( int n = SITHWEAPON_WHIP; n <= SITHWEAPON_BAZOOKA; ++n )
     {
         const SithInventoryType* pType = &sithInventory_g_aTypes[n];
         if ( pType->pHolsterModel )
@@ -1379,13 +1381,14 @@ int J3DAPI sithDSS_ProcessSyncGameState(const SithMessage* pMsg)
     sithInventory_g_dword_56B750           = SITHDSS_POPINT32();
     sithInventory_g_dword_56B754           = SITHDSS_POPINT32();
 
-    for ( int i = 2; i < 11; ++i )
+    for ( int i = SITHWEAPON_WHIP; i <= SITHWEAPON_BAZOOKA; ++i )
     {
         SithInventoryType* pInventoryType = &sithInventory_g_aTypes[i];
-        int16_t idx16 = SITHDSS_POPINT16();
-        if ( idx16 != -1 )
+
+        int16_t modelIdx = SITHDSS_POPINT16();
+        if ( modelIdx != -1 )
         {
-            pInventoryType->pHolsterModel = sithModel_GetModelByIndex(idx16);
+            pInventoryType->pHolsterModel = sithModel_GetModelByIndex(modelIdx);
         }
         else
         {
@@ -1394,12 +1397,14 @@ int J3DAPI sithDSS_ProcessSyncGameState(const SithMessage* pMsg)
     }
 
     sithRender_bResetCameraAspect = SITHDSS_POPINT32();
-    cogIdx = SITHDSS_POPINT32();
-    sithPlayerControls_SetVehicleBoardedThing(sithThing_GetThingByIndex(cogIdx));
+
+    int thingIdx = SITHDSS_POPINT32();
+    sithPlayerControls_SetVehicleBoardedThing(sithThing_GetThingByIndex(thingIdx));
 
     // Note: Cur collided surface, model and model face are named as cur ledge surface, ledge thing model and model face
     int16_t idx16 = SITHDSS_POPINT16();
     sithPlayerActions_g_pCurCollidedSurface = sithSurface_GetSurfaceEx(sithWorld_g_pCurrentWorld, idx16);
+
     idx16 = SITHDSS_POPINT16();
     sithPlayerActions_g_pCurCollidedModel = sithModel_GetModelByIndex(idx16);
     if ( sithPlayerActions_g_pCurCollidedModel )
@@ -1415,13 +1420,15 @@ int J3DAPI sithDSS_ProcessSyncGameState(const SithMessage* pMsg)
     sithPlayer_g_impFireType        = SITHDSS_POPUINT16();
     sithPlayer_g_curLevelNum        = SITHDSS_POPUINT16();
     sithPlayer_g_bBonusMapBought    = SITHDSS_POPUINT8();
-    cogIdx = SITHDSS_POPINT32();
-    sithPlayerActions_g_pPlasma     = sithThing_GetThingByIndex(cogIdx);
+
+    thingIdx = SITHDSS_POPINT32();
+    sithPlayerActions_g_pPlasma = sithThing_GetThingByIndex(thingIdx);
+
     sithPlayerActions_g_jewelFlyingPuppetTrackNum = SITHDSS_POPUINT16();
-    sithPlayerActions_g_bJewelFlying     = SITHDSS_POPUINT8();
-    sithPlayerActions_g_bPlayerInvisible = SITHDSS_POPUINT8();
-    sithPlayerControls_g_bCutsceneMode   = SITHDSS_POPUINT8();
-    sithPuppet_g_bPlayerLeapForward      = SITHDSS_POPUINT8();
+    sithPlayerActions_g_bJewelFlying              = SITHDSS_POPUINT8();
+    sithPlayerActions_g_bPlayerInvisible          = SITHDSS_POPUINT8();
+    sithPlayerControls_g_bCutsceneMode            = SITHDSS_POPUINT8();
+    sithPuppet_g_bPlayerLeapForward               = SITHDSS_POPUINT8();
 
     sithFX_g_numChalkMarks    = SITHDSS_POPINT32();
     sithFX_g_lastChalkMarkNum = SITHDSS_POPINT32();
@@ -1429,10 +1436,10 @@ int J3DAPI sithDSS_ProcessSyncGameState(const SithMessage* pMsg)
     // TODO: [BUG] Number of chalk marks read from the stream is not checked against the size of aChalkMarks
     for ( int i = 0; i < (int)sithFX_g_numChalkMarks; ++i )
     {
-        cogIdx = SITHDSS_POPINT32();
-        if ( cogIdx >= 0 && cogIdx < (int)sithWorld_g_pCurrentWorld->numThings )
+        thingIdx = SITHDSS_POPINT32();
+        if ( thingIdx >= 0 && thingIdx < (int)sithWorld_g_pCurrentWorld->numThings )
         {
-            sithFX_g_aChalkMarks[i] = &sithWorld_g_pCurrentWorld->aThings[cogIdx];
+            sithFX_g_aChalkMarks[i] = &sithWorld_g_pCurrentWorld->aThings[thingIdx];
         }
     }
 
@@ -1498,17 +1505,17 @@ int J3DAPI sithDSS_ProcessVehicleControlsState(const SithMessage* pMsg)
     SITHDSS_STARTIN(pMsg);
 
     SithMineCarControlsState mineCarState;
-    mineCarState.secElapsedStoppingTime  = SITHDSS_POPFLOAT();
-    mineCarState.moveState               = SITHDSS_POPINT32();
-    mineCarState.secDuckTime             = SITHDSS_POPFLOAT();
-    mineCarState.curDuckPuppetTrackNum   = SITHDSS_POPINT32();
-    mineCarState.bCanDuck                = SITHDSS_POPINT32();
-    mineCarState.leanState               = SITHDSS_POPINT32();
-    mineCarState.curPuppetTrack          = SITHDSS_POPINT32();
-    mineCarState.hBrakeSnd               = SITHDSS_POPINT32();
-    mineCarState.secElapsedBrakingTime   = SITHDSS_POPFLOAT();
+    mineCarState.secElapsedStoppingTime   = SITHDSS_POPFLOAT();
+    mineCarState.moveState                = SITHDSS_POPINT32();
+    mineCarState.secDuckTime              = SITHDSS_POPFLOAT();
+    mineCarState.curDuckPuppetTrackNum    = SITHDSS_POPINT32();
+    mineCarState.bCanDuck                 = SITHDSS_POPINT32();
+    mineCarState.leanState                = SITHDSS_POPINT32();
+    mineCarState.curPuppetTrack           = SITHDSS_POPINT32();
+    mineCarState.hBrakeSnd                = SITHDSS_POPINT32();
+    mineCarState.secElapsedBrakingTime    = SITHDSS_POPFLOAT();
     mineCarState.secUnboardingElapsedTime = SITHDSS_POPFLOAT();
-    mineCarState.unboardState            = SITHDSS_POPINT32();
+    mineCarState.unboardState             = SITHDSS_POPINT32();
 
     SithRaftControlsState raftState;
     raftState.nextMoveStatus = SITHDSS_POPINT32();

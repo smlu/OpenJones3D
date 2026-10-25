@@ -109,7 +109,7 @@ typedef enum eSithDSSType
 int J3DAPI sithDSS_SurfaceStatus(const SithSurface* pSurf, DPID idTo, unsigned int outstream);
 int J3DAPI sithDSS_ProcessSurfaceStatus(const SithMessage* pMsg);
 
-int J3DAPI sithDSS_SectorStatus(const SithSector* pSector, DPID a2, unsigned int outstream);
+int J3DAPI sithDSS_SectorStatus(const SithSector* pSector, DPID idTo, unsigned int outstream);
 int J3DAPI sithDSS_SyncSeenSectors(DPID idTo, unsigned int outstream);
 
 int J3DAPI sithDSS_ProcessSyncSeenSecors(const SithMessage* pMsg);
