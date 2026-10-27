@@ -287,9 +287,11 @@ void J3DAPI sithAIMove_UpdateMineCar(SithAIControlBlock* pLocal, float secDeltaT
     //       In the debug build its own stack slot is read but never written (garbage). In retail the compiler shares the slot
     //       with the pLocal argument, which later holds angle: moveState is zero only when angle is +0.0f, and nonzero (the
     //       pLocal pointer) when the actor looks straight up or down and angle is never computed. Emulated as retail.
+    // TODO: moveState should probably be initialized with sithAIMove_AIGetMoveState(pLocal), but further investigation is needed to determine the correct value.
     int moveState = 1;
 
     float upDot = fabsf(rdVector_Dot3(&pThing->orient.uvec, &toLook));
+
     if ( upDot > sithAIMove_mineCarMaxUpDot )
     {
         if ( (pThing->moveInfo.physics.flags & SITH_PF_FLY) == 0 )
@@ -318,6 +320,7 @@ void J3DAPI sithAIMove_UpdateMineCar(SithAIControlBlock* pLocal, float secDeltaT
             float fwdDot   = rdVector_Dot3(&pThing->orient.lvec, &lookDir);
             float rightDot = rdVector_Dot3(&pThing->orient.rvec, &lookDir);
             pThing->renderData.apTweakedAngles[meshIdx].y = 90.0f - stdMath_ArcSin3(fwdDot);
+
             if ( rightDot > 0.0f )
             {
                 pThing->renderData.apTweakedAngles[meshIdx].y = -pThing->renderData.apTweakedAngles[meshIdx].y;
@@ -331,6 +334,7 @@ void J3DAPI sithAIMove_UpdateMineCar(SithAIControlBlock* pLocal, float secDeltaT
             float fwdDot   = rdVector_Dot3(&pThing->orient.lvec, &aimDir);
             float rightDot = rdVector_Dot3(&pThing->orient.rvec, &aimDir);
             pThing->renderData.apTweakedAngles[meshIdx].y = 90.0f - stdMath_ArcSin3(fwdDot);
+
             if ( rightDot > 0.0f )
             {
                 pThing->renderData.apTweakedAngles[meshIdx].y = -pThing->renderData.apTweakedAngles[meshIdx].y;
@@ -380,12 +384,14 @@ void J3DAPI sithAIMove_UpdateTurn(SithAIControlBlock* pLocal, float secDeltatTim
     }
 
     SithAIMoveState moveState = sithAIMove_AIGetMoveState(pLocal);
+
     if ( moveState == SITHAIMOVE_STATE_STATIONARY )
     {
         return;
     }
 
     float upDot = fabsf(rdVector_Dot3(&pOwner->orient.uvec, &goalLVec));
+
     if ( upDot > sithAIMove_turnMaxUpDot )
     {
         if ( (pOwner->moveInfo.physics.flags & SITH_PF_FLY) == 0 )
@@ -399,6 +405,7 @@ void J3DAPI sithAIMove_UpdateTurn(SithAIControlBlock* pLocal, float secDeltatTim
         rdMath_ProjectPointOntoPlaneNormalized(&lvec, &goalLVec, &pOwner->orient.uvec, &rdroid_g_zeroVector3);
 
         float angle = rdMath_DeltaAngleNormalized(&lvec, &pOwner->orient.lvec, &pOwner->orient.uvec);
+
         if ( sithAIMove_AISpecialTurn(pLocal, angle) )
         {
             return;
@@ -488,6 +495,7 @@ void J3DAPI sithAIMove_UpdateMove(SithAIControlBlock* pLocal, float secDeltaTime
     float goalDist = sithAIMove_GetGoalTolerance(pLocal, &pos, &movePos);
 
     rdVector_Sub3(&pLocal->moveDirection, &movePos, &pos);
+
     pLocal->moveDistance = rdVector_Normalize3Acc(&pLocal->moveDirection);
 
     rdVector3 vel;
@@ -636,6 +644,7 @@ float J3DAPI sithAIMove_GetGoalTolerance(SithAIControlBlock* pLocal, rdVector3* 
 
         rdVector3 delta;
         rdVector_Sub3(&delta, pMovePos, pPos);
+
         if ( fabsf(delta.x) <= minDist )
         {
             ++numAligned;
@@ -664,6 +673,7 @@ float J3DAPI sithAIMove_GetGoalTolerance(SithAIControlBlock* pLocal, rdVector3* 
             distance = rdVector_Normalize3Acc(&delta);
 
             float dot = rdVector_Dot3(&pThing->attach.attachedToStructure.pSurfaceAttached->face.normal, &delta);
+
             if ( fabsf(dot) < 0.996f )
             {
                 bOnSurface = true;
@@ -693,10 +703,12 @@ float J3DAPI sithAIMove_GetGoalTolerance(SithAIControlBlock* pLocal, rdVector3* 
     {
         rdVector3 rightPos;
         rdVector_ScaleAdd3(&rightPos, &pThing->orient.rvec, sithAIMove_goalSideTolerance, pPos);
+
         float rightDist = stdMath_Dist2D1(rightPos.x - pMovePos->x, rightPos.y - pMovePos->y);
 
         rdVector3 leftPos;
         rdVector_ScaleAdd3(&leftPos, &pThing->orient.rvec, -sithAIMove_goalSideTolerance, pPos);
+
         float leftDist = stdMath_Dist2D1(leftPos.x - pMovePos->x, leftPos.y - pMovePos->y);
 
         if ( rightDist < sithAIMove_goalSideTolerance || leftDist < sithAIMove_goalSideTolerance )
@@ -720,6 +732,7 @@ int J3DAPI sithAIMove_CheckWalkMove(SithAIControlBlock* pLocal, float secDeltaTi
         if ( (pLocal->mode & SITHAI_MODE_WALLCRAWLING) != 0 )
         {
             sithAIUtil_GetXYZHeadingVector(pLocal->pOwner, &direction);
+
             offset = pLocal->pOwner->collide.movesize;
             if ( offset - 0.03f > 0.0f )
             {
@@ -729,6 +742,7 @@ int J3DAPI sithAIMove_CheckWalkMove(SithAIControlBlock* pLocal, float secDeltaTi
         else
         {
             sithAIUtil_GetXYHeadingVector(pLocal->pOwner, &direction);
+
             offset = pLocal->pOwner->collide.movesize + 0.03f;
         }
 
@@ -775,6 +789,7 @@ int J3DAPI sithAIMove_CheckFlyMove(SithAIControlBlock* pLocal, float secDeltaTim
     if ( (pThing->flags & SITH_TF_SUBMERGED) != 0 )
     {
         sithAIMove_StopAIMovement(pLocal);
+
         pThing->moveInfo.physics.velocity.z += 0.5f;
         pThing->moveStatus = SITHPLAYERMOVE_WALKING;
         return 0;
@@ -788,6 +803,7 @@ int J3DAPI sithAIMove_CheckFlyMove(SithAIControlBlock* pLocal, float secDeltaTim
     rdVector_ScaleAdd3(&endPos, &curDir, pThing->collide.movesize + 0.05f, &endPos);
 
     SithSector* pSector = sithCollision_FindSectorInRadius(pThing->pInSector, &pThing->pos, &endPos, 0.0f);
+
     if ( !pSector )
     {
         sithAIMove_Unreachable(pLocal);
@@ -803,6 +819,7 @@ int J3DAPI sithAIMove_CheckFlyMove(SithAIControlBlock* pLocal, float secDeltaTim
     if ( pSector && (pSector->flags & SITH_SECTOR_UNDERWATER) != 0 )
     {
         sithAIMove_StopAIMovement(pLocal);
+
         pThing->moveStatus = SITHPLAYERMOVE_WALKING;
         pThing->moveInfo.physics.velocity.z += 0.5f;
         return 1;
@@ -828,6 +845,7 @@ int J3DAPI sithAIMove_CheckSwimMove(SithAIControlBlock* pLocal, float secDeltaTi
         }
 
         SithSector* pSurfaceSector = sithCollision_FindSectorInRadius(pThing->pInSector, &pThing->pos, &surfacePos, 0.0f);
+
         if ( pSurfaceSector && (pSurfaceSector->flags & SITH_SECTOR_UNDERWATER) == 0 )
         {
             pThing->moveInfo.physics.velocity.z = -0.05f;
@@ -846,6 +864,7 @@ int J3DAPI sithAIMove_CheckSwimMove(SithAIControlBlock* pLocal, float secDeltaTi
     rdVector_ScaleAdd3(&endPos, &curDir, pLocal->pOwner->collide.movesize + 0.03f, &endPos);
 
     SithSector* pSector = sithCollision_FindSectorInRadius(pThing->pInSector, &pThing->pos, &endPos, 0.0f);
+
     if ( !pSector )
     {
         sithAIMove_Unreachable(pLocal);
@@ -910,6 +929,7 @@ int J3DAPI sithAIMove_AISpecialTurn(SithAIControlBlock* pLocal, float angle)
     }
 
     float absAngle = fabsf(angle);
+
     if ( absAngle < 22.5f )
     {
         return 0;
@@ -1253,6 +1273,7 @@ void J3DAPI sithAIMove_SetSubMode(SithAIControlBlock* pLocal, SithThingMoveStatu
     if ( pKeyframe )
     {
         SithPuppetTrack* pTrack = sithPuppet_FindActiveTrack(pThing, pKeyframe);
+
         if ( pTrack )
         {
             sithPuppet_SynchMode(pThing, pTrack->submode, submode, -1.0f, 0);
@@ -1282,6 +1303,7 @@ void J3DAPI sithAIMove_PuppetCallback(SithThing* pThing, int trackNum, rdKeyMark
     {
         case (rdKeyMarkerType)0: // Finish playing
             sithPuppet_FreeTrackByIndex(pThing, trackNum);
+
             if ( (pThing->flags & (SITH_TF_DYING | SITH_TF_DESTROYED)) != 0 )
             {
                 return;
@@ -1295,12 +1317,14 @@ void J3DAPI sithAIMove_PuppetCallback(SithThing* pThing, int trackNum, rdKeyMark
 
                 case SITHPLAYERMOVE_MOUNTING_WALL:
                     sithAIMove_AIFinalizeSpecialMove(pLocal, SITHACTORSPECIALMOVE_MOUNTWALL);
+
                     pThing->moveStatus = SITHPLAYERMOVE_WALKING;
                     break;
 
                 case SITHPLAYERMOVE_ROLLING_LEFT:
                 case SITHPLAYERMOVE_ROLLING_RIGHT:
                     sithAIMove_AIFinalizeSpecialMove(pLocal, SITHACTORSPECIALMOVE_ROLL);
+
                     pThing->moveStatus = SITHPLAYERMOVE_STILL;
                     sithAIMove_SetGoalReached(pLocal);
                     break;
@@ -1341,23 +1365,27 @@ void J3DAPI sithAIMove_PuppetCallback(SithThing* pThing, int trackNum, rdKeyMark
                 case SITHPLAYERMOVE_TURNING_LEFT_45_DEGREES:
                 case SITHPLAYERMOVE_TURNING_RIGHT_45_DEGREES:
                     sithAIMove_AIFinalizeSpecialMove(pLocal, SITHACTORSPECIALMOVE_TURN45);
+
                     pThing->moveStatus = SITHPLAYERMOVE_WALKING;
                     break;
 
                 case SITHPLAYERMOVE_TURNING_LEFT_90_DEGREES:
                 case SITHPLAYERMOVE_TURNING_RIGHT_90_DEGREES:
                     sithAIMove_AIFinalizeSpecialMove(pLocal, SITHACTORSPECIALMOVE_TURN90);
+
                     pThing->moveStatus = SITHPLAYERMOVE_WALKING;
                     break;
 
                 case SITHPLAYERMOVE_TURNING_LEFT_135_DEGREES:
                 case SITHPLAYERMOVE_TURNING_RIGHT_135_DEGREES:
                     sithAIMove_AIFinalizeSpecialMove(pLocal, SITHACTORSPECIALMOVE_TURN135);
+
                     pThing->moveStatus = SITHPLAYERMOVE_WALKING;
                     break;
 
                 case SITHPLAYERMOVE_TURNING_180_DEGREES:
                     sithAIMove_AIFinalizeSpecialMove(pLocal, SITHACTORSPECIALMOVE_TURN180);
+
                     pThing->moveStatus = SITHPLAYERMOVE_WALKING;
                     break;
 
@@ -1492,7 +1520,9 @@ void J3DAPI sithAIMove_AISetLookPos(SithAIControlBlock* pLocal, const rdVector3*
     }
 
     rdVector_Sub3(&pLocal->goalLVec, targetPos, &eyePos);
+
     float lookDist = rdVector_Normalize3Acc(&pLocal->goalLVec);
+
     if ( _isnan(lookDist) || lookDist < 0.001f )
     {
         pLocal->goalLVec = pOwner->orient.lvec;
@@ -1553,6 +1583,7 @@ int J3DAPI sithAIMove_AISetMovePos(SithAIControlBlock* pLocal, const rdVector3* 
         rdVector_Sub3(&homeDir, moveToPos, &pLocal->homePos);
 
         float homeDist = rdVector_Normalize3Acc(&homeDir);
+
         if ( homeDist > pLocal->maxHomeDist )
         {
             rdVector_ScaleAdd3(&newPos, &homeDir, pLocal->maxHomeDist, &pLocal->homePos);
@@ -1560,6 +1591,7 @@ int J3DAPI sithAIMove_AISetMovePos(SithAIControlBlock* pLocal, const rdVector3* 
     }
 
     float goalDist = sithAIMove_GetGoalTolerance(pLocal, &curPos, &newPos);
+
     if ( rdVector_Dist3(moveToPos, &pLocal->pOwner->pos) <= goalDist )
     {
         return 0;
@@ -1583,12 +1615,14 @@ int J3DAPI sithAIMove_AISetMovePos(SithAIControlBlock* pLocal, const rdVector3* 
     if ( sithAIMove_pMoveToDebugMarkThing )
     {
         sithThing_RemoveThing(sithWorld_g_pCurrentWorld, sithAIMove_pMoveToDebugMarkThing);
+
         sithAIMove_pMoveToDebugMarkThing = NULL;
     }
 
     if ( sithAIMove_pMoveToPosGroundMarkThing )
     {
         sithThing_RemoveThing(sithWorld_g_pCurrentWorld, sithAIMove_pMoveToPosGroundMarkThing);
+
         sithAIMove_pMoveToPosGroundMarkThing = NULL;
     }
 
@@ -1598,6 +1632,7 @@ int J3DAPI sithAIMove_AISetMovePos(SithAIControlBlock* pLocal, const rdVector3* 
     }
 
     SithThing* pMarkTpl = sithTemplate_GetTemplate("+x_mark");
+
     if ( !pMarkTpl )
     {
         return 1;
@@ -1801,6 +1836,7 @@ int J3DAPI sithAIMove_AISpecialMove(SithAIControlBlock* pLocal, SithActorSpecial
     if ( (moveFlags & SITHACTORSPECIALMOVE_STRAFE) != 0 )
     {
         sithAIMove_StopAIMovement(pLocal);
+
         if ( bRight )
         {
             pLocal->pOwner->moveStatus = SITHPLAYERMOVE_STRAFING_RIGHT;
@@ -1825,6 +1861,7 @@ int J3DAPI sithAIMove_AISpecialMove(SithAIControlBlock* pLocal, SithActorSpecial
     {
         sithAIMove_StopAIMovement(pLocal);
         sithAIMove_ResetAILook(pLocal);
+
         if ( bRight )
         {
             pLocal->pOwner->moveStatus = SITHPLAYERMOVE_ROLLING_RIGHT;
@@ -1903,6 +1940,7 @@ int J3DAPI sithAIMove_AISpecialMove(SithAIControlBlock* pLocal, SithActorSpecial
     // Wall mount
     float angle    = rdMath_DeltaAngleNormalized(&pLocal->vecUnknown3, &pThing->orient.uvec, &pThing->orient.lvec);
     float absAngle = fabsf(angle);
+
     if ( absAngle >= 80.0f && absAngle <= 100.0f )
     {
         pLocal->pOwner->moveStatus = SITHPLAYERMOVE_MOUNTING_WALL;
@@ -2003,6 +2041,7 @@ void J3DAPI sithAIMove_AIFinalizeSpecialMove(SithAIControlBlock* pLocal, SithAct
             rdVector_Normalize3Acc(&pThing->orient.lvec);
 
             sithPhysics_FindFloor(pThing, 1);
+
             if ( pThing->moveStatus == SITHPLAYERMOVE_MOUNTING_WALL )
             {
                 sithCollision_MoveThing(pThing, &pThing->orient.lvec, pThing->collide.movesize, 0);
@@ -2044,6 +2083,7 @@ void J3DAPI sithAIMove_SetGoalReached(SithAIControlBlock* pLocal)
 {
     SITH_ASSERTREL(pLocal && pLocal->pOwner);
     sithAI_EmitEvent(pLocal, SITHAI_EVENT_GOAL_REACHED, NULL);
+
     if ( (pLocal->mode & SITHAI_MODE_BLOCK) != 0 )
     {
         sithCog_ThingSendMessage(pLocal->pOwner, NULL, SITHCOG_MSG_ARRIVED);
@@ -2052,6 +2092,7 @@ void J3DAPI sithAIMove_SetGoalReached(SithAIControlBlock* pLocal)
     if ( (pLocal->submode & SITHAI_SUBMODE_UNKNOWN_4000) == 0 && (pLocal->mode & SITHAI_MODE_TRAVERSEWPNTS) == 0 )
     {
         sithAIMove_StopAIMovement(pLocal);
+
         if ( sithAIMove_AIGetMoveState(pLocal) == SITHAIMOVE_STATE_NONE )
         {
             sithAIMove_UpdateAIMove(pLocal);
@@ -2093,6 +2134,7 @@ void J3DAPI sithAIMove_StopAIMovement(SithAIControlBlock* pLocal)
 void J3DAPI sithAIMove_ResetAILook(SithAIControlBlock* pLocal)
 {
     sithActor_SetHeadPYR(pLocal->pOwner, &rdroid_g_zeroVector3);
+
     pLocal->goalLVec = pLocal->pOwner->orient.lvec;
     sithAIUtil_AIClearMode(pLocal, SITHAI_MODE_TURNING);
 }
@@ -2104,6 +2146,7 @@ void J3DAPI sithAIMove_UpdateBoss(SithAIControlBlock* pLocal, float secDeltaTime
     rdVector3 goal            = pLocal->goalLVec;
 
     float dot = fabsf(rdVector_Dot3(&pOwner->orient.uvec, &goal));
+
     if ( dot > sithAIMove_bossMaxUpDot )
     {
         pLocal->mode &= ~SITHAI_MODE_TURNING;
@@ -2172,8 +2215,8 @@ void J3DAPI sithAIMove_UpdateHeadTrackTarget(SithAIControlBlock* pLocal, float s
     }
 
     rdVector3 targetPos;
-    rdVector3 targetDir;
-    rdVector3 projTargetDir;
+    rdVector3 targetDir     = { 0 };
+    rdVector3 projTargetDir = { 0 };
     if ( pTarget )
     {
         if ( pTarget->type == SITH_THING_ACTOR || pTarget->type == SITH_THING_PLAYER )
@@ -2216,6 +2259,7 @@ void J3DAPI sithAIMove_UpdateHeadTrackTarget(SithAIControlBlock* pLocal, float s
     else
     {
         float dot = rdVector_Dot3(&pOwner->orient.lvec, &projTargetDir);
+
         if ( (pLocal->submode & SITHAI_SUBMODE_UNKNOWN_800) != 0 )
         {
             if ( dot < lowThreshold )
@@ -2233,8 +2277,8 @@ void J3DAPI sithAIMove_UpdateHeadTrackTarget(SithAIControlBlock* pLocal, float s
     rdVector3 pitchDir;
     if ( (pLocal->submode & SITHAI_SUBMODE_UNKNOWN_800) != 0 )
     {
-        rdVector_Copy3(&aimDir, &projTargetDir); // Set when pTarget is set, which SITHAI_SUBMODE_UNKNOWN_800 requires
-        rdVector_Copy3(&pitchDir, &targetDir);
+        aimDir = projTargetDir; // Set when pTarget is set, which SITHAI_SUBMODE_UNKNOWN_800 requires
+        pitchDir = targetDir;
     }
     else
     {
@@ -2319,6 +2363,7 @@ void J3DAPI sithAIMove_UpdateHeadTrackLookPos(SithAIControlBlock* pLocal, float 
 
     float pitch = 0.0f;
     float dot = rdVector_Dot3(&pOwner->orient.lvec, &projDir);
+
     if ( dot > 0.0f )
     {
         pitch = rdMath_DeltaAngleNormalized(&projDir, &lookDir, &pOwner->orient.rvec);
@@ -2347,6 +2392,7 @@ void J3DAPI sithAIMove_GetQuetzStrikeAngles(SithAIControlBlock* pLocal, float* p
     rdVector3 targetEye;
     rdMatrix_TransformVector34(&targetEye, &pTarget->thingInfo.actorInfo.eyeOffset, &pTarget->orient);
     rdVector_Add3Acc(&targetEye, &pTarget->pos);
+
     if ( (pTarget->moveInfo.physics.flags & SITH_PF_CROUCHING) != 0 )
     {
         targetEye.z -= 0.1f;
@@ -2398,6 +2444,7 @@ void J3DAPI sithAIMove_UpdateQuetzStrike(SithAIControlBlock* pLocal, float secDe
         float headYaw;
         float angleHeadPitch;
         sithAIMove_GetQuetzStrikeAngles(pLocal, &angle, &pitchAngle, &headYaw, &angleHeadPitch);
+
         pStrike->aSnapShots[1].angle1 = 20.0f;
         pStrike->aSnapShots[1].angle2 = angle * 0.5f;
         pStrike->aSnapShots[1].angle3 = pThing->renderData.apTweakedAngles[2].pitch - 20.0f;
@@ -2411,6 +2458,7 @@ void J3DAPI sithAIMove_UpdateQuetzStrike(SithAIControlBlock* pLocal, float secDe
         float headYaw;
         float angleHeadPitch;
         sithAIMove_GetQuetzStrikeAngles(pLocal, &angle, &pitchAngle, &headYaw, &angleHeadPitch);
+
         pStrike->aSnapShots[2].angle1 = pitchAngle * 0.9f;
         pStrike->aSnapShots[2].angle2 = angle * 0.9f;
         pStrike->aSnapShots[2].angle3 = pThing->renderData.apTweakedAngles[2].pitch + angleHeadPitch * 0.9f;
@@ -2424,6 +2472,7 @@ void J3DAPI sithAIMove_UpdateQuetzStrike(SithAIControlBlock* pLocal, float secDe
         float headYaw;
         float angleHeadPitch;
         sithAIMove_GetQuetzStrikeAngles(pLocal, &angle, &pitchAngle, &headYaw, &angleHeadPitch);
+
         pStrike->aSnapShots[3].angle1 = pitchAngle;
         pStrike->aSnapShots[3].angle2 = angle;
         pStrike->aSnapShots[3].angle3 = pThing->renderData.apTweakedAngles[2].pitch + angleHeadPitch;
@@ -2437,6 +2486,7 @@ void J3DAPI sithAIMove_UpdateQuetzStrike(SithAIControlBlock* pLocal, float secDe
         float headYaw;
         float angleHeadPitch;
         sithAIMove_GetQuetzStrikeAngles(pLocal, &angle, &pitchAngle, &headYaw, &angleHeadPitch);
+
         pStrike->aSnapShots[4].angle1 = 10.0f;
         pStrike->aSnapShots[4].angle2 = angle * 0.4f;
         pStrike->aSnapShots[4].angle3 = pThing->renderData.apTweakedAngles[2].pitch - 10.0f;
@@ -2536,6 +2586,7 @@ void J3DAPI sithAIMove_UpdateQuetzAnim2(SithAIControlBlock* pLocal, float secDel
         float headYaw;
         float angleHeadPitch;
         sithAIMove_GetQuetzAnim2Angles(pLocal, &angle, &pitchAngle, &headYaw, &angleHeadPitch);
+
         pStrike->aSnapShots[1].angle1 = 20.0f;
         pStrike->aSnapShots[1].angle2 = angle * 0.5f;
         pStrike->aSnapShots[1].angle3 = pThing->renderData.apTweakedAngles[2].pitch + 10.0f;
@@ -2549,6 +2600,7 @@ void J3DAPI sithAIMove_UpdateQuetzAnim2(SithAIControlBlock* pLocal, float secDel
         float headYaw;
         float angleHeadPitch;
         sithAIMove_GetQuetzAnim2Angles(pLocal, &angle, &pitchAngle, &headYaw, &angleHeadPitch);
+
         pStrike->aSnapShots[2].angle1 = pitchAngle;
         pStrike->aSnapShots[2].angle2 = angle;
         pStrike->aSnapShots[2].angle3 = pThing->renderData.apTweakedAngles[2].pitch + angleHeadPitch;
@@ -3129,6 +3181,7 @@ void J3DAPI sithAIMove_UpdateMardukTail(SithThing* pThing, float secDeltaTime)
     if ( stdUtil_StrCmp(pThing->aName, "marduk") == 0 || stdUtil_StrCmp(pThing->aName, "marduk2") == 0 )
     {
         int jointIndex = sithThing_GetThingJointIndex(pThing, "wmabdomen");
+
         if ( jointIndex != -1 )
         {
             float angle = stdMath_NormalizeAngle(sithAIMove_mardukTailYawSpeed * secDeltaTime);
