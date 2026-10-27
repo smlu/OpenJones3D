@@ -179,6 +179,7 @@ void J3DAPI sithAIUtil_UpdateTargetSight(SithAIControlBlock* pLocal, SithAIUtilF
 
     rdMatrix_TransformVector34(&pLocal->weaponFirePos, &pOwner->thingInfo.actorInfo.fireOffset, &pOwner->orient);
     rdVector_Add3Acc(&pLocal->weaponFirePos, &pOwner->pos);
+
     rdVector3 curStartPos = pLocal->weaponFirePos;
 
     if ( (pLocal->submode & SITHAI_SUBMODE_FIREADDEYEOFFSET) != 0
@@ -206,6 +207,7 @@ void J3DAPI sithAIUtil_UpdateTargetSight(SithAIControlBlock* pLocal, SithAIUtilF
 
         pLocal->targetPos        = pTarget->pos;
         pLocal->targetSightState = sithAIUtil_GetDistanceToTarget(pOwner, &curStartPos, pTarget, pLocal->pClass->fov, pLocal->pClass->sightDistance, curCollideSize, &pLocal->toTarget, &pLocal->distance);
+
         if ( pLocal->targetSightState == SITHAI_SIGHT_VISIBLE )
         {
             if ( sightState != SITHAI_SIGHT_VISIBLE && !sithAIUtil_CanSeeTarget(pLocal, pTarget, pLocal->distance) )
@@ -222,6 +224,7 @@ void J3DAPI sithAIUtil_UpdateTargetSight(SithAIControlBlock* pLocal, SithAIUtilF
     else
     {
         pLocal->targetSightState = sithAIUtil_GetDistanceToTargetPos(pOwner, &curStartPos, &pLocal->targetPos, pLocal->pClass->fov, pLocal->pClass->sightDistance, curCollideSize, &pLocal->toTarget, &pLocal->distance);
+
         if ( pLocal->targetSightState == SITHAI_SIGHT_VISIBLE )
         {
             pLocal->vecUnknown122   = pLocal->targetPos;
@@ -234,6 +237,7 @@ void J3DAPI sithAIUtil_UpdateTargetSight(SithAIControlBlock* pLocal, SithAIUtilF
         && !rdVector_IsZero3(&pOwner->thingInfo.actorInfo.eyeOffset) )
     {
         rdVector_Sub3(&pLocal->toTarget, &pLocal->targetPos, &pLocal->weaponFirePos);
+
         if ( pTarget )
         {
             pLocal->distance = rdVector_Normalize3Acc(&pLocal->toTarget) - pTarget->collide.size;
@@ -274,6 +278,7 @@ void J3DAPI sithAIUtil_UpdateGoalSight(SithAIControlBlock* pLocal)
         }
 
         pLocal->targetSightState2 = sithAIUtil_GetDistanceToTarget(pOwner, &pOwner->pos, pTarget, -1.0f, pLocal->pClass->sightDistance, 0.0f, &pLocal->vecUnknown0, &pLocal->targetDistance);
+
         if ( pLocal->targetSightState2 == SITHAI_SIGHT_VISIBLE )
         {
             if ( curSightState != SITHAI_SIGHT_VISIBLE && !sithAIUtil_CanSeeTarget(pLocal, pTarget, pLocal->targetDistance) )
@@ -290,6 +295,7 @@ void J3DAPI sithAIUtil_UpdateGoalSight(SithAIControlBlock* pLocal)
     {
         pLocal->vecUnknown6       = pLocal->movePos;
         pLocal->targetSightState2 = sithAIUtil_GetDistanceToTargetPos(pOwner, &pOwner->pos, &pLocal->vecUnknown6, -1.0f, pLocal->pClass->sightDistance, 0.0f, &pLocal->vecUnknown0, &pLocal->targetDistance);
+
         if ( pLocal->targetSightState2 == SITHAI_SIGHT_VISIBLE )
         {
             pLocal->vecUnknown5 = pLocal->vecUnknown6;
@@ -306,6 +312,7 @@ SithAISightState J3DAPI sithAIUtil_GetDistanceToTarget(SithThing* pViewer, rdVec
     SITH_ASSERTREL(pViewer && pTarget && startPos);
 
     rdVector_Sub3(toTarget, &pTarget->pos, startPos);
+
     *pDist = rdVector_Normalize3Acc(toTarget) - pTarget->collide.size;
     *pDist = J3DMAX(*pDist, 0.0f);
 
@@ -359,6 +366,7 @@ SithAISightState J3DAPI sithAIUtil_GetDistanceToTarget(SithThing* pViewer, rdVec
     }
 
     SithSector* pSector = sithCollision_FindSectorInRadius(pViewer->pInSector, &pViewer->pos, startPos, 0.0f);
+
     if ( sithCollision_CheckLOS(pSector, startPos, &pTarget->pos, 0.0f) )
     {
         return SITHAI_SIGHT_VISIBLE;
@@ -375,7 +383,9 @@ SithAISightState J3DAPI sithAIUtil_GetDistanceToTargetPos(SithThing* pViewer, rd
     SITH_ASSERTREL(pViewer && startPos);
 
     rdVector_Sub3(toTarget, endPos, startPos);
+
     *pDist = rdVector_Normalize3Acc(toTarget);
+
     if ( *pDist > sightDistance )
     {
         return SITHAI_SIGHT_TOOFAR;
@@ -403,6 +413,7 @@ SithAISightState J3DAPI sithAIUtil_GetDistanceToTargetPos(SithThing* pViewer, rd
     }
 
     SithSector* pSector = sithCollision_FindSectorInRadius(pViewer->pInSector, &pViewer->pos, startPos, 0.0f);
+
     if ( sithCollision_CheckLOS(pSector, startPos, endPos, 0.0f) )
     {
         return SITHAI_SIGHT_VISIBLE;
@@ -461,6 +472,7 @@ int J3DAPI sithAIUtil_AIFire(SithAIControlBlock* pLocal, float minDist, float ma
     }
 
     sithAIUtil_UpdateTargetSight(pLocal, flags);
+
     rdVector3 targetDir = pLocal->toTarget;
 
     if ( (flags & SITHAIUTIL_FIRE_UNKNOWN_8) == 0 )
@@ -519,6 +531,7 @@ int J3DAPI sithAIUtil_AIFire(SithAIControlBlock* pLocal, float minDist, float ma
         pLocal->fireWeaponNum = weaponNum;
         sithPuppet_PlayMode(pAttacker, curSubMode, NULL);
         sithAI_EmitEvent(pLocal, SITHAI_EVENT_FIRE, pLocal->pTargetThing);
+
         bHasFired = true;
     }
     else
@@ -531,6 +544,7 @@ int J3DAPI sithAIUtil_AIFire(SithAIControlBlock* pLocal, float minDist, float ma
             rdVector_Scale3(&predictVec, &targetDir, speed);
             rdVector_Add3Acc(&predictVec, &pLocal->pTargetThing->moveInfo.physics.velocity);
             rdVector_Normalize3Acc(&predictVec);
+
             if ( rdVector_Dot3(&predictVec, &targetDir) > 0.5f )
             {
                 targetDir = predictVec;
@@ -541,6 +555,7 @@ int J3DAPI sithAIUtil_AIFire(SithAIControlBlock* pLocal, float minDist, float ma
         {
             rdVector3 predictVec;
             rdVector_Scale3(&predictVec, &pLocal->toTarget, speed);
+
             float leadFlightTime = pLocal->distance / speed;
             predictVec.z += leadFlightTime * 0.5f * sithWorld_g_pCurrentWorld->gravity;
             lobFactor = rdVector_Normalize3(&targetDir, &predictVec) / speed;
@@ -548,6 +563,7 @@ int J3DAPI sithAIUtil_AIFire(SithAIControlBlock* pLocal, float minDist, float ma
         }
 
         float accuracy = pLocal->pClass->accurancy * sithGetHitAccuarancyScalar();
+
         if ( aimError != 0.0f && pLocal->distance != 0.0f && SITH_RANDF() > accuracy )
         {
             aimError = sithGetCombatDamageScalar() * aimError;
@@ -567,11 +583,14 @@ int J3DAPI sithAIUtil_AIFire(SithAIControlBlock* pLocal, float minDist, float ma
             }
 
             sithSoundClass_PlayModeRandom(pAttacker, SITHSOUNDCLASS_FIRE1 + weaponNum);
+
             pAttacker->thingInfo.actorInfo.weaponInfo.vecUnknown0 = targetDir;
             SithThing* pBullet = sithWeapon_WeaponFire(pAttacker, pShotTemplate, &targetDir, &pLocal->weaponFirePos, 0, curSubMode, lobFactor, projFlags, 0.0f);
+
             if ( pBullet )
             {
                 sithCog_ThingSendMessageEx(pAttacker, pBullet, SITHCOG_MSG_FIRE, (int)pShotTemplate->thingInfo.weaponInfo.damage, pShotTemplate->thingInfo.weaponInfo.damageType, weaponNum, 0);
+
                 if ( (flags & SITHAIUTIL_FIRE_UNKNOWN_8) == 0 )
                 {
                     sithAI_EmitEvent(pLocal, SITHAI_EVENT_FIRE, pLocal->pTargetThing);
@@ -584,9 +603,11 @@ int J3DAPI sithAIUtil_AIFire(SithAIControlBlock* pLocal, float minDist, float ma
         else
         {
             SithInventoryType* pActiveWeaponType = sithInventory_GetType(pAttacker->thingInfo.actorInfo.weaponInfo.curWeaponID);
+
             if ( pActiveWeaponType && pActiveWeaponType->pCog )
             {
                 rdVector_Sub3(&pAttacker->thingInfo.actorInfo.weaponInfo.vecUnknown0, &targetDir, &pLocal->toTarget);
+
                 if ( sithWeapon_HasWeaponSelected(pAttacker) && !sithWeapon_IsAiming(pAttacker) )
                 {
                     goto postfire;
@@ -595,6 +616,7 @@ int J3DAPI sithAIUtil_AIFire(SithAIControlBlock* pLocal, float minDist, float ma
                 if ( !sithWeapon_IsMountingWeapon(pAttacker) )
                 {
                     sithCog_SendMessageEx(pActiveWeaponType->pCog, SITHCOG_MSG_ACTIVATE, SITHCOG_SYM_REF_NONE, 0, SITHCOG_SYM_REF_THING, pAttacker->idx, 0, burstCount, 0, 0, 0);
+
                     if ( (flags & SITHAIUTIL_FIRE_UNKNOWN_8) == 0 )
                     {
                         sithAI_EmitEvent(pLocal, SITHAI_EVENT_FIRE, pLocal->pTargetThing);
@@ -826,6 +848,7 @@ void J3DAPI sithAIUtil_AIConnectWpnts(unsigned int wpntIdx1, unsigned int wpntId
 int J3DAPI sithAIUtil_AIMoveToNextWpnt(SithAIControlBlock* pLocal, float moveSpeed, float degTurn, int mode)
 {
     int wpntIdx = sithAIUtil_AIFindNearestWpnt(pLocal->pOwner, 1);
+
     if ( wpntIdx > -1 )
     {
         if ( (pLocal->submode & SITHAI_SUBMODE_UNKNOWN_100) != 0 )
@@ -869,6 +892,7 @@ void J3DAPI sithAIUtil_AITraverseWpnts(SithAIControlBlock* pLocal, int wpntIdx, 
     }
 
     int ownerNum = sithAIUtil_CreateAIWaypoint(pLocal, degTurn);
+
     if ( ownerNum == -1 )
     {
         SITHLOG_ERROR("AITraverseWpnts: Too many AI's using waypoints (max = %d).\n", STD_ARRAYLEN(sithAIUtil_aWpntOwners));
@@ -906,6 +930,7 @@ int J3DAPI sithAIUtil_AIAdvanceToNextWpnt(SithAIControlBlock* pLocal, int bNotif
     SITH_ASSERTREL(pLocal && pLocal->pOwner);
 
     int ownerIdx = sithAIUtil_GetAIWaypointNum(pLocal);
+
     if ( ownerIdx == -1 )
     {
         SITHLOG_ERROR("AIAdvanceToNextWpnt: AI '%s' not in waypoint tracking list.\n", pLocal->pOwner->aName);
@@ -1022,6 +1047,7 @@ int J3DAPI sithAIUtil_SelectWpntLink(SithAIControlBlock* pLocal, unsigned int nu
             rdVector3 targetDir;
             rdVector3 wpntDir;
             rdVector_Sub3(&targetDir, &pLocal->pFleeFromThing->pos, &pLocal->pOwner->pos);
+
             float playerDistance = rdVector_Normalize3Acc(&targetDir);
             float slopeStep      = (sithAIUtil_fleeFacingMaxDot - sithAIUtil_fleeFacingMinDot) / (sithAIUtil_fleeFacingMaxDist - sithAIUtil_fleeFacingMinDist);
             float threshold      = (playerDistance - sithAIUtil_fleeFacingMinDist) * slopeStep + sithAIUtil_fleeFacingMinDot;
@@ -1031,6 +1057,7 @@ int J3DAPI sithAIUtil_SelectWpntLink(SithAIControlBlock* pLocal, unsigned int nu
             rdVector_Sub3(&wpntDir, &pWorld->aThings[idxThing].pos, &pLocal->pOwner->pos);
             rdVector_Normalize3Acc(&wpntDir);
             float fleeFacing = rdVector_Dot3(&targetDir, &wpntDir);
+
             if ( fleeFacing > threshold )
             {
                 bestPriority -= SITHAIUTIL_WPNTSCORE_FLEEFACING;
@@ -1040,6 +1067,7 @@ int J3DAPI sithAIUtil_SelectWpntLink(SithAIControlBlock* pLocal, unsigned int nu
             rdVector_Sub3(&wpntDir, &pWorld->aThings[idxThing].pos, &pLocal->pOwner->pos);
             rdVector_Normalize3Acc(&wpntDir);
             fleeFacing = rdVector_Dot3(&targetDir, &wpntDir);
+
             if ( fleeFacing > threshold )
             {
                 curRank -= SITHAIUTIL_WPNTSCORE_FLEEFACING;
@@ -1145,6 +1173,7 @@ int J3DAPI sithAIUtil_SelectWpntLink(SithAIControlBlock* pLocal, unsigned int nu
 void J3DAPI sithAIUtil_CheckWpntMoveAlign(SithAIControlBlock* pLocal)
 {
     int wpntNumber = sithAIUtil_GetAIWaypointNum(pLocal);
+
     if ( wpntNumber > -1 )
     {
         rdVector3 dir;
@@ -1179,15 +1208,15 @@ int J3DAPI sithAIUtil_AIFindNearestWpnt(SithThing* pThing, int bCheckPath)
 {
     SithWorld* pWorld = sithWorld_g_pCurrentWorld;
     int idWpnt = 0;
-    int found = 0;
+    bool bFound = false;
     if ( pThing != sithPlayer_g_pLocalPlayerThing )
     {
         sithCog_ThingSendMessageEx(pThing, NULL, SITHCOG_MSG_UPDATEWPNTS, 0, 0, 0, 0);
     }
 
-    int numDist = 0;
-    int i;
-    for ( i = 0; i < (int)STD_ARRAYLEN(sithAIUtil_aAIWpnts); ++i )
+    size_t numDist = 0;
+    size_t i;
+    for ( i = 0; i < STD_ARRAYLEN(sithAIUtil_aAIWpnts); ++i )
     {
         if ( (sithAIUtil_aAIWpnts[i].flags & SITH_AIWPNT_DISABLED) != 0
             || (sithAIUtil_aAIWpnts[i].flags & sithAIUtil_activeWpntLayer) == 0 )
@@ -1203,49 +1232,51 @@ int J3DAPI sithAIUtil_AIFindNearestWpnt(SithThing* pThing, int bCheckPath)
 
         if ( idxThing > pWorld->lastThingIdx || pWorld->aThings[idxThing].type != SITH_THING_GHOST )
         {
-            SITHLOG_ERROR("AIFindNearestWpnt: Invalid waypoint (#%d).\n", i);
+            SITHLOG_ERROR("AIFindNearestWpnt: Invalid waypoint (#%zu).\n", i);
             continue;
         }
 
-        found = 1;
+        bFound = true;
 
         rdVector3 toWpnt;
         rdVector_Sub3(&toWpnt, &pThing->pos, &pWorld->aThings[idxThing].pos);
 
-        sithAIUtil_aWpntDistances[numDist].num      = i;
+        sithAIUtil_aWpntDistances[numDist].num      = (int)i;
         sithAIUtil_aWpntDistances[numDist].distance = rdVector_Dot3(&toWpnt, &toWpnt);
+
         if ( sithAIUtil_aWpntDistances[numDist].distance <= (pThing->collide.movesize + 0.03f) * (pThing->collide.movesize + 0.03f) )
         {
-            return i;
+            return (int)i;
         }
 
         ++numDist;
     }
 
-    if ( !found )
+    if ( !bFound )
     {
         return -1;
     }
 
+    // Step 1: Sort the waypoints by their squared distance to the thing, nearest first
     qsort(sithAIUtil_aWpntDistances, numDist, sizeof(SithAIWaypointDistance), sithAIUtil_CompareAIWpntDistances);
     idWpnt = sithAIUtil_aWpntDistances[0].num;
     float pathDist;
     rdVector3 hitNorm;
     if ( bCheckPath )
     {
-        found = 0;
+        bFound = false;
         for ( i = 0; i < numDist; ++i )
         {
             idWpnt = sithAIUtil_aWpntDistances[i].num;
             int idxThing = sithAIUtil_aAIWpnts[idWpnt].thingNum;
             if ( !sithAIUtil_CheckPathToPoint(pThing, &pWorld->aThings[idxThing].pos, pThing->collide.movesize, &pathDist, &hitNorm, 1, 0) )
             {
-                found = 1;
+                bFound = true;
                 break;
             }
         }
 
-        if ( !found )
+        if ( !bFound )
         {
             return -1;
         }
@@ -1302,6 +1333,7 @@ void J3DAPI sithAIUtil_RankWpntsFromPlayer()
     }
 
     int wpntNum = sithAIUtil_AIFindNearestWpnt(sithPlayer_g_pLocalPlayerThing, 0);
+
     if ( wpntNum == -1 )
     {
         return;
@@ -1312,6 +1344,7 @@ void J3DAPI sithAIUtil_RankWpntsFromPlayer()
     int top = 0;
     aStack[0] = wpntNum;
     sithAIUtil_aAIWpnts[wpntNum].rank = rankNum;
+
     while ( top >= 0 )
     {
         int curWpnt = aStack[top--];
@@ -1366,6 +1399,7 @@ void J3DAPI sithAIUtil_RankWpntsFromThing(SithThing* pThing)
     int top = 0;
     aStack[0] = wpntNum;
     sithAIUtil_aAIWpnts[wpntNum].rank = rankNum;
+
     while ( top >= 0 )
     {
         int curWpnt = aStack[top--];
@@ -1394,16 +1428,16 @@ void J3DAPI sithAIUtil_RankWpntsFromThing(SithThing* pThing)
 int J3DAPI sithAIUtil_CreateAIWaypoint(SithAIControlBlock* pLocal, float degTurn)
 {
     int wpntNum = -1;
-    for ( int ownerNum = 0; ownerNum < (int)STD_ARRAYLEN(sithAIUtil_aWpntOwners); ++ownerNum )
+    for ( size_t ownerNum = 0; ownerNum < STD_ARRAYLEN(sithAIUtil_aWpntOwners); ++ownerNum )
     {
         if ( sithAIUtil_aWpntOwners[ownerNum].thingNum == -1 && wpntNum == -1 )
         {
-            wpntNum = ownerNum;
+            wpntNum = (int)ownerNum;
         }
 
         if ( sithAIUtil_aWpntOwners[ownerNum].thingNum == pLocal->pOwner->idx )
         {
-            wpntNum = ownerNum;
+            wpntNum = (int)ownerNum;
             break;
         }
     }
@@ -1414,6 +1448,7 @@ int J3DAPI sithAIUtil_CreateAIWaypoint(SithAIControlBlock* pLocal, float degTurn
         float sinAngle;
         float cosAngle;
         stdMath_SinCos(degTurn, &sinAngle, &cosAngle);
+
         sithAIUtil_aWpntOwners[wpntNum].thingNum          = pLocal->pOwner->idx;
         sithAIUtil_aWpntOwners[wpntNum].cosTurnAlignAngle = cosAngle;
     }
@@ -1424,6 +1459,7 @@ int J3DAPI sithAIUtil_CreateAIWaypoint(SithAIControlBlock* pLocal, float degTurn
 void J3DAPI sithAIUtil_ClearAIWaypoint(SithAIControlBlock* pLocal)
 {
     int wpntNum = sithAIUtil_GetAIWaypointNum(pLocal);
+
     if ( wpntNum > -1 )
     {
         sithAIUtil_aWpntOwners[wpntNum].thingNum          = -1;
@@ -1434,11 +1470,11 @@ void J3DAPI sithAIUtil_ClearAIWaypoint(SithAIControlBlock* pLocal)
 
 int J3DAPI sithAIUtil_GetAIWaypointNum(SithAIControlBlock* pLocal)
 {
-    for ( int i = 0; i < (int)STD_ARRAYLEN(sithAIUtil_aWpntOwners); ++i )
+    for ( size_t i = 0; i < STD_ARRAYLEN(sithAIUtil_aWpntOwners); ++i )
     {
         if ( sithAIUtil_aWpntOwners[i].thingNum == pLocal->pOwner->idx )
         {
-            return i;
+            return (int)i;
         }
     }
 
@@ -1505,6 +1541,7 @@ void sithAIUtil_RenderAIWaypoints(void)
             rdVector3 laserEnd = pWorld->aThings[linkGhostIdx].pos;
             laserEnd.z += 0.1f;
             sithFX_CreateLaserThing(&pWorld->aThings[thingNum], &offset, &laserEnd, 0.05f, 0.05f, sithAIUtil_wpntRenderInterval + 0.1f);
+
             sithAIUtil_secLastUpdate = sithTime_g_secGameTime;
         }
     }
@@ -1518,6 +1555,7 @@ int J3DAPI sithAIUtil_CheckPathToPoint(SithThing* pViewer, const rdVector3* pTar
 
     rdVector3 curDir;
     rdVector_Sub3(&curDir, pTarget, &pViewer->pos);
+
     float distance = rdVector_Normalize3Acc(&curDir);
     *pDistance     = distance;
 
@@ -1561,6 +1599,7 @@ SithAIUtilFloorCheck J3DAPI sithAIUtil_CheckPosition(const SithAIControlBlock* p
     SITH_ASSERTREL(pThing);
 
     SithSector* pSector = sithCollision_FindSectorInRadius(pThing->pInSector, &pThing->pos, endPos, 0.0f);
+
     if ( !pSector )
     {
         return SITHAIUTIL_FLOOR_BLOCKED;
@@ -1602,6 +1641,7 @@ SithAIUtilFloorCheck J3DAPI sithAIUtil_CheckFloorAtPos(const SithAIControlBlock*
     }
 
     sithCollision_SearchForCollisions(pStartSector, pThing, startPos, &downDir, sithPhysics_GetThingHeight(pThing) + pLocal->pClass->maxStep, 0.001f, 0);
+
     SithCollision* pCollision;
     while ( (pCollision = sithCollision_PopStack()) != NULL )
     {
@@ -1655,6 +1695,7 @@ SithAIUtilFloorCheck J3DAPI sithAIUtil_CheckFloorAtPos(const SithAIControlBlock*
                     if ( pAttachedSurface != pSurface )
                     {
                         float dot = rdVector_Dot3(&pSurface->face.normal, &rdroid_g_zVector3);
+
                         if ( dot < 0.788f )
                         {
                             result = SITHAIUTIL_FLOOR_WALL;
@@ -1687,9 +1728,11 @@ SithAIUtilFloorCheck J3DAPI sithAIUtil_CheckFloorAtPos(const SithAIControlBlock*
             {
                 result = SITHAIUTIL_FLOOR_OK;
             }
-            // TODO: [BUG] The original tests the thing type as a bit mask, i.e. any type having the bit 2 or 8 set (not only actor and player) passes
+            // TODO: [BUG] SITH_THING_PLAYER is 10 (0xA), so the original test (type & SITH_THING_PLAYER) == 0 treats the thing type as a bit mask:
+            //       every type having bit 2 or 8 set (not only players) is skipped. The intended check is probably that the thing is not invisible,
+            //       i.e. (pThingCollided->flags & SITH_TF_INVISIBLE) == 0. Kept as in the original.
             else if ( (pCollision->pThingCollided->flags & SITH_TF_STANDON) == 0
-                && (pCollision->pThingCollided->type & (SITH_THING_ACTOR | SITH_THING_PLAYER)) == 0 )
+                && (pCollision->pThingCollided->type & SITH_THING_PLAYER) == 0 )
             {
                 result = SITHAIUTIL_FLOOR_THING;
                 break;
@@ -1712,8 +1755,8 @@ SithAIUtilFloorCheck J3DAPI sithAIUtil_CheckFloorAtPos(const SithAIControlBlock*
 
 int J3DAPI sithAIUtil_MakeRandPoint(SithAIControlBlock* pLocal, rdVector3* pPos, SithAIUtilMkPointFlags flags, float angle, float* pDownCos, rdVector3* pDir, rdVector3* pDestPoint)
 {
-    rdVector3 newDir;
-    rdVector3 rotPyr;
+    rdVector3 newDir = { 0 };
+    rdVector3 rotPyr = { 0 };
     rdVector3 toMovePos;
 
     bool bValid = false;
@@ -1762,6 +1805,7 @@ int J3DAPI sithAIUtil_MakeRandPoint(SithAIControlBlock* pLocal, rdVector3* pPos,
         }
 
         rdVector_Rotate3(&newDir, pDir, &rotPyr);
+
         bValid = true;
     }
     else if ( (flags & SITHAIUTIL_MKPOINT_SIDEWAYS) != 0 )
@@ -1837,14 +1881,15 @@ int J3DAPI sithAIUtil_MakeRandPoint(SithAIControlBlock* pLocal, rdVector3* pPos,
             sithAIUtil_mkPointCurDir    = *pDir;
             if ( (flags & SITHAIUTIL_MKPOINT_YAW) != 0 )
             {
-                rdVector_Copy3(&sithAIUtil_mkPointCurPYR, &rotPyr);
+                sithAIUtil_mkPointCurPYR = rotPyr;
             }
             else
             {
-                rdVector_Copy3(&sithAIUtil_mkPointCurRVec, &newDir);
+                sithAIUtil_mkPointCurRVec = newDir;
             }
 
             rdVector_ScaleAdd3(pDestPoint, &newDir, *pDownCos, pPos);
+
             *pDir     = newDir;
             *pDownCos = fabsf(*pDownCos);
         }
@@ -1883,11 +1928,13 @@ int J3DAPI sithAIUtil_RetryMakeRandPoint(SithAIControlBlock* pLocal, rdVector3* 
     {
         rdVector_Neg3Acc(&sithAIUtil_mkPointCurPYR);
         rdVector_Rotate3(&dir, &sithAIUtil_mkPointCurDir, &sithAIUtil_mkPointCurPYR);
+
         sithAIUtil_mkPointCurFlags &= ~SITHAIUTIL_MKPOINT_ROTATE;
     }
     else if ( (sithAIUtil_mkPointCurFlags & SITHAIUTIL_MKPOINT_SIDEWAYS) != 0 )
     {
         rdVector_Neg3(&dir, &sithAIUtil_mkPointCurRVec);
+
         sithAIUtil_mkPointCurFlags &= ~SITHAIUTIL_MKPOINT_SIDEWAYS;
     }
     else
@@ -1898,6 +1945,7 @@ int J3DAPI sithAIUtil_RetryMakeRandPoint(SithAIControlBlock* pLocal, rdVector3* 
     }
 
     rdVector_ScaleAdd3(pDestPoint, &dir, downCos, pPos);
+
     *pDirection = dir;
     return 1;
 }
@@ -1925,6 +1973,7 @@ SithAIUtilPathResult J3DAPI sithAIUtil_CheckPathToPos(SithAIControlBlock* pLocal
         rdVector_ScaleAdd3(&endPos, pDirection, moveDist, startPos);
 
         sithCollision_SearchForCollisions(pStartSector, pOwner, startPos, pDirection, moveDist, radius, 0x102);
+
         SithCollision* pCollision;
         while ( (pCollision = sithCollision_PopStack()) != NULL )
         {
@@ -1971,6 +2020,7 @@ SithAIUtilPathResult J3DAPI sithAIUtil_CheckPathToPos(SithAIControlBlock* pLocal
         }
 
         sithCollision_DecreaseStackLevel();
+
         if ( result != SITHAIUTIL_PATH_BLOCKED )
         {
             float targetDist;
@@ -2011,12 +2061,15 @@ SithAIUtilPathResult J3DAPI sithAIUtil_CheckPathToPos(SithAIControlBlock* pLocal
         bool bSideDone = false;
         rdVector3 perp;
         rdVector_Cross3(&perp, &pLocal->pOwner->orient.uvec, pDirection);
+
         perp.x = stdMath_ClipNearZero(perp.x);
         perp.y = stdMath_ClipNearZero(perp.y);
         perp.z = stdMath_ClipNearZero(perp.z);
+
         if ( rdVector_Normalize3Acc(&perp) == 0.0f )
         {
             rdVector_Cross3(&perp, pDirection, &pLocal->pOwner->orient.rvec);
+
             perp.x = stdMath_ClipNearZero(perp.x);
             perp.y = stdMath_ClipNearZero(perp.y);
             perp.z = stdMath_ClipNearZero(perp.z);
@@ -2046,7 +2099,9 @@ SithAIUtilPathResult J3DAPI sithAIUtil_CheckPathToPos(SithAIControlBlock* pLocal
             }
 
             rdVector_ScaleAdd3(&aEndPos[side], &perp, distance, startPos);
+
             SithSector* pSector = sithCollision_FindSectorInRadius(pStartSector, startPos, &aEndPos[side], radius);
+
             if ( !pSector )
             {
                 bSideDone = true;
@@ -2054,11 +2109,14 @@ SithAIUtilPathResult J3DAPI sithAIUtil_CheckPathToPos(SithAIControlBlock* pLocal
             }
 
             sithCollision_SearchForCollisions(pStartSector, pOwner, startPos, &perp, distance, radius, 0x102);
+
             SithCollision* pCollision = sithCollision_PopStack();
             sithCollision_DecreaseStackLevel();
+
             if ( pCollision )
             {
                 rdVector_ScaleAdd3(&aEndPos[side], &perp, pCollision->distance, startPos);
+
                 if ( (pCollision->type & SITHCOLLISION_THING) != 0 )
                 {
                     aResults[side] = SITHAIUTIL_PATH_THING;
@@ -2073,6 +2131,7 @@ SithAIUtilPathResult J3DAPI sithAIUtil_CheckPathToPos(SithAIControlBlock* pLocal
             else
             {
                 aResults[side] = sithAIUtil_CheckPathToPos(pLocal, pSector, &aEndPos[side], SITHAIUTIL_PATHFLAG_IGNOREFLOORS | SITHAIUTIL_PATHFLAG_STRAIGHT, pOwner->collide.movesize + 0.03f, radius, 0.0f, pDirection, NULL);
+
                 if ( aResults[side] == SITHAIUTIL_PATH_CLEAR )
                 {
                     bSideDone = true;
@@ -2082,7 +2141,7 @@ SithAIUtilPathResult J3DAPI sithAIUtil_CheckPathToPos(SithAIControlBlock* pLocal
 
         if ( pLocal->goalThing )
         {
-            for ( int i = 0; i < 2; ++i )
+            for ( size_t i = 0; i < 2; ++i )
             {
                 bool bVisible = sithAIUtil_GetDistanceToTargetPos(pLocal->goalThing, &pLocal->goalThing->pos, &aEndPos[i], -1.0f, pLocal->pClass->sightDistance, 0.0f, &pLocal->vecUnknown0, &pLocal->targetDistance) != SITHAI_SIGHT_HIDDEN;
                 if ( bVisible )
@@ -2096,6 +2155,7 @@ SithAIUtilPathResult J3DAPI sithAIUtil_CheckPathToPos(SithAIControlBlock* pLocal
             }
 
             float goalDist = rdVector_Dist2((const rdVector2*)&aEndPos[0], (const rdVector2*)&pLocal->goalThing->pos);
+
             if ( goalDist < rdVector_Dist2((const rdVector2*)&aEndPos[1], (const rdVector2*)&pLocal->goalThing->pos) )
             {
                 if ( (flags & SITHAIUTIL_PATHFLAG_PREFERGOAL) != 0 )
@@ -2136,6 +2196,7 @@ int J3DAPI sithAIUtil_SweepMoveToPathPos(SithAIControlBlock* pLocal, rdVector3* 
 {
     rdVector3 toTargetDir;
     rdVector_Sub3(&toTargetDir, pPos, &pLocal->pOwner->pos);
+
     toTargetDir.z = 0.0f;
     float pathDist = rdVector_Normalize3Acc(&toTargetDir);
 
@@ -2206,6 +2267,7 @@ check:
     }
 
     curResult = sithAIUtil_CheckPathToPos(pLocal, pLocal->pOwner->pInSector, &pLocal->pOwner->pos, pathFlags, minDist, moveDist, 0.0f, &dir, pDestPos);
+
     if ( curResult == SITHAIUTIL_PATH_BLOCKED )
     {
         if ( sithAIUtil_RetryMakeRandPoint(pLocal, &pLocal->pOwner->pos, moveDist, &dir, pDestPos) )
@@ -2276,6 +2338,7 @@ int J3DAPI sithAIUtil_IsLineOfFireClear(const SithAIControlBlock* pLocal, const 
 
     rdVector3 curDir;
     rdVector_Sub3(&curDir, &pLocal->pTargetThing->pos, pPos);
+
     float dist = rdVector_Normalize3Acc(&curDir);
 
     SithAIControlBlock* cur = sithAI_g_aControlBlocks;
@@ -2302,6 +2365,7 @@ int J3DAPI sithAIUtil_IsLineOfFireClear(const SithAIControlBlock* pLocal, const 
         }
 
         float dot = rdVector_Dot3(&cur->toTarget, &curDir);
+
         if ( dot >= 0.966f && dist > cur->distance )
         {
             return 0;
@@ -2655,6 +2719,7 @@ size_t J3DAPI sithAIUtil_GetThingsInView(SithSector* pStartSector, const rdMatri
     stdMath_SinCos(curangleY, &sinFov, &sithAIUtil_thingsInViewFovY);
 
     sithAdvanceRenderTick();
+
     sithAIUtil_numThingsInView = 0;
     sithAIUtil_numVisitedSectors = 0;
     sithAIUtil_GetNextThingsInView(pStartSector, orient, 0.0f);
