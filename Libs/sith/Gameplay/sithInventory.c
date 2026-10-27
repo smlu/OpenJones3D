@@ -725,8 +725,8 @@ int sithInventory_ClearPowerKeybinds(void)
 
 void J3DAPI sithInventory_SetPowerKeybind(size_t index, int binding)
 {
-    sithInventory_g_aPowerKeybinds[index].bEnabled = 1;
-    sithInventory_g_aPowerKeybinds[index].binding = binding;
+    sithInventory_g_aPowerKeybinds[index].bEnabled   = 1;
+    sithInventory_g_aPowerKeybinds[index].binding    = binding;
     sithInventory_g_aPowerKeybinds[index].bActivated = 0;
 }
 
