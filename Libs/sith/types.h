@@ -815,6 +815,15 @@ typedef enum eSithAIEventType
     SITHAI_EVENT_TALK                = 0x400000,
 } SithAIEventType;
 
+// Types of AI awareness events, index into SithAIAwarenessSector transmitting levels
+typedef enum eSithAIAwarenessType
+{
+    SITHAIAWARENESS_NOISE   = 0, // Gunshots, explosions caused by the player, damage taken, target spotted. Heard by the listen instinct
+    SITHAIAWARENESS_DANGER  = 1, // Explosions and fleeing AIs that have spotted the player
+    SITHAIAWARENESS_THREAT  = 2, // Projectiles in flight and fleeing AIs. Sensed by the sensedanger and dodge instincts
+    SITHAIAWARENESS_GUNFIRE = 3, // Player firing a weapon. Feared by the feargunshot instinct
+} SithAIAwarenessType;
+
 typedef enum eSithAIInstinctFlag J3D_ENUM_TYPE(int32_t)
 {
     SITHAI_INSTINCT_DISABLED = 0x1,

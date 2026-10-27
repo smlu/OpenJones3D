@@ -36,200 +36,201 @@
 #include <stdlib.h>
 
 //
-// Indices of the instinct arguments (SithAIInstinct fltArg/intArg, both hold the same class file argument) and
+// Getters of the instinct arguments (SithAIInstinct fltArg/intArg, both hold the same class file argument) and
 // of the instinct state parameters (SithAIInstinctState aParams) per instinct
 //
 // Listen
-#define SITHAI_LISTEN_ARG_HEARCHANCE        0
-#define SITHAI_LISTEN_ARG_INVESTIGATECHANCE 1
-#define SITHAI_LISTEN_ARG_BACKOFFDIST       2
-#define SITHAI_LISTEN_PARAM_LOUDNESS        0
+#define SITHAIINSTINCT_LISTEN_HEARCHANCE(pInstinct)        ((pInstinct)->fltArg[0])
+#define SITHAIINSTINCT_LISTEN_INVESTIGATECHANCE(pInstinct) ((pInstinct)->fltArg[1])
+#define SITHAIINSTINCT_LISTEN_BACKOFFDIST(pInstinct)       ((pInstinct)->fltArg[2])
+#define SITHAIINSTINCT_STATE_LISTEN_LOUDNESS(pState)       ((pState)->aParams[0])
 
 // LookForTarget
-#define SITHAI_LOOKFORTARGET_ARG_INTERVAL    0
-#define SITHAI_LOOKFORTARGET_ARG_ATTACKTIME  1
-#define SITHAI_LOOKFORTARGET_ARG_LOOKONLY    2
-#define SITHAI_LOOKFORTARGET_ARG_HUNTTIME    3
-#define SITHAI_LOOKFORTARGET_PARAM_HUNTSTART 0
+#define SITHAIINSTINCT_LOOKFORTARGET_INTERVAL(pInstinct)     ((pInstinct)->fltArg[0])
+#define SITHAIINSTINCT_LOOKFORTARGET_INTERVAL_INT(pInstinct) ((pInstinct)->intArg[0])
+#define SITHAIINSTINCT_LOOKFORTARGET_ATTACKTIME(pInstinct)   ((pInstinct)->intArg[1])
+#define SITHAIINSTINCT_LOOKFORTARGET_LOOKONLY(pInstinct)     ((pInstinct)->fltArg[2])
+#define SITHAIINSTINCT_LOOKFORTARGET_HUNTTIME(pInstinct)     ((pInstinct)->fltArg[3])
+#define SITHAIINSTINCT_STATE_LOOKFORTARGET_HUNTSTART(pState) ((pState)->aParams[0])
 
 // SenseDanger
-#define SITHAI_SENSEDANGER_ARG_INTERVAL    0
-#define SITHAI_SENSEDANGER_ARG_MINLOUDNESS 1
-#define SITHAI_SENSEDANGER_ARG_SIGHTCHANCE 2
-#define SITHAI_SENSEDANGER_ARG_HITCHANCE   3
+#define SITHAIINSTINCT_SENSEDANGER_INTERVAL(pInstinct)    ((pInstinct)->intArg[0])
+#define SITHAIINSTINCT_SENSEDANGER_MINLOUDNESS(pInstinct) ((pInstinct)->fltArg[1])
+#define SITHAIINSTINCT_SENSEDANGER_SIGHTCHANCE(pInstinct) ((pInstinct)->fltArg[2])
+#define SITHAIINSTINCT_SENSEDANGER_HITCHANCE(pInstinct)   ((pInstinct)->fltArg[3])
 
 // FearGunshot
-#define SITHAI_FEARGUNSHOT_ARG_NEARDIST   0
-#define SITHAI_FEARGUNSHOT_ARG_FARDIST    1
-#define SITHAI_FEARGUNSHOT_ARG_FLEECHANCE 2
-#define SITHAI_FEARGUNSHOT_ARG_MINDOT     3
+#define SITHAIINSTINCT_FEARGUNSHOT_NEARDIST(pInstinct)   ((pInstinct)->fltArg[0])
+#define SITHAIINSTINCT_FEARGUNSHOT_FARDIST(pInstinct)    ((pInstinct)->fltArg[1])
+#define SITHAIINSTINCT_FEARGUNSHOT_FLEECHANCE(pInstinct) ((pInstinct)->fltArg[2])
+#define SITHAIINSTINCT_FEARGUNSHOT_MINDOT(pInstinct)     ((pInstinct)->fltArg[3])
 
 // Hop
-#define SITHAI_HOP_ARG_DELAY 0
-#define SITHAI_HOP_ARG_FORCE 1
+#define SITHAIINSTINCT_HOP_DELAY(pInstinct) ((pInstinct)->intArg[0])
+#define SITHAIINSTINCT_HOP_FORCE(pInstinct) ((pInstinct)->fltArg[1])
 
 // HoverDrift
-#define SITHAI_HOVERDRIFT_ARG_INTERVAL 0
-#define SITHAI_HOVERDRIFT_ARG_FORCE    1
+#define SITHAIINSTINCT_HOVERDRIFT_INTERVAL(pInstinct) ((pInstinct)->fltArg[0])
+#define SITHAIINSTINCT_HOVERDRIFT_FORCE(pInstinct)    ((pInstinct)->fltArg[1])
 
 // Talk
-#define SITHAI_TALK_ARG_DELAY          0
-#define SITHAI_TALK_ARG_CHANCE         1
-#define SITHAI_TALK_ARG_COOLDOWN       2
-#define SITHAI_TALK_PARAM_LASTTALKTIME 0
+#define SITHAIINSTINCT_TALK_DELAY(pInstinct)           ((pInstinct)->fltArg[0])
+#define SITHAIINSTINCT_TALK_CHANCE(pInstinct)          ((pInstinct)->fltArg[1])
+#define SITHAIINSTINCT_TALK_COOLDOWN(pInstinct)        ((pInstinct)->fltArg[2])
+#define SITHAIINSTINCT_STATE_TALK_LASTTALKTIME(pState) ((pState)->aParams[0])
 
 // RandomTurn
-#define SITHAI_RANDOMTURN_ARG_INTERVAL 0
-#define SITHAI_RANDOMTURN_ARG_LOOKDIST 1
+#define SITHAIINSTINCT_RANDOMTURN_INTERVAL(pInstinct) ((pInstinct)->intArg[0])
+#define SITHAIINSTINCT_RANDOMTURN_LOOKDIST(pInstinct) ((pInstinct)->fltArg[1])
 
 // Jump
-#define SITHAI_JUMP_ARG_DELAY          0
-#define SITHAI_JUMP_ARG_HEIGHT         1
-#define SITHAI_JUMP_ARG_CLIFFDIST      2
-#define SITHAI_JUMP_PARAM_NEXTJUMPTIME 0
+#define SITHAIINSTINCT_JUMP_DELAY(pInstinct)           ((pInstinct)->fltArg[0])
+#define SITHAIINSTINCT_JUMP_HEIGHT(pInstinct)          ((pInstinct)->fltArg[1])
+#define SITHAIINSTINCT_JUMP_CLIFFDIST(pInstinct)       ((pInstinct)->fltArg[2])
+#define SITHAIINSTINCT_STATE_JUMP_NEXTJUMPTIME(pState) ((pState)->aParams[0])
 
 // LobFire
-#define SITHAI_LOBFIRE_ARG_FIREDELAY    0
-#define SITHAI_LOBFIRE_ARG_FIREDOT      1
-#define SITHAI_LOBFIRE_ARG_MINDIST      2
-#define SITHAI_LOBFIRE_ARG_MAXDIST      3
-#define SITHAI_LOBFIRE_ARG_AIMERROR     4
-#define SITHAI_LOBFIRE_ARG_ALTWPNCHANCE 5
-#define SITHAI_LOBFIRE_ARG_WEAPON       6
+#define SITHAIINSTINCT_LOBFIRE_FIREDELAY(pInstinct)    ((pInstinct)->intArg[0])
+#define SITHAIINSTINCT_LOBFIRE_FIREDOT(pInstinct)      ((pInstinct)->fltArg[1])
+#define SITHAIINSTINCT_LOBFIRE_MINDIST(pInstinct)      ((pInstinct)->fltArg[2])
+#define SITHAIINSTINCT_LOBFIRE_MAXDIST(pInstinct)      ((pInstinct)->fltArg[3])
+#define SITHAIINSTINCT_LOBFIRE_AIMERROR(pInstinct)     ((pInstinct)->fltArg[4])
+#define SITHAIINSTINCT_LOBFIRE_ALTWPNCHANCE(pInstinct) ((pInstinct)->fltArg[5])
+#define SITHAIINSTINCT_LOBFIRE_WEAPON(pInstinct)       ((pInstinct)->intArg[6])
 
 // PrimaryFire
-#define SITHAI_PRIMARYFIRE_ARG_FIREDELAY       0
-#define SITHAI_PRIMARYFIRE_ARG_FIREDOT         1
-#define SITHAI_PRIMARYFIRE_ARG_MAXDIST         2
-#define SITHAI_PRIMARYFIRE_ARG_AIMERROR        3
-#define SITHAI_PRIMARYFIRE_ARG_MINDIST         4
-#define SITHAI_PRIMARYFIRE_ARG_LEADCHANCE      6
-#define SITHAI_PRIMARYFIRE_ARG_ALTWPNCHANCE    7
-#define SITHAI_PRIMARYFIRE_ARG_BURST           8
-#define SITHAI_PRIMARYFIRE_ARG_STILLALTWPN     10
-#define SITHAI_PRIMARYFIRE_ARG_WEAPON          11
-#define SITHAI_PRIMARYFIRE_ARG_MOVEFIREMODE    14
-#define SITHAI_PRIMARYFIRE_ARG_ALTWPNDIST      15
-#define SITHAI_PRIMARYFIRE_ARG_NOLOOK          16
-#define SITHAI_PRIMARYFIRE_ARG_HOLDDOT         17
-#define SITHAI_PRIMARYFIRE_MOVEFIRE_DEFAULTWPN 1 // Value of MOVEFIREMODE: fire weapon -1 while moving
-#define SITHAI_PRIMARYFIRE_MOVEFIRE_NONE       2 // Value of MOVEFIREMODE: do not fire while moving
+#define SITHAIINSTINCT_PRIMARYFIRE_FIREDELAY(pInstinct)    ((pInstinct)->fltArg[0])
+#define SITHAIINSTINCT_PRIMARYFIRE_FIREDOT(pInstinct)      ((pInstinct)->fltArg[1])
+#define SITHAIINSTINCT_PRIMARYFIRE_MAXDIST(pInstinct)      ((pInstinct)->fltArg[2])
+#define SITHAIINSTINCT_PRIMARYFIRE_AIMERROR(pInstinct)     ((pInstinct)->fltArg[3])
+#define SITHAIINSTINCT_PRIMARYFIRE_MINDIST(pInstinct)      ((pInstinct)->fltArg[4])
+#define SITHAIINSTINCT_PRIMARYFIRE_LEADCHANCE(pInstinct)   ((pInstinct)->fltArg[6])
+#define SITHAIINSTINCT_PRIMARYFIRE_ALTWPNCHANCE(pInstinct) ((pInstinct)->fltArg[7])
+#define SITHAIINSTINCT_PRIMARYFIRE_BURST(pInstinct)        ((pInstinct)->intArg[8])
+#define SITHAIINSTINCT_PRIMARYFIRE_STILLALTWPN(pInstinct)  ((pInstinct)->fltArg[10])
+#define SITHAIINSTINCT_PRIMARYFIRE_WEAPON(pInstinct)       ((pInstinct)->intArg[11])
+#define SITHAIINSTINCT_PRIMARYFIRE_MOVEFIREMODE(pInstinct) ((pInstinct)->intArg[14])
+#define SITHAIINSTINCT_PRIMARYFIRE_ALTWPNDIST(pInstinct)   ((pInstinct)->fltArg[15])
+#define SITHAIINSTINCT_PRIMARYFIRE_NOLOOK(pInstinct)       ((pInstinct)->fltArg[16])
+#define SITHAIINSTINCT_PRIMARYFIRE_HOLDDOT(pInstinct)      ((pInstinct)->fltArg[17])
+#define SITHAIINSTINCT_PRIMARYFIRE_MOVEFIRE_DEFAULTWPN     1 // Value of MOVEFIREMODE: fire weapon -1 while moving
+#define SITHAIINSTINCT_PRIMARYFIRE_MOVEFIRE_NONE           2 // Value of MOVEFIREMODE: do not fire while moving
 
 // AlternateFire
-#define SITHAI_ALTERNATEFIRE_ARG_WEAPON     0
-#define SITHAI_ALTERNATEFIRE_ARG_RETRYDELAY 1
-#define SITHAI_ALTERNATEFIRE_ARG_FIREDELAY  2
-#define SITHAI_ALTERNATEFIRE_ARG_FIREDOT    3
-#define SITHAI_ALTERNATEFIRE_ARG_MINDIST    4
-#define SITHAI_ALTERNATEFIRE_ARG_MAXDIST    5
-#define SITHAI_ALTERNATEFIRE_ARG_AIMERROR   6
-#define SITHAI_ALTERNATEFIRE_ARG_LEADCHANCE 7
-#define SITHAI_ALTERNATEFIRE_ARG_BURST      8
-#define SITHAI_ALTERNATEFIRE_ARG_STOPONFIRE 9
+#define SITHAIINSTINCT_ALTERNATEFIRE_WEAPON(pInstinct)     ((pInstinct)->intArg[0])
+#define SITHAIINSTINCT_ALTERNATEFIRE_RETRYDELAY(pInstinct) ((pInstinct)->intArg[1])
+#define SITHAIINSTINCT_ALTERNATEFIRE_FIREDELAY(pInstinct)  ((pInstinct)->fltArg[2])
+#define SITHAIINSTINCT_ALTERNATEFIRE_FIREDOT(pInstinct)    ((pInstinct)->fltArg[3])
+#define SITHAIINSTINCT_ALTERNATEFIRE_MINDIST(pInstinct)    ((pInstinct)->fltArg[4])
+#define SITHAIINSTINCT_ALTERNATEFIRE_MAXDIST(pInstinct)    ((pInstinct)->fltArg[5])
+#define SITHAIINSTINCT_ALTERNATEFIRE_AIMERROR(pInstinct)   ((pInstinct)->fltArg[6])
+#define SITHAIINSTINCT_ALTERNATEFIRE_LEADCHANCE(pInstinct) ((pInstinct)->fltArg[7])
+#define SITHAIINSTINCT_ALTERNATEFIRE_BURST(pInstinct)      ((pInstinct)->intArg[8])
+#define SITHAIINSTINCT_ALTERNATEFIRE_STOPONFIRE(pInstinct) ((pInstinct)->intArg[9])
 
 // CircleStrafe
-#define SITHAI_CIRCLESTRAFE_ARG_INTERVAL     0
-#define SITHAI_CIRCLESTRAFE_ARG_ANGLE        1
-#define SITHAI_CIRCLESTRAFE_ARG_MAXDIST      2
-#define SITHAI_CIRCLESTRAFE_ARG_MOVEINTERVAL 3
-#define SITHAI_CIRCLESTRAFE_ARG_RANDOM       4
-#define SITHAI_CIRCLESTRAFE_ARG_MINSTEP      5
-#define SITHAI_CIRCLESTRAFE_ARG_LOOKATDEST   6
-#define SITHAI_CIRCLESTRAFE_ARG_WAITFIRE     7
-#define SITHAI_CIRCLESTRAFE_ARG_SPEED        8
-#define SITHAI_CIRCLESTRAFE_PARAM_SIDE       0
-#define SITHAI_CIRCLESTRAFE_PARAM_NUMSTEPS   1
+#define SITHAIINSTINCT_CIRCLESTRAFE_INTERVAL(pInstinct)     ((pInstinct)->intArg[0])
+#define SITHAIINSTINCT_CIRCLESTRAFE_ANGLE(pInstinct)        ((pInstinct)->fltArg[1])
+#define SITHAIINSTINCT_CIRCLESTRAFE_MAXDIST(pInstinct)      ((pInstinct)->fltArg[2])
+#define SITHAIINSTINCT_CIRCLESTRAFE_MOVEINTERVAL(pInstinct) ((pInstinct)->intArg[3])
+#define SITHAIINSTINCT_CIRCLESTRAFE_RANDOM(pInstinct)       ((pInstinct)->intArg[4])
+#define SITHAIINSTINCT_CIRCLESTRAFE_MINSTEP(pInstinct)      ((pInstinct)->fltArg[5])
+#define SITHAIINSTINCT_CIRCLESTRAFE_LOOKATDEST(pInstinct)   ((pInstinct)->intArg[6])
+#define SITHAIINSTINCT_CIRCLESTRAFE_WAITFIRE(pInstinct)     ((pInstinct)->fltArg[7])
+#define SITHAIINSTINCT_CIRCLESTRAFE_SPEED(pInstinct)        ((pInstinct)->fltArg[8])
+#define SITHAIINSTINCT_STATE_CIRCLESTRAFE_SIDE(pState)      ((pState)->aParams[0])
+#define SITHAIINSTINCT_STATE_CIRCLESTRAFE_NUMSTEPS(pState)  ((pState)->aParams[1])
 
 // Dodge
-#define SITHAI_DODGE_ARG_MINDIST         0
-#define SITHAI_DODGE_ARG_MAXDIST         1
-#define SITHAI_DODGE_ARG_SPEED           2
-#define SITHAI_DODGE_ARG_COOLDOWN        3
-#define SITHAI_DODGE_ARG_MINTARGETDIST   4
-#define SITHAI_DODGE_ARG_TARGETEDCHANCE  5
-#define SITHAI_DODGE_ARG_HITCHANCE       6
-#define SITHAI_DODGE_ARG_SOUNDCHANCE     7
-#define SITHAI_DODGE_ARG_ROLLCHANCE      8
-#define SITHAI_DODGE_ARG_VEHICLECHANCE   9
-#define SITHAI_DODGE_ARG_PATHMINDIST     10
-#define SITHAI_DODGE_PARAM_LASTDODGETIME 0
+#define SITHAIINSTINCT_DODGE_MINDIST(pInstinct)          ((pInstinct)->fltArg[0])
+#define SITHAIINSTINCT_DODGE_MAXDIST(pInstinct)          ((pInstinct)->fltArg[1])
+#define SITHAIINSTINCT_DODGE_SPEED(pInstinct)            ((pInstinct)->fltArg[2])
+#define SITHAIINSTINCT_DODGE_COOLDOWN(pInstinct)         ((pInstinct)->fltArg[3])
+#define SITHAIINSTINCT_DODGE_MINTARGETDIST(pInstinct)    ((pInstinct)->fltArg[4])
+#define SITHAIINSTINCT_DODGE_TARGETEDCHANCE(pInstinct)   ((pInstinct)->fltArg[5])
+#define SITHAIINSTINCT_DODGE_HITCHANCE(pInstinct)        ((pInstinct)->fltArg[6])
+#define SITHAIINSTINCT_DODGE_SOUNDCHANCE(pInstinct)      ((pInstinct)->fltArg[7])
+#define SITHAIINSTINCT_DODGE_ROLLCHANCE(pInstinct)       ((pInstinct)->fltArg[8])
+#define SITHAIINSTINCT_DODGE_VEHICLECHANCE(pInstinct)    ((pInstinct)->fltArg[9])
+#define SITHAIINSTINCT_DODGE_PATHMINDIST(pInstinct)      ((pInstinct)->fltArg[10])
+#define SITHAIINSTINCT_STATE_DODGE_LASTDODGETIME(pState) ((pState)->aParams[0])
 
 // HitAndRun
-#define SITHAI_HITANDRUN_ARG_ATTACKTIME      0
-#define SITHAI_HITANDRUN_ARG_FLEETIME        1
-#define SITHAI_HITANDRUN_ARG_FIRECHANCE      2
-#define SITHAI_HITANDRUN_PARAM_ATTACKELAPSED 0
-#define SITHAI_HITANDRUN_PARAM_FLEEPENDING   1
-#define SITHAI_HITANDRUN_PARAM_FLEEING       2
-#define SITHAI_HITANDRUN_PARAM_HASFIRED      3
+#define SITHAIINSTINCT_HITANDRUN_ATTACKTIME(pInstinct)       ((pInstinct)->fltArg[0])
+#define SITHAIINSTINCT_HITANDRUN_FLEETIME(pInstinct)         ((pInstinct)->fltArg[1])
+#define SITHAIINSTINCT_HITANDRUN_FIRECHANCE(pInstinct)       ((pInstinct)->fltArg[2])
+#define SITHAIINSTINCT_STATE_HITANDRUN_ATTACKELAPSED(pState) ((pState)->aParams[0])
+#define SITHAIINSTINCT_STATE_HITANDRUN_FLEEPENDING(pState)   ((pState)->aParams[1])
+#define SITHAIINSTINCT_STATE_HITANDRUN_FLEEING(pState)       ((pState)->aParams[2])
+#define SITHAIINSTINCT_STATE_HITANDRUN_HASFIRED(pState)      ((pState)->aParams[3])
 
 // Retreat
-#define SITHAI_RETREAT_ARG_INTERVAL      0
-#define SITHAI_RETREAT_ARG_HEALTH        1
-#define SITHAI_RETREAT_ARG_CHANCE        2
-#define SITHAI_RETREAT_ARG_MAXRETREATS   3
-#define SITHAI_RETREAT_PARAM_NUMRETREATS 0
+#define SITHAIINSTINCT_RETREAT_INTERVAL(pInstinct)       ((pInstinct)->intArg[0])
+#define SITHAIINSTINCT_RETREAT_HEALTH(pInstinct)         ((pInstinct)->fltArg[1])
+#define SITHAIINSTINCT_RETREAT_CHANCE(pInstinct)         ((pInstinct)->fltArg[2])
+#define SITHAIINSTINCT_RETREAT_MAXRETREATS(pInstinct)    ((pInstinct)->fltArg[3])
+#define SITHAIINSTINCT_STATE_RETREAT_NUMRETREATS(pState) ((pState)->aParams[0])
 
 // RandomMove
-#define SITHAI_RANDOMMOVE_ARG_INTERVAL    0
-#define SITHAI_RANDOMMOVE_ARG_MINDIST     1
-#define SITHAI_RANDOMMOVE_ARG_MAXDIST     2
-#define SITHAI_RANDOMMOVE_ARG_MINSPEED    3
-#define SITHAI_RANDOMMOVE_ARG_MAXSPEED    4
-#define SITHAI_RANDOMMOVE_ARG_ANGLE       5
-#define SITHAI_RANDOMMOVE_ARG_WAITFIRE    6
-#define SITHAI_RANDOMMOVE_ARG_MOVEONFIRE  7
-#define SITHAI_RANDOMMOVE_ARG_ALWAYSLOOK  8
-#define SITHAI_RANDOMMOVE_ARG_ALLOW3D     9
-#define SITHAI_RANDOMMOVE_PARAM_TARGETX   0
-#define SITHAI_RANDOMMOVE_PARAM_TARGETY   1
-#define SITHAI_RANDOMMOVE_PARAM_TARGETZ   2
-#define SITHAI_RANDOMMOVE_PARAM_HASTARGET 3
+#define SITHAIINSTINCT_RANDOMMOVE_INTERVAL(pInstinct)     ((pInstinct)->intArg[0])
+#define SITHAIINSTINCT_RANDOMMOVE_MINDIST(pInstinct)      ((pInstinct)->fltArg[1])
+#define SITHAIINSTINCT_RANDOMMOVE_MAXDIST(pInstinct)      ((pInstinct)->fltArg[2])
+#define SITHAIINSTINCT_RANDOMMOVE_MINSPEED(pInstinct)     ((pInstinct)->fltArg[3])
+#define SITHAIINSTINCT_RANDOMMOVE_MAXSPEED(pInstinct)     ((pInstinct)->fltArg[4])
+#define SITHAIINSTINCT_RANDOMMOVE_ANGLE(pInstinct)        ((pInstinct)->fltArg[5])
+#define SITHAIINSTINCT_RANDOMMOVE_WAITFIRE(pInstinct)     ((pInstinct)->intArg[6])
+#define SITHAIINSTINCT_RANDOMMOVE_MOVEONFIRE(pInstinct)   ((pInstinct)->intArg[7])
+#define SITHAIINSTINCT_RANDOMMOVE_ALWAYSLOOK(pInstinct)   ((pInstinct)->intArg[8])
+#define SITHAIINSTINCT_RANDOMMOVE_ALLOW3D(pInstinct)      ((pInstinct)->intArg[9])
+#define SITHAIINSTINCT_STATE_RANDOMMOVE_TARGETX(pState)   ((pState)->aParams[0])
+#define SITHAIINSTINCT_STATE_RANDOMMOVE_TARGETY(pState)   ((pState)->aParams[1])
+#define SITHAIINSTINCT_STATE_RANDOMMOVE_TARGETZ(pState)   ((pState)->aParams[2])
+#define SITHAIINSTINCT_STATE_RANDOMMOVE_HASTARGET(pState) ((pState)->aParams[3])
 
 // HumanCombatMove
-#define SITHAI_HUMANCOMBATMOVE_ARG_MOVEDELAY       0
-#define SITHAI_HUMANCOMBATMOVE_ARG_ALLOWSTRAFE     1
-#define SITHAI_HUMANCOMBATMOVE_ARG_MINDIST         2
-#define SITHAI_HUMANCOMBATMOVE_ARG_MAXDIST         3
-#define SITHAI_HUMANCOMBATMOVE_ARG_MINSPEED        4
-#define SITHAI_HUMANCOMBATMOVE_ARG_FASTSPEED       5
-#define SITHAI_HUMANCOMBATMOVE_ARG_FLEEHEALTH      6
-#define SITHAI_HUMANCOMBATMOVE_ARG_FLEECHANCE      7
-#define SITHAI_HUMANCOMBATMOVE_ARG_STRAFECHANCE    8
-#define SITHAI_HUMANCOMBATMOVE_ARG_CHASECHANCE     9
-#define SITHAI_HUMANCOMBATMOVE_ARG_STANDFIRECHANCE 10
-#define SITHAI_HUMANCOMBATMOVE_PARAM_NEXTMOVETIME  0
-#define SITHAI_HUMANCOMBATMOVE_PARAM_MOVECHANCE    1
-#define SITHAI_HUMANCOMBATMOVE_PARAM_TRIEDMOVES    2
-#define SITHAI_HUMANCOMBATMOVE_PARAM_CHASESTATE    3
+#define SITHAIINSTINCT_HUMANCOMBATMOVE_MOVEDELAY(pInstinct)       ((pInstinct)->fltArg[0])
+#define SITHAIINSTINCT_HUMANCOMBATMOVE_ALLOWSTRAFE(pInstinct)     ((pInstinct)->intArg[1])
+#define SITHAIINSTINCT_HUMANCOMBATMOVE_MINDIST(pInstinct)         ((pInstinct)->fltArg[2])
+#define SITHAIINSTINCT_HUMANCOMBATMOVE_MAXDIST(pInstinct)         ((pInstinct)->fltArg[3])
+#define SITHAIINSTINCT_HUMANCOMBATMOVE_MINSPEED(pInstinct)        ((pInstinct)->fltArg[4])
+#define SITHAIINSTINCT_HUMANCOMBATMOVE_FASTSPEED(pInstinct)       ((pInstinct)->fltArg[5])
+#define SITHAIINSTINCT_HUMANCOMBATMOVE_FLEEHEALTH(pInstinct)      ((pInstinct)->fltArg[6])
+#define SITHAIINSTINCT_HUMANCOMBATMOVE_FLEECHANCE(pInstinct)      ((pInstinct)->fltArg[7])
+#define SITHAIINSTINCT_HUMANCOMBATMOVE_STRAFECHANCE(pInstinct)    ((pInstinct)->fltArg[8])
+#define SITHAIINSTINCT_HUMANCOMBATMOVE_CHASECHANCE(pInstinct)     ((pInstinct)->fltArg[9])
+#define SITHAIINSTINCT_HUMANCOMBATMOVE_STANDFIRECHANCE(pInstinct) ((pInstinct)->fltArg[10])
+#define SITHAIINSTINCT_STATE_HUMANCOMBATMOVE_NEXTMOVETIME(pState) ((pState)->aParams[0])
+#define SITHAIINSTINCT_STATE_HUMANCOMBATMOVE_MOVECHANCE(pState)   ((pState)->aParams[1])
+#define SITHAIINSTINCT_STATE_HUMANCOMBATMOVE_TRIEDMOVES(pState)   ((pState)->aParams[2])
+#define SITHAIINSTINCT_STATE_HUMANCOMBATMOVE_CHASESTATE(pState)   ((pState)->aParams[3])
 
 // Roam
-#define SITHAI_ROAM_ARG_INTERVAL 0
-#define SITHAI_ROAM_ARG_RADIUS   1
-#define SITHAI_ROAM_ARG_ALLOW3D  2
-#define SITHAI_ROAM_ARG_SPEED    3
+#define SITHAIINSTINCT_ROAM_INTERVAL(pInstinct) ((pInstinct)->intArg[0])
+#define SITHAIINSTINCT_ROAM_RADIUS(pInstinct)   ((pInstinct)->fltArg[1])
+#define SITHAIINSTINCT_ROAM_ALLOW3D(pInstinct)  ((pInstinct)->fltArg[2])
+#define SITHAIINSTINCT_ROAM_SPEED(pInstinct)    ((pInstinct)->fltArg[3])
 
 // Flee
-#define SITHAI_FLEE_ARG_RANGE       0
-#define SITHAI_FLEE_ARG_INTERVAL    1
-#define SITHAI_FLEE_ARG_PANICTIME   2
-#define SITHAI_FLEE_ARG_ANGLE       3
-#define SITHAI_FLEE_ARG_SPEED       4
-#define SITHAI_FLEE_ARG_MINSTEP     5
-#define SITHAI_FLEE_PARAM_STARTTIME 0
+#define SITHAIINSTINCT_FLEE_RANGE(pInstinct)        ((pInstinct)->fltArg[0])
+#define SITHAIINSTINCT_FLEE_INTERVAL(pInstinct)     ((pInstinct)->intArg[1])
+#define SITHAIINSTINCT_FLEE_PANICTIME(pInstinct)    ((pInstinct)->fltArg[2])
+#define SITHAIINSTINCT_FLEE_ANGLE(pInstinct)        ((pInstinct)->fltArg[3])
+#define SITHAIINSTINCT_FLEE_SPEED(pInstinct)        ((pInstinct)->fltArg[4])
+#define SITHAIINSTINCT_FLEE_MINSTEP(pInstinct)      ((pInstinct)->fltArg[5])
+#define SITHAIINSTINCT_STATE_FLEE_STARTTIME(pState) ((pState)->aParams[0])
 
 // BasicFallow
-#define SITHAI_BASICFOLLOW_ARG_INTERVAL     0
-#define SITHAI_BASICFOLLOW_ARG_MINDIST      1
-#define SITHAI_BASICFOLLOW_ARG_MAXDIST      2
-#define SITHAI_BASICFOLLOW_ARG_IDEALDIST    3
-#define SITHAI_BASICFOLLOW_ARG_IGNORELOS    4
-#define SITHAI_BASICFOLLOW_ARG_WAITFIRE     5
-#define SITHAI_BASICFOLLOW_PARAM_NUMBLOCKED 0
-#define SITHAI_BASICFOLLOW_PARAM_HITFLAG    1
+#define SITHAIINSTINCT_BASICFOLLOW_INTERVAL(pInstinct)      ((pInstinct)->intArg[0])
+#define SITHAIINSTINCT_BASICFOLLOW_MINDIST(pInstinct)       ((pInstinct)->fltArg[1])
+#define SITHAIINSTINCT_BASICFOLLOW_MAXDIST(pInstinct)       ((pInstinct)->fltArg[2])
+#define SITHAIINSTINCT_BASICFOLLOW_IDEALDIST(pInstinct)     ((pInstinct)->fltArg[3])
+#define SITHAIINSTINCT_BASICFOLLOW_IGNORELOS(pInstinct)     ((pInstinct)->fltArg[4])
+#define SITHAIINSTINCT_BASICFOLLOW_WAITFIRE(pInstinct)      ((pInstinct)->intArg[5])
+#define SITHAIINSTINCT_STATE_BASICFOLLOW_NUMBLOCKED(pState) ((pState)->aParams[0])
+#define SITHAIINSTINCT_STATE_BASICFOLLOW_HITFLAG(pState)    ((pState)->aParams[1])
 
 // SnakeFollow
-#define SITHAI_SNAKEFOLLOW_PARAM_USELASTPOS 0
+#define SITHAIINSTINCT_STATE_SNAKEFOLLOW_USELASTPOS(pState) ((pState)->aParams[0])
 
 //
 // Snake follow vars
@@ -273,9 +274,6 @@ void sithAIInstinct_InstallHooks(void)
 
 void sithAIInstinct_ResetGlobals(void)
 {
-    sithAIInstinct_snakeLastDotFwd      = 1.0f;
-    sithAIInstinct_snakeSlitherDir      = 0.0f;
-    sithAIInstinct_snakeFollowNearRange = 0.0f;
 }
 
 void J3DAPI sithAIInstinct_InitInstincts()
@@ -332,7 +330,8 @@ int J3DAPI sithAIInstinct_Listen(SithAIControlBlock* pLocal, SithAIInstinct* pIn
     {
         case SITHAI_EVENT_HIT_SECTOR:
         case SITHAI_EVENT_TOUCHED:
-            if ( pState->aParams[SITHAI_LISTEN_PARAM_LOUDNESS] == 0.0f )
+        {
+            if ( SITHAIINSTINCT_STATE_LISTEN_LOUDNESS(pState) == 0.0f )
             {
                 if ( event == SITHAI_EVENT_HIT_SECTOR )
                 {
@@ -342,7 +341,7 @@ int J3DAPI sithAIInstinct_Listen(SithAIControlBlock* pLocal, SithAIInstinct* pIn
                 {
                     sithAIUtil_AIPlaySoundMode(pLocal, SITHSOUNDCLASS_CURIOUS);
                 }
-                pState->aParams[SITHAI_LISTEN_PARAM_LOUDNESS] = 0.1f;
+                SITHAIINSTINCT_STATE_LISTEN_LOUDNESS(pState) = 0.1f;
             }
 
             if ( pThing )
@@ -350,7 +349,7 @@ int J3DAPI sithAIInstinct_Listen(SithAIControlBlock* pLocal, SithAIInstinct* pIn
                 SithThing* pShooter = sithThing_GetThingParent(pThing);
                 if ( event == SITHAI_EVENT_HIT_SECTOR )
                 {
-                    if ( SITH_RANDF() > pInstinct->fltArg[SITHAI_LISTEN_ARG_INVESTIGATECHANCE] )
+                    if ( SITH_RANDF() > SITHAIINSTINCT_LISTEN_INVESTIGATECHANCE(pInstinct) )
                     {
                         sithAIMove_AISetLookThing(pLocal, pShooter);
                         return 0;
@@ -359,6 +358,7 @@ int J3DAPI sithAIInstinct_Listen(SithAIControlBlock* pLocal, SithAIInstinct* pIn
                     if ( (pLocal->mode & (SITHAI_MODE_HUNTING | SITHAI_MODE_INSTINCTUSEWPNTS)) != 0 )
                     {
                         sithAIUtil_AISetMode(pLocal, SITHAI_MODE_HUNTING);
+
                         pLocal->pTargetThing = sithPlayer_g_pLocalPlayerThing;
                         if ( sithAIUtil_AIMoveToNextWpnt(pLocal, 1.7f, 0.0f, 0) )
                         {
@@ -381,7 +381,7 @@ int J3DAPI sithAIInstinct_Listen(SithAIControlBlock* pLocal, SithAIInstinct* pIn
                         return 0;
                     }
 
-                    if ( SITH_RANDF() > pInstinct->fltArg[SITHAI_LISTEN_ARG_INVESTIGATECHANCE] )
+                    if ( SITH_RANDF() > SITHAIINSTINCT_LISTEN_INVESTIGATECHANCE(pInstinct) )
                     {
                         sithAIMove_AISetLookThing(pLocal, pShooter);
                         return 0;
@@ -400,9 +400,10 @@ int J3DAPI sithAIInstinct_Listen(SithAIControlBlock* pLocal, SithAIInstinct* pIn
 
                         rdVector_Sub3(&pos, &pLocal->pOwner->pos, &pShooter->pos);
                         rdVector_Normalize3Acc(&pos);
+
                         if ( rdVector_Dot3(&pos, &pLocal->moveDirection) < 0.0f )
                         {
-                            rdVector_Scale3Acc(&pos, pInstinct->fltArg[SITHAI_LISTEN_ARG_BACKOFFDIST]);
+                            rdVector_Scale3Acc(&pos, SITHAIINSTINCT_LISTEN_BACKOFFDIST(pInstinct));
                             rdVector_Add3Acc(&pos, &pLocal->pOwner->pos);
 
                             sithAIMove_StopAIMovement(pLocal);
@@ -414,38 +415,42 @@ int J3DAPI sithAIInstinct_Listen(SithAIControlBlock* pLocal, SithAIInstinct* pIn
                 }
             }
             return 0;
+        }
 
         case SITHAI_EVENT_SOUND:
+        {
             if ( (pListener->thingInfo.actorInfo.flags & SITH_AF_DEAF) != 0 )
             {
                 return 0;
             }
             break;
+        }
 
         default:
             return 0;
     }
 
-    if ( pSectorInfo->aLevelAtTransmittingPos[0] != 0.0f && SITH_RANDF() < pInstinct->fltArg[SITHAI_LISTEN_ARG_HEARCHANCE] )
+    if ( pSectorInfo->aLevelAtTransmittingPos[SITHAIAWARENESS_NOISE] != 0.0f
+         && SITH_RANDF() < SITHAIINSTINCT_LISTEN_HEARCHANCE(pInstinct) )
     {
         bool bMove = false;
         bool bLook = false;
         bool bStop = false;
         bool bHunt = false;
-        SithThing* pSource = pSectorInfo->aTransmittingThing[0];
+        SithThing* pSource = pSectorInfo->aTransmittingThing[SITHAIAWARENESS_NOISE];
         if ( pSource && (pSource->thingInfo.actorInfo.flags & SITH_AF_INVISIBLE) != 0 )
         {
             return 0;
         }
 
-        if ( !sithAIAwareness_IsInTransmittingRange(pSectorInfo, 0, pListener) )
+        if ( !sithAIAwareness_IsInTransmittingRange(pSectorInfo, SITHAIAWARENESS_NOISE, pListener) )
         {
             return 0;
         }
 
         float distance;
         rdVector3 toDest;
-        SithAISightState sightVal = sithAIUtil_GetDistanceToTargetPos(pListener, &pListener->pos, &pSectorInfo->aStartPos[0], -1.0f, pLocal->pClass->sightDistance, 0.0f, &toDest, &distance);
+        SithAISightState sightVal = sithAIUtil_GetDistanceToTargetPos(pListener, &pListener->pos, &pSectorInfo->aStartPos[SITHAIAWARENESS_NOISE], -1.0f, pLocal->pClass->sightDistance, 0.0f, &toDest, &distance);
         if ( distance <= pLocal->pClass->heardDistance )
         {
             SithAISightState thingVis;
@@ -460,31 +465,32 @@ int J3DAPI sithAIInstinct_Listen(SithAIControlBlock* pLocal, SithAIInstinct* pIn
                 thingVis = SITHAI_SIGHT_HIDDEN;
             }
 
-            float loudness = 0.0f;
-            if ( pSource && pSource->type && (pLocal->mode & (SITHAI_MODE_HUNTING | SITHAI_MODE_INSTINCTUSEWPNTS)) != 0 )
+            float loudness;
+            if ( pSource
+                 && pSource->type
+                 && (pLocal->mode & (SITHAI_MODE_HUNTING | SITHAI_MODE_INSTINCTUSEWPNTS)) != 0 )
             {
                 bHunt = true;
 
-                // TODO: [BUG] The original never sets loudness on this path; it reads the stack slot of the pInstinct argument as a float
-                memcpy(&loudness, &pInstinct, sizeof(loudness));
+                // TODO: [BUG] The original never sets loudness on this path, but it is read below
             }
             else if ( thingVis == SITHAI_SIGHT_VISIBLE )
             {
                 pLocal->alertPos = pSource->pos;
-                loudness = pSectorInfo->aLevelAtTransmittingPos[0];
+                loudness = pSectorInfo->aLevelAtTransmittingPos[SITHAIAWARENESS_NOISE];
                 bMove = true;
                 bLook = true;
             }
             else if ( sightVal == SITHAI_SIGHT_VISIBLE )
             {
-                pLocal->alertPos = pSectorInfo->aStartPos[0];
-                loudness = pSectorInfo->aLevelAtTransmittingPos[0];
+                pLocal->alertPos = pSectorInfo->aStartPos[SITHAIAWARENESS_NOISE];
+                loudness = pSectorInfo->aLevelAtTransmittingPos[SITHAIAWARENESS_NOISE];
                 bMove = true;
                 bLook = true;
             }
             else if ( pSource && (pLocal->mode & SITHAI_MODE_HUNTING) == 0 )
             {
-                loudness = pSectorInfo->aLevelAtTransmittingPos[0];
+                loudness = pSectorInfo->aLevelAtTransmittingPos[SITHAIAWARENESS_NOISE];
                 bStop = true;
                 bLook = true;
             }
@@ -501,18 +507,19 @@ int J3DAPI sithAIInstinct_Listen(SithAIControlBlock* pLocal, SithAIInstinct* pIn
                     }
                 }
 
-                if ( loudness > pState->aParams[SITHAI_LISTEN_PARAM_LOUDNESS] )
+                if ( loudness > SITHAIINSTINCT_STATE_LISTEN_LOUDNESS(pState) )
                 {
-                    pState->aParams[SITHAI_LISTEN_PARAM_LOUDNESS] = loudness;
+                    SITHAIINSTINCT_STATE_LISTEN_LOUDNESS(pState) = loudness;
                 }
 
                 sithAIUtil_AIPlaySoundMode(pLocal, SITHSOUNDCLASS_CURIOUS);
+
                 if ( bStop )
                 {
                     sithAIMove_StopAIMovement(pLocal);
                 }
 
-                if ( bMove && SITH_RANDF() <= pInstinct->fltArg[SITHAI_LISTEN_ARG_INVESTIGATECHANCE] )
+                if ( bMove && SITH_RANDF() <= SITHAIINSTINCT_LISTEN_INVESTIGATECHANCE(pInstinct) )
                 {
                     sithAIMove_AISetMovePos(pLocal, &pLocal->alertPos, 0.75f);
                 }
@@ -522,9 +529,10 @@ int J3DAPI sithAIInstinct_Listen(SithAIControlBlock* pLocal, SithAIInstinct* pIn
                     sithAIMove_AISetLookPosEyeLevel(pLocal, &pLocal->alertPos);
                 }
 
-                if ( bHunt && SITH_RANDF() <= pInstinct->fltArg[SITHAI_LISTEN_ARG_INVESTIGATECHANCE] )
+                if ( bHunt && SITH_RANDF() <= SITHAIINSTINCT_LISTEN_INVESTIGATECHANCE(pInstinct) )
                 {
                     sithAIUtil_AISetMode(pLocal, SITHAI_MODE_HUNTING);
+
                     pLocal->pTargetThing = sithPlayer_g_pLocalPlayerThing;
                     sithAIUtil_AIMoveToNextWpnt(pLocal, 1.7f, 0.0f, 0);
                 }
@@ -540,7 +548,7 @@ int J3DAPI sithAIInstinct_LookForTarget(SithAIControlBlock* pLocal, SithAIInstin
     {
         if ( (pLocal->mode & SITHAI_MODE_HUNTING) != 0 && (newMode & SITHAI_MODE_HUNTING) == 0 )
         {
-            pState->aParams[SITHAI_LOOKFORTARGET_PARAM_HUNTSTART] = sithTime_g_secGameTime;
+            SITHAIINSTINCT_STATE_LOOKFORTARGET_HUNTSTART(pState) = sithTime_g_secGameTime;
         }
     }
 
@@ -561,7 +569,7 @@ int J3DAPI sithAIInstinct_LookForTarget(SithAIControlBlock* pLocal, SithAIInstin
 
     if ( (pLocal->mode & SITHAI_MODE_HUNTING) != 0 )
     {
-        float curhuntTime = pInstinct->fltArg[SITHAI_LOOKFORTARGET_ARG_HUNTTIME];
+        float curhuntTime = SITHAIINSTINCT_LOOKFORTARGET_HUNTTIME(pInstinct);
         if ( !pLocal->pTargetThing )
         {
             SITHLOG_DEBUG("LookForTarget: AI '%s' lost track of its target.  Ending HUNT mode.\n", pLocal->pOwner->aName);
@@ -574,11 +582,12 @@ int J3DAPI sithAIInstinct_LookForTarget(SithAIControlBlock* pLocal, SithAIInstin
                 curhuntTime = 20.0f;
             }
 
-            if ( sithTime_g_secGameTime > pState->aParams[SITHAI_LOOKFORTARGET_PARAM_HUNTSTART] + curhuntTime )
+            if ( sithTime_g_secGameTime > SITHAIINSTINCT_STATE_LOOKFORTARGET_HUNTSTART(pState) + curhuntTime )
             {
                 sithAIUtil_AIClearMode(pLocal, SITHAI_MODE_HUNTING);
             }
-            else if ( (pLocal->pOwner->thingInfo.actorInfo.flags & SITH_AF_HUMAN) == 0 && (pLocal->pTargetThing->moveInfo.physics.flags & (SITH_PF_MINECAR | SITH_PF_RAFT | SITH_PF_JEEP | SITH_PF_UNKNOWN_8000000)) != 0 )
+            else if ( (pLocal->pOwner->thingInfo.actorInfo.flags & SITH_AF_HUMAN) == 0
+                      && (pLocal->pTargetThing->moveInfo.physics.flags & (SITH_PF_MINECAR | SITH_PF_RAFT | SITH_PF_JEEP | SITH_PF_UNKNOWN_8000000)) != 0 )
             {
                 sithAIUtil_AIClearMode(pLocal, SITHAI_MODE_HUNTING);
             }
@@ -587,17 +596,19 @@ int J3DAPI sithAIInstinct_LookForTarget(SithAIControlBlock* pLocal, SithAIInstin
 
     if ( (pLocal->mode & SITHAI_MODE_ACTIVE) != 0 )
     {
-        if ( !pInstinct->intArg[SITHAI_LOOKFORTARGET_ARG_ATTACKTIME] )
+        if ( !SITHAIINSTINCT_LOOKFORTARGET_ATTACKTIME(pInstinct) )
         {
             return 0;
         }
 
-        if ( pLocal->msecAttackStart + pInstinct->intArg[SITHAI_LOOKFORTARGET_ARG_ATTACKTIME] < sithTime_g_msecGameTime )
+        if ( pLocal->msecAttackStart + SITHAIINSTINCT_LOOKFORTARGET_ATTACKTIME(pInstinct) < sithTime_g_msecGameTime )
         {
             sithAIUtil_AISetMode(pLocal, SITHAI_MODE_SEARCHING);
+
             if ( (pLocal->mode & SITHAI_MODE_INSTINCTUSEWPNTS) != 0 )
             {
-                if ( (pLocal->pOwner->thingInfo.actorInfo.flags & SITH_AF_HUMAN) == 0 && (pLocal->pTargetThing->moveInfo.physics.flags & (SITH_PF_MINECAR | SITH_PF_RAFT | SITH_PF_JEEP | SITH_PF_UNKNOWN_8000000)) != 0 )
+                if ( (pLocal->pOwner->thingInfo.actorInfo.flags & SITH_AF_HUMAN) == 0
+                     && (pLocal->pTargetThing->moveInfo.physics.flags & (SITH_PF_MINECAR | SITH_PF_RAFT | SITH_PF_JEEP | SITH_PF_UNKNOWN_8000000)) != 0 )
                 {
                     return 0;
                 }
@@ -615,7 +626,7 @@ int J3DAPI sithAIInstinct_LookForTarget(SithAIControlBlock* pLocal, SithAIInstin
         return 0;
     }
 
-    pState->msecNextUpdate = sithTime_g_msecGameTime + pInstinct->intArg[SITHAI_LOOKFORTARGET_ARG_INTERVAL];
+    pState->msecNextUpdate = sithTime_g_msecGameTime + SITHAIINSTINCT_LOOKFORTARGET_INTERVAL_INT(pInstinct);
     if ( (pLocal->pOwner->thingInfo.actorInfo.flags & SITH_AF_BLIND) != 0 )
     {
         return 0;
@@ -638,6 +649,7 @@ int J3DAPI sithAIInstinct_LookForTarget(SithAIControlBlock* pLocal, SithAIInstin
     }
 
     sithAIUtil_UpdateTargetSight(pLocal, 0);
+
     if ( pLocal->targetSightState == SITHAI_SIGHT_VISIBLE )
     {
         if ( pLocal->goalThing == pLocal->pTargetThing )
@@ -651,13 +663,14 @@ int J3DAPI sithAIInstinct_LookForTarget(SithAIControlBlock* pLocal, SithAIInstin
             pLocal->unknown150        = sithTime_g_msecGameTime;
         }
 
-        if ( pInstinct->fltArg[SITHAI_LOOKFORTARGET_ARG_LOOKONLY] != 0.0f )
+        if ( SITHAIINSTINCT_LOOKFORTARGET_LOOKONLY(pInstinct) != 0.0f )
         {
             sithAIMove_AISetLookThing(pLocal, pLocal->pTargetThing);
             return 0;
         }
 
         sithAIUtil_AISetMode(pLocal, SITHAI_MODE_ATTACKING);
+
         if ( (pLocal->submode & SITHAI_SUBMODE_CONTINUOUSWPNTMOTION) == 0 )
         {
             sithAIUtil_AIClearMode(pLocal, SITHAI_MODE_TRAVERSEWPNTS);
@@ -665,14 +678,15 @@ int J3DAPI sithAIInstinct_LookForTarget(SithAIControlBlock* pLocal, SithAIInstin
 
         sithAIUtil_AIPlaySoundMode(pLocal, SITHSOUNDCLASS_ALERT);
         sithAIUtil_AIPlaySoundMode(pLocal, SITHSOUNDCLASS_ACTIVATE);
-        sithAIAwareness_CreateTransmittingEvent(pLocal->pTargetThing->pInSector, &pLocal->pOwner->pos, 0, 1.5f, pLocal->pTargetThing);
+        sithAIAwareness_CreateTransmittingEvent(pLocal->pTargetThing->pInSector, &pLocal->pOwner->pos, SITHAIAWARENESS_NOISE, 1.5f, pLocal->pTargetThing);
+
         pLocal->goalThing = pLocal->pTargetThing;
         return 1;
     }
 
-    if ( pInstinct->fltArg[SITHAI_LOOKFORTARGET_ARG_INTERVAL] == 0.0f )
+    if ( SITHAIINSTINCT_LOOKFORTARGET_INTERVAL(pInstinct) == 0.0f )
     {
-        pInstinct->fltArg[SITHAI_LOOKFORTARGET_ARG_INTERVAL] = 500.0f;
+        SITHAIINSTINCT_LOOKFORTARGET_INTERVAL(pInstinct) = 500.0f;
     }
     return 0;
 }
@@ -681,9 +695,9 @@ int J3DAPI sithAIInstinct_SenseDanger(SithAIControlBlock* pLocal, SithAIInstinct
 {
     SithThing* pOwner = pLocal->pOwner;
     SithAIAwarenessSector* pAISector = &sithAIAwareness_g_aSectors[sithSector_GetSectorIndex(pOwner->pInSector)];
-    if ( !event && pInstance->intArg[SITHAI_SENSEDANGER_ARG_INTERVAL] )
+    if ( !event && SITHAIINSTINCT_SENSEDANGER_INTERVAL(pInstance) )
     {
-        pState->msecNextUpdate = sithTime_g_msecGameTime + pInstance->intArg[SITHAI_SENSEDANGER_ARG_INTERVAL];
+        pState->msecNextUpdate = sithTime_g_msecGameTime + SITHAIINSTINCT_SENSEDANGER_INTERVAL(pInstance);
     }
 
     if ( (pLocal->mode & SITHAI_MODE_FLEEING) != 0 )
@@ -699,12 +713,14 @@ int J3DAPI sithAIInstinct_SenseDanger(SithAIControlBlock* pLocal, SithAIInstinct
     switch ( event )
     {
         case SITHAI_EVENT_HIT_SECTOR:
-            if ( SITH_RANDF() > pInstance->fltArg[SITHAI_SENSEDANGER_ARG_HITCHANCE] )
+        {
+            if ( SITH_RANDF() > SITHAIINSTINCT_SENSEDANGER_HITCHANCE(pInstance) )
             {
                 return 0;
             }
 
             sithAIUtil_AIPlaySoundMode(pLocal, SITHSOUNDCLASS_SURPRISE);
+
             if ( pThing )
             {
                 pLocal->pFleeFromThing = sithThing_GetThingParent(pThing);
@@ -712,14 +728,16 @@ int J3DAPI sithAIInstinct_SenseDanger(SithAIControlBlock* pLocal, SithAIInstinct
 
             sithAIUtil_AISetMode(pLocal, SITHAI_MODE_FLEEING);
             return 1;
+        }
 
         case SITHAI_EVENT_SOUND:
-            if ( pAISector->aLevelAtTransmittingPos[2] <= pInstance->fltArg[SITHAI_SENSEDANGER_ARG_MINLOUDNESS] )
+        {
+            if ( pAISector->aLevelAtTransmittingPos[SITHAIAWARENESS_THREAT] <= SITHAIINSTINCT_SENSEDANGER_MINLOUDNESS(pInstance) )
             {
                 return 0;
             }
 
-            SithThing* pDanger = pAISector->aTransmittingThing[2];
+            SithThing* pDanger = pAISector->aTransmittingThing[SITHAIAWARENESS_THREAT];
             if ( !pDanger )
             {
                 return 0;
@@ -742,14 +760,16 @@ int J3DAPI sithAIInstinct_SenseDanger(SithAIControlBlock* pLocal, SithAIInstinct
             if ( (pLocal->mode & SITHAI_MODE_FLEEING) == 0 )
             {
                 sithAIUtil_AIPlaySoundMode(pLocal, SITHSOUNDCLASS_FEAR);
-                sithAIAwareness_CreateTransmittingEvent(pLocal->pOwner->pInSector, &pLocal->pOwner->pos, 2, 4.0f, pLocal->pOwner);
+                sithAIAwareness_CreateTransmittingEvent(pLocal->pOwner->pInSector, &pLocal->pOwner->pos, SITHAIAWARENESS_THREAT, 4.0f, pLocal->pOwner);
             }
 
             sithAIUtil_AISetMode(pLocal, SITHAI_MODE_FLEEING);
             return 1;
+        }
 
         case (SithAIEventType)0:
-            if ( SITH_RANDF() > pInstance->fltArg[SITHAI_SENSEDANGER_ARG_SIGHTCHANCE] )
+        {
+            if ( SITH_RANDF() > SITHAIINSTINCT_SENSEDANGER_SIGHTCHANCE(pInstance) )
             {
                 return 0;
             }
@@ -762,14 +782,17 @@ int J3DAPI sithAIInstinct_SenseDanger(SithAIControlBlock* pLocal, SithAIInstinct
             }
 
             sithAIUtil_UpdateTargetSight(pLocal, 0);
+
             if ( pLocal->targetSightState == SITHAI_SIGHT_VISIBLE )
             {
                 sithAIUtil_AISetMode(pLocal, SITHAI_MODE_FLEEING);
                 sithAIUtil_AIPlaySoundMode(pLocal, SITHSOUNDCLASS_FEAR);
-                sithAIAwareness_CreateTransmittingEvent(pLocal->pOwner->pInSector, &pLocal->pOwner->pos, 1, 3.0f, pLocal->pOwner);
+                sithAIAwareness_CreateTransmittingEvent(pLocal->pOwner->pInSector, &pLocal->pOwner->pos, SITHAIAWARENESS_DANGER, 3.0f, pLocal->pOwner);
+
                 pLocal->pFleeFromThing = pLocal->pTargetThing;
             }
             break;
+        }
     }
 
     return 0;
@@ -790,18 +813,25 @@ signed int J3DAPI sithAIInstinct_FearGunshot(SithAIControlBlock* pLocal, SithAII
     switch ( event )
     {
         case SITHAI_EVENT_SOUND:
-            if ( pAISector->aLevelAtTransmittingPos[3] > 0.0f )
+        {
+            if ( pAISector->aLevelAtTransmittingPos[SITHAIAWARENESS_GUNFIRE] > 0.0f )
             {
-                SithThing* pShooter = pAISector->aTransmittingThing[3];
+                SithThing* pShooter = pAISector->aTransmittingThing[SITHAIAWARENESS_GUNFIRE];
                 if ( pShooter && pShooter != pLocal->pOwner )
                 {
                     rdVector3 curdir;
                     rdVector_Sub3(&curdir, &pLocal->pOwner->pos, &pShooter->pos);
+
                     float dist = rdVector_Normalize3Acc(&curdir);
                     float dot  = rdVector_Dot3(&pShooter->orient.lvec, &curdir);
-                    if ( dist < pInstinct->fltArg[SITHAI_FEARGUNSHOT_ARG_NEARDIST] || (dist < pInstinct->fltArg[SITHAI_FEARGUNSHOT_ARG_FARDIST] && dot > pInstinct->fltArg[SITHAI_FEARGUNSHOT_ARG_MINDOT] && SITH_RANDF() < pInstinct->fltArg[SITHAI_FEARGUNSHOT_ARG_FLEECHANCE]) )
+
+                    if ( dist < SITHAIINSTINCT_FEARGUNSHOT_NEARDIST(pInstinct)
+                        || (dist < SITHAIINSTINCT_FEARGUNSHOT_FARDIST(pInstinct)
+                            && dot > SITHAIINSTINCT_FEARGUNSHOT_MINDOT(pInstinct)
+                            && SITH_RANDF() < SITHAIINSTINCT_FEARGUNSHOT_FLEECHANCE(pInstinct)) )
                     {
                         sithAIUtil_AISetMode(pLocal, SITHAI_MODE_FLEEING);
+
                         pLocal->pFleeFromThing = pShooter;
                         sithAIUtil_AIPlaySoundMode(pLocal, SITHSOUNDCLASS_FEAR);
                         return 1;
@@ -809,6 +839,7 @@ signed int J3DAPI sithAIInstinct_FearGunshot(SithAIControlBlock* pLocal, SithAII
                 }
             }
             break;
+        }
     }
 
     return 0;
@@ -819,7 +850,7 @@ int J3DAPI sithAIInstinct_Hop(SithAIControlBlock* pLocal, SithAIInstinct* pInsti
     J3D_UNUSED(event);
     J3D_UNUSED(pObject);
 
-    float hopDelay = (float)pInstinct->intArg[SITHAI_HOP_ARG_DELAY];
+    float hopDelay = (float)SITHAIINSTINCT_HOP_DELAY(pInstinct);
     pState->msecNextUpdate = sithTime_g_msecGameTime + (uint32_t)(hopDelay * SITH_RANDF());
     if ( !pLocal->pOwner->attach.flags )
     {
@@ -833,7 +864,7 @@ int J3DAPI sithAIInstinct_Hop(SithAIControlBlock* pLocal, SithAIInstinct* pInsti
 
     sithThing_DetachThing(pLocal->pOwner);
 
-    float hopForce = pInstinct->fltArg[SITHAI_HOP_ARG_FORCE];
+    float hopForce = SITHAIINSTINCT_HOP_FORCE(pInstinct);
     rdVector3 force;
 
     rdVector_Set3(&force, 0.0f, 0.0f, hopForce * SITH_RANDF());
@@ -853,10 +884,11 @@ int J3DAPI sithAIInstinct_HoverDrift(SithAIControlBlock* pLocal, SithAIInstinct*
         return 0;
     }
 
-    float curSpread = pInstinct->fltArg[SITHAI_HOVERDRIFT_ARG_INTERVAL];
+    float curSpread = SITHAIINSTINCT_HOVERDRIFT_INTERVAL(pInstinct);
     curSpread = (SITH_RANDF() - 0.5f) * curSpread + curSpread;
     pState->msecNextUpdate = sithTime_g_msecGameTime + (uint32_t)curSpread;
-    if ( (pLocal->mode & SITHAI_MODE_MOVING) != 0 || (pLocal->pOwner->thingInfo.actorInfo.flags & SITH_AF_IMMOBILE) != 0 )
+    if ( (pLocal->mode & SITHAI_MODE_MOVING) != 0
+         || (pLocal->pOwner->thingInfo.actorInfo.flags & SITH_AF_IMMOBILE) != 0 )
     {
         return 0;
     }
@@ -868,30 +900,31 @@ int J3DAPI sithAIInstinct_HoverDrift(SithAIControlBlock* pLocal, SithAIInstinct*
 
     // Note, the original draws a separate random scale for each axis
     rdVector3 curForce;
-    curForce.x = SITH_RANDF() * pInstinct->fltArg[SITHAI_HOVERDRIFT_ARG_FORCE] * direction.x;
-    curForce.y = SITH_RANDF() * pInstinct->fltArg[SITHAI_HOVERDRIFT_ARG_FORCE] * direction.y;
-    curForce.z = SITH_RANDF() * pInstinct->fltArg[SITHAI_HOVERDRIFT_ARG_FORCE] * direction.z;
+    curForce.x = SITH_RANDF() * SITHAIINSTINCT_HOVERDRIFT_FORCE(pInstinct) * direction.x;
+    curForce.y = SITH_RANDF() * SITHAIINSTINCT_HOVERDRIFT_FORCE(pInstinct) * direction.y;
+    curForce.z = SITH_RANDF() * SITHAIINSTINCT_HOVERDRIFT_FORCE(pInstinct) * direction.z;
     sithPhysics_ApplyForce(pLocal->pOwner, &curForce);
     return 0;
 }
 
 int J3DAPI sithAIInstinct_Talk(SithAIControlBlock* pLocal, SithAIInstinct* pInstinct, SithAIInstinctState* pState, SithAIEventType event, void* pObject)
 {
-    float talkChance = pInstinct->fltArg[SITHAI_TALK_ARG_CHANCE];
-    float delay = pInstinct->fltArg[SITHAI_TALK_ARG_DELAY];
+    float talkChance   = SITHAIINSTINCT_TALK_CHANCE(pInstinct);
+    float delay        = SITHAIINSTINCT_TALK_DELAY(pInstinct);
     float nextTalkTime = -1.0f;
-    SithThing* pOwner = pLocal->pOwner;
-    bool bSuccess     = false;
-    int hChannel      = 0;
+    SithThing* pOwner  = pLocal->pOwner;
+    bool bSuccess      = false;
+    int hChannel       = 0;
 
-    if ( pInstinct->fltArg[SITHAI_TALK_ARG_COOLDOWN] != 0.0f )
+    if ( SITHAIINSTINCT_TALK_COOLDOWN(pInstinct) != 0.0f )
     {
-        nextTalkTime = pState->aParams[SITHAI_TALK_PARAM_LASTTALKTIME] + pInstinct->fltArg[SITHAI_TALK_ARG_COOLDOWN];
+        nextTalkTime = SITHAIINSTINCT_STATE_TALK_LASTTALKTIME(pState) + SITHAIINSTINCT_TALK_COOLDOWN(pInstinct);
     }
 
     switch ( event )
     {
         case (SithAIEventType)0:
+        {
             if ( (pLocal->mode & SITHAI_MODE_UNKNOWN_100000) != 0 )
             {
                 delay = delay / 2.0f;
@@ -964,6 +997,7 @@ int J3DAPI sithAIInstinct_Talk(SithAIControlBlock* pLocal, SithAIInstinct* pInst
                 }
             }
             break;
+        }
 
         case SITHAI_EVENT_MODECHANGED:
         {
@@ -971,12 +1005,14 @@ int J3DAPI sithAIInstinct_Talk(SithAIControlBlock* pLocal, SithAIInstinct* pInst
             if ( (pLocal->mode & SITHAI_MODE_UNKNOWN_100000) != 0 && (prevMode & SITHAI_MODE_UNKNOWN_100000) == 0 )
             {
                 sithSoundMixer_StopAllSoundsThing(pLocal->pOwner);
+
                 hChannel = sithSoundClass_PlayModeFirst(pLocal->pOwner, SITHSOUNDCLASS_RESERVED8);
             }
             break;
         }
 
         case SITHAI_EVENT_TOUCHED:
+        {
             if ( (pLocal->mode & SITHAI_MODE_SEARCHING) == 0 )
             {
                 return 0;
@@ -993,13 +1029,16 @@ int J3DAPI sithAIInstinct_Talk(SithAIControlBlock* pLocal, SithAIInstinct* pInst
                 return 0;
             }
 
-            if ( (pCheckThing->type == SITH_THING_PLAYER || pCheckThing->type == SITH_THING_ACTOR) && SITH_RANDF() < talkChance )
+            if ( (pCheckThing->type == SITH_THING_PLAYER || pCheckThing->type == SITH_THING_ACTOR)
+                 && SITH_RANDF() < talkChance )
             {
                 hChannel = sithSoundClass_PlayModeRandom(pLocal->pOwner, SITHSOUNDCLASS_ALERT);
             }
             break;
+        }
 
         case SITHAI_EVENT_TALK:
+        {
             if ( nextTalkTime > sithTime_g_secGameTime )
             {
                 return 0;
@@ -1008,6 +1047,7 @@ int J3DAPI sithAIInstinct_Talk(SithAIControlBlock* pLocal, SithAIInstinct* pInst
             hChannel = sithSoundClass_PlayModeRandom(pLocal->pOwner, (SithSoundClassMode)(int)pObject);
             bSuccess = true;
             break;
+        }
 
         default:
             return 0;
@@ -1015,7 +1055,7 @@ int J3DAPI sithAIInstinct_Talk(SithAIControlBlock* pLocal, SithAIInstinct* pInst
 
     if ( hChannel > 0 )
     {
-        pState->aParams[SITHAI_TALK_PARAM_LASTTALKTIME] = sithTime_g_secGameTime;
+        SITHAIINSTINCT_STATE_TALK_LASTTALKTIME(pState) = sithTime_g_secGameTime;
     }
 
     return bSuccess;
@@ -1026,13 +1066,13 @@ int J3DAPI sithAIInstinct_RandomTurn(SithAIControlBlock* pLocal, SithAIInstinct*
     J3D_UNUSED(event);
     J3D_UNUSED(pObject);
 
-    if ( !pInstinct->intArg[SITHAI_RANDOMTURN_ARG_INTERVAL] )
+    if ( !SITHAIINSTINCT_RANDOMTURN_INTERVAL(pInstinct) )
     {
         pState->msecNextUpdate = sithTime_g_msecGameTime + 5000;
     }
     else
     {
-        pState->msecNextUpdate = sithTime_g_msecGameTime + pInstinct->intArg[SITHAI_RANDOMTURN_ARG_INTERVAL];
+        pState->msecNextUpdate = sithTime_g_msecGameTime + SITHAIINSTINCT_RANDOMTURN_INTERVAL(pInstinct);
     }
 
     if ( (pLocal->mode & SITHAI_MODE_SEARCHING) == 0 )
@@ -1040,18 +1080,17 @@ int J3DAPI sithAIInstinct_RandomTurn(SithAIControlBlock* pLocal, SithAIInstinct*
         return 0;
     }
 
-    rdVector3 randomPyr;
-    memset(&randomPyr, 0, sizeof(randomPyr));
+    rdVector3 randomPyr = { 0 };
     randomPyr.yaw = SITH_RANDF() * 360.0f;
     rdVector3 dir = rdroid_g_yVector3;
     rdVector_Rotate3Acc(&dir, &randomPyr);
 
     rdVector3 lookPos;
-    rdVector_ScaleAdd3(&lookPos, &dir, pInstinct->fltArg[SITHAI_RANDOMTURN_ARG_LOOKDIST], &pLocal->pOwner->pos);
+    rdVector_ScaleAdd3(&lookPos, &dir, SITHAIINSTINCT_RANDOMTURN_LOOKDIST(pInstinct), &pLocal->pOwner->pos);
 
     rdVector3 toTarget;
     float distToLook;
-    SithAISightState sightState = sithAIUtil_GetDistanceToTargetPos(pLocal->pOwner, &pLocal->pOwner->pos, &lookPos, -1.0f, pInstinct->fltArg[SITHAI_RANDOMTURN_ARG_LOOKDIST], 0.0f, &toTarget, &distToLook);
+    SithAISightState sightState = sithAIUtil_GetDistanceToTargetPos(pLocal->pOwner, &pLocal->pOwner->pos, &lookPos, -1.0f, SITHAIINSTINCT_RANDOMTURN_LOOKDIST(pInstinct), 0.0f, &toTarget, &distToLook);
     if ( sightState == SITHAI_SIGHT_VISIBLE )
     {
         sithAIMove_AISetLookPosEyeLevel(pLocal, &lookPos);
@@ -1078,6 +1117,7 @@ int J3DAPI sithAIInstinct_OpenDoors(SithAIControlBlock* pLocal, SithAIInstinct* 
     }
 
     sithPlayerActions_Activate(pLocal->pOwner);
+
     pState->msecNextUpdate = sithTime_g_msecGameTime + 1000;
     return 0;
 }
@@ -1110,19 +1150,21 @@ int J3DAPI sithAIInstinct_Jump(SithAIControlBlock* pLocal, SithAIInstinct* pInst
         return 0;
     }
 
-    if ( (double)sithTime_g_msecGameTime < pState->aParams[SITHAI_JUMP_PARAM_NEXTJUMPTIME] )
+    if ( (double)sithTime_g_msecGameTime < SITHAIINSTINCT_STATE_JUMP_NEXTJUMPTIME(pState) )
     {
         return 0;
     }
 
-    pState->aParams[SITHAI_JUMP_PARAM_NEXTJUMPTIME] = (float)((double)sithTime_g_msecGameTime + pInstinct->fltArg[SITHAI_JUMP_ARG_DELAY]);
-    rdVector3 upPos;
-    rdVector3 curjumpPos;
+    SITHAIINSTINCT_STATE_JUMP_NEXTJUMPTIME(pState) = (float)((double)sithTime_g_msecGameTime + SITHAIINSTINCT_JUMP_DELAY(pInstinct));
+
     switch ( event )
     {
         case SITHAI_EVENT_TOUCHED:
         case SITHAI_EVENT_HIT_WALL:
-            rdVector_ScaleAdd3(&upPos, &rdroid_g_zVector3, pInstinct->fltArg[SITHAI_JUMP_ARG_HEIGHT], &pThing->pos);
+        {
+            rdVector3 upPos;
+            rdVector_ScaleAdd3(&upPos, &rdroid_g_zVector3, SITHAIINSTINCT_JUMP_HEIGHT(pInstinct), &pThing->pos);
+
             pSect = sithCollision_FindSectorInRadius(pSect, &pThing->pos, &upPos, 0.0f);
             if ( !pSect )
             {
@@ -1130,7 +1172,10 @@ int J3DAPI sithAIInstinct_Jump(SithAIControlBlock* pLocal, SithAIInstinct* pInst
             }
 
             float upZ = upPos.z;
+
+            rdVector3 curjumpPos;
             rdVector_ScaleAdd3(&curjumpPos, &pLocal->moveDirection, 0.1f, &upPos);
+
             curjumpPos.z = upZ;
             pSect = sithCollision_FindSectorInRadius(pSect, &upPos, &curjumpPos, 0.0f);
             if ( !pSect )
@@ -1139,20 +1184,26 @@ int J3DAPI sithAIInstinct_Jump(SithAIControlBlock* pLocal, SithAIInstinct* pInst
             }
 
             int bNoCollision;
-            if ( sithAIUtil_CheckFloorAtPos(pLocal, &curjumpPos, pSect, &bNoCollision) == SITHAIUTIL_FLOOR_OK && bNoCollision )
+            if ( sithAIUtil_CheckFloorAtPos(pLocal, &curjumpPos, pSect, &bNoCollision) == SITHAIUTIL_FLOOR_OK
+                 && bNoCollision )
             {
                 sithAIMove_AIJump(pLocal, &curjumpPos, 1.0f);
             }
             break;
+        }
 
         case SITHAI_EVENT_HIT_CLIFF:
-            rdVector_ScaleAdd3(&curjumpPos, &pLocal->moveDirection, pInstinct->fltArg[SITHAI_JUMP_ARG_CLIFFDIST], &pThing->pos);
+        {
+            rdVector3 curjumpPos;
+            rdVector_ScaleAdd3(&curjumpPos, &pLocal->moveDirection, SITHAIINSTINCT_JUMP_CLIFFDIST(pInstinct), &pThing->pos);
+
             if ( sithAIUtil_CheckPosition(pLocal, &curjumpPos, NULL) )
             {
                 rdVector_MultAcc3(&pThing->moveInfo.physics.velocity, &pLocal->moveDirection, 0.1f);
                 sithAIMove_AIJump(pLocal, &pLocal->movePos, 1.0f);
             }
             break;
+        }
 
         default:
             return 0;
@@ -1179,13 +1230,16 @@ int J3DAPI sithAIInstinct_LobFire(SithAIControlBlock* pLocal, SithAIInstinct* pI
 
     if ( !sithAIUtil_CanAttackTarget(pTarget) )
     {
-        if ( pTarget && (pTarget->flags & (SITH_TF_DYING | SITH_TF_DESTROYED)) != 0 && (pLocal->mode & SITHAI_MODE_TARGETVISIBLE) != 0 )
+        if ( pTarget
+             && (pTarget->flags & (SITH_TF_DYING | SITH_TF_DESTROYED)) != 0
+             && (pLocal->mode & SITHAI_MODE_TARGETVISIBLE) != 0 )
         {
             sithAIUtil_AIPlaySoundMode(pLocal, SITHSOUNDCLASS_VICTORY);
             sithPuppet_PlayMode(pLocal->pOwner, SITHPUPPETSUBMODE_VICTORY, NULL);
         }
 
         sithAIUtil_AISetMode(pLocal, SITHAI_MODE_SEARCHING);
+
         pLocal->pTargetThing = NULL;
         return 1;
     }
@@ -1196,21 +1250,23 @@ int J3DAPI sithAIInstinct_LobFire(SithAIControlBlock* pLocal, SithAIInstinct* pI
         return 0;
     }
 
-    int weaponNum = pInstinct->intArg[SITHAI_LOBFIRE_ARG_WEAPON];
-    if ( SITH_RANDF() < pInstinct->fltArg[SITHAI_LOBFIRE_ARG_ALTWPNCHANCE] )
+    int weaponNum = SITHAIINSTINCT_LOBFIRE_WEAPON(pInstinct);
+    if ( SITH_RANDF() < SITHAIINSTINCT_LOBFIRE_ALTWPNCHANCE(pInstinct) )
     {
         ++weaponNum;
     }
 
     sithAIUtil_SetWeaponFireFlags(weaponNum, &fireFlags);
-    if ( sithAIUtil_AIFire(pLocal, pInstinct->fltArg[SITHAI_LOBFIRE_ARG_MINDIST], pInstinct->fltArg[SITHAI_LOBFIRE_ARG_MAXDIST], pInstinct->fltArg[SITHAI_LOBFIRE_ARG_FIREDOT], pInstinct->fltArg[SITHAI_LOBFIRE_ARG_AIMERROR], weaponNum, fireFlags, 1) )
+
+    if ( sithAIUtil_AIFire(pLocal, SITHAIINSTINCT_LOBFIRE_MINDIST(pInstinct), SITHAIINSTINCT_LOBFIRE_MAXDIST(pInstinct), SITHAIINSTINCT_LOBFIRE_FIREDOT(pInstinct), SITHAIINSTINCT_LOBFIRE_AIMERROR(pInstinct), weaponNum, fireFlags, 1) )
     {
-        pState->msecNextUpdate = sithTime_g_msecGameTime + pInstinct->intArg[SITHAI_LOBFIRE_ARG_FIREDELAY];
-        pLocal->msecFireWaitTime = sithTime_g_msecGameTime + pInstinct->intArg[SITHAI_LOBFIRE_ARG_FIREDELAY];
+        pState->msecNextUpdate = sithTime_g_msecGameTime + SITHAIINSTINCT_LOBFIRE_FIREDELAY(pInstinct);
+        pLocal->msecFireWaitTime = sithTime_g_msecGameTime + SITHAIINSTINCT_LOBFIRE_FIREDELAY(pInstinct);
     }
     else
     {
         sithAIMove_AISetLookThing(pLocal, pTarget);
+
         pState->msecNextUpdate = sithTime_g_msecGameTime + 500;
     }
     return 0;
@@ -1239,13 +1295,16 @@ int J3DAPI sithAIInstinct_PrimaryFire(SithAIControlBlock* pLocal, SithAIInstinct
     SithThing* pTarget = pLocal->pTargetThing;
     if ( !sithAIUtil_CanAttackTarget(pTarget) )
     {
-        if ( pTarget && (pTarget->flags & (SITH_TF_DYING | SITH_TF_DESTROYED)) != 0 && (pLocal->mode & SITHAI_MODE_TARGETVISIBLE) != 0 )
+        if ( pTarget
+             && (pTarget->flags & (SITH_TF_DYING | SITH_TF_DESTROYED)) != 0
+             && (pLocal->mode & SITHAI_MODE_TARGETVISIBLE) != 0 )
         {
             sithAIUtil_AIPlaySoundMode(pLocal, SITHSOUNDCLASS_VICTORY);
             sithPuppet_PlayMode(pLocal->pOwner, SITHPUPPETSUBMODE_VICTORY, NULL);
         }
 
         sithAIUtil_AISetMode(pLocal, SITHAI_MODE_SEARCHING);
+
         pLocal->pTargetThing = NULL;
         return 1;
     }
@@ -1256,59 +1315,66 @@ int J3DAPI sithAIInstinct_PrimaryFire(SithAIControlBlock* pLocal, SithAIInstinct
         return 0;
     }
 
-    if ( pInstinct->fltArg[SITHAI_PRIMARYFIRE_ARG_HOLDDOT] != 0.0f && rdVector_Dot3(&pLocal->toTarget, &pActor->orient.lvec) > pInstinct->fltArg[SITHAI_PRIMARYFIRE_ARG_HOLDDOT] )
+    if ( SITHAIINSTINCT_PRIMARYFIRE_HOLDDOT(pInstinct) != 0.0f
+         && rdVector_Dot3(&pLocal->toTarget, &pActor->orient.lvec) > SITHAIINSTINCT_PRIMARYFIRE_HOLDDOT(pInstinct) )
     {
-        if ( pInstinct->fltArg[SITHAI_PRIMARYFIRE_ARG_NOLOOK] == 0.0f )
+        if ( SITHAIINSTINCT_PRIMARYFIRE_NOLOOK(pInstinct) == 0.0f )
         {
             sithAIMove_AISetLookThing(pLocal, pLocal->pTargetThing);
         }
         return 0;
     }
 
-    if ( pInstinct->fltArg[SITHAI_PRIMARYFIRE_ARG_LEADCHANCE] != 0.0f && SITH_RANDF() <= pInstinct->fltArg[SITHAI_PRIMARYFIRE_ARG_LEADCHANCE] )
+    if ( SITHAIINSTINCT_PRIMARYFIRE_LEADCHANCE(pInstinct) != 0.0f
+         && SITH_RANDF() <= SITHAIINSTINCT_PRIMARYFIRE_LEADCHANCE(pInstinct) )
     {
         flags |= SITHAIUTIL_FIRE_LEAD;
     }
 
-    int weaponNum = pInstinct->intArg[SITHAI_PRIMARYFIRE_ARG_WEAPON];
+    int weaponNum = SITHAIINSTINCT_PRIMARYFIRE_WEAPON(pInstinct);
     if ( (pLocal->mode & SITHAI_MODE_MOVING) != 0 )
     {
-        switch ( pInstinct->intArg[SITHAI_PRIMARYFIRE_ARG_MOVEFIREMODE] )
+        switch ( SITHAIINSTINCT_PRIMARYFIRE_MOVEFIREMODE(pInstinct) )
         {
-            case SITHAI_PRIMARYFIRE_MOVEFIRE_DEFAULTWPN:
+            case SITHAIINSTINCT_PRIMARYFIRE_MOVEFIRE_DEFAULTWPN:
                 weaponNum = -1;
                 break;
 
-            case SITHAI_PRIMARYFIRE_MOVEFIRE_NONE:
+            case SITHAIINSTINCT_PRIMARYFIRE_MOVEFIRE_NONE:
+            {
                 sithAIUtil_UpdateTargetSight(pLocal, 0);
                 return 0;
+            }
         }
     }
-    else if ( pInstinct->fltArg[SITHAI_PRIMARYFIRE_ARG_STILLALTWPN] != 0.0f )
+    else if ( SITHAIINSTINCT_PRIMARYFIRE_STILLALTWPN(pInstinct) != 0.0f )
     {
-        float curFireDist = pInstinct->fltArg[SITHAI_PRIMARYFIRE_ARG_ALTWPNDIST];
+        float curFireDist = SITHAIINSTINCT_PRIMARYFIRE_ALTWPNDIST(pInstinct);
         if ( curFireDist != 0.0f )
         {
             sithAIUtil_UpdateTargetSight(pLocal, 0);
+
             if ( curFireDist < pLocal->distance )
             {
-                weaponNum = pInstinct->intArg[SITHAI_PRIMARYFIRE_ARG_WEAPON] + 1;
+                weaponNum = SITHAIINSTINCT_PRIMARYFIRE_WEAPON(pInstinct) + 1;
             }
         }
         else
         {
-            weaponNum = pInstinct->intArg[SITHAI_PRIMARYFIRE_ARG_WEAPON] + 1;
+            weaponNum = SITHAIINSTINCT_PRIMARYFIRE_WEAPON(pInstinct) + 1;
         }
     }
 
-    if ( weaponNum == pInstinct->intArg[SITHAI_PRIMARYFIRE_ARG_WEAPON] && pInstinct->fltArg[SITHAI_PRIMARYFIRE_ARG_ALTWPNCHANCE] != 0.0f && SITH_RANDF() <= pInstinct->fltArg[SITHAI_PRIMARYFIRE_ARG_ALTWPNCHANCE] )
+    if ( weaponNum == SITHAIINSTINCT_PRIMARYFIRE_WEAPON(pInstinct)
+         && SITHAIINSTINCT_PRIMARYFIRE_ALTWPNCHANCE(pInstinct) != 0.0f
+         && SITH_RANDF() <= SITHAIINSTINCT_PRIMARYFIRE_ALTWPNCHANCE(pInstinct) )
     {
-        weaponNum = pInstinct->intArg[SITHAI_PRIMARYFIRE_ARG_WEAPON] + 1;
+        weaponNum = SITHAIINSTINCT_PRIMARYFIRE_WEAPON(pInstinct) + 1;
     }
 
     sithAIUtil_SetWeaponFireFlags(weaponNum, &flags);
 
-    int curBurstNum = pInstinct->intArg[SITHAI_PRIMARYFIRE_ARG_BURST];
+    int curBurstNum = SITHAIINSTINCT_PRIMARYFIRE_BURST(pInstinct);
     if ( !curBurstNum )
     {
         curBurstNum = 1;
@@ -1323,30 +1389,31 @@ int J3DAPI sithAIInstinct_PrimaryFire(SithAIControlBlock* pLocal, SithAIInstinct
         curBurstNum = rand() % abs(curBurstNum) + 1;
     }
 
-    float closestDist = pInstinct->fltArg[SITHAI_PRIMARYFIRE_ARG_MINDIST];
-    float farDist = pInstinct->fltArg[SITHAI_PRIMARYFIRE_ARG_MAXDIST];
+    float closestDist = SITHAIINSTINCT_PRIMARYFIRE_MINDIST(pInstinct);
+    float farDist = SITHAIINSTINCT_PRIMARYFIRE_MAXDIST(pInstinct);
     if ( sithWeapon_HasWeaponSelected(pActor) )
     {
         farDist = sithWeapon_GetWeaponMaxAimDistance(pActor->thingInfo.actorInfo.weaponInfo.curWeaponID);
     }
 
-    if ( (pLocal->mode & SITHAI_MODE_UNKNOWN_100000) == 0 && !sithAIUtil_IsLineOfFireClear(pLocal, &pLocal->pOwner->pos) )
+    if ( (pLocal->mode & SITHAI_MODE_UNKNOWN_100000) == 0
+         && !sithAIUtil_IsLineOfFireClear(pLocal, &pLocal->pOwner->pos) )
     {
         // No clear line of fire, skip the shot
     }
-    else if ( sithAIUtil_AIFire(pLocal, closestDist, farDist, pInstinct->fltArg[SITHAI_PRIMARYFIRE_ARG_FIREDOT], pInstinct->fltArg[SITHAI_PRIMARYFIRE_ARG_AIMERROR], weaponNum, flags, curBurstNum) )
+    else if ( sithAIUtil_AIFire(pLocal, closestDist, farDist, SITHAIINSTINCT_PRIMARYFIRE_FIREDOT(pInstinct), SITHAIINSTINCT_PRIMARYFIRE_AIMERROR(pInstinct), weaponNum, flags, curBurstNum) )
     {
-        if ( pInstinct->fltArg[SITHAI_PRIMARYFIRE_ARG_NOLOOK] == 0.0f && !sithWeapon_IsAiming(pLocal->pOwner) )
+        if ( SITHAIINSTINCT_PRIMARYFIRE_NOLOOK(pInstinct) == 0.0f && !sithWeapon_IsAiming(pLocal->pOwner) )
         {
             sithAIMove_AISetLookThing(pLocal, pTarget);
         }
 
-        float fireDelay = (SITH_RANDF() * 0.4f - 0.2f + 1.0f) * pInstinct->fltArg[SITHAI_PRIMARYFIRE_ARG_FIREDELAY];
+        float fireDelay = (SITH_RANDF() * 0.4f - 0.2f + 1.0f) * SITHAIINSTINCT_PRIMARYFIRE_FIREDELAY(pInstinct);
         pState->msecNextUpdate = sithTime_g_msecGameTime + (uint32_t)fireDelay;
         return 0;
     }
 
-    if ( pInstinct->fltArg[SITHAI_PRIMARYFIRE_ARG_NOLOOK] == 0.0f && (pLocal->mode & SITHAI_MODE_MOVING) == 0 )
+    if ( SITHAIINSTINCT_PRIMARYFIRE_NOLOOK(pInstinct) == 0.0f && (pLocal->mode & SITHAI_MODE_MOVING) == 0 )
     {
         SithWeaponId curWeaponID = pLocal->pOwner->thingInfo.actorInfo.weaponInfo.curWeaponID;
         switch ( pLocal->targetSightState )
@@ -1356,17 +1423,20 @@ int J3DAPI sithAIInstinct_PrimaryFire(SithAIControlBlock* pLocal, SithAIInstinct
                 break;
 
             case SITHAI_SIGHT_VISIBLE:
+            {
                 if ( !rdVector_IsZero3(&pLocal->pTargetThing->moveInfo.physics.velocity) )
                 {
                     rdVector3 lookPosition;
                     rdVector_ScaleAdd3(&lookPosition, &pLocal->pTargetThing->moveInfo.physics.velocity, 0.5f, &pLocal->pTargetThing->pos);
                     sithAIMove_AISetLookPosEyeLevel(pLocal, &lookPosition);
                 }
-                else if ( (unsigned int)curWeaponID >= SITHWEAPON_COMFISTS && (unsigned int)curWeaponID <= SITHWEAPON_COMSHOTGUN )
+                else if ( (unsigned int)curWeaponID >= SITHWEAPON_COMFISTS
+                          && (unsigned int)curWeaponID <= SITHWEAPON_COMSHOTGUN )
                 {
                     sithAIMove_AISetLookThing(pLocal, pLocal->pTargetThing);
                 }
                 break;
+            }
         }
     }
 
@@ -1390,7 +1460,7 @@ int J3DAPI sithAIInstinct_AlternateFire(SithAIControlBlock* pLocal, SithAIInstin
 
     if ( (pLocal->mode & SITHAI_MODE_ATTACKING) == 0 )
     {
-        pState->msecNextUpdate = sithTime_g_msecGameTime + pInstinct->intArg[SITHAI_ALTERNATEFIRE_ARG_RETRYDELAY];
+        pState->msecNextUpdate = sithTime_g_msecGameTime + SITHAIINSTINCT_ALTERNATEFIRE_RETRYDELAY(pInstinct);
         return 0;
     }
 
@@ -1400,7 +1470,7 @@ int J3DAPI sithAIInstinct_AlternateFire(SithAIControlBlock* pLocal, SithAIInstin
         return 0;
     }
 
-    int weaponNum = pInstinct->intArg[SITHAI_ALTERNATEFIRE_ARG_WEAPON];
+    int weaponNum = SITHAIINSTINCT_ALTERNATEFIRE_WEAPON(pInstinct);
     if ( weaponNum < 0 )
     {
         weaponNum = rand() % (abs(weaponNum) + 1);
@@ -1408,12 +1478,13 @@ int J3DAPI sithAIInstinct_AlternateFire(SithAIControlBlock* pLocal, SithAIInstin
 
     sithAIUtil_SetWeaponFireFlags(weaponNum, &flags);
 
-    if ( pInstinct->fltArg[SITHAI_ALTERNATEFIRE_ARG_LEADCHANCE] != 0.0f && SITH_RANDF() <= pInstinct->fltArg[SITHAI_ALTERNATEFIRE_ARG_LEADCHANCE] )
+    if ( SITHAIINSTINCT_ALTERNATEFIRE_LEADCHANCE(pInstinct) != 0.0f
+         && SITH_RANDF() <= SITHAIINSTINCT_ALTERNATEFIRE_LEADCHANCE(pInstinct) )
     {
         flags |= SITHAIUTIL_FIRE_LEAD;
     }
 
-    int burstCount = pInstinct->intArg[SITHAI_ALTERNATEFIRE_ARG_BURST];
+    int burstCount = SITHAIINSTINCT_ALTERNATEFIRE_BURST(pInstinct);
     if ( !burstCount )
     {
         burstCount = 1;
@@ -1428,14 +1499,14 @@ int J3DAPI sithAIInstinct_AlternateFire(SithAIControlBlock* pLocal, SithAIInstin
         burstCount = rand() % abs(burstCount) + 1;
     }
 
-    if ( pInstinct->intArg[SITHAI_ALTERNATEFIRE_ARG_STOPONFIRE] )
+    if ( SITHAIINSTINCT_ALTERNATEFIRE_STOPONFIRE(pInstinct) )
     {
         flags |= SITHAIUTIL_FIRE_STOP_ON_FIRE;
     }
 
-    if ( sithAIUtil_AIFire(pLocal, pInstinct->fltArg[SITHAI_ALTERNATEFIRE_ARG_MINDIST], pInstinct->fltArg[SITHAI_ALTERNATEFIRE_ARG_MAXDIST], pInstinct->fltArg[SITHAI_ALTERNATEFIRE_ARG_FIREDOT], pInstinct->fltArg[SITHAI_ALTERNATEFIRE_ARG_AIMERROR], weaponNum, flags, burstCount) )
+    if ( sithAIUtil_AIFire(pLocal, SITHAIINSTINCT_ALTERNATEFIRE_MINDIST(pInstinct), SITHAIINSTINCT_ALTERNATEFIRE_MAXDIST(pInstinct), SITHAIINSTINCT_ALTERNATEFIRE_FIREDOT(pInstinct), SITHAIINSTINCT_ALTERNATEFIRE_AIMERROR(pInstinct), weaponNum, flags, burstCount) )
     {
-        float currentfireDelay = (SITH_RANDF() * 0.4f - 0.2f + 1.0f) * pInstinct->fltArg[SITHAI_ALTERNATEFIRE_ARG_FIREDELAY];
+        float currentfireDelay = (SITH_RANDF() * 0.4f - 0.2f + 1.0f) * SITHAIINSTINCT_ALTERNATEFIRE_FIREDELAY(pInstinct);
         pState->msecNextUpdate = sithTime_g_msecGameTime + (uint32_t)currentfireDelay;
     }
     else
@@ -1453,7 +1524,7 @@ int J3DAPI sithAIInstinct_AlternateFire(SithAIControlBlock* pLocal, SithAIInstin
             sithAIMove_AISetLookPosEyeLevel(pLocal, &lookPos);
         }
 
-        pState->msecNextUpdate = sithTime_g_msecGameTime + pInstinct->intArg[SITHAI_ALTERNATEFIRE_ARG_RETRYDELAY];
+        pState->msecNextUpdate = sithTime_g_msecGameTime + SITHAIINSTINCT_ALTERNATEFIRE_RETRYDELAY(pInstinct);
     }
 
     return 0;
@@ -1465,7 +1536,7 @@ int J3DAPI sithAIInstinct_CircleStrafe(SithAIControlBlock* pLocal, SithAIInstinc
     int result = 0;
     SITH_ASSERTREL(pLocal);
 
-    pState->msecNextUpdate = sithTime_g_msecGameTime + pInstinct->intArg[SITHAI_CIRCLESTRAFE_ARG_INTERVAL];
+    pState->msecNextUpdate = sithTime_g_msecGameTime + SITHAIINSTINCT_CIRCLESTRAFE_INTERVAL(pInstinct);
     if ( (pLocal->mode & (SITHAI_MODE_UNKNOWN_1000000 | SITHAI_MODE_FLEEING | SITHAI_MODE_SEARCHING)) != 0 )
     {
         pLocal->mode &= ~SITHAI_MODE_CIRCLESTRAFING;
@@ -1481,19 +1552,21 @@ int J3DAPI sithAIInstinct_CircleStrafe(SithAIControlBlock* pLocal, SithAIInstinc
     if ( !sithAIUtil_CanAttackTarget(pLocal->goalThing) )
     {
         sithAIUtil_AISetMode(pLocal, SITHAI_MODE_SEARCHING);
+
         pLocal->goalThing = NULL;
         return 0;
     }
 
-    if ( pInstinct->fltArg[SITHAI_CIRCLESTRAFE_ARG_WAITFIRE] != 0.0f && sithPuppet_IsAnyModeOnTrack(pLocal->pOwner, SITHPUPPETSUBMODE_FIRE, SITHPUPPETSUBMODE_FIRE4) )
+    if ( SITHAIINSTINCT_CIRCLESTRAFE_WAITFIRE(pInstinct) != 0.0f
+         && sithPuppet_IsAnyModeOnTrack(pLocal->pOwner, SITHPUPPETSUBMODE_FIRE, SITHPUPPETSUBMODE_FIRE4) )
     {
         pState->msecNextUpdate = sithTime_g_msecGameTime + 500;
         return 0;
     }
 
-    if ( pInstinct->fltArg[SITHAI_CIRCLESTRAFE_ARG_SPEED] != 0.0f )
+    if ( SITHAIINSTINCT_CIRCLESTRAFE_SPEED(pInstinct) != 0.0f )
     {
-        rate = pInstinct->fltArg[SITHAI_CIRCLESTRAFE_ARG_SPEED];
+        rate = SITHAIINSTINCT_CIRCLESTRAFE_SPEED(pInstinct);
     }
 
     switch ( event )
@@ -1506,6 +1579,7 @@ int J3DAPI sithAIInstinct_CircleStrafe(SithAIControlBlock* pLocal, SithAIInstinc
             break;
 
         case SITHAI_EVENT_TOUCHED:
+        {
             if ( (pLocal->mode & SITHAI_MODE_CIRCLESTRAFING) != 0 )
             {
                 if ( pThing && pThing->type != SITH_THING_PLAYER )
@@ -1515,68 +1589,73 @@ int J3DAPI sithAIInstinct_CircleStrafe(SithAIControlBlock* pLocal, SithAIInstinc
             }
 
             return 0;
+        }
 
         case SITHAI_EVENT_HIT_WALL:
         case SITHAI_EVENT_HIT_CLIFF:
         case SITHAI_EVENT_HIT_THING:
         case SITHAI_EVENT_GOAL_UNREACHABLE:
+        {
             if ( (pLocal->mode & SITHAI_MODE_CIRCLESTRAFING) != 0 )
             {
                 goto stop;
             }
 
             return 0;
+        }
 
         default:
             return 0;
     }
 
-    if ( (pLocal->mode & SITHAI_MODE_CIRCLESTRAFING) != 0 && !pInstinct->intArg[SITHAI_CIRCLESTRAFE_ARG_LOOKATDEST] )
+    if ( (pLocal->mode & SITHAI_MODE_CIRCLESTRAFING) != 0 && !SITHAIINSTINCT_CIRCLESTRAFE_LOOKATDEST(pInstinct) )
     {
         sithAIMove_AISetLookThing(pLocal, pLocal->goalThing);
     }
 
-    int bRandom = pInstinct->intArg[SITHAI_CIRCLESTRAFE_ARG_RANDOM];
+    bool bRandom = SITHAIINSTINCT_CIRCLESTRAFE_RANDOM(pInstinct) != 0;
     sithAIUtil_UpdateGoalSight(pLocal);
-    if ( pInstinct->fltArg[SITHAI_CIRCLESTRAFE_ARG_MAXDIST] < pLocal->targetDistance || pLocal->targetSightState2 != SITHAI_SIGHT_VISIBLE )
+
+    if ( SITHAIINSTINCT_CIRCLESTRAFE_MAXDIST(pInstinct) < pLocal->targetDistance
+         || pLocal->targetSightState2 != SITHAI_SIGHT_VISIBLE )
     {
         goto stop;
     }
 
     rdVector3 strafeDir;
     rdVector_Scale3(&strafeDir, &pLocal->vecUnknown0, -pLocal->targetDistance);
+
     if ( !bRandom && rdVector_Dot3(&pLocal->goalThing->orient.lvec, &strafeDir) < 0.0f )
     {
         goto stop;
     }
 
-    if ( pState->aParams[SITHAI_CIRCLESTRAFE_PARAM_NUMSTEPS]++ > 4.0f )
+    if ( SITHAIINSTINCT_STATE_CIRCLESTRAFE_NUMSTEPS(pState)++ > 4.0f )
     {
         goto stop;
     }
 
-    if ( pState->aParams[SITHAI_CIRCLESTRAFE_PARAM_SIDE] == 0.0f || bRandom )
+    if ( SITHAIINSTINCT_STATE_CIRCLESTRAFE_SIDE(pState) == 0.0f || bRandom )
     {
         if ( SITH_RANDF() < 0.5f )
         {
-            pState->aParams[SITHAI_CIRCLESTRAFE_PARAM_SIDE] = -1.0f;
+            SITHAIINSTINCT_STATE_CIRCLESTRAFE_SIDE(pState) = -1.0f;
         }
         else
         {
-            pState->aParams[SITHAI_CIRCLESTRAFE_PARAM_SIDE] = 1.0f;
+            SITHAIINSTINCT_STATE_CIRCLESTRAFE_SIDE(pState) = 1.0f;
         }
     }
 
-    float side = pState->aParams[SITHAI_CIRCLESTRAFE_PARAM_SIDE];
-    rdVector3 pyr;
-    memset(&pyr, 0, sizeof(pyr));
+    float side = SITHAIINSTINCT_STATE_CIRCLESTRAFE_SIDE(pState);
+    rdVector3 pyr = { 0 };
     if ( !bRandom )
     {
-        pyr.y = pInstinct->fltArg[SITHAI_CIRCLESTRAFE_ARG_ANGLE] * side;
+        pyr.y = SITHAIINSTINCT_CIRCLESTRAFE_ANGLE(pInstinct) * side;
     }
     else
     {
-        pyr.y = (SITH_RANDF() + 0.5f) * side * pInstinct->fltArg[SITHAI_CIRCLESTRAFE_ARG_ANGLE];
+        pyr.y = (SITH_RANDF() + 0.5f) * side * SITHAIINSTINCT_CIRCLESTRAFE_ANGLE(pInstinct);
     }
 
     {
@@ -1590,16 +1669,17 @@ int J3DAPI sithAIInstinct_CircleStrafe(SithAIControlBlock* pLocal, SithAIInstinc
     rdVector3 nextPos;
     rdVector_ScaleAdd3(&nextPos, &strafeDir, pLocal->pOwner->collide.movesize * 3.0f, &pLocal->pOwner->pos);
 
-    if ( pInstinct->fltArg[SITHAI_CIRCLESTRAFE_ARG_MINSTEP] != 0.0f )
+    if ( SITHAIINSTINCT_CIRCLESTRAFE_MINSTEP(pInstinct) != 0.0f )
     {
         rdVector3 pushDir;
         float pushDist;
 
         rdVector_Sub3(&pushDir, &pLocal->pOwner->pos, &nextPos);
+
         pushDist = rdVector_Normalize3Acc(&pushDir);
-        if ( pushDist < pInstinct->fltArg[SITHAI_CIRCLESTRAFE_ARG_MINSTEP] )
+        if ( pushDist < SITHAIINSTINCT_CIRCLESTRAFE_MINSTEP(pInstinct) )
         {
-            pushDist = pInstinct->fltArg[SITHAI_CIRCLESTRAFE_ARG_MINSTEP];
+            pushDist = SITHAIINSTINCT_CIRCLESTRAFE_MINSTEP(pInstinct);
             rdVector_ScaleAdd3(&nextPos, &pushDir, pushDist, &nextPos);
         }
     }
@@ -1610,7 +1690,8 @@ int J3DAPI sithAIInstinct_CircleStrafe(SithAIControlBlock* pLocal, SithAIInstinc
     {
         pLocal->mode |= SITHAI_MODE_CIRCLESTRAFING;
         sithAIMove_AISetMovePos(pLocal, &nextPos, rate);
-        if ( !pInstinct->intArg[SITHAI_CIRCLESTRAFE_ARG_LOOKATDEST] )
+
+        if ( !SITHAIINSTINCT_CIRCLESTRAFE_LOOKATDEST(pInstinct) )
         {
             sithAIMove_AISetLookThing(pLocal, pLocal->goalThing);
         }
@@ -1619,12 +1700,12 @@ int J3DAPI sithAIInstinct_CircleStrafe(SithAIControlBlock* pLocal, SithAIInstinc
             sithAIMove_AISetLookPosEyeLevel(pLocal, &nextPos);
         }
 
-        pState->msecNextUpdate = sithTime_g_msecGameTime + pInstinct->intArg[SITHAI_CIRCLESTRAFE_ARG_MOVEINTERVAL];
+        pState->msecNextUpdate = sithTime_g_msecGameTime + SITHAIINSTINCT_CIRCLESTRAFE_MOVEINTERVAL(pInstinct);
     }
     else
     {
-        pState->aParams[SITHAI_CIRCLESTRAFE_PARAM_SIDE] = -side;
-        pState->aParams[SITHAI_CIRCLESTRAFE_PARAM_NUMSTEPS] = 0.0f;
+        SITHAIINSTINCT_STATE_CIRCLESTRAFE_SIDE(pState) = -side;
+        SITHAIINSTINCT_STATE_CIRCLESTRAFE_NUMSTEPS(pState) = 0.0f;
         pLocal->mode &= ~SITHAI_MODE_CIRCLESTRAFING;
     }
 
@@ -1632,9 +1713,10 @@ int J3DAPI sithAIInstinct_CircleStrafe(SithAIControlBlock* pLocal, SithAIInstinc
 
 stop:
     sithAIMove_AISetLookThing(pLocal, pLocal->goalThing);
+
     pLocal->mode &= ~SITHAI_MODE_CIRCLESTRAFING;
-    pState->aParams[SITHAI_CIRCLESTRAFE_PARAM_SIDE] = 0.0f;
-    pState->aParams[SITHAI_CIRCLESTRAFE_PARAM_NUMSTEPS] = 0.0f;
+    SITHAIINSTINCT_STATE_CIRCLESTRAFE_SIDE(pState) = 0.0f;
+    SITHAIINSTINCT_STATE_CIRCLESTRAFE_NUMSTEPS(pState) = 0.0f;
     return result;
 }
 
@@ -1652,7 +1734,8 @@ int J3DAPI sithAIInstinct_Dodge(SithAIControlBlock* pLocal, SithAIInstinct* pIns
         return 0;
     }
 
-    if ( (event & (SITHAI_EVENT_GOAL_REACHED | SITHAI_EVENT_GOAL_UNREACHABLE)) != 0 && (pLocal->mode & SITHAI_MODE_UNKNOWN_10) != 0 )
+    if ( (event & (SITHAI_EVENT_GOAL_REACHED | SITHAI_EVENT_GOAL_UNREACHABLE)) != 0
+         && (pLocal->mode & SITHAI_MODE_UNKNOWN_10) != 0 )
     {
         goto goal_reached;
     }
@@ -1662,20 +1745,20 @@ int J3DAPI sithAIInstinct_Dodge(SithAIControlBlock* pLocal, SithAIInstinct* pIns
         return 0;
     }
 
-    float minDodgeDist = pInstinct->fltArg[SITHAI_DODGE_ARG_MINDIST] + 0.03f;
-    float maxStep      = pInstinct->fltArg[SITHAI_DODGE_ARG_MAXDIST] + 0.03f;
+    float minDodgeDist = SITHAIINSTINCT_DODGE_MINDIST(pInstinct) + 0.03f;
+    float maxStep      = SITHAIINSTINCT_DODGE_MAXDIST(pInstinct) + 0.03f;
     float moveDist     = SITH_RANDF() * (maxStep - minDodgeDist) + minDodgeDist;
-    float minTargetLen = pInstinct->fltArg[SITHAI_DODGE_ARG_MINTARGETDIST];
-    float minDistVal   = pInstinct->fltArg[SITHAI_DODGE_ARG_PATHMINDIST];
+    float minTargetLen = SITHAIINSTINCT_DODGE_MINTARGETDIST(pInstinct);
+    float minDistVal   = SITHAIINSTINCT_DODGE_PATHMINDIST(pInstinct);
 
-    if ( pInstinct->fltArg[SITHAI_DODGE_ARG_SPEED] != 0.0f )
+    if ( SITHAIINSTINCT_DODGE_SPEED(pInstinct) != 0.0f )
     {
-        moveSpeed = pInstinct->fltArg[SITHAI_DODGE_ARG_SPEED];
+        moveSpeed = SITHAIINSTINCT_DODGE_SPEED(pInstinct);
     }
 
-    if ( pInstinct->fltArg[SITHAI_DODGE_ARG_COOLDOWN] != 0.0f )
+    if ( SITHAIINSTINCT_DODGE_COOLDOWN(pInstinct) != 0.0f )
     {
-        nextCheck = pState->aParams[SITHAI_DODGE_PARAM_LASTDODGETIME] + pInstinct->fltArg[SITHAI_DODGE_ARG_COOLDOWN];
+        nextCheck = SITHAIINSTINCT_STATE_DODGE_LASTDODGETIME(pState) + SITHAIINSTINCT_DODGE_COOLDOWN(pInstinct);
     }
 
     rdVector3 toDest;
@@ -1708,7 +1791,7 @@ int J3DAPI sithAIInstinct_Dodge(SithAIControlBlock* pLocal, SithAIInstinct* pIns
                 return 0;
             }
 
-            if ( SITH_RANDF() >= pInstinct->fltArg[SITHAI_DODGE_ARG_TARGETEDCHANCE] )
+            if ( SITH_RANDF() >= SITHAIINSTINCT_DODGE_TARGETEDCHANCE(pInstinct) )
             {
                 return 0;
             }
@@ -1726,7 +1809,9 @@ int J3DAPI sithAIInstinct_Dodge(SithAIControlBlock* pLocal, SithAIInstinct* pIns
             return 0;
         }
 
-        if ( pInstinct->fltArg[SITHAI_DODGE_ARG_ROLLCHANCE] != 0.0f && SITH_RANDF() < pInstinct->fltArg[SITHAI_DODGE_ARG_ROLLCHANCE] && sithAIMove_AISpecialMove(pLocal, SITHACTORSPECIALMOVE_DIR_RANDOM | SITHACTORSPECIALMOVE_ROLL) )
+        if ( SITHAIINSTINCT_DODGE_ROLLCHANCE(pInstinct) != 0.0f
+             && SITH_RANDF() < SITHAIINSTINCT_DODGE_ROLLCHANCE(pInstinct)
+             && sithAIMove_AISpecialMove(pLocal, SITHACTORSPECIALMOVE_DIR_RANDOM | SITHACTORSPECIALMOVE_ROLL) )
         {
             goto dodged;
         }
@@ -1740,7 +1825,7 @@ int J3DAPI sithAIInstinct_Dodge(SithAIControlBlock* pLocal, SithAIInstinct* pIns
             return 0;
         }
 
-        if ( SITH_RANDF() >= pInstinct->fltArg[SITHAI_DODGE_ARG_HITCHANCE] )
+        if ( SITH_RANDF() >= SITHAIINSTINCT_DODGE_HITCHANCE(pInstinct) )
         {
             return 0;
         }
@@ -1789,12 +1874,12 @@ int J3DAPI sithAIInstinct_Dodge(SithAIControlBlock* pLocal, SithAIInstinct* pIns
     else if ( event == SITHAI_EVENT_SOUND )
     {
         SithAIAwarenessSector* pCurSector = &sithAIAwareness_g_aSectors[sithSector_GetSectorIndex(pLocal->pOwner->pInSector)];
-        if ( pCurSector->aLevelAtTransmittingPos[2] == 0.0f )
+        if ( pCurSector->aLevelAtTransmittingPos[SITHAIAWARENESS_THREAT] == 0.0f )
         {
             return 0;
         }
 
-        pSource = pCurSector->aTransmittingThing[2];
+        pSource = pCurSector->aTransmittingThing[SITHAIAWARENESS_THREAT];
         if ( !pSource )
         {
             return 0;
@@ -1840,6 +1925,7 @@ int J3DAPI sithAIInstinct_Dodge(SithAIControlBlock* pLocal, SithAIInstinct* pIns
             rdVector3 heading;
 
             sithAIUtil_GetXYHeadingVector(pSource, &heading);
+
             if ( rdVector_Dot3(&toDest, &heading) > -0.5f )
             {
                 return 0;
@@ -1848,7 +1934,7 @@ int J3DAPI sithAIInstinct_Dodge(SithAIControlBlock* pLocal, SithAIInstinct* pIns
             moveDist  = 0.5f;
             moveFlags = SITHAIUTIL_MKPOINT_RANDSIDE | SITHAIUTIL_MKPOINT_SIDEWAYS;
 
-            float chance = pInstinct->fltArg[SITHAI_DODGE_ARG_VEHICLECHANCE];
+            float chance = SITHAIINSTINCT_DODGE_VEHICLECHANCE(pInstinct);
             if ( chance == 0.0f )
             {
                 chance = 0.98f;
@@ -1873,12 +1959,13 @@ int J3DAPI sithAIInstinct_Dodge(SithAIControlBlock* pLocal, SithAIInstinct* pIns
             return 0;
         }
 
-        if ( SITH_RANDF() >= pInstinct->fltArg[SITHAI_DODGE_ARG_SOUNDCHANCE] )
+        if ( SITH_RANDF() >= SITHAIINSTINCT_DODGE_SOUNDCHANCE(pInstinct) )
         {
             return 0;
         }
 
         sithAIUtil_AIPlaySoundMode(pLocal, SITHSOUNDCLASS_FEAR);
+
         pLocal->pFleeFromThing = pFirer;
         yaw = 45.0f;
         moveFlags = SITHAIUTIL_MKPOINT_RANDSIDE | SITHAIUTIL_MKPOINT_RANDANGLE | SITHAIUTIL_MKPOINT_YAW;
@@ -1904,7 +1991,8 @@ make_path:
 dodged:
     pLocal->mode |= SITHAI_MODE_UNKNOWN_10;
     sithAIUtil_AIClearMode(pLocal, SITHAI_MODE_TRAVERSEWPNTS);
-    pState->aParams[SITHAI_DODGE_PARAM_LASTDODGETIME] = sithTime_g_secGameTime;
+
+    SITHAIINSTINCT_STATE_DODGE_LASTDODGETIME(pState) = sithTime_g_secGameTime;
     return bEvaded;
 
 goal_reached:
@@ -1924,7 +2012,8 @@ int J3DAPI sithAIInstinct_HitAndRun(SithAIControlBlock* pLocal, SithAIInstinct* 
     switch ( event )
     {
         case (SithAIEventType)0:
-            if ( pState->aParams[SITHAI_HITANDRUN_PARAM_FLEEPENDING] == 1.0f )
+        {
+            if ( SITHAIINSTINCT_STATE_HITANDRUN_FLEEPENDING(pState) == 1.0f )
             {
                 if ( sithPuppet_IsAnyModeOnTrack(pLocal->pOwner, SITHPUPPETSUBMODE_FIRE, SITHPUPPETSUBMODE_FIRE4) )
                 {
@@ -1934,19 +2023,23 @@ int J3DAPI sithAIInstinct_HitAndRun(SithAIControlBlock* pLocal, SithAIInstinct* 
                 }
 
                 sithAIUtil_AISetMode(pLocal, SITHAI_MODE_FLEEING);
+
                 pLocal->pFleeFromThing = pLocal->pTargetThing;
                 goto flee;
             }
             break;
+        }
 
         case SITHAI_EVENT_FIRE:
-            pState->aParams[SITHAI_HITANDRUN_PARAM_HASFIRED] = 1.0f;
-            if ( SITH_RANDF() < pInstinct->fltArg[SITHAI_HITANDRUN_ARG_FIRECHANCE] )
+        {
+            SITHAIINSTINCT_STATE_HITANDRUN_HASFIRED(pState) = 1.0f;
+            if ( SITH_RANDF() < SITHAIINSTINCT_HITANDRUN_FIRECHANCE(pInstinct) )
             {
-                pState->aParams[SITHAI_HITANDRUN_PARAM_FLEEPENDING] = 1.0f;
+                SITHAIINSTINCT_STATE_HITANDRUN_FLEEPENDING(pState) = 1.0f;
                 pState->msecNextUpdate = sithTime_g_msecGameTime + 500;
             }
             return 0;
+        }
 
         default:
             return 0;
@@ -1954,43 +2047,48 @@ int J3DAPI sithAIInstinct_HitAndRun(SithAIControlBlock* pLocal, SithAIInstinct* 
 
     if ( (pLocal->mode & SITHAI_MODE_FLEEING) != 0 )
     {
-        if ( pState->aParams[SITHAI_HITANDRUN_PARAM_FLEEING] == 1.0f )
+        if ( SITHAIINSTINCT_STATE_HITANDRUN_FLEEING(pState) == 1.0f )
         {
             sithAIUtil_AISetMode(pLocal, SITHAI_MODE_ATTACKING);
-            pState->aParams[SITHAI_HITANDRUN_PARAM_FLEEING] = 0.0f;
+
+            SITHAIINSTINCT_STATE_HITANDRUN_FLEEING(pState) = 0.0f;
         }
 
         return 0;
     }
 
-    if ( (pLocal->mode & SITHAI_MODE_TARGETVISIBLE) != 0 && pState->aParams[SITHAI_HITANDRUN_PARAM_HASFIRED] != 0.0f && sithAIUtil_CanAttackTarget(pLocal->pTargetThing) )
+    if ( (pLocal->mode & SITHAI_MODE_TARGETVISIBLE) != 0
+         && SITHAIINSTINCT_STATE_HITANDRUN_HASFIRED(pState) != 0.0f
+         && sithAIUtil_CanAttackTarget(pLocal->pTargetThing) )
     {
-        float time = pState->aParams[SITHAI_HITANDRUN_PARAM_ATTACKELAPSED];
+        float time = SITHAIINSTINCT_STATE_HITANDRUN_ATTACKELAPSED(pState);
         time += 1000.0f;
-        if ( time > pInstinct->fltArg[SITHAI_HITANDRUN_ARG_ATTACKTIME] )
+        if ( time > SITHAIINSTINCT_HITANDRUN_ATTACKTIME(pInstinct) )
         {
             sithAIUtil_AISetMode(pLocal, SITHAI_MODE_FLEEING);
+
             pLocal->pFleeFromThing = pLocal->pTargetThing;
             goto flee;
         }
 
-        pState->aParams[SITHAI_HITANDRUN_PARAM_ATTACKELAPSED] = time;
+        SITHAIINSTINCT_STATE_HITANDRUN_ATTACKELAPSED(pState) = time;
         pState->msecNextUpdate = sithTime_g_msecGameTime + 1000;
     }
     else
     {
-        pState->aParams[SITHAI_HITANDRUN_PARAM_ATTACKELAPSED] = 0.0f;
+        SITHAIINSTINCT_STATE_HITANDRUN_ATTACKELAPSED(pState) = 0.0f;
         pState->msecNextUpdate = sithTime_g_msecGameTime + 1000;
     }
 
     return 0;
 
 flee:
-    pState->aParams[SITHAI_HITANDRUN_PARAM_FLEEING] = 1.0f;
-    pState->aParams[SITHAI_HITANDRUN_PARAM_ATTACKELAPSED] = 0.0f;
-    pState->aParams[SITHAI_HITANDRUN_PARAM_FLEEPENDING] = 0.0f;
-    pState->aParams[SITHAI_HITANDRUN_PARAM_HASFIRED] = 0.0f;
-    pState->msecNextUpdate = sithTime_g_msecGameTime + (int)pInstinct->fltArg[SITHAI_HITANDRUN_ARG_FLEETIME];
+    SITHAIINSTINCT_STATE_HITANDRUN_FLEEING(pState)       = 1.0f;
+    SITHAIINSTINCT_STATE_HITANDRUN_ATTACKELAPSED(pState) = 0.0f;
+    SITHAIINSTINCT_STATE_HITANDRUN_FLEEPENDING(pState)   = 0.0f;
+    SITHAIINSTINCT_STATE_HITANDRUN_HASFIRED(pState)      = 0.0f;
+
+    pState->msecNextUpdate = sithTime_g_msecGameTime + (int)SITHAIINSTINCT_HITANDRUN_FLEETIME(pInstinct);
     return 0;
 }
 
@@ -2005,7 +2103,7 @@ int J3DAPI sithAIInstinct_Retreat(SithAIControlBlock* pLocal, SithAIInstinct* pI
 
     if ( !sithAIUtil_CanAttackTarget(pLocal->pTargetThing) )
     {
-        pState->msecNextUpdate = sithTime_g_msecGameTime + pInstinct->intArg[SITHAI_RETREAT_ARG_INTERVAL];
+        pState->msecNextUpdate = sithTime_g_msecGameTime + SITHAIINSTINCT_RETREAT_INTERVAL(pInstinct);
         return 0;
     }
 
@@ -2016,22 +2114,25 @@ int J3DAPI sithAIInstinct_Retreat(SithAIControlBlock* pLocal, SithAIInstinct* pI
     }
 
     float healthRatio = pLocal->pOwner->thingInfo.actorInfo.health / pLocal->pOwner->thingInfo.actorInfo.maxHealth;
-    if ( pInstinct->fltArg[SITHAI_RETREAT_ARG_MAXRETREATS] != 0.0f && pState->aParams[SITHAI_RETREAT_PARAM_NUMRETREATS] > pInstinct->fltArg[SITHAI_RETREAT_ARG_MAXRETREATS] )
+    if ( SITHAIINSTINCT_RETREAT_MAXRETREATS(pInstinct) != 0.0f
+        && SITHAIINSTINCT_STATE_RETREAT_NUMRETREATS(pState) > SITHAIINSTINCT_RETREAT_MAXRETREATS(pInstinct) )
     {
         return 0;
     }
 
-    if ( healthRatio < pInstinct->fltArg[SITHAI_RETREAT_ARG_HEALTH] )
+    if ( healthRatio < SITHAIINSTINCT_RETREAT_HEALTH(pInstinct) )
     {
         switch ( event )
         {
             case (SithAIEventType)0:
             case SITHAI_EVENT_HIT_SECTOR:
-                if ( SITH_RANDF() < pInstinct->fltArg[SITHAI_RETREAT_ARG_CHANCE] )
+            {
+                if ( SITH_RANDF() < SITHAIINSTINCT_RETREAT_CHANCE(pInstinct) )
                 {
-                    pState->aParams[SITHAI_RETREAT_PARAM_NUMRETREATS] = pState->aParams[SITHAI_RETREAT_PARAM_NUMRETREATS] + 1.0f;
+                    SITHAIINSTINCT_STATE_RETREAT_NUMRETREATS(pState) = SITHAIINSTINCT_STATE_RETREAT_NUMRETREATS(pState) + 1.0f;
                     sithAIUtil_AIPlaySoundMode(pLocal, SITHSOUNDCLASS_FLEE);
                     sithAIUtil_AISetMode(pLocal, SITHAI_MODE_FLEEING);
+
                     pLocal->pFleeFromThing = pLocal->pTargetThing;
                 }
                 else if ( SITH_RANDF() < 0.1f )
@@ -2039,10 +2140,11 @@ int J3DAPI sithAIInstinct_Retreat(SithAIControlBlock* pLocal, SithAIInstinct* pI
                     sithAIUtil_AIPlaySoundMode(pLocal, SITHSOUNDCLASS_FEAR);
                 }
                 break;
+            }
         }
     }
 
-    pState->msecNextUpdate = sithTime_g_msecGameTime + pInstinct->intArg[SITHAI_RETREAT_ARG_INTERVAL];
+    pState->msecNextUpdate = sithTime_g_msecGameTime + SITHAIINSTINCT_RETREAT_INTERVAL(pInstinct);
     return 0;
 }
 
@@ -2070,7 +2172,8 @@ int J3DAPI sithAIInstinct_RandomMove(SithAIControlBlock* pLocal, SithAIInstinct*
         return 0;
     }
 
-    if ( pInstinct->intArg[SITHAI_RANDOMMOVE_ARG_WAITFIRE] && sithPuppet_IsAnyModeOnTrack(pLocal->pOwner, SITHPUPPETSUBMODE_FIRE, SITHPUPPETSUBMODE_FIRE4) )
+    if ( SITHAIINSTINCT_RANDOMMOVE_WAITFIRE(pInstinct)
+         && sithPuppet_IsAnyModeOnTrack(pLocal->pOwner, SITHPUPPETSUBMODE_FIRE, SITHPUPPETSUBMODE_FIRE4) )
     {
         return 0;
     }
@@ -2082,14 +2185,17 @@ int J3DAPI sithAIInstinct_RandomMove(SithAIControlBlock* pLocal, SithAIInstinct*
     switch ( event )
     {
         case SITHAI_EVENT_FIRE:
-            if ( !pInstinct->intArg[SITHAI_RANDOMMOVE_ARG_MOVEONFIRE] )
+        {
+            if ( !SITHAIINSTINCT_RANDOMMOVE_MOVEONFIRE(pInstinct) )
             {
                 return 0;
             }
             break;
+        }
 
         case (SithAIEventType)0:
-            delay = pInstinct->intArg[SITHAI_RANDOMMOVE_ARG_INTERVAL];
+        {
+            delay = SITHAIINSTINCT_RANDOMMOVE_INTERVAL(pInstinct);
             delay += (int)((float)(uint32_t)delay * (SITH_RANDF() - 0.5f));
             pState->msecNextUpdate = sithTime_g_msecGameTime + delay;
             if ( pLocal->targetSightState != SITHAI_SIGHT_VISIBLE )
@@ -2097,42 +2203,45 @@ int J3DAPI sithAIInstinct_RandomMove(SithAIControlBlock* pLocal, SithAIInstinct*
                 return 0;
             }
             break;
+        }
 
         case SITHAI_EVENT_GOAL_REACHED:
+        {
             if ( pLocal->targetSightState == SITHAI_SIGHT_VISIBLE && pLocal->pTargetThing )
             {
                 sithAIMove_AISetLookThing(pLocal, pLocal->pTargetThing);
             }
-            else if ( pState->aParams[SITHAI_RANDOMMOVE_PARAM_HASTARGET] != 0.0f )
+            else if ( SITHAIINSTINCT_STATE_RANDOMMOVE_HASTARGET(pState) != 0.0f )
             {
-                rdVector_Set3(&direction, pState->aParams[SITHAI_RANDOMMOVE_PARAM_TARGETX], pState->aParams[SITHAI_RANDOMMOVE_PARAM_TARGETY], pState->aParams[SITHAI_RANDOMMOVE_PARAM_TARGETZ]);
+                rdVector_Set3(&direction, SITHAIINSTINCT_STATE_RANDOMMOVE_TARGETX(pState), SITHAIINSTINCT_STATE_RANDOMMOVE_TARGETY(pState), SITHAIINSTINCT_STATE_RANDOMMOVE_TARGETZ(pState));
                 sithAIMove_AISetLookPosEyeLevel(pLocal, &direction);
             }
 
-            pState->aParams[SITHAI_RANDOMMOVE_PARAM_HASTARGET] = 0.0f;
+            SITHAIINSTINCT_STATE_RANDOMMOVE_HASTARGET(pState) = 0.0f;
             return 0;
+        }
 
         default:
             return 0;
     }
 
-    float minDist  = pInstinct->fltArg[SITHAI_RANDOMMOVE_ARG_MINDIST] + 0.03f;
-    float maxLen   = pInstinct->fltArg[SITHAI_RANDOMMOVE_ARG_MAXDIST] + 0.03f;
+    float minDist  = SITHAIINSTINCT_RANDOMMOVE_MINDIST(pInstinct) + 0.03f;
+    float maxLen   = SITHAIINSTINCT_RANDOMMOVE_MAXDIST(pInstinct) + 0.03f;
     float moveDist = SITH_RANDF() * (maxLen - minDist) + minDist;
 
-    float lowSpeed  = pInstinct->fltArg[SITHAI_RANDOMMOVE_ARG_MINSPEED];
-    float maxSpeed  = pInstinct->fltArg[SITHAI_RANDOMMOVE_ARG_MAXSPEED];
+    float lowSpeed  = SITHAIINSTINCT_RANDOMMOVE_MINSPEED(pInstinct);
+    float maxSpeed  = SITHAIINSTINCT_RANDOMMOVE_MAXSPEED(pInstinct);
     float moveSpeed = SITH_RANDF() * (maxSpeed - lowSpeed) + lowSpeed;
 
     rdVector_Neg3(&direction, &pLocal->toTarget);
 
     int pathOpts = (int)SITHAIUTIL_PATHFLAG_TARGETVISIBLE | SITHAIUTIL_MKPOINT_RANDSIDE | SITHAIUTIL_MKPOINT_YAW;
-    if ( pInstinct->intArg[SITHAI_RANDOMMOVE_ARG_ALLOW3D] )
+    if ( SITHAIINSTINCT_RANDOMMOVE_ALLOW3D(pInstinct) )
     {
         pathOpts |= SITHAIUTIL_MKPOINT_PITCH;
     }
 
-    float angleDeg = pInstinct->fltArg[SITHAI_RANDOMMOVE_ARG_ANGLE];
+    float angleDeg = SITHAIINSTINCT_RANDOMMOVE_ANGLE(pInstinct);
     if ( angleDeg < 0.0f )
     {
         pathOpts |= SITHAIUTIL_MKPOINT_RANDANGLE;
@@ -2143,17 +2252,17 @@ int J3DAPI sithAIInstinct_RandomMove(SithAIControlBlock* pLocal, SithAIInstinct*
     {
         if ( pLocal->pTargetThing )
         {
-            pState->aParams[SITHAI_RANDOMMOVE_PARAM_TARGETX] = pLocal->pTargetThing->pos.x;
-            pState->aParams[SITHAI_RANDOMMOVE_PARAM_TARGETY] = pLocal->pTargetThing->pos.y;
-            pState->aParams[SITHAI_RANDOMMOVE_PARAM_TARGETZ] = pLocal->pTargetThing->pos.z;
-            pState->aParams[SITHAI_RANDOMMOVE_PARAM_HASTARGET] = 1.0f;
+            SITHAIINSTINCT_STATE_RANDOMMOVE_TARGETX(pState) = pLocal->pTargetThing->pos.x;
+            SITHAIINSTINCT_STATE_RANDOMMOVE_TARGETY(pState) = pLocal->pTargetThing->pos.y;
+            SITHAIINSTINCT_STATE_RANDOMMOVE_TARGETZ(pState) = pLocal->pTargetThing->pos.z;
+            SITHAIINSTINCT_STATE_RANDOMMOVE_HASTARGET(pState) = 1.0f;
         }
         else
         {
-            pState->aParams[SITHAI_RANDOMMOVE_PARAM_HASTARGET] = 0.0f;
+            SITHAIINSTINCT_STATE_RANDOMMOVE_HASTARGET(pState) = 0.0f;
         }
 
-        if ( pInstinct->intArg[SITHAI_RANDOMMOVE_ARG_ALWAYSLOOK] || moveDist >= (maxLen - minDist) / 2.0f + minDist )
+        if ( SITHAIINSTINCT_RANDOMMOVE_ALWAYSLOOK(pInstinct) || moveDist >= (maxLen - minDist) / 2.0f + minDist )
         {
             sithAIMove_AISetLookPosEyeLevel(pLocal, &goalPos);
         }
@@ -2185,11 +2294,13 @@ int J3DAPI sithAIInstinct_HumanCombatMove(SithAIControlBlock* pLocal, SithAIInst
     }
 
     sithAIUtil_UpdateTargetSight(pLocal, 0);
+
     float healthPct = pOwner->thingInfo.actorInfo.health / pOwner->thingInfo.actorInfo.maxHealth;
 
     switch ( event )
     {
         case SITHAI_EVENT_MODECHANGED:
+        {
             if ( (pLocal->mode & SITHAI_MODE_CHASE_GOAL) != 0 && ((SithAIMode)pObject & SITHAI_MODE_CHASE_GOAL) == 0 )
             {
                 if ( (pLocal->mode & SITHAI_MODE_UNKNOWN_1000000) != 0 )
@@ -2202,48 +2313,54 @@ int J3DAPI sithAIInstinct_HumanCombatMove(SithAIControlBlock* pLocal, SithAIInst
                 float enemyRange;
                 rdVector3 dirNorm;
                 SithAISightState sightState = sithAIUtil_GetDistanceToTargetPos(pLocal->pOwner, &pLocal->pOwner->pos, &pLocal->vecUnknown5, -1.0f, pLocal->pClass->sightDistance, 0.0f, &dirNorm, &enemyRange);
-                if ( healthPct <= pInstinct->fltArg[SITHAI_HUMANCOMBATMOVE_ARG_FLEEHEALTH]
-                  && SITH_RANDF() < pInstinct->fltArg[SITHAI_HUMANCOMBATMOVE_ARG_CHASECHANCE]
+                if ( healthPct <= SITHAIINSTINCT_HUMANCOMBATMOVE_FLEEHEALTH(pInstinct)
+                  && SITH_RANDF() < SITHAIINSTINCT_HUMANCOMBATMOVE_CHASECHANCE(pInstinct)
                   && sightState != SITHAI_SIGHT_VISIBLE )
                 {
                     sithAIMove_AISetLookPosEyeLevel(pLocal, &pLocal->vecUnknown);
-                    sithAIMove_AISetMovePos(pLocal, &pLocal->vecUnknown, pInstinct->fltArg[SITHAI_HUMANCOMBATMOVE_ARG_FASTSPEED]);
+                    sithAIMove_AISetMovePos(pLocal, &pLocal->vecUnknown, SITHAIINSTINCT_HUMANCOMBATMOVE_FASTSPEED(pInstinct));
 
                     pLocal->mode |= SITHAI_MODE_UNKNOWN_1000000;
                     pLocal->mode &= ~SITHAI_MODE_CHASE_GOAL;
-                    pState->aParams[SITHAI_HUMANCOMBATMOVE_PARAM_CHASESTATE] = 3.0f;
+                    SITHAIINSTINCT_STATE_HUMANCOMBATMOVE_CHASESTATE(pState) = 3.0f;
                     return 1;
                 }
 
                 if ( sightState != SITHAI_SIGHT_VISIBLE )
                 {
                     sithAIMove_AISetLookPosEyeLevel(pLocal, &pLocal->vecUnknown);
-                    sithAIMove_AISetMovePos(pLocal, &pLocal->vecUnknown, pInstinct->fltArg[SITHAI_HUMANCOMBATMOVE_ARG_FASTSPEED]);
+                    sithAIMove_AISetMovePos(pLocal, &pLocal->vecUnknown, SITHAIINSTINCT_HUMANCOMBATMOVE_FASTSPEED(pInstinct));
                     return 1;
                 }
             }
             break;
+        }
 
         case SITHAI_EVENT_HIT_SECTOR:
-            if ( healthPct <= pInstinct->fltArg[SITHAI_HUMANCOMBATMOVE_ARG_FLEEHEALTH] )
+        {
+            if ( healthPct <= SITHAIINSTINCT_HUMANCOMBATMOVE_FLEEHEALTH(pInstinct) )
             {
-                if ( SITH_RANDF() < pInstinct->fltArg[SITHAI_HUMANCOMBATMOVE_ARG_FLEECHANCE] )
+                if ( SITH_RANDF() < SITHAIINSTINCT_HUMANCOMBATMOVE_FLEECHANCE(pInstinct) )
                 {
                     sithAIUtil_AIPlaySoundMode(pLocal, SITHSOUNDCLASS_FLEE);
                     sithAIUtil_AISetMode(pLocal, SITHAI_MODE_FLEEING);
+
                     pLocal->pFleeFromThing = pLocal->pTargetThing;
                     return 0;
                 }
 
-                if ( SITH_RANDF() < pInstinct->fltArg[SITHAI_HUMANCOMBATMOVE_ARG_STRAFECHANCE] && sithAI_HasInstinct(pLocal, "circlestrafe") )
+                if ( SITH_RANDF() < SITHAIINSTINCT_HUMANCOMBATMOVE_STRAFECHANCE(pInstinct)
+                     && sithAI_HasInstinct(pLocal, "circlestrafe") )
                 {
                     sithAI_EnableInstinct(pLocal, "circlestrafe", 1);
+
                     pLocal->submode |= SITHAI_SUBMODE_UNKNOWN_400000;
                 }
 
-                if ( SITH_RANDF() < pInstinct->fltArg[SITHAI_HUMANCOMBATMOVE_ARG_STANDFIRECHANCE] )
+                if ( SITH_RANDF() < SITHAIINSTINCT_HUMANCOMBATMOVE_STANDFIRECHANCE(pInstinct) )
                 {
                     sithAIMove_StopAIMovement(pLocal);
+
                     pLocal->mode |= SITHAI_MODE_UNKNOWN_100000;
 
                     sithAI_ForceInstinctUpdate(pLocal, "primaryfire", 0);
@@ -2252,6 +2369,7 @@ int J3DAPI sithAIInstinct_HumanCombatMove(SithAIControlBlock* pLocal, SithAIInst
                 }
             }
             break;
+        }
 
         case (SithAIEventType)0:
         {
@@ -2264,35 +2382,36 @@ int J3DAPI sithAIInstinct_HumanCombatMove(SithAIControlBlock* pLocal, SithAIInst
             if ( sithAIUtil_IsLineOfFireClear(pLocal, &pLocal->pOwner->pos) )
             {
                 bCheckPath = true;
-                if ( (pLocal->pTargetThing->moveInfo.physics.flags & (SITH_PF_MINECAR | SITH_PF_RAFT | SITH_PF_JEEP | SITH_PF_UNKNOWN_8000000)) == 0 && sithAIUtil_IsThingMoving(pLocal->pTargetThing) )
+                if ( (pLocal->pTargetThing->moveInfo.physics.flags & (SITH_PF_MINECAR | SITH_PF_RAFT | SITH_PF_JEEP | SITH_PF_UNKNOWN_8000000)) == 0
+                     && sithAIUtil_IsThingMoving(pLocal->pTargetThing) )
                 {
-                    pState->aParams[SITHAI_HUMANCOMBATMOVE_PARAM_MOVECHANCE] += 0.2f;
+                    SITHAIINSTINCT_STATE_HUMANCOMBATMOVE_MOVECHANCE(pState) += 0.2f;
                 }
 
-                if ( pState->aParams[SITHAI_HUMANCOMBATMOVE_PARAM_NEXTMOVETIME] > (float)sithTime_g_msecGameTime )
+                if ( SITHAIINSTINCT_STATE_HUMANCOMBATMOVE_NEXTMOVETIME(pState) > (float)sithTime_g_msecGameTime )
                 {
                     return 0;
                 }
 
-                float arc = pInstinct->fltArg[SITHAI_HUMANCOMBATMOVE_ARG_MOVEDELAY];
+                float arc = SITHAIINSTINCT_HUMANCOMBATMOVE_MOVEDELAY(pInstinct);
                 arc       = (SITH_RANDF() - 0.5f) * arc + arc;
 
-                pState->aParams[SITHAI_HUMANCOMBATMOVE_PARAM_NEXTMOVETIME] = sithTime_g_msecGameTime + arc;
-                if ( SITH_RANDF() > pState->aParams[SITHAI_HUMANCOMBATMOVE_PARAM_MOVECHANCE] )
+                SITHAIINSTINCT_STATE_HUMANCOMBATMOVE_NEXTMOVETIME(pState) = sithTime_g_msecGameTime + arc;
+                if ( SITH_RANDF() > SITHAIINSTINCT_STATE_HUMANCOMBATMOVE_MOVECHANCE(pState) )
                 {
-                    pState->aParams[SITHAI_HUMANCOMBATMOVE_PARAM_MOVECHANCE] += 0.05f;
+                    SITHAIINSTINCT_STATE_HUMANCOMBATMOVE_MOVECHANCE(pState) += 0.05f;
                     return 0;
                 }
             }
 
-            float minDist  = pInstinct->fltArg[SITHAI_HUMANCOMBATMOVE_ARG_MINDIST] + 0.03f;
-            float maxRange = pInstinct->fltArg[SITHAI_HUMANCOMBATMOVE_ARG_MAXDIST] + 0.03f;
+            float minDist  = SITHAIINSTINCT_HUMANCOMBATMOVE_MINDIST(pInstinct) + 0.03f;
+            float maxRange = SITHAIINSTINCT_HUMANCOMBATMOVE_MAXDIST(pInstinct) + 0.03f;
             float moveDist = SITH_RANDF() * (maxRange - minDist) + minDist;
 
-            float minSpeed  = pInstinct->fltArg[SITHAI_HUMANCOMBATMOVE_ARG_MINSPEED];
-            float fastSpeed = pInstinct->fltArg[SITHAI_HUMANCOMBATMOVE_ARG_FASTSPEED];
+            float minSpeed  = SITHAIINSTINCT_HUMANCOMBATMOVE_MINSPEED(pInstinct);
+            float fastSpeed = SITHAIINSTINCT_HUMANCOMBATMOVE_FASTSPEED(pInstinct);
 
-            unsigned int triedMoves = (unsigned int)pState->aParams[SITHAI_HUMANCOMBATMOVE_PARAM_TRIEDMOVES];
+            unsigned int triedMoves = (unsigned int)SITHAIINSTINCT_STATE_HUMANCOMBATMOVE_TRIEDMOVES(pState);
 
             bool bAimAtDest = true;
             unsigned int curMoveType;
@@ -2318,7 +2437,7 @@ int J3DAPI sithAIInstinct_HumanCombatMove(SithAIControlBlock* pLocal, SithAIInst
                     goto move_side;
                 }
 
-                pState->aParams[SITHAI_HUMANCOMBATMOVE_PARAM_TRIEDMOVES] = 0.0f;
+                SITHAIINSTINCT_STATE_HUMANCOMBATMOVE_TRIEDMOVES(pState) = 0.0f;
                 return 0;
             }
 
@@ -2345,7 +2464,8 @@ int J3DAPI sithAIInstinct_HumanCombatMove(SithAIControlBlock* pLocal, SithAIInst
 
         move_back:
             curMoveType = 2;
-            if ( !pInstinct->intArg[SITHAI_HUMANCOMBATMOVE_ARG_ALLOWSTRAFE] && pLocal->distance > pOwner->collide.movesize * 4.0f )
+            if ( !SITHAIINSTINCT_HUMANCOMBATMOVE_ALLOWSTRAFE(pInstinct)
+                 && pLocal->distance > pOwner->collide.movesize * 4.0f )
             {
                 return 1;
             }
@@ -2359,7 +2479,7 @@ int J3DAPI sithAIInstinct_HumanCombatMove(SithAIControlBlock* pLocal, SithAIInst
 
         move_side:
             curMoveType = 4;
-            if ( !pInstinct->intArg[SITHAI_HUMANCOMBATMOVE_ARG_ALLOWSTRAFE] )
+            if ( !SITHAIINSTINCT_HUMANCOMBATMOVE_ALLOWSTRAFE(pInstinct) )
             {
                 return 1;
             }
@@ -2374,8 +2494,8 @@ int J3DAPI sithAIInstinct_HumanCombatMove(SithAIControlBlock* pLocal, SithAIInst
             {
                 if ( !bCheckPath || sithAIUtil_IsLineOfFireClear(pLocal, &targetPos) )
                 {
-                    pState->aParams[SITHAI_HUMANCOMBATMOVE_PARAM_MOVECHANCE] = 0.0f;
-                    pState->aParams[SITHAI_HUMANCOMBATMOVE_PARAM_TRIEDMOVES] = 0.0f;
+                    SITHAIINSTINCT_STATE_HUMANCOMBATMOVE_MOVECHANCE(pState) = 0.0f;
+                    SITHAIINSTINCT_STATE_HUMANCOMBATMOVE_TRIEDMOVES(pState) = 0.0f;
                     if ( bAimAtDest )
                     {
                         sithAIMove_AISetLookPosEyeLevel(pLocal, &targetPos);
@@ -2393,14 +2513,15 @@ int J3DAPI sithAIInstinct_HumanCombatMove(SithAIControlBlock* pLocal, SithAIInst
             }
 
             triedMoves |= curMoveType;
-            pState->aParams[SITHAI_HUMANCOMBATMOVE_PARAM_TRIEDMOVES] = (float)triedMoves;
+            SITHAIINSTINCT_STATE_HUMANCOMBATMOVE_TRIEDMOVES(pState) = (float)triedMoves;
             break;
         }
 
         case SITHAI_EVENT_GOAL_REACHED:
+        {
             if ( (pLocal->mode & SITHAI_MODE_UNKNOWN_1000000) != 0 )
             {
-                if ( pState->aParams[SITHAI_HUMANCOMBATMOVE_PARAM_CHASESTATE] == 3.0f )
+                if ( SITHAIINSTINCT_STATE_HUMANCOMBATMOVE_CHASESTATE(pState) == 3.0f )
                 {
                     if ( pLocal->targetSightState != SITHAI_SIGHT_VISIBLE )
                     {
@@ -2410,9 +2531,10 @@ int J3DAPI sithAIInstinct_HumanCombatMove(SithAIControlBlock* pLocal, SithAIInst
 
                     sithAIMove_AISetLookPosEyeLevel(pLocal, &pLocal->vecUnknown122);
                     sithAIUtil_AIPauseMove(pLocal, rand() % 1001 + 2000);
-                    pState->aParams[SITHAI_HUMANCOMBATMOVE_PARAM_CHASESTATE] = 2.0f;
+
+                    SITHAIINSTINCT_STATE_HUMANCOMBATMOVE_CHASESTATE(pState) = 2.0f;
                 }
-                else if ( pState->aParams[SITHAI_HUMANCOMBATMOVE_PARAM_CHASESTATE] == 2.0f )
+                else if ( SITHAIINSTINCT_STATE_HUMANCOMBATMOVE_CHASESTATE(pState) == 2.0f )
                 {
                     if ( pLocal->targetSightState == SITHAI_SIGHT_VISIBLE )
                     {
@@ -2421,7 +2543,8 @@ int J3DAPI sithAIInstinct_HumanCombatMove(SithAIControlBlock* pLocal, SithAIInst
                     }
 
                     sithAIUtil_AIPauseMove(pLocal, rand() % 2001 + 1000);
-                    pState->aParams[SITHAI_HUMANCOMBATMOVE_PARAM_CHASESTATE] = 3.0f;
+
+                    SITHAIINSTINCT_STATE_HUMANCOMBATMOVE_CHASESTATE(pState) = 3.0f;
                 }
 
                 rdVector3 dirToLook;
@@ -2465,6 +2588,7 @@ int J3DAPI sithAIInstinct_HumanCombatMove(SithAIControlBlock* pLocal, SithAIInst
             }
 
             goto clear;
+        }
 
         case SITHAI_EVENT_GOAL_UNREACHABLE:
             goto clear;
@@ -2473,8 +2597,8 @@ int J3DAPI sithAIInstinct_HumanCombatMove(SithAIControlBlock* pLocal, SithAIInst
     return 0;
 
 clear:
-    pState->aParams[SITHAI_HUMANCOMBATMOVE_PARAM_MOVECHANCE] = 0.0f;
-    pState->aParams[SITHAI_HUMANCOMBATMOVE_PARAM_TRIEDMOVES] = 0.0f;
+    SITHAIINSTINCT_STATE_HUMANCOMBATMOVE_MOVECHANCE(pState) = 0.0f;
+    SITHAIINSTINCT_STATE_HUMANCOMBATMOVE_TRIEDMOVES(pState) = 0.0f;
     return 0;
 }
 
@@ -2492,7 +2616,7 @@ int J3DAPI sithAIInstinct_Roam(SithAIControlBlock* pLocal, SithAIInstinct* pInst
         SithAIMode prevMode = (SithAIMode)pThing;
         if ( (pLocal->mode & SITHAI_MODE_SEARCHING) != 0 && (prevMode & SITHAI_MODE_SEARCHING) == 0 )
         {
-            pState->msecNextUpdate = sithTime_g_msecGameTime + pInstinct->intArg[SITHAI_ROAM_ARG_INTERVAL];
+            pState->msecNextUpdate = sithTime_g_msecGameTime + SITHAIINSTINCT_ROAM_INTERVAL(pInstinct);
             return 0;
         }
     }
@@ -2503,16 +2627,16 @@ int J3DAPI sithAIInstinct_Roam(SithAIControlBlock* pLocal, SithAIInstinct* pInst
     }
 
     float closestDist = pLocal->pOwner->collide.movesize + 0.03f;
-    float homeRadius  = pInstinct->fltArg[SITHAI_ROAM_ARG_RADIUS];
+    float homeRadius  = SITHAIINSTINCT_ROAM_RADIUS(pInstinct);
     float roamDist    = SITH_RANDF() * (fabsf(homeRadius) - closestDist) + closestDist;
 
-    if ( pInstinct->fltArg[SITHAI_ROAM_ARG_SPEED] != 0.0f )
+    if ( SITHAIINSTINCT_ROAM_SPEED(pInstinct) != 0.0f )
     {
-        moveSpeed = pInstinct->fltArg[SITHAI_ROAM_ARG_SPEED];
+        moveSpeed = SITHAIINSTINCT_ROAM_SPEED(pInstinct);
     }
 
     rdVector3 startPos = homeRadius > 0.0f ? pLocal->homePos : pLocal->pOwner->pos;
-    int bAllow3D = pInstinct->fltArg[SITHAI_ROAM_ARG_ALLOW3D] != 0.0f;
+    bool bAllow3D = SITHAIINSTINCT_ROAM_ALLOW3D(pInstinct) != 0.0f;
 
     rdVector3 movePos;
     switch ( event )
@@ -2528,6 +2652,7 @@ int J3DAPI sithAIInstinct_Roam(SithAIControlBlock* pLocal, SithAIInstinct* pInst
             if ( sithAIUtil_MakePathPos(pLocal, &pLocal->pOwner->pos, closestDist, roamDist, 45.0f, SITHAIUTIL_MKPOINT_REFHOME | SITHAIUTIL_MKPOINT_RANDSIDE | SITHAIUTIL_MKPOINT_RANDANGLE | SITHAIUTIL_MKPOINT_YAW, &direction, &movePos) )
             {
                 sithAIMove_StopAIMovement(pLocal);
+
                 if ( sithAIMove_AISetMovePos(pLocal, &movePos, moveSpeed) )
                 {
                     sithAIMove_AISetLookPosEyeLevel(pLocal, &movePos);
@@ -2538,15 +2663,19 @@ int J3DAPI sithAIInstinct_Roam(SithAIControlBlock* pLocal, SithAIInstinct* pInst
         }
 
         case SITHAI_EVENT_GOAL_REACHED:
+        {
             if ( (pLocal->submode & (SITHAI_SUBMODE_SEMICONTINUOUSMOTION | SITHAI_SUBMODE_CONTINUOUSMOTION)) == 0 )
             {
                 return 0;
             }
             // fallthrough
+        }
 
         case (SithAIEventType)0:
-            pState->msecNextUpdate = sithTime_g_msecGameTime + pInstinct->intArg[SITHAI_ROAM_ARG_INTERVAL];
-            if ( (pLocal->mode & SITHAI_MODE_INSTINCTUSEWPNTS) != 0 && sithAIUtil_AIMoveToNextWpnt(pLocal, moveSpeed, 0.0f, 1) )
+        {
+            pState->msecNextUpdate = sithTime_g_msecGameTime + SITHAIINSTINCT_ROAM_INTERVAL(pInstinct);
+            if ( (pLocal->mode & SITHAI_MODE_INSTINCTUSEWPNTS) != 0
+                 && sithAIUtil_AIMoveToNextWpnt(pLocal, moveSpeed, 0.0f, 1) )
             {
                 return 0;
             }
@@ -2558,12 +2687,14 @@ int J3DAPI sithAIInstinct_Roam(SithAIControlBlock* pLocal, SithAIInstinct* pInst
                 return 0;
             }
             break;
+        }
 
         default:
             return 0;
     }
 
-    if ( sithAIUtil_MakeRoamPos(pLocal, &startPos, closestDist, roamDist, bAllow3D, 2, &movePos) && sithAIMove_AISetMovePos(pLocal, &movePos, moveSpeed) )
+    if ( sithAIUtil_MakeRoamPos(pLocal, &startPos, closestDist, roamDist, bAllow3D, 2, &movePos)
+         && sithAIMove_AISetMovePos(pLocal, &movePos, moveSpeed) )
     {
         sithAIMove_AISetLookPosEyeLevel(pLocal, &movePos);
         return 1;
@@ -2597,6 +2728,7 @@ int J3DAPI sithAIInstinct_ReturnHome(SithAIControlBlock* pLocal, SithAIInstinct*
         }
 
         case SITHAI_EVENT_GOAL_REACHED:
+        {
             if ( (pLocal->mode & SITHAI_MODE_SEARCHING) != 0 )
             {
                 rdVector3 lookPos;
@@ -2604,6 +2736,7 @@ int J3DAPI sithAIInstinct_ReturnHome(SithAIControlBlock* pLocal, SithAIInstinct*
                 sithAIMove_AISetLookPosEyeLevel(pLocal, &lookPos);
             }
             break;
+        }
     }
 
     return 0;
@@ -2611,15 +2744,15 @@ int J3DAPI sithAIInstinct_ReturnHome(SithAIControlBlock* pLocal, SithAIInstinct*
 
 int J3DAPI sithAIInstinct_Flee(SithAIControlBlock* pLocal, SithAIInstinct* pInstinct, SithAIInstinctState* pState, SithAIEventType event, SithThing* pThing)
 {
-    float panicTime    = pInstinct->fltArg[SITHAI_FLEE_ARG_PANICTIME];
-    float fleeRange    = pInstinct->fltArg[SITHAI_FLEE_ARG_RANGE];
+    float panicTime    = SITHAIINSTINCT_FLEE_PANICTIME(pInstinct);
+    float fleeRange    = SITHAIINSTINCT_FLEE_RANGE(pInstinct);
     float minStep      = pLocal->pOwner->collide.movesize + 0.03f;
     float fleeingSpeed = 1.5f;
     bool bPanic        = false;
 
     if ( (pLocal->mode & SITHAI_MODE_FLEEING) == 0 )
     {
-        if ( pState->aParams[SITHAI_FLEE_PARAM_STARTTIME] > 0.0f )
+        if ( SITHAIINSTINCT_STATE_FLEE_STARTTIME(pState) > 0.0f )
         {
             goto stop;
         }
@@ -2629,9 +2762,9 @@ int J3DAPI sithAIInstinct_Flee(SithAIControlBlock* pLocal, SithAIInstinct* pInst
 
     pLocal->goalThing    = NULL;
     pLocal->pTargetThing = NULL;
-    if ( pState->aParams[SITHAI_FLEE_PARAM_STARTTIME] == 0.0f )
+    if ( SITHAIINSTINCT_STATE_FLEE_STARTTIME(pState) == 0.0f )
     {
-        pState->aParams[SITHAI_FLEE_PARAM_STARTTIME] = sithTime_g_secGameTime;
+        SITHAIINSTINCT_STATE_FLEE_STARTTIME(pState) = sithTime_g_secGameTime;
         bPanic = true;
     }
 
@@ -2649,19 +2782,19 @@ int J3DAPI sithAIInstinct_Flee(SithAIControlBlock* pLocal, SithAIInstinct* pInst
         goto stop;
     }
 
-    if ( sithTime_g_secGameTime > pState->aParams[SITHAI_FLEE_PARAM_STARTTIME] + panicTime )
+    if ( sithTime_g_secGameTime > SITHAIINSTINCT_STATE_FLEE_STARTTIME(pState) + panicTime )
     {
         goto stop;
     }
 
-    if ( pInstinct->fltArg[SITHAI_FLEE_ARG_SPEED] != 0.0f )
+    if ( SITHAIINSTINCT_FLEE_SPEED(pInstinct) != 0.0f )
     {
-        fleeingSpeed = pInstinct->fltArg[SITHAI_FLEE_ARG_SPEED];
+        fleeingSpeed = SITHAIINSTINCT_FLEE_SPEED(pInstinct);
     }
 
-    if ( pInstinct->intArg[SITHAI_FLEE_ARG_INTERVAL] )
+    if ( SITHAIINSTINCT_FLEE_INTERVAL(pInstinct) )
     {
-        pState->msecNextUpdate = sithTime_g_msecGameTime + pInstinct->intArg[SITHAI_FLEE_ARG_INTERVAL];
+        pState->msecNextUpdate = sithTime_g_msecGameTime + SITHAIINSTINCT_FLEE_INTERVAL(pInstinct);
     }
     else
     {
@@ -2670,11 +2803,13 @@ int J3DAPI sithAIInstinct_Flee(SithAIControlBlock* pLocal, SithAIInstinct* pInst
 
     rdVector3 direction;
     float threatRange;
-    if ( sithAIUtil_GetDistanceToTarget(pLocal->pOwner, &pLocal->pOwner->pos, pLocal->pFleeFromThing, -1.0f, fleeRange, 0.0f, &direction, &threatRange) == SITHAI_SIGHT_VISIBLE || bPanic )
+    if ( sithAIUtil_GetDistanceToTarget(pLocal->pOwner, &pLocal->pOwner->pos, pLocal->pFleeFromThing, -1.0f, fleeRange, 0.0f, &direction, &threatRange) == SITHAI_SIGHT_VISIBLE
+         || bPanic )
     {
         switch ( event )
         {
             case SITHAI_EVENT_MODECHANGED:
+            {
                 if ( pThing )
                 {
                     SithAIMode prevMode = (SithAIMode)pThing;
@@ -2686,21 +2821,27 @@ int J3DAPI sithAIInstinct_Flee(SithAIControlBlock* pLocal, SithAIInstinct* pInst
                 }
 
                 return 0;
+            }
 
             case (SithAIEventType)0:
             case SITHAI_EVENT_GOAL_REACHED:
+            {
                 rdVector_Neg3Acc(&direction);
                 goto flee;
+            }
 
             case SITHAI_EVENT_TOUCHED:
+            {
                 if ( pThing && pThing->type == SITH_THING_PLAYER )
                 {
                     return 1;
                 }
                 break;
+            }
         }
 
         sithAIUtil_GetXYHeadingVector(pLocal->pOwner, &direction);
+
         pLocal->mode &= ~SITHAI_MODE_TRAVERSEWPNTS;
         goto flee;
     }
@@ -2718,7 +2859,7 @@ stop:
     sithAIMove_StopAIMovement(pLocal);
     sithAIUtil_AISetMode(pLocal, SITHAI_MODE_SEARCHING);
 
-    pState->aParams[SITHAI_FLEE_PARAM_STARTTIME] = 0.0f;
+    SITHAIINSTINCT_STATE_FLEE_STARTTIME(pState) = 0.0f;
     pLocal->pFleeFromThing                       = NULL;
     return 0;
 
@@ -2737,13 +2878,14 @@ flee:
     }
 
     sithAIMove_StopAIMovement(pLocal);
+
     int pathOpts = (int)SITHAIUTIL_PATHFLAG_IGNOREPLAYER | SITHAIUTIL_MKPOINT_AWAYFROMFLEE | SITHAIUTIL_MKPOINT_YAW;
-    if ( pInstinct->fltArg[SITHAI_FLEE_ARG_MINSTEP] > 0.0f )
+    if ( SITHAIINSTINCT_FLEE_MINSTEP(pInstinct) > 0.0f )
     {
-        minStep = pInstinct->fltArg[SITHAI_FLEE_ARG_MINSTEP];
+        minStep = SITHAIINSTINCT_FLEE_MINSTEP(pInstinct);
     }
 
-    float angle = pInstinct->fltArg[SITHAI_FLEE_ARG_ANGLE];
+    float angle = SITHAIINSTINCT_FLEE_ANGLE(pInstinct);
     if ( angle != 0.0f )
     {
         pathOpts |= SITHAIUTIL_MKPOINT_RANDSIDE;
@@ -2754,14 +2896,16 @@ flee:
     }
 
     rdVector3 endPos;
-    if ( sithAIUtil_MakePathPos(pLocal, &pLocal->pOwner->pos, minStep, fleeRange, angle, pathOpts, &direction, &endPos) && sithAIMove_AISetMovePos(pLocal, &endPos, fleeingSpeed) )
+    if ( sithAIUtil_MakePathPos(pLocal, &pLocal->pOwner->pos, minStep, fleeRange, angle, pathOpts, &direction, &endPos)
+         && sithAIMove_AISetMovePos(pLocal, &endPos, fleeingSpeed) )
     {
         sithAIMove_AISetLookPosEyeLevel(pLocal, &endPos);
         return 1;
     }
 
     pathOpts = (int)SITHAIUTIL_PATHFLAG_IGNOREPLAYER | SITHAIUTIL_MKPOINT_RANDSIDE | SITHAIUTIL_MKPOINT_AWAYFROMFLEE | SITHAIUTIL_MKPOINT_SIDEWAYS;
-    if ( sithAIUtil_MakePathPos(pLocal, &pLocal->pOwner->pos, minStep, fleeRange, angle, pathOpts, &direction, &endPos) && sithAIMove_AISetMovePos(pLocal, &endPos, fleeingSpeed) )
+    if ( sithAIUtil_MakePathPos(pLocal, &pLocal->pOwner->pos, minStep, fleeRange, angle, pathOpts, &direction, &endPos)
+         && sithAIMove_AISetMovePos(pLocal, &endPos, fleeingSpeed) )
     {
         sithAIMove_AISetLookPosEyeLevel(pLocal, &endPos);
         return 1;
@@ -2819,16 +2963,18 @@ int J3DAPI sithAIInstinct_BasicFallow(SithAIControlBlock* pLocal, SithAIInstinct
         }
 
         sithAIUtil_GetXYHeadingVector(pFoe, &heading);
-        if ( pState->aParams[SITHAI_BASICFOLLOW_PARAM_NUMBLOCKED] > 3.0f )
+
+        if ( SITHAIINSTINCT_STATE_BASICFOLLOW_NUMBLOCKED(pState) > 3.0f )
         {
-            pState->aParams[SITHAI_BASICFOLLOW_PARAM_NUMBLOCKED] = 0.0f;
-            pState->aParams[SITHAI_BASICFOLLOW_PARAM_HITFLAG]    = 0.0f;
+            SITHAIINSTINCT_STATE_BASICFOLLOW_NUMBLOCKED(pState) = 0.0f;
+            SITHAIINSTINCT_STATE_BASICFOLLOW_HITFLAG(pState)    = 0.0f;
 
             pLocal->vecUnknown3 = pLocal->movePos;
             rdVector_Neg3Acc(&heading);
 
             gap = pFoe->collide.movesize * 4.0f;
             rdVector_ScaleAdd3(&movePos, &heading, gap, &pFoe->pos);
+
             if ( sithAIUtil_SweepMoveToPathPos(pLocal, &movePos, 0.0f, 60.0f, 30.0f, SITHAIUTIL_MKPOINT_TOWARDGOAL) )
             {
                 pLocal->submode |= SITHAI_SUBMODE_UNKNOWN_8;
@@ -2841,10 +2987,11 @@ int J3DAPI sithAIInstinct_BasicFallow(SithAIControlBlock* pLocal, SithAIInstinct
 
     if ( (event & (SITHAI_EVENT_HIT_THING | SITHAI_EVENT_HIT_CLIFF | SITHAI_EVENT_HIT_WALL | SITHAI_EVENT_TOUCHED)) != 0 )
     {
-        pState->aParams[SITHAI_BASICFOLLOW_PARAM_HITFLAG] = 1.0f;
+        SITHAIINSTINCT_STATE_BASICFOLLOW_HITFLAG(pState) = 1.0f;
     }
 
-    if ( pInstinct->intArg[SITHAI_BASICFOLLOW_ARG_WAITFIRE] && sithPuppet_IsAnyModeOnTrack(pFoe, SITHPUPPETSUBMODE_FIRE, SITHPUPPETSUBMODE_FIRE4) )
+    if ( SITHAIINSTINCT_BASICFOLLOW_WAITFIRE(pInstinct)
+         && sithPuppet_IsAnyModeOnTrack(pFoe, SITHPUPPETSUBMODE_FIRE, SITHPUPPETSUBMODE_FIRE4) )
     {
         pState->msecNextUpdate = sithTime_g_msecGameTime + 500;
         return 0;
@@ -2876,15 +3023,17 @@ int J3DAPI sithAIInstinct_BasicFallow(SithAIControlBlock* pLocal, SithAIInstinct
                 }
 
                 rdVector_Sub3(&toDir, &pFoe->pos, &pHitThing->pos);
+
                 toDir.z = 0.0f;
                 rdVector_Normalize3Acc(&toDir);
+
                 if ( rdVector_Dot3(&heading, &toDir) > 0.0f )
                 {
                     return 1;
                 }
             }
 
-            pState->aParams[SITHAI_BASICFOLLOW_PARAM_NUMBLOCKED] += 1.0f;
+            SITHAIINSTINCT_STATE_BASICFOLLOW_NUMBLOCKED(pState) += 1.0f;
             pLocal->submode |= SITHAI_SUBMODE_UNKNOWN_4;
             if ( sithAIUtil_SweepMoveToPathPos(pLocal, &pLocal->movePos, 45.0f, 135.0f, 45.0f, SITHAIUTIL_MKPOINT_TOWARDGOAL) )
             {
@@ -2930,7 +3079,7 @@ int J3DAPI sithAIInstinct_BasicFallow(SithAIControlBlock* pLocal, SithAIInstinct
                 return 0;
             }
 
-            pState->aParams[SITHAI_BASICFOLLOW_PARAM_NUMBLOCKED] += 1.0f;
+            SITHAIINSTINCT_STATE_BASICFOLLOW_NUMBLOCKED(pState) += 1.0f;
             pLocal->submode |= SITHAI_SUBMODE_UNKNOWN_4;
 
             float pathDistance;
@@ -2962,20 +3111,23 @@ int J3DAPI sithAIInstinct_BasicFallow(SithAIControlBlock* pLocal, SithAIInstinct
         }
 
         case (SithAIEventType)0:
-            if ( pInstinct->intArg[SITHAI_BASICFOLLOW_ARG_INTERVAL] )
+        {
+            if ( SITHAIINSTINCT_BASICFOLLOW_INTERVAL(pInstinct) )
             {
-                pState->msecNextUpdate = sithTime_g_msecGameTime + pInstinct->intArg[SITHAI_BASICFOLLOW_ARG_INTERVAL];
+                pState->msecNextUpdate = sithTime_g_msecGameTime + SITHAIINSTINCT_BASICFOLLOW_INTERVAL(pInstinct);
             }
             break;
+        }
 
         case SITHAI_EVENT_GOAL_UNREACHABLE:
             return 0;
 
         case SITHAI_EVENT_GOAL_REACHED:
-            pState->aParams[SITHAI_BASICFOLLOW_PARAM_NUMBLOCKED] = 0.0f;
-            if ( pState->aParams[SITHAI_BASICFOLLOW_PARAM_HITFLAG] == 1.0f )
+        {
+            SITHAIINSTINCT_STATE_BASICFOLLOW_NUMBLOCKED(pState) = 0.0f;
+            if ( SITHAIINSTINCT_STATE_BASICFOLLOW_HITFLAG(pState) == 1.0f )
             {
-                pState->aParams[SITHAI_BASICFOLLOW_PARAM_HITFLAG] = 0.0f;
+                SITHAIINSTINCT_STATE_BASICFOLLOW_HITFLAG(pState) = 0.0f;
                 sithAIMove_AISetLookPosEyeLevel(pLocal, &pGoal->pos);
             }
 
@@ -2989,13 +3141,15 @@ int J3DAPI sithAIInstinct_BasicFallow(SithAIControlBlock* pLocal, SithAIInstinct
                 return 0;
             }
             break;
+        }
 
         default:
             return 0;
     }
 
     pLocal->submode &= ~SITHAI_SUBMODE_UNKNOWN_2000000;
-    if ( (pFoe->thingInfo.actorInfo.flags & SITH_AF_HUMAN) == 0 && (pGoal->moveInfo.physics.flags & (SITH_PF_MINECAR | SITH_PF_RAFT | SITH_PF_JEEP | SITH_PF_UNKNOWN_8000000)) != 0 )
+    if ( (pFoe->thingInfo.actorInfo.flags & SITH_AF_HUMAN) == 0
+         && (pGoal->moveInfo.physics.flags & (SITH_PF_MINECAR | SITH_PF_RAFT | SITH_PF_JEEP | SITH_PF_UNKNOWN_8000000)) != 0 )
     {
         return 0;
     }
@@ -3006,15 +3160,15 @@ int J3DAPI sithAIInstinct_BasicFallow(SithAIControlBlock* pLocal, SithAIInstinct
     if ( (pLocal->mode & SITHAI_MODE_UNKNOWN_100000) != 0 )
     {
         moveSpeed     = 2.0f;
-        minDist       = pInstinct->fltArg[SITHAI_BASICFOLLOW_ARG_MINDIST];
+        minDist       = SITHAIINSTINCT_BASICFOLLOW_MINDIST(pInstinct);
         reach         = J3DMIN(pFoe->collide.movesize * 3.0f, minDist);
         idealDistance = 0.0f;
     }
     else
     {
-        minDist       = pInstinct->fltArg[SITHAI_BASICFOLLOW_ARG_MINDIST];
-        reach         = pInstinct->fltArg[SITHAI_BASICFOLLOW_ARG_MAXDIST];
-        idealDistance = pInstinct->fltArg[SITHAI_BASICFOLLOW_ARG_IDEALDIST];
+        minDist       = SITHAIINSTINCT_BASICFOLLOW_MINDIST(pInstinct);
+        reach         = SITHAIINSTINCT_BASICFOLLOW_MAXDIST(pInstinct);
+        idealDistance = SITHAIINSTINCT_BASICFOLLOW_IDEALDIST(pInstinct);
         if ( sithWeapon_HasWeaponSelected(pFoe) )
         {
             reach         = sithWeapon_GetWeaponMaxAimDistance(pFoe->thingInfo.actorInfo.weaponInfo.curWeaponID);
@@ -3030,7 +3184,8 @@ int J3DAPI sithAIInstinct_BasicFallow(SithAIControlBlock* pLocal, SithAIInstinct
         }
     }
 
-    if ( (pLocal->submode & SITHAI_SUBMODE_USEMATCHVELOCITY) != 0 && !rdVector_IsZero3(&pLocal->goalThing->moveInfo.physics.velocity) )
+    if ( (pLocal->submode & SITHAI_SUBMODE_USEMATCHVELOCITY) != 0
+         && !rdVector_IsZero3(&pLocal->goalThing->moveInfo.physics.velocity) )
     {
         if ( pLocal->targetDistance >= 0.0f && pLocal->targetDistance <= pFoe->collide.movesize * 2.0f )
         {
@@ -3055,6 +3210,7 @@ int J3DAPI sithAIInstinct_BasicFallow(SithAIControlBlock* pLocal, SithAIInstinct
         }
 
         sithAIMove_AISetLookPosEyeLevel(pLocal, &pGoal->pos);
+
         if ( pLocal->targetDistance > reach )
         {
             length = pLocal->targetDistance - reach;
@@ -3079,6 +3235,7 @@ int J3DAPI sithAIInstinct_BasicFallow(SithAIControlBlock* pLocal, SithAIInstinct
             }
 
             rdVector_ScaleAdd3(&movePos, &pLocal->vecUnknown0, length, &pFoe->pos);
+
             if ( (pFoe->moveInfo.physics.flags & SITH_PF_FLY) != 0 )
             {
                 movePos.z = pGoal->pos.z + pFoe->collide.movesize;
@@ -3108,7 +3265,7 @@ int J3DAPI sithAIInstinct_BasicFallow(SithAIControlBlock* pLocal, SithAIInstinct
         }
 
         SithAISightState losCheck = sithAIUtil_GetDistanceToTargetPos(pGoal, &pGoal->pos, &movePos, -1.0f, pLocal->pClass->sightDistance, 0.0f, &toDir, &gap);
-        if ( pInstinct->fltArg[SITHAI_BASICFOLLOW_ARG_IGNORELOS] != 0.0f || losCheck == SITHAI_SIGHT_VISIBLE )
+        if ( SITHAIINSTINCT_BASICFOLLOW_IGNORELOS(pInstinct) != 0.0f || losCheck == SITHAI_SIGHT_VISIBLE )
         {
             sithAIMove_AISetMovePos(pLocal, &movePos, moveSpeed);
             return 1;
@@ -3121,7 +3278,8 @@ int J3DAPI sithAIInstinct_BasicFallow(SithAIControlBlock* pLocal, SithAIInstinct
     }
     else if ( (pLocal->mode & SITHAI_MODE_CHASE_GOAL) == 0 )
     {
-        if ( (pGoal->type == SITH_THING_PLAYER || pGoal->type == SITH_THING_ACTOR) && (pGoal->thingInfo.actorInfo.flags & SITH_AF_INVISIBLE) != 0 )
+        if ( (pGoal->type == SITH_THING_PLAYER || pGoal->type == SITH_THING_ACTOR)
+             && (pGoal->thingInfo.actorInfo.flags & SITH_AF_INVISIBLE) != 0 )
         {
             return 0;
         }
@@ -3143,7 +3301,8 @@ int J3DAPI sithAIInstinct_WallCrawl(SithAIControlBlock* pLocal, SithAIInstinct* 
     SITH_ASSERTREL(pLocal && pLocal->pClass && pLocal->pOwner);
     SithThing* pThing = pLocal->pOwner;
 
-    if ( (event & (SITHAI_EVENT_HIT_WALL | SITHAI_EVENT_HIT_FLOOR)) != 0 && (pLocal->mode & (SITHAI_MODE_ACTIVE | SITHAI_MODE_MOVING)) == 0 )
+    if ( (event & (SITHAI_EVENT_HIT_WALL | SITHAI_EVENT_HIT_FLOOR)) != 0
+         && (pLocal->mode & (SITHAI_MODE_ACTIVE | SITHAI_MODE_MOVING)) == 0 )
     {
         return 0;
     }
@@ -3164,6 +3323,7 @@ int J3DAPI sithAIInstinct_WallCrawl(SithAIControlBlock* pLocal, SithAIInstinct* 
     switch ( event )
     {
         case SITHAI_EVENT_HIT_CLIFF:
+        {
             if ( (pLocal->mode & SITHAI_MODE_WALLCRAWLING) != 0 )
             {
                 sithAIMove_Unreachable(pLocal);
@@ -3171,17 +3331,21 @@ int J3DAPI sithAIInstinct_WallCrawl(SithAIControlBlock* pLocal, SithAIInstinct* 
             }
 
             return 0;
+        }
 
         case SITHAI_EVENT_TOUCHED:
         case SITHAI_EVENT_HIT_THING:
+        {
             if ( (pLocal->mode & SITHAI_MODE_WALLCRAWLING) != 0 )
             {
                 return 1;
             }
             break;
+        }
 
         case SITHAI_EVENT_HIT_FLOOR:
         case SITHAI_EVENT_LAND_FLOOR:
+        {
             if ( !pSurface )
             {
                 break;
@@ -3199,8 +3363,10 @@ int J3DAPI sithAIInstinct_WallCrawl(SithAIControlBlock* pLocal, SithAIInstinct* 
                 goto crawl;
             }
             break;
+        }
 
         case SITHAI_EVENT_HIT_WALL:
+        {
             if ( (pLocal->submode & (SITHAI_SUBMODE_WALLCRAWLLOCKED | SITHAI_SUBMODE_UNKNOWN_4)) != 0 )
             {
                 return 1;
@@ -3222,11 +3388,14 @@ int J3DAPI sithAIInstinct_WallCrawl(SithAIControlBlock* pLocal, SithAIInstinct* 
                 goto crawl;
             }
             break;
+        }
 
         case (SithAIEventType)0:
+        {
             if ( (pLocal->mode & SITHAI_MODE_WALLCRAWLING) != 0 )
             {
-                if ( (pThing->attach.flags & SITH_ATTACH_SURFACE) != 0 && (pThing->attach.attachedToStructure.pSurfaceAttached->flags & SITH_SURFACE_ISFLOOR) != 0 )
+                if ( (pThing->attach.flags & SITH_ATTACH_SURFACE) != 0
+                     && (pThing->attach.attachedToStructure.pSurfaceAttached->flags & SITH_SURFACE_ISFLOOR) != 0 )
                 {
                     sithAIUtil_AIClearMode(pLocal, SITHAI_MODE_WALLCRAWLING);
                 }
@@ -3235,6 +3404,7 @@ int J3DAPI sithAIInstinct_WallCrawl(SithAIControlBlock* pLocal, SithAIInstinct* 
                 return 1;
             }
             break;
+        }
 
         default:
             return 0;
@@ -3301,6 +3471,7 @@ int J3DAPI sithAIInstinct_SnakeMungeTestCheck(SithAIControlBlock* pLocal, rdVect
 
     rdVector3 delta;
     rdVector_Sub3(&delta, &endPos, &beginPos);
+
     delta.x = stdMath_ClipNearZero(delta.x);
     delta.y = stdMath_ClipNearZero(delta.y);
     delta.z = stdMath_ClipNearZero(delta.z);
@@ -3310,10 +3481,8 @@ int J3DAPI sithAIInstinct_SnakeMungeTestCheck(SithAIControlBlock* pLocal, rdVect
         return 0;
     }
 
-    // TODO: [BUG] The original never initializes the path flags it ORs the flags into (the debug build reads an uninitialized local).
-    //       The retail build leaves the bit pattern of the distance argument in it, which is emulated here.
+    // TODO: [BUG] The original never initializes the path flags before ORing the flags into them
     SithAIUtilPathFlags pathFlags;
-    memcpy(&pathFlags, &distance, sizeof(pathFlags));
     pathFlags |= SITHAIUTIL_PATHFLAG_IGNOREPLAYER | SITHAIUTIL_PATHFLAG_IGNORETHINGS | SITHAIUTIL_PATHFLAG_GOALVISIBLE | SITHAIUTIL_PATHFLAG_STRAIGHT;
 
     rdVector3 curHitPos;
@@ -3347,6 +3516,7 @@ void J3DAPI sithAIInstinct_SnakeFindMovePos(SithAIControlBlock* pLocal, rdVector
     rdVector3 diff;
     rdVector3 probe;
     rdVector_Sub3(&diff, moveToPosLeft, &pThing->pos);
+
     float range = rdVector_Normalize3(&probe, &diff);
     if ( sithAIInstinct_SnakeMungeTestCheck(pLocal, &probe, range, moveToPosLeft) )
     {
@@ -3354,6 +3524,7 @@ void J3DAPI sithAIInstinct_SnakeFindMovePos(SithAIControlBlock* pLocal, rdVector
     }
 
     rdVector_Sub3(&diff, moveToPosRight, &pThing->pos);
+
     float altReach = rdVector_Normalize3(&probe, &diff);
     if ( sithAIInstinct_SnakeMungeTestCheck(pLocal, &probe, altReach, moveToPosLeft) )
     {
@@ -3410,25 +3581,31 @@ signed int J3DAPI sithAIInstinct_SnakeFollow(SithAIControlBlock* pLocal, SithAII
         case SITHAI_EVENT_HIT_WALL:
         case SITHAI_EVENT_HIT_CLIFF:
         case SITHAI_EVENT_HIT_THING:
+        {
             if ( (pLocal->mode & SITHAI_MODE_MOVING) == 0 || (pLocal->mode & SITHAI_MODE_ACTIVE) == 0 )
             {
                 return 1;
             }
             break;
+        }
 
         case SITHAI_EVENT_TOUCHED:
+        {
             if ( pThing->type == SITH_THING_PLAYER )
             {
                 bAdvance = false;
             }
             break;
+        }
 
         case (SithAIEventType)0:
+        {
             if ( (pLocal->mode & SITHAI_MODE_MOVING) != 0 )
             {
                 bAdvance = false;
             }
             break;
+        }
 
         case SITHAI_EVENT_GOAL_REACHED:
             break;
@@ -3451,15 +3628,16 @@ signed int J3DAPI sithAIInstinct_SnakeFollow(SithAIControlBlock* pLocal, SithAII
     float distance;
     if ( pLocal->targetSightState2 == SITHAI_SIGHT_VISIBLE || pLocal->targetSightState2 == SITHAI_SIGHT_OUTOFFOV )
     {
-        pState->aParams[SITHAI_SNAKEFOLLOW_PARAM_USELASTPOS] = 0.0f;
+        SITHAIINSTINCT_STATE_SNAKEFOLLOW_USELASTPOS(pState) = 0.0f;
         dirVec = pLocal->vecUnknown0;
         distance = pLocal->targetDistance;
         pLocal->mode |= SITHAI_MODE_LOSTSIGHTOFGOAL;
     }
     else
     {
-        pState->aParams[SITHAI_SNAKEFOLLOW_PARAM_USELASTPOS] = 1.0f;
+        SITHAIINSTINCT_STATE_SNAKEFOLLOW_USELASTPOS(pState) = 1.0f;
         rdVector_Sub3(&dirVec, &pLocal->vecUnknown5, &pLocal->pOwner->pos);
+
         distance = rdVector_Normalize3Acc(&dirVec);
         pLocal->mode &= ~SITHAI_MODE_LOSTSIGHTOFGOAL;
     }
@@ -3576,6 +3754,7 @@ signed int J3DAPI sithAIInstinct_SnakeFollow(SithAIControlBlock* pLocal, SithAII
         sithAIMove_AISetLookPos(pLocal, &moveGoal);
 
         rdVector_Sub3(&dirVec, &pLocal->movePos, &pOwner->pos);
+
         dotRight = rdVector_Dot3(&pLocal->pOwner->orient.rvec, &dirVec);
         sithAIInstinct_SnakePlaySlitherSound(pOwner, dotRight);
 
