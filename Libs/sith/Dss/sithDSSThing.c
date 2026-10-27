@@ -175,7 +175,7 @@ int J3DAPI sithDSSThing_ProcessPos(const SithMessage* pMsg)
     }
     else
     {
-        rdVector_Copy3(&pThing->pos, &loc);
+        pThing->pos = loc;
         sithThing_SetSector(pThing, pSector, /*bNotify=*/0);
     }
 
@@ -539,9 +539,9 @@ int J3DAPI sithDSSThing_ProcessPlaySound(const SithMessage* pMsg)
     SITHDSS_STARTIN(pMsg);
 
     SoundPlayFlag playflags = SITHDSS_POPUINT32();
-    float minRadius = SITHDSS_POPFLOAT();
-    float maxRadius = SITHDSS_POPFLOAT();
-    int soundIdx = SITHDSS_POPUINT16();
+    float minRadius         = SITHDSS_POPFLOAT();
+    float maxRadius         = SITHDSS_POPFLOAT();
+    int soundIdx            = SITHDSS_POPUINT16();
 
     tSoundHandle hSnd = Sound_GetSoundHandle(soundIdx);
     if ( !hSnd )
@@ -607,7 +607,7 @@ int J3DAPI sithDSSThing_ProcessPlaySoundMode(const SithMessage* pMsg)
     }
 
     SITHDSS_POPINT32(); // channel, unused
-    float selectionRatio = SITHDSS_POPFLOAT();
+    float selectionRatio    = SITHDSS_POPFLOAT();
     SithSoundClassMode mode = SITHDSS_POPUINT16();
 
     if ( selectionRatio < 0.0f )
@@ -666,7 +666,7 @@ int J3DAPI sithDSSThing_ProcessPlayKey(const SithMessage* pMsg)
         return 0;
     }
 
-    int lowPriority = SITHDSS_POPUINT16();
+    int lowPriority       = SITHDSS_POPUINT16();
     rdKeyframeFlags flags = SITHDSS_POPINT32();
     unsigned int trackGUID = SITHDSS_POPUINT32();
 
@@ -849,7 +849,7 @@ int J3DAPI sithDSSThing_ProcessStopSound(const SithMessage* pMsg)
 {
     SITHDSS_STARTIN(pMsg);
 
-    int guid = SITHDSS_POPINT32();
+    int guid          = SITHDSS_POPINT32();
     float secFadeTime = SITHDSS_POPFLOAT();
 
     tSoundChannelHandle hChannel = sithSoundMixer_GetChannelHandle(guid);
@@ -929,7 +929,7 @@ int J3DAPI sithDSSThing_ProcessFire(const SithMessage* pMsg)
     SITHDSS_POPVEC3(&firePos);
     SITHDSS_POPVEC3(&fireDir);
 
-    float extra = SITHDSS_POPFLOAT();
+    float extra        = SITHDSS_POPFLOAT();
     float secDeltaTime = SITHDSS_POPFLOAT();
     int projectileGUID = SITHDSS_POPINT32();
 
@@ -970,8 +970,8 @@ int J3DAPI sithDSSThing_ProcessDeath(const SithMessage* pMsg)
     SITH_ASSERTREL(pMsg);
     SITHDSS_STARTIN(pMsg);
 
-    int curguid = SITHDSS_POPINT32();
-    int killerGuid = SITHDSS_POPINT32();
+    int curguid      = SITHDSS_POPINT32();
+    int killerGuid   = SITHDSS_POPINT32();
     bool bKillPlayer = SITHDSS_POPUINT8() == 1;
 
     SithThing* pCurThing = sithThing_GetGuidThing(curguid);
@@ -1046,7 +1046,7 @@ int J3DAPI sithDSSThing_ProcessDamage(const SithMessage* pMsg)
         return 0;
     }
 
-    int guid = SITHDSS_POPINT32();
+    int guid     = SITHDSS_POPINT32();
     int purpGuid = SITHDSS_POPINT32();
 
     SithThing* pThing = sithThing_GetGuidThing(guid);
@@ -1062,7 +1062,7 @@ int J3DAPI sithDSSThing_ProcessDamage(const SithMessage* pMsg)
         pPurpetrator = pThing;
     }
 
-    float damage = SITHDSS_POPFLOAT();
+    float damage           = SITHDSS_POPFLOAT();
     SithDamageType hitType = SITHDSS_POPUINT16();
     sithThing_DamageThing(pThing, pPurpetrator, damage, hitType);
 
@@ -1851,8 +1851,8 @@ int J3DAPI sithDSSThing_ProcessPathMove(const SithMessage* pMsg)
     SITH_ASSERTREL(pMsg);
     SITHDSS_STARTIN(pMsg);
 
-    int command = SITHDSS_POPINT32();
-    int guid = SITHDSS_POPINT32();
+    int command       = SITHDSS_POPINT32();
+    int guid          = SITHDSS_POPINT32();
     SithThing* pThing = sithThing_GetGuidThing(guid);
     if ( !pThing || pThing->moveType != SITH_MT_PATH )
     {
@@ -2013,7 +2013,7 @@ int J3DAPI sithDSSThing_ProcessAttachment(const SithMessage* pMsg)
         pThing->attach.flags = attachflags;
         pThing->attach.pFace = &pSurf->face;
         pThing->attach.attachedToStructure.pSurfaceAttached = pSurf;
-        rdVector_Copy3(&pThing->attach.attachedFaceFirstVert, &sithWorld_g_pCurrentWorld->aVertices[*pSurf->face.aVertices]);
+        pThing->attach.attachedFaceFirstVert = sithWorld_g_pCurrentWorld->aVertices[*pSurf->face.aVertices];
     }
     else if ( (attachflags & (SITH_ATTACH_THING | SITH_ATTACH_THINGFACE)) != 0 )
     {
@@ -2041,7 +2041,7 @@ int J3DAPI sithDSSThing_ProcessAttachment(const SithMessage* pMsg)
             if ( pThingAttached->renderData.data.pModel3 && faceIdx >= 0 && faceIdx < pThingAttached->renderData.data.pModel3->aGeos[0].aMeshes->numFaces )
             {
                 rdFace* pFaceAttached = &pThingAttached->renderData.data.pModel3->aGeos[0].aMeshes->aFaces[faceIdx];
-                rdVector_Copy3(&pThing->attach.attachedFaceFirstVert, &pThingAttached->renderData.data.pModel3->aGeos[0].aMeshes->apVertices[*pFaceAttached->aVertices]);
+                pThing->attach.attachedFaceFirstVert = pThingAttached->renderData.data.pModel3->aGeos[0].aMeshes->apVertices[*pFaceAttached->aVertices];
                 pThing->attach.pFace = pFaceAttached;
             }
             else // Added
@@ -2265,7 +2265,7 @@ void J3DAPI sithDSSThing_MoveToPos(SithThing* pThing, const rdVector3* pPos, Sit
     }
     else
     {
-        rdVector_Copy3(&pThing->pos, pPos);
+        pThing->pos = *pPos;
         sithThing_SetSector(pThing, pSector, /*bNotify=*/0);
     }
 }
