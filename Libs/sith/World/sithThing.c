@@ -1340,12 +1340,13 @@ void J3DAPI sithThing_UpdateQuetzUserBlock(SithThing* pThing)
 
     size_t attachNum      = 0;
     bool bTurnFlipped     = false;
-    // TODO: [BUG] The original leaves bTurnConsistent, firstAngle and totalAngle uninitialized (also in the debug build 0x44993f),
-    //       so a Quetz without tail segments reads stack garbage. Zero-initialized here to keep the read deterministic.
+    SithThing* pPrevThing = pThing;
+
+    // Fixed: The original leaves bTurnConsistent, firstAngle and totalAngle uninitialized (also in the debug build),
+    //        so a Quetz without tail segments reads stack garbage. Zero-initialized here.
     bool bTurnConsistent  = false;
     float firstAngle      = 0.0f;
     float totalAngle      = 0.0f;
-    SithThing* pPrevThing = pThing;
 
     sithThing_prevQuetzAttachInfo = NULL;
     sithThing_curQuetzAttachInfo  = pThing->userblock.pQuetz->aAttachInfos;
@@ -4657,31 +4658,31 @@ int J3DAPI sithThing_CreateQuetzUserBlock(SithThing* pThing)
         if ( (pAttachedThing->attach.flags & SITH_ATTACH_TAIL) != 0 )
         {
             pQuetz->aAttachInfos[attNum].offsetPrevY = -0.045000002f;
-            pQuetz->aAttachInfos[attNum].offsetY = -0.045000002f;
+            pQuetz->aAttachInfos[attNum].offsetY     = -0.045000002f;
             STD_ZEROMEM(&pQuetz->aAttachInfos[attNum].rotation, sizeof(pQuetz->aAttachInfos[attNum].rotation));
 
             if ( attNum == 0 )
             {
-                pQuetz->aAttachInfos[0].offsetZ           = pAttachedThing->attach.posOffset.z - 0.02f;
-                pQuetz->aAttachInfos[0].offsetPrevY           = 0.0f;
+                pQuetz->aAttachInfos[0].offsetZ        = pAttachedThing->attach.posOffset.z - 0.02f;
+                pQuetz->aAttachInfos[0].offsetPrevY    = 0.0f;
                 pQuetz->aAttachInfos[0].rotation.pitch = 40.0f;
-                pQuetz->aAttachInfos[0].uvecOffset          = 0.055f;
+                pQuetz->aAttachInfos[0].uvecOffset     = 0.055f;
             }
             else if ( attNum == 1 )
             {
-                pQuetz->aAttachInfos[1].offsetZ = pAttachedThing->attach.posOffset.z - pPrevThing->attach.posOffset.z;
+                pQuetz->aAttachInfos[1].offsetZ    = pAttachedThing->attach.posOffset.z - pPrevThing->attach.posOffset.z;
                 pQuetz->aAttachInfos[1].rotation.x = 25.0f;
-                pQuetz->aAttachInfos[1].uvecOffset      = 0.103f;
+                pQuetz->aAttachInfos[1].uvecOffset = 0.103f;
             }
             else if ( attNum == 2 )
             {
-                pQuetz->aAttachInfos[2].offsetZ       = pAttachedThing->attach.posOffset.z - pPrevThing->attach.posOffset.z;
+                pQuetz->aAttachInfos[2].offsetZ    = pAttachedThing->attach.posOffset.z - pPrevThing->attach.posOffset.z;
                 pQuetz->aAttachInfos[2].rotation.x = 10.0f;
-                pQuetz->aAttachInfos[2].uvecOffset      = 0.118f;
+                pQuetz->aAttachInfos[2].uvecOffset = 0.118f;
             }
             else
             {
-                pQuetz->aAttachInfos[attNum].offsetZ  = pAttachedThing->attach.posOffset.z - pPrevThing->attach.posOffset.z;
+                pQuetz->aAttachInfos[attNum].offsetZ    = pAttachedThing->attach.posOffset.z - pPrevThing->attach.posOffset.z;
                 pQuetz->aAttachInfos[attNum].uvecOffset = 0.12f;
             }
 
