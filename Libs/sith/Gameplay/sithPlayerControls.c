@@ -900,7 +900,7 @@ void J3DAPI sithPlayerControls_ProcessGeneralMove(SithThing* pThing, float secDe
 {
     sithPlayerActions_g_pCurHitLedgeModelFace = NULL;
     sithPlayerActions_g_pCurHitLedgeModel     = NULL;
-    sithPlayerActions_g_pCurHitLedgeSurface        = NULL;
+    sithPlayerActions_g_pCurHitLedgeSurface   = NULL;
 
     // Handle jump direction input when in jump ready state
     if ( pThing->thingInfo.actorInfo.bControlsDisabled )
