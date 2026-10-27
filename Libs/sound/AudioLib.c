@@ -95,6 +95,9 @@
 #define AUDIOLIB_RIFF_FMT_BITS_OFFSET       18
 #define AUDIOLIB_IMUS_MAGIC                 "iMUS"
 #define AUDIOLIB_IMUS_FRMT_MAGIC            "FRMT"
+#define AUDIOLIB_IMUS_SIZE_OFFSET           12 // Offset of the big endian size field used to locate the sound data
+#define AUDIOLIB_IMUS_FRMT_OFFSET           16 // Offset of the 'FRMT' tag
+#define AUDIOLIB_IMUS_FORMAT_OFFSET         32 // Offset of the format fields: bits per sample, sample rate and number of channels
 #define AUDIOLIB_AIFF_MAGIC                 "FORM"
 #define AUDIOLIB_AIFF_COMM_MAGIC            "AIFFCOMM"
 #define AUDIOLIB_AIFF_SSND_CHUNK            "SSND"
@@ -399,8 +402,8 @@ const uint8_t* J3DAPI AudioLib_ParseWaveFileHeader(const uint8_t* pData, int* pT
 
     if ( memeq(pData, AUDIOLIB_IMUS_MAGIC, sizeof(AUDIOLIB_IMUS_MAGIC) - 1) )
     {
-        uint32_t size = AudioLib_ReadU32BE(pData + 12);
-        if ( !memeq(pData + 16, AUDIOLIB_IMUS_FRMT_MAGIC, sizeof(AUDIOLIB_IMUS_FRMT_MAGIC) - 1) )
+        uint32_t size = AudioLib_ReadU32BE(pData + AUDIOLIB_IMUS_SIZE_OFFSET);
+        if ( !memeq(pData + AUDIOLIB_IMUS_FRMT_OFFSET, AUDIOLIB_IMUS_FRMT_MAGIC, sizeof(AUDIOLIB_IMUS_FRMT_MAGIC) - 1) )
         {
             return NULL;
         }
@@ -410,7 +413,7 @@ const uint8_t* J3DAPI AudioLib_ParseWaveFileHeader(const uint8_t* pData, int* pT
             *pType = bCompressed ? AUDIOLIB_FILETYPE_IMUS_COMPRESSED : AUDIOLIB_FILETYPE_IMUS;
         }
 
-        pData += 32;
+        pData += AUDIOLIB_IMUS_FORMAT_OFFSET;
         if ( pBitsPerSample )
         {
             *pBitsPerSample = AudioLib_ReadU32BE(pData);
@@ -418,12 +421,12 @@ const uint8_t* J3DAPI AudioLib_ParseWaveFileHeader(const uint8_t* pData, int* pT
 
         if ( pSampleRate )
         {
-            *pSampleRate = AudioLib_ReadU32BE(pData + 4);
+            *pSampleRate = AudioLib_ReadU32BE(pData + sizeof(uint32_t));
         }
 
         if ( pNumChannels )
         {
-            *pNumChannels = AudioLib_ReadU32BE(pData + 8);
+            *pNumChannels = AudioLib_ReadU32BE(pData + 2 * sizeof(uint32_t));
         }
 
         if ( pExtraInfo )
