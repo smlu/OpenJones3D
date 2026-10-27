@@ -96,29 +96,8 @@ void sithMulti_InstallHooks(void)
 
 void sithMulti_ResetGlobals(void)
 {
-    sithMulti_tickRate                = 70;
-    sithMulti_numUpdatedSurfaces      = 0;
-    sithMulti_lastUpdateIdx           = 0;
-    sithMulti_playerWelcomeState      = SITHMULTI_WELCOME_NONE;
-    sithMulti_numUpdatedSectors       = 0;
-    memset(sithMulti_aRemovedStaticThings, 0, sizeof(sithMulti_aRemovedStaticThings));
-    sithMulti_curWelcomePlayerNum     = 0;
-    sithMulti_numUpdatedThings        = 0;
-    sithMulti_quitGameState           = SITHMULTI_QUITSTATE_NONE;
-    sithMulti_checksum                = 0;
-    sithMulti_bWelcomingPlayer        = false;
-    sithMulti_newPlayerId             = 0;
-    sithMulti_bSyncScores             = false;
-    sithMulti_pfNewPlayerJoinedCallback = NULL;
-    sithMulti_msecPingStartTime       = 0;
-    sithMulti_msecQuitGameTime        = 0;
-    sithMulti_numRemovedStaticThings  = 0;
-    sithMulti_msecLastSyncScoreTime   = 0;
-    sithMulti_msecWelcomeUpdateInterval = 0;
-    sithMulti_msecSyncTime            = 0;
-
-    memset(&sithMulti_g_serverId, 0, sizeof(sithMulti_g_serverId));
-    memset(&sithMulti_g_message, 0, sizeof(sithMulti_g_message));
+    STD_ZEROMEM(&sithMulti_g_serverId, sizeof(sithMulti_g_serverId));
+    STD_ZEROMEM(&sithMulti_g_message, sizeof(sithMulti_g_message));
 }
 
 void sithMulti_CloseGame()
