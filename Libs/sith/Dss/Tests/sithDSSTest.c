@@ -129,9 +129,18 @@ static void sithDSSTest_Describe(char* pOut, size_t outSize, const uint8_t* pExp
     }
 
     int len = snprintf(pOut, outSize, "sizes expected %u actual %u, first difference at %u in %s: expected", (unsigned)expSize, (unsigned)actSize, (unsigned)i, pSection);
-    for ( size_t k = i; k < i + 24 && k < expSize && len < (int)outSize - 8; ++k ) { len += snprintf(pOut + len, outSize - len, " %02x", pExp[k]); }
+
+    for ( size_t k = i; k < i + 24 && k < expSize && len < (int)outSize - 8; ++k )
+    {
+        len += snprintf(pOut + len, outSize - len, " %02x", pExp[k]);
+    }
+
     len += snprintf(pOut + len, outSize - len, " actual");
-    for ( size_t k = i; k < i + 24 && k < actSize && len < (int)outSize - 8; ++k ) { len += snprintf(pOut + len, outSize - len, " %02x", pAct[k]); }
+
+    for ( size_t k = i; k < i + 24 && k < actSize && len < (int)outSize - 8; ++k )
+    {
+        len += snprintf(pOut + len, outSize - len, " %02x", pAct[k]);
+    }
 }
 
 // Names an offset in the watched image (see dssv_WatchAll): arena members first, then the engine globals
