@@ -48,14 +48,6 @@
 
 #define SITHPHYSICS_CROUCH_THRUST_SCALE 0.80000001f
 
-#define sithPhysics_jeepWheelSteepNormalZ J3D_DECL_FAR_VAR(sithPhysics_jeepWheelSteepNormalZ, float)
-#define sithPhysics_bJeepEngineFx J3D_DECL_FAR_VAR(sithPhysics_bJeepEngineFx, int)
-#define sithPhysics_bJeepDriveFx J3D_DECL_FAR_VAR(sithPhysics_bJeepDriveFx, int)
-#define sithPhysics_bJeepMoveFx J3D_DECL_FAR_VAR(sithPhysics_bJeepMoveFx, int)
-#define sithPhysics_bJeepBumpFx J3D_DECL_FAR_VAR(sithPhysics_bJeepBumpFx, int)
-#define sithPhysics_jeepSndGear J3D_DECL_FAR_VAR(sithPhysics_jeepSndGear, int)
-#define sithPhysics_jeepSteepestSlopeThrustKeep J3D_DECL_FAR_VAR(sithPhysics_jeepSteepestSlopeThrustKeep, float)
-
 // Added
 static float sithPhysics_fixedFramerate = SITHPHYSICS_FIXED_FRAMERATE_DFLT;
 static float sithPhysics_fixedTimestep  = SITHPHYSICS_FIXED_TIMESTEP_DFLT;
@@ -123,6 +115,13 @@ static float sithPhysics_trackTruckMaxSndVolume   = 1.0f;
 static float sithPhysics_trackTruckMaxSpeed       = 1.0f;
 
 // Jeep physics and fx vars
+static float sithPhysics_jeepWheelSteepNormalZ          = 0.60000002f;
+static bool sithPhysics_bJeepEngineFx                   = true;
+static bool sithPhysics_bJeepDriveFx                    = true;
+static bool sithPhysics_bJeepMoveFx                     = true;
+static bool sithPhysics_bJeepBumpFx                     = true;
+static int sithPhysics_jeepSndGear                      = 0;
+static float sithPhysics_jeepSteepestSlopeThrustKeep    = 0.0f;
 static float sithPhysics_jeepWheelProbeHeight       = 0.2f;
 static float sithPhysics_jeepWheelContactDist       = 0.0024999999f;
 static float sithPhysics_jeepSteepWheelLiftScale    = 1.0f;
@@ -350,23 +349,6 @@ void sithPhysics_InstallHooks(void)
 
 void sithPhysics_ResetGlobals(void)
 {
-    float sithPhysics_jeepWheelSteepNormalZ_tmp = 0.60000002f;
-    memcpy(&sithPhysics_jeepWheelSteepNormalZ, &sithPhysics_jeepWheelSteepNormalZ_tmp, sizeof(sithPhysics_jeepWheelSteepNormalZ));
-
-    int sithPhysics_bJeepEngineFx_tmp = 1;
-    memcpy(&sithPhysics_bJeepEngineFx, &sithPhysics_bJeepEngineFx_tmp, sizeof(sithPhysics_bJeepEngineFx));
-
-    int sithPhysics_bJeepDriveFx_tmp = 1;
-    memcpy(&sithPhysics_bJeepDriveFx, &sithPhysics_bJeepDriveFx_tmp, sizeof(sithPhysics_bJeepDriveFx));
-
-    int sithPhysics_bJeepMoveFx_tmp = 1;
-    memcpy(&sithPhysics_bJeepMoveFx, &sithPhysics_bJeepMoveFx_tmp, sizeof(sithPhysics_bJeepMoveFx));
-
-    int sithPhysics_bJeepBumpFx_tmp = 1;
-    memcpy(&sithPhysics_bJeepBumpFx, &sithPhysics_bJeepBumpFx_tmp, sizeof(sithPhysics_bJeepBumpFx));
-
-    STD_ZEROMEM(&sithPhysics_jeepSndGear, sizeof(sithPhysics_jeepSndGear));
-    STD_ZEROMEM(&sithPhysics_jeepSteepestSlopeThrustKeep, sizeof(sithPhysics_jeepSteepestSlopeThrustKeep));
 }
 
 void J3DAPI sithPhysics_Startup(void)
@@ -2003,8 +1985,8 @@ void J3DAPI sithPhysics_InitMineCarState(SithThing* pThing, SithMineCarState* pS
     pState->secTimeSparksRight = 0.0f;
     pState->secTimeSparksLeft  = 0.0f;
     pState->surfDrag           = pThing->moveInfo.physics.surfDrag + 1.0f;
-    pState->blendLength          = 0.2f;
-    pState->maxBlendFaceLength           = 0.30000001f;
+    pState->blendLength        = 0.2f;
+    pState->maxBlendFaceLength = 0.30000001f;
     pState->bBraking           = 0;
 }
 
@@ -2021,8 +2003,8 @@ void J3DAPI sithPhysics_InitTrackTruckState(SithThing* pThing, SithMineCarState*
     pState->secTimeSparksRight = 0.0f;
     pState->secTimeSparksLeft  = 0.0f;
     pState->surfDrag           = pThing->moveInfo.physics.surfDrag + 1.0f;
-    pState->blendLength          = 0.60000002f;
-    pState->maxBlendFaceLength           = 0.80000001f;
+    pState->blendLength        = 0.60000002f;
+    pState->maxBlendFaceLength = 0.80000001f;
     pState->bBraking           = 0;
 }
 
