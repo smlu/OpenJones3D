@@ -37,8 +37,8 @@ int J3DAPI sithCollision_HandleThingHitSurface(SithThing* pThing, SithSurface* p
 // Note: Function handles collsions between 2 things.
 // It returns True if there was collision otherwise False
 int J3DAPI sithCollision_ThingCollisionHandler(SithThing* pSrcThing, SithThing* pThingCollided, SithCollision* pCollision, int bSecondThingIsSource);
-void J3DAPI sithCollision_VehicleCollisionHandler(SithThing* pThing, SithThing* pHitThing, rdVector3* pForce, rdVector3* pInpactForce, int* a5, const rdVector3* hitNormal, float impactSpeed, float hitImpactSpeed);
-int J3DAPI sithCollision_DeflectThingOffSurface(SithThing* pThing, const rdVector3* pHitNorm, float distance, int a4, const SithSurface* pHitSurf);
+void J3DAPI sithCollision_VehicleCollisionHandler(SithThing* pThing, SithThing* pHitThing, rdVector3* pForce, rdVector3* pInpactForce, int* pbDeflect, const rdVector3* hitNormal, float impactSpeed, float hitImpactSpeed);
+int J3DAPI sithCollision_DeflectThingOffSurface(SithThing* pThing, const rdVector3* pHitNorm, float distance, int unusedFlag, const SithSurface* pHitSurf);
 SithThing* J3DAPI sithCollision_FindItemThing(SithThing* pThing, int* pbFoundFloorItem);
 void J3DAPI sithCollision_PushThingCollision(SithThing* pHitThing, float distance, SithCollisionType hitType, rdModel3Mesh* pHitMesh, rdFace* pHitFace, rdVector3* hitNorm);
 void J3DAPI sithCollision_PushSurfaceCollision(SithSurface* pSurf, float distance, SithCollisionType hitType, rdVector3* pHitNorm);

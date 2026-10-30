@@ -550,8 +550,8 @@ void J3DAPI sithCollision_ApplyThingOrient(SithThing* pThing, rdMatrix34* pOrien
     if ( pThing->pAttachedThing )
     {
         rdMatrix_Normalize34(pOrient);
-        rdVector_Copy3(&pOrient->dvec, &pThing->pos);
-        rdVector_Copy3(&pThing->orient.dvec, &pThing->pos);
+        pOrient->dvec = pThing->pos;
+        pThing->orient.dvec = pThing->pos;
 
         rdMatrix34 orient;
         rdMatrix_InvertOrtho34(&orient, &pThing->orient);
@@ -561,7 +561,7 @@ void J3DAPI sithCollision_ApplyThingOrient(SithThing* pThing, rdMatrix34* pOrien
         {
             pNextAttachedThing = pAttachedThing->pNextAttachedThing;
 
-            rdVector_Copy3(&pAttachedThing->orient.dvec, &pAttachedThing->pos);
+            pAttachedThing->orient.dvec = pAttachedThing->pos;
 
             rdMatrix34 mat;
             rdMatrix_Multiply34(&mat, &orient, &pAttachedThing->orient);
@@ -595,7 +595,7 @@ void J3DAPI sithCollision_ApplyThingOrient(SithThing* pThing, rdMatrix34* pOrien
     }
 
     rdVector_Zero3(&pOrient->dvec);
-    rdMatrix_Copy34(&pThing->orient, pOrient);
+    pThing->orient = *pOrient;
 }
 
 float J3DAPI sithCollision_MoveThing(SithThing* pThing, const rdVector3* moveNorm, float moveDist, int flags)
@@ -614,11 +614,11 @@ float J3DAPI sithCollision_MoveThing(SithThing* pThing, const rdVector3* moveNor
 
     rdVector3 dest;
     rdVector3 prevAttPos;
-    rdVector3 v40;
+    rdVector3 v40 = { 0 };
     float distMoved;
     SithMoveInfo* pMoveInfo;
     float v44;
-    rdVector3 prevPos;
+    rdVector3 prevPos = { 0 };
     float v46;
     SithThing* pAttached;
     unsigned int v49;
@@ -637,7 +637,7 @@ float J3DAPI sithCollision_MoveThing(SithThing* pThing, const rdVector3* moveNor
         return 0.0f;
     }
 
-    rdVector_Copy3(&dest, moveNorm);
+    dest = *moveNorm;
 
     if ( pThing->collide.type == SITH_COLLIDE_NONE )
     {
@@ -665,7 +665,7 @@ float J3DAPI sithCollision_MoveThing(SithThing* pThing, const rdVector3* moveNor
         {
             if ( pAttached->type == SITH_THING_PLAYER && pAttached->thingInfo.actorInfo.bForceMovePlay )
             {
-                rdVector_Copy3(&prevAttPos, &pAttached->pos);
+                prevAttPos = pAttached->pos;
             }
 
             distMoved = sithCollision_MoveThing(pAttached, moveNorm, moveDist, 0x40);
@@ -795,12 +795,12 @@ LABEL_61:
     while ( moveDist != 0.0f && v49 < 4 )
     {
         bCollided = 0;
-        rdVector_Copy3(&prevPos, &pThing->pos);
+        prevPos = pThing->pos;
 
         pPrevSector = pThing->pInSector;
         v50 = moveDist;
 
-        rdVector_Copy3(&v40, &dest);
+        v40 = dest;
 
 
         float distance = 0.0f; // Added: Init to 0
@@ -868,7 +868,7 @@ LABEL_61:
                 SITH_ASSERTREL(pCollision->pSurfaceCollided->pAdjoin->pMirrorAdjoin != NULL);
                 SITH_ASSERTREL(pCollision->pSurfaceCollided->pAdjoin->pAdjoinSector != NULL);
 
-                rdVector_Copy3(&curthPos, &pThing->pos);
+                curthPos = pThing->pos;
                 if ( (pCollision->pSurfaceCollided->flags & SITH_SURFACE_COGLINKED) != 0 )
                 {
                     sithCog_SurfaceSendMessage(pCollision->pSurfaceCollided, pThing, SITHCOG_MSG_CROSSED);
@@ -964,8 +964,8 @@ LABEL_61:
             SITHLOG_ERROR("Thing %s in wrong sector, pushed back to last good position.\n", pThing->aName);
         }
 
-        rdVector_Copy3(&pThing->pos, &prevPos);
-        rdVector_Copy3(&dest, &v40);
+        pThing->pos = prevPos;
+        dest = v40;
         sithThing_SetSector(pThing, pPrevSector, 0);
     }
 
@@ -1480,7 +1480,7 @@ int J3DAPI sithCollision_ThingCollisionHandler(SithThing* pSrcThing, SithThing* 
     {
         if ( pHitThing->moveType == SITH_MT_PHYSICS && pHitThing->moveInfo.physics.mass != 0.0f )
         {
-            int a5 = 1;
+            int bDeflect = 1;
 
             float mass        = pThing->moveInfo.physics.mass;
             float impactSpeed = -rdVector_Dot3(&pThing->moveInfo.physics.velocity, &hitNorm);
@@ -1517,7 +1517,7 @@ int J3DAPI sithCollision_ThingCollisionHandler(SithThing* pSrcThing, SithThing* 
             if ( pThing->moveType == SITH_MT_PHYSICS && (pThing->moveInfo.physics.flags & (SITH_PF_JEEP | SITH_PF_MINECAR)) != 0
                 || pHitThing->moveType == SITH_MT_PHYSICS && (pHitThing->moveInfo.physics.flags & (SITH_PF_JEEP | SITH_PF_MINECAR)) != 0 )
             {
-                sithCollision_VehicleCollisionHandler(pThing, pHitThing, &force, &impactForce, &a5, &hitNorm, impactSpeed, hitImpactSpeed);
+                sithCollision_VehicleCollisionHandler(pThing, pHitThing, &force, &impactForce, &bDeflect, &hitNorm, impactSpeed, hitImpactSpeed);
             }
             else if ( pThing->pAttachedThing && (pThing->pAttachedThing->attach.flags & SITH_ATTACH_TAIL) != 0
                 || (pThing->attach.flags & SITH_ATTACH_TAIL) != 0 )
@@ -1531,7 +1531,7 @@ int J3DAPI sithCollision_ThingCollisionHandler(SithThing* pSrcThing, SithThing* 
                 rdVector_Scale3Acc(&impactForce, 1.2f);
                 rdVector_Zero3(&force);
 
-                a5 = 0;
+                bDeflect = 0;
             }
             else if ( pHitThing->pAttachedThing && (pHitThing->pAttachedThing->attach.flags & SITH_ATTACH_TAIL) != 0
                 || (pHitThing->attach.flags & SITH_ATTACH_TAIL) != 0 )
@@ -1549,7 +1549,7 @@ int J3DAPI sithCollision_ThingCollisionHandler(SithThing* pSrcThing, SithThing* 
             sithPhysics_ApplyForce(pThing, &force);
             sithPhysics_ApplyForce(pHitThing, &impactForce);
 
-            if ( a5 )
+            if ( bDeflect )
             {
                 return sithCollision_DeflectThingOffSurface(pThing, &hitNorm, pCollision->distance, 0, 0);
             }
@@ -1685,7 +1685,7 @@ int J3DAPI sithCollision_ThingCollisionHandler(SithThing* pSrcThing, SithThing* 
     }
 }
 
-void J3DAPI sithCollision_VehicleCollisionHandler(SithThing* pThing, SithThing* pHitThing, rdVector3* pForce, rdVector3* pImpactForce, int* a5, const rdVector3* hitNormal, float impactSpeed, float hitImpactSpeed)
+void J3DAPI sithCollision_VehicleCollisionHandler(SithThing* pThing, SithThing* pHitThing, rdVector3* pForce, rdVector3* pImpactForce, int* pbDeflect, const rdVector3* hitNormal, float impactSpeed, float hitImpactSpeed)
 {
     if ( pThing->moveType == SITH_MT_PHYSICS && (pThing->moveInfo.physics.flags & SITH_PF_MINECAR) != 0
         || (pHitThing->moveType != SITH_MT_PHYSICS || (pHitThing->moveInfo.physics.flags & SITH_PF_MINECAR) == 0)
@@ -1694,7 +1694,7 @@ void J3DAPI sithCollision_VehicleCollisionHandler(SithThing* pThing, SithThing* 
     {
         rdVector_Zero3(pForce);
 
-        *a5 = 0;
+        *pbDeflect = 0;
         if ( pHitThing->moveType == SITH_MT_PHYSICS && (pHitThing->moveInfo.physics.flags & SITH_PF_JEEP) != 0 )
         {
             float dot = rdVector_Dot3(&pHitThing->orient.lvec, hitNormal);
@@ -1752,7 +1752,7 @@ void J3DAPI sithCollision_VehicleCollisionHandler(SithThing* pThing, SithThing* 
                         pImpactForce->z = objSpeed * 0.19f * pHitThing->moveInfo.physics.mass;
                         sithThing_DetachThing(pHitThing);
 
-                        rdVector_Copy3(&pHitThing->orient.lvec, hitNormal);
+                        pHitThing->orient.lvec = *hitNormal;
 
                         pHitThing->orient.rvec.x = pHitThing->orient.lvec.y * pHitThing->orient.uvec.z - pHitThing->orient.lvec.z * pHitThing->orient.uvec.y;
                         pHitThing->orient.rvec.y = pHitThing->orient.lvec.z * pHitThing->orient.uvec.x - pHitThing->orient.lvec.x * pHitThing->orient.uvec.z;
@@ -1801,7 +1801,7 @@ void J3DAPI sithCollision_VehicleCollisionHandler(SithThing* pThing, SithThing* 
                 pImpactForce->z = objSpeed * 0.19f * pHitThing->moveInfo.physics.mass;
                 sithThing_DetachThing(pHitThing);
 
-                rdVector_Copy3(&pHitThing->orient.lvec, hitNormal);
+                pHitThing->orient.lvec = *hitNormal;
 
                 pHitThing->orient.rvec.x = pHitThing->orient.lvec.y * pHitThing->orient.uvec.z - pHitThing->orient.lvec.z * pHitThing->orient.uvec.y;
                 pHitThing->orient.rvec.y = pHitThing->orient.lvec.z * pHitThing->orient.uvec.x - pHitThing->orient.lvec.x * pHitThing->orient.uvec.z;
@@ -1976,9 +1976,9 @@ void J3DAPI sithCollision_VehicleCollisionHandler(SithThing* pThing, SithThing* 
     }
 }
 
-int J3DAPI sithCollision_DeflectThingOffSurface(SithThing* pThing, const rdVector3* pHitNorm, float colDistance, int a4, const SithSurface* pHitSurf)
+int J3DAPI sithCollision_DeflectThingOffSurface(SithThing* pThing, const rdVector3* pHitNorm, float colDistance, int unusedFlag, const SithSurface* pHitSurf)
 {
-    J3D_UNUSED(a4);
+    J3D_UNUSED(unusedFlag);
     float impactDot;
     float scaledImpact;
     SithMoveInfo* pMoveInfo;
@@ -2046,7 +2046,7 @@ int J3DAPI sithCollision_DeflectThingOffSurface(SithThing* pThing, const rdVecto
             zImpactVel.y = (float)(speed * zImpactVel.y);
             zImpactVel.z = (float)(speed * zImpactVel.z);
 
-            rdVector_Copy3(&pMoveInfo->physics.velocity, &zImpactVel);
+            pMoveInfo->physics.velocity = zImpactVel;
         }
         else
         {
@@ -2078,7 +2078,7 @@ int J3DAPI sithCollision_DeflectThingOffSurface(SithThing* pThing, const rdVecto
         pThing->moveDir.z = sithCollision_vec17F10A0.z * hitDot + pThing->moveDir.z;
     }
 
-    rdVector_Copy3(&sithCollision_vec17F10A0, pHitNorm);
+    sithCollision_vec17F10A0 = *pHitNorm;
     sithCollision_dword_17F1090 = 1;
 
     impactDot = -rdVector_Dot3(&pMoveInfo->physics.velocity, pHitNorm);
@@ -2106,7 +2106,7 @@ int J3DAPI sithCollision_DeflectThingOffSurface(SithThing* pThing, const rdVecto
             newVel.x = (float)(speed * newVel.x);
             newVel.y = (float)(speed * newVel.y);
             newVel.z = (float)(speed * newVel.z);
-            rdVector_Copy3(&pMoveInfo->physics.velocity, &newVel);
+            pMoveInfo->physics.velocity = newVel;
         }
         else
         {
@@ -2414,7 +2414,7 @@ void J3DAPI sithCollision_PushThingCollision(SithThing* pHitThing, float distanc
     pCollision->pMeshCollided    = pHitMesh;
     pCollision->pFaceCollided    = pHitFace;
 
-    rdVector_Copy3(&pCollision->hitNorm, hitNorm);
+    pCollision->hitNorm = *hitNorm;
 }
 
 void J3DAPI sithCollision_PushSurfaceCollision(SithSurface* pSurf, float distance, SithCollisionType hitType, rdVector3* pHitNorm)
@@ -2436,7 +2436,7 @@ void J3DAPI sithCollision_PushSurfaceCollision(SithSurface* pSurf, float distanc
     pCollision->pSurfaceCollided = pSurf;
     if ( pHitNorm )
     {
-        rdVector_Copy3(&pCollision->hitNorm, pHitNorm);
+        pCollision->hitNorm = *pHitNorm;
     }
 }
 
