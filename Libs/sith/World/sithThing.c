@@ -1375,7 +1375,7 @@ void J3DAPI sithThing_UpdateQuetzUserBlock(SithThing* pThing)
         rdMatrix34 orient;
         rdMatrix_BuildFromLook34(&orient, &dir);
         rdMatrix_PreRotate34(&orient, &sithThing_curQuetzAttachInfo->rotation);
-        rdMatrix_Copy34(&pAttachedThing->orient, &orient);
+        pAttachedThing->orient = orient;
 
         vec.y = sithThing_curQuetzAttachInfo->offsetY;
 
@@ -1390,8 +1390,8 @@ void J3DAPI sithThing_UpdateQuetzUserBlock(SithThing* pThing)
         rdVector_Sub3(&moveNorm, &newPos, &pAttachedThing->pos);
 
         rdVector_Scale3(&pAttachedThing->moveInfo.physics.velocity, &moveNorm, sithTime_g_fps);
-        rdVector_Copy3(&pAttachedThing->moveInfo.physics.deltaVelocity, &moveNorm);
-        rdVector_Copy3(&pAttachedThing->moveDir, &moveNorm);
+        pAttachedThing->moveInfo.physics.deltaVelocity = moveNorm;
+        pAttachedThing->moveDir = moveNorm;
 
         float moveDist = rdVector_Normalize3Acc(&moveNorm);
         if ( moveDist != 0.0f )
@@ -1400,14 +1400,14 @@ void J3DAPI sithThing_UpdateQuetzUserBlock(SithThing* pThing)
             rdVector_ScaleAdd3(&attachPos, &pAttachedThing->orient.uvec, sithThing_curQuetzAttachInfo->uvecOffset, &pAttachedThing->pos);
 
             SithSector* pNewSector = sithCollision_FindSectorInRadius(pAttachedThing->pInSector, &pAttachedThing->pos, &attachPos, 0.0f);
-            rdVector_Copy3(&pAttachedThing->pos, &attachPos);
+            pAttachedThing->pos = attachPos;
             sithThing_SetSector(pAttachedThing, pNewSector, /*bNotify=*/1);
 
             sithCollision_MoveThing(pAttachedThing, &moveNorm, moveDist, 4);
 
             rdVector_ScaleAdd3(&attachPos, &pAttachedThing->orient.uvec, -sithThing_curQuetzAttachInfo->uvecOffset, &pAttachedThing->pos);
             pNewSector = sithCollision_FindSectorInRadius(pAttachedThing->pInSector, &pAttachedThing->pos, &attachPos, 0.0f);
-            rdVector_Copy3(&pAttachedThing->pos, &attachPos);
+            pAttachedThing->pos = attachPos;
             sithThing_SetSector(pAttachedThing, pNewSector, /*bNotify=*/1);
         }
 
@@ -1419,11 +1419,11 @@ void J3DAPI sithThing_UpdateQuetzUserBlock(SithThing* pThing)
 
             const float prevAngle = rdMath_DeltaAngleNormalized(&sithThing_curQuetzAttachInfo->vecDirection, &sithThing_curQuetzAttachInfo->vecDirectionNextAttach, &rdroid_g_zVector3);
 
-            rdVector_Copy3(&sithThing_curQuetzAttachInfo->vecDirection, &pPrevThing->orient.lvec);
+            sithThing_curQuetzAttachInfo->vecDirection = pPrevThing->orient.lvec;
             sithThing_curQuetzAttachInfo->vecDirection.z = 0.0f;
             rdVector_Normalize3Acc(&sithThing_curQuetzAttachInfo->vecDirection);
 
-            rdVector_Copy3(&sithThing_curQuetzAttachInfo->vecDirectionNextAttach, &pAttachedThing->orient.lvec);
+            sithThing_curQuetzAttachInfo->vecDirectionNextAttach = pAttachedThing->orient.lvec;
             sithThing_curQuetzAttachInfo->vecDirectionNextAttach.z = 0.0f;
             rdVector_Normalize3Acc(&sithThing_curQuetzAttachInfo->vecDirectionNextAttach);
 
