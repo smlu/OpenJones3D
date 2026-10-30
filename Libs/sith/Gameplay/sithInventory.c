@@ -631,7 +631,7 @@ SithThing* J3DAPI sithInventory_CreateBackpack(SithThing* pThing)
             float amount = sithInventory_GetInventory(pThing, typeId);
             if ( pItemInfo->numItems < STD_ARRAYLEN(pItemInfo->aBackpackItems) && amount > 0.0f )
             {
-                pItemInfo->aBackpackItems[pItemInfo->numItems].typeId = typeId;
+                pItemInfo->aBackpackItems[pItemInfo->numItems].typeId = (int16_t)typeId;
                 pItemInfo->aBackpackItems[pItemInfo->numItems++].amount = amount;
             }
         }
