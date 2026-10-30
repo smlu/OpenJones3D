@@ -47,6 +47,7 @@
 #define AUDIOLIB_MAX_STEP_BITS              7
 #define AUDIOLIB_BITBUFFER_BITS             16
 #define AUDIOLIB_ADPCM_CHANNEL_BIAS         2 // Compress: a channel argument above 2 selects ADPCM and is the channel count plus 2.
+#define AUDIOLIB_ADPCM_CHANNEL_HEADER_SIZE  ((int)(sizeof(uint8_t) + sizeof(uint16_t))) // Step index and big endian previous sample of a channel
 #define AUDIOLIB_SAMPLE_MIN                 (-32768)
 #define AUDIOLIB_SAMPLE_MAX                 32767
 
@@ -74,6 +75,8 @@
 
 // Sound file format constants
 #define AUDIOLIB_MCMP_MAGIC                 "MCMP"
+#define AUDIOLIB_MCMP_MAGIC_SIZE            ((int)sizeof(AUDIOLIB_MCMP_MAGIC) - 1)
+#define AUDIOLIB_MCMP_HEADER_SIZE           (AUDIOLIB_MCMP_MAGIC_SIZE + (int)sizeof(uint16_t)) // Magic and the big endian number of index entries
 #define AUDIOLIB_MCMP_ENTRY_SIZE            9
 #define AUDIOLIB_INDYWV_MAGIC               "INDYWV"
 #define AUDIOLIB_INDYWV_SAMPLERATE_OFFSET   6  // INDYWV header layout: sample rate, bits per sample, channels, sound data size (also the extra info), extra data size
@@ -87,27 +90,42 @@
 #define AUDIOLIB_RIFF_SYNC_CHUNK            "sync"
 #define AUDIOLIB_RIFF_DATA_CHUNK            "data"
 #define AUDIOLIB_RIFF_FORMAT_PCM            1
-#define AUDIOLIB_RIFF_CHUNK_HEADER_SIZE     8  // Chunk id and chunk size
+#define AUDIOLIB_CHUNK_TAG_SIZE             ((int)sizeof(uint32_t))                              // Four character chunk tag of the RIFF, iMUS and AIFF containers
+#define AUDIOLIB_CHUNK_SIZE_SIZE            ((int)sizeof(uint32_t))                              // Chunk size field following the tag
+#define AUDIOLIB_CHUNK_HEADER_SIZE          (AUDIOLIB_CHUNK_TAG_SIZE + AUDIOLIB_CHUNK_SIZE_SIZE) // Chunk tag and chunk size
+#define AUDIOLIB_CONTAINER_SIZE_OFFSET      AUDIOLIB_CHUNK_TAG_SIZE                              // Offset of the RIFF and AIFF container size, after the 'RIFF' or 'FORM' tag
+#define AUDIOLIB_CONTAINER_FORMTYPE_OFFSET  AUDIOLIB_CHUNK_HEADER_SIZE                           // Offset of the form type 'WAVEfmt ' or 'AIFFCOMM'
 #define AUDIOLIB_RIFF_FMT_CHUNK_OFFSET      16 // Offset of the 'fmt ' chunk size from the start of the file
-#define AUDIOLIB_RIFF_FMT_FORMAT_OFFSET     4  // 'fmt ' chunk layout, from the chunk size: format tag, channels, sample rate, bits per sample
-#define AUDIOLIB_RIFF_FMT_CHANNELS_OFFSET   6
-#define AUDIOLIB_RIFF_FMT_SAMPLERATE_OFFSET 8
-#define AUDIOLIB_RIFF_FMT_BITS_OFFSET       18
+#define AUDIOLIB_RIFF_FMT_FORMAT_OFFSET     AUDIOLIB_CHUNK_SIZE_SIZE // 'fmt ' chunk layout, from the chunk size: format tag, channels, sample rate, bytes per second, block align, bits per sample
+#define AUDIOLIB_RIFF_FMT_CHANNELS_OFFSET   (AUDIOLIB_RIFF_FMT_FORMAT_OFFSET + (int)sizeof(uint16_t))
+#define AUDIOLIB_RIFF_FMT_SAMPLERATE_OFFSET (AUDIOLIB_RIFF_FMT_CHANNELS_OFFSET + (int)sizeof(uint16_t))
+#define AUDIOLIB_RIFF_FMT_BITS_OFFSET       (AUDIOLIB_RIFF_FMT_SAMPLERATE_OFFSET + 2 * (int)sizeof(uint32_t) + (int)sizeof(uint16_t))
 #define AUDIOLIB_IMUS_MAGIC                 "iMUS"
 #define AUDIOLIB_IMUS_FRMT_MAGIC            "FRMT"
 #define AUDIOLIB_IMUS_SIZE_OFFSET           12 // Offset of the big endian size field used to locate the sound data
 #define AUDIOLIB_IMUS_FRMT_OFFSET           16 // Offset of the 'FRMT' tag
-#define AUDIOLIB_IMUS_FORMAT_OFFSET         32 // Offset of the format fields: bits per sample, sample rate and number of channels
+#define AUDIOLIB_IMUS_FORMAT_OFFSET         32 // Offset of the format fields: bits per sample, sample rate and number of channels (big endian 32-bit values)
+#define AUDIOLIB_IMUS_FORMAT_SAMPLERATE     ((int)sizeof(uint32_t))
+#define AUDIOLIB_IMUS_FORMAT_CHANNELS       (2 * (int)sizeof(uint32_t))
+#define AUDIOLIB_IMUS_DATA_OFFSET_BACK      AUDIOLIB_CHUNK_HEADER_SIZE                           // Sound data starts this far before the end of the header, which ends at the format offset plus the size read at AUDIOLIB_IMUS_SIZE_OFFSET
+#define AUDIOLIB_IMUS_DATA_SIZE_OFFSET_BACK (AUDIOLIB_CHUNK_HEADER_SIZE + AUDIOLIB_CHUNK_SIZE_SIZE) // The size of the sound data is stored before the data chunk header
 #define AUDIOLIB_AIFF_MAGIC                 "FORM"
 #define AUDIOLIB_AIFF_COMM_MAGIC            "AIFFCOMM"
 #define AUDIOLIB_AIFF_SSND_CHUNK            "SSND"
+#define AUDIOLIB_AIFF_COMM_OFFSET           (AUDIOLIB_CONTAINER_FORMTYPE_OFFSET + 2 * AUDIOLIB_CHUNK_TAG_SIZE) // Offset of the COMM chunk size, after the form type "AIFF" and the COMM tag
+#define AUDIOLIB_AIFF_COMM_CHANNELS_OFFSET  5  // COMM chunk layout, from the chunk size: low byte of channels (16-bit), number of frames (32-bit), low byte of bits per sample (16-bit)
+#define AUDIOLIB_AIFF_COMM_BITS_OFFSET      11
+#define AUDIOLIB_AIFF_COMM_RATE_EXP_OFFSET  13 // Low byte of the 80-bit extended sample rate exponent
+#define AUDIOLIB_AIFF_SSND_HEADER_SIZE      (2 * (int)sizeof(uint32_t)) // SSND chunk data offset and block size fields precede the sound data
 #define AUDIOLIB_AIFF_RATE_EXP_44100        14 // Low byte of the 80-bit extended sample rate exponent
 #define AUDIOLIB_AIFF_RATE_EXP_11025        12
 #define AUDIOLIB_AIFF_RATE_44100            44100
 #define AUDIOLIB_AIFF_RATE_22050            22050
 #define AUDIOLIB_AIFF_RATE_11025            11025
 
-// Compressed data header of the stereo WVSM stream written by AudioLib_Compress
+// Compressed data header of the stereo WVSM stream written by AudioLib_Compress and recognized by AudioLib_Uncompress.
+// It has the layout of the stereo ADPCM stream header: negated step index of channel 0 (0xE4 = ~0x1B), big endian previous sample of
+// channel 0 (0x1111), step index of channel 1 (0x64), big endian previous sample of channel 1 (0x2222), followed by the WVSM magic.
 static const uint8_t AudioLib_aWVSMHeader[10] = { 0xE4, 0x11, 0x11, 0x64, 0x22, 0x22, 'W', 'V', 'S', 'M' };
 
 static const int16_t AudioLib_aStepTable[AUDIOLIB_NUM_STEPS] = {
@@ -277,11 +295,11 @@ const uint8_t* J3DAPI AudioLib_ParseWaveFileHeader(const uint8_t* pData, int* pT
     // Skip the MCMP container header: the index of entries followed by a size prefixed block
     if ( memeq(pData, AUDIOLIB_MCMP_MAGIC, sizeof(AUDIOLIB_MCMP_MAGIC) - 1) )
     {
-        uint16_t count = AudioLib_ReadU16BE(pData + 4);
-        pData += (AUDIOLIB_MCMP_ENTRY_SIZE * count) + 6;
+        uint16_t count = AudioLib_ReadU16BE(pData + AUDIOLIB_MCMP_MAGIC_SIZE);
+        pData += (AUDIOLIB_MCMP_ENTRY_SIZE * count) + AUDIOLIB_MCMP_HEADER_SIZE;
 
         count = AudioLib_ReadU16BE(pData);
-        pData += count + 2;
+        pData += count + sizeof(uint16_t);
         bCompressed = true;
     }
 
@@ -337,8 +355,8 @@ const uint8_t* J3DAPI AudioLib_ParseWaveFileHeader(const uint8_t* pData, int* pT
 
     if ( memeq(pData, AUDIOLIB_RIFF_MAGIC, sizeof(AUDIOLIB_RIFF_MAGIC) - 1) )
     {
-        const uint8_t* pEnd = pData + AudioLib_ReadU32LE(pData + 4) + 8;
-        if ( !memeq(pData + 8, AUDIOLIB_RIFF_WAVEFMT_MAGIC, sizeof(AUDIOLIB_RIFF_WAVEFMT_MAGIC) - 1) )
+        const uint8_t* pEnd = pData + AudioLib_ReadU32LE(pData + AUDIOLIB_CONTAINER_SIZE_OFFSET) + AUDIOLIB_CHUNK_HEADER_SIZE;
+        if ( !memeq(pData + AUDIOLIB_CONTAINER_FORMTYPE_OFFSET, AUDIOLIB_RIFF_WAVEFMT_MAGIC, sizeof(AUDIOLIB_RIFF_WAVEFMT_MAGIC) - 1) )
         {
             return NULL;
         }
@@ -378,14 +396,14 @@ const uint8_t* J3DAPI AudioLib_ParseWaveFileHeader(const uint8_t* pData, int* pT
         // Walk the chunks until the data chunk, remembering the sync chunk
         do
         {
-            pData += size + AUDIOLIB_RIFF_CHUNK_HEADER_SIZE;
+            pData += size + AUDIOLIB_CHUNK_HEADER_SIZE;
             size = AudioLib_ReadU32LE(pData);
-            if ( memeq(pData - 4, AUDIOLIB_RIFF_SYNC_CHUNK, sizeof(AUDIOLIB_RIFF_SYNC_CHUNK) - 1) && pExtraDataOffset && pSoundDataOffset )
+            if ( memeq(pData - AUDIOLIB_CHUNK_TAG_SIZE, AUDIOLIB_RIFF_SYNC_CHUNK, sizeof(AUDIOLIB_RIFF_SYNC_CHUNK) - 1) && pExtraDataOffset && pSoundDataOffset )
             {
-                *pExtraDataOffset = (uint32_t)(uintptr_t)(pData + 4);
+                *pExtraDataOffset = (uint32_t)(uintptr_t)(pData + AUDIOLIB_CHUNK_SIZE_SIZE);
                 *pSoundDataOffset = size;
             }
-        } while ( pData < pEnd && !memeq(pData - 4, AUDIOLIB_RIFF_DATA_CHUNK, sizeof(AUDIOLIB_RIFF_DATA_CHUNK) - 1) );
+        } while ( pData < pEnd && !memeq(pData - AUDIOLIB_CHUNK_TAG_SIZE, AUDIOLIB_RIFF_DATA_CHUNK, sizeof(AUDIOLIB_RIFF_DATA_CHUNK) - 1) );
 
         if ( pData < pEnd )
         {
@@ -394,7 +412,7 @@ const uint8_t* J3DAPI AudioLib_ParseWaveFileHeader(const uint8_t* pData, int* pT
                 *pSoundDataSize = size;
             }
 
-            return pData + 4;
+            return pData + AUDIOLIB_CHUNK_SIZE_SIZE;
         }
 
         return NULL;
@@ -421,12 +439,12 @@ const uint8_t* J3DAPI AudioLib_ParseWaveFileHeader(const uint8_t* pData, int* pT
 
         if ( pSampleRate )
         {
-            *pSampleRate = AudioLib_ReadU32BE(pData + sizeof(uint32_t));
+            *pSampleRate = AudioLib_ReadU32BE(pData + AUDIOLIB_IMUS_FORMAT_SAMPLERATE);
         }
 
         if ( pNumChannels )
         {
-            *pNumChannels = AudioLib_ReadU32BE(pData + 2 * sizeof(uint32_t));
+            *pNumChannels = AudioLib_ReadU32BE(pData + AUDIOLIB_IMUS_FORMAT_CHANNELS);
         }
 
         if ( pExtraInfo )
@@ -436,10 +454,10 @@ const uint8_t* J3DAPI AudioLib_ParseWaveFileHeader(const uint8_t* pData, int* pT
 
         if ( pSoundDataSize )
         {
-            *pSoundDataSize = AudioLib_ReadU32BE(&pData[size - 12]);
+            *pSoundDataSize = AudioLib_ReadU32BE(&pData[size - AUDIOLIB_IMUS_DATA_SIZE_OFFSET_BACK]);
         }
 
-        return pData + size - 8;
+        return pData + size - AUDIOLIB_IMUS_DATA_OFFSET_BACK;
     }
 
     if ( bCompressed )
@@ -449,8 +467,8 @@ const uint8_t* J3DAPI AudioLib_ParseWaveFileHeader(const uint8_t* pData, int* pT
 
     if ( memeq(pData, AUDIOLIB_AIFF_MAGIC, sizeof(AUDIOLIB_AIFF_MAGIC) - 1) )
     {
-        const uint8_t* pEnd = pData + AudioLib_ReadU32BE(pData + 4) + 8;
-        if ( !memeq(pData + 8, AUDIOLIB_AIFF_COMM_MAGIC, sizeof(AUDIOLIB_AIFF_COMM_MAGIC) - 1) )
+        const uint8_t* pEnd = pData + AudioLib_ReadU32BE(pData + AUDIOLIB_CONTAINER_SIZE_OFFSET) + AUDIOLIB_CHUNK_HEADER_SIZE;
+        if ( !memeq(pData + AUDIOLIB_CONTAINER_FORMTYPE_OFFSET, AUDIOLIB_AIFF_COMM_MAGIC, sizeof(AUDIOLIB_AIFF_COMM_MAGIC) - 1) )
         {
             return NULL;
         }
@@ -460,16 +478,16 @@ const uint8_t* J3DAPI AudioLib_ParseWaveFileHeader(const uint8_t* pData, int* pT
             *pType = AUDIOLIB_FILETYPE_AIFF;
         }
 
-        pData += 16;
+        pData += AUDIOLIB_AIFF_COMM_OFFSET;
         uint32_t size = AudioLib_ReadU32BE(pData);
         if ( pSampleRate )
         {
             // Only the exponent byte of the extended sample rate is examined
-            if ( pData[13] == AUDIOLIB_AIFF_RATE_EXP_44100 )
+            if ( pData[AUDIOLIB_AIFF_COMM_RATE_EXP_OFFSET] == AUDIOLIB_AIFF_RATE_EXP_44100 )
             {
                 *pSampleRate = AUDIOLIB_AIFF_RATE_44100;
             }
-            else if ( pData[13] == AUDIOLIB_AIFF_RATE_EXP_11025 )
+            else if ( pData[AUDIOLIB_AIFF_COMM_RATE_EXP_OFFSET] == AUDIOLIB_AIFF_RATE_EXP_11025 )
             {
                 *pSampleRate = AUDIOLIB_AIFF_RATE_11025;
             }
@@ -481,12 +499,12 @@ const uint8_t* J3DAPI AudioLib_ParseWaveFileHeader(const uint8_t* pData, int* pT
 
         if ( pBitsPerSample )
         {
-            *pBitsPerSample = pData[11];
+            *pBitsPerSample = pData[AUDIOLIB_AIFF_COMM_BITS_OFFSET];
         }
 
         if ( pNumChannels )
         {
-            *pNumChannels = pData[5];
+            *pNumChannels = pData[AUDIOLIB_AIFF_COMM_CHANNELS_OFFSET];
         }
 
         if ( pExtraInfo )
@@ -497,18 +515,18 @@ const uint8_t* J3DAPI AudioLib_ParseWaveFileHeader(const uint8_t* pData, int* pT
         // Walk the chunks until the sound data chunk
         do
         {
-            pData += size + 8;
+            pData += size + AUDIOLIB_CHUNK_HEADER_SIZE;
             size = AudioLib_ReadU32BE(pData);
-        } while ( pData < pEnd && !memeq(pData - 4, AUDIOLIB_AIFF_SSND_CHUNK, sizeof(AUDIOLIB_AIFF_SSND_CHUNK) - 1) );
+        } while ( pData < pEnd && !memeq(pData - AUDIOLIB_CHUNK_TAG_SIZE, AUDIOLIB_AIFF_SSND_CHUNK, sizeof(AUDIOLIB_AIFF_SSND_CHUNK) - 1) );
 
         if ( pData < pEnd )
         {
             if ( pSoundDataSize )
             {
-                *pSoundDataSize = size - 8;
+                *pSoundDataSize = size - AUDIOLIB_AIFF_SSND_HEADER_SIZE;
             }
 
-            return pData + 12;
+            return pData + AUDIOLIB_CHUNK_SIZE_SIZE + AUDIOLIB_AIFF_SSND_HEADER_SIZE;
         }
 
         return NULL;
@@ -535,7 +553,7 @@ int J3DAPI AudioLib_Compress(tAudioCompressorState* pCompressorState, uint8_t* p
             pOutBuffer += sizeof(uint16_t);
         }
 
-        return (3 * numChannels) + AudioLib_CompressBlock(pCompressorState, pOutBuffer, (int16_t*)pInBuffer, size / (2 * numChannels), numChannels, 1, 1);
+        return (AUDIOLIB_ADPCM_CHANNEL_HEADER_SIZE * numChannels) + AudioLib_CompressBlock(pCompressorState, pOutBuffer, (int16_t*)pInBuffer, size / (sizeof(int16_t) * numChannels), numChannels, 1, 1);
     }
 
     // WVSM stream
@@ -617,7 +635,7 @@ void J3DAPI AudioLib_Uncompress(tAudioCompressorState* pCompressorState, uint8_t
     }
     else
     {
-        AudioLib_UncompressBlock(pCompressorState, pOutSndData, pCompressedData, size / (2 * numChannels), numChannels, 1);
+        AudioLib_UncompressBlock(pCompressorState, pOutSndData, pCompressedData, size / (sizeof(int16_t) * numChannels), numChannels, 1);
     }
 }
 
