@@ -2327,7 +2327,7 @@ float J3DAPI sithThing_ScaleCombatDamage(const SithThing* pThing, SithThing* pHi
                 damage *= sithGetCombatDamageScalar() * 0.5f;
             }
 
-            if ( (pLocal->mode & (SITHAI_MODE_FLEEING | SITHAI_MODE_UNKNOWN_10)) == 0 )
+            if ( (pLocal->mode & (SITHAI_MODE_FLEEING | SITHAI_MODE_DODGING)) == 0 )
             {
                 return damage;
             }

@@ -475,7 +475,7 @@ int J3DAPI sithAIUtil_AIFire(SithAIControlBlock* pLocal, float minDist, float ma
 
     rdVector3 targetDir = pLocal->toTarget;
 
-    if ( (flags & SITHAIUTIL_FIRE_UNKNOWN_8) == 0 )
+    if ( (flags & SITHAIUTIL_FIRE_DELAYED) == 0 )
     {
         if ( pLocal->msecFireWaitTime > sithTime_g_msecGameTime )
         {
@@ -492,19 +492,19 @@ int J3DAPI sithAIUtil_AIFire(SithAIControlBlock* pLocal, float minDist, float ma
             goto postfire;
         }
 
-        if ( (flags & SITHAIUTIL_FIRE_UNKNOWN_40) != 0 )
+        if ( (flags & SITHAIUTIL_FIRE_WEAPON1) != 0 )
         {
             curSubMode = SITHPUPPETSUBMODE_FIRE;
         }
-        else if ( (flags & SITHAIUTIL_FIRE_UNKNOWN_80) != 0 )
+        else if ( (flags & SITHAIUTIL_FIRE_WEAPON2) != 0 )
         {
             curSubMode = SITHPUPPETSUBMODE_FIRE2;
         }
-        else if ( (flags & SITHAIUTIL_FIRE_UNKNOWN_100) != 0 )
+        else if ( (flags & SITHAIUTIL_FIRE_WEAPON3) != 0 )
         {
             curSubMode = SITHPUPPETSUBMODE_FIRE3;
         }
-        else if ( (flags & SITHAIUTIL_FIRE_UNKNOWN_200) != 0 )
+        else if ( (flags & SITHAIUTIL_FIRE_WEAPON4) != 0 )
         {
             curSubMode = SITHPUPPETSUBMODE_FIRE4;
         }
@@ -521,12 +521,12 @@ int J3DAPI sithAIUtil_AIFire(SithAIControlBlock* pLocal, float minDist, float ma
         pLocal->fireDot     = fireDot;
         pLocal->minFireDist = minDist;
         pLocal->maxFireDist = maxDist;
-        bDelayFire          = (flags & SITHAIUTIL_FIRE_UNKNOWN_8) == 0 && (pAttacker->thingInfo.actorInfo.flags & SITH_AF_DELAYFIRE) != 0;
+        bDelayFire          = (flags & SITHAIUTIL_FIRE_DELAYED) == 0 && (pAttacker->thingInfo.actorInfo.flags & SITH_AF_DELAYFIRE) != 0;
     }
 
     if ( bDelayFire )
     {
-        pLocal->fireFlags     = flags | SITHAIUTIL_FIRE_UNKNOWN_8;
+        pLocal->fireFlags     = flags | SITHAIUTIL_FIRE_DELAYED;
         pLocal->aimError      = aimError;
         pLocal->fireWeaponNum = weaponNum;
         sithPuppet_PlayMode(pAttacker, curSubMode, NULL);
@@ -591,7 +591,7 @@ int J3DAPI sithAIUtil_AIFire(SithAIControlBlock* pLocal, float minDist, float ma
             {
                 sithCog_ThingSendMessageEx(pAttacker, pBullet, SITHCOG_MSG_FIRE, (int)pShotTemplate->thingInfo.weaponInfo.damage, pShotTemplate->thingInfo.weaponInfo.damageType, weaponNum, 0);
 
-                if ( (flags & SITHAIUTIL_FIRE_UNKNOWN_8) == 0 )
+                if ( (flags & SITHAIUTIL_FIRE_DELAYED) == 0 )
                 {
                     sithAI_EmitEvent(pLocal, SITHAI_EVENT_FIRE, pLocal->pTargetThing);
                 }
@@ -617,7 +617,7 @@ int J3DAPI sithAIUtil_AIFire(SithAIControlBlock* pLocal, float minDist, float ma
                 {
                     sithCog_SendMessageEx(pActiveWeaponType->pCog, SITHCOG_MSG_ACTIVATE, SITHCOG_SYM_REF_NONE, 0, SITHCOG_SYM_REF_THING, pAttacker->idx, 0, burstCount, 0, 0, 0);
 
-                    if ( (flags & SITHAIUTIL_FIRE_UNKNOWN_8) == 0 )
+                    if ( (flags & SITHAIUTIL_FIRE_DELAYED) == 0 )
                     {
                         sithAI_EmitEvent(pLocal, SITHAI_EVENT_FIRE, pLocal->pTargetThing);
                     }
@@ -853,7 +853,7 @@ int J3DAPI sithAIUtil_AIMoveToNextWpnt(SithAIControlBlock* pLocal, float moveSpe
 
     if ( wpntIdx > -1 )
     {
-        if ( (pLocal->submode & SITHAI_SUBMODE_UNKNOWN_100) != 0 )
+        if ( (pLocal->submode & SITHAI_SUBMODE_MOVEFORWARD) != 0 )
         {
             degTurn = 180.0f;
         }
@@ -1193,7 +1193,7 @@ void J3DAPI sithAIUtil_CheckWpntMoveAlign(SithAIControlBlock* pLocal)
 
         if ( dot >= sithAIUtil_aWpntOwners[wpntNumber].cosTurnAlignAngle || (pLocal->mode & SITHAI_MODE_TURNING) == 0 )
         {
-            pLocal->submode &= ~SITHAI_SUBMODE_UNKNOWN_10;
+            pLocal->submode &= ~SITHAI_SUBMODE_ALIGNING;
         }
         else
         {
@@ -2387,7 +2387,7 @@ void J3DAPI sithAIUtil_AISetMode(SithAIControlBlock* pLocal, SithAIMode mode)
     {
         case SITHAI_MODE_MOVING:
             pLocal->mode |= SITHAI_MODE_MOVING;
-            pLocal->submode |= SITHAI_SUBMODE_UNKNOWN_4000;
+            pLocal->submode |= SITHAI_SUBMODE_NEWMOVE;
             break;
 
         case SITHAI_MODE_SEARCHING:
@@ -2434,7 +2434,7 @@ void J3DAPI sithAIUtil_AISetMode(SithAIControlBlock* pLocal, SithAIMode mode)
             pLocal->mode &= ~(SITHAI_MODE_UNKNOWN_1000000 | SITHAI_MODE_TARGETVISIBLE);
             pLocal->mode &= ~(SITHAI_MODE_BLOCK | SITHAI_MODE_NOCHECKFORCLIFF);
             pLocal->mode &= ~SITHAI_MODE_SLEEPING;
-            pLocal->submode &= ~SITHAI_SUBMODE_UNKNOWN_1;
+            pLocal->submode &= ~SITHAI_SUBMODE_MOVETARGETLOCKED;
             break;
 
         case SITHAI_MODE_BLOCK:
@@ -2447,7 +2447,7 @@ void J3DAPI sithAIUtil_AISetMode(SithAIControlBlock* pLocal, SithAIMode mode)
 
         case SITHAI_MODE_WALLCRAWLING:
             pLocal->mode |= SITHAI_MODE_WALLCRAWLING;
-            pLocal->submode |= SITHAI_SUBMODE_UNKNOWN_100;
+            pLocal->submode |= SITHAI_SUBMODE_MOVEFORWARD;
             break;
     }
 }
@@ -2458,16 +2458,16 @@ void J3DAPI sithAIUtil_AIClearMode(SithAIControlBlock* pLocal, SithAIMode mode)
     {
         case SITHAI_MODE_MOVING:
             pLocal->mode &= ~SITHAI_MODE_MOVING;
-            pLocal->mode &= ~SITHAI_MODE_UNKNOWN_10;
-            pLocal->submode &= ~(SITHAI_SUBMODE_UNKNOWN_1 | SITHAI_SUBMODE_UNKNOWN_2);
-            pLocal->submode &= ~(SITHAI_SUBMODE_UNKNOWN_4000 | SITHAI_SUBMODE_UNKNOWN_4);
-            pLocal->submode &= ~(SITHAI_SUBMODE_UNKNOWN_8 | SITHAI_SUBMODE_UNKNOWN_10);
+            pLocal->mode &= ~SITHAI_MODE_DODGING;
+            pLocal->submode &= ~(SITHAI_SUBMODE_MOVETARGETLOCKED | SITHAI_SUBMODE_UNKNOWN_2);
+            pLocal->submode &= ~(SITHAI_SUBMODE_NEWMOVE | SITHAI_SUBMODE_UNKNOWN_4);
+            pLocal->submode &= ~(SITHAI_SUBMODE_UNKNOWN_8 | SITHAI_SUBMODE_ALIGNING);
             break;
 
         case SITHAI_MODE_TURNING:
             pLocal->mode &= ~SITHAI_MODE_TURNING;
-            pLocal->mode &= ~SITHAI_MODE_UNKNOWN_80;
-            pLocal->submode &= ~SITHAI_SUBMODE_UNKNOWN_10;
+            pLocal->mode &= ~SITHAI_MODE_LOOKING;
+            pLocal->submode &= ~SITHAI_SUBMODE_ALIGNING;
             break;
 
         case SITHAI_MODE_TRAVERSEWPNTS:
@@ -2491,7 +2491,7 @@ void J3DAPI sithAIUtil_AIClearMode(SithAIControlBlock* pLocal, SithAIMode mode)
 
         case SITHAI_MODE_WALLCRAWLING:
             pLocal->mode &= ~SITHAI_MODE_WALLCRAWLING;
-            pLocal->submode &= ~SITHAI_SUBMODE_UNKNOWN_100;
+            pLocal->submode &= ~SITHAI_SUBMODE_MOVEFORWARD;
             break;
     }
 }
@@ -2501,19 +2501,19 @@ void J3DAPI sithAIUtil_SetWeaponFireFlags(int weaponNum, SithAIUtilFireFlags* pF
     switch ( weaponNum )
     {
         case 0:
-            *pFlags |= SITHAIUTIL_FIRE_UNKNOWN_40;
+            *pFlags |= SITHAIUTIL_FIRE_WEAPON1;
             break;
 
         case 1:
-            *pFlags |= SITHAIUTIL_FIRE_UNKNOWN_80;
+            *pFlags |= SITHAIUTIL_FIRE_WEAPON2;
             break;
 
         case 2:
-            *pFlags |= SITHAIUTIL_FIRE_UNKNOWN_100;
+            *pFlags |= SITHAIUTIL_FIRE_WEAPON3;
             break;
 
         case 3:
-            *pFlags |= SITHAIUTIL_FIRE_UNKNOWN_200;
+            *pFlags |= SITHAIUTIL_FIRE_WEAPON4;
             break;
     }
 }

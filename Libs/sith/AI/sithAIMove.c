@@ -173,7 +173,7 @@ void J3DAPI sithAIMove_Update(SithThing* pThing, float secDeltatTime)
         return;
     }
 
-    if ( (pLocal->submode & SITHAI_SUBMODE_UNKNOWN_100) != 0
+    if ( (pLocal->submode & SITHAI_SUBMODE_MOVEFORWARD) != 0
         && (pLocal->mode & SITHAI_MODE_MOVING) != 0
         && (pLocal->mode & SITHAI_MODE_DISABLED) == 0 )
     {
@@ -196,7 +196,7 @@ void J3DAPI sithAIMove_Update(SithThing* pThing, float secDeltatTime)
         {
             if ( (pLocal->submode & SITHAI_SUBMODE_BODYTRACKINGMOTION) != 0 && pLocal->pTargetThing )
             {
-                if ( (pLocal->mode & SITHAI_MODE_TURNING) != 0 || (pLocal->submode & SITHAI_SUBMODE_UNKNOWN_400) == 0 )
+                if ( (pLocal->mode & SITHAI_MODE_TURNING) != 0 || (pLocal->submode & SITHAI_SUBMODE_HEADTRACKINGENABLED) == 0 )
                 {
                     sithAIMove_AISetLookThing(pLocal, pLocal->pTargetThing);
                 }
@@ -210,7 +210,7 @@ void J3DAPI sithAIMove_Update(SithThing* pThing, float secDeltatTime)
         }
     }
 
-    if ( (pLocal->submode & SITHAI_SUBMODE_UNKNOWN_10) != 0 )
+    if ( (pLocal->submode & SITHAI_SUBMODE_ALIGNING) != 0 )
     {
         if ( (pLocal->mode & SITHAI_MODE_TRAVERSEWPNTS) != 0 )
         {
@@ -222,7 +222,7 @@ void J3DAPI sithAIMove_Update(SithThing* pThing, float secDeltatTime)
         }
     }
 
-    if ( (pLocal->mode & SITHAI_MODE_MOVING) != 0 && (pLocal->submode & SITHAI_SUBMODE_UNKNOWN_10) == 0 )
+    if ( (pLocal->mode & SITHAI_MODE_MOVING) != 0 && (pLocal->submode & SITHAI_SUBMODE_ALIGNING) == 0 )
     {
         sithAIMove_UpdateMove(pLocal, secDeltatTime);
     }
@@ -233,10 +233,10 @@ void J3DAPI sithAIMove_Update(SithThing* pThing, float secDeltatTime)
     }
 
     if ( !sithWeapon_IsAiming(pLocal->pOwner)
-        && ((pLocal->mode & (SITHAI_MODE_UNKNOWN_80 | SITHAI_MODE_TURNING)) != 0 || (pLocal->submode & SITHAI_SUBMODE_UNKNOWN_400) != 0) )
+        && ((pLocal->mode & (SITHAI_MODE_LOOKING | SITHAI_MODE_TURNING)) != 0 || (pLocal->submode & SITHAI_SUBMODE_HEADTRACKINGENABLED) != 0) )
     {
         if ( ((pLocal->mode & SITHAI_MODE_BLOCK) != 0 || (pThing->thingInfo.actorInfo.flags & SITH_AF_NOSLOPEMOVE) != 0)
-            && (pLocal->submode & SITHAI_SUBMODE_UNKNOWN_400) == 0 )
+            && (pLocal->submode & SITHAI_SUBMODE_HEADTRACKINGENABLED) == 0 )
         {
             sithAIMove_UpdateHeadTrackLookPos(pLocal, secDeltatTime);
         }
@@ -486,7 +486,7 @@ void J3DAPI sithAIMove_UpdateMove(SithAIControlBlock* pLocal, float secDeltaTime
         return;
     }
 
-    pLocal->submode &= ~(SITHAI_SUBMODE_UNKNOWN_4000 | SITHAI_SUBMODE_UNKNOWN_4);
+    pLocal->submode &= ~(SITHAI_SUBMODE_NEWMOVE | SITHAI_SUBMODE_UNKNOWN_4);
 
     float moveDist    = (pThing->thingInfo.actorInfo.maxThrust * secDeltaTime) * pLocal->moveSpeed;
     rdVector3 pos     = pThing->pos;
@@ -499,7 +499,7 @@ void J3DAPI sithAIMove_UpdateMove(SithAIControlBlock* pLocal, float secDeltaTime
     pLocal->moveDistance = rdVector_Normalize3Acc(&pLocal->moveDirection);
 
     rdVector3 vel;
-    if ( (pLocal->submode & SITHAI_SUBMODE_UNKNOWN_100) == 0 )
+    if ( (pLocal->submode & SITHAI_SUBMODE_MOVEFORWARD) == 0 )
     {
         rdVector_Scale3(&vel, &pLocal->moveDirection, moveDist);
     }
@@ -515,7 +515,7 @@ void J3DAPI sithAIMove_UpdateMove(SithAIControlBlock* pLocal, float secDeltaTime
     vel.y = stdMath_ClipNearZero(vel.y);
     vel.z = stdMath_ClipNearZero(vel.z);
 
-    if ( (pLocal->mode & SITHAI_MODE_UNKNOWN_8000) != 0 && pLocal->goalThing )
+    if ( (pLocal->mode & SITHAI_MODE_MATCHVELOCITY) != 0 && pLocal->goalThing )
     {
         rdVector3 goalDir = pLocal->goalThing->moveInfo.physics.velocity;
         float goalSpeed   = rdVector_Normalize3Acc(&goalDir);
@@ -534,7 +534,7 @@ void J3DAPI sithAIMove_UpdateMove(SithAIControlBlock* pLocal, float secDeltaTime
         rdVector_Zero3(&pLocal->pOwner->moveInfo.physics.velocity);
     }
 
-    if ( (pLocal->submode & SITHAI_SUBMODE_UNKNOWN_100) != 0 )
+    if ( (pLocal->submode & SITHAI_SUBMODE_MOVEFORWARD) != 0 )
     {
         float speed = rdVector_Len3(&pThing->moveInfo.physics.velocity);
         rdVector_Scale3(&pThing->moveInfo.physics.velocity, &pThing->orient.lvec, speed);
@@ -613,12 +613,12 @@ void J3DAPI sithAIMove_CheckMoveAlign(SithAIControlBlock* pLocal)
     {
         if ( rdVector_Dot3(&pLocal->goalLVec, &pLocal->pOwner->orient.lvec) >= 0.0f )
         {
-            pLocal->submode &= ~SITHAI_SUBMODE_UNKNOWN_10;
+            pLocal->submode &= ~SITHAI_SUBMODE_ALIGNING;
         }
     }
     else
     {
-        pLocal->submode &= ~SITHAI_SUBMODE_UNKNOWN_10;
+        pLocal->submode &= ~SITHAI_SUBMODE_ALIGNING;
     }
 }
 
@@ -699,7 +699,7 @@ float J3DAPI sithAIMove_GetGoalTolerance(SithAIControlBlock* pLocal, rdVector3* 
     pPos->z       = pThing->pos.z;
     pMovePos->z   = pThing->pos.z;
 
-    if ( (pLocal->submode & SITHAI_SUBMODE_UNKNOWN_100) != 0 )
+    if ( (pLocal->submode & SITHAI_SUBMODE_MOVEFORWARD) != 0 )
     {
         rdVector3 rightPos;
         rdVector_ScaleAdd3(&rightPos, &pThing->orient.rvec, sithAIMove_goalSideTolerance, pPos);
@@ -1502,7 +1502,7 @@ void J3DAPI sithAIMove_AISetLookPos(SithAIControlBlock* pLocal, const rdVector3*
     SITH_ASSERTREL(pLocal && pLocal->pOwner && pLocal->pClass);
     SITH_ASSERTREL(targetPos);
 
-    if ( (pLocal->submode & SITHAI_SUBMODE_UNKNOWN_1) != 0 )
+    if ( (pLocal->submode & SITHAI_SUBMODE_MOVETARGETLOCKED) != 0 )
     {
         return;
     }
@@ -1533,13 +1533,13 @@ void J3DAPI sithAIMove_AISetLookPos(SithAIControlBlock* pLocal, const rdVector3*
     if ( lookDist != 0.0f )
     {
         pLocal->mode    |= SITHAI_MODE_TURNING;
-        pLocal->submode |= SITHAI_SUBMODE_UNKNOWN_10;
+        pLocal->submode |= SITHAI_SUBMODE_ALIGNING;
     }
 
-    pLocal->mode |= SITHAI_MODE_UNKNOWN_80;
+    pLocal->mode |= SITHAI_MODE_LOOKING;
     if ( (pLocal->mode & SITHAI_MODE_WANTALLEVENTS) != 0 )
     {
-        sithAI_EmitEvent(pLocal, SITHAI_EVENT_UNKNOWN_40000, NULL);
+        sithAI_EmitEvent(pLocal, SITHAI_EVENT_LOOK_TARGET_CHANGED, NULL);
     }
 }
 
@@ -1564,7 +1564,7 @@ int J3DAPI sithAIMove_AISetMovePos(SithAIControlBlock* pLocal, const rdVector3* 
     SITH_ASSERTREL(pLocal && pLocal->pOwner && pLocal->pClass);
     SITH_ASSERTREL(moveToPos);
 
-    if ( (pLocal->submode & SITHAI_SUBMODE_UNKNOWN_1) != 0 )
+    if ( (pLocal->submode & SITHAI_SUBMODE_MOVETARGETLOCKED) != 0 )
     {
         return 0;
     }
@@ -1663,13 +1663,13 @@ int J3DAPI sithAIMove_AISetMoveTargetPos(SithAIControlBlock* pLocal, const rdVec
         SITHLOG_ERROR("WARNING!  Move target issued to '%s'. AI is DISABLED.\n", pLocal->pOwner->aName);
     }
 
-    pLocal->submode &= ~SITHAI_SUBMODE_UNKNOWN_1;
+    pLocal->submode &= ~SITHAI_SUBMODE_MOVETARGETLOCKED;
     if ( !sithAIMove_AISetMovePos(pLocal, moveToPos, moveSpeed) )
     {
         return 0;
     }
 
-    pLocal->submode |= SITHAI_SUBMODE_UNKNOWN_1;
+    pLocal->submode |= SITHAI_SUBMODE_MOVETARGETLOCKED;
     return 1;
 }
 
@@ -1677,7 +1677,7 @@ int J3DAPI sithAIMove_AISetMoveTargetPos2(SithAIControlBlock* pLocal, const rdVe
 {
     SITH_ASSERTREL(pLocal);
     SITH_ASSERTREL(moveToPos);
-    if ( (pLocal->submode & SITHAI_SUBMODE_UNKNOWN_1) != 0 )
+    if ( (pLocal->submode & SITHAI_SUBMODE_MOVETARGETLOCKED) != 0 )
     {
         return 0;
     }
@@ -2089,7 +2089,7 @@ void J3DAPI sithAIMove_SetGoalReached(SithAIControlBlock* pLocal)
         sithCog_ThingSendMessage(pLocal->pOwner, NULL, SITHCOG_MSG_ARRIVED);
     }
 
-    if ( (pLocal->submode & SITHAI_SUBMODE_UNKNOWN_4000) == 0 && (pLocal->mode & SITHAI_MODE_TRAVERSEWPNTS) == 0 )
+    if ( (pLocal->submode & SITHAI_SUBMODE_NEWMOVE) == 0 && (pLocal->mode & SITHAI_MODE_TRAVERSEWPNTS) == 0 )
     {
         sithAIMove_StopAIMovement(pLocal);
 
@@ -2248,11 +2248,11 @@ void J3DAPI sithAIMove_UpdateHeadTrackTarget(SithAIControlBlock* pLocal, float s
     float highThreshold = sithAIMove_headTrackTargetStartDot;
     if ( !pTarget )
     {
-        pLocal->submode &= ~SITHAI_SUBMODE_UNKNOWN_800;
+        pLocal->submode &= ~SITHAI_SUBMODE_HEADTRACKINGTARGET;
     }
     else if ( (pActorInfo->flags & SITH_AF_NOSLOPEMOVE) != 0 || (pLocal->mode & SITHAI_MODE_BLOCK) != 0 )
     {
-        pLocal->submode |= SITHAI_SUBMODE_UNKNOWN_800;
+        pLocal->submode |= SITHAI_SUBMODE_HEADTRACKINGTARGET;
         lowThreshold  = -1.0f;
         highThreshold = 1.0f;
     }
@@ -2260,24 +2260,24 @@ void J3DAPI sithAIMove_UpdateHeadTrackTarget(SithAIControlBlock* pLocal, float s
     {
         float dot = rdVector_Dot3(&pOwner->orient.lvec, &projTargetDir);
 
-        if ( (pLocal->submode & SITHAI_SUBMODE_UNKNOWN_800) != 0 )
+        if ( (pLocal->submode & SITHAI_SUBMODE_HEADTRACKINGTARGET) != 0 )
         {
             if ( dot < lowThreshold )
             {
-                pLocal->submode &= ~SITHAI_SUBMODE_UNKNOWN_800;
+                pLocal->submode &= ~SITHAI_SUBMODE_HEADTRACKINGTARGET;
             }
         }
         else if ( dot > highThreshold )
         {
-            pLocal->submode |= SITHAI_SUBMODE_UNKNOWN_800;
+            pLocal->submode |= SITHAI_SUBMODE_HEADTRACKINGTARGET;
         }
     }
 
     rdVector3 aimDir;
     rdVector3 pitchDir;
-    if ( (pLocal->submode & SITHAI_SUBMODE_UNKNOWN_800) != 0 )
+    if ( (pLocal->submode & SITHAI_SUBMODE_HEADTRACKINGTARGET) != 0 )
     {
-        aimDir = projTargetDir; // Set when pTarget is set, which SITHAI_SUBMODE_UNKNOWN_800 requires
+        aimDir = projTargetDir; // Set when pTarget is set, which SITHAI_SUBMODE_HEADTRACKINGTARGET requires
         pitchDir = targetDir;
     }
     else
@@ -2377,7 +2377,7 @@ void J3DAPI sithAIMove_UpdateHeadTrackLookPos(SithAIControlBlock* pLocal, float 
 
     if ( fabsf(deltaYaw) <= sithAIMove_headTrackDoneAngle && fabsf(deltaPitch) <= sithAIMove_headTrackDoneAngle )
     {
-        pLocal->mode &= ~SITHAI_MODE_UNKNOWN_80;
+        pLocal->mode &= ~SITHAI_MODE_LOOKING;
     }
 }
 
