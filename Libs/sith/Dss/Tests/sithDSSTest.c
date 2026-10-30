@@ -330,14 +330,12 @@ SITHDSSTEST_FAMILY(EndSection, "sub_4B3760", "sub_4B3790")
 
 // The original stores the playback speed of a puppet track as it is. The reconstruction replaces a speed of zero or
 // less with 1.0 on load (marked Added: in sithDSS_ProcessPuppetStatus), so these two cases differ on purpose.
-// ProcessPuppetStatus_edge_keyframeMinus1_priorities: the original reads the track priorities as unsigned 16-bit
-// values (0x8000 becomes 32768), the reconstruction reads them signed (-32768); see tv/sithDSS/README.md.
 TEST(sithDSS, TestOriginalPuppetStatus)
 {
-    static const char* const aKnown[] = { "ProcessPuppetStatus_zerospeed", "ProcessPuppetStatus_negativespeed", "ProcessPuppetStatus_edge_keyframeMinus1_priorities" };
+    static const char* const aKnown[] = { "ProcessPuppetStatus_zerospeed", "ProcessPuppetStatus_negativespeed" };
     unsigned numFailed = sithDSSTest_RunCases(dssv_aDSSCases, (unsigned)DSSV_NUMDSSCASES, &sithDSSTest_dssFixture, "PuppetStatus_", "ProcessPuppetStatus_", sithDSSTest_aFailText, sizeof(sithDSSTest_aFailText));
     sithDSSTest_ExpectKnownDifferences(numFailed, sithDSSTest_aFailText, aKnown, sizeof(aKnown) / sizeof(aKnown[0]),
-        "sithDSS_ProcessPuppetStatus replaces a playback speed <= 0 with 1.0 (intentional) and reads track priorities signed (differs from the original); see tv/sithDSS/README.md.");
+        "sithDSS_ProcessPuppetStatus replaces a playback speed <= 0 with 1.0 (intentional); see tv/sithDSS/README.md.");
 }
 
 // Every case of the table must be in the fixture and the other way around
