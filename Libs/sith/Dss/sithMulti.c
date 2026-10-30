@@ -112,7 +112,7 @@ void sithMulti_CloseGame()
     sithEvent_RegisterTask(SITHMULTI_CHECKPLAYER_TASKID, NULL, 0, SITHEVENT_TASKDISABLED);
     sithMessage_CloseGame();
 
-    sithMulti_g_serverId  = 0;
+    sithMulti_g_serverId   = 0;
     sithMulti_msecSyncTime = 0;
 }
 
@@ -226,7 +226,6 @@ int J3DAPI sithMulti_ProcessWelcome(const SithMessage* pMsg)
     // TODO: [BUG] playerNum is read from the message and used as an index into sithPlayer_g_aPlayers without a range check
     wchar_t awName[SITHMULTI_PLAYERNAME_LEN];
     SITHDSS_POPWSTRING(awName, STD_ARRAYLEN(awName));
-    awName[STD_ARRAYLEN(awName) - 1] = 0;
     STD_WSTRCPY(sithPlayer_g_aPlayers[playerNum].awName, awName);
 
     if ( playerId == sithMessage_g_localPlayerId )
@@ -370,7 +369,6 @@ signed int J3DAPI sithMulti_ProcessSyncPlayers(const SithMessage* pMsg)
 
             char aName[SITHMULTI_PLAYERNAME_LEN];
             SITHDSS_POPSTRING(aName, STD_ARRAYLEN(aName));
-            aName[STD_ARRAYLEN(aName) - 1] = 0;
 
             stdUtil_ToWStringEx(sithPlayer_g_aPlayers[i].awName, aName, STD_ARRAYLEN(aName) - 1);
             sithPlayer_g_aPlayers[i].awName[STD_ARRAYLEN(aName) - 1] = 0;
@@ -407,7 +405,6 @@ int J3DAPI sithMulti_ProcessJoinRequest(const SithMessage* pMsg)
 
     char aLevelName[64];
     SITHDSS_POPSTRING(aLevelName, STD_ARRAYLEN(aLevelName));
-    aLevelName[STD_ARRAYLEN(aLevelName) - 1] = 0;
 
     if ( _strcmpi(aLevelName, sithWorld_g_pCurrentWorld->aName) )
     {
@@ -484,9 +481,9 @@ int J3DAPI sithMulti_ProcessJoinRequest(const SithMessage* pMsg)
     }
 
     sithPlayer_Reset(sithMulti_curWelcomePlayerNum);
+
     wchar_t awName[SITHMULTI_PLAYERNAME_LEN];
     SITHDSS_POPWSTRING(awName, STD_ARRAYLEN(awName));
-    awName[STD_ARRAYLEN(awName) - 1] = 0;
     STD_WSTRCPY(sithPlayer_g_aPlayers[sithMulti_curWelcomePlayerNum].awName, awName);
 
     int clientChecksum = SITHDSS_POPINT32();
@@ -501,7 +498,9 @@ int J3DAPI sithMulti_ProcessJoinRequest(const SithMessage* pMsg)
     sithMulti_FinishJoining(SITHMULTI_JOIN_OK, 0.25f, playerId);
     sithMulti_SyncPlayers(playerId, 0);
     sithMulti_StartWelcomingPlayer(playerId);
-    SITHLOG_ERROR("Starting welcome of player %d.\n", playerId);
+
+    // TODO: This is an informational message, not an error
+    SITHLOG_STATUS("Starting welcome of player %d.\n", playerId);
     return 1;
 }
 
@@ -525,9 +524,7 @@ int J3DAPI sithMulti_ProcessChat(const SithMessage* pMsg)
 
     // TODO: [BUG] len can be 0: len - 1 wraps; the original strncpy then overruns aText (here the copy is clamped) and aText[len - 1] writes before aText
     char aText[SITHMULTI_CHAT_MAXLEN + 4];
-    STD_STRNCPY(aText, (const char*)pCurDSSMsgData_, len - 1);
-    aText[len - 1] = 0;
-    pCurDSSMsgData_ += len;
+    SITHDSS_POPSTRING(aText, len);
     aText[len + 1] = 0;
 
     // TODO: [BUG] playerCount is only checked for being negative, not against sithPlayer_g_numPlayers
@@ -545,6 +542,7 @@ int J3DAPI sithMulti_ProcessChat(const SithMessage* pMsg)
 
 int J3DAPI sithMulti_ProcessPing(const SithMessage* pMsg)
 {
+    // TODO: A deep copy of pMsg should be made in a new SithMessage object instead of mutating the const message
     ((SithMessage*)pMsg)->type = SITHDSS_PONG;
     sithMessage_SendMessage(&sithMulti_g_message, sithMessage_GetSenderID(), SITHMESSAGE_STREAM_NET, 0);
     return 1;
@@ -930,7 +928,6 @@ void J3DAPI sithMulti_UpdateRemovals()
     }
 }
 
-// Retail function 0x004564F0, not yet in upstream's function list or RTI; called only from sithMulti_UpdateRemovals
 static void sithMulti_FinishWelcomingPlayer(void)
 {
     SITHLOG_ERROR("Finished welcoming player %d, sending the welcome packet.\n", sithMulti_newPlayerId);
