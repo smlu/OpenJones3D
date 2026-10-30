@@ -769,19 +769,23 @@ int J3DAPI sithDSS_ProcessAnimStatus(const SithMessage* pMsg)
     if ( (pAnim->flags & (SITHANIMATE_PUSHITEM | SITHANIMATE_PULLITEM)) != 0 )
     {
         int16_t idx16 = SITHDSS_POPINT16();
+
         pAnim->pItemThing     = sithThing_GetThingByIndex(idx16);
         pAnim->thingSignature = SITHDSS_POPINT32();
         pAnim->deltaValue     = SITHDSS_POPFLOAT();
         pAnim->endValue       = SITHDSS_POPFLOAT();
         pAnim->curValue       = SITHDSS_POPFLOAT();
         pAnim->curFrame       = SITHDSS_POPINT32();
+
         SITHDSS_POPVEC4(&pAnim->deltaVector);
         SITHDSS_POPVEC4(&pAnim->startVector);
         SITHDSS_POPVEC4(&pAnim->endVector);
+
         pAnim->trackNum     = SITHDSS_POPINT32();
         pAnim->msecPerFrame = SITHDSS_POPINT32();
-        animIdx = SITHDSS_POPINT32();
+        animIdx             = SITHDSS_POPINT32();
         pAnim->pSurface     = sithSurface_GetSurfaceEx(sithWorld_g_pCurrentWorld, animIdx);
+
         SITHDSS_POPVEC3(&pAnim->direction3);
     }
 
@@ -846,7 +850,7 @@ int J3DAPI sithDSS_ProcessAnimStatus(const SithMessage* pMsg)
 
     if ( (pAnim->flags & SITHANIMATE_THING_FADE) != 0 )
     {
-        animIdx = SITHDSS_POPINT32();
+        animIdx               = SITHDSS_POPINT32();
         pAnim->pThing         = sithThing_GetThingByIndex(animIdx);
         pAnim->thingSignature = SITHDSS_POPINT32();
         SITHDSS_POPVEC4(&pAnim->startVector);
@@ -1243,8 +1247,10 @@ int J3DAPI sithDSS_ProcessSyncCameras(const SithMessage* pMsg)
     sithCamera_g_pCurCamera       = &sithCamera_g_aCameras[cameraNum];
     sithCamera_g_bCurCameraSet    = SITHDSS_POPINT32();
     sithCamera_g_curCycleCamNum   = SITHDSS_POPINT32();
+
     SITHDSS_POPVEC3(&sithCamera_g_vecCameraPosOffset);
     SITHDSS_POPVEC3(&sithCamera_g_vecCameraAngleOffset);
+
     sithCamera_g_cameraPosDelta   = SITHDSS_POPFLOAT();
     sithCamera_g_cameraAngleDelta = SITHDSS_POPFLOAT();
 
@@ -1288,6 +1294,9 @@ int J3DAPI sithDSS_SyncGameState(DPID idTo, unsigned int outstream)
 
     SITHDSS_PUSHINT32(sithInventory_g_bSendDeactivateMessage);
     SITHDSS_PUSHINT32(sithInventory_g_bInitInventory);
+
+    // Note, these two globals are only reset on inventory reset and serialized here, the original code never reads them otherwise.
+    // TODO: Find out what the two values represent and rename them.
     SITHDSS_PUSHINT32(sithInventory_g_dword_56B750);
     SITHDSS_PUSHINT32(sithInventory_g_dword_56B754);
 
@@ -1321,6 +1330,7 @@ int J3DAPI sithDSS_SyncGameState(DPID idTo, unsigned int outstream)
     SITHDSS_PUSHINT16((int16_t)sithPlayer_g_impFireType);
     SITHDSS_PUSHINT16((int16_t)sithPlayer_g_curLevelNum);
     SITHDSS_PUSHUINT8((uint8_t)sithPlayer_g_bBonusMapBought);
+
     SITHDSS_PUSHINT32(sithThing_GetThingIndex(sithPlayerActions_g_pPlasma));
     SITHDSS_PUSHINT16((int16_t)sithPlayerActions_g_jewelFlyingPuppetTrackNum);
     SITHDSS_PUSHUINT8((uint8_t)sithPlayerActions_g_bJewelFlying);
