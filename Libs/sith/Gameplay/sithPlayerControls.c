@@ -118,7 +118,6 @@ static int J3DAPI sithPlayerControls_ProcessDeadPlayer(SithThing* pThing, float 
 static void J3DAPI sithPlayerControls_ProcessFallingMove(SithThing* pThing, float secDeltaTime);
 static void J3DAPI sithPlayerControls_ProcessSwimMove(SithThing* pThing, float secDeltaTime);
 static void J3DAPI sithPlayerControls_ProcessHangMove(SithThing* pThing, float secDeltaTime);
-static void J3DAPI sithPlayerControls_ProcessWeaponAim(SithThing* pThing, float secDeltaTime);
 
 static int J3DAPI sithPlayerControls_CheckAimRange(SithThing* pThing, const rdVector3* pStartPos, const rdVector3* pTargetPos, float cosFarAimCone, float cosCloseAimCone, float cosVerticalLimit, float maxAimDist);
 static int J3DAPI sithPlayerControls_GetPushPullMoveNorm(rdVector3* moveNorm, const rdVector3* pLVect, float angle);
@@ -827,7 +826,7 @@ int J3DAPI sithPlayerControls_ProcessPlayerDebugControls(SithThing* pThing, floa
         }
     }
 
-    return 1;
+    return 0;
 }
 
 void J3DAPI sithPlayerControls_ProcessLookControls(SithThing* pThing, float secDeltaTime)
@@ -856,7 +855,7 @@ void J3DAPI sithPlayerControls_ProcessLookControls(SithThing* pThing, float secD
 
     if ( yawDelta != 0.0f )
     {
-        yawDelta *= 90.0f * secDeltaTime;
+        yawDelta = (yawDelta * 90.0f) * secDeltaTime;
     }
 
     if ( sithControl_GetKey(SITHCONTROL_FORWARD, NULL) )
@@ -871,17 +870,33 @@ void J3DAPI sithPlayerControls_ProcessLookControls(SithThing* pThing, float secD
     if ( pitchDelta != 0.0f )
     {
         bInputReceived = true;
-        pitchDelta *= 90.0f * secDeltaTime;
+        pitchDelta = (pitchDelta * 90.0f) * secDeltaTime;
     }
 
     if ( bInputReceived )
     {
         rdVector3 newOffset = sithCamera_g_pCurCamera->offset;
-        newOffset.z = STDMATH_CLAMP(newOffset.z + pitchDelta, -0.07f, 0.15000001f);
+        newOffset.z += pitchDelta;
+        if ( newOffset.z < -0.07f )
+        {
+            newOffset.z = -0.07f;
+        }
+        else if ( newOffset.z > 0.15000001f )
+        {
+            newOffset.z = 0.15000001f;
+        }
 
         if ( yawDelta != 0.0f )
         {
-            newOffset.x = STDMATH_CLAMP(newOffset.x + yawDelta, -0.07f, 0.15000001f);
+            newOffset.x += yawDelta;
+            if ( newOffset.x < -0.07f )
+            {
+                newOffset.x = -0.07f;
+            }
+            else if ( newOffset.x > 0.15000001f )
+            {
+                newOffset.x = 0.15000001f;
+            }
         }
 
         sithCamera_SetExtCameraOffset(&newOffset);
@@ -899,9 +914,9 @@ void J3DAPI sithPlayerControls_ProcessLookControls(SithThing* pThing, float secD
 
 void J3DAPI sithPlayerControls_ProcessGeneralMove(SithThing* pThing, float secDeltaTime)
 {
-    sithPlayerActions_g_pCurLedgeThingModelFace = NULL;
-    sithPlayerActions_g_pCurLedgeThingModel     = NULL;
-    sithPlayerActions_g_pCurLedgeSurface        = NULL;
+    sithPlayerActions_g_pCurHitLedgeModelFace = NULL;
+    sithPlayerActions_g_pCurHitLedgeModel     = NULL;
+    sithPlayerActions_g_pCurHitLedgeSurface   = NULL;
 
     // Handle jump direction input when in jump ready state
     if ( pThing->thingInfo.actorInfo.bControlsDisabled )
@@ -1110,11 +1125,12 @@ void J3DAPI sithPlayerControls_ProcessClimbMove(SithThing* pThing, float secDelt
 
                 sithPlayerActions_ClimbPullUp(pThing);
                 sithPlayerControls_UpdateClimbingSpeed(pThing, bFastClimb); // Added: Speedup play if runmode is enabled
+                return;
             }
         }
     }
     // Handle Jump-off key
-    else if ( sithControl_GetKey(SITHCONTROL_JUMP, NULL)
+    if ( sithControl_GetKey(SITHCONTROL_JUMP, NULL)
         && !sithPlayerControls_bJumpKeyActive
         && !pThing->thingInfo.actorInfo.bForceMovePlay )
     {
@@ -1294,7 +1310,11 @@ void J3DAPI sithPlayerControls_ProcessJewelFlyMove(SithThing* pThing, float secD
     {
         if ( bCanMoveUp )
         {
-            pPhysics->thrust.z = STDMATH_CLAMP(pPhysics->thrust.z + thrustIncrement * sithTime_g_fps, -1.0f, 1.0f);
+            pPhysics->thrust.z += thrustIncrement * sithTime_g_fps;
+            if ( pPhysics->thrust.z > 1.0f )
+            {
+                pPhysics->thrust.z = 1.0f;
+            }
         }
         else
         {
@@ -1306,7 +1326,11 @@ void J3DAPI sithPlayerControls_ProcessJewelFlyMove(SithThing* pThing, float secD
     {
         if ( bCanMoveDown )
         {
-            pPhysics->thrust.z = STDMATH_CLAMP(pPhysics->thrust.z - thrustIncrement * sithTime_g_fps, -1.0f, 1.0f);
+            pPhysics->thrust.z -= thrustIncrement * sithTime_g_fps;
+            if ( pPhysics->thrust.z < -1.0f )
+            {
+                pPhysics->thrust.z = -1.0f;
+            }
         }
         else
         {
@@ -1318,6 +1342,12 @@ void J3DAPI sithPlayerControls_ProcessJewelFlyMove(SithThing* pThing, float secD
     {
         pPhysics->thrust.z = 0.0f;
         if ( !bCanMoveUp )
+        {
+            pPhysics->velocity.z = 0.0f;
+            sithPhysics_ResetThingMovement(pThing);
+        }
+
+        if ( !bCanMoveDown )
         {
             pPhysics->velocity.z = 0.0f;
             sithPhysics_ResetThingMovement(pThing);
@@ -2178,7 +2208,6 @@ void J3DAPI sithPlayerControls_ProcessSwimMove(SithThing* pThing, float secDelta
             return;
         }
 
-        pPhysics->thrust.z = 0.0f;
     }
     else
     {
@@ -2276,17 +2305,6 @@ void J3DAPI sithPlayerControls_ProcessSwimMove(SithThing* pThing, float secDelta
         pPhysics->angularVelocity.yaw = 0.0f;
     }
 
-    //
-    // Transform thrust based on head rotation
-    //
-    if ( !rdVector_IsZero3(&pPhysics->thrust)
-        && !rdVector_IsZero3(&pActor->headPYR)
-        && (pPhysics->flags & SITH_PF_ONWATERSURFACE) == 0 )
-    {
-        rdMatrix34 mat;
-        rdMatrix_BuildRotate34(&mat, &pActor->headPYR);
-        rdMatrix_TransformVector34Acc(&pPhysics->thrust, &mat);
-    }
 }
 
 void J3DAPI sithPlayerControls_ProcessHangMove(SithThing* pThing, float secDeltaTime)
@@ -2353,13 +2371,13 @@ void J3DAPI sithPlayerControls_ProcessHangMove(SithThing* pThing, float secDelta
             if ( pLedgeSurf )
             {
                 sithThing_AttachThingToClimbSurface(pThing, pLedgeSurf);
-                sithPlayerActions_g_pCurLedgeSurface = pLedgeSurf;
+                sithPlayerActions_g_pCurHitLedgeSurface = pLedgeSurf;
             }
             else
             {
                 sithThing_AttachThingToThingFace(pThing, pLedgeThing, pLedgeFace, pLedgeMesh->apVertices, /*bNoImpactUpdate=*/1);
-                sithPlayerActions_g_pCurLedgeThingModelFace = pLedgeFace;
-                sithPlayerActions_g_pCurLedgeThingModel     = pLedgeModel;
+                sithPlayerActions_g_pCurHitLedgeModelFace = pLedgeFace;
+                sithPlayerActions_g_pCurHitLedgeModel     = pLedgeModel;
             }
         }
     }
@@ -2382,19 +2400,21 @@ void J3DAPI sithPlayerControls_ProcessHangMove(SithThing* pThing, float secDelta
 
             pThing->forceMoveStartPos = pThing->pos;
             pThing->collide.movesize = 0.0f;
-            sithPuppet_PlayForceMoveMode(pThing, SITHPUPPETSUBMODE_HANGSHIMLEFT, NULL);
-            sithSoundClass_PlayModeFirst(pThing, SITHSOUNDCLASS_CLIMBHANDLEFT);
 
             if ( pLedgeSurf )
             {
+                sithPuppet_PlayForceMoveMode(pThing, SITHPUPPETSUBMODE_HANGSHIMLEFT, NULL);
                 sithThing_AttachThingToClimbSurface(pThing, pLedgeSurf);
-                sithPlayerActions_g_pCurLedgeSurface = pLedgeSurf;
+                sithSoundClass_PlayModeFirst(pThing, SITHSOUNDCLASS_CLIMBHANDLEFT);
+                sithPlayerActions_g_pCurHitLedgeSurface = pLedgeSurf;
             }
             else
             {
+                sithSoundClass_PlayModeFirst(pThing, SITHSOUNDCLASS_CLIMBHANDLEFT);
+                sithPuppet_PlayForceMoveMode(pThing, SITHPUPPETSUBMODE_HANGSHIMLEFT, NULL);
                 sithThing_AttachThingToThingFace(pThing, pLedgeThing, pLedgeFace, pLedgeMesh->apVertices, 1);
-                sithPlayerActions_g_pCurLedgeThingModelFace = pLedgeFace;
-                sithPlayerActions_g_pCurLedgeThingModel     = pLedgeModel;
+                sithPlayerActions_g_pCurHitLedgeModelFace = pLedgeFace;
+                sithPlayerActions_g_pCurHitLedgeModel     = pLedgeModel;
             }
         }
     }
@@ -3700,7 +3720,15 @@ void J3DAPI sithPlayerControls_RotateAimJointsEx(SithThing* pThing, float pitch,
             int jointIdx = sithThing_GetThingJointIndex(pThing, "inrarm");
             if ( jointIdx >= 0 )
             {
-                pitch = STDMATH_CLAMP(pitch, -80.0f, 80.0f);
+                if ( pitch > 80.0f )
+                {
+                    pitch = 80.0f;
+                }
+
+                if ( pitch < -80.0f )
+                {
+                    pitch = -80.0f;
+                }
                 /*pThing->renderData.apTweakedAngles[jointIdx].yaw  = pitch;
                 pThing->renderData.apTweakedAngles[jointIdx].roll = pitch * -0.5f;*/
 
@@ -3712,7 +3740,15 @@ void J3DAPI sithPlayerControls_RotateAimJointsEx(SithThing* pThing, float pitch,
             jointIdx = sithThing_GetThingJointIndex(pThing, "intorso");
             if ( jointIdx >= 0 )
             {
-                yaw = STDMATH_CLAMP(yaw, -45.0f, 45.0f);
+                if ( yaw > 45.0f )
+                {
+                    yaw = 45.0f;
+                }
+
+                if ( yaw < -45.0f )
+                {
+                    yaw = -45.0f;
+                }
               /*pThing->renderData.apTweakedAngles[jointIdx].yaw   = yaw;
                 pThing->renderData.apTweakedAngles[jointIdx].pitch = 0.0;*/
 
@@ -3735,8 +3771,24 @@ void J3DAPI sithPlayerControls_RotateAimJointsEx(SithThing* pThing, float pitch,
             int jointIdx = sithThing_GetThingJointIndex(pThing, "intorso");
             if ( jointIdx >= 0 )
             {
-                pitch = STDMATH_CLAMP(pitch, -45.0f, 45.0f);
-                yaw   = STDMATH_CLAMP(yaw, -45.0f, 45.0f);
+                if ( pitch > 45.0f )
+                {
+                    pitch = 45.0f;
+                }
+
+                if ( pitch < -45.0f )
+                {
+                    pitch = -45.0f;
+                }
+                if ( yaw > 45.0f )
+                {
+                    yaw = 45.0f;
+                }
+
+                if ( yaw < -45.0f )
+                {
+                    yaw = -45.0f;
+                }
 
                 /*pThing->renderData.apTweakedAngles[jointIdx].pitch = pitch;
                 pThing->renderData.apTweakedAngles[jointIdx].yaw   = yaw;
@@ -3754,8 +3806,24 @@ void J3DAPI sithPlayerControls_RotateAimJointsEx(SithThing* pThing, float pitch,
             int jointIdx = sithThing_GetThingJointIndex(pThing, "intorso");
             if ( jointIdx >= 0 )
             {
-                pitch = STDMATH_CLAMP(pitch, -45.0f, 45.0f);
-                yaw   = STDMATH_CLAMP(yaw, -45.0f, 45.0f);
+                if ( pitch > 45.0f )
+                {
+                    pitch = 45.0f;
+                }
+
+                if ( pitch < -45.0f )
+                {
+                    pitch = -45.0f;
+                }
+                if ( yaw > 45.0f )
+                {
+                    yaw = 45.0f;
+                }
+
+                if ( yaw < -45.0f )
+                {
+                    yaw = -45.0f;
+                }
 
                 /*pThing->renderData.apTweakedAngles[jointIdx].pitch = pitch;
                 pThing->renderData.apTweakedAngles[jointIdx].yaw   = yaw;
@@ -3950,7 +4018,7 @@ bool J3DAPI sithPlayerControls_CanStrafeMove(SithThing* pThing, int bMoveRight)
             rdVector3* apVertices = pMeshCollided->apVertices;
 
             rdVector3 worldVert;
-            rdMatrix_TransformPoint34(&worldVert, &apVertices[*pFaceCollided->aVertices], &pCollision->pThingCollided->orient);
+            rdMatrix_TransformVector34(&worldVert, &apVertices[*pFaceCollided->aVertices], &pCollision->pThingCollided->orient);
             rdVector_Add3Acc(&worldVert, &pCollision->pThingCollided->pos);
 
             // Calculate distance from start pos to face plane
@@ -5174,7 +5242,7 @@ void J3DAPI sithPlayerControls_ProcessPushPullMove(SithThing* pThing, float secD
     //
     // Handle pull object move
     //
-    if ( sithControl_GetKey(SITHCONTROL_BACK, NULL) )
+    if ( !sithControl_GetKey(SITHCONTROL_FORWARD, NULL) )
     {
         // Check height difference for pull - can't pull objects that are higher
         if ( searchRadius > 0.05f && pThing->pos.z > sithPlayerControls_pMovableThing->pos.z )
@@ -5206,10 +5274,17 @@ void J3DAPI sithPlayerControls_ProcessPushPullMove(SithThing* pThing, float secD
         //
         rdVector3 pullDir = RDVECTOR_NEG3(pushPullMoveNorm);
         float pullMoveDist = pThing->collide.movesize + 0.19f;
+        // Fixed: [v1.2] Start the search from a position lowered by 0.05 for the statue movable thing `2marpushstatue`
+        rdVector3 startPos = sithPlayerControls_pMovableThing->pos;
+        if ( streq(sithPlayerControls_pMovableThing->aName, "2marpushstatue") )
+        {
+            startPos.z -= 0.05f;
+        }
+
         sithCollision_SearchForCollisions(
             sithPlayerControls_pMovableThing->pInSector,
             sithPlayerControls_pMovableThing,
-            &sithPlayerControls_pMovableThing->pos,
+            &startPos,
             &pullDir,
             pullMoveDist,
             searchRadius,
@@ -5473,10 +5548,17 @@ void J3DAPI sithPlayerControls_ProcessPushPullMove(SithThing* pThing, float secD
         //
         // Check if movable thing can be pushed to new position
         //
+        // Fixed: [v1.2] Start the search from a position lowered by 0.05 for the statue movable thing `2marpushstatue`
+        rdVector3 startPos = sithPlayerControls_pMovableThing->pos;
+        if ( streq(sithPlayerControls_pMovableThing->aName, "2marpushstatue") )
+        {
+            startPos.z -= 0.05f;
+        }
+
         sithCollision_SearchForCollisions(
             sithPlayerControls_pMovableThing->pInSector,
             sithPlayerControls_pMovableThing,
-            &sithPlayerControls_pMovableThing->pos,
+            &startPos,
             &pushPullMoveNorm,
             0.19f, // move distance
             searchRadius,

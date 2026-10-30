@@ -18,8 +18,8 @@ J3D_EXTERN_C_START
 #define sithFX_g_aChalkMarks J3D_DECL_FAR_ARRAYVAR(sithFX_g_aChalkMarks, SithThing*(*)[10])
 // extern SithThing *sithFX_g_aChalkMarks[10];
 
-#define sithFX_g_numChalkMarks J3D_DECL_FAR_VAR(sithFX_g_numChalkMarks, size_t)
-// extern size_t sithFX_g_numChalkMarks;
+#define sithFX_g_numChalkMarks J3D_DECL_FAR_VAR(sithFX_g_numChalkMarks, int)
+// extern int sithFX_g_numChalkMarks;
 
 void sithFX_Reset(void);
 void sithFX_ClearChalkMarks(void);

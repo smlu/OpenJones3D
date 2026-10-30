@@ -14,7 +14,7 @@
 
 #include <std/Win95/stdDisplay.h>
 
-bool rdCamera_dword_5E10E8 = false;
+static bool rdCamera_bOverlayDepthRange = false;
 
 void J3DAPI rdCamera_BuildFOV(rdCamera* pCamera);
 void J3DAPI rdCamera_BuildClipFrustrum(const rdCamera* pCamera, rdClipFrustum* pFrustum, float width, float height);
@@ -47,7 +47,7 @@ void rdCamera_InstallHooks(void)
     J3D_HOOKFUNC(rdCamera_SetAttenuation);
     J3D_HOOKFUNC(rdCamera_AddLight);
     J3D_HOOKFUNC(rdCamera_ClearLights);
-    J3D_HOOKFUNC(rdCamera_sub_4C60B0);
+    J3D_HOOKFUNC(rdCamera_SetOverlayDepthRange);
 }
 
 void rdCamera_ResetGlobals(void)
@@ -245,6 +245,8 @@ void J3DAPI rdCamera_BuildFOV(rdCamera* pCamera)
             float hwidth = (pCamera->pCanvas->rect.right - pCamera->pCanvas->rect.left) / 2.0f;
             float hheight = (pCamera->pCanvas->rect.bottom - pCamera->pCanvas->rect.top) / 2.0f;
 
+            // Altered: The left/right ortho planes are divided by aspectRatio too; the original divided only the top/bottom planes
+            //          (the projection functions below also scale x by aspectRatio).
             pCamera->pFrustum->orthoLeftPlane   = -(hwidth / pCamera->orthoScale) / pCamera->aspectRatio;
             pCamera->pFrustum->orthoTopPlane    = hheight / pCamera->orthoScale / pCamera->aspectRatio;
             pCamera->pFrustum->orthoRightPlane  = hwidth / pCamera->orthoScale / pCamera->aspectRatio;
@@ -268,7 +270,7 @@ void J3DAPI rdCamera_BuildFOV(rdCamera* pCamera)
             float fscale         = RD_REF_APECTRATIO / (hwidth / hheight);
             pCamera->focalLength = pCamera->focalLength * fscale;
 
-            if ( rdCamera_dword_5E10E8 )
+            if ( rdCamera_bOverlayDepthRange )
             {
                 pCamera->invNearClipPlane = 1.0f / pCamera->pFrustum->nearPlane;
                 pCamera->invFarClipPlane  = 1.0f / (1.0f / pCamera->pFrustum->farPlane - pCamera->invNearClipPlane) * 0.1f;
@@ -281,6 +283,7 @@ void J3DAPI rdCamera_BuildFOV(rdCamera* pCamera)
             }
 
             // Setup frustum planes
+            // Altered: The left/right planes are divided by aspectRatio too; the original divided only the top/bottom planes.
             pCamera->pFrustum->topPlane    =  (hheight / pCamera->focalLength) / pCamera->aspectRatio;
             pCamera->pFrustum->bottomPlane = -(hheight / pCamera->focalLength) / pCamera->aspectRatio;
             pCamera->pFrustum->leftPlane   = -(hwidth / pCamera->focalLength) / pCamera->aspectRatio;
@@ -328,6 +331,7 @@ int J3DAPI rdCamera_SetFrustrum(rdCamera* pCamera, rdClipFrustum* pFrustrum, int
     float tsize = pCanvas->center.y - (top - 0.5f);
     float bsize = bottom - 0.5f - pCanvas->center.y;
 
+    // Altered: The left/right planes are divided by aspectRatio too; the original divided only the top/bottom planes.
     pFrustrum->topPlane    =  tsize / pCamera->focalLength / pCamera->aspectRatio;
     pFrustrum->leftPlane   = -lsize / pCamera->focalLength / pCamera->aspectRatio;
     pFrustrum->bottomPlane = -bsize / pCamera->focalLength / pCamera->aspectRatio;
@@ -337,7 +341,7 @@ int J3DAPI rdCamera_SetFrustrum(rdCamera* pCamera, rdClipFrustum* pFrustrum, int
     pFrustrum->nearPlane   = pCamera->pFrustum->nearPlane;
     pFrustrum->farPlane    = pCamera->pFrustum->farPlane;
 
-    if ( rdCamera_dword_5E10E8 )
+    if ( rdCamera_bOverlayDepthRange )
     {
         pCamera->invNearClipPlane = 1.0f / pCamera->pFrustum->nearPlane;
         pCamera->invFarClipPlane = 1.0f / (1.0f / pCamera->pFrustum->farPlane - pCamera->invNearClipPlane) * 0.1f;
@@ -519,12 +523,12 @@ int J3DAPI rdCamera_ClearLights(rdCamera* pCamera)
     return 1;
 }
 
-void J3DAPI rdCamera_sub_4C60B0(bool bEnable)
+void J3DAPI rdCamera_SetOverlayDepthRange(bool bEnable)
 {
-    rdCamera_dword_5E10E8 = bEnable;
+    rdCamera_bOverlayDepthRange = bEnable;
 }
 
-bool rdCamera_sub_506861(void)
+bool rdCamera_IsOverlayDepthRangeEnabled(void)
 {
-    return rdCamera_dword_5E10E8;
+    return rdCamera_bOverlayDepthRange;
 }

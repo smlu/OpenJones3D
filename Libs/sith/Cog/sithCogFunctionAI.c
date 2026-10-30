@@ -63,7 +63,7 @@ void J3DAPI sithCogFunctionAI_AISetMovePos(SithCog* pCog)
         return;
     }
 
-    if ( (pThing->controlInfo.aiControl.pLocal->submode & (SITHAI_SUBMODE_UNKNOWN_2 | SITHAI_SUBMODE_UNKNOWN_1)) != 0 )
+    if ( (pThing->controlInfo.aiControl.pLocal->submode & (SITHAI_SUBMODE_UNKNOWN_2 | SITHAI_SUBMODE_MOVETARGETLOCKED)) != 0 )
     {
         sithAIMove_StopAIMovement(pThing->controlInfo.aiControl.pLocal);
     }
@@ -139,12 +139,14 @@ void J3DAPI sithCogFunctionAI_AIGetGoalThing(SithCog* pCog)
     if ( !pThing )
     {
         SITHLOG_ERROR("Cog %s: Bad thing passed to AIGetGoalThing\n", pCog->aName);
+        sithCogExec_PushInt(pCog, -1);
         return;
     }
 
     if ( pThing->controlType != SITH_CT_AI || !pThing->controlInfo.aiControl.pLocal )
     {
         SITHLOG_ERROR("Cog %s: thing %s is not AI controlled in AIGetGoalThing\n", pCog->aName, pThing->aName);
+        sithCogExec_PushInt(pCog, -1);
         return;
     }
 
@@ -166,17 +168,15 @@ void J3DAPI sithCogFunctionAI_AIGetGoalLVec(SithCog* pCog)
     if ( !pThing )
     {
         SITHLOG_ERROR("Cog %s: Bad THING passed to AIGetGoalLVec\n", pCog->aName);
+        sithCogExec_PushVector(pCog, &rdroid_g_zeroVector3);
         return;
     }
 
-    if ( pThing->controlType == SITH_CT_AI )
+    if ( pThing->controlType != SITH_CT_AI || !pThing->controlInfo.aiControl.pLocal )
     {
-        if ( !pThing->controlInfo.aiControl.pLocal )
-        {
-            SITHLOG_ERROR("Cog %s: THING %s is not AI controlled in AIGetGoalLVec\n", pCog->aName, pThing->aName);
-            sithCogExec_PushVector(pCog, &rdroid_g_zeroVector3);
-            return;
-        }
+        SITHLOG_ERROR("Cog %s: THING %s is not AI controlled in AIGetGoalLVec\n", pCog->aName, pThing->aName);
+        sithCogExec_PushVector(pCog, &rdroid_g_zeroVector3);
+        return;
     }
 
     sithCogExec_PushVector(pCog, &pThing->controlInfo.aiControl.pLocal->goalLVec);
@@ -296,7 +296,7 @@ void J3DAPI sithCogFunctionAI_AIEnableHeadTracking(SithCog* pCog)
     else
     {
         pThing->controlInfo.aiControl.pLocal->pTargetThing = pTarget;
-        pThing->controlInfo.aiControl.pLocal->submode |= SITHAI_SUBMODE_HEADTRACKINGMOTION | SITHAI_SUBMODE_UNKNOWN_800 | SITHAI_SUBMODE_UNKNOWN_400;
+        pThing->controlInfo.aiControl.pLocal->submode |= SITHAI_SUBMODE_HEADTRACKINGMOTION | SITHAI_SUBMODE_HEADTRACKINGTARGET | SITHAI_SUBMODE_HEADTRACKINGENABLED;
     }
 }
 
@@ -310,7 +310,7 @@ void J3DAPI sithCogFunctionAI_AIDisableHeadTracking(SithCog* pCog)
     }
     else
     {
-        pThing->controlInfo.aiControl.pLocal->submode &= ~(SITHAI_SUBMODE_HEADTRACKINGMOTION | SITHAI_SUBMODE_UNKNOWN_400); // Note, SITHAI_SUBMODE_UNKNOWN_800 not being cleared
+        pThing->controlInfo.aiControl.pLocal->submode &= ~(SITHAI_SUBMODE_HEADTRACKINGMOTION | SITHAI_SUBMODE_HEADTRACKINGENABLED); // Note, SITHAI_SUBMODE_HEADTRACKINGTARGET not being cleared
     }
 }
 
@@ -722,6 +722,7 @@ void J3DAPI sithCogFunctionAI_IsAITargetInSight(SithCog* pCog)
         || !pThing->controlInfo.aiControl.pLocal )
     {
         SITHLOG_ERROR("Cog %s: Invalid AI THING in IsAITargetInSight.\n", pCog->aName);
+        sithCogExec_PushInt(pCog, 0);
         return;
     }
 
@@ -982,7 +983,7 @@ void J3DAPI sithCogFunctionAI_AIRunOver(SithCog* pCog)
     }
 
     pThing->controlInfo.aiControl.pLocal->mode |= SITHAI_MODE_DISABLED;
-    pThing->controlInfo.aiControl.pLocal->mode &= ~(SITHAI_MODE_ACTIVE | SITHAI_MODE_UNKNOWN_80 | SITHAI_MODE_TURNING | SITHAI_MODE_MOVING);
+    pThing->controlInfo.aiControl.pLocal->mode &= ~(SITHAI_MODE_ACTIVE | SITHAI_MODE_LOOKING | SITHAI_MODE_TURNING | SITHAI_MODE_MOVING);
 }
 
 void J3DAPI sithCogFunctionAI_AISetAllowedSurfaceType(SithCog* pCog)

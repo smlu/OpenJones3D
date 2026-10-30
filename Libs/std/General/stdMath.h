@@ -12,7 +12,7 @@ J3D_EXTERN_C_START
 #define STDMATH_ZERO_EPSILON 0.00001f
 
 // Clamp value between min and max
-#define STDMATH_CLAMP(val, minv, maxv) (((val) < (minv)) ? (minv) : ((val) > (maxv)) ? (maxv) : (val))
+#define STDMATH_CLAMP(val, minv, maxv) (((val) >= (minv)) ? (((val) <= (maxv)) ? (val) : (maxv)) : (minv))
 
 // PI
 #define STDMATH_PI M_PI
@@ -76,11 +76,11 @@ float stdMath_SmoothDamp(float current, float target, float rate, float deltaTim
 
 float stdMath_ClipNearZero(float val)
 {
-    if ( fabsf(val) <= STDMATH_ZERO_EPSILON )
+    if ( fabsf(val) > STDMATH_ZERO_EPSILON )
     {
-        return 0.0f;
+        return val;
     }
-    return val;
+    return 0.0f;
 }
 
 /**

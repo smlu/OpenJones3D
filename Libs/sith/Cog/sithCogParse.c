@@ -109,7 +109,8 @@ int J3DAPI sithCogParse_Load(const char* pFilename, SithCogScript* pScript, int 
     // Parse optional flags
     if ( streq(stdConffile_g_entry.aArgs[0].argName, "flags") ) // TODO: case-insensitive cmp?
     {
-        if ( sscanf_s(stdConffile_g_entry.aArgs[0].argValue, "%x", &pScript->flags) != 1 || !stdConffile_ReadArgs() )
+        sscanf_s(stdConffile_g_entry.aArgs[0].argValue, "%x", &pScript->flags);
+        if ( !stdConffile_ReadArgs() )
         {
             goto eof_error;
         }
@@ -608,7 +609,7 @@ SithCogSyntaxNode* sithCogParse_GetNextNode(void)
     if ( numTreeNodes == syntaxTreeSize )
     {
         SITHLOG_ERROR("Max # of nodes %d exceeded, expanding size to %d.\n", syntaxTreeSize, 2 * syntaxTreeSize);
-        pSyntaxTree = (SithCogSyntaxNode*)STDREALLOC(pSyntaxTree, 2 * sizeof(int32_t) * syntaxTreeSize);
+        pSyntaxTree = (SithCogSyntaxNode*)STDREALLOC(pSyntaxTree, 2 * syntaxTreeSize * sizeof(SithCogSyntaxNode));
         if ( !pSyntaxTree )
         {
             return NULL;

@@ -2274,15 +2274,15 @@ Returns:
 #### SetThingStateChange
 
 ```C++
-SetThingStateChange(Thing thing, int state, int type)
+SetThingStateChange(Thing thing, int type, int param)
 ```
 
 Stores a pending actor/player state-change request on `thing`.
 
 Parameters:
 - `thing`: Actor or player thing whose state-change payload should be updated.
-- `state`: State payload value written into `stateChange.params.moveFlags`. When `type` is [Actor State-Change Types](Types-And-Modes.md#actor-state-change-types) `SITHACTORSTATECHANGE_ANIMMOVE`, this is typically a combination of [Actor Special-Move Flags](Flags.md#actor-special-move-flags). When `type` is `SITHACTORSTATECHANGE_ARMEDMODE`, this is a [Puppet Armed Modes](Types-And-Modes.md#puppet-armed-modes) value.
 - `type`: State-change type selector. See [Actor State-Change Types](Types-And-Modes.md#actor-state-change-types).
+- `param`: Payload value written into `stateChange.params.moveFlags`. When `type` is [Actor State-Change Types](Types-And-Modes.md#actor-state-change-types) `SITHACTORSTATECHANGE_ANIMMOVE`, this is typically a combination of [Actor Special-Move Flags](Flags.md#actor-special-move-flags). When `type` is `SITHACTORSTATECHANGE_ARMEDMODE`, this is a [Puppet Armed Modes](Types-And-Modes.md#puppet-armed-modes) value.
 
 Notes:
 - Requires an actor or player thing.

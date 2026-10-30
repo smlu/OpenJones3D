@@ -336,7 +336,7 @@ void sithOverlayMap_Draw(void)
         sithOverlayMap_DrawSectors(sithOverlayMap_pLocalPlayer->pInSector);
 
         // Draw map hints
-        for ( size_t i = 0; i < sithFX_g_numChalkMarks; ++i )
+        for ( int i = 0; i < sithFX_g_numChalkMarks; ++i )
         {
             sithOverlayMap_DrawThingIcon(
                 sithFX_g_aChalkMarks[i],
@@ -422,7 +422,7 @@ int sithOverlayMap_UpdateHints(void)
             if ( (hintflags & SITH_HINT_SOLVED) == 0 )
             {
                 int32_t hintval = (int32_t)sithWorld_g_pCurrentWorld->aThings[i].userval;
-                hintval &= ~SITH_HINT_SOLVED | SITH_HINT_SEEN; // Remove flags to extract hint value
+                hintval &= ~(SITH_HINT_SOLVED | SITH_HINT_SEEN);
                 if ( (size_t)hintval < (size_t)maxHintVal ) // Note: Don't remove casting
                 {
                     maxHintVal = hintval;
@@ -659,7 +659,7 @@ int J3DAPI sithOverlayMap_DrawSector(SithSector* pSector)
 
         if ( (sithCamera_g_pCurCamera->rdCamera.pCanvas->rect.left - radius <= x1
             && sithCamera_g_pCurCamera->rdCamera.pCanvas->rect.right + radius >= x1)
-            || (sithCamera_g_pCurCamera->rdCamera.pCanvas->rect.top - radius > y1
+            || (sithCamera_g_pCurCamera->rdCamera.pCanvas->rect.top - radius <= y1
                 && sithCamera_g_pCurCamera->rdCamera.pCanvas->rect.bottom + radius >= y1) )
         {
             bSectorDrawn = 1;

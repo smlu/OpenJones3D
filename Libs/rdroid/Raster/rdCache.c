@@ -22,6 +22,7 @@ static rdVector4 rdCache_aVertIntensities[RDCACHE_VERTBUFFERSIZE] = { 0 }; // Fi
 
 
 static size_t rdCache_numAlphaProcFaces               = 0;
+// Altered: The original list holds 2048 entries; a larger list means fewer early flushes, so alpha face batches (and their sort order) differ from the original.
 static rdCacheProcEntry rdCache_aAlphaProcFaces[4096] = { 0 };
 
 static size_t rdCache_numUsedAlphaVertices = 0;
@@ -275,39 +276,14 @@ LABEL_4:
             curMatCelNum = pCurPoly->matCelNum;
             if ( curMatCelNum == -1 )
             {
-                if ( pCurPoly->pMaterial->curCelNum < 0 )
-                {
-                    curMatCelNum = 0;
-                }
-                else if ( pCurPoly->pMaterial->curCelNum > pCurPoly->pMaterial->numCels - 1 )
-                {
-                    curMatCelNum = pCurPoly->pMaterial->numCels - 1;
-                }
-                else
-                {
-                    curMatCelNum = pCurPoly->pMaterial->curCelNum;
-                }
-
-                pTex = &pCurPoly->pMaterial->aTextures[curMatCelNum];
+                int texCelNum = STDMATH_CLAMP((int)pCurPoly->pMaterial->curCelNum, 0, (int)pCurPoly->pMaterial->numCels - 1);
+                pTex = &pCurPoly->pMaterial->aTextures[texCelNum];
                 rdCache_AddToTextureCache(pTex, pCurMat->formatType);
             }
             else
             {
-                if ( curMatCelNum < 0 )
-                {
-                    curMatCelNum = 0;
-                }
-
-                else if ( curMatCelNum > pCurPoly->pMaterial->numCels - 1 )
-                {
-                    curMatCelNum = pCurPoly->pMaterial->numCels - 1;
-                }
-                else
-                {
-                    curMatCelNum = pCurPoly->matCelNum;
-                }
-
-                pTex = &pCurPoly->pMaterial->aTextures[curMatCelNum];
+                int texCelNum = STDMATH_CLAMP(curMatCelNum, 0, (int)pCurPoly->pMaterial->numCels - 1);
+                pTex = &pCurPoly->pMaterial->aTextures[texCelNum];
                 rdCache_AddToTextureCache(pTex, pCurMat->formatType);
             }
 

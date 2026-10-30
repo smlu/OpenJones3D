@@ -104,17 +104,18 @@ int J3DAPI sithMessage_SendMessage(SithMessage* pMessage, DPID idTo, SithMessage
     }
 
     pMessage->msecTime = sithTime_g_msecGameTime;
+    int result = 1; // Added: Init result, the original returns an uninitialized value when neither stream bit is set
     if ( (stream & SITHMESSAGE_STREAM_NET) != 0 )
     {
-        return sithMessage_NetWrite(pMessage, idTo, dwDPFlags);
+        result = sithMessage_NetWrite(pMessage, idTo, dwDPFlags);
     }
 
     if ( (stream & SITHMESSAGE_STREAM_FILE) != 0 )
     {
-        return sithMessage_FileWrite(pMessage);
+        result = sithMessage_FileWrite(pMessage);
     }
 
-    return 1; // Added: return error
+    return result;
 }
 
 void sithMessage_ProcessMessages(void)
@@ -169,7 +170,7 @@ int J3DAPI sithMessage_NetWrite(const SithMessage* pMsg, DPID idTo, uint32_t fla
     SITH_ASSERTREL(pMsg); // Fixed: Moved this assert to the start, before accessing the pMsg
 
     int bFailed = 0;
-    uint32_t dataSize = pMsg->length + sizeof(pMsg->type); // 4 is the size of message type
+    uint32_t dataSize = pMsg->length + 4;
     if ( idTo == SITHMESSAGE_SENDTOJOINEDPLAYERS )
     {
         for ( size_t i = 0; i < sithPlayer_g_numPlayers; ++i )
@@ -201,7 +202,7 @@ int J3DAPI sithMessage_ReceiveMessage(SithMessage* pMsg, DPID* pSender)
 {
     SITH_ASSERTREL(pMsg != NULL); // Fixed: Moved this assert to beginning of scope before accessing pMsg
 
-    size_t dataLen = STD_ARRAYLEN(pMsg->data);
+    size_t dataLen = STD_ARRAYLEN(pMsg->data) + 4;
     int res = stdComm_Receive(pSender, &pMsg->type, &dataLen);
     if ( res == -1 ) // no more messages
     {
@@ -210,7 +211,7 @@ int J3DAPI sithMessage_ReceiveMessage(SithMessage* pMsg, DPID* pSender)
 
     if ( res == 0 ) // success
     {
-        pMsg->length = dataLen - sizeof(pMsg->type);
+        pMsg->length = dataLen - 4;
         pMsg->msecTime = sithTime_g_msecGameTime;
         return 1;
     }
@@ -473,7 +474,7 @@ void sithMessage_InitMessageHandlers(void)
     sithMessage_RegisterFunction(SITHDSS_CHECKMEMBERSHIPLIST, sithMessage_ProcessCheckMembershipList);
     sithMessage_RegisterFunction(SITHDSS_QUIT, sithMulti_ProcessQuit);
     sithMessage_RegisterFunction(SITHDSS_MOVEPOS, sithDSSThing_ProcessMovePos);
-    sithMessage_RegisterFunction(SITHDSS_UNKNOWN_44, sithDSS_sub_4B3790);
+    sithMessage_RegisterFunction(SITHDSS_ENDSECTION, sithDSS_ProcessEndSection);
     sithMessage_RegisterFunction(SITHDSS_VOICESTATE, sithVoice_ProcessVoiceState);
     sithMessage_RegisterFunction(SITHDSS_VEHICLECONTROLSTATE, sithDSS_ProcessVehicleControlsState);
     sithMessage_RegisterFunction(SITHDSS_WHIPSTATUS, sithWhip_Restore);

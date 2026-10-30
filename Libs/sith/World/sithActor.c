@@ -167,7 +167,8 @@ void J3DAPI sithActor_Update(SithThing* pThing, unsigned int msecDeltaTime)
         {
             // Update Raft damage
 
-            float damage = (float)sithGetGameDifficulty() * (0.60000002f - 1.2f) / 5.0f + 1.2f;
+            float rate   = (0.60000002f - 1.2f) / 5.0f;
+            float damage = (float)sithGetGameDifficulty() * rate + 1.2f;
             damage = (float)msecDeltaTime / damage;
             sithThing_DamageThing(pThing, pThing, damage, SITH_DAMAGE_RAFT_LEAK);
         }
@@ -209,6 +210,14 @@ float J3DAPI sithActor_DamageActor(SithThing* pActor, SithThing* pThing, float d
     SITH_ASSERTREL(pActor && (damage > 0.0f));
     SITH_ASSERTREL(pActor->type == SITH_THING_ACTOR || pActor->type == SITH_THING_PLAYER);
 
+    // Fixed: [v1.2] Do not play damage sound when the player damages itself with these damage types
+    bool bPlayedDamageSound = false;
+    if ( pActor->type == SITH_THING_PLAYER && pActor == pThing
+        && (damageType == SITH_DAMAGE_IMP1 || damageType == SITH_DAMAGE_2000 || damageType == SITH_DAMAGE_IMP4) )
+    {
+        bPlayedDamageSound = true;
+    }
+
     if ( pActor->type == SITH_THING_PLAYER
         && (pActor->moveStatus == SITHPLAYERMOVE_RAFT_BOARDING
             || pActor->moveStatus == SITHPLAYERMOVE_RAFT_UNBOARDING_LEFT
@@ -240,7 +249,7 @@ float J3DAPI sithActor_DamageActor(SithThing* pActor, SithThing* pThing, float d
             return 0.0f;
         }
 
-        if ( pThing->pParent->type == SITH_THING_PLAYER )
+        if ( !bPlayedDamageSound && pThing->pParent->type == SITH_THING_PLAYER ) // Fixed: [v1.2] bPlayedDamageSound check
         {
             sithActor_PlayDamageSoundFx(pActor, damageType);
         }
@@ -263,7 +272,11 @@ float J3DAPI sithActor_DamageActor(SithThing* pActor, SithThing* pThing, float d
     }
 
     pActor->thingInfo.actorInfo.health = pActor->thingInfo.actorInfo.health - damage;
-    sithActor_PlayDamageSoundFx(pActor, damageType);
+    if ( !bPlayedDamageSound ) // Fixed: [v1.2] bPlayedDamageSound check
+    {
+        sithActor_PlayDamageSoundFx(pActor, damageType);
+    }
+
     if ( pThing )
     {
         if ( pThing != pActor && pActor->controlType == SITH_CT_AI )
@@ -832,8 +845,10 @@ int J3DAPI sithActor_ParseArg(const StdConffileArg* pArg, SithThing* pThing, int
         }
         case SITHTHING_ARG_HEALTH:
         {
+            errno = 0; // Fixed: Reset errno, a stale ERANGE rejected valid values
             float health = strtof(pArg->argValue, NULL); // Changed: Use strtof instead atof
-            if ( health < 0.0f || (errno == ERANGE) ) // Added: Conversion range error check
+            // Fixed: Only reject overflow, the original (float)atof accepted underflowing values
+            if ( health < 0.0f || (errno == ERANGE && fabsf(health) > 1.0f) ) // Added: Conversion range error check
             {
                 goto error;
             }
@@ -848,8 +863,10 @@ int J3DAPI sithActor_ParseArg(const StdConffileArg* pArg, SithThing* pThing, int
         }
         case SITHTHING_ARG_MAXTHRUST:
         {
+            errno = 0; // Fixed: Reset errno, a stale ERANGE rejected valid values
             float maxthrust = strtof(pArg->argValue, NULL); // Changed: Use strtof instead atof
-            if ( maxthrust < 0.0f || (errno == ERANGE) )    // Added: Conversion range error check
+            // Fixed: Only reject overflow, the original (float)atof accepted underflowing values
+            if ( maxthrust < 0.0f || (errno == ERANGE && fabsf(maxthrust) > 1.0f) )    // Added: Conversion range error check
             {
                 goto error;
             }
@@ -859,8 +876,10 @@ int J3DAPI sithActor_ParseArg(const StdConffileArg* pArg, SithThing* pThing, int
         }
         case SITHTHING_ARG_MAXROTTHRUST:
         {
+            errno = 0; // Fixed: Reset errno, a stale ERANGE rejected valid values
             float maxrotthrust = strtof(pArg->argValue, NULL); // Changed: Use strtof instead atof
-            if ( maxrotthrust < 0.0f || (errno == ERANGE) )    // Added: Conversion range error check
+            // Fixed: Only reject overflow, the original (float)atof accepted underflowing values
+            if ( maxrotthrust < 0.0f || (errno == ERANGE && fabsf(maxrotthrust) > 1.0f) )    // Added: Conversion range error check
             {
                 goto error;
             }
@@ -870,8 +889,10 @@ int J3DAPI sithActor_ParseArg(const StdConffileArg* pArg, SithThing* pThing, int
         }
         case SITHTHING_ARG_MAXHEADVEL:
         {
+            errno = 0; // Fixed: Reset errno, a stale ERANGE rejected valid values
             float maxheadvel = strtof(pArg->argValue, NULL); // Changed: Use strtof instead atof
-            if ( maxheadvel < 0.0f || (errno == ERANGE) )    // Added: Conversion range error check
+            // Fixed: Only reject overflow, the original (float)atof accepted underflowing values
+            if ( maxheadvel < 0.0f || (errno == ERANGE && fabsf(maxheadvel) > 1.0f) )    // Added: Conversion range error check
             {
                 goto error;
             }
@@ -881,8 +902,10 @@ int J3DAPI sithActor_ParseArg(const StdConffileArg* pArg, SithThing* pThing, int
         }
         case SITHTHING_ARG_MAXHEADYAW:
         {
+            errno = 0; // Fixed: Reset errno, a stale ERANGE rejected valid values
             float maxheadyaw = strtof(pArg->argValue, NULL); // Changed: Use strtof instead atof
-            if ( maxheadyaw < 0.0f || (errno == ERANGE) )    // Added: Conversion range error check
+            // Fixed: Only reject overflow, the original (float)atof accepted underflowing values
+            if ( maxheadyaw < 0.0f || (errno == ERANGE && fabsf(maxheadyaw) > 1.0f) )    // Added: Conversion range error check
             {
                 goto error;
             }
@@ -892,8 +915,10 @@ int J3DAPI sithActor_ParseArg(const StdConffileArg* pArg, SithThing* pThing, int
         }
         case SITHTHING_ARG_JUMPSPEED:
         {
+            errno = 0; // Fixed: Reset errno, a stale ERANGE rejected valid values
             float jumpspeed = strtof(pArg->argValue, NULL); // Changed: Use strtof instead atof
-            if ( jumpspeed < 0.0f || (errno == ERANGE) )    // Added: Conversion range error check
+            // Fixed: Only reject overflow, the original (float)atof accepted underflowing values
+            if ( jumpspeed < 0.0f || (errno == ERANGE && fabsf(jumpspeed) > 1.0f) )    // Added: Conversion range error check
             {
                 goto error;
             }
@@ -913,8 +938,10 @@ int J3DAPI sithActor_ParseArg(const StdConffileArg* pArg, SithThing* pThing, int
         }
         case SITHTHING_ARG_MAXHEALTH:
         {
+            errno = 0; // Fixed: Reset errno, a stale ERANGE rejected valid values
             float maxhealth = strtof(pArg->argValue, NULL); // Changed: Use strtof instead atof
-            if ( maxhealth < 0.0f || (errno == ERANGE) )    // Added: Conversion range error check
+            // Fixed: Only reject overflow, the original (float)atof accepted underflowing values
+            if ( maxhealth < 0.0f || (errno == ERANGE && fabsf(maxhealth) > 1.0f) )    // Added: Conversion range error check
             {
                 goto error;
             }

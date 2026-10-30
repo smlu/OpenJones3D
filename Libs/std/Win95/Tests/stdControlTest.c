@@ -380,6 +380,25 @@ TEST(stdControl, TestAxisRegistrationAndFlags)
     TEST_ASSERT_EQUAL_INT(0, stdControl_ReadAxisRaw(axis));
 }
 
+// Regression: the deadzone threshold is the truncated product of the scale and the axis range (it was rounded)
+TEST(stdControl, TestAxisDeadzoneThresholdTruncated)
+{
+    StdControlAxis axis;
+    size_t aid = STDCONTROL_GET_JOYSTICK_AXIS_X(0u);
+
+    stdControl_RegisterAxis(aid, -100, 100, 0.159f); // 100 * 0.159 = 15.9
+    TEST_ASSERT_TRUE(stdControl_TestGetAxis(aid, &axis));
+    TEST_ASSERT_EQUAL_INT(15, axis.deadzoneThreshold);
+
+    stdControl_RegisterAxis(aid, -100, 100, 0.0f);
+    TEST_ASSERT_TRUE(stdControl_TestGetAxis(aid, &axis));
+    TEST_ASSERT_EQUAL_INT(0, axis.deadzoneThreshold);
+
+    stdControl_RegisterAxis(aid, -1000, 1000, 0.2999f); // 299.9
+    TEST_ASSERT_TRUE(stdControl_TestGetAxis(aid, &axis));
+    TEST_ASSERT_EQUAL_INT(299, axis.deadzoneThreshold);
+}
+
 #ifdef J3D_RUNTIME_GUARDS
 TEST(stdControl, TestRuntimeGuardsRejectOutOfRangeInputs)
 {
@@ -448,14 +467,25 @@ TEST(stdControl, TestReadTimingAndFlaggedAxes)
     stdControl_TestSetAxisState(axis, 80);
     TEST_ASSERT_EQUAL_INT(80, stdControl_ReadAxisRaw(axis | STDCONTROL_AID_POSITIVE_AXIS));
 
+    // The original never updates the num pressed state when reading an axis as key, QOL builds count the axis as a key press.
+    // The press is added to the presses of the other bindings of the key function.
     int pressed = 0;
     TEST_ASSERT_EQUAL_INT(1, stdControl_ReadAxisAsKey(axis | STDCONTROL_AID_LOW_SENSITIVITY | STDCONTROL_AID_POSITIVE_AXIS, &pressed));
-    TEST_ASSERT_EQUAL_INT(1, pressed);
+    TEST_ASSERT_EQUAL_INT(J3D_QOL_VALUE(1, 0), pressed);
 
     stdControl_TestSetAxisState(axis, -80);
     pressed = 0;
     TEST_ASSERT_EQUAL_INT(1, stdControl_ReadAxisAsKey(axis | STDCONTROL_AID_LOW_SENSITIVITY | STDCONTROL_AID_NEGATIVE_AXIS, &pressed));
-    TEST_ASSERT_EQUAL_INT(1, pressed);
+    TEST_ASSERT_EQUAL_INT(J3D_QOL_VALUE(1, 0), pressed);
+
+    pressed = 2;
+    TEST_ASSERT_EQUAL_INT(1, stdControl_ReadAxisAsKey(axis | STDCONTROL_AID_LOW_SENSITIVITY | STDCONTROL_AID_NEGATIVE_AXIS, &pressed));
+    TEST_ASSERT_EQUAL_INT(J3D_QOL_VALUE(3, 2), pressed);
+
+    // Axis below the threshold is not a key press
+    pressed = 2;
+    TEST_ASSERT_EQUAL_INT(0, stdControl_ReadAxisAsKey(axis | STDCONTROL_AID_LOW_SENSITIVITY | STDCONTROL_AID_POSITIVE_AXIS, &pressed));
+    TEST_ASSERT_EQUAL_INT(2, pressed);
 
     uint8_t aKeyboardState[STDCONTROL_MAX_KEYBOARD_BUTTONS] = { 0 };
     aKeyboardState[DIK_F15] = 0x80u;
@@ -629,6 +659,41 @@ TEST(stdControl, TestMouseStateTranslationAndRanges)
     TEST_ASSERT_EQUAL_INT(0, stdControl_TestGetAxisState(STDCONTROL_MAX_AXES));
 }
 
+// Regression: the mouse smoothing averages with the previous read using an arithmetic shift (floor), division truncated negative sums toward zero
+TEST(stdControl, TestMouseSmoothingFloorsNegativeValues)
+{
+    DIMOUSESTATE state;
+
+    stdControl_RegisterAxis(STDCONTROL_AID_MOUSE_X, -100, 100, 0.0f);
+    stdControl_RegisterAxis(STDCONTROL_AID_MOUSE_Y, -100, 100, 0.0f);
+    TEST_ASSERT_EQUAL_INT(1, stdControl_EnableAxis(STDCONTROL_AID_MOUSE_X));
+    TEST_ASSERT_EQUAL_INT(1, stdControl_EnableAxis(STDCONTROL_AID_MOUSE_Y));
+    stdControl_TestSetControlsActive(true);
+
+    // Frame time below 25 msec enables the smoothing, the previous mouse position is (0, 0)
+    stdControl_TestBeginRead(110u, 100u);
+    STD_ZEROMEM(&state, sizeof(state));
+    state.lX = -1;
+    state.lY = 1;
+    stdControl_TestApplyMouseState(&state, false);
+    TEST_ASSERT_EQUAL_INT(-1, stdControl_TestGetAxisState(STDCONTROL_AID_MOUSE_X)); // floor(-1 / 2)
+    TEST_ASSERT_EQUAL_INT(0, stdControl_TestGetAxisState(STDCONTROL_AID_MOUSE_Y));  // floor(1 / 2)
+
+    // Previous position is now (-1, 1)
+    state.lX = -4;
+    state.lY = -4;
+    stdControl_TestApplyMouseState(&state, false);
+    TEST_ASSERT_EQUAL_INT(-3, stdControl_TestGetAxisState(STDCONTROL_AID_MOUSE_X)); // floor((-1 + -4) / 2)
+    TEST_ASSERT_EQUAL_INT(-2, stdControl_TestGetAxisState(STDCONTROL_AID_MOUSE_Y)); // floor((1 + -4) / 2)
+
+    // Previous position is now (-4, -4)
+    state.lX = -3;
+    state.lY = 0;
+    stdControl_TestApplyMouseState(&state, false);
+    TEST_ASSERT_EQUAL_INT(-4, stdControl_TestGetAxisState(STDCONTROL_AID_MOUSE_X)); // floor((-4 + -3) / 2)
+    TEST_ASSERT_EQUAL_INT(-2, stdControl_TestGetAxisState(STDCONTROL_AID_MOUSE_Y)); // (-4 + 0) / 2
+}
+
 TEST(stdControl, TestStatusAndEmptyJoystickState)
 {
     TEST_ASSERT_EQUAL_STRING("DI_OK", stdControl_DIGetStatus(DI_OK));
@@ -735,10 +800,12 @@ TEST_GROUP_RUNNER(stdControl)
     RUN_TEST_CASE(stdControl, TestNoDeviceLifecycleAndReadDefaults);
     RUN_TEST_CASE(stdControl, TestMouseAndSensitivityState);
     RUN_TEST_CASE(stdControl, TestAxisRegistrationAndFlags);
+    RUN_TEST_CASE(stdControl, TestAxisDeadzoneThresholdTruncated);
 #ifdef J3D_RUNTIME_GUARDS
     RUN_TEST_CASE(stdControl, TestRuntimeGuardsRejectOutOfRangeInputs);
 #endif
     RUN_TEST_CASE(stdControl, TestMouseAxisRegistrationAndSensitivityHelpers);
+    RUN_TEST_CASE(stdControl, TestMouseSmoothingFloorsNegativeValues);
     RUN_TEST_CASE(stdControl, TestReadTimingAndFlaggedAxes);
     RUN_TEST_CASE(stdControl, TestKeyboardStateTransitions);
     RUN_TEST_CASE(stdControl, TestDirectInputJoystickStateTranslation);

@@ -206,11 +206,8 @@ TEST(stdStrTable, TestLoadCleansEveryAllocationFailure)
             const char* pExpectedAssert = allocation == 0
                 ? "pStrTable->pData != NULL"
                 : "pStrTable->pHashtbl != NULL";
-            const char* pExpectedLog = allocation == 0
-                ? "stdStrTable.c(84): Out of memory--cannot load string table"
-                : "stdStrTable.c(96): Out of memory--cannot load string table";
 
-            TEST_ASSERT_EQUAL_STRING(pExpectedLog, StdGeneralTest_GetDebugOutput());
+            StdGeneralTest_AssertDebugOutputMessage("stdStrTable.c", "Out of memory--cannot load string table");
             StdGeneralTest_AssertLastAssert(pExpectedAssert, "stdStrTable.c");
         }
 

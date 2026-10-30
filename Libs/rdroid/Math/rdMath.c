@@ -22,7 +22,7 @@ float J3DAPI rdMath_DeltaAngleNormalized(const rdVector3* pVectorX, const rdVect
     float dot = rdVector_Dot3(pVectorX, pVectorY);
 
     // Clamp dot product to [-1, 1] range
-    dot = J3DMAX(-1.0f, J3DMIN(1.0f, dot));
+    dot = STDMATH_CLAMP(dot, -1.0f, 1.0f);
 
     // Handle special cases
     if ( dot == 1.0f ) return 0.0f;
@@ -35,7 +35,7 @@ float J3DAPI rdMath_DeltaAngleNormalized(const rdVector3* pVectorX, const rdVect
     dot = rdVector_CrossDot3(pVectorX, pVectorY, pVectorZ);
 
     // Return signed angle based on the direction of rotation
-    return (dot <= 0.0f) ? -angle : angle;
+    return (dot > 0.0f) ? angle : -angle;
 }
 
 void J3DAPI rdMath_CalcSurfaceNormal(rdVector3* pDestNormal, const rdVector3* pVert1, const rdVector3* pVert2, const rdVector3* pVert3)

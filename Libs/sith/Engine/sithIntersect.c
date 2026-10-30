@@ -544,16 +544,19 @@ int J3DAPI sithIntersect_CheckSphereHit(const rdVector3* startPos, const rdVecto
     double dot = -(rdVector_Dot3(normal, moveNorm));
     if ( dist < 0.0f ) // If away from plane
     {
-        *pSphereHitDist = 0.0f;
         if ( (colflags & 0x400) != 0 )
         {
-            *pSphereHitDist = *pSphereHitDist + radius;
+            *pSphereHitDist = *pSphereHitDist + radius; // TODO: [BUG] The original adds to an uninitialized value, see the init in sithCollision_SearchForSurfaceCollisions
+        }
+        else
+        {
+            *pSphereHitDist = 0.0f;
         }
 
         return 1;
     }
 
-    if ( dot == 0.0f )
+    if ( dot <= 0.0f )
     {
         return 0;
     }
@@ -616,10 +619,11 @@ SithCollisionType J3DAPI sithIntersect_CheckSphereFaceIntersectionEx(const rdVec
         return sithIntersect_CheckFaceVerticesIntersection(&hitPos, radius, pFace, aVertices, NULL);
     }
 
-    SithCollisionType hitType = sithIntersect_CheckFaceVerticesIntersection(&hitPos, radius, pFace, aVertices, &hitPos);
+    rdVector3 vertexHitPos;
+    SithCollisionType hitType = sithIntersect_CheckFaceVerticesIntersection(&hitPos, radius, pFace, aVertices, &vertexHitPos);
     if ( hitType == SITHCOLLISION_FACEEDGE || hitType == SITHCOLLISION_FACEVERTEX )
     {
-        rdVector_Sub3(hitNorm, startPos, &hitPos);
+        rdVector_Sub3(hitNorm, startPos, &vertexHitPos);
         rdVector_Normalize3Acc(hitNorm);
     }
     else

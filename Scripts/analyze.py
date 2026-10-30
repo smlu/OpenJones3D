@@ -24,6 +24,7 @@ ROOT_FOLDER = f"{SCRIPT_DIR}/../"
 MODULES = {
     "rdroid": "Libs/rdroid",
     "sith": "Libs/sith",
+    "smush": "Libs/smush",
     "sound": "Libs/sound",
     "std": "Libs/std",
     "w32util": "Libs/w32util",

@@ -346,19 +346,19 @@ void J3DAPI jonesInventory_UpdateLevelStatisticTime(uint32_t elapsedSec, SithLev
 
     // Extract old hours and minutes from elapsedTime.
     uint8_t oldMinutes = pLevelStats->elapsedTime & 0xFF; // lower 8 bits
-    uint8_t oldHours   = pLevelStats->elapsedTime >> 8;   // upper 8 bits
+    uint32_t oldHours  = pLevelStats->elapsedTime >> 8;   // upper bits.
 
     // Calculate new time components from msecNewElapsed.
     uint8_t newMinutes = (msecNewElapsed / 60000) % 60;  // minutes portion
-    uint8_t newHours   = msecNewElapsed / 3600000;       // hours portion
+    uint32_t newHours  = msecNewElapsed / 3600000;       // hours portion
 
     // Sum the minutes and compute carry for hours.
     uint16_t totalMinutes = oldMinutes + newMinutes;
-    uint8_t carryHours = totalMinutes / 60;
+    uint32_t carryHours = totalMinutes / 60;
     totalMinutes %= 60;
 
     // Calculate total hours.
-    uint8_t totalHours = oldHours + newHours + carryHours;
+    uint32_t totalHours = oldHours + newHours + carryHours;
 
     // Pack the hours and minutes back into a single integer.
     pLevelStats->elapsedTime = (totalHours << 8) | totalMinutes;

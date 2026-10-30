@@ -337,6 +337,7 @@ size_t J3DAPI rdFont_GetTextWidthEx(const char* pText, const rdFont* pFont, floa
 
     for ( size_t i = 0; i < texLen; ++i )
     {
+        // Fixed: Index glyphs by the unsigned char value. The original rdFont_GetTextWidth used the signed char (negative index for chars >= 128).
         size_t curChar = (uint8_t)pText[i];
         if ( pFont->aGlyphs[curChar].baselineOriginY == -pFont->fontSize )
         {
@@ -351,6 +352,11 @@ size_t J3DAPI rdFont_GetTextWidthEx(const char* pText, const rdFont* pFont, floa
 
 size_t J3DAPI rdFont_GetTextWidth(const char* pText, const rdFont* pFont)
 {
+    if ( !pFont )
+    {
+        return 0;
+    }
+
     return rdFont_GetTextWidthEx(pText, pFont, (float)pFont->fontSize);
 }
 
@@ -396,6 +402,11 @@ const char* J3DAPI rdFont_GetWrapLineEx(const char* pText, const rdFont* pFont, 
 
 const char* J3DAPI rdFont_GetWrapLine(const char* pText, const rdFont* pFont, float widthScale)
 {
+    if ( !pFont )
+    {
+        return NULL;
+    }
+
     return rdFont_GetWrapLineEx(pText, pFont, widthScale, (float)pFont->fontSize);
 }
 
@@ -434,12 +445,13 @@ void J3DAPI rdFont_DrawTextLineEx(const char* pText, float x, float y, float z, 
                 textWidth += (double)pFont->aGlyphs[curChar].baselineOriginX * swidth * fontScale; // Altered: Added multiply by fontScale
             }
 
-            if ( bAlignCenter )
+            double offsetX = textWidth;
+            if ( bAlignCenter && !bAlignRight )
             {
-                textWidth /= 2.0f;
+                offsetX /= 2.0f;
             }
 
-            curPosX = curPosX - textWidth;
+            curPosX = curPosX - (double)(int)offsetX;
         }
 
         for ( size_t i = 0; i < textLen; ++i )
@@ -473,6 +485,11 @@ void J3DAPI rdFont_DrawTextLineEx(const char* pText, float x, float y, float z, 
 
 void J3DAPI rdFont_DrawTextLine(const char* pText, float x, float y, float z, const rdFont* pFont, int alignFlags)
 {
+    if ( !pFont )
+    {
+        return;
+    }
+
     rdFont_DrawTextLineEx(pText, x, y, z, pFont, alignFlags, (float)pFont->fontSize);
 }
 
@@ -511,11 +528,13 @@ void J3DAPI rdFont_DrawTextLineClippedEx(const char* pText, float x, float y, fl
                 }
                 textWidth += (double)pFont->aGlyphs[curChar].baselineOriginX * swidth * fontScale; // Altered: Added multiply by fontScale
             }
-            if ( bAlignCenter )
+            double offsetX = textWidth;
+            if ( bAlignCenter && !bAlignRight )
             {
-                textWidth /= 2.0f;
+                offsetX /= 2.0f;
             }
-            curPosX = curPosX - textWidth;
+
+            curPosX = curPosX - (double)(int)offsetX;
         }
 
         for ( size_t i = 0; i < textLen; ++i )
@@ -544,6 +563,11 @@ void J3DAPI rdFont_DrawTextLineClippedEx(const char* pText, float x, float y, fl
 
 void J3DAPI rdFont_DrawTextLineClipped(const char* pText, float x, float y, float z, const rdFont* pFont, int alignFlags)
 {
+    if ( !pFont )
+    {
+        return;
+    }
+
     rdFont_DrawTextLineClippedEx(pText, x, y, z, pFont, alignFlags, (float)pFont->fontSize);
 }
 

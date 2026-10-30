@@ -111,7 +111,7 @@ void J3DAPI sithExplosion_CreateSpriteThing(SithThing* pThing)
         }
     }
 
-    if ( pExplode->flags && pExplode->pSprite && pExplode->pSprite->renderData.data.pSprite3 )
+    if ( pExplode && pExplode->pSprite && pExplode->pSprite->renderData.data.pSprite3 )
     {
         if ( (pExplode->flags & SITH_EF_RANDOMROLL) != 0 )
         {
@@ -151,7 +151,7 @@ void J3DAPI sithExplosion_UpdateExpandFade(SithExplosionInfo* pExplode)
                 if ( sithTime_g_msecGameTime >= pExplode->msecExpandTime && (pExplode->flags & SITH_EF_EXPAND) != 0 && (pExplode->flags & SITH_EF_FADE) != 0 )
                 {
                     sithAnimate_StartAnimateSpriteSize(pExplode->pSprite, &start, &end, secAnimTime);
-                    pExplode->flags &= ~SITH_EF_FADE | SITH_EF_EXPAND;
+                    pExplode->flags &= ~(SITH_EF_EXPAND | SITH_EF_FADE);
                 }
             }
             else if ( sithTime_g_msecGameTime >= pExplode->msecExpandTime && (pExplode->flags & SITH_EF_EXPAND) != 0 )
@@ -309,10 +309,9 @@ void J3DAPI sithExplosion_Update(SithThing* pThing, float sedDeltaTime)
         }
 
         float delta = (float)(msecLifeLeft / msecBlastTime);
-        rdVector_Scale3((rdVector3*)&pThing->light.color, (rdVector3*)&pThing->light.emitColor, pExplode->maxLight * delta);
-       /* pThing->light.color.x = pThing->thingInfo.explosionInfo.maxLight * delta + pThing->light.emitColor.x;
-        pThing->light.color.y = pThing->thingInfo.explosionInfo.maxLight * delta + pThing->light.emitColor.y;
-        pThing->light.color.z = pThing->thingInfo.explosionInfo.maxLight * delta + pThing->light.emitColor.z;*/
+        pThing->light.color.red   = pExplode->maxLight * delta + pThing->light.emitColor.red;
+        pThing->light.color.green = pExplode->maxLight * delta + pThing->light.emitColor.green;
+        pThing->light.color.blue  = pExplode->maxLight * delta + pThing->light.emitColor.blue;
     }
 }
 
