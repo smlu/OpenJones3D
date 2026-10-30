@@ -338,12 +338,14 @@ void sithDSS_ReadMat34(uint8_t** stream, rdMatrix34* mat)
 void sithDSS_ReadString(uint8_t** stream, char* str, int length)
 {
     memcpy(str, *stream, length);
+    str[length - 1] = 0; // Note, the original always null terminates the string
     *stream += length;
 }
 
 void sithDSS_ReadWString(uint8_t** stream, wchar_t* str, int length)
 {
     memcpy(str, *stream, length * sizeof(wchar_t));
+    str[length - 1] = 0; // Note, the original always null terminates the string
     *stream += length * sizeof(wchar_t);
 }
 
