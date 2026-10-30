@@ -1225,6 +1225,10 @@ int J3DAPI sithAIInstinct_RandomTurn(SithAIControlBlock* pLocal, SithAIInstinct*
     if ( sightState == SITHAI_SIGHT_VISIBLE )
     {
         sithAIMove_AISetLookPosEyeLevel(pLocal, &lookPos);
+
+        // Fixed: Report the event as handled; the original has no return statement here and returns the nonzero eax left over
+        //        from AISetLookPosEyeLevel (see below).
+        return 1;
     }
 
     // TODO: [BUG] The original has no return statement at the end of the function and returns whatever eax holds:
