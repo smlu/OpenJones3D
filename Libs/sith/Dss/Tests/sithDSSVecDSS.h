@@ -25,10 +25,25 @@ static int dssvc_ProcessSurfaceStatus(DssvCtx* cx)
     return DSSV_FN(sithDSS_ProcessSurfaceStatus)(DSSV_MSG);
 }
 
+// var 0..3: sector index; 8: sector 2 with every flag set and extreme light and thrust values
 static int dssvc_SectorStatus(DssvCtx* cx)
 {
+    SithSector* sec = &DSSV_A->sectors[DSSV_VAR & 3];
+    if ( DSSV_VAR == 8 )
+    {
+        sec->flags              = (SithSectorFlag)0xFFFFFFFFu;
+        sec->ambientLight.red   = dssv_BitsF(DSSV_FLTMAX);
+        sec->ambientLight.green = dssv_BitsF(DSSV_NFLTMAX);
+        sec->ambientLight.blue  = dssv_BitsF(DSSV_DENORMMIN);
+        sec->extraLight.red     = dssv_BitsF(DSSV_NZERO);
+        sec->extraLight.green   = dssv_BitsF(DSSV_FLTMIN);
+        sec->extraLight.blue    = dssv_BitsF(DSSV_NDENORMMAX);
+        sec->thrust.x           = dssv_BitsF(DSSV_NFLTMAX);
+        sec->thrust.y           = dssv_BitsF(DSSV_DENORMMIN);
+        sec->thrust.z           = dssv_BitsF(DSSV_FLTMAX);
+    }
     dssv_Begin(cx);
-    return DSSV_FN(sithDSS_SectorStatus)(&DSSV_A->sectors[DSSV_VAR], DSSV_IDTO, DSSV_STREAM);
+    return DSSV_FN(sithDSS_SectorStatus)(sec, DSSV_IDTO, DSSV_STREAM);
 }
 
 static int dssvc_ProcessSectorStatus(DssvCtx* cx)
@@ -76,6 +91,17 @@ static int dssvc_AIStatus(DssvCtx* cx)
     if ( DSSV_VAR & 8 ) { ai->numFrames = 0; }
     if ( DSSV_VAR & 16 ) { ai->goalThing = NULL; ai->pTargetThing = NULL; ai->pFleeFromThing = &DSSV_A->things[6]; }
     if ( DSSV_VAR & 32 ) { ai->pClass = &DSSV_A->aiClasses[1]; ai->numInstincts = 5; }
+    if ( DSSV_VAR & 64 ) // extreme integer and float fields
+    {
+        ai->submode         = (SithAISubMode)0x80000000u;
+        ai->msecNextUpdate  = 0xFFFFFFFFu;
+        ai->msecAttackStart = 0x7FFFFFFF;
+        ai->moveSpeed       = dssv_BitsF(DSSV_FLTMAX);
+        ai->homePos.x       = dssv_BitsF(DSSV_NFLTMAX);
+        ai->homePos.y       = dssv_BitsF(DSSV_DENORMMIN);
+        ai->homePos.z       = dssv_BitsF(DSSV_NZERO);
+        ai->maxHomeDist     = dssv_BitsF(DSSV_NDENORMMAX);
+    }
     dssv_Begin(cx);
     return DSSV_FN(sithDSS_AIStatus)(ai, DSSV_IDTO, DSSV_STREAM);
 }
@@ -91,10 +117,17 @@ static int dssvc_ProcessAIStatus(DssvCtx* cx)
 // ---------------------------------------------------------------------------------------------------------------
 // Inventory
 // ---------------------------------------------------------------------------------------------------------------
-static const struct { unsigned thing, id; } dssv_aInventoryArgs[] = { { 0, 0 }, { 0, 17 }, { 1, 199 }, { 3, 5 }, { 6, 3 }, { 7, 1 } };
+static const struct { unsigned thing, id; } dssv_aInventoryArgs[] = { { 0, 0 }, { 0, 17 }, { 1, 199 }, { 3, 5 }, { 6, 3 }, { 7, 1 }, { 0, 199 } };
 
+// var 6: the last item of the player with extreme amount and status
 static int dssvc_Inventory(DssvCtx* cx)
 {
+    if ( DSSV_VAR == 6 )
+    {
+        SithInventoryItem* item = &DSSV_A->things[0].thingInfo.actorInfo.pPlayer->aItems[199];
+        item->amount = dssv_BitsF(DSSV_NFLTMAX);
+        item->status = (SithInventoryItemStatus)0xFFFFFFFFu;
+    }
     dssv_Begin(cx);
     return DSSV_FN(sithDSS_Inventory)(&DSSV_A->things[dssv_aInventoryArgs[DSSV_VAR].thing], dssv_aInventoryArgs[DSSV_VAR].id, DSSV_IDTO, DSSV_STREAM);
 }
@@ -190,11 +223,11 @@ static int dssvc_ProcessPuppetStatus(DssvCtx* cx)
 // ---------------------------------------------------------------------------------------------------------------
 // Task events, cameras, game state, vehicles
 // ---------------------------------------------------------------------------------------------------------------
-// var 0: event in the future, 1: event time is before the game time
+// var 0: event in the future, 1: event time is before the game time, 2: event time equals the game time
 static int dssvc_SyncTaskEvents(DssvCtx* cx)
 {
     sithTime_g_msecGameTime = 100000;
-    DSSV_A->event.msecEventTime = DSSV_VAR == 0 ? 100000 + 2500 : 100000 - 4000;
+    DSSV_A->event.msecEventTime = DSSV_VAR == 0 ? 100000 + 2500 : (DSSV_VAR == 1 ? 100000 - 4000 : 100000);
     dssv_Begin(cx);
     return DSSV_FN(sithDSS_SyncTaskEvents)(&DSSV_A->event, DSSV_IDTO, DSSV_STREAM);
 }
@@ -205,10 +238,17 @@ static int dssvc_ProcessSyncTaskEvents(DssvCtx* cx)
     return DSSV_FN(sithDSS_ProcessSyncTaskEvents)(DSSV_MSG);
 }
 
-// var: index of the current camera (0, 3 or 6 for 0..2)
+// var: index of the current camera (0, 3 or 6 for 0..2); 3: camera 6 with extreme cycle number and deltas
 static int dssvc_SyncCameras(DssvCtx* cx)
 {
     sithCamera_g_pCurCamera = &sithCamera_g_aCameras[DSSV_VAR == 0 ? 0 : (DSSV_VAR == 1 ? 3 : 6)];
+    if ( DSSV_VAR == 3 )
+    {
+        sithCamera_g_curCycleCamNum   = 0x80000000u;
+        sithCamera_g_cameraPosDelta   = dssv_BitsF(DSSV_FLTMAX);
+        sithCamera_g_cameraAngleDelta = dssv_BitsF(DSSV_DENORMMIN);
+        sithCamera_g_aCameras[6].fov  = dssv_BitsF(DSSV_NFLTMAX);
+    }
     dssv_Begin(cx);
     return DSSV_FN(sithDSS_SyncCameras)(DSSV_IDTO, DSSV_STREAM);
 }
@@ -298,16 +338,30 @@ static const DssvCase dssv_aDSSCases[] = {
     { "ProcessSurfaceStatus_celFFFF", dssvc_ProcessSurfaceStatus, 0, "SurfaceStatus_s2", { { 10, 2, 0xFFFF } } },
     { "ProcessSurfaceStatus_matIndex2", dssvc_ProcessSurfaceStatus, 0, "SurfaceStatus_s4", { { 6, 4, 2 }, { 10, 2, 1 } } },
     { "ProcessSurfaceStatus_matIndex9", dssvc_ProcessSurfaceStatus, 0, "SurfaceStatus_s4", { { 6, 4, 9 } } },
+    // Edge values: all flag bits and +-FLT_MAX texture offsets, denormal/-0 light, extreme face modes
+    { "ProcessSurfaceStatus_edge_maxflags_maxfloats", dssvc_ProcessSurfaceStatus, 0, "SurfaceStatus_s0", { { 2, 4, 0xFFFFFFFF }, { 12, 4, DSSV_FLTMAX }, { 16, 4, DSSV_NFLTMAX } } },
+    { "ProcessSurfaceStatus_edge_denormal_light", dssvc_ProcessSurfaceStatus, 0, "SurfaceStatus_s1", { { 20, 4, DSSV_DENORMMIN }, { 24, 4, DSSV_NZERO }, { 28, 4, DSSV_NDENORMMAX } } },
+    { "ProcessSurfaceStatus_edge_facemodes", dssvc_ProcessSurfaceStatus, 0, "SurfaceStatus_s2", { { 32, 4, 0xFFFFFFFF }, { 36, 4, 0x80000000 }, { 40, 4, 0x7FFFFFFF } } },
+    // Material index -2, past the static materials, INT_MAX; cel 0 and 0x8000 (read unsigned, beyond the cels)
+    { "ProcessSurfaceStatus_edge_matIndexMinus2", dssvc_ProcessSurfaceStatus, 0, "SurfaceStatus_s4", { { 6, 4, 0xFFFFFFFE } } },
+    { "ProcessSurfaceStatus_edge_matIndexStaticPastEnd", dssvc_ProcessSurfaceStatus, 0, "SurfaceStatus_s4", { { 6, 4, 0x8002 } } },
+    { "ProcessSurfaceStatus_edge_matIndexIntMax", dssvc_ProcessSurfaceStatus, 0, "SurfaceStatus_s4", { { 6, 4, 0x7FFFFFFF } } },
+    { "ProcessSurfaceStatus_edge_cel0", dssvc_ProcessSurfaceStatus, 0, "SurfaceStatus_s1", { { 10, 2, 0 } } },
+    { "ProcessSurfaceStatus_edge_cel8000", dssvc_ProcessSurfaceStatus, 0, "SurfaceStatus_s1", { { 10, 2, 0x8000 } } },
 
     // Sectors: thrust and adjoins off flags
     { "SectorStatus_s0_thrust", dssvc_SectorStatus, 0, NULL, DSSV_NOMUT },
     { "SectorStatus_s1_adjoinsoff", dssvc_SectorStatus, 1, NULL, DSSV_NOMUT },
     { "SectorStatus_s2", dssvc_SectorStatus, 2, NULL, DSSV_NOMUT },
     { "SectorStatus_s3_thrust_adjoinsoff", dssvc_SectorStatus, 3, NULL, DSSV_NOMUT },
+    // Every flag bit set (thrust included), +-FLT_MAX, denormal and -0 lights and thrust
+    { "SectorStatus_edge_s2_allflags_extremes", dssvc_SectorStatus, 8, NULL, DSSV_NOMUT },
     { "ProcessSectorStatus_s0", dssvc_ProcessSectorStatus, 0, "SectorStatus_s0_thrust", DSSV_NOMUT },
     { "ProcessSectorStatus_s1", dssvc_ProcessSectorStatus, 0, "SectorStatus_s1_adjoinsoff", DSSV_NOMUT },
     { "ProcessSectorStatus_s2", dssvc_ProcessSectorStatus, 0, "SectorStatus_s2", DSSV_NOMUT },
     { "ProcessSectorStatus_s3", dssvc_ProcessSectorStatus, 0, "SectorStatus_s3_thrust_adjoinsoff", DSSV_NOMUT },
+    { "ProcessSectorStatus_edge_s2_allflags_extremes", dssvc_ProcessSectorStatus, 0, "SectorStatus_edge_s2_allflags_extremes", DSSV_NOMUT },
+    { "ProcessSectorStatus_edge_lights", dssvc_ProcessSectorStatus, 0, "SectorStatus_s0_thrust", { { 6, 4, DSSV_FLTMAX }, { 18, 4, DSSV_NDENORMMAX }, { 30, 4, DSSV_NZERO } } },
     // Adjoins switched off (flag 0x80) and on by the message; thrust flag set without the thrust vector in the message would over-read, so
     // the flags are only edited together with the sector they came from
     { "ProcessSectorStatus_hideadjoins", dssvc_ProcessSectorStatus, 0, "SectorStatus_s2", { { 2, 4, 0x80 } } },
@@ -324,11 +378,18 @@ static const DssvCase dssv_aDSSCases[] = {
     { "ProcessSectorFlags_showadjoins", dssvc_ProcessSectorFlags, 0, "SectorFlags_s1_adjoinsoff", { { 2, 4, 0x10 } } },
     { "ProcessSectorFlags_index4", dssvc_ProcessSectorFlags, 0, "SectorFlags_s2", { { 0, 2, 4 } } },
     { "ProcessSectorFlags_indexFFFF", dssvc_ProcessSectorFlags, 0, "SectorFlags_s2", { { 0, 2, 0xFFFF } } },
+    // All flag bits (adjoins switched off) and only the top bit
+    { "ProcessSectorFlags_edge_allbits", dssvc_ProcessSectorFlags, 0, "SectorFlags_s2", { { 2, 4, 0xFFFFFFFF } } },
+    { "ProcessSectorFlags_edge_topbit", dssvc_ProcessSectorFlags, 0, "SectorFlags_s1_adjoinsoff", { { 2, 4, 0x80000000 } } },
+    { "ProcessSectorFlags_edge_lastsector", dssvc_ProcessSectorFlags, 0, "SectorFlags_s2", { { 0, 2, 3 } } },
     { "SyncSeenSectors", dssvc_SyncSeenSectors, 0, NULL, DSSV_NOMUT },
     { "SyncSeenSectors_noworld", dssvc_SyncSeenSectors, 1, NULL, DSSV_NOMUT },
     { "ProcessSyncSeenSecors", dssvc_ProcessSyncSeenSecors, 0, "SyncSeenSectors", DSSV_NOMUT },
     { "ProcessSyncSeenSecors_allseen", dssvc_ProcessSyncSeenSecors, 0, "SyncSeenSectors", { { 0, 4, 0x01010101 } } },
     { "ProcessSyncSeenSecors_noneseen", dssvc_ProcessSyncSeenSecors, 0, "SyncSeenSectors", { { 0, 4, 0 } } },
+    // Any nonzero byte marks a sector seen
+    { "ProcessSyncSeenSecors_edge_FF", dssvc_ProcessSyncSeenSecors, 0, "SyncSeenSectors", { { 0, 4, 0xFFFFFFFF } } },
+    { "ProcessSyncSeenSecors_edge_mixed", dssvc_ProcessSyncSeenSecors, 0, "SyncSeenSectors", { { 0, 4, 0x80FF0002 } } },
     { "ProcessSyncSeenSecors_noworld", dssvc_ProcessSyncSeenSecors, 1, "SyncSeenSectors", DSSV_NOMUT },
 
     // AI status: every mode flag that adds data, no frames, no goal/target
@@ -341,6 +402,7 @@ static const DssvCase dssv_aDSSCases[] = {
     { "AIStatus_nogoalthing", dssvc_AIStatus, 16, NULL, DSSV_NOMUT },
     { "AIStatus_all_nogoal", dssvc_AIStatus, 23, NULL, DSSV_NOMUT },
     { "AIStatus_class1_5instincts", dssvc_AIStatus, 32, NULL, DSSV_NOMUT },
+    { "AIStatus_edge_extremes", dssvc_AIStatus, 64 | 7, NULL, DSSV_NOMUT },
     { "ProcessAIStatus_plain", dssvc_ProcessAIStatus, 0, "AIStatus_plain", DSSV_NOMUT },
     { "ProcessAIStatus_moving", dssvc_ProcessAIStatus, 0, "AIStatus_moving", DSSV_NOMUT },
     { "ProcessAIStatus_turning", dssvc_ProcessAIStatus, 0, "AIStatus_turning", DSSV_NOMUT },
@@ -349,6 +411,14 @@ static const DssvCase dssv_aDSSCases[] = {
     { "ProcessAIStatus_noframes", dssvc_ProcessAIStatus, 0, "AIStatus_noframes", DSSV_NOMUT },
     { "ProcessAIStatus_nogoalthing", dssvc_ProcessAIStatus, 0, "AIStatus_nogoalthing", DSSV_NOMUT },
     { "ProcessAIStatus_class1_5instincts", dssvc_ProcessAIStatus, 0, "AIStatus_class1_5instincts", DSSV_NOMUT },
+    { "ProcessAIStatus_edge_extremes", dssvc_ProcessAIStatus, 0, "AIStatus_edge_extremes", DSSV_NOMUT },
+    // Edge values: INT_MIN/UINT_MAX/INT_MAX ints, +-FLT_MAX and denormal floats, goal and target index 0xFFFF,
+    // every mode bit on a message that already has the moving, turning and fleeing fields
+    { "ProcessAIStatus_edge_ints", dssvc_ProcessAIStatus, 0, "AIStatus_plain", { { 8, 4, 0x80000000 }, { 12, 4, 0xFFFFFFFF }, { 42, 4, 0x7FFFFFFF } } },
+    { "ProcessAIStatus_edge_floats", dssvc_ProcessAIStatus, 0, "AIStatus_plain", { { 18, 4, DSSV_FLTMAX }, { 22, 4, DSSV_NFLTMAX }, { 76, 4, DSSV_DENORMMIN } } },
+    { "ProcessAIStatus_edge_goaltargetFFFF", dssvc_ProcessAIStatus, 0, "AIStatus_plain", { { 16, 2, 0xFFFF }, { 46, 2, 0xFFFF } } },
+    { "ProcessAIStatus_edge_modeallbits", dssvc_ProcessAIStatus, 0, "AIStatus_moving_turning_fleeing", { { 4, 4, 0xFFFFFFFF } } },
+    { "ProcessAIStatus_edge_classFFFF", dssvc_ProcessAIStatus, 0, "AIStatus_plain", { { 2, 2, 0xFFFF } } },
     { "ProcessAIStatus_allocfail", dssvc_ProcessAIStatus, 1, "AIStatus_plain", DSSV_NOMUT },
     { "ProcessAIStatus_badthing", dssvc_ProcessAIStatus, 0, "AIStatus_plain", { { 0, 2, 100 } } },
     { "ProcessAIStatus_nonaithing", dssvc_ProcessAIStatus, 0, "AIStatus_plain", { { 0, 2, 0 } } },
@@ -361,6 +431,7 @@ static const DssvCase dssv_aDSSCases[] = {
     { "Inventory_weapon_rejected", dssvc_Inventory, 3, NULL, DSSV_NOMUT },
     { "Inventory_freething_rejected", dssvc_Inventory, 4, NULL, DSSV_NOMUT },
     { "Inventory_corpse_rejected", dssvc_Inventory, 5, NULL, DSSV_NOMUT },
+    { "Inventory_edge_player_199_extremes", dssvc_Inventory, 6, NULL, DSSV_NOMUT },
     { "ProcessInventory_player_0", dssvc_ProcessInventory, 0, "Inventory_player_0", DSSV_NOMUT },
     { "ProcessInventory_player_17", dssvc_ProcessInventory, 0, "Inventory_player_17", DSSV_NOMUT },
     { "ProcessInventory_actor_199", dssvc_ProcessInventory, 0, "Inventory_actor_199", DSSV_NOMUT },
@@ -369,6 +440,12 @@ static const DssvCase dssv_aDSSCases[] = {
     { "ProcessInventory_badthing", dssvc_ProcessInventory, 0, "Inventory_player_0", { { 0, 2, 200 } } },
     { "ProcessInventory_id200", dssvc_ProcessInventory, 0, "Inventory_player_0", { { 2, 2, 200 } } },
     { "ProcessInventory_idFFFF", dssvc_ProcessInventory, 0, "Inventory_player_0", { { 2, 2, 0xFFFF } } },
+    { "ProcessInventory_edge_player_199_extremes", dssvc_ProcessInventory, 0, "Inventory_edge_player_199_extremes", DSSV_NOMUT },
+    // Last item id, first invalid id, +FLT_MAX/denormal amounts with INT_MIN status, thing index 0xFFFF
+    { "ProcessInventory_edge_id199", dssvc_ProcessInventory, 0, "Inventory_player_0", { { 2, 2, 199 } } },
+    { "ProcessInventory_edge_maxamount", dssvc_ProcessInventory, 0, "Inventory_player_17", { { 4, 4, DSSV_FLTMAX }, { 8, 4, 0x80000000 } } },
+    { "ProcessInventory_edge_denormalamount", dssvc_ProcessInventory, 0, "Inventory_player_17", { { 4, 4, DSSV_NDENORMMAX }, { 8, 4, 0x7FFFFFFF } } },
+    { "ProcessInventory_edge_thingFFFF", dssvc_ProcessInventory, 0, "Inventory_player_0", { { 0, 2, 0xFFFF } } },
 
     // Animation status: one case per flag group, all flags, no flags
     { "AnimStatus_thing_move", dssvc_AnimStatus, 0, NULL, DSSV_NOMUT },
@@ -413,6 +490,22 @@ static const DssvCase dssv_aDSSCases[] = {
     { "ProcessAnimStatus_badthing", dssvc_ProcessAnimStatus, 0, "AnimStatus_sprite_camerazoom", { { 8, 2, 0x7FFF } } },
     { "ProcessAnimStatus_spritething", dssvc_ProcessAnimStatus, 0, "AnimStatus_sprite_camerazoom", { { 8, 2, 5 } } },
     { "ProcessAnimStatus_badsurface", dssvc_ProcessAnimStatus, 0, "AnimStatus_surface", { { 8, 4, 77 } } },
+    // Negative and extreme indices: int16 thing index -1 and -32768, int32 surface/sector/material/thing indices,
+    // animation id -1 (a new slot), extreme page flip times and FLT_MAX camera zoom values
+    { "ProcessAnimStatus_edge_thingMinus1", dssvc_ProcessAnimStatus, 0, "AnimStatus_sprite_camerazoom", { { 8, 2, 0xFFFF } } },
+    { "ProcessAnimStatus_edge_thingMinus32768", dssvc_ProcessAnimStatus, 0, "AnimStatus_sprite_camerazoom", { { 8, 2, 0x8000 } } },
+    { "ProcessAnimStatus_edge_zoomfloats", dssvc_ProcessAnimStatus, 0, "AnimStatus_sprite_camerazoom", { { 14, 4, DSSV_FLTMAX }, { 18, 4, DSSV_NFLTMAX }, { 22, 4, DSSV_DENORMMIN } } },
+    { "ProcessAnimStatus_edge_surfaceMinus1", dssvc_ProcessAnimStatus, 0, "AnimStatus_surface", { { 8, 4, 0xFFFFFFFF } } },
+    { "ProcessAnimStatus_edge_surfaceIntMin", dssvc_ProcessAnimStatus, 0, "AnimStatus_surface", { { 8, 4, 0x80000000 } } },
+    { "ProcessAnimStatus_edge_sectorMinus1", dssvc_ProcessAnimStatus, 0, "AnimStatus_sector", { { 8, 4, 0xFFFFFFFF } } },
+    { "ProcessAnimStatus_edge_sectorIntMax", dssvc_ProcessAnimStatus, 0, "AnimStatus_sector", { { 8, 4, 0x7FFFFFFF } } },
+    { "ProcessAnimStatus_edge_materialMinus1", dssvc_ProcessAnimStatus, 0, "AnimStatus_material", { { 8, 4, 0xFFFFFFFF } } },
+    { "ProcessAnimStatus_edge_materialStatic0", dssvc_ProcessAnimStatus, 0, "AnimStatus_material", { { 8, 4, 0x8000 } } },
+    { "ProcessAnimStatus_edge_materialIntMax", dssvc_ProcessAnimStatus, 0, "AnimStatus_material", { { 8, 4, 0x7FFFFFFF } } },
+    { "ProcessAnimStatus_edge_fadethingMinus1", dssvc_ProcessAnimStatus, 0, "AnimStatus_thing_fade", { { 8, 4, 0xFFFFFFFF } } },
+    { "ProcessAnimStatus_edge_fadethingIntMin", dssvc_ProcessAnimStatus, 0, "AnimStatus_thing_fade", { { 8, 4, 0x80000000 } } },
+    { "ProcessAnimStatus_edge_pageflipints", dssvc_ProcessAnimStatus, 0, "AnimStatus_pageflip", { { 8, 4, 0xFFFFFFFF }, { 12, 4, 0x80000000 }, { 16, 4, 0x7FFFFFFF } } },
+    { "ProcessAnimStatus_edge_animidMinus1", dssvc_ProcessAnimStatus, 0, "AnimStatus_thing_fade", { { 0, 4, 0xFFFFFFFF } } },
 
     // Puppet status: three things times six variants
     { "PuppetStatus_t0", dssvc_PuppetStatus, 0, NULL, DSSV_NOMUT },
@@ -435,6 +528,12 @@ static const DssvCase dssv_aDSSCases[] = {
     { "ProcessPuppetStatus_newtrackfails", dssvc_ProcessPuppetStatus, 1, "PuppetStatus_t0", DSSV_NOMUT },
     { "ProcessPuppetStatus_badthing", dssvc_ProcessPuppetStatus, 0, "PuppetStatus_t0", { { 0, 4, 6 } } },
     { "ProcessPuppetStatus_thingwithoutpuppet", dssvc_ProcessPuppetStatus, 0, "PuppetStatus_t0", { { 0, 4, 2 } } },
+    // Track fields at their limits: keyframe -1, priorities 0x7FFF/-32768, +-FLT_MAX and denormal frame values,
+    // a denormal playback speed (above zero, kept by both), callback index 255; thing index -1
+    { "ProcessPuppetStatus_edge_keyframeMinus1_priorities", dssvc_ProcessPuppetStatus, 0, "PuppetStatus_t0", { { 12, 4, 0xFFFFFFFF }, { 20, 4, 0x80007FFF } } },
+    { "ProcessPuppetStatus_edge_floats", dssvc_ProcessPuppetStatus, 0, "PuppetStatus_t0", { { 24, 4, DSSV_FLTMAX }, { 28, 4, DSSV_NFLTMAX }, { 32, 4, DSSV_NDENORMMAX } } },
+    { "ProcessPuppetStatus_edge_denormalspeed_callback255", dssvc_ProcessPuppetStatus, 0, "PuppetStatus_t0", { { 16, 4, DSSV_DENORMMIN }, { 40, 1, 0xFF } } },
+    { "ProcessPuppetStatus_edge_thingMinus1", dssvc_ProcessPuppetStatus, 0, "PuppetStatus_t0", { { 0, 4, 0xFFFFFFFF } } },
     // The original keeps a playback speed of zero or less, the reconstruction replaces it with 1.0 (known difference)
     { "ProcessPuppetStatus_zerospeed", dssvc_ProcessPuppetStatus, 0, "PuppetStatus_t0", { { 16, 4, 0x00000000 } } },
     { "ProcessPuppetStatus_negativespeed", dssvc_ProcessPuppetStatus, 0, "PuppetStatus_t0", { { 16, 4, 0xBF800000 } } },
@@ -442,19 +541,29 @@ static const DssvCase dssv_aDSSCases[] = {
     // Task events
     { "SyncTaskEvents_future", dssvc_SyncTaskEvents, 0, NULL, DSSV_NOMUT },
     { "SyncTaskEvents_past", dssvc_SyncTaskEvents, 1, NULL, DSSV_NOMUT },
+    { "SyncTaskEvents_edge_now", dssvc_SyncTaskEvents, 2, NULL, DSSV_NOMUT },
     { "ProcessSyncTaskEvents_future", dssvc_ProcessSyncTaskEvents, 0, "SyncTaskEvents_future", DSSV_NOMUT },
     { "ProcessSyncTaskEvents_past", dssvc_ProcessSyncTaskEvents, 0, "SyncTaskEvents_past", DSSV_NOMUT },
+    { "ProcessSyncTaskEvents_edge_now", dssvc_ProcessSyncTaskEvents, 0, "SyncTaskEvents_edge_now", DSSV_NOMUT },
+    // Delay UINT_MAX, event index INT_MIN, task number 0xFFFF; zero delay with INT_MAX parameters
+    { "ProcessSyncTaskEvents_edge_extremes", dssvc_ProcessSyncTaskEvents, 0, "SyncTaskEvents_future", { { 0, 4, 0xFFFFFFFF }, { 4, 4, 0x80000000 }, { 20, 2, 0xFFFF } } },
+    { "ProcessSyncTaskEvents_edge_zerodelay", dssvc_ProcessSyncTaskEvents, 0, "SyncTaskEvents_future", { { 0, 4, 0 }, { 8, 4, 0x7FFFFFFF }, { 16, 4, 0xFFFFFFFF } } },
 
     // Cameras
     { "SyncCameras_cam0", dssvc_SyncCameras, 0, NULL, DSSV_NOMUT },
     { "SyncCameras_cam3", dssvc_SyncCameras, 1, NULL, DSSV_NOMUT },
     { "SyncCameras_cam6", dssvc_SyncCameras, 2, NULL, DSSV_NOMUT },
+    { "SyncCameras_edge_extremes", dssvc_SyncCameras, 3, NULL, DSSV_NOMUT },
     { "ProcessSyncCameras_cam0", dssvc_ProcessSyncCameras, 0, "SyncCameras_cam0", DSSV_NOMUT },
     { "ProcessSyncCameras_cam3", dssvc_ProcessSyncCameras, 0, "SyncCameras_cam3", DSSV_NOMUT },
     { "ProcessSyncCameras_cam6", dssvc_ProcessSyncCameras, 0, "SyncCameras_cam6", DSSV_NOMUT },
     // Camera numbers past the last camera are clamped
     { "ProcessSyncCameras_clamp", dssvc_ProcessSyncCameras, 0, "SyncCameras_cam3", { { 0, 2, 9 } } },
     { "ProcessSyncCameras_clampFFFF", dssvc_ProcessSyncCameras, 0, "SyncCameras_cam3", { { 0, 2, 0xFFFF } } },
+    { "ProcessSyncCameras_edge_extremes", dssvc_ProcessSyncCameras, 0, "SyncCameras_edge_extremes", DSSV_NOMUT },
+    // Focus thing indices INT_MIN/INT_MAX, FLT_MAX field of view; all bits in the camera set flag, -0/denormal deltas
+    { "ProcessSyncCameras_edge_focusindices", dssvc_ProcessSyncCameras, 0, "SyncCameras_cam3", { { 42, 4, 0x80000000 }, { 46, 4, 0x7FFFFFFF }, { 50, 4, DSSV_FLTMAX } } },
+    { "ProcessSyncCameras_edge_globals", dssvc_ProcessSyncCameras, 0, "SyncCameras_cam0", { { 2, 4, 0xFFFFFFFF }, { 34, 4, DSSV_NZERO }, { 38, 4, DSSV_NDENORMMAX } } },
 
     // Game state
     { "SyncGameState_full", dssvc_SyncGameState, 0, NULL, DSSV_NOMUT },
@@ -463,10 +572,17 @@ static const DssvCase dssv_aDSSCases[] = {
     { "ProcessSyncGameState_full", dssvc_ProcessSyncGameState, 0, "SyncGameState_full", DSSV_NOMUT },
     { "ProcessSyncGameState_empty", dssvc_ProcessSyncGameState, 0, "SyncGameState_empty", DSSV_NOMUT },
     { "ProcessSyncGameState_tenchalkmarks", dssvc_ProcessSyncGameState, 0, "SyncGameState_tenchalkmarks", DSSV_NOMUT },
+    // Master cog index INT_MAX/INT_MIN/-2 with extreme current item and weapon ids
+    { "ProcessSyncGameState_edge_cogIntMax", dssvc_ProcessSyncGameState, 0, "SyncGameState_full", { { 0, 4, 0x7FFFFFFF }, { 4, 4, 0x80000000 }, { 8, 4, 0xFFFFFFFF } } },
+    { "ProcessSyncGameState_edge_cogIntMin", dssvc_ProcessSyncGameState, 0, "SyncGameState_empty", { { 0, 4, 0x80000000 }, { 4, 4, 0x7FFFFFFF } } },
+    { "ProcessSyncGameState_edge_cogMinus2", dssvc_ProcessSyncGameState, 0, "SyncGameState_full", { { 0, 4, 0xFFFFFFFE } } },
 
     // Vehicle controls
     { "SyncVehicleControlState", dssvc_SyncVehicleControlState, 0, NULL, DSSV_NOMUT },
     { "ProcessVehicleControlsState", dssvc_ProcessVehicleControlsState, 0, "SyncVehicleControlState", DSSV_NOMUT },
+    // +-FLT_MAX, denormal and -0 floats, INT_MIN/UINT_MAX states
+    { "ProcessVehicleControlsState_edge_minecar", dssvc_ProcessVehicleControlsState, 0, "SyncVehicleControlState", { { 0, 4, DSSV_FLTMAX }, { 4, 4, 0x80000000 }, { 8, 4, DSSV_DENORMMIN } } },
+    { "ProcessVehicleControlsState_edge_raft", dssvc_ProcessVehicleControlsState, 0, "SyncVehicleControlState", { { 44, 4, 0xFFFFFFFF }, { 52, 4, DSSV_NFLTMAX }, { 92, 4, DSSV_NZERO } } },
 
     // End of section message
     { "sub_4B3760", dssvc_sub_4B3760, 0, NULL, DSSV_NOMUT },

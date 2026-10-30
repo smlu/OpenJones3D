@@ -149,7 +149,7 @@ changes of both records.
 
 ### Cases
 
-`sithDSS.tv` (165 cases):
+`sithDSS.tv` (225 cases):
 
 - Surface status: every surface kind (with and without material and adjoin, 3 and 4
   vertices). Reader: all of them, a surface and material index past the end, a static
@@ -172,7 +172,7 @@ changes of both records.
   numbers past the last), game state (everything set, nothing set, ten chalk marks),
   vehicle control state and the end of section message.
 
-`sithDSSThing.tv` (173 cases):
+`sithDSSThing.tv` (213 cases):
 
 - Pos/MovePos: player, actor, item without physics and path mover (physics and player
   data are optional fields), rejected free/NULL/sectorless things. Reader: all of them,
@@ -202,13 +202,50 @@ changes of both records.
   (within 0.5, exactly on the thing, far away, and with values that are not exactly
   representable).
 
+Edge cases (names contain `_edge_`; 60 in `sithDSS.tv`, 40 in `sithDSSThing.tv`), added
+to check the serialized fields at their limits:
+
+- Floats given by bit pattern: `FLT_MAX`, `-FLT_MAX`, the smallest normal, the
+  smallest positive and the largest negative denormal and `-0` (no NaN or infinity),
+  written by the writers (sector status with every flag bit and thrust, AI status,
+  inventory item 199, cameras) and edited into reader messages (surface/sector
+  lights, texture offsets, AI vectors and speeds, inventory amounts, animation zoom,
+  puppet track frames, vehicle states, sound radii, sound mode selection ratios,
+  stop sound/stop key fade times, fire and damage values, create thing positions).
+  `-0` and a negative denormal select the branches of `selectionRatio < 0` and
+  `secFadeTime <= 0` (`-0` is not below zero; a negative denormal is).
+- Integers: all bits, `INT_MIN`, `INT_MAX` and `UINT_MAX` in flags, modes, times and
+  event parameters; zero event delay; an event at the game time.
+- Indices: int16 indices `-1` and `-32768`, unsigned 16-bit indices `0xFFFF` and
+  `0x8000` (cel number, priorities), int32 indices `-1`, `-2`, `INT_MIN` and `INT_MAX`
+  for things, sectors, surfaces, materials, cogs, keyframes, templates and guids,
+  the last valid sector and inventory id, the first static material and template and
+  the first index past the static materials.
+- Strings: a model name of the maximum length (63 characters and the terminator)
+  through `sithDSSThing_SetModel`/`ProcessSetModel` (found and not found), and a
+  message whose 64 name bytes have no terminator (the reader terminates it).
+- Other: any nonzero seen-sector byte, kill flags 2 and `0xFF` (only 1 kills the
+  player), every AI mode bit on a message that has all mode fields, every keyframe
+  flag with low priority `0xFFFF`, callback index 255, a denormal playback speed.
+
+The capture verifies the lookup stubs for the added indices as well (`INT_MIN`,
+`INT_MAX`, `-32768`, `0x7FFF`, `0xFFFF`, `0x10000`, `-2`). No edge case crashed the
+original, was unstable between the two fills or was dropped. The records of the
+earlier cases are byte-identical in the regenerated files.
+
 ### Known Differences
 
 - `ProcessPuppetStatus_zerospeed`, `ProcessPuppetStatus_negativespeed`: the
   original stores the playback speed of a puppet track as read; the reconstruction
   replaces a value of zero or less with 1.0 (an intentional `Added:` change in
-  `sithDSS_ProcessPuppetStatus`). `TestOriginalPuppetStatus` expects exactly these two
-  cases to differ and is reported as ignored.
+  `sithDSS_ProcessPuppetStatus`). `TestOriginalPuppetStatus` expects exactly these
+  cases (and the next one) to differ and is reported as ignored.
+- `ProcessPuppetStatus_edge_keyframeMinus1_priorities`: the original reads the low and
+  high priority of a puppet track with an unsigned 16-bit read (`0x8000` becomes
+  32768); the reconstruction uses a signed read (`SITHDSS_POPINT16`) and stores
+  -32768. The writer only produces small priorities, so the difference needs an
+  edited message. Not changed in this corpus update; expected by
+  `TestOriginalPuppetStatus` like the two cases above.
 - None for `sithDSSThing_MoveToPos` any more: the original evaluates
   `velocity * 0.25 + newPos - pos` in x87 extended precision and rounds once, and the
   reconstruction computes the direction in double and rounds once, which reproduces
@@ -224,6 +261,14 @@ changes of both records.
   behavior to compare with and are not part of the corpus.
 - Counts that overflow fixed arrays (`sithDSS_ProcessSyncGameState` chalk marks,
   `sithDSSThing_ProcessStateUpdate` backpack items, both preserved original bugs).
+- Edge values that change the amount of data a reader consumes (mode bits, flags or
+  counts that add fields, a negative marker guid on a create-at-marker message, a
+  `numFrames` that does not match the frames in the message) over-read the message
+  and are not used; edge values are only placed in fields that do not decide the
+  layout. Model names of 64 characters without a terminator in `rdModel3::aName`
+  make the original writer copy past the name and are not used. The ledge model face
+  index of `ProcessSyncGameState` is left as written (a negative index builds a
+  pointer outside the model).
 - `ThingFullDescription` and `Attachment`: already implemented upstream (with
   documented extensions), not part of this corpus.
 
@@ -231,7 +276,7 @@ changes of both records.
 
 - Capture harness: a temporary C file built with MSVC (x86, static CRT) as
   `Jones3D.dll` and kept outside the repository (SHA-256 of the source used:
-  `b5ff22764bc51ca780b5f0a5557988eb0ebf8f87260262db5f96930cc391aec8`), including the shared headers of `Libs/sith/Dss/Tests`. It
+  `cdeec8e4daf34ab91cebe83ef43e8fce461c1e550fa8617cd80ae8bc76611876`), including the shared headers of `Libs/sith/Dss/Tests`. It
   patches the engine functions of `sithDSSSeams.def` and `sithDSSThingSeams.def` to jump to the stubs, builds the
   state of each case, calls the original functions at the addresses above and writes the
   fixtures; no other function of the executable is modified. `Jones3D.exe` (this
@@ -254,6 +299,6 @@ changes of both records.
 ### SHA-256
 
 ```text
-820dc9c5c44824ea34fd3e3a1077529cb0deeb6016821f54f3818aaa17f18b9d  sithDSS.tv
-fe9bc9a6c074d5954c6cf440bc863d88d94f69a9c75c6115d4f9e12ee6efca18  sithDSSThing.tv
+3bbd82d15e2cff3f577443ffcafa7c3ca971c1fafa2713e4e9c84ade21908a81  sithDSS.tv
+69cc9af3e76201ae9981444e975e84e061ae823b87673a4bbc39e28d8996fef3  sithDSSThing.tv
 ```

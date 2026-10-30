@@ -127,6 +127,14 @@ static uint32_t dssv_Rnd(void)
 
 // Floats are multiples of 1/16 so every value is exact and has a distinctive bit pattern
 static float dssv_RndF(void) { return (float)((int)(dssv_Rnd() % 16384u) - 8192) / 16.0f; }
+// Edge-case floats given by their bit pattern (denormals, -0, +-FLT_MAX), so they are exact on both sides
+static float dssv_BitsF(uint32_t bits) { float f; memcpy(&f, &bits, sizeof(f)); return f; }
+#define DSSV_FLTMAX    0x7F7FFFFFu
+#define DSSV_NFLTMAX   0xFF7FFFFFu
+#define DSSV_FLTMIN    0x00800000u // smallest normal
+#define DSSV_DENORMMIN 0x00000001u
+#define DSSV_NDENORMMAX 0x807FFFFFu
+#define DSSV_NZERO     0x80000000u
 static int dssv_RndI(unsigned n) { return (int)(dssv_Rnd() % n); }
 static void dssv_RndVec3(rdVector3* v) { v->x = dssv_RndF(); v->y = dssv_RndF(); v->z = dssv_RndF(); }
 static void dssv_RndVec4(rdVector4* v) { v->x = dssv_RndF(); v->y = dssv_RndF(); v->z = dssv_RndF(); v->w = dssv_RndF(); }

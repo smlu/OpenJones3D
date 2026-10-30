@@ -371,15 +371,26 @@ static int dssvc_ProcessPlayKeyMode(DssvCtx* cx)
 }
 
 // var 0: model thing, 1: thing without model3 (rejected), 2: NULL
+// Model name of the longest length that fits rdModel3::aName (63 characters and the terminator)
+static void dssv_SetLongModelName(rdModel3* m)
+{
+    memset(m->aName, 'n', sizeof(m->aName) - 5);
+    memcpy(&m->aName[sizeof(m->aName) - 5], ".3do", 5);
+}
+
+// var 0: model thing, 1: thing without model3 (rejected), 2: NULL, 3: model thing whose model name has the maximum length
 static int dssvc_SetModel(DssvCtx* cx)
 {
-    SithThing* t = DSSV_VAR == 2 ? NULL : DSSV_T(DSSV_VAR == 0 ? 0 : 5);
+    SithThing* t = DSSV_VAR == 2 ? NULL : DSSV_T(DSSV_VAR == 1 ? 5 : 0);
+    if ( DSSV_VAR == 3 ) { dssv_SetLongModelName(t->renderData.data.pModel3); }
     dssv_Begin(cx);
     return DSSV_FN(sithDSSThing_SetModel)(t, DSSV_IDTO);
 }
 
+// var 1: model 1 of the world has the maximum length name
 static int dssvc_ProcessSetModel(DssvCtx* cx)
 {
+    if ( DSSV_VAR == 1 ) { dssv_SetLongModelName(&DSSV_A->models[1]); }
     dssv_Begin(cx);
     return DSSV_FN(sithDSSThing_ProcessSetModel)(DSSV_MSG);
 }
@@ -617,17 +628,31 @@ static const DssvCase dssv_aThingCases[] = {
     { "ProcessPlaySound_plain", dssvc_ProcessPlaySound, 0, "PlaySound_plain", DSSV_NOMUT },
     { "ProcessPlaySound_badsound", dssvc_ProcessPlaySound, 0, "PlaySound_thing", { { 12, 2, 9 } } },
     { "ProcessPlaySound_badthing", dssvc_ProcessPlaySound, 0, "PlaySound_thing", { { 14, 4, 0x7777 } } },
+    // +-FLT_MAX and denormal radii, sound index 0xFFFF, thing guid -1
+    { "ProcessPlaySound_edge_radii", dssvc_ProcessPlaySound, 0, "PlaySound_thing", { { 4, 4, DSSV_FLTMAX }, { 8, 4, DSSV_NFLTMAX } } },
+    { "ProcessPlaySound_edge_denormalradii", dssvc_ProcessPlaySound, 0, "PlaySound_plain", { { 4, 4, DSSV_DENORMMIN }, { 8, 4, DSSV_NZERO } } },
+    { "ProcessPlaySound_edge_soundFFFF", dssvc_ProcessPlaySound, 0, "PlaySound_thing", { { 12, 2, 0xFFFF } } },
+    { "ProcessPlaySound_edge_guidMinus1", dssvc_ProcessPlaySound, 0, "PlaySound_thing", { { 14, 4, 0xFFFFFFFF } } },
     { "PlaySoundMode_random", dssvc_PlaySoundMode, 0, NULL, DSSV_NOMUT },
     { "PlaySoundMode_ratio", dssvc_PlaySoundMode, 1, NULL, DSSV_NOMUT },
     { "ProcessPlaySoundMode_random", dssvc_ProcessPlaySoundMode, 0, "PlaySoundMode_random", DSSV_NOMUT },
     { "ProcessPlaySoundMode_ratio", dssvc_ProcessPlaySoundMode, 0, "PlaySoundMode_ratio", DSSV_NOMUT },
     { "ProcessPlaySoundMode_badthing", dssvc_ProcessPlaySoundMode, 0, "PlaySoundMode_ratio", { { 0, 4, 0x7777 } } },
+    // Selection ratio -0 (not below zero: PlayMode), a negative denormal (random), 0 and FLT_MAX; mode 0xFFFF
+    { "ProcessPlaySoundMode_edge_negzero", dssvc_ProcessPlaySoundMode, 0, "PlaySoundMode_ratio", { { 8, 4, DSSV_NZERO } } },
+    { "ProcessPlaySoundMode_edge_negdenormal", dssvc_ProcessPlaySoundMode, 0, "PlaySoundMode_ratio", { { 8, 4, 0x80000001 } } },
+    { "ProcessPlaySoundMode_edge_zero", dssvc_ProcessPlaySoundMode, 0, "PlaySoundMode_ratio", { { 8, 4, 0 } } },
+    { "ProcessPlaySoundMode_edge_fltmax_modeFFFF", dssvc_ProcessPlaySoundMode, 0, "PlaySoundMode_ratio", { { 8, 4, DSSV_FLTMAX }, { 12, 2, 0xFFFF } } },
     { "StopSound_channel", dssvc_StopSound, 0, NULL, DSSV_NOMUT },
     { "StopSound_nochannel", dssvc_StopSound, 1, NULL, DSSV_NOMUT },
     { "ProcessStopSound_fade", dssvc_ProcessStopSound, 0, "StopSound_channel", DSSV_NOMUT },
     { "ProcessStopSound_stop", dssvc_ProcessStopSound, 0, "StopSound_channel", { { 4, 4, 0 } } },
     { "ProcessStopSound_stop_negative", dssvc_ProcessStopSound, 0, "StopSound_channel", { { 4, 4, 0xBF800000 } } },
     { "ProcessStopSound_nochannel", dssvc_ProcessStopSound, 0, "StopSound_nochannel", DSSV_NOMUT },
+    // Fade time -0 (stop), smallest denormal (fade) and FLT_MAX
+    { "ProcessStopSound_edge_negzero", dssvc_ProcessStopSound, 0, "StopSound_channel", { { 4, 4, DSSV_NZERO } } },
+    { "ProcessStopSound_edge_denormal", dssvc_ProcessStopSound, 0, "StopSound_channel", { { 4, 4, DSSV_DENORMMIN } } },
+    { "ProcessStopSound_edge_fltmax", dssvc_ProcessStopSound, 0, "StopSound_channel", { { 4, 4, DSSV_FLTMAX } } },
 
     // Keys and puppets
     { "PlayKey_a", dssvc_PlayKey, 0, NULL, DSSV_NOMUT },
@@ -638,6 +663,9 @@ static const DssvCase dssv_aThingCases[] = {
     { "ProcessPlayKey_badthing", dssvc_ProcessPlayKey, 0, "PlayKey_a", { { 0, 4, 0x7777 } } },
     { "ProcessPlayKey_nopuppet", dssvc_ProcessPlayKey, 0, "PlayKey_a", { { 0, 4, 0x1022 } } },
     { "ProcessPlayKey_badkey", dssvc_ProcessPlayKey, 0, "PlayKey_a", { { 4, 4, 77 } } },
+    // Low priority 0xFFFF (read unsigned, high priority 0x10001), all keyframe flag bits; keyframe index -1
+    { "ProcessPlayKey_edge_priorityFFFF_allflags", dssvc_ProcessPlayKey, 0, "PlayKey_a", { { 8, 2, 0xFFFF }, { 10, 4, 0xFFFFFFFF }, { 14, 4, 0xFFFFFFFF } } },
+    { "ProcessPlayKey_edge_keyMinus1", dssvc_ProcessPlayKey, 0, "PlayKey_a", { { 4, 4, 0xFFFFFFFF } } },
     { "PlayKeyMode_a", dssvc_PlayKeyMode, 0, NULL, DSSV_NOMUT },
     { "PlayKeyMode_b", dssvc_PlayKeyMode, 3, NULL, DSSV_NOMUT },
     { "ProcessPlayKeyMode_track", dssvc_ProcessPlayKeyMode, 0, "PlayKeyMode_a", DSSV_NOMUT },
@@ -645,18 +673,26 @@ static const DssvCase dssv_aThingCases[] = {
     { "ProcessPlayKeyMode_failed", dssvc_ProcessPlayKeyMode, 1, "PlayKeyMode_a", DSSV_NOMUT },
     { "ProcessPlayKeyMode_badthing", dssvc_ProcessPlayKeyMode, 0, "PlayKeyMode_a", { { 0, 4, 0x7777 } } },
     { "ProcessPlayKeyMode_nopuppet", dssvc_ProcessPlayKeyMode, 0, "PlayKeyMode_a", { { 0, 4, 0x1022 } } },
+    { "ProcessPlayKeyMode_edge_modeFFFF", dssvc_ProcessPlayKeyMode, 0, "PlayKeyMode_a", { { 4, 4, 0xFFFFFFFF }, { 8, 2, 0xFFFF } } },
     { "SetModel_model", dssvc_SetModel, 0, NULL, DSSV_NOMUT },
     { "SetModel_nomodel", dssvc_SetModel, 1, NULL, DSSV_NOMUT },
     { "SetModel_null", dssvc_SetModel, 2, NULL, DSSV_NOMUT },
+    { "SetModel_edge_maxlengthname", dssvc_SetModel, 3, NULL, DSSV_NOMUT },
     { "ProcessSetModel_model", dssvc_ProcessSetModel, 0, "SetModel_model", DSSV_NOMUT },
     { "ProcessSetModel_unknownmodel", dssvc_ProcessSetModel, 0, "SetModel_model", { { 4, 4, 0x78787878 } } },
     { "ProcessSetModel_badthing", dssvc_ProcessSetModel, 0, "SetModel_model", { { 0, 4, 0x7777 } } },
+    // The longest model name (63 characters), found and not found; a name without a terminator in the message
+    { "ProcessSetModel_edge_maxlengthname", dssvc_ProcessSetModel, 1, "SetModel_edge_maxlengthname", DSSV_NOMUT },
+    { "ProcessSetModel_edge_maxlengthname_unknown", dssvc_ProcessSetModel, 0, "SetModel_edge_maxlengthname", DSSV_NOMUT },
+    { "ProcessSetModel_edge_unterminated", dssvc_ProcessSetModel, 1, "SetModel_edge_maxlengthname", { { 64, 4, 0x6E6E6E6E } } },
     { "StopKey_a", dssvc_StopKey, 0, NULL, DSSV_NOMUT },
     { "StopKey_b", dssvc_StopKey, 2, NULL, DSSV_NOMUT },
     { "ProcessStopKey_found", dssvc_ProcessStopKey, 0, "StopKey_a", DSSV_NOMUT },
     { "ProcessStopKey_notfound", dssvc_ProcessStopKey, 1, "StopKey_b", DSSV_NOMUT },
     { "ProcessStopKey_badthing", dssvc_ProcessStopKey, 1, "StopKey_a", { { 0, 4, 0x7777 } } },
     { "ProcessStopKey_nopuppet", dssvc_ProcessStopKey, 1, "StopKey_a", { { 0, 4, 0x1022 } } },
+    { "ProcessStopKey_edge_fltmax", dssvc_ProcessStopKey, 0, "StopKey_a", { { 8, 4, DSSV_FLTMAX } } },
+    { "ProcessStopKey_edge_negfltmax", dssvc_ProcessStopKey, 0, "StopKey_a", { { 8, 4, DSSV_NFLTMAX } } },
 
     // Fire
     { "Fire_sound", dssvc_Fire, 0, NULL, DSSV_NOMUT },
@@ -665,6 +701,10 @@ static const DssvCase dssv_aThingCases[] = {
     { "ProcessFire_nosound", dssvc_ProcessFire, 0, "Fire_nosound", DSSV_NOMUT },
     { "ProcessFire_noprojectile", dssvc_ProcessFire, 1, "Fire_sound", DSSV_NOMUT },
     { "ProcessFire_badshooter", dssvc_ProcessFire, 0, "Fire_sound", { { 0, 4, 0x7777 } } },
+    // All flag bits with template, sound and submode 0xFFFF; +-FLT_MAX and denormal extra/delta time and direction
+    { "ProcessFire_edge_indicesFFFF", dssvc_ProcessFire, 0, "Fire_sound", { { 4, 4, 0xFFFFFFFF }, { 8, 4, 0xFFFFFFFF } } },
+    { "ProcessFire_edge_floats", dssvc_ProcessFire, 0, "Fire_sound", { { 24, 4, DSSV_FLTMAX }, { 36, 4, DSSV_NFLTMAX }, { 40, 4, DSSV_DENORMMIN } } },
+    { "ProcessFire_edge_statictemplate", dssvc_ProcessFire, 0, "Fire_sound", { { 6, 2, 0x8000 } } },
 
     // Death and damage
     { "Death_actor_killer", dssvc_Death, 0, NULL, DSSV_NOMUT },
@@ -678,12 +718,21 @@ static const DssvCase dssv_aThingCases[] = {
     { "ProcessDeath_player_nokill", dssvc_ProcessDeath, 0, "Death_player_nokill", DSSV_NOMUT },
     { "ProcessDeath_item", dssvc_ProcessDeath, 0, "Death_item", DSSV_NOMUT },
     { "ProcessDeath_badthing", dssvc_ProcessDeath, 0, "Death_actor_killer", { { 0, 4, 0x7777 } } },
+    // The kill flag counts only when it is exactly 1; killer guid -1
+    { "ProcessDeath_edge_killflag2", dssvc_ProcessDeath, 0, "Death_player_kill", { { 8, 1, 2 } } },
+    { "ProcessDeath_edge_killflagFF", dssvc_ProcessDeath, 0, "Death_player_kill", { { 8, 1, 0xFF } } },
+    { "ProcessDeath_edge_killerMinus1", dssvc_ProcessDeath, 0, "Death_actor_killer", { { 4, 4, 0xFFFFFFFF } } },
     { "DamageThing_perp", dssvc_DamageThing, 0, NULL, DSSV_NOMUT },
     { "DamageThing_noperp", dssvc_DamageThing, 1, NULL, DSSV_NOMUT },
     { "ProcessDamage_perp", dssvc_ProcessDamage, 0, "DamageThing_perp", DSSV_NOMUT },
     { "ProcessDamage_noperp", dssvc_ProcessDamage, 0, "DamageThing_noperp", DSSV_NOMUT },
     { "ProcessDamage_notfromserver", dssvc_ProcessDamage, 1, "DamageThing_perp", DSSV_NOMUT },
     { "ProcessDamage_badthing", dssvc_ProcessDamage, 0, "DamageThing_perp", { { 0, 4, 0x7777 } } },
+    // +-FLT_MAX, denormal and -0 damage, damage type 0xFFFF, perpetrator guid -1
+    { "ProcessDamage_edge_fltmax", dssvc_ProcessDamage, 0, "DamageThing_perp", { { 8, 4, DSSV_FLTMAX }, { 12, 2, 0xFFFF } } },
+    { "ProcessDamage_edge_negfltmax", dssvc_ProcessDamage, 0, "DamageThing_perp", { { 8, 4, DSSV_NFLTMAX } } },
+    { "ProcessDamage_edge_denormal", dssvc_ProcessDamage, 0, "DamageThing_noperp", { { 8, 4, DSSV_DENORMMIN } } },
+    { "ProcessDamage_edge_negzero_perpMinus1", dssvc_ProcessDamage, 0, "DamageThing_perp", { { 4, 4, 0xFFFFFFFF }, { 8, 4, DSSV_NZERO } } },
 
     // Path movement
     { "PathMove_moveto", dssvc_PathMove, 0, NULL, DSSV_NOMUT },
@@ -712,6 +761,8 @@ static const DssvCase dssv_aThingCases[] = {
     { "ProcessTake_unknownitem_host", dssvc_ProcessTake, 1, "Take_client", { { 0, 4, 0x7777 } } },
     { "ProcessTake_unknownitem_client", dssvc_ProcessTake, 0, "Take_client", { { 0, 4, 0x7777 } } },
     { "ProcessTake_unknowntaker", dssvc_ProcessTake, 1, "Take_client", { { 4, 4, 0x7777 } } },
+    { "ProcessTake_edge_itemMinus1_host", dssvc_ProcessTake, 1, "Take_client", { { 0, 4, 0xFFFFFFFF } } },
+    { "ProcessTake_edge_takerIntMin", dssvc_ProcessTake, 0, "Take_client", { { 4, 4, 0x80000000 } } },
     { "CreateThing_marker", dssvc_CreateThing, 0, NULL, DSSV_NOMUT },
     { "CreateThing_position", dssvc_CreateThing, 1, NULL, DSSV_NOMUT },
     { "ProcessCreateThing_marker", dssvc_ProcessCreateThing, 0, "CreateThing_marker", DSSV_NOMUT },
@@ -722,10 +773,20 @@ static const DssvCase dssv_aThingCases[] = {
     { "ProcessCreateThing_statictemplate", dssvc_ProcessCreateThing, 0, "CreateThing_marker", { { 0, 2, 0x8001 } } },
     { "ProcessCreateThing_badmarker", dssvc_ProcessCreateThing, 0, "CreateThing_marker", { { 2, 4, 0x7777 } } },
     { "ProcessCreateThing_badsector", dssvc_ProcessCreateThing, 0, "CreateThing_position", { { 6, 4, 9 } } },
+    // Template 0xFFFF and the first static template, marker guid INT_MAX (not negative: a marker lookup),
+    // sector index INT_MIN and -1, +-FLT_MAX position
+    { "ProcessCreateThing_edge_templateFFFF", dssvc_ProcessCreateThing, 0, "CreateThing_marker", { { 0, 2, 0xFFFF } } },
+    { "ProcessCreateThing_edge_statictemplate0", dssvc_ProcessCreateThing, 0, "CreateThing_marker", { { 0, 2, 0x8000 } } },
+    { "ProcessCreateThing_edge_markerIntMax", dssvc_ProcessCreateThing, 0, "CreateThing_marker", { { 2, 4, 0x7FFFFFFF } } },
+    { "ProcessCreateThing_edge_sectorIntMin", dssvc_ProcessCreateThing, 0, "CreateThing_position", { { 6, 4, 0x80000000 } } },
+    { "ProcessCreateThing_edge_sectorMinus1", dssvc_ProcessCreateThing, 0, "CreateThing_position", { { 6, 4, 0xFFFFFFFF } } },
+    { "ProcessCreateThing_edge_position", dssvc_ProcessCreateThing, 0, "CreateThing_position", { { 10, 4, DSSV_FLTMAX }, { 14, 4, DSSV_NFLTMAX }, { 18, 4, DSSV_DENORMMIN } } },
     { "DestroyThing_a", dssvc_DestroyThing, 3, NULL, DSSV_NOMUT },
     { "DestroyThing_b", dssvc_DestroyThing, 6, NULL, DSSV_NOMUT },
     { "ProcessDestroyThing", dssvc_ProcessDestroyThing, 0, "DestroyThing_a", DSSV_NOMUT },
     { "ProcessDestroyThing_unknown", dssvc_ProcessDestroyThing, 0, "DestroyThing_b", DSSV_NOMUT },
+    { "ProcessDestroyThing_edge_guidMinus1", dssvc_ProcessDestroyThing, 0, "DestroyThing_a", { { 0, 4, 0xFFFFFFFF } } },
+    { "ProcessDestroyThing_edge_guidIntMin", dssvc_ProcessDestroyThing, 0, "DestroyThing_a", { { 0, 4, 0x80000000 } } },
 
     // MoveToPos is called directly
     { "MoveToPos_close", dssvc_MoveToPos, 0, NULL, DSSV_NOMUT },
