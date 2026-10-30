@@ -2262,7 +2262,7 @@ typedef struct sSithItemInfo
     SithSector* pInSector;
     float secRespawnInterval;
     unsigned int msecLastTouchTime;
-    size_t numItems;
+    size_t numItems; // Note, DSS serializes only 16 bits of the value
     SithBackpackItem aBackpackItems[32];
 } SithItemInfo;
 static_assert(sizeof(SithItemInfo) == 288, "sizeof(SithItemInfo) == 288");

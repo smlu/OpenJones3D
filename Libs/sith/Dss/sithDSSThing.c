@@ -249,6 +249,7 @@ int J3DAPI sithDSSThing_ProcessMovePos(const SithMessage* pMsg)
     SITHDSS_POPVEC3(&pyr);
     rdMatrix_BuildRotate34(&pThing->orient, &pyr);
 
+    // Pop player move status
     switch ( SITHDSS_POPINT32() )
     {
         case SITHPLAYERMOVE_PUSHING:
@@ -370,7 +371,7 @@ int J3DAPI sithDSSThing_UpdateState(const SithThing* pThing, DPID toID, SithMess
             SITHDSS_PUSHINT32(pEntry->meshNum);
 
             char aModelName[64] = { 0 };
-            STD_STRNCPY(aModelName, pEntry->pSrcModel->aName, STD_ARRAYLEN(aModelName) - 1);
+            STD_STRCPY(aModelName, pEntry->pSrcModel->aName);
             SITHDSS_PUSHSTRING(aModelName, STD_ARRAYLEN(aModelName));
 
             SITHDSS_PUSHINT32(pEntry->srcMeshNum);
@@ -454,12 +455,11 @@ int J3DAPI sithDSSThing_ProcessStateUpdate(const SithMessage* pMsg)
             pThing->thingInfo.itemInfo.flags = SITHDSS_POPUINT32();
             if ( (pThing->thingInfo.itemInfo.flags & SITH_ITEM_BACKPACK) != 0 )
             {
-                // Note: The original stores numItems as int16_t (writes only the low 2 bytes of the field)
-                *(int16_t*)&pThing->thingInfo.itemInfo.numItems = SITHDSS_POPINT16();
-                int16_t numItems = *(int16_t*)&pThing->thingInfo.itemInfo.numItems;
+                // Note: numItems is serialized as 16 bits
+                pThing->thingInfo.itemInfo.numItems = SITHDSS_POPUINT16();
 
                 // TODO: [BUG] numItems is not validated against the size of aBackpackItems and can overflow it with a malformed message
-                for ( int16_t i = 0; i < numItems; ++i )
+                for ( size_t i = 0; i < pThing->thingInfo.itemInfo.numItems; ++i )
                 {
                     pThing->thingInfo.itemInfo.aBackpackItems[i].typeId = SITHDSS_POPINT16();
                     pThing->thingInfo.itemInfo.aBackpackItems[i].amount = SITHDSS_POPFLOAT();
@@ -491,7 +491,6 @@ int J3DAPI sithDSSThing_ProcessStateUpdate(const SithMessage* pMsg)
 
             char aModelName[64];
             SITHDSS_POPSTRING(aModelName, STD_ARRAYLEN(aModelName));
-            aModelName[STD_ARRAYLEN(aModelName) - 1] = 0;
 
             int srcMeshNum = SITHDSS_POPINT32();
             rdModel3* pModel = sithModel_Load(aModelName, /*bSkipDefault=*/1);
@@ -579,14 +578,14 @@ int J3DAPI sithDSSThing_ProcessPlaySound(const SithMessage* pMsg)
 }
 
 
-int J3DAPI sithDSSThing_PlaySoundMode(const SithThing* pThing, int16_t mode, int channel, float a4)
+int J3DAPI sithDSSThing_PlaySoundMode(const SithThing* pThing, int16_t mode, int channel, float selectionRatio)
 {
     SITH_ASSERTREL(pThing);
 
     SITHDSS_STARTOUT(SITHDSS_PLAYSOUNDMODE);
     SITHDSS_PUSHINT32(pThing->guid);
     SITHDSS_PUSHINT32(channel);
-    SITHDSS_PUSHFLOAT(a4);
+    SITHDSS_PUSHFLOAT(selectionRatio);
     SITHDSS_PUSHINT16(mode);
 
     SITHDSS_ENDOUT;
@@ -666,8 +665,8 @@ int J3DAPI sithDSSThing_ProcessPlayKey(const SithMessage* pMsg)
         return 0;
     }
 
-    int lowPriority       = SITHDSS_POPUINT16();
-    rdKeyframeFlags flags = SITHDSS_POPINT32();
+    int lowPriority        = SITHDSS_POPUINT16();
+    rdKeyframeFlags flags  = SITHDSS_POPINT32();
     unsigned int trackGUID = SITHDSS_POPUINT32();
 
     // Note: the high priority is the low priority + 2
@@ -742,7 +741,7 @@ int J3DAPI sithDSSThing_SetModel(const SithThing* pThing, DPID idTo)
     SITHDSS_PUSHINT32(pThing->guid);
 
     char aModelName[64] = { 0 };
-    STD_STRNCPY(aModelName, pThing->renderData.data.pModel3->aName, STD_ARRAYLEN(aModelName) - 1);
+    STD_STRCPY(aModelName, pThing->renderData.data.pModel3->aName);
     SITHDSS_PUSHSTRING(aModelName, STD_ARRAYLEN(aModelName));
 
     SITHDSS_ENDOUT;
@@ -764,7 +763,6 @@ int J3DAPI sithDSSThing_ProcessSetModel(const SithMessage* pMsg)
 
     char aModelName[64];
     SITHDSS_POPSTRING(aModelName, STD_ARRAYLEN(aModelName));
-    aModelName[STD_ARRAYLEN(aModelName) - 1] = 0;
 
     rdModel3* pModel = sithModel_Load(aModelName, /*bSkipDefault=*/1);
     if ( !pModel )
@@ -920,8 +918,8 @@ int J3DAPI sithDSSThing_ProcessFire(const SithMessage* pMsg)
     int templateIdx = SITHDSS_POPUINT16();
     SithThing* pTemplate = sithTemplate_GetTemplateByIndex(templateIdx);
 
-    int soundIdx = SITHDSS_POPUINT16();
-    tSoundHandle hSnd = Sound_GetSoundHandle(soundIdx);
+    int soundIdx              = SITHDSS_POPUINT16();
+    tSoundHandle hSnd         = Sound_GetSoundHandle(soundIdx);
     SithPuppetSubMode submode = SITHDSS_POPUINT16();
 
     rdVector3 firePos;
@@ -1534,6 +1532,7 @@ int J3DAPI sithDSSThing_ProcessThingFullDescription(const SithMessage* pMsg)
         case SITH_THING_WEAPON:
         {
             SithWeaponInfo* pWeapon = &pThing->thingInfo.weaponInfo;
+
             pWeapon->flags        = SITHDSS_POPUINT32();
             pWeapon->numRicochets = SITHDSS_POPUINT16();
             break;
@@ -1549,6 +1548,7 @@ int J3DAPI sithDSSThing_ProcessThingFullDescription(const SithMessage* pMsg)
         case SITH_THING_SPRITE:
         {
             SithSpriteInfo* pSprite = &pThing->thingInfo.spriteInfo;
+
             pSprite->width     = SITHDSS_POPFLOAT();
             pSprite->height    = SITHDSS_POPFLOAT();
             pSprite->alpha     = SITHDSS_POPFLOAT();
@@ -2122,6 +2122,7 @@ int J3DAPI sithDSSThing_ProcessTake(const SithMessage* pMsg)
             return 1;
         }
 
+        // TODO: A deep copy of pMsg should be made in a new SithMessage object instead of mutating the const message
         ((SithMessage*)pMsg)->type = SITHDSS_TAKE2;
         sithMessage_SendMessage((SithMessage*)pMsg, SITHMESSAGE_SENDTOJOINEDPLAYERS, SITHMESSAGE_STREAM_NET, DPSEND_GUARANTEED);
     }
@@ -2250,12 +2251,17 @@ void J3DAPI sithDSSThing_MoveToPos(SithThing* pThing, const rdVector3* pPos, Sit
 {
     SITH_ASSERTREL(pThing && (pThing->moveType == SITH_MT_PHYSICS) && pSector && pPos);
 
-    // Note: The original evaluates the predicted position minus the current position in x87 extended precision
-    //       and rounds to float once when storing the direction. Double precision reproduces that exactly.
+    // Note: The predicted position is calculated in double precision and not rounded to float before pThing->pos is subtracted.
+    //       The original evaluates it in x87 extended precision and the results differ when it is rounded to float
+    //       (e.g. rdVector_ScaleAdd3 followed by rdVector_Sub3Acc).
+    const double predX = (double)pThing->moveInfo.physics.velocity.x * SITHDSS_MOVETOPOS_PREDICTTIME + (double)pPos->x;
+    const double predY = (double)pThing->moveInfo.physics.velocity.y * SITHDSS_MOVETOPOS_PREDICTTIME + (double)pPos->y;
+    const double predZ = (double)pThing->moveInfo.physics.velocity.z * SITHDSS_MOVETOPOS_PREDICTTIME + (double)pPos->z;
+
     rdVector3 dir;
-    dir.x = (float)((double)pThing->moveInfo.physics.velocity.x * SITHDSS_MOVETOPOS_PREDICTTIME + (double)pPos->x - (double)pThing->pos.x);
-    dir.y = (float)((double)pThing->moveInfo.physics.velocity.y * SITHDSS_MOVETOPOS_PREDICTTIME + (double)pPos->y - (double)pThing->pos.y);
-    dir.z = (float)((double)pThing->moveInfo.physics.velocity.z * SITHDSS_MOVETOPOS_PREDICTTIME + (double)pPos->z - (double)pThing->pos.z);
+    dir.x = (float)(predX - (double)pThing->pos.x);
+    dir.y = (float)(predY - (double)pThing->pos.y);
+    dir.z = (float)(predZ - (double)pThing->pos.z);
 
     float dist = rdVector_Len3(&dir);
     if ( dist != 0.0f && dist < SITHDSS_MOVETOPOS_SMOOTHDIST )
