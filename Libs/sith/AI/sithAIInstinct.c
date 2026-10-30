@@ -30,6 +30,7 @@
 
 #include <std/General/std.h>
 #include <std/General/stdMath.h>
+#include <std/General/stdUtil.h>
 
 #include <math.h>
 #include <stdio.h>
@@ -278,31 +279,156 @@ void sithAIInstinct_ResetGlobals(void)
 
 void J3DAPI sithAIInstinct_InitInstincts()
 {
-    sithAI_RegisterInstinct("listen", (SithAIInstinctFunc)sithAIInstinct_Listen, 0, 0, 7);
-    sithAI_RegisterInstinct("lookfortarget", (SithAIInstinctFunc)sithAIInstinct_LookForTarget, 0x204, 0x800, 0x100);
-    sithAI_RegisterInstinct("sensedanger", (SithAIInstinctFunc)sithAIInstinct_SenseDanger, 0x804, 0, 7);
-    sithAI_RegisterInstinct("primaryfire", (SithAIInstinctFunc)sithAIInstinct_PrimaryFire, 2, 0x800, 0);
-    sithAI_RegisterInstinct("alternatefire", (SithAIInstinctFunc)sithAIInstinct_AlternateFire, 2, 0x800, 0);
-    sithAI_RegisterInstinct("lobfire", (SithAIInstinctFunc)sithAIInstinct_LobFire, 2, 0x800, 0);
-    sithAI_RegisterInstinct("opendoors", (SithAIInstinctFunc)sithAIInstinct_OpenDoors, 2, 0, 0);
-    sithAI_RegisterInstinct("jump", (SithAIInstinctFunc)sithAIInstinct_Jump, 0, 0, 0x604);
-    sithAI_RegisterInstinct("randomturn", (SithAIInstinctFunc)sithAIInstinct_RandomTurn, 4, 0, 0);
-    sithAI_RegisterInstinct("roam", (SithAIInstinctFunc)sithAIInstinct_Roam, 4, 0xA12, 0xF04);
-    sithAI_RegisterInstinct("flee", (SithAIInstinctFunc)sithAIInstinct_Flee, 0x800, 0, 0xF04);
-    sithAI_RegisterInstinct("retreat", (SithAIInstinctFunc)sithAIInstinct_Retreat, 2, 0x1000800, 1);
-    sithAI_RegisterInstinct("circlestrafe", (SithAIInstinctFunc)sithAIInstinct_CircleStrafe, 2, 0x1000800, 0x88E04);
-    sithAI_RegisterInstinct("returnhome", (SithAIInstinctFunc)sithAIInstinct_ReturnHome, 0, 0, 0x900);
-    sithAI_RegisterInstinct("talk", (SithAIInstinctFunc)sithAIInstinct_Talk, -1, 0, 0x400104);
-    sithAI_RegisterInstinct("hitandrun", (SithAIInstinctFunc)sithAIInstinct_HitAndRun, 0xC00, 4, 0x4000);
-    sithAI_RegisterInstinct("dodge", (SithAIInstinctFunc)sithAIInstinct_Dodge, 0, 0x100000, 0x81803);
-    sithAI_RegisterInstinct("hop", (SithAIInstinctFunc)sithAIInstinct_Hop, 1, 0, 0);
-    sithAI_RegisterInstinct("hoverdrift", (SithAIInstinctFunc)sithAIInstinct_HoverDrift, 0x6FE, 0xF001, 0);
-    sithAI_RegisterInstinct("basicfollow", (SithAIInstinctFunc)sithAIInstinct_BasicFallow, 0x202, 0x1004814, 0x8CE04);
-    sithAI_RegisterInstinct("wallcrawl", (SithAIInstinctFunc)sithAIInstinct_WallCrawl, 0x202, 0x3004014, 0x10A604);
-    sithAI_RegisterInstinct("snakefollow", (SithAIInstinctFunc)sithAIInstinct_SnakeFollow, 6, 0, 0x8E04);
-    sithAI_RegisterInstinct("randommove", (SithAIInstinctFunc)sithAIInstinct_RandomMove, 2, 0x104805, 0x4800);
-    sithAI_RegisterInstinct("humancombatmove", (SithAIInstinctFunc)sithAIInstinct_HumanCombatMove, 2, 0x1104805, 0x80901);
-    sithAI_RegisterInstinct("feargunshot", (SithAIInstinctFunc)sithAIInstinct_FearGunshot, 6, 0x800, 2);
+    sithAI_RegisterInstinct("listen",
+        (SithAIInstinctFunc)sithAIInstinct_Listen,
+        0,
+        0,
+        SITHAI_EVENT_HIT_SECTOR | SITHAI_EVENT_SOUND | SITHAI_EVENT_TOUCHED
+    );
+    sithAI_RegisterInstinct("lookfortarget",
+        (SithAIInstinctFunc)sithAIInstinct_LookForTarget,
+        SITHAI_MODE_SEARCHING | SITHAI_MODE_ACTIVE,
+        SITHAI_MODE_FLEEING,
+        SITHAI_EVENT_MODECHANGED
+    );
+    sithAI_RegisterInstinct("sensedanger",
+        (SithAIInstinctFunc)sithAIInstinct_SenseDanger,
+        SITHAI_MODE_SEARCHING | SITHAI_MODE_FLEEING,
+        0,
+        SITHAI_EVENT_HIT_SECTOR | SITHAI_EVENT_SOUND | SITHAI_EVENT_TOUCHED
+    );
+    sithAI_RegisterInstinct("primaryfire",
+        (SithAIInstinctFunc)sithAIInstinct_PrimaryFire,
+        SITHAI_MODE_ATTACKING,
+        SITHAI_MODE_FLEEING,
+        0
+    );
+    sithAI_RegisterInstinct("alternatefire",
+        (SithAIInstinctFunc)sithAIInstinct_AlternateFire,
+        SITHAI_MODE_ATTACKING,
+        SITHAI_MODE_FLEEING,
+        0
+    );
+    sithAI_RegisterInstinct("lobfire",
+        (SithAIInstinctFunc)sithAIInstinct_LobFire,
+        SITHAI_MODE_ATTACKING,
+        SITHAI_MODE_FLEEING,
+        0
+    );
+    sithAI_RegisterInstinct("opendoors",
+        (SithAIInstinctFunc)sithAIInstinct_OpenDoors,
+        SITHAI_MODE_ATTACKING,
+        0,
+        0
+    );
+    sithAI_RegisterInstinct("jump",
+        (SithAIInstinctFunc)sithAIInstinct_Jump,
+        0,
+        0,
+        SITHAI_EVENT_TOUCHED | SITHAI_EVENT_HIT_WALL | SITHAI_EVENT_HIT_CLIFF
+    );
+    sithAI_RegisterInstinct("randomturn",
+        (SithAIInstinctFunc)sithAIInstinct_RandomTurn,
+        SITHAI_MODE_SEARCHING,
+        0,
+        0
+    );
+    sithAI_RegisterInstinct("roam",
+        (SithAIInstinctFunc)sithAIInstinct_Roam,
+        SITHAI_MODE_SEARCHING,
+        SITHAI_MODE_ATTACKING | SITHAI_MODE_UNKNOWN_10 | SITHAI_MODE_ACTIVE | SITHAI_MODE_FLEEING,
+        SITHAI_EVENT_TOUCHED | SITHAI_EVENT_MODECHANGED | SITHAI_EVENT_HIT_WALL | SITHAI_EVENT_HIT_CLIFF | SITHAI_EVENT_GOAL_REACHED
+    );
+    sithAI_RegisterInstinct("flee",
+        (SithAIInstinctFunc)sithAIInstinct_Flee,
+        SITHAI_MODE_FLEEING,
+        0,
+        SITHAI_EVENT_TOUCHED | SITHAI_EVENT_MODECHANGED | SITHAI_EVENT_HIT_WALL | SITHAI_EVENT_HIT_CLIFF | SITHAI_EVENT_GOAL_REACHED
+    );
+    sithAI_RegisterInstinct("retreat",
+        (SithAIInstinctFunc)sithAIInstinct_Retreat,
+        SITHAI_MODE_ATTACKING,
+        SITHAI_MODE_FLEEING | SITHAI_MODE_UNKNOWN_1000000,
+        SITHAI_EVENT_HIT_SECTOR
+    );
+    sithAI_RegisterInstinct("circlestrafe",
+        (SithAIInstinctFunc)sithAIInstinct_CircleStrafe,
+        SITHAI_MODE_ATTACKING,
+        SITHAI_MODE_FLEEING | SITHAI_MODE_UNKNOWN_1000000,
+        SITHAI_EVENT_TOUCHED | SITHAI_EVENT_HIT_WALL | SITHAI_EVENT_HIT_CLIFF | SITHAI_EVENT_GOAL_REACHED | SITHAI_EVENT_HIT_THING | SITHAI_EVENT_GOAL_UNREACHABLE
+    );
+    sithAI_RegisterInstinct("returnhome",
+        (SithAIInstinctFunc)sithAIInstinct_ReturnHome,
+        0,
+        0,
+        SITHAI_EVENT_MODECHANGED | SITHAI_EVENT_GOAL_REACHED
+    );
+    sithAI_RegisterInstinct("talk",
+        (SithAIInstinctFunc)sithAIInstinct_Talk,
+        (SithAIMode)-1,
+        0,
+        SITHAI_EVENT_TOUCHED | SITHAI_EVENT_MODECHANGED | SITHAI_EVENT_TALK
+    );
+    sithAI_RegisterInstinct("hitandrun",
+        (SithAIInstinctFunc)sithAIInstinct_HitAndRun,
+        SITHAI_MODE_TARGETVISIBLE | SITHAI_MODE_FLEEING,
+        SITHAI_MODE_SEARCHING,
+        SITHAI_EVENT_FIRE
+    );
+    sithAI_RegisterInstinct("dodge",
+        (SithAIInstinctFunc)sithAIInstinct_Dodge,
+        0,
+        SITHAI_MODE_UNKNOWN_100000,
+        SITHAI_EVENT_HIT_SECTOR | SITHAI_EVENT_SOUND | SITHAI_EVENT_GOAL_REACHED | SITHAI_EVENT_TARGETED | SITHAI_EVENT_GOAL_UNREACHABLE
+    );
+    sithAI_RegisterInstinct("hop",
+        (SithAIInstinctFunc)sithAIInstinct_Hop,
+        SITHAI_MODE_MOVING,
+        0,
+        0
+    );
+    sithAI_RegisterInstinct("hoverdrift",
+        (SithAIInstinctFunc)sithAIInstinct_HoverDrift,
+        SITHAI_MODE_ATTACKING | SITHAI_MODE_SEARCHING | SITHAI_MODE_TURNING | SITHAI_MODE_UNKNOWN_10 | SITHAI_MODE_TOUGHSKIN | SITHAI_MODE_NOCHECKFORCLIFF | SITHAI_MODE_UNKNOWN_80 | SITHAI_MODE_ACTIVE | SITHAI_MODE_TARGETVISIBLE,
+        SITHAI_MODE_MOVING | SITHAI_MODE_SLEEPING | SITHAI_MODE_DISABLED | SITHAI_MODE_CIRCLESTRAFING | SITHAI_MODE_UNKNOWN_8000,
+        0
+    );
+    sithAI_RegisterInstinct("basicfollow",
+        (SithAIInstinctFunc)sithAIInstinct_BasicFallow,
+        SITHAI_MODE_ATTACKING | SITHAI_MODE_ACTIVE,
+        SITHAI_MODE_SEARCHING | SITHAI_MODE_UNKNOWN_10 | SITHAI_MODE_FLEEING | SITHAI_MODE_CIRCLESTRAFING | SITHAI_MODE_UNKNOWN_1000000,
+        SITHAI_EVENT_TOUCHED | SITHAI_EVENT_HIT_WALL | SITHAI_EVENT_HIT_CLIFF | SITHAI_EVENT_GOAL_REACHED | SITHAI_EVENT_FIRE | SITHAI_EVENT_HIT_THING | SITHAI_EVENT_GOAL_UNREACHABLE
+    );
+    sithAI_RegisterInstinct("wallcrawl",
+        (SithAIInstinctFunc)sithAIInstinct_WallCrawl,
+        SITHAI_MODE_ATTACKING | SITHAI_MODE_ACTIVE,
+        SITHAI_MODE_SEARCHING | SITHAI_MODE_UNKNOWN_10 | SITHAI_MODE_CIRCLESTRAFING | SITHAI_MODE_UNKNOWN_1000000 | SITHAI_MODE_NOCHASING,
+        SITHAI_EVENT_TOUCHED | SITHAI_EVENT_HIT_WALL | SITHAI_EVENT_HIT_CLIFF | SITHAI_EVENT_GOAL_SET | SITHAI_EVENT_HIT_THING | SITHAI_EVENT_HIT_FLOOR
+    );
+    sithAI_RegisterInstinct("snakefollow",
+        (SithAIInstinctFunc)sithAIInstinct_SnakeFollow,
+        SITHAI_MODE_ATTACKING | SITHAI_MODE_SEARCHING,
+        0,
+        SITHAI_EVENT_TOUCHED | SITHAI_EVENT_HIT_WALL | SITHAI_EVENT_HIT_CLIFF | SITHAI_EVENT_GOAL_REACHED | SITHAI_EVENT_HIT_THING
+    );
+    sithAI_RegisterInstinct("randommove",
+        (SithAIInstinctFunc)sithAIInstinct_RandomMove,
+        SITHAI_MODE_ATTACKING,
+        SITHAI_MODE_MOVING | SITHAI_MODE_SEARCHING | SITHAI_MODE_FLEEING | SITHAI_MODE_CIRCLESTRAFING | SITHAI_MODE_UNKNOWN_100000,
+        SITHAI_EVENT_GOAL_REACHED | SITHAI_EVENT_FIRE
+    );
+    sithAI_RegisterInstinct("humancombatmove",
+        (SithAIInstinctFunc)sithAIInstinct_HumanCombatMove,
+        SITHAI_MODE_ATTACKING,
+        SITHAI_MODE_MOVING | SITHAI_MODE_SEARCHING | SITHAI_MODE_FLEEING | SITHAI_MODE_CIRCLESTRAFING | SITHAI_MODE_UNKNOWN_100000 | SITHAI_MODE_UNKNOWN_1000000,
+        SITHAI_EVENT_HIT_SECTOR | SITHAI_EVENT_MODECHANGED | SITHAI_EVENT_GOAL_REACHED | SITHAI_EVENT_GOAL_UNREACHABLE
+    );
+    sithAI_RegisterInstinct("feargunshot",
+        (SithAIInstinctFunc)sithAIInstinct_FearGunshot,
+        SITHAI_MODE_ATTACKING | SITHAI_MODE_SEARCHING,
+        SITHAI_MODE_FLEEING,
+        SITHAI_EVENT_SOUND
+    );
 }
 
 int J3DAPI sithAIInstinct_Listen(SithAIControlBlock* pLocal, SithAIInstinct* pInstinct, SithAIInstinctState* pState, SithAIEventType event, SithThing* pThing)
@@ -1094,14 +1220,14 @@ int J3DAPI sithAIInstinct_RandomTurn(SithAIControlBlock* pLocal, SithAIInstinct*
     if ( sightState == SITHAI_SIGHT_VISIBLE )
     {
         sithAIMove_AISetLookPosEyeLevel(pLocal, &lookPos);
-
-        // TODO: [BUG] The original has no return statement here and returns whatever eax holds after AISetLookPos:
-        //       pLocal->pClass (submode & 1 early return), pLocal->mode | 0x80, or sithAI_EmitEvent's result when mode & 0x10000 (WANTALLEVENTS).
-        //       All are nonzero (the EmitEvent case is approximated), so report the event as handled.
-        return 1;
     }
 
-    // TODO: [BUG] The original has no return statement here; the result of GetDistanceToTargetPos is left in eax
+    // TODO: [BUG] The original has no return statement at the end of the function and returns whatever eax holds:
+    //       - Target not visible: eax is the result of GetDistanceToTargetPos, i.e. the sight state, which is TOOFAR, OUTOFFOV or HIDDEN (1, 2 or 3).
+    //         This is always nonzero, so the instinct reports the event as handled although it did nothing.
+    //       - Target visible: sightState is 0 here, but the original returns the eax left over from AISetLookPosEyeLevel/AISetLookPos,
+    //         that is pLocal->pClass (submode & 1 early return), pLocal->mode | 0x80, or the result of sithAI_EmitEvent (mode & WANTALLEVENTS),
+    //         all of which are nonzero, so the original reports the event as handled.
     return sightState;
 }
 
@@ -2313,6 +2439,7 @@ int J3DAPI sithAIInstinct_HumanCombatMove(SithAIControlBlock* pLocal, SithAIInst
                 float enemyRange;
                 rdVector3 dirNorm;
                 SithAISightState sightState = sithAIUtil_GetDistanceToTargetPos(pLocal->pOwner, &pLocal->pOwner->pos, &pLocal->vecUnknown5, -1.0f, pLocal->pClass->sightDistance, 0.0f, &dirNorm, &enemyRange);
+
                 if ( healthPct <= SITHAIINSTINCT_HUMANCOMBATMOVE_FLEEHEALTH(pInstinct)
                   && SITH_RANDF() < SITHAIINSTINCT_HUMANCOMBATMOVE_CHASECHANCE(pInstinct)
                   && sightState != SITHAI_SIGHT_VISIBLE )
@@ -2420,6 +2547,7 @@ int J3DAPI sithAIInstinct_HumanCombatMove(SithAIControlBlock* pLocal, SithAIInst
             SithAIUtilMkPointFlags pathFlags;
             rdVector3 dirNorm;
             rdVector3 targetPos;
+
             if ( triedMoves )
             {
                 if ( (triedMoves & 1) == 0 )
@@ -3561,8 +3689,12 @@ void J3DAPI sithAIInstinct_SnakeFindMovePos(SithAIControlBlock* pLocal, rdVector
         rdVector_Rotate3(&probe, &pThing->orient.lvec, &angles);
     } while ( !bFoundIt && retries-- );
 
-    // Note, the original also formats "Retires %d" into an unused local buffer when a position was found
-    if ( !bFoundIt )
+    if ( bFoundIt )
+    {
+        char aText[256];
+        STD_FORMAT(aText, "Retires %d", 24 - retries);
+    }
+    else
     {
         *moveToPosLeft = pThing->pos;
     }
