@@ -869,7 +869,7 @@ void J3DAPI sithCogFunction_SetInvFlags(SithCog* pCog)
     size_t bin = sithCogExec_PopInt(pCog);
     SithThing* pThing = sithCogExec_PopThing(pCog);
 
-    if ( !pThing || pThing->type != SITH_THING_PLAYER || !pThing->thingInfo.itemInfo.aBackpackItems[14].typeId )
+    if ( !pThing || pThing->type != SITH_THING_PLAYER || !pThing->thingInfo.actorInfo.pPlayer )
     {
         SITHLOG_ERROR("Cog %s: Invalid thing in SetInvFlags.\n", pCog->aName);
         return;

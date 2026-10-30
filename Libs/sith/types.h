@@ -2256,7 +2256,7 @@ typedef struct sSithSpriteInfo
 
 typedef struct sSithBackpackItem
 {
-    int typeId;
+    int16_t typeId;
     union
     {
         SithInventoryItem* pItem; // Note: The original stores the item amount in this field (float amount), see sithDSSThing_ProcessStateUpdate
@@ -2274,6 +2274,9 @@ typedef struct sSithItemInfo
     size_t numItems; // Note, DSS serializes only 16 bits of the value
     SithBackpackItem aBackpackItems[32];
 } SithItemInfo;
+static_assert(sizeof(SithBackpackItem) == 8, "sizeof(SithBackpackItem) == 8");
+static_assert(offsetof(SithBackpackItem, amount) == 4, "offsetof(SithBackpackItem, amount) == 4");
+static_assert(offsetof(SithItemInfo, aBackpackItems) == 32, "offsetof(SithItemInfo, aBackpackItems) == 32");
 static_assert(sizeof(SithItemInfo) == 288, "sizeof(SithItemInfo) == 288");
 
 typedef union sSithThingInfo

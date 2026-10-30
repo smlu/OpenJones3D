@@ -337,7 +337,7 @@ int J3DAPI sithDSSThing_UpdateState(const SithThing* pThing, DPID toID, SithMess
                 SITHDSS_PUSHINT16(numItems);
                 for ( int16_t i = 0; i < numItems; ++i )
                 {
-                    SITHDSS_PUSHINT16((int16_t)pThing->thingInfo.itemInfo.aBackpackItems[i].typeId);
+                    SITHDSS_PUSHINT16(pThing->thingInfo.itemInfo.aBackpackItems[i].typeId);
                     SITHDSS_PUSHFLOAT(pThing->thingInfo.itemInfo.aBackpackItems[i].amount);
                 }
             }
