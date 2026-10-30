@@ -24,7 +24,7 @@ int J3DAPI sithAIMove_AISpecialTurn(SithAIControlBlock* pLocal, float angle);
 
 float J3DAPI sithAIMove_UpdateAIMove(SithAIControlBlock* pLocal);
 
-void J3DAPI sithAIMove_GetAIMoveModes(const SithThing* pThing, float moveSpeed, int moveDirection, SithThingMoveStatus* pOutMoveStatus, SithPuppetSubMode* pOutSubmode);
+void J3DAPI sithAIMove_GetAIMoveModes(const SithThing* pThing, float moveSpeed, SithThingMoveAxis moveAxis, SithThingMoveStatus* pOutMoveStatus, SithPuppetSubMode* pOutSubmode);
 void J3DAPI sithAIMove_SetSubMode(SithAIControlBlock* pLocal, SithThingMoveStatus moveStatus, SithPuppetSubMode submode);
 void J3DAPI sithAIMove_PuppetCallback(SithThing* pThing, int trackNum, rdKeyMarkerType marker);
 void J3DAPI sithAIMove_AISetLookThing(SithAIControlBlock* pLocal, const SithThing* pThing);

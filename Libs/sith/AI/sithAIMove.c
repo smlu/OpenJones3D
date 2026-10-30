@@ -581,7 +581,7 @@ void J3DAPI sithAIMove_UpdateMove(SithAIControlBlock* pLocal, float secDeltaTime
     if ( (pLocal->submode & SITHAI_SUBMODE_UNKNOWN_2) != 0 )
     {
         sithAIMove_StopAIMovement(pLocal);
-        sithAIMove_AISetMovePos(pLocal, &pLocal->vecUnknown3, pLocal->moveSpeed);
+        sithAIMove_AISetMovePos(pLocal, &pLocal->savedMovePos, pLocal->moveSpeed);
         return;
     }
 
@@ -593,7 +593,7 @@ void J3DAPI sithAIMove_UpdateMove(SithAIControlBlock* pLocal, float secDeltaTime
             pointFlags |= SITHAIUTIL_MKPOINT_TOWARDGOAL;
         }
 
-        if ( sithAIUtil_SweepMoveToPathPos(pLocal, &pLocal->vecUnknown3, 45.0f, 90.0f, 45.0f, pointFlags) )
+        if ( sithAIUtil_SweepMoveToPathPos(pLocal, &pLocal->savedMovePos, 45.0f, 90.0f, 45.0f, pointFlags) )
         {
             return;
         }
@@ -1006,24 +1006,24 @@ float J3DAPI sithAIMove_UpdateAIMove(SithAIControlBlock* pLocal)
         }
         else
         {
-            int moveDirection;
+            SithThingMoveAxis moveAxis;
             if ( fabsf(velocity.z) > fabsf(velocity.y) && fabsf(velocity.z) > fabsf(velocity.x) )
             {
                 moveSpeed     = velocity.z;
-                moveDirection = 2; // z - up
+                moveAxis = SITHTHING_MOVEAXIS_Z;
             }
             else if ( fabsf(velocity.y) > fabsf(velocity.x) )
             {
                 moveSpeed     = velocity.y;
-                moveDirection = 1; // y - forward
+                moveAxis = SITHTHING_MOVEAXIS_Y;
             }
             else
             {
                 moveSpeed     = velocity.x;
-                moveDirection = 0; // x - right
+                moveAxis = SITHTHING_MOVEAXIS_X;
             }
 
-            sithAIMove_GetAIMoveModes(pThing, moveSpeed, moveDirection, &newMoveStatus, &newSubmode);
+            sithAIMove_GetAIMoveModes(pThing, moveSpeed, moveAxis, &newMoveStatus, &newSubmode);
         }
     }
 
@@ -1052,7 +1052,7 @@ float J3DAPI sithAIMove_UpdateAIMove(SithAIControlBlock* pLocal)
     return moveSpeed;
 }
 
-void J3DAPI sithAIMove_GetAIMoveModes(const SithThing* pThing, float moveSpeed, int moveDirection, SithThingMoveStatus* pOutMoveStatus, SithPuppetSubMode* pOutSubmode)
+void J3DAPI sithAIMove_GetAIMoveModes(const SithThing* pThing, float moveSpeed, SithThingMoveAxis moveAxis, SithThingMoveStatus* pOutMoveStatus, SithPuppetSubMode* pOutSubmode)
 {
     SithAIControlBlock* pLocal = pThing->controlInfo.aiControl.pLocal;
 
@@ -1118,9 +1118,9 @@ void J3DAPI sithAIMove_GetAIMoveModes(const SithThing* pThing, float moveSpeed, 
         }
     }
 
-    switch ( moveDirection )
+    switch ( moveAxis )
     {
-        case 0: // x - right
+        case SITHTHING_MOVEAXIS_X:
             if ( fabsf(moveSpeed) >= maxWalkSpeed )
             {
                 *pOutMoveStatus = SITHPLAYERMOVE_RUNNING;
@@ -1139,7 +1139,7 @@ void J3DAPI sithAIMove_GetAIMoveModes(const SithThing* pThing, float moveSpeed, 
 
             break;
 
-        case 2: // z - up
+        case SITHTHING_MOVEAXIS_Z:
             if ( !pThing->attach.flags )
             {
                 if ( moveSpeed >= -minWalkSpeed && moveSpeed <= minWalkSpeed )
@@ -1158,7 +1158,7 @@ void J3DAPI sithAIMove_GetAIMoveModes(const SithThing* pThing, float moveSpeed, 
 
             // Fall through
 
-        case 1: // y - forward
+        case SITHTHING_MOVEAXIS_Y:
             if ( moveSpeed >= maxWalkSpeed )
             {
                 *pOutMoveStatus = SITHPLAYERMOVE_RUNNING;
@@ -1182,6 +1182,7 @@ void J3DAPI sithAIMove_GetAIMoveModes(const SithThing* pThing, float moveSpeed, 
 
             break;
 
+        case SITHTHING_MOVEAXIS_NONE:
         default:
             *pOutMoveStatus = SITHPLAYERMOVE_STILL;
             *pOutSubmode    = SITHPUPPETSUBMODE_STAND;
@@ -1599,7 +1600,7 @@ int J3DAPI sithAIMove_AISetMovePos(SithAIControlBlock* pLocal, const rdVector3* 
 
     pLocal->moveSpeed  = moveSpeed;
     pLocal->movePos    = *moveToPos;
-    pLocal->vecUnknown = pLocal->pOwner->pos;
+    pLocal->moveStartPos = pLocal->pOwner->pos;
 
     sithSoundClass_PlayModeFirst(pLocal->pOwner, SITHSOUNDCLASS_MOVING);
     sithAIUtil_AISetMode(pLocal, SITHAI_MODE_MOVING);
@@ -1692,7 +1693,7 @@ int J3DAPI sithAIMove_AISetMoveTargetPos2(SithAIControlBlock* pLocal, const rdVe
         return 0;
     }
 
-    pLocal->vecUnknown3 = pLocal->movePos;
+    pLocal->savedMovePos = pLocal->movePos;
     if ( !sithAIMove_AISetMoveTargetPos(pLocal, moveToPos, moveSpeed) )
     {
         return 0;
@@ -1938,7 +1939,7 @@ int J3DAPI sithAIMove_AISpecialMove(SithAIControlBlock* pLocal, SithActorSpecial
     }
 
     // Wall mount
-    float angle    = rdMath_DeltaAngleNormalized(&pLocal->vecUnknown3, &pThing->orient.uvec, &pThing->orient.lvec);
+    float angle    = rdMath_DeltaAngleNormalized(&pLocal->wallNormal, &pThing->orient.uvec, &pThing->orient.lvec);
     float absAngle = fabsf(angle);
 
     if ( absAngle >= 80.0f && absAngle <= 100.0f )
@@ -1951,7 +1952,7 @@ int J3DAPI sithAIMove_AISpecialMove(SithAIControlBlock* pLocal, SithActorSpecial
     if ( absAngle >= 60.0f && absAngle <= 79.0f )
     {
         rdVector3 newUVec;
-        rdVector_ScaleAdd3(&newUVec, &pLocal->vecUnknown3, -0.2f, &pThing->orient.uvec);
+        rdVector_ScaleAdd3(&newUVec, &pLocal->wallNormal, -0.2f, &pThing->orient.uvec);
         rdVector_Normalize3Acc(&newUVec);
 
         // TODO: [BUG] The projected lvec is computed but never used
@@ -2036,7 +2037,7 @@ void J3DAPI sithAIMove_AIFinalizeSpecialMove(SithAIControlBlock* pLocal, SithAct
         case SITHACTORSPECIALMOVE_MOUNTWALL:
             sithThing_DetachThing(pThing);
 
-            pThing->orient.uvec = pLocal->vecUnknown3;
+            pThing->orient.uvec = pLocal->wallNormal;
             rdVector_Cross3(&pThing->orient.lvec, &pThing->orient.uvec, &pThing->orient.rvec);
             rdVector_Normalize3Acc(&pThing->orient.lvec);
 

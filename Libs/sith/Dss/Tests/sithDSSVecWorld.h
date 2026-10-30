@@ -452,12 +452,12 @@ static void dssv_BuildWorld(uint32_t seed)
     ai->pTargetThing   = &a->things[0];
     ai->goalThing      = &a->things[3];
     RV3(ai->targetPos);
-    RV3(ai->vecUnknown122);
+    RV3(ai->lastTargetSeenPos);
     RU(ai->msecAttackStart);
     RF(ai->moveSpeed);
-    RV3(ai->vecUnknown6);
-    RV3(ai->vecUnknown5);
-    RU(ai->unknown150);
+    RV3(ai->goalPos);
+    RV3(ai->lastGoalSeenPos);
+    RU(ai->msecGoalSeen);
     RV3(ai->homePos);
     RV3(ai->homeOrient);
     RU(ai->msecFireWaitTime);
@@ -467,8 +467,8 @@ static void dssv_BuildWorld(uint32_t seed)
     ai->sizeFrames = 4;
     for ( unsigned k = 0; k < 4; ++k ) { RV3(a->aiFrames[k]); }
     RU(ai->allowedSurfaceTypes);
-    RV3(ai->vecUnknown3);
-    RV3(ai->vecUnknown);
+    RV3(ai->savedMovePos);
+    RV3(ai->moveStartPos);
     RF(ai->maxHomeDist);
 
     // Animation slots

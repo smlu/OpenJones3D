@@ -780,13 +780,13 @@ int J3DAPI sithAIInstinct_LookForTarget(SithAIControlBlock* pLocal, SithAIInstin
     {
         if ( pLocal->goalThing == pLocal->pTargetThing )
         {
-            pLocal->unknown141        = sithMain_g_frameNumber;
+            pLocal->goalSightFrame        = sithMain_g_frameNumber;
             pLocal->targetSightState2 = pLocal->targetSightState;
-            pLocal->vecUnknown0       = pLocal->toTarget;
+            pLocal->toGoal       = pLocal->toTarget;
             pLocal->targetDistance    = pLocal->distance;
-            pLocal->vecUnknown5       = pLocal->pTargetThing->pos;
-            pLocal->vecUnknown6       = pLocal->pTargetThing->pos;
-            pLocal->unknown150        = sithTime_g_msecGameTime;
+            pLocal->lastGoalSeenPos       = pLocal->pTargetThing->pos;
+            pLocal->goalPos       = pLocal->pTargetThing->pos;
+            pLocal->msecGoalSeen        = sithTime_g_msecGameTime;
         }
 
         if ( SITHAIINSTINCT_LOOKFORTARGET_LOOKONLY(pInstinct) != 0.0f )
@@ -1270,7 +1270,7 @@ int J3DAPI sithAIInstinct_Jump(SithAIControlBlock* pLocal, SithAIInstinct* pInst
         return 0;
     }
 
-    float curdot = rdVector_Dot3(&pThing->moveInfo.physics.velocity, &pLocal->vecUnknown0);
+    float curdot = rdVector_Dot3(&pThing->moveInfo.physics.velocity, &pLocal->toGoal);
     if ( curdot > 0.02f )
     {
         return 0;
@@ -1749,7 +1749,7 @@ int J3DAPI sithAIInstinct_CircleStrafe(SithAIControlBlock* pLocal, SithAIInstinc
     }
 
     rdVector3 strafeDir;
-    rdVector_Scale3(&strafeDir, &pLocal->vecUnknown0, -pLocal->targetDistance);
+    rdVector_Scale3(&strafeDir, &pLocal->toGoal, -pLocal->targetDistance);
 
     if ( !bRandom && rdVector_Dot3(&pLocal->goalThing->orient.lvec, &strafeDir) < 0.0f )
     {
@@ -2438,14 +2438,14 @@ int J3DAPI sithAIInstinct_HumanCombatMove(SithAIControlBlock* pLocal, SithAIInst
 
                 float enemyRange;
                 rdVector3 dirNorm;
-                SithAISightState sightState = sithAIUtil_GetDistanceToTargetPos(pLocal->pOwner, &pLocal->pOwner->pos, &pLocal->vecUnknown5, -1.0f, pLocal->pClass->sightDistance, 0.0f, &dirNorm, &enemyRange);
+                SithAISightState sightState = sithAIUtil_GetDistanceToTargetPos(pLocal->pOwner, &pLocal->pOwner->pos, &pLocal->lastGoalSeenPos, -1.0f, pLocal->pClass->sightDistance, 0.0f, &dirNorm, &enemyRange);
 
                 if ( healthPct <= SITHAIINSTINCT_HUMANCOMBATMOVE_FLEEHEALTH(pInstinct)
                   && SITH_RANDF() < SITHAIINSTINCT_HUMANCOMBATMOVE_CHASECHANCE(pInstinct)
                   && sightState != SITHAI_SIGHT_VISIBLE )
                 {
-                    sithAIMove_AISetLookPosEyeLevel(pLocal, &pLocal->vecUnknown);
-                    sithAIMove_AISetMovePos(pLocal, &pLocal->vecUnknown, SITHAIINSTINCT_HUMANCOMBATMOVE_FASTSPEED(pInstinct));
+                    sithAIMove_AISetLookPosEyeLevel(pLocal, &pLocal->moveStartPos);
+                    sithAIMove_AISetMovePos(pLocal, &pLocal->moveStartPos, SITHAIINSTINCT_HUMANCOMBATMOVE_FASTSPEED(pInstinct));
 
                     pLocal->mode |= SITHAI_MODE_UNKNOWN_1000000;
                     pLocal->mode &= ~SITHAI_MODE_CHASE_GOAL;
@@ -2455,8 +2455,8 @@ int J3DAPI sithAIInstinct_HumanCombatMove(SithAIControlBlock* pLocal, SithAIInst
 
                 if ( sightState != SITHAI_SIGHT_VISIBLE )
                 {
-                    sithAIMove_AISetLookPosEyeLevel(pLocal, &pLocal->vecUnknown);
-                    sithAIMove_AISetMovePos(pLocal, &pLocal->vecUnknown, SITHAIINSTINCT_HUMANCOMBATMOVE_FASTSPEED(pInstinct));
+                    sithAIMove_AISetLookPosEyeLevel(pLocal, &pLocal->moveStartPos);
+                    sithAIMove_AISetMovePos(pLocal, &pLocal->moveStartPos, SITHAIINSTINCT_HUMANCOMBATMOVE_FASTSPEED(pInstinct));
                     return 1;
                 }
             }
@@ -2657,7 +2657,7 @@ int J3DAPI sithAIInstinct_HumanCombatMove(SithAIControlBlock* pLocal, SithAIInst
                         return 0;
                     }
 
-                    sithAIMove_AISetLookPosEyeLevel(pLocal, &pLocal->vecUnknown122);
+                    sithAIMove_AISetLookPosEyeLevel(pLocal, &pLocal->lastTargetSeenPos);
                     sithAIUtil_AIPauseMove(pLocal, rand() % 1001 + 2000);
 
                     SITHAIINSTINCT_STATE_HUMANCOMBATMOVE_CHASESTATE(pState) = 2.0f;
@@ -2676,11 +2676,11 @@ int J3DAPI sithAIInstinct_HumanCombatMove(SithAIControlBlock* pLocal, SithAIInst
                 }
 
                 rdVector3 dirToLook;
-                rdVector_Sub3(&dirToLook, &pLocal->vecUnknown122, &pLocal->pOwner->pos);
+                rdVector_Sub3(&dirToLook, &pLocal->lastTargetSeenPos, &pLocal->pOwner->pos);
                 rdVector_Normalize3Acc(&dirToLook);
 
                 rdVector3 dirToMove;
-                rdVector_Sub3(&dirToMove, &pLocal->vecUnknown, &pLocal->pOwner->pos);
+                rdVector_Sub3(&dirToMove, &pLocal->moveStartPos, &pLocal->pOwner->pos);
                 rdVector_Normalize3Acc(&dirToMove);
 
                 pOwner->thingInfo.actorInfo.stateChange.type = SITHACTORSTATECHANGE_ANIMMOVE;
@@ -2702,11 +2702,11 @@ int J3DAPI sithAIInstinct_HumanCombatMove(SithAIControlBlock* pLocal, SithAIInst
             {
                 float enemyRange;
                 rdVector3 dirNorm;
-                SithAISightState sightState = sithAIUtil_GetDistanceToTargetPos(pLocal->pOwner, &pLocal->pOwner->pos, &pLocal->vecUnknown5, -1.0f, pLocal->pClass->sightDistance, 0.0f, &dirNorm, &enemyRange);
+                SithAISightState sightState = sithAIUtil_GetDistanceToTargetPos(pLocal->pOwner, &pLocal->pOwner->pos, &pLocal->lastGoalSeenPos, -1.0f, pLocal->pClass->sightDistance, 0.0f, &dirNorm, &enemyRange);
                 if ( sightState != SITHAI_SIGHT_VISIBLE )
                 {
-                    sithAIMove_AISetMovePos(pLocal, &pLocal->vecUnknown5, 1.7f);
-                    sithAIMove_AISetLookPosEyeLevel(pLocal, &pLocal->vecUnknown5);
+                    sithAIMove_AISetMovePos(pLocal, &pLocal->lastGoalSeenPos, 1.7f);
+                    sithAIMove_AISetLookPosEyeLevel(pLocal, &pLocal->lastGoalSeenPos);
                     return 1;
                 }
             }
@@ -3097,7 +3097,7 @@ int J3DAPI sithAIInstinct_BasicFallow(SithAIControlBlock* pLocal, SithAIInstinct
             SITHAIINSTINCT_STATE_BASICFOLLOW_NUMBLOCKED(pState) = 0.0f;
             SITHAIINSTINCT_STATE_BASICFOLLOW_HITFLAG(pState)    = 0.0f;
 
-            pLocal->vecUnknown3 = pLocal->movePos;
+            pLocal->savedMovePos = pLocal->movePos;
             rdVector_Neg3Acc(&heading);
 
             gap = pFoe->collide.movesize * 4.0f;
@@ -3188,8 +3188,8 @@ int J3DAPI sithAIInstinct_BasicFallow(SithAIControlBlock* pLocal, SithAIInstinct
             if ( pLocal->targetSightState2 == SITHAI_SIGHT_VISIBLE )
             {
                 rdVector3 targetVec = {
-                    .x = stdMath_ClipNearZero(pLocal->vecUnknown0.x),
-                    .y = stdMath_ClipNearZero(pLocal->vecUnknown0.y),
+                    .x = stdMath_ClipNearZero(pLocal->toGoal.x),
+                    .y = stdMath_ClipNearZero(pLocal->toGoal.y),
                     .z = 0.0f
                 };
                 rdVector_Normalize3Acc(&targetVec);
@@ -3362,7 +3362,7 @@ int J3DAPI sithAIInstinct_BasicFallow(SithAIControlBlock* pLocal, SithAIInstinct
                 pLocal->submode |= SITHAI_SUBMODE_UNKNOWN_2000000;
             }
 
-            rdVector_ScaleAdd3(&movePos, &pLocal->vecUnknown0, length, &pFoe->pos);
+            rdVector_ScaleAdd3(&movePos, &pLocal->toGoal, length, &pFoe->pos);
 
             if ( (pFoe->moveInfo.physics.flags & SITH_PF_FLY) != 0 )
             {
@@ -3555,7 +3555,7 @@ crawl:
         }
 
         pLocal->submode |= SITHAI_SUBMODE_UNKNOWN_4;
-        pLocal->vecUnknown3 = pSurface->face.normal;
+        pLocal->wallNormal = pSurface->face.normal;
         if ( sithAIMove_AISpecialMove(pLocal, SITHACTORSPECIALMOVE_MOUNTWALL) )
         {
             return 1;
@@ -3761,14 +3761,14 @@ signed int J3DAPI sithAIInstinct_SnakeFollow(SithAIControlBlock* pLocal, SithAII
     if ( pLocal->targetSightState2 == SITHAI_SIGHT_VISIBLE || pLocal->targetSightState2 == SITHAI_SIGHT_OUTOFFOV )
     {
         SITHAIINSTINCT_STATE_SNAKEFOLLOW_USELASTPOS(pState) = 0.0f;
-        dirVec = pLocal->vecUnknown0;
+        dirVec = pLocal->toGoal;
         distance = pLocal->targetDistance;
         pLocal->mode |= SITHAI_MODE_LOSTSIGHTOFGOAL;
     }
     else
     {
         SITHAIINSTINCT_STATE_SNAKEFOLLOW_USELASTPOS(pState) = 1.0f;
-        rdVector_Sub3(&dirVec, &pLocal->vecUnknown5, &pLocal->pOwner->pos);
+        rdVector_Sub3(&dirVec, &pLocal->lastGoalSeenPos, &pLocal->pOwner->pos);
 
         distance = rdVector_Normalize3Acc(&dirVec);
         pLocal->mode &= ~SITHAI_MODE_LOSTSIGHTOFGOAL;

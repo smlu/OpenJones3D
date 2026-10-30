@@ -1171,7 +1171,7 @@
 #define sithAIMove_AIGetMoveState_TYPE int (J3DAPI*)(const SithAIControlBlock*)
 #define sithAIMove_AISpecialTurn_TYPE int (J3DAPI*)(SithAIControlBlock*, float)
 #define sithAIMove_UpdateAIMove_TYPE float (J3DAPI*)(SithAIControlBlock*)
-#define sithAIMove_GetAIMoveModes_TYPE void (J3DAPI*)(const SithThing*, float, int, SithThingMoveStatus*, SithPuppetSubMode*)
+#define sithAIMove_GetAIMoveModes_TYPE void (J3DAPI*)(const SithThing*, float, SithThingMoveAxis, SithThingMoveStatus*, SithPuppetSubMode*)
 #define sithAIMove_SetSubMode_TYPE void (J3DAPI*)(SithAIControlBlock*, SithThingMoveStatus, SithPuppetSubMode)
 #define sithAIMove_PuppetCallback_TYPE void (J3DAPI*)(SithThing*, int, rdKeyMarkerType)
 #define sithAIMove_AISetLookThing_TYPE void (J3DAPI*)(SithAIControlBlock*, const SithThing*)

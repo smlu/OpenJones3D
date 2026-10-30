@@ -361,13 +361,13 @@ int J3DAPI sithDSS_AIStatus(const SithAIControlBlock* pLocal, DPID idTo, signed 
     SITHDSS_PUSHINT32(pLocal->msecNextUpdate);
 
     SITHDSS_PUSHINT16((int16_t)(sithThing_GetThingIndex(pLocal->goalThing)));
-    SITHDSS_PUSHVEC3(&pLocal->vecUnknown6);
-    SITHDSS_PUSHVEC3(&pLocal->vecUnknown5);
-    SITHDSS_PUSHINT32(pLocal->unknown150);
+    SITHDSS_PUSHVEC3(&pLocal->goalPos);
+    SITHDSS_PUSHVEC3(&pLocal->lastGoalSeenPos);
+    SITHDSS_PUSHINT32(pLocal->msecGoalSeen);
 
     SITHDSS_PUSHINT16((int16_t)(sithThing_GetThingIndex(pLocal->pTargetThing)));
     SITHDSS_PUSHVEC3(&pLocal->targetPos);
-    SITHDSS_PUSHVEC3(&pLocal->vecUnknown122);
+    SITHDSS_PUSHVEC3(&pLocal->lastTargetSeenPos);
     SITHDSS_PUSHINT32(pLocal->msecAttackStart);
     SITHDSS_PUSHFLOAT(pLocal->moveSpeed);
 
@@ -408,8 +408,8 @@ int J3DAPI sithDSS_AIStatus(const SithAIControlBlock* pLocal, DPID idTo, signed 
     }
 
     SITHDSS_PUSHINT32(pLocal->allowedSurfaceTypes);
-    SITHDSS_PUSHVEC3(&pLocal->vecUnknown3);
-    SITHDSS_PUSHVEC3(&pLocal->vecUnknown);
+    SITHDSS_PUSHVEC3(&pLocal->savedMovePos);
+    SITHDSS_PUSHVEC3(&pLocal->moveStartPos);
     SITHDSS_PUSHFLOAT(pLocal->maxHomeDist);
 
     SITHDSS_ENDOUT;
@@ -455,17 +455,17 @@ int J3DAPI sithDSS_ProcessAIStatus(const SithMessage* pMsg)
 
     thingIdx = SITHDSS_POPUINT16();
     pLocal->goalThing = sithThing_GetThingByIndex(thingIdx);
-    SITHDSS_POPVEC3(&pLocal->vecUnknown6);
-    SITHDSS_POPVEC3(&pLocal->vecUnknown5);
-    pLocal->unknown150 = SITHDSS_POPINT32();
-    pLocal->unknown141 = 0;
+    SITHDSS_POPVEC3(&pLocal->goalPos);
+    SITHDSS_POPVEC3(&pLocal->lastGoalSeenPos);
+    pLocal->msecGoalSeen = SITHDSS_POPINT32();
+    pLocal->goalSightFrame = 0;
 
     thingIdx = SITHDSS_POPUINT16();
     pLocal->pTargetThing = sithThing_GetThingByIndex(thingIdx);
     SITHDSS_POPVEC3(&pLocal->targetPos);
-    SITHDSS_POPVEC3(&pLocal->vecUnknown122);
+    SITHDSS_POPVEC3(&pLocal->lastTargetSeenPos);
     pLocal->msecAttackStart = SITHDSS_POPINT32();
-    pLocal->unknown124      = 0;
+    pLocal->targetSightFrame      = 0;
     pLocal->moveSpeed       = SITHDSS_POPFLOAT();
 
     if ( (pLocal->mode & SITHAI_MODE_MOVING) != 0 )
@@ -517,8 +517,8 @@ int J3DAPI sithDSS_ProcessAIStatus(const SithMessage* pMsg)
     }
 
     pLocal->allowedSurfaceTypes = SITHDSS_POPINT32();
-    SITHDSS_POPVEC3(&pLocal->vecUnknown3);
-    SITHDSS_POPVEC3(&pLocal->vecUnknown);
+    SITHDSS_POPVEC3(&pLocal->savedMovePos);
+    SITHDSS_POPVEC3(&pLocal->moveStartPos);
     pLocal->maxHomeDist = SITHDSS_POPFLOAT();
 
     SITHDSS_ENDIN;

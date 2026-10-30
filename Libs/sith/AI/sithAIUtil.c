@@ -162,12 +162,12 @@ void J3DAPI sithAIUtil_UpdateTargetSight(SithAIControlBlock* pLocal, SithAIUtilF
     SithAISightState sightState = pLocal->targetSightState;
     SithThing* pOwner           = pLocal->pOwner;
     float curCollideSize        = 0.0f;
-    if ( (flags & (SITHAIUTIL_FIRE_LOB | SITHAIUTIL_FIRE_PRIMARY | SITHAIUTIL_FIRE_ALT)) == 0 && (size_t)pLocal->unknown124 == sithMain_g_frameNumber )
+    if ( (flags & (SITHAIUTIL_FIRE_LOB | SITHAIUTIL_FIRE_PRIMARY | SITHAIUTIL_FIRE_ALT)) == 0 && (size_t)pLocal->targetSightFrame == sithMain_g_frameNumber )
     {
         return;
     }
 
-    pLocal->unknown124 = sithMain_g_frameNumber;
+    pLocal->targetSightFrame = sithMain_g_frameNumber;
     if ( sithWeapon_HasWeaponSelected(pOwner) )
     {
         curCollideSize = sithWeapon_GetWeaponCollideSize(pOwner->thingInfo.actorInfo.weaponInfo.curWeaponID);
@@ -216,7 +216,7 @@ void J3DAPI sithAIUtil_UpdateTargetSight(SithAIControlBlock* pLocal, SithAIUtilF
                 return;
             }
 
-            pLocal->vecUnknown122  = pTarget->pos;
+            pLocal->lastTargetSeenPos  = pTarget->pos;
             pLocal->msecAttackStart = sithTime_g_msecGameTime;
             pLocal->mode |= SITHAI_MODE_TARGETVISIBLE;
         }
@@ -227,7 +227,7 @@ void J3DAPI sithAIUtil_UpdateTargetSight(SithAIControlBlock* pLocal, SithAIUtilF
 
         if ( pLocal->targetSightState == SITHAI_SIGHT_VISIBLE )
         {
-            pLocal->vecUnknown122   = pLocal->targetPos;
+            pLocal->lastTargetSeenPos   = pLocal->targetPos;
             pLocal->msecAttackStart = sithTime_g_msecGameTime;
             pLocal->mode |= SITHAI_MODE_TARGETVISIBLE;
         }
@@ -255,12 +255,12 @@ void J3DAPI sithAIUtil_UpdateGoalSight(SithAIControlBlock* pLocal)
 {
     SithAISightState curSightState = pLocal->targetSightState2;
     SithThing* pOwner              = pLocal->pOwner;
-    if ( (size_t)pLocal->unknown141 == sithMain_g_frameNumber )
+    if ( (size_t)pLocal->goalSightFrame == sithMain_g_frameNumber )
     {
         return;
     }
 
-    pLocal->unknown141 = sithMain_g_frameNumber;
+    pLocal->goalSightFrame = sithMain_g_frameNumber;
     SithThing* pTarget = pLocal->goalThing;
     if ( pTarget )
     {
@@ -277,7 +277,7 @@ void J3DAPI sithAIUtil_UpdateGoalSight(SithAIControlBlock* pLocal)
             }
         }
 
-        pLocal->targetSightState2 = sithAIUtil_GetDistanceToTarget(pOwner, &pOwner->pos, pTarget, -1.0f, pLocal->pClass->sightDistance, 0.0f, &pLocal->vecUnknown0, &pLocal->targetDistance);
+        pLocal->targetSightState2 = sithAIUtil_GetDistanceToTarget(pOwner, &pOwner->pos, pTarget, -1.0f, pLocal->pClass->sightDistance, 0.0f, &pLocal->toGoal, &pLocal->targetDistance);
 
         if ( pLocal->targetSightState2 == SITHAI_SIGHT_VISIBLE )
         {
@@ -287,19 +287,19 @@ void J3DAPI sithAIUtil_UpdateGoalSight(SithAIControlBlock* pLocal)
                 return;
             }
 
-            pLocal->vecUnknown5 = pTarget->pos;
-            pLocal->unknown150  = sithTime_g_msecGameTime;
+            pLocal->lastGoalSeenPos = pTarget->pos;
+            pLocal->msecGoalSeen  = sithTime_g_msecGameTime;
         }
     }
     else
     {
-        pLocal->vecUnknown6       = pLocal->movePos;
-        pLocal->targetSightState2 = sithAIUtil_GetDistanceToTargetPos(pOwner, &pOwner->pos, &pLocal->vecUnknown6, -1.0f, pLocal->pClass->sightDistance, 0.0f, &pLocal->vecUnknown0, &pLocal->targetDistance);
+        pLocal->goalPos       = pLocal->movePos;
+        pLocal->targetSightState2 = sithAIUtil_GetDistanceToTargetPos(pOwner, &pOwner->pos, &pLocal->goalPos, -1.0f, pLocal->pClass->sightDistance, 0.0f, &pLocal->toGoal, &pLocal->targetDistance);
 
         if ( pLocal->targetSightState2 == SITHAI_SIGHT_VISIBLE )
         {
-            pLocal->vecUnknown5 = pLocal->vecUnknown6;
-            pLocal->unknown150  = sithTime_g_msecGameTime;
+            pLocal->lastGoalSeenPos = pLocal->goalPos;
+            pLocal->msecGoalSeen  = sithTime_g_msecGameTime;
         }
     }
 }
@@ -2148,7 +2148,7 @@ SithAIUtilPathResult J3DAPI sithAIUtil_CheckPathToPos(SithAIControlBlock* pLocal
         {
             for ( size_t i = 0; i < STD_ARRAYLEN(aEndPos); ++i )
             {
-                bool bVisible = sithAIUtil_GetDistanceToTargetPos(pLocal->goalThing, &pLocal->goalThing->pos, &aEndPos[i], -1.0f, pLocal->pClass->sightDistance, 0.0f, &pLocal->vecUnknown0, &pLocal->targetDistance) != SITHAI_SIGHT_HIDDEN;
+                bool bVisible = sithAIUtil_GetDistanceToTargetPos(pLocal->goalThing, &pLocal->goalThing->pos, &aEndPos[i], -1.0f, pLocal->pClass->sightDistance, 0.0f, &pLocal->toGoal, &pLocal->targetDistance) != SITHAI_SIGHT_HIDDEN;
                 if ( bVisible )
                 {
                     ++aScores[i];
@@ -2546,7 +2546,7 @@ int J3DAPI sithAIUtil_AIGetMovePos(const SithAIControlBlock* pLocal, SithAIUtilM
         }
         else
         {
-            *pDestPos = pLocal->vecUnknown6;
+            *pDestPos = pLocal->goalPos;
         }
 
         return 1;

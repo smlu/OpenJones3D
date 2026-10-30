@@ -1020,6 +1020,15 @@ typedef enum eSithThingMoveStatus
     SITHPLAYERMOVE_UNKNOWN_106                         = 106,
 } SithThingMoveStatus;
 
+// Local-space axis of the dominant velocity component of a thing, see sithPuppet_GetThingLocalVelocityAxis
+typedef enum eSithThingMoveAxis J3D_ENUM_TYPE(int32_t)
+{
+    SITHTHING_MOVEAXIS_X    = 0,  // Right (strafe)
+    SITHTHING_MOVEAXIS_Y    = 1,  // Forward
+    SITHTHING_MOVEAXIS_Z    = 2,  // Up (falling)
+    SITHTHING_MOVEAXIS_NONE = 99, // Not moving, velocity is zero
+} SithThingMoveAxis;
+
 typedef enum eSithPuppetMoveMode
 {
     SITHPUPPET_MOVEMODE_NORMAL = 0,
@@ -2573,21 +2582,21 @@ struct sSithAIControlBlock
     rdVector3 alertPos;
     SithThing* pTargetThing;
     rdVector3 targetPos;
-    int unknown124;
+    int targetSightFrame;
     rdVector3 toTarget;
     float distance;
     SithAISightState targetSightState;
-    rdVector3 vecUnknown122;
+    rdVector3 lastTargetSeenPos;
     uint32_t msecAttackStart;
     rdVector3 weaponFirePos;
     SithThing* goalThing;
-    rdVector3 vecUnknown6;
-    int unknown141;
-    rdVector3 vecUnknown0;
+    rdVector3 goalPos;
+    int goalSightFrame;
+    rdVector3 toGoal;
     float targetDistance;
     SithAISightState targetSightState2;
-    rdVector3 vecUnknown5;
-    int unknown150;
+    rdVector3 lastGoalSeenPos;
+    int msecGoalSeen;
     rdVector3 homePos;
     rdVector3 homeOrient;
     float aimError;
@@ -2606,8 +2615,12 @@ struct sSithAIControlBlock
     size_t numFrames;
     size_t sizeFrames;
     int allowedSurfaceTypes;
-    rdVector3 vecUnknown3;
-    rdVector3 vecUnknown;
+    union
+    {
+        rdVector3 savedMovePos; // Move position saved to resume the move later
+        rdVector3 wallNormal;   // Wall surface normal during the wall-crawl mount move
+    };
+    rdVector3 moveStartPos;
     float maxHomeDist;
 };
 static_assert(sizeof(SithAIControlBlock) == 728, "sizeof(SithAIControlBlock) == 728");
