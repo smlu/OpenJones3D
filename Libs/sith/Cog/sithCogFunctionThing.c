@@ -225,7 +225,7 @@ void J3DAPI sithCogFunctionThing_CreateLaser(SithCog* pCog)
     if ( !sithCogExec_PopVector(pCog, &endPos) )
     {
         STDLOG_ERROR("Cog %s: Invalid end pos vector in CreateLaser!\n", pCog->aName);
-        bArgError = true; // Fixed: Set bArgError to true so we don't proceed with creating laser thing
+        bArgError = true; // Fixed: [v1.2] Set bArgError to true so we don't proceed with creating laser thing
     }
 
     rdVector3 offset;
@@ -356,7 +356,7 @@ void J3DAPI sithCogFunctionThing_AnimateSpriteSize(SithCog* pCog)
     }
     else
     {
-        // Added: Set sprite size instantly when deltaTime is 0
+        // Added: Set sprite size instantly when deltaTime <= 0 and return -1; the original created the animation for any deltaTime and returned its id
         pSprite->thingInfo.spriteInfo.width  = vecEnd.x;
         pSprite->thingInfo.spriteInfo.height = vecEnd.y;
         pSprite->thingInfo.spriteInfo.alpha  = vecEnd.z;
@@ -544,7 +544,7 @@ void J3DAPI sithCogFunctionThing_SetMoveMode(SithCog* pCog)
         return;
     }
 
-    if ( (size_t)newMode >= SITH_PUPPET_NUMMOVEMODES ) //107 )     // ?? shouldnt be less than SITH_PUPPET_NUMMOVEMODES which is 3 => newMode > -1 && newMode <  SITH_PUPPET_NUMMOVEMODES
+    if ( (size_t)newMode >= SITH_PUPPET_NUMMOVEMODES ) // Altered: Reject modes outside of the valid range of SITH_PUPPET_NUMMOVEMODES, the original accepts modes 0 to 107 (original Indy3D.exe v1.0 0x0046DCB0), which then fail the release assert in sithPuppet_SetMoveMode
     {
         STDLOG_ERROR("Cog %s: Bad move mode for thing %s in SetMoveMode()\n", pCog->aName, pThing->aName); // Fixed: Updated format to show cog name
         sithCogExec_PushInt(pCog, -1);
@@ -1436,6 +1436,8 @@ void J3DAPI sithCogFunctionThing_ThingLightAnim(SithCog* pCog)
         sithCogExec_PushInt(pCog, pAnim->animID);
         return;
     }
+
+    sithCogExec_PushInt(pCog, -1);
 }
 
 void J3DAPI sithCogFunctionThing_ThingFadeAnim(SithCog* pCog)
@@ -1836,7 +1838,7 @@ void J3DAPI sithCogFunctionThing_SetInventory(SithCog* pCog)
         return;
     }
 
-    if ( typeId > SITHINVENTORY_MAXTYPES )
+    if ( typeId >= SITHINVENTORY_MAXTYPES )
     {
         STDLOG_ERROR("Cog %s: Called SetInventory for illegal type %d.\n", pCog->aName, typeId);
         return;
@@ -1902,6 +1904,8 @@ void J3DAPI sithCogFunctionThing_GetInventoryCog(SithCog* pCog)
         sithCogExec_PushInt(pCog, pInventory->pCog->idx);
         return;
     }
+
+    sithCogExec_PushInt(pCog, -1);
 }
 
 void J3DAPI sithCogFunctionThing_GetThingVelocity(SithCog* pCog)
@@ -2476,6 +2480,7 @@ void J3DAPI sithCogFunctionThing_TrackToMode(SithCog* pCog)
     {
         STDLOG_ERROR("Cog %s: Bad thing in TrackToMode().\n", pCog->aName);
         sithCogExec_PushInt(pCog, -1);
+        return;
     }
 
     if ( trackNum >= RDPUPPET_MAX_TRACKS )
@@ -3556,6 +3561,7 @@ void J3DAPI sithCogFunctionThing_GetThingRotVel(SithCog* pCog)
     {
         STDLOG_ERROR("Cog %s: No thing, or non-physics thing in GetThingRotVel.\n", pCog->aName);
         sithCogExec_PushVector(pCog, &rdroid_g_zeroVector3);
+        return;
     }
 
     sithCogExec_PushVector(pCog, &pThing->moveInfo.physics.angularVelocity);
@@ -5101,6 +5107,7 @@ void J3DAPI sithCogFunctionThing_SetThingMaxHeadVel(SithCog* pCog)
     if ( !pThing )
     {
         STDLOG_ERROR("Cog %s: Ain't no thing in SetThingMaxHeadVel().\n", pCog->aName);
+        return;
     }
 
     if ( pThing->type != SITH_THING_PLAYER && pThing->type != SITH_THING_ACTOR )
@@ -5371,8 +5378,8 @@ void J3DAPI sithCogFunctionThing_MoveThingToPos(SithCog* pCog)
 
 void J3DAPI sithCogFunctionThing_SetThingStateChange(SithCog* pCog)
 {
+    int param         = sithCogExec_PopInt(pCog);
     int type          = sithCogExec_PopInt(pCog);
-    int state         = sithCogExec_PopInt(pCog);
     SithThing* pThing = sithCogExec_PopThing(pCog);
 
     if ( !pThing )
@@ -5388,7 +5395,7 @@ void J3DAPI sithCogFunctionThing_SetThingStateChange(SithCog* pCog)
     }
 
     pThing->thingInfo.actorInfo.stateChange.type             = type;
-    pThing->thingInfo.actorInfo.stateChange.params.moveFlags = (SithActorSpecialMoveFlags)state; // Note could be also armedMode, depending on the type
+    pThing->thingInfo.actorInfo.stateChange.params.moveFlags = (SithActorSpecialMoveFlags)param; // Note could be also armedMode, depending on the type
 }
 
 void J3DAPI sithCogFunctionThing_StartQuetzAnim(SithCog* pCog)
@@ -5403,7 +5410,7 @@ void J3DAPI sithCogFunctionThing_StartQuetzAnim(SithCog* pCog)
         return;
     }
 
-    if ( mode > 6 )
+    if ( mode < 0 || mode > 6 )
     {
         STDLOG_ERROR("Bad mode for thing %s in StartQuetzAnim()\n", pThing->aName);
         sithCogExec_PushInt(pCog, -1);
@@ -5412,17 +5419,17 @@ void J3DAPI sithCogFunctionThing_StartQuetzAnim(SithCog* pCog)
 
     switch ( mode )
     {
-        case 2:
-            sithAIMove_sub_49AB80(pThing->controlInfo.aiControl.pLocal);
+        case SITHQUETZSTRIKE_MODE_ANIM2:
+            sithAIMove_StartQuetzAnim2(pThing->controlInfo.aiControl.pLocal);
             break;
-        case 3:
-            sithAIMove_sub_49AC50(pThing->controlInfo.aiControl.pLocal);
+        case SITHQUETZSTRIKE_MODE_ANIM3:
+            sithAIMove_StartQuetzAnim3(pThing->controlInfo.aiControl.pLocal);
             break;
-        case 4:
-            sithAIMove_sub_49B1B0(pThing->controlInfo.aiControl.pLocal);
+        case SITHQUETZSTRIKE_MODE_ANIM4:
+            sithAIMove_StartQuetzAnim4(pThing->controlInfo.aiControl.pLocal);
             break;
-        case 5:
-            sithAIMove_sub_49AF80(pThing->controlInfo.aiControl.pLocal);
+        case SITHQUETZSTRIKE_MODE_ANIM5:
+            sithAIMove_StartQuetzAnim5(pThing->controlInfo.aiControl.pLocal);
             break;
         default:
             return;

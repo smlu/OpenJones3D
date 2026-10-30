@@ -659,9 +659,9 @@ TEST(stdConffile, TestPrintfTruncatesAndWarnsForOversizedOutput)
     TEST_ASSERT_EQUAL_INT(1, stdConffile_OpenWrite(pPath));
     StdGeneralTest_ResetDebugOutput();
     TEST_ASSERT_EQUAL_INT(0, stdConffile_Printf("%s", aLargeText));
-    TEST_ASSERT_EQUAL_STRING(
-        "stdConffile.c(240): stdConffile_Printf: Truncated formatted output for 'stdConffile_write.cfg' from 4999 to 4095 bytes.\n",
-        StdGeneralTest_GetDebugOutput()
+    StdGeneralTest_AssertDebugOutputMessage(
+        "stdConffile.c",
+        "stdConffile_Printf: Truncated formatted output for 'stdConffile_write.cfg' from 4999 to 4095 bytes.\n"
     );
     stdConffile_CloseWrite();
     TEST_ASSERT_EQUAL_size_t(4095u, stdFileSize(pPath));

@@ -1,5 +1,6 @@
 #ifndef SOUND_TYPES_H
 #define SOUND_TYPES_H
+#include <stddef.h>
 #include <stdint.h>
 #include <Mmreg.h>
 #include <j3dcore/j3d.h>
@@ -129,10 +130,12 @@ typedef struct sSoundFade
     int bPitch;
     float startValue;
     float endValue;
-    uint32_t msecStartTime;
-    uint32_t msecEndTime;
+    int32_t msecStartTime;
+    int32_t msecEndTime;
 } SoundFade;
 static_assert(sizeof(SoundFade) == 24, "sizeof(SoundFade) == 24");
+static_assert(offsetof(SoundFade, msecStartTime) == 16, "offsetof(SoundFade, msecStartTime) == 16");
+static_assert(offsetof(SoundFade, msecEndTime) == 20, "offsetof(SoundFade, msecEndTime) == 20");
 
 struct sSoundThingInfo
 {
@@ -143,12 +146,10 @@ struct sSoundThingInfo
 
 typedef struct sAudioCompressorState
 {
-    uint8_t unknown0;
-    uint8_t unknown1;
-    int16_t unknown2;
-    int16_t unknown3;
-    int16_t unknown4;
+    int8_t aStepIndex[2];   // per-channel ADPCM step table index
+    int16_t aPrevSample[2]; // per-channel previous (predicted) sample
 } tAudioCompressorState;
+static_assert(sizeof(tAudioCompressorState) == 6, "sizeof(tAudioCompressorState) == 6");
 
 typedef struct sAudioCompressedData
 {

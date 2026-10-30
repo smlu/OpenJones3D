@@ -28,6 +28,22 @@ J3D_EXTERN_C_START
 #define SITHAI_MAXINSTINCTS           16u
 #define SITHAI_MAXREGISTEREDINSTINCTS 32u
 #define SITHAI_MAXWPNTS               60u
+#define SITHAI_MAXWPNTLINKS           8u
+
+// Waypoint flags: the low byte holds the waypoint rank, the rest the waypoint layer flags (SithAIWaypointLayerFlag)
+#define SITHAI_WPNT_RANKMASK  0x000000FFu
+#define SITHAI_WPNT_FLAGSMASK 0xFFFFFF00u
+#define SITHAI_WPNT_MAXRANK   0xFFu
+
+// Waypoint owner's waypointNum: the low byte holds the previous waypoint and the next byte the waypoint the AI is moving to
+#define SITHAI_WPNTOWNER_PREVMASK  0x00FFu
+#define SITHAI_WPNTOWNER_NEXTMASK  0xFF00u
+#define SITHAI_WPNTOWNER_NEXTSHIFT 8
+
+#define SITHAI_WPNTOWNER_GETPREV(waypointNum)       ((waypointNum) & SITHAI_WPNTOWNER_PREVMASK)
+#define SITHAI_WPNTOWNER_GETNEXT(waypointNum)       (((waypointNum) & SITHAI_WPNTOWNER_NEXTMASK) >> SITHAI_WPNTOWNER_NEXTSHIFT)
+#define SITHAI_WPNTOWNER_PACKPREV(waypointNum, idx) (((waypointNum) & ~SITHAI_WPNTOWNER_PREVMASK) | (idx))
+#define SITHAI_WPNTOWNER_PACKNEXT(waypointNum, idx) (((waypointNum) & ~SITHAI_WPNTOWNER_NEXTMASK) | ((idx) << SITHAI_WPNTOWNER_NEXTSHIFT))
 
 #define SITH_STATICRESOURCE_INDEXMASK 0x8000
 
@@ -342,6 +358,14 @@ typedef enum eSithPathMoveMode
     SITH_PATHMOVE_PAUSED       = 0x80,
 } SithPathMoveMode;
 
+// Path move command of the DSS::PathMove message, see sithDSSThing_PathMove
+typedef enum eSithDSSPathMoveCommand
+{
+    SITHDSS_PATHMOVE_MOVETOFRAME = 0,
+    SITHDSS_PATHMOVE_SKIPTOFRAME = 1,
+    SITHDSS_PATHMOVE_FINISH      = 2,
+} SithDSSPathMoveCommand;
+
 typedef enum eSithPhysicsFlags
 {
     SITH_PF_USEGRAVITY          = 0x01,
@@ -384,10 +408,10 @@ typedef enum eSithAIMode
     SITHAI_MODE_ATTACKING         = 0x02,
     SITHAI_MODE_SEARCHING         = 0x04,
     SITHAI_MODE_TURNING           = 0x08,
-    SITHAI_MODE_UNKNOWN_10        = 0x10,
+    SITHAI_MODE_DODGING           = 0x10,
     SITHAI_MODE_TOUGHSKIN         = 0x20,
     SITHAI_MODE_NOCHECKFORCLIFF   = 0x40,
-    SITHAI_MODE_UNKNOWN_80        = 0x80,
+    SITHAI_MODE_LOOKING           = 0x80,
     SITHAI_MODE_BLOCK             = 0x100,
     SITHAI_MODE_ACTIVE            = 0x200,
     SITHAI_MODE_TARGETVISIBLE     = 0x400,
@@ -395,12 +419,12 @@ typedef enum eSithAIMode
     SITHAI_MODE_SLEEPING          = 0x1000,
     SITHAI_MODE_DISABLED          = 0x2000,
     SITHAI_MODE_CIRCLESTRAFING    = 0x4000,
-    SITHAI_MODE_UNKNOWN_8000      = 0x8000,
+    SITHAI_MODE_MATCHVELOCITY     = 0x8000,
     SITHAI_MODE_WANTALLEVENTS     = 0x10000,
     SITHAI_MODE_LOSTSIGHTOFGOAL   = 0x20000,
     SITHAI_MODE_INSTINCTUSEWPNTS  = 0x40000,
     SITHAI_MODE_CHASE_GOAL        = 0x80000,
-    SITHAI_MODE_UNKNOWN_100000    = 0x100000,
+    SITHAI_MODE_BERSERK           = 0x100000,
     SITHAI_MODE_WALLCRAWLING      = 0x200000,
     SITHAI_MODE_UNKNOWN_400000    = 0x400000,
     SITHAI_MODE_HUNTING           = 0x800000,
@@ -413,21 +437,21 @@ typedef enum eSithAIMode
 
 typedef enum eSithAISubMode
 {
-    SITHAI_SUBMODE_UNKNOWN_1                = 0x01,
+    SITHAI_SUBMODE_MOVETARGETLOCKED         = 0x01,
     SITHAI_SUBMODE_UNKNOWN_2                = 0x02,
     SITHAI_SUBMODE_UNKNOWN_4                = 0x04,
     SITHAI_SUBMODE_UNKNOWN_8                = 0x08,
-    SITHAI_SUBMODE_UNKNOWN_10               = 0x10,
+    SITHAI_SUBMODE_ALIGNING                 = 0x10,
     SITHAI_SUBMODE_SKIPCHECKFIREFOV         = 0x20,
     SITHAI_SUBMODE_FIREADDEYEOFFSET         = 0x40,
     SITHAI_SUBMODE_NOMOVEBACKWARDS          = 0x80,
-    SITHAI_SUBMODE_UNKNOWN_100              = 0x100,
+    SITHAI_SUBMODE_MOVEFORWARD              = 0x100,
     SITHAI_SUBMODE_CONTINUOUSMOTION         = 0x200,
-    SITHAI_SUBMODE_UNKNOWN_400              = 0x400,
-    SITHAI_SUBMODE_UNKNOWN_800              = 0x800,
+    SITHAI_SUBMODE_HEADTRACKINGENABLED      = 0x400,
+    SITHAI_SUBMODE_HEADTRACKINGTARGET       = 0x800,
     SITHAI_SUBMODE_HEADTRACKINGMOTION       = 0x1000,
     SITHAI_SUBMODE_BODYTRACKINGMOTION       = 0x2000,
-    SITHAI_SUBMODE_UNKNOWN_4000             = 0x4000,
+    SITHAI_SUBMODE_NEWMOVE                  = 0x4000,
     SITHAI_SUBMODE_CONTINUOUSWPNTMOTION     = 0x8000,
     SITHAI_SUBMODE_SEMICONTINUOUSWPNTMOTION = 0x10000,
     SITHAI_SUBMODE_SEMICONTINUOUSMOTION     = 0x20000,
@@ -441,6 +465,14 @@ typedef enum eSithAISubMode
     SITHAI_SUBMODE_UNKNOWN_2000000          = 0x2000000,
     SITHAI_SUBMODE_WALLCRAWLLOCKED          = 0x8000000,
 } SithAISubMode;
+
+// The AI move state derived from the actor's move status, see sithAIMove_AIGetMoveState
+typedef enum eSithAIMoveState
+{
+    SITHAIMOVE_STATE_NONE       = 0, // Free to move and turn
+    SITHAIMOVE_STATE_ANIMATED   = 1, // Roll, strafe, slide, knock-out or walk/stand transition animation plays; actor still moves but its puppet submode is not changed
+    SITHAIMOVE_STATE_STATIONARY = 2, // Special turn or wall mount animation plays; actor neither moves nor turns
+} SithAIMoveState;
 
 typedef enum eSithAttachFlag
 {
@@ -781,12 +813,21 @@ typedef enum eSithAIEventType
     SITHAI_EVENT_HIT_THING           = 0x8000,
     SITHAI_EVENT_PREFIRE             = 0x10000,
     SITHAI_EVENT_POSTFIRE            = 0x20000,
-    SITHAI_EVENT_UNKNOWN_40000       = 0x40000,
+    SITHAI_EVENT_LOOK_TARGET_CHANGED = 0x40000,
     SITHAI_EVENT_GOAL_UNREACHABLE    = 0x80000,
     SITHAI_EVENT_HIT_FLOOR           = 0x100000,
     SITHAI_EVENT_LAND_FLOOR          = 0x200000,
     SITHAI_EVENT_TALK                = 0x400000,
 } SithAIEventType;
+
+// Types of AI awareness events, index into SithAIAwarenessSector transmitting levels
+typedef enum eSithAIAwarenessType
+{
+    SITHAIAWARENESS_NOISE   = 0, // Gunshots, explosions caused by the player, damage taken, target spotted. Heard by the listen instinct
+    SITHAIAWARENESS_DANGER  = 1, // Explosions and fleeing AIs that have spotted the player
+    SITHAIAWARENESS_THREAT  = 2, // Projectiles in flight and fleeing AIs. Sensed by the sensedanger and dodge instincts
+    SITHAIAWARENESS_GUNFIRE = 3, // Player firing a weapon. Feared by the feargunshot instinct
+} SithAIAwarenessType;
 
 typedef enum eSithAIInstinctFlag J3D_ENUM_TYPE(int32_t)
 {
@@ -798,15 +839,75 @@ typedef enum eSithAIUtilFireFlags
     SITHAIUTIL_FIRE_LEAD         = 0x1,
     SITHAIUTIL_FIRE_LOB          = 0x2,
     SITHAIUTIL_FIRE_UNKNOWN_4    = 0x4,
-    SITHAIUTIL_FIRE_UNKNOWN_8    = 0x8,
+    SITHAIUTIL_FIRE_DELAYED      = 0x8,
     SITHAIUTIL_FIRE_PRIMARY      = 0x10,
     SITHAIUTIL_FIRE_ALT          = 0x20,
-    SITHAIUTIL_FIRE_UNKNOWN_40   = 0x40,
-    SITHAIUTIL_FIRE_UNKNOWN_80   = 0x80,
-    SITHAIUTIL_FIRE_UNKNOWN_100  = 0x100,
-    SITHAIUTIL_FIRE_UNKNOWN_200  = 0x200,
+    SITHAIUTIL_FIRE_WEAPON1      = 0x40,
+    SITHAIUTIL_FIRE_WEAPON2      = 0x80,
+    SITHAIUTIL_FIRE_WEAPON3      = 0x100,
+    SITHAIUTIL_FIRE_WEAPON4      = 0x200,
     SITHAIUTIL_FIRE_STOP_ON_FIRE = 0x400,
 } SithAIUtilFireFlags;
+
+// Target sight state calculated by sithAIUtil_GetDistanceToTarget and sithAIUtil_GetDistanceToTargetPos
+typedef enum eSithAISightState
+{
+    SITHAI_SIGHT_VISIBLE  = 0, // Target in sight
+    SITHAI_SIGHT_TOOFAR   = 1, // Target too far away (distance > sight distance)
+    SITHAI_SIGHT_OUTOFFOV = 2, // Target out of field of view
+    SITHAI_SIGHT_HIDDEN   = 3, // Target not in sight (invisible, blind viewer, underwater or line of sight blocked)
+} SithAISightState;
+
+// Point creation flags of sithAIUtil_MakeRandPoint, sithAIUtil_AIGetMovePos and the functions making path points
+typedef enum eSithAIUtilMkPointFlags
+{
+    SITHAIUTIL_MKPOINT_SIDEWAYS       = 0x01,     // Point to the side of the direction (up x dir)
+    SITHAIUTIL_MKPOINT_YAW            = 0x02,     // Rotate the direction by the yaw angle
+    SITHAIUTIL_MKPOINT_PITCH          = 0x04,     // Rotate the direction by the pitch angle and keep the vertical component of the direction
+    SITHAIUTIL_MKPOINT_TOWARDGOAL     = 0x100,    // Point towards the goal thing
+    SITHAIUTIL_MKPOINT_AWAYFROMGOAL   = 0x200,    // Point away from the goal thing
+    SITHAIUTIL_MKPOINT_TOWARDMOVEPOS  = 0x400,    // Point towards the move position
+    SITHAIUTIL_MKPOINT_ALONGMOVEDIR   = 0x800,    // Side point along the current move direction
+    SITHAIUTIL_MKPOINT_AWAYFROMFLEE   = 0x1000,   // Point away from the flee-from thing
+    SITHAIUTIL_MKPOINT_RANDANGLE      = 0x4000,   // Random angle up to the given angle
+    SITHAIUTIL_MKPOINT_RANDSIDE       = 0x8000,   // Random rotation side
+    SITHAIUTIL_MKPOINT_TARGETDIST     = 0x10000,  // Distance of the point is the distance to the plane crossing the reference position
+    SITHAIUTIL_MKPOINT_REFOWNER       = 0x100000, // Reference position is the actor's position
+    SITHAIUTIL_MKPOINT_REFHOME        = 0x200000, // Reference position is the home position
+} SithAIUtilMkPointFlags;
+
+// Path check flags of sithAIUtil_CheckPathToPos
+typedef enum eSithAIUtilPathFlags
+{
+    SITHAIUTIL_PATHFLAG_STRAIGHT      = 0x10,     // Check the path straight along the direction
+    SITHAIUTIL_PATHFLAG_SIDES         = 0x20,     // Check the paths to both sides of the direction and select the better one
+    SITHAIUTIL_PATHFLAG_PREFERGOAL    = 0x100,    // Side check prefers the side closer to the goal thing
+    SITHAIUTIL_PATHFLAG_AVOIDGOAL     = 0x200,    // Side check prefers the side further away from the goal thing
+    SITHAIUTIL_PATHFLAG_GOALVISIBLE   = 0x2000,  // End position must be visible from the goal thing
+    SITHAIUTIL_PATHFLAG_IGNOREPLAYER  = 0x20000,  // Player collision does not block the path
+    SITHAIUTIL_PATHFLAG_IGNORETHINGS  = 0x40000,  // Thing collision does not block the path
+    SITHAIUTIL_PATHFLAG_IGNOREFLOORS  = 0x80000,  // Floor surface collision does not block the path
+    SITHAIUTIL_PATHFLAG_TARGETVISIBLE = 0x800000, // End position must be visible from the target thing
+} SithAIUtilPathFlags;
+
+// Result of sithAIUtil_CheckPathToPos
+typedef enum eSithAIUtilPathResult
+{
+    SITHAIUTIL_PATH_BLOCKED = 0, // Path blocked before the minimal move distance
+    SITHAIUTIL_PATH_CLEAR   = 1, // Path is clear
+    SITHAIUTIL_PATH_WORLD   = 2, // Path ends at a surface
+    SITHAIUTIL_PATH_THING   = 4, // Path ends at a thing
+} SithAIUtilPathResult;
+
+// Result of the floor check of sithAIUtil_CheckPosition
+typedef enum eSithAIUtilFloorCheck
+{
+    SITHAIUTIL_FLOOR_BLOCKED = 0, // Disallowed sector or surface
+    SITHAIUTIL_FLOOR_OK      = 1, // Walkable floor or thing to stand on
+    SITHAIUTIL_FLOOR_WALL    = 2, // Surface that is not a floor or is too steep
+    SITHAIUTIL_FLOOR_THING   = 4, // Blocked by thing
+    SITHAIUTIL_FLOOR_NONE    = 8, // Nothing found within step height (cliff)
+} SithAIUtilFloorCheck;
 
 typedef enum eSithThingMoveStatus
 {
@@ -918,6 +1019,15 @@ typedef enum eSithThingMoveStatus
     SITHPLAYERMOVE_UNKNOWN_105                         = 105,
     SITHPLAYERMOVE_UNKNOWN_106                         = 106,
 } SithThingMoveStatus;
+
+// Local-space axis of the dominant velocity component of a thing, see sithPuppet_GetThingLocalVelocityAxis
+typedef enum eSithThingMoveAxis J3D_ENUM_TYPE(int32_t)
+{
+    SITHTHING_MOVEAXIS_X    = 0,  // Right (strafe)
+    SITHTHING_MOVEAXIS_Y    = 1,  // Forward
+    SITHTHING_MOVEAXIS_Z    = 2,  // Up (falling)
+    SITHTHING_MOVEAXIS_NONE = 99, // Not moving, velocity is zero
+} SithThingMoveAxis;
 
 typedef enum eSithPuppetMoveMode
 {
@@ -1078,6 +1188,8 @@ typedef enum eSithAIWaypointLayerFlag
     SITH_AIWPNT_LAYER3   = 0x8000,
     SITH_AIWPNT_LAYER4   = 0x10000,
     SITH_AIWPNT_LAYER5   = 0x20000,
+
+    SITH_AIWPNT_ALLLAYERS = SITH_AIWPNT_LAYER0 | SITH_AIWPNT_LAYER1 | SITH_AIWPNT_LAYER2 | SITH_AIWPNT_LAYER3 | SITH_AIWPNT_LAYER4 | SITH_AIWPNT_LAYER5,
 } SithAIWaypointLayerFlag;
 
 typedef enum eSithControlBindFlag
@@ -1316,6 +1428,22 @@ typedef enum eSithMultiJoinStatus J3D_ENUM_TYPE(int32_t)
         SITHMULTI_JOIN_WRONGLEVEL    = 6,
 } SithMultiJoinStatus;
 
+typedef enum eSithMultiQuitState
+{
+    SITHMULTI_QUITSTATE_NONE    = 0,
+    SITHMULTI_QUITSTATE_QUIT    = 1,
+    SITHMULTI_QUITSTATE_EJECTED = 2, // Ejected from the game by the server
+} SithMultiQuitState;
+
+typedef enum eSithMultiWelcomeState
+{
+    SITHMULTI_WELCOME_NONE     = 0,
+    SITHMULTI_WELCOME_SECTORS  = 1,
+    SITHMULTI_WELCOME_SURFACES = 2,
+    SITHMULTI_WELCOME_THINGS   = 3,
+    SITHMULTI_WELCOME_REMOVALS = 4,
+} SithMultiWelcomeState;
+
 typedef enum sSithMinecarControlsUnboardState
 {
     SITHMINECARCONTROLS_UNBOARD_NONE      = 0,  // No unboard interaction (key held down)
@@ -1539,7 +1667,7 @@ struct sSithThingSwapEntry
 
 typedef struct sSithQuetzSnapShot
 {
-    float unknown0;
+    float time;
     float angle1;
     float angle2;
     float angle3;
@@ -1547,35 +1675,45 @@ typedef struct sSithQuetzSnapShot
     float angle5;
 } SithQuetzSnapShot;
 
+typedef enum eSithQuetzStrikeMode
+{
+    SITHQUETZSTRIKE_MODE_NONE   = 0,
+    SITHQUETZSTRIKE_MODE_STRIKE = 1,
+    SITHQUETZSTRIKE_MODE_ANIM2  = 2,
+    SITHQUETZSTRIKE_MODE_ANIM3  = 3,
+    SITHQUETZSTRIKE_MODE_ANIM4  = 4,
+    SITHQUETZSTRIKE_MODE_ANIM5  = 5,
+} SithQuetzStrikeMode;
+
 typedef struct sSithQuetzStrike
 {
-    int unknown0;
-    float unknown1;
+    SithQuetzStrikeMode mode;
+    float curTime;
     int snapShot;
-    int unknown3;
+    int numSnapShots;
     SithQuetzSnapShot aSnapShots[15];
 } SithQuetzStrike;
 
 typedef struct sSithQuetzAttachInfo
 {
-    float unknown0;
-    float unknown1;
-    float unknown2;
+    float offsetPrevY; // Y offset along the previous segment orientation
+    float offsetZ;     // Z offset in world space
+    float offsetY;     // Y offset along this segment orientation
     rdVector3 vecDirection;
     rdVector3 vecDirectionNextAttach;
-    float unknown9;
-    float unknown10;
-    rdVector3 vecUnknown11;
-    float unknown14;
+    float length;    // Segment length used to normalize travelled distance
+    float remaining; // Remaining length of the segment, counts down as the Quetz moves
+    rdVector3 rotation; // PYR rotation applied to the segment orientation
+    float uvecOffset;   // Offset along segment up vector used to probe collisions
 } SithQuetzAttachInfo;
 
 typedef struct sSithQuetzUserBlock
 {
     SithQuetzAttachInfo aAttachInfos[26];
     unsigned int numAttachInfos;
-    int unknown391;
+    int bResetSegment;
     int bPosFudged;
-    float unknown393;
+    float posFudge;
     SithQuetzStrike strike;
     int unknown488;
     int unknown489;
@@ -1840,8 +1978,8 @@ typedef struct sSithMineCarState
     int bUpdateSparksLeft;
     float secTimeSparksRight;
     float secTimeSparksLeft;
-    float unknown9;
-    float unknown10;
+    float maxBlendFaceLength;
+    float blendLength;
     int bBraking;
 
     // Following are new fields added in OJ3D v0.4
@@ -2062,7 +2200,7 @@ typedef struct sSithActorInfo
     SithActorVoiceInfo voiceInfo;
     SithActorStateChange stateChange;
 } SithActorInfo;
-static_assert(sizeof(SithActorInfo) == 300, "sizeof(SithActorInfo) == 292");
+static_assert(sizeof(SithActorInfo) == 300, "sizeof(SithActorInfo) == 300");
 
 typedef struct sSithSpriteInfo
 {
@@ -2118,8 +2256,12 @@ typedef struct sSithSpriteInfo
 
 typedef struct sSithBackpackItem
 {
-    int typeId;
-    SithInventoryItem* pItem;
+    int16_t typeId;
+    union
+    {
+        SithInventoryItem* pItem; // Note: The original stores the item amount in this field (float amount), see sithDSSThing_ProcessStateUpdate
+        float amount;
+    };
 } SithBackpackItem;
 
 typedef struct sSithItemInfo
@@ -2129,9 +2271,12 @@ typedef struct sSithItemInfo
     SithSector* pInSector;
     float secRespawnInterval;
     unsigned int msecLastTouchTime;
-    size_t numItems;
+    size_t numItems; // Note, DSS serializes only 16 bits of the value
     SithBackpackItem aBackpackItems[32];
 } SithItemInfo;
+static_assert(sizeof(SithBackpackItem) == 8, "sizeof(SithBackpackItem) == 8");
+static_assert(offsetof(SithBackpackItem, amount) == 4, "offsetof(SithBackpackItem, amount) == 4");
+static_assert(offsetof(SithItemInfo, aBackpackItems) == 32, "offsetof(SithItemInfo, aBackpackItems) == 32");
 static_assert(sizeof(SithItemInfo) == 288, "sizeof(SithItemInfo) == 288");
 
 typedef union sSithThingInfo
@@ -2301,10 +2446,10 @@ typedef struct sSithPathMoveInfo
     rdVector3 goalPYR;
     rdVector3 rotateToPYR;
     float rotDelta;
-    size_t numBlockedMoves; // serialized as uint16_t
+    size_t numBlockedMoves; // serialized as int16_t
     int currentFrame; // can be -1, serialized as int16_t
-    size_t nextFrame; // serialized as uint16_t
-    size_t goalFrame; // serialized as uint16_t
+    size_t nextFrame; // serialized as int16_t
+    size_t goalFrame; // serialized as int16_t
 } SithPathMoveInfo;
 static_assert(sizeof(SithPathMoveInfo) == 144, "sizeof(SithPathMoveInfo) == 144");
 
@@ -2440,21 +2585,21 @@ struct sSithAIControlBlock
     rdVector3 alertPos;
     SithThing* pTargetThing;
     rdVector3 targetPos;
-    int unknown124;
+    int targetSightFrame;
     rdVector3 toTarget;
     float distance;
-    int targetSightState;
-    rdVector3 vecUnknown122;
+    SithAISightState targetSightState;
+    rdVector3 lastTargetSeenPos;
     uint32_t msecAttackStart;
     rdVector3 weaponFirePos;
     SithThing* goalThing;
-    rdVector3 vecUnknown6;
-    int unknown141;
-    rdVector3 vecUnknown0;
+    rdVector3 goalPos;
+    int goalSightFrame;
+    rdVector3 toGoal;
     float targetDistance;
-    int targetSightState2;
-    rdVector3 vecUnknown5;
-    int unknown150;
+    SithAISightState targetSightState2;
+    rdVector3 lastGoalSeenPos;
+    int msecGoalSeen;
     rdVector3 homePos;
     rdVector3 homeOrient;
     float aimError;
@@ -2473,8 +2618,12 @@ struct sSithAIControlBlock
     size_t numFrames;
     size_t sizeFrames;
     int allowedSurfaceTypes;
-    rdVector3 vecUnknown3;
-    rdVector3 vecUnknown;
+    union
+    {
+        rdVector3 savedMovePos; // Move position saved to resume the move later
+        rdVector3 wallNormal;   // Wall surface normal during the wall-crawl mount move
+    };
+    rdVector3 moveStartPos;
     float maxHomeDist;
 };
 static_assert(sizeof(SithAIControlBlock) == 728, "sizeof(SithAIControlBlock) == 728");
@@ -2865,18 +3014,19 @@ struct sSithConsoleCommand
 typedef struct sSithAIWaypointOwner
 {
     int thingNum;
-    int waypointNum;
+    unsigned int waypointNum;
     float cosTurnAlignAngle;
 } SithAIWaypointOwner;
 
 typedef struct sSithAIWaypoint
 {
     int thingNum;
-    int numUsedLinks;
+    size_t numUsedLinks;
     int aWpntLinks[8];
     SithAIWaypointLayerFlag flags;
-    int unknown11;
+    size_t rank;
 } SithAIWaypoint;
+static_assert(sizeof(SithAIWaypoint) == 48, "sizeof(SithAIWaypoint) == 48");
 
 struct sSithEvent
 {
@@ -3144,13 +3294,13 @@ typedef struct sSithAIWaypointDistance
     float distance;
 } SithAIWaypointDistance;
 
-typedef struct sSithInventoryUnknown
+typedef struct sSithPowerKeybind
 {
     int bEnabled;
-    int unknown2;
-    int unknown3;
-} SithInventoryUnknown;
-static_assert(sizeof(SithInventoryUnknown) == 12, "sizeof(SithInventoryUnknown) == 12");
+    int binding;
+    int bActivated;
+} SithPowerKeybind;
+static_assert(sizeof(SithPowerKeybind) == 12, "sizeof(SithPowerKeybind) == 12");
 
 J3D_EXTERN_C_END
 #endif //SITH_TYPES_H

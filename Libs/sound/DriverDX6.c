@@ -11,6 +11,9 @@
 #include <std/General/stdPlatform.h>
 #include <std/General/stdUtil.h>
 
+#include <stdarg.h>
+#include <stdio.h>
+
 #define SOUNDDRIVER_FARVOLUMETHRESHOLD 0.01f
 
 static float SoundDriver_maxVolume = 1.0f;
@@ -139,18 +142,16 @@ static void SoundDriver_LogError(const char* pFormat, ...)
 {
     if ( SoundDriver_pfLogError )
     {
+        // Fixed: Format the message into a buffer, a va_list was passed as a variadic argument of the log function (undefined output or crash)
+        char aMessage[1024];
+
         va_list args;
         va_start(args, pFormat);
-
-        // Create a new va_list for the function call
-        va_list argsCopy;
-        va_copy(argsCopy, args);
-
-        // Forward the variable arguments to SoundDriver_pfLogError
-        SoundDriver_pfLogError(pFormat, argsCopy);
-
-        va_end(argsCopy);
+        vsnprintf(aMessage, sizeof(aMessage), pFormat, args);
         va_end(args);
+
+        aMessage[sizeof(aMessage) - 1] = '\0';
+        SoundDriver_pfLogError("%s", aMessage);
     }
 }
 
@@ -764,6 +765,9 @@ int J3DAPI SoundDriver_Update3DSound(tSysSoundBuffer** ppDSBuf, float x, float y
     float newPitch  = pitch;
     if ( !b3DControl )
     {
+        // Fixed: The original has no initial value here and the mix callback leaves the outputs untouched when there is no camera (sithSoundMixer_CalcCameraRelativeSoundMix),
+        //        so the sound is culled by the far volume check below. In the original the unwritten volume slot holds the ppDSBuf argument (NULL or a heap pointer), which as a float is always below the far threshold, so the sound is always culled. Start with silence to get the same cull (original Indy3D.exe v1.0 0x004DE790)
+        newVolume = 0.0f;
         SoundDriver_CalcListeneSoundMix(x, y, z, volume, pitch, &newVolume, &pan, &newPitch, minRadius, maxRadius, envflags);
         if ( newVolume < SOUNDDRIVER_FARVOLUMETHRESHOLD
             && (*pChannelFlags & (SOUND_CHANNEL_LOOP | SOUND_CHANNEL_PLAYING)) != (SOUND_CHANNEL_LOOP | SOUND_CHANNEL_PLAYING)

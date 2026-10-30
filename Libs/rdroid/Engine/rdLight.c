@@ -159,10 +159,10 @@ void J3DAPI rdLight_CalcFaceIntensity(const rdLight** apLights, const rdVector3*
                 float dot = rdVector_Dot3(pNormal, &dir);
                 if ( dot > 0.0f )
                 {
-                    attenuation = dist * attenuation;
-                    pOutColor->red   += (pLight->color.red - attenuation) * dot;
-                    pOutColor->green += (pLight->color.green - attenuation) * dot;
-                    pOutColor->blue  += (pLight->color.blue - attenuation) * dot;
+                    float atten = dist * attenuation;
+                    pOutColor->red   += (pLight->color.red - atten) * dot;
+                    pOutColor->green += (pLight->color.green - atten) * dot;
+                    pOutColor->blue  += (pLight->color.blue - atten) * dot;
                 }
             }
         }

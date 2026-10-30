@@ -304,6 +304,50 @@ TEST(stdMemory, TestBlockAllocatorUsesBestAndExactFits)
     stdMemory_BlockFree(pSeparatorB);
 }
 
+// Regression: An emptied zone keeps its slot flagged as allocated like the original, so the first search of
+// stdMemory_BlockMalloc prefers a later zone with enough free memory over the emptied one.
+TEST(stdMemory, TestBlockAllocatorKeepsEmptiedZoneAllocated)
+{
+    void* apFirstZone[7];
+    for ( size_t i = 0; i < STD_ARRAYLEN(apFirstZone); ++i )
+    {
+        apFirstZone[i] = stdMemory_BlockMalloc(4096u);
+        TEST_ASSERT_NOT_NULL(apFirstZone[i]);
+    }
+
+    // No room left in the first zone for another 4096 bytes
+    void* pSecondZoneData = stdMemory_BlockMalloc(4096u);
+    TEST_ASSERT_NOT_NULL(pSecondZoneData);
+
+    tMemoryBlock* pFirstZone  = stdMemoryTest_GetBlockHeader(apFirstZone[0])->pBlock;
+    tMemoryBlock* pSecondZone = stdMemoryTest_GetBlockHeader(pSecondZoneData)->pBlock;
+    TEST_ASSERT_NOT_NULL(pFirstZone);
+    TEST_ASSERT_NOT_NULL(pSecondZone);
+    TEST_ASSERT_TRUE(pFirstZone != pSecondZone);
+    for ( size_t i = 1; i < STD_ARRAYLEN(apFirstZone); ++i )
+    {
+        TEST_ASSERT_EQUAL_PTR(pFirstZone, stdMemoryTest_GetBlockHeader(apFirstZone[i])->pBlock);
+    }
+
+    // Empty the first zone, it is released but the slot stays flagged as allocated
+    for ( size_t i = 0; i < STD_ARRAYLEN(apFirstZone); ++i )
+    {
+        stdMemory_BlockFree(apFirstZone[i]);
+    }
+
+    TEST_ASSERT_NULL(pFirstZone->pFirst);
+    TEST_ASSERT_EQUAL_size_t(0u, pFirstZone->availableMem);
+    TEST_ASSERT_NOT_EQUAL_INT(0, pFirstZone->bAllocated);
+
+    void* pSmall = stdMemory_BlockMalloc(16u);
+    TEST_ASSERT_NOT_NULL(pSmall);
+    TEST_ASSERT_EQUAL_PTR(pSecondZone, stdMemoryTest_GetBlockHeader(pSmall)->pBlock);
+    TEST_ASSERT_NULL(pFirstZone->pFirst);
+
+    stdMemory_BlockFree(pSmall);
+    stdMemory_BlockFree(pSecondZoneData);
+}
+
 TEST(stdMemory, TestBlockAllocatorCoalescesNextPreviousAndBothNeighbors)
 {
     uint8_t* pA = (uint8_t*)stdMemory_BlockMalloc(64u);
@@ -532,6 +576,7 @@ TEST_GROUP_RUNNER(stdMemory)
     RUN_TEST_CASE(stdMemory, TestBlockAllocatorReusesFreedFragmentsAndWarnsOnDoubleFree);
     RUN_TEST_CASE(stdMemory, TestBlockAllocatorAlignsOddSizesAndUsesThresholdBoundary);
     RUN_TEST_CASE(stdMemory, TestBlockAllocatorUsesBestAndExactFits);
+    RUN_TEST_CASE(stdMemory, TestBlockAllocatorKeepsEmptiedZoneAllocated);
     RUN_TEST_CASE(stdMemory, TestBlockAllocatorCoalescesNextPreviousAndBothNeighbors);
     RUN_TEST_CASE(stdMemory, TestBlockAllocatorCreatesAndReleasesMultipleZones);
     RUN_TEST_CASE(stdMemory, TestBlockReallocPreservesDataAcrossZoneAndHeapBoundaries);

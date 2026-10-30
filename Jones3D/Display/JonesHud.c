@@ -887,7 +887,7 @@ int JonesHud_Open(void)
     //
     // Setup HUD camera
     //
-    rdCamera_sub_4C60B0(true);
+    rdCamera_SetOverlayDepthRange(true);
 
     JonesHud_pHudCamera = rdCamera_New(10.0f, 0, 1.0f, 100.0f, 1.0f);
     if ( !JonesHud_pHudCamera )
@@ -933,7 +933,7 @@ int JonesHud_Open(void)
     rdVector4 hudAmbientColor = { .red = 1.0f, .green = 1.0f, .blue = 1.0f, .alpha = 0.0f };
     rdCamera_SetAmbientLight(JonesHud_pHudCamera, &hudAmbientColor);
 
-    rdCamera_sub_4C60B0(false);
+    rdCamera_SetOverlayDepthRange(false);
 
     //
     // Initialize HUD state variables
@@ -1201,7 +1201,7 @@ void JonesHud_Process(void) // maybe this function should be called something el
                     {
                         healthState = (300.0f * sithPlayer_g_pLocalPlayerThing->thingInfo.actorInfo.health / maxHealth);
                     }
-                    JonesHud_RenderHealthIndicatorHit(roundf(healthState));
+                    JonesHud_RenderHealthIndicatorHit((float)(int)healthState);
                 }
 
                 // DRAW endurance indicator
@@ -1361,7 +1361,7 @@ int J3DAPI JonesHud_SetCanvasSize(int width, int height)
         return 0;
     }
 
-    rdCamera_sub_4C60B0(true); // This changes camera z plane
+    rdCamera_SetOverlayDepthRange(true); // This changes camera z plane
     if ( JonesHud_pHudCanvas )
     {
         rdCanvas_Free(JonesHud_pHudCanvas);
@@ -1378,7 +1378,7 @@ int J3DAPI JonesHud_SetCanvasSize(int width, int height)
     }
 
     rdCamera_SetFrustrum(JonesHud_pHudCamera, JonesHud_pHudCamera->pFrustum, 0, 0, width - 1, height - 1);
-    rdCamera_sub_4C60B0(false);
+    rdCamera_SetOverlayDepthRange(false);
     return 1;
 }
 
@@ -1523,7 +1523,7 @@ void JonesHud_MenuClose(void)
                 || (JonesHud_apMenuItems[pItem->nextUpItemId]->flags & 0x20) != 0) )
         {
             //(JonesHud_item_flag_state_55514C & 0xFF) = (1 << i) | JonesHud_item_flag_state_55514C;
-            JonesHud_item_flag_state_55514C = (JonesHud_item_flag_state_55514C & ~0xFF) | (1 << i);
+            JonesHud_item_flag_state_55514C |= (1 << i);
             if ( JonesHud_aSoundFxHandles[3] )  // inv_expand.wav
             {
                 JonesHud_hCurSndChannel = sithSoundMixer_PlaySound(JonesHud_aSoundFxHandles[3], 1.0f, 0.0f, SOUNDPLAY_PLAYONCE);
@@ -2626,7 +2626,6 @@ int J3DAPI JonesHud_GetKey(unsigned int keyId)
         return 0;
     }
 
-    JonesHud_msecMenuItemMoveCurDuration = JonesHud_msecMenuItemMoveDuration;
     if ( keyId == JonesHud_curKeyId )
     {
         if ( JonesHud_msecMenuItemMoveCurDuration < JonesHud_msecMenuItemMoveDuration
@@ -2642,6 +2641,10 @@ int J3DAPI JonesHud_GetKey(unsigned int keyId)
                 JonesHud_msecMenuItemMoveCurDuration = 75;
             }
         }
+    }
+    else
+    {
+        JonesHud_msecMenuItemMoveCurDuration = JonesHud_msecMenuItemMoveDuration;
     }
 
     JonesHud_msecLastKeyPressTime = JonesHud_msecTime;

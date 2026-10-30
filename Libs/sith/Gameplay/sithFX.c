@@ -111,9 +111,9 @@ static void sithFX_RotateSpriteToMovement(SithThing* pSprite, const rdVector3* v
 
 void J3DAPI sithFX_CreatePaddleWaterSplash(SithThing* pThing, const rdVector3* pos);
 
-bool J3DAPI sithFX_GetWaterPosition(SithThing* pThing, rdVector3* waterPos, SithSector* waterSec, rdVector3* waterNormal)
+bool J3DAPI sithFX_GetWaterPosition(SithThing* pThing, rdVector3* waterPos, SithSector** ppWaterSec, rdVector3* waterNormal)
 {
-    SITH_ASSERT(waterPos && waterSec && waterNormal);
+    SITH_ASSERT(waterPos && ppWaterSec && waterNormal);
 
     rdVector3 rippleStartPos = *waterPos;
     rippleStartPos.z = pThing->pos.z;
@@ -127,7 +127,7 @@ bool J3DAPI sithFX_GetWaterPosition(SithThing* pThing, rdVector3* waterPos, Sith
         SithSurface* pWaterSurf = sithCollision_FindWaterSurface(pStartSec, &rippleStartPos, &endPos, sithFX_surfaceOffsetZ);
         if ( pWaterSurf )
         {
-            waterSec     = pWaterSurf->pSector;
+            *ppWaterSec  = pWaterSurf->pSector; // Fixed: Pass the sector by pointer, assigning the by-value parameter had no effect for the callers
             *waterNormal = pWaterSurf->face.normal;
 
             // Assign found position
@@ -175,7 +175,7 @@ void sithFX_ResetGlobals(void)
     int sithFX_g_lastChalkMarkNum_tmp = -1;
     STD_COPYMEM(&sithFX_g_lastChalkMarkNum, &sithFX_g_lastChalkMarkNum_tmp, sizeof(sithFX_g_lastChalkMarkNum));
 
-    size_t sithFX_g_numChalkMarks_tmp = 0;
+    int sithFX_g_numChalkMarks_tmp = 0;
     STD_COPYMEM(&sithFX_g_numChalkMarks, &sithFX_g_numChalkMarks_tmp, sizeof(sithFX_g_numChalkMarks));
 
     STD_ZEROMEM(&sithFX_g_aChalkMarks, sizeof(sithFX_g_aChalkMarks));
@@ -550,7 +550,7 @@ void J3DAPI sithFX_CreateRaftSplatterFX(SithThing* pThing, int bCreateSplash)
         //        This prevents visual issues where ripples could be misplaced or
         //        incorrectly oriented (e.g. embedded in the water surface or spawned
         //        in the air) due to steep, uneven, or overlapping water surfaces.
-        sithFX_GetWaterPosition(pThing, &ripplePos, pRippleSec, &rippleUpDir);
+        sithFX_GetWaterPosition(pThing, &ripplePos, &pRippleSec, &rippleUpDir);
 
         // Altered: Replaced OG code with sithFX_CreateThingFacingUp
         SithThing* pRipple = sithFX_CreateThingFacingUp(pSplashTpl, &ripplePos, pRippleSec, &rippleUpDir);
@@ -686,7 +686,7 @@ void J3DAPI sithFX_CreateRaftWakeFX(SithThing* pThing)
         //        This prevents visual issues where ripples could be misplaced or
         //        incorrectly oriented (e.g. embedded in the water surface or spawned
         //        in the air) due to steep, uneven, or overlapping water surfaces.
-        sithFX_GetWaterPosition(pThing, &ripplePos, pRippleSec, &rippleUpDir);
+        sithFX_GetWaterPosition(pThing, &ripplePos, &pRippleSec, &rippleUpDir);
 
         SithThing* pRipple = sithFX_CreateThingFacingUp(pRippleTpl, &ripplePos, pRippleSec, &rippleUpDir);
         if ( !pRipple )
@@ -851,7 +851,7 @@ void J3DAPI sithFX_CreateRaftPaddleWaterFX(SithThing* pThing, float secTime)
     //        This prevents visual issues where ripples could be misplaced or
     //        incorrectly oriented (e.g. embedded in the water surface or spawned
     //        in the air) due to steep, uneven, or overlapping water surfaces.
-    sithFX_GetWaterPosition(pThing, &ripplePos, pRippleSec, &rippleUpDir);
+    sithFX_GetWaterPosition(pThing, &ripplePos, &pRippleSec, &rippleUpDir);
 
     bool bCreateSplashFx = false;
     if ( secDeltaTime == 0.0f || secDelatLastCreated >= 0.2f )
@@ -1085,9 +1085,9 @@ void J3DAPI sithFX_CreateChalkMark(const rdVector3* pPos, const SithSurface* pAt
     bool bSearch = false; // Added init to false
     do
     {
-        tplNum = (size_t)(SITH_RAND() * (float)STD_ARRAYLEN(sithFX_aChalkMarkNames));
+        tplNum = (size_t)(SITH_RAND() * (float)(STD_ARRAYLEN(sithFX_aChalkMarkNames) - 1));
         bSearch = false;
-        for ( size_t i = 0; i < sithFX_g_numChalkMarks && !bSearch && sithFX_g_aChalkMarks[i]; i++ )
+        for ( int i = 0; i < sithFX_g_numChalkMarks && !bSearch && sithFX_g_aChalkMarks[i]; i++ )
         {
             if ( streq(sithFX_g_aChalkMarks[i]->aName, sithFX_aChalkMarkNames[tplNum]) )
             {
@@ -1109,7 +1109,7 @@ void J3DAPI sithFX_CreateChalkMark(const rdVector3* pPos, const SithSurface* pAt
         if ( sithFX_g_aChalkMarks[markNum] )
         {
             ++sithFX_g_lastChalkMarkNum;
-            if ( ++sithFX_g_numChalkMarks > STD_ARRAYLEN(sithFX_g_aChalkMarks) )
+            if ( ++sithFX_g_numChalkMarks > (int)STD_ARRAYLEN(sithFX_g_aChalkMarks) )
             {
                 sithFX_g_numChalkMarks = STD_ARRAYLEN(sithFX_g_aChalkMarks);
             }

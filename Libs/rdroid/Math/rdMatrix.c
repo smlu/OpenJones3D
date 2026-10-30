@@ -92,7 +92,7 @@ void J3DAPI rdMatrix_BuildFromLook34(rdMatrix34* mat, const rdVector3* look)
         mat->uvec.y = mat->lvec.x * 0.0f - mat->lvec.z * 1.0f;
         mat->uvec.z = mat->lvec.y * 1.0f - mat->lvec.x * 0.0f;*/
 
-        rdVector_Cross3(&mat->uvec, &mat->lvec, &rdroid_g_xVector3);
+        rdVector_Cross3(&mat->uvec, &rdroid_g_xVector3, &mat->lvec);
         rdVector_Normalize3Acc(&mat->uvec);
 
         /*mat->rvec.x = mat->lvec.y * mat->uvec.z - mat->lvec.z * mat->uvec.y;
@@ -190,6 +190,7 @@ void J3DAPI rdMatrix_BuildFromVectorAngle34(rdMatrix34* mat, const rdVector3* ve
 
     // Fixed: Added normalized check as vec->z might be wrongly normalized 
     //        and due to rounding errors close to -1.0f
+    // TODO: [BUG] A NaN vec->z now takes this branch (stdMath_ClipNearZero turns NaN into 0 like the original, but the check is upstream code)
     if ( stdMath_ClipNearZero(1.0f + vec->z) == 0.0f ) // vec->z <= -1.0f
     {
         mat->rvec = (rdVector3){ cosAngle, -sinAngle, 0.0f };

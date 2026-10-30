@@ -17,4 +17,5 @@ source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCES} ${HEADERS})
 
 if (JONES3D_BUILD_TESTS)
     add_subdirectory(Tests)
+    add_subdirectory(Dss/Tests)
 endif()

@@ -5,10 +5,6 @@
 
 // Function addresses
 
-#define stdio_open_ADDR 0x004EA080
-#define stdio_close_ADDR 0x004EA0B0
-#define stdio_flush_ADDR 0x004EA0E0
-
 #define word_183962C_ADDR 0x183962C
 #define word_1839630_ADDR 0x1839630
 #define word_183962E_ADDR 0x183962E

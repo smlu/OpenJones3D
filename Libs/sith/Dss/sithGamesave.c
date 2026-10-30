@@ -413,7 +413,7 @@ int J3DAPI sithGamesave_SaveCurrentWorld(SithMessageStream outstream)
     sithGamesave_aNdsSaveSectionSizes[14] += sithMulti_g_message.length;
 
     // Write unknown section
-    bError = sithDSS_sub_4B3760(DPID_ALLPLAYERS, outstream);
+    bError = sithDSS_SendEndSection(DPID_ALLPLAYERS, outstream);
     if ( bError )
     {
         return bError;
@@ -669,11 +669,11 @@ int J3DAPI sithGamesave_ReadBlockTypeLength(uint16_t* pType, uint32_t* pLength)
 {
     if ( !stdConffile_Read(pType, sizeof(uint16_t)) || !stdConffile_Read(pLength, sizeof(uint32_t)) )
     {
-        *pType   = SITHDSS_UNKNOWN_44;
+        *pType   = SITHDSS_ENDSECTION;
         *pLength = 0;
         return 1; // error
     }
-    else if ( *pType == SITHDSS_UNKNOWN_44 )
+    else if ( *pType == SITHDSS_ENDSECTION )
     {
         return SITHSAVEGAME_ENDFILE; // end of savegame file section
     }
@@ -682,7 +682,7 @@ int J3DAPI sithGamesave_ReadBlockTypeLength(uint16_t* pType, uint32_t* pLength)
     if ( *pLength > STD_ARRAYLEN(sithMulti_g_message.data) )
     {
         SITHLOG_ERROR("Savegame DSS block type %d length %u exceeds message buffer size %u.\n", *pType, *pLength, (unsigned int)STD_ARRAYLEN(sithMulti_g_message.data));
-        *pType   = SITHDSS_UNKNOWN_44;
+        *pType   = SITHDSS_ENDSECTION;
         *pLength = 0;
         return 1;
     }
@@ -718,7 +718,7 @@ int J3DAPI sithGamesave_SaveFile(const char* pFilename)
     // Init NDS file header
     NdsHeader header = { 0 };
     header.version = SITHSAVEGAME_FILEVERSION;
-    STD_STRCPY(header.aDate, "Oct 28 1999"); // TODO: use current date
+    STD_STRCPY(header.aDate, "Oct 29 1999"); // TODO: use current date
     STD_STRCPY(header.aLevelFilename, sithWorld_g_pCurrentWorld->aName);
     STD_STRCPY(header.aPreviousLevelFilename, sithGamesave_aPrevLevelFilename);
 

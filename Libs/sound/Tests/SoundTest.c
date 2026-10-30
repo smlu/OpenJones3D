@@ -474,6 +474,62 @@ TEST(Sound, TestMouthLevelMacro)
     }
 }
 
+// Regression: with all channels busy and none of lower priority Sound_Play scanned past the end of the channel array
+TEST(Sound, TestPlayAllChannelsBusy)
+{
+    // The second element is outside of the channel list (numChannels == 1) and looks like a free channel.
+    tSoundChannel aChannels[2];
+    STD_ZEROMEM(aChannels, sizeof(aChannels));
+    aChannels[0]               = SoundTest_channel;
+    aChannels[0].priority      = 5;
+    Sound_TestSetChannels(aChannels, 1);
+    Sound_TestSetOpen(1);
+
+    TEST_ASSERT_EQUAL_UINT32(SOUND_INVALIDHANDLE, Sound_Play(SOUND_TEST_SOUND_HANDLE, 1.0f, 0.0f, 3, SOUND_CHANNEL_STARTFAR, 0)); // STARTFAR skips the driver, so a write outside the list fails the test instead of crashing
+    TEST_ASSERT_EQUAL_UINT32(SOUND_INVALIDHANDLE, aChannels[1].handle);
+    TEST_ASSERT_EQUAL_UINT32(SOUND_INVALIDHANDLE, aChannels[1].hSnd);
+    TEST_ASSERT_EQUAL_UINT32(SOUND_TEST_CHANNEL_HANDLE, aChannels[0].handle);
+
+    Sound_TestSetOpen(0);
+    Sound_TestSetChannels(&SoundTest_channel, 1);
+}
+
+// Regression: Sound_Load dropped the first char of a path without separator, so the sound in the bank was not found
+TEST(Sound, TestLoadFindsBankedSound)
+{
+    uint32_t sndIdx = UINT32_MAX;
+    SoundTest_soundInfo.idx = 5u;
+
+    TEST_ASSERT_EQUAL_UINT32(SOUND_TEST_SOUND_HANDLE, Sound_Load("voice_test.wav", &sndIdx));
+    TEST_ASSERT_EQUAL_UINT32(5u, sndIdx);
+
+    sndIdx = UINT32_MAX;
+    TEST_ASSERT_EQUAL_UINT32(SOUND_TEST_SOUND_HANDLE, Sound_Load("sound\\voice_test.wav", &sndIdx));
+    TEST_ASSERT_EQUAL_UINT32(5u, sndIdx);
+
+    sndIdx = UINT32_MAX;
+    TEST_ASSERT_EQUAL_UINT32(SOUND_TEST_SOUND_HANDLE, Sound_Load("/res/sound/voice_test.wav", &sndIdx));
+    TEST_ASSERT_EQUAL_UINT32(5u, sndIdx);
+
+    // Leading separator
+    TEST_ASSERT_EQUAL_UINT32(SOUND_TEST_SOUND_HANDLE, Sound_Load("\\voice_test.wav", NULL));
+}
+
+// Regression: Sound_GetSoundIndex matched the invalid handle (0) with unused sound infos
+TEST(Sound, TestGetSoundIndexInvalidHandle)
+{
+    SoundInfo aInfos[2];
+    aInfos[0]     = SoundTest_soundInfo;
+    aInfos[0].idx = 3u;
+    STD_ZEROMEM(&aInfos[1], sizeof(aInfos[1]));
+    aInfos[1].idx = 7u;
+    Sound_TestSetSoundBank(0, aInfos, STD_ARRAYLEN(aInfos), SoundTest_aSoundCache, sizeof(SoundTest_aSoundCache));
+
+    TEST_ASSERT_EQUAL_UINT32(SOUND_INVALISOUNDINFOINDEX, Sound_GetSoundIndex(SOUND_INVALIDHANDLE));
+    TEST_ASSERT_EQUAL_UINT32(3u, Sound_GetSoundIndex(SOUND_TEST_SOUND_HANDLE));
+    TEST_ASSERT_EQUAL_UINT32(SOUND_INVALISOUNDINFOINDEX, Sound_GetSoundIndex(SOUND_TEST_SOUND_HANDLE + 1u));
+}
+
 TEST_GROUP_RUNNER(Sound)
 {
     RUN_TEST_CASE(Sound, TestFailures);
@@ -483,4 +539,7 @@ TEST_GROUP_RUNNER(Sound)
     RUN_TEST_CASE(Sound, TestAllocationFailures);
     RUN_TEST_CASE(Sound, TestLargeLipSyncBuffer);
     RUN_TEST_CASE(Sound, TestMouthLevelMacro);
+    RUN_TEST_CASE(Sound, TestPlayAllChannelsBusy);
+    RUN_TEST_CASE(Sound, TestLoadFindsBankedSound);
+    RUN_TEST_CASE(Sound, TestGetSoundIndexInvalidHandle);
 }

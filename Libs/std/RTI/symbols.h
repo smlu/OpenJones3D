@@ -3,9 +3,6 @@
 #include <j3dcore/j3d.h>
 #include <std/types.h>
 
-// Extra definition
-#define stdio_open_TYPE tFileHandle (J3API*)(char *Filename, char *mode)
-
 #define stdControl_Startup_TYPE int (J3DAPI*)(int)
 #define stdControl_Shutdown_TYPE void (*)(void)
 #define stdControl_Open_TYPE int (*)(void)
