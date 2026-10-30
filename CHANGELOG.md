@@ -28,7 +28,13 @@
     * `sithPlayerActions` (67f2eab)
     * `sithVehicleControls` (63685d3)
     * `sithPlayerControls` (d31ee9b)
-    * `sithAIMove` [incomplete] (05c806d)
+    * `sithAIMove` (05c806d,929c0a1,4cf0ba9)
+    * `sithAIUtil` (8c6239f,45c1a2b)
+    * `sithAIInstinct_InitInstincts` of `sithAIInstinct` (975b4b7,f7e90fa)
+    * `sithMulti` (2fa7748,9b74e4e)
+    * `sithDSS` (060bbe5,967a114)
+    * `sithDSSThing` (05aff55,e5a453d)
+    * `smush` (6bf096d)
   - Moved high poly option to advance display settings (7b58bff)
   - Fixed selecting stored MipMap filter mode in developer dialog (ad1633c)
   - Added new graphic options for MSAA, anisotropic texture filtering and mipmap auto gen to display settings (77df36d)
@@ -113,6 +119,10 @@
   - Fixed string-table validation, EOF handling, and partial-load cleanup in `stdStrTable`. (1b7cb2d)
     The loader validates message counts, decimal fields, quoted values, duplicate keys, and the trailing `END` marker, and releases partially loaded data after parsing or allocation failures.
   - Added implementations of `AudioLib_GenerateLipSyncBlock` and `AudioLib_GetMouthPosition`, preserving the original lip-sync timeline and cross-sample decoding behavior. (0facac9)
+  - Added implementations of `AudioLib_ParseWaveFileHeader`, `AudioLib_Compress`, `AudioLib_Uncompress`, `AudioLib_ResetCompressor`, `AudioLib_CompressBlock`, `AudioLib_UncompressBlock`, and `AudioLib_WVSMUncompressBlock`, completing `AudioLib`; the codec tables are now owned by the DLL, and the unit tests compare against vectors captured from the original executable.
+  - Fixed `AudioLib_WVSMCompressBlock` writing past the end of its sample bit length histograms for the sample -32768 and, with the earlier bounds fix, counting the bit lengths from 0 instead of 1, which selected different shifts than the original and produced different (larger) compressed WVSM data; it now matches the original output.
+  - Added implementations of the remaining `sithAIMove` functions (turning, movement, cliff/water checks, head tracking and the Quetz and Marduk tail animations), completing `sithAIMove`.
+  - Added implementation of `sithThing_UpdateQuetzUserBlock`, preserving the original Quetz tail follow behavior.
   - Added capacity-aware lip-sync generation helpers to calculate worst-case output sizes and validate input/output buffer capacities. (0facac9)
   - Added implementations of `sithThing_WriteThingsListBinary` and `sithThing_ReadThingsListBinary` for world things and templates, preserving the original binary record layout and block ordering. (92660f2)
   - Fixed MSVC incremental-link PDB collisions by giving the executable a separate debug-symbol database from the DLL. (db582ba)
@@ -122,6 +132,9 @@
   - Fixed constant wide-string array detection and DX6 DirectPlay session-descriptor allocation failure handling and cleanup. (db582ba)
   - Changed the JONES3D_RUNTIME_GUARDS CMake option to be disabled by default. (db582ba)
   - Added AudioLib and Sound lip-sync unit tests covering generation, lookup, caching, playback offsets, and allocation failures. (19d570c)
+  - Added `AudioLib` unit tests with vectors captured from the original executable, covering the wave file header parser and the ADPCM and WVSM codecs. (f114397)
+  - Added `sithDSS` and `sithDSSThing` unit tests with vectors captured from the original executable. (eea7b3e,c6e8168)
+  - Added `smush` unit tests for the core, bitmap, stream, codec and sound areas, with vectors captured from the original executable for the assembly routines and the C modules. (6ae2c86,9d82c33,3cb6658,7527a47,0f92b02,100743f)
   - Added sithThing, sithTemplate, and sithVoice unit tests, including retail-generated binary vectors and allocation/I/O failure coverage. (aa4e510)
   - Added GitHub Actions unit-test workflows for DirectX 6/9 and updated the existing CI builds to use Visual Studio 2026 with four build profiles per backend. (2995463)
 

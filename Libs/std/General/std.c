@@ -49,12 +49,6 @@ void std_InstallHooks(void)
     J3D_HOOKFUNC(stdFileSize);
     J3D_HOOKFUNC(stdFilePrintf);
     J3D_HOOKFUNC(stdFileSeek);
-
-    // Hook on stdio_open, stdio_close & stdio_flush due to stdio_services using stdFile* functions which might have conflicting FILE* object
-    // Note on debug version this should be skipped
-    J3DHookFunction(stdio_open_ADDR, (void*)stdFileOpen);
-    J3DHookFunction(stdio_close_ADDR, (void*)stdFileClose);
-    J3DHookFunction(stdio_flush_ADDR, (void*)stdFileFlush);
 }
 
 void std_ResetGlobals(void)

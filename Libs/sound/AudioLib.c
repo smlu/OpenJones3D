@@ -2,6 +2,7 @@
 #include <j3dcore/j3d.h>
 #include <j3dcore/j3dhook.h>
 #include <sound/RTI/symbols.h>
+#include <std/General/stdMath.h>
 #include <std/General/stdUtil.h>
 #include <limits.h>
 
@@ -37,264 +38,175 @@
 
 #define AUDIOLIB_PACK_LIPSYNC_ENTRY(timeKey, mouthX, mouthY) (((uint32_t)(mouthY) & AUDIOLIB_LIPSYNC_MOUTH_MASK) | (((uint32_t)(mouthX) & AUDIOLIB_LIPSYNC_MOUTH_MASK) << 8) | ((timeKey) & AUDIOLIB_LIPSYNC_TIME_MASK))
 
-#define AudioLib_aStepTable J3D_DECL_FAR_ARRAYVAR(AudioLib_aStepTable, const int16_t(*)[89])
-#define AudioLib_aStepBits J3D_DECL_FAR_ARRAYVAR(AudioLib_aStepBits, const uint8_t(*)[89])
-#define AudioLib_aIndexTableTable J3D_DECL_FAR_ARRAYVAR(AudioLib_aIndexTableTable, const int8_t*(*)[8])
-#define AudioLib_aDeltaTable J3D_DECL_FAR_ARRAYVAR(AudioLib_aDeltaTable, int16_t(*)[64])
-#define AudioLib_word_14E4928 J3D_DECL_FAR_ARRAYVAR(AudioLib_word_14E4928, int16_t(*)[5632])
-#define AudioLib_bDeltaTableInitialized J3D_DECL_FAR_VAR(AudioLib_bDeltaTableInitialized, int)
+// ADPCM codec constants
+#define AUDIOLIB_NUM_STEPS                  89
+#define AUDIOLIB_MAX_STEP_INDEX             (AUDIOLIB_NUM_STEPS - 1)
+#define AUDIOLIB_DELTA_CODE_BITS            6
+#define AUDIOLIB_DELTA_CODE_COUNT           (1 << AUDIOLIB_DELTA_CODE_BITS)
+#define AUDIOLIB_DELTA_TABLE_SIZE           (AUDIOLIB_NUM_STEPS * AUDIOLIB_DELTA_CODE_COUNT)
+#define AUDIOLIB_MAX_STEP_BITS              7
+#define AUDIOLIB_BITBUFFER_BITS             16
+#define AUDIOLIB_ADPCM_CHANNEL_BIAS         2 // Compress: a channel argument above 2 selects ADPCM and is the channel count plus 2.
+#define AUDIOLIB_ADPCM_CHANNEL_HEADER_SIZE  ((int)(sizeof(uint8_t) + sizeof(uint16_t))) // Step index and big endian previous sample of a channel
+#define AUDIOLIB_SAMPLE_MIN                 (-32768)
+#define AUDIOLIB_SAMPLE_MAX                 32767
+
+// WVSM codec constants
+#define AUDIOLIB_WVSM_MAGIC                 "WVSM"
+#define AUDIOLIB_WVSM_BLOCK_SIZE            0x1000
+#define AUDIOLIB_WVSM_ESCAPE                0x80 // Marks a raw 16-bit sample in a WVSM block.
+#define AUDIOLIB_WVSM_BLOCK_HEADER_SIZE     2    // Compressed block size, big endian.
+#define AUDIOLIB_WVSM_MAX_SHIFT             8    // Largest sample shift of a channel.
+#define AUDIOLIB_WVSM_NUM_BIT_LENGTHS       17   // Entries of the sample bit length histogram of the original.
+#define AUDIOLIB_WVSM_HISTOGRAM_SIZE        (AUDIOLIB_WVSM_NUM_BIT_LENGTHS + 1)
+#define AUDIOLIB_WVSM_MAX_ESCAPES           192  // Number of escaped samples allowed per block when lowering the shifts.
+#define AUDIOLIB_WVSM_STEREO_STEP_INDEX     0x64
+#define AUDIOLIB_WVSM_STEREO_PREV_SAMPLE0   0x1111
+#define AUDIOLIB_WVSM_STEREO_PREV_SAMPLE1   0x2222
+
+// Sound file types returned by AudioLib_ParseWaveFileHeader
+#define AUDIOLIB_FILETYPE_UNKNOWN           0
+#define AUDIOLIB_FILETYPE_IMUS              1
+#define AUDIOLIB_FILETYPE_IMUS_COMPRESSED   2
+#define AUDIOLIB_FILETYPE_WAV               3
+#define AUDIOLIB_FILETYPE_WAV_COMPRESSED    4
+#define AUDIOLIB_FILETYPE_AIFF              5
+#define AUDIOLIB_FILETYPE_INDYWV            6
+
+// Sound file format constants
+#define AUDIOLIB_MCMP_MAGIC                 "MCMP"
+#define AUDIOLIB_MCMP_MAGIC_SIZE            ((int)sizeof(AUDIOLIB_MCMP_MAGIC) - 1)
+#define AUDIOLIB_MCMP_HEADER_SIZE           (AUDIOLIB_MCMP_MAGIC_SIZE + (int)sizeof(uint16_t)) // Magic and the big endian number of index entries
+#define AUDIOLIB_MCMP_ENTRY_SIZE            9
+#define AUDIOLIB_INDYWV_MAGIC               "INDYWV"
+#define AUDIOLIB_INDYWV_SAMPLERATE_OFFSET   6  // INDYWV header layout: sample rate, bits per sample, channels, sound data size (also the extra info), extra data size
+#define AUDIOLIB_INDYWV_BITS_OFFSET         10
+#define AUDIOLIB_INDYWV_CHANNELS_OFFSET     14
+#define AUDIOLIB_INDYWV_DATASIZE_OFFSET     18
+#define AUDIOLIB_INDYWV_EXTRASIZE_OFFSET    22
+#define AUDIOLIB_INDYWV_HEADER_SIZE         26 // Extra data follows the header, then the sound data
+#define AUDIOLIB_RIFF_MAGIC                 "RIFF"
+#define AUDIOLIB_RIFF_WAVEFMT_MAGIC         "WAVEfmt "
+#define AUDIOLIB_RIFF_SYNC_CHUNK            "sync"
+#define AUDIOLIB_RIFF_DATA_CHUNK            "data"
+#define AUDIOLIB_RIFF_FORMAT_PCM            1
+#define AUDIOLIB_CHUNK_TAG_SIZE             ((int)sizeof(uint32_t))                              // Four character chunk tag of the RIFF, iMUS and AIFF containers
+#define AUDIOLIB_CHUNK_SIZE_SIZE            ((int)sizeof(uint32_t))                              // Chunk size field following the tag
+#define AUDIOLIB_CHUNK_HEADER_SIZE          (AUDIOLIB_CHUNK_TAG_SIZE + AUDIOLIB_CHUNK_SIZE_SIZE) // Chunk tag and chunk size
+#define AUDIOLIB_CONTAINER_SIZE_OFFSET      AUDIOLIB_CHUNK_TAG_SIZE                              // Offset of the RIFF and AIFF container size, after the 'RIFF' or 'FORM' tag
+#define AUDIOLIB_CONTAINER_FORMTYPE_OFFSET  AUDIOLIB_CHUNK_HEADER_SIZE                           // Offset of the form type 'WAVEfmt ' or 'AIFFCOMM'
+#define AUDIOLIB_RIFF_FMT_CHUNK_OFFSET      16 // Offset of the 'fmt ' chunk size from the start of the file
+#define AUDIOLIB_RIFF_FMT_FORMAT_OFFSET     AUDIOLIB_CHUNK_SIZE_SIZE // 'fmt ' chunk layout, from the chunk size: format tag, channels, sample rate, bytes per second, block align, bits per sample
+#define AUDIOLIB_RIFF_FMT_CHANNELS_OFFSET   (AUDIOLIB_RIFF_FMT_FORMAT_OFFSET + (int)sizeof(uint16_t))
+#define AUDIOLIB_RIFF_FMT_SAMPLERATE_OFFSET (AUDIOLIB_RIFF_FMT_CHANNELS_OFFSET + (int)sizeof(uint16_t))
+#define AUDIOLIB_RIFF_FMT_BITS_OFFSET       (AUDIOLIB_RIFF_FMT_SAMPLERATE_OFFSET + 2 * (int)sizeof(uint32_t) + (int)sizeof(uint16_t))
+#define AUDIOLIB_IMUS_MAGIC                 "iMUS"
+#define AUDIOLIB_IMUS_FRMT_MAGIC            "FRMT"
+#define AUDIOLIB_IMUS_SIZE_OFFSET           12 // Offset of the big endian size field used to locate the sound data
+#define AUDIOLIB_IMUS_FRMT_OFFSET           16 // Offset of the 'FRMT' tag
+#define AUDIOLIB_IMUS_FORMAT_OFFSET         32 // Offset of the format fields: bits per sample, sample rate and number of channels (big endian 32-bit values)
+#define AUDIOLIB_IMUS_FORMAT_SAMPLERATE     ((int)sizeof(uint32_t))
+#define AUDIOLIB_IMUS_FORMAT_CHANNELS       (2 * (int)sizeof(uint32_t))
+#define AUDIOLIB_IMUS_DATA_OFFSET_BACK      AUDIOLIB_CHUNK_HEADER_SIZE                           // Sound data starts this far before the end of the header, which ends at the format offset plus the size read at AUDIOLIB_IMUS_SIZE_OFFSET
+#define AUDIOLIB_IMUS_DATA_SIZE_OFFSET_BACK (AUDIOLIB_CHUNK_HEADER_SIZE + AUDIOLIB_CHUNK_SIZE_SIZE) // The size of the sound data is stored before the data chunk header
+#define AUDIOLIB_AIFF_MAGIC                 "FORM"
+#define AUDIOLIB_AIFF_COMM_MAGIC            "AIFFCOMM"
+#define AUDIOLIB_AIFF_SSND_CHUNK            "SSND"
+#define AUDIOLIB_AIFF_COMM_OFFSET           (AUDIOLIB_CONTAINER_FORMTYPE_OFFSET + 2 * AUDIOLIB_CHUNK_TAG_SIZE) // Offset of the COMM chunk size, after the form type "AIFF" and the COMM tag
+#define AUDIOLIB_AIFF_COMM_CHANNELS_OFFSET  5  // COMM chunk layout, from the chunk size: low byte of channels (16-bit), number of frames (32-bit), low byte of bits per sample (16-bit)
+#define AUDIOLIB_AIFF_COMM_BITS_OFFSET      11
+#define AUDIOLIB_AIFF_COMM_RATE_EXP_OFFSET  13 // Low byte of the 80-bit extended sample rate exponent
+#define AUDIOLIB_AIFF_SSND_HEADER_SIZE      (2 * (int)sizeof(uint32_t)) // SSND chunk data offset and block size fields precede the sound data
+#define AUDIOLIB_AIFF_RATE_EXP_44100        14 // Low byte of the 80-bit extended sample rate exponent
+#define AUDIOLIB_AIFF_RATE_EXP_11025        12
+#define AUDIOLIB_AIFF_RATE_44100            44100
+#define AUDIOLIB_AIFF_RATE_22050            22050
+#define AUDIOLIB_AIFF_RATE_11025            11025
+
+// Compressed data header of the stereo WVSM stream written by AudioLib_Compress and recognized by AudioLib_Uncompress.
+// It has the layout of the stereo ADPCM stream header: negated step index of channel 0 (0xE4 = ~0x1B), big endian previous sample of
+// channel 0 (0x1111), step index of channel 1 (0x64), big endian previous sample of channel 1 (0x2222), followed by the WVSM magic.
+static const uint8_t AudioLib_aWVSMHeader[10] = { 0xE4, 0x11, 0x11, 0x64, 0x22, 0x22, 'W', 'V', 'S', 'M' };
+
+static const int16_t AudioLib_aStepTable[AUDIOLIB_NUM_STEPS] = {
+    7, 8, 9, 10, 11, 12, 13, 14, 16, 17,
+    19, 21, 23, 25, 28, 31, 34, 37, 41, 45,
+    50, 55, 60, 66, 73, 80, 88, 97, 107, 118,
+    130, 143, 157, 173, 190, 209, 230, 253, 279, 307,
+    337, 371, 408, 449, 494, 544, 598, 658, 724, 796,
+    876, 963, 1060, 1166, 1282, 1411, 1552, 1707, 1878, 2066,
+    2272, 2499, 2749, 3024, 3327, 3660, 4026, 4428, 4871, 5358,
+    5894, 6484, 7132, 7845, 8630, 9493, 10442, 11487, 12635, 13899,
+    15289, 16818, 18500, 20350, 22385, 24623, 27086, 29794, 32767
+};
+
+// Number of bits of an encoded sample per step index
+static const uint8_t AudioLib_aStepBits[AUDIOLIB_NUM_STEPS] = {
+    4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+    4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+    4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 6,
+    6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7,
+    7, 7, 7, 7, 7, 7, 7, 7, 7
+};
+
+// Step index adjustments indexed by the encoded magnitude, one table per sample bit count
+static const int8_t AudioLib_aIndex2Bit[4] = { -1, 4, -1, 4 };
+static const int8_t AudioLib_aIndex3Bit[8] = { -1, -1, 2, 6, -1, -1, 2, 6 };
+static const int8_t AudioLib_aIndex4Bit[16] = { -1, -1, -1, -1, 1, 2, 4, 6, -1, -1, -1, -1, 1, 2, 4, 6 };
+static const int8_t AudioLib_aIndex5Bit[32] = {
+    -1, -1, -1, -1, -1, -1, -1, -1, 1, 1, 1, 2, 2, 4, 5, 6,
+    -1, -1, -1, -1, -1, -1, -1, -1, 1, 1, 1, 2, 2, 4, 5, 6
+};
+static const int8_t AudioLib_aIndex6Bit[64] = {
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    1, 1, 1, 1, 1, 2, 2, 2, 2, 4, 4, 4, 5, 5, 6, 6,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    1, 1, 1, 1, 1, 2, 2, 2, 2, 4, 4, 4, 5, 5, 6, 6
+};
+static const int8_t AudioLib_aIndex7Bit[128] = {
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2,
+    2, 2, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 6, 6,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2,
+    2, 2, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 6, 6
+};
+
+static const int8_t* const AudioLib_aIndexTableTable[AUDIOLIB_MAX_STEP_BITS + 1] = {
+    NULL,
+    NULL,
+    AudioLib_aIndex2Bit,
+    AudioLib_aIndex3Bit,
+    AudioLib_aIndex4Bit,
+    AudioLib_aIndex5Bit,
+    AudioLib_aIndex6Bit,
+    AudioLib_aIndex7Bit
+};
+
+// Step delta lookup table indexed by [stepIndex * 64 + code], built on first use by AudioLib_UncompressBlock
+static uint16_t AudioLib_aDeltaTable[AUDIOLIB_DELTA_TABLE_SIZE];
+static int AudioLib_bDeltaTableInitialized = 0;
 
 void AudioLib_InstallHooks(void)
 {
     // Uncomment only lines for functions that have full definition and doesn't call original function (non-thunk functions)
 
-    // J3D_HOOKFUNC(AudioLib_ParseWaveFileHeader);
-    // J3D_HOOKFUNC(AudioLib_Compress);
-    // J3D_HOOKFUNC(AudioLib_ResetCompressor);
-    // J3D_HOOKFUNC(AudioLib_Uncompress);
+    J3D_HOOKFUNC(AudioLib_ParseWaveFileHeader);
+    J3D_HOOKFUNC(AudioLib_Compress);
+    J3D_HOOKFUNC(AudioLib_ResetCompressor);
+    J3D_HOOKFUNC(AudioLib_Uncompress);
     J3D_HOOKFUNC(AudioLib_GetMouthPosition);
     J3D_HOOKFUNC(AudioLib_GenerateLipSyncBlock);
-   // J3D_HOOKFUNC(AudioLib_CompressBlock);
-   // J3D_HOOKFUNC(AudioLib_UncompressBlock);
+    J3D_HOOKFUNC(AudioLib_CompressBlock);
+    J3D_HOOKFUNC(AudioLib_UncompressBlock);
     J3D_HOOKFUNC(AudioLib_WVSMCompressBlock);
-    // J3D_HOOKFUNC(AudioLib_WVSMUncompressBlock);
+    J3D_HOOKFUNC(AudioLib_WVSMUncompressBlock);
 }
 
 void AudioLib_ResetGlobals(void)
-{
-    const int16_t AudioLib_aStepTable_tmp[89] = {
-      7,
-      8,
-      9,
-      10,
-      11,
-      12,
-      13,
-      14,
-      16,
-      17,
-      19,
-      21,
-      23,
-      25,
-      28,
-      31,
-      34,
-      37,
-      41,
-      45,
-      50,
-      55,
-      60,
-      66,
-      73,
-      80,
-      88,
-      97,
-      107,
-      118,
-      130,
-      143,
-      157,
-      173,
-      190,
-      209,
-      230,
-      253,
-      279,
-      307,
-      337,
-      371,
-      408,
-      449,
-      494,
-      544,
-      598,
-      658,
-      724,
-      796,
-      876,
-      963,
-      1060,
-      1166,
-      1282,
-      1411,
-      1552,
-      1707,
-      1878,
-      2066,
-      2272,
-      2499,
-      2749,
-      3024,
-      3327,
-      3660,
-      4026,
-      4428,
-      4871,
-      5358,
-      5894,
-      6484,
-      7132,
-      7845,
-      8630,
-      9493,
-      10442,
-      11487,
-      12635,
-      13899,
-      15289,
-      16818,
-      18500,
-      20350,
-      22385,
-      24623,
-      27086,
-      29794,
-      32767
-    };
-    memcpy((int16_t*)&AudioLib_aStepTable, &AudioLib_aStepTable_tmp, sizeof(AudioLib_aStepTable));
-
-    const uint8_t AudioLib_aStepBits_tmp[89] = {
-      4u,
-      4u,
-      4u,
-      4u,
-      4u,
-      4u,
-      4u,
-      4u,
-      4u,
-      4u,
-      4u,
-      4u,
-      4u,
-      4u,
-      4u,
-      4u,
-      4u,
-      4u,
-      4u,
-      4u,
-      4u,
-      4u,
-      4u,
-      4u,
-      4u,
-      4u,
-      4u,
-      4u,
-      4u,
-      4u,
-      4u,
-      4u,
-      4u,
-      4u,
-      4u,
-      4u,
-      4u,
-      4u,
-      4u,
-      4u,
-      4u,
-      4u,
-      4u,
-      4u,
-      4u,
-      5u,
-      5u,
-      5u,
-      5u,
-      5u,
-      5u,
-      5u,
-      5u,
-      5u,
-      5u,
-      5u,
-      5u,
-      5u,
-      5u,
-      6u,
-      6u,
-      6u,
-      6u,
-      6u,
-      6u,
-      6u,
-      6u,
-      6u,
-      6u,
-      6u,
-      6u,
-      6u,
-      6u,
-      6u,
-      7u,
-      7u,
-      7u,
-      7u,
-      7u,
-      7u,
-      7u,
-      7u,
-      7u,
-      7u,
-      7u,
-      7u,
-      7u,
-      7u,
-      7u
-    };
-    memcpy((uint8_t*)&AudioLib_aStepBits, &AudioLib_aStepBits_tmp, sizeof(AudioLib_aStepBits));
-
-    /* const int8_t *AudioLib_aIndexTableTable_tmp[8] = {
-       NULL,
-       NULL,
-       &AudioLib_aIndex2Bit,
-       &AudioLib_aIndex3Bit,
-       &AudioLib_aIndex4Bit,
-       &AudioLib_aIndex5Bit,
-       &AudioLib_aIndex6Bit,
-       &AudioLib_aIndex7Bit
-     };
-     memcpy((int8_t **)&AudioLib_aIndexTableTable, &AudioLib_aIndexTableTable_tmp, sizeof(AudioLib_aIndexTableTable));*/
-
-    memset(&AudioLib_aDeltaTable, 0, sizeof(AudioLib_aDeltaTable));
-    memset(&AudioLib_word_14E4928, 0, sizeof(AudioLib_word_14E4928));
-    memset(&AudioLib_bDeltaTableInitialized, 0, sizeof(AudioLib_bDeltaTableInitialized));
-}
-
-// Returns pointer to snd data
-const uint8_t* J3DAPI AudioLib_ParseWaveFileHeader(const uint8_t* pData, int* pType, uint32_t* pSampleRate, uint32_t* pBitsPerSample, uint32_t* pNumChannels, uint32_t* pExtraInfo, uint32_t* pSoundDataSize, uint32_t* pExtraDataOffset, uint32_t* pSoundDataOffset)
-{
-    return J3D_TRAMPOLINE_CALL(AudioLib_ParseWaveFileHeader, pData, pType, pSampleRate, pBitsPerSample, pNumChannels, pExtraInfo, pSoundDataSize, pExtraDataOffset, pSoundDataOffset);
-}
-
-int J3DAPI AudioLib_Compress(tAudioCompressorState* pCompressorState, uint8_t* pOutBuffer, const uint8_t* pInBuffer, int size, unsigned int numChannels)
-{
-    return J3D_TRAMPOLINE_CALL(AudioLib_Compress, pCompressorState, pOutBuffer, pInBuffer, size, numChannels);
-}
-
-void J3DAPI AudioLib_ResetCompressor(tAudioCompressorState* pState)
-{
-    J3D_TRAMPOLINE_CALL(AudioLib_ResetCompressor, pState);
-}
-
-void J3DAPI AudioLib_Uncompress(tAudioCompressorState* pCompressorState, uint8_t* pOutSndData, const uint8_t* pCompressedData, unsigned int size)
-{
-    J3D_TRAMPOLINE_CALL(AudioLib_Uncompress, pCompressorState, pOutSndData, pCompressedData, size);
-}
-
-//int J3DAPI AudioLib_GetMouthPosition(uint8_t* pData, int a2, uint8_t* pMouthPosX, uint8_t* pMouthPosY)
-//{
-//    return J3D_TRAMPOLINE_CALL(AudioLib_GetMouthPosition, pData, a2, pMouthPosX, pMouthPosY);
-//}
-//
-//int J3DAPI AudioLib_GenerateLipSyncBlock(uint8_t* pOutData, const uint8_t* pSndData, uint32_t a3, int8_t a4, int8_t a5, uint32_t sampleRate, uint32_t bitsPerSample, uint32_t numChannels, int a9, uint32_t sndDataSize)
-//{
-//    return J3D_TRAMPOLINE_CALL(AudioLib_GenerateLipSyncBlock, pOutData, pSndData, a3, a4, a5, sampleRate, bitsPerSample, numChannels, a9, sndDataSize);
-//}
+{}
 
 // Added helper functions for readability; original code used direct little-endian casts.
 // Reads a 32-bit little-endian value from the lip-sync block.
@@ -326,6 +238,405 @@ static inline int16_t AudioLib_ReadS16LE(const uint8_t* pData)
 static inline int AudioLib_AbsS16(int16_t value)
 {
     return value < 0 ? -(int)value : (int)value;
+}
+
+// Reads a 16-bit big-endian value.
+static inline uint16_t AudioLib_ReadU16BE(const uint8_t* pData)
+{
+    return (uint16_t)((pData[0] << AUDIOLIB_BITS_PER_BYTE) | pData[1]);
+}
+
+// Reads a 32-bit big-endian value.
+static inline uint32_t AudioLib_ReadU32BE(const uint8_t* pData)
+{
+    return ((uint32_t)pData[0] << (AUDIOLIB_BITS_PER_BYTE * 3))
+        | ((uint32_t)pData[1] << (AUDIOLIB_BITS_PER_BYTE * 2))
+        | ((uint32_t)pData[2] << AUDIOLIB_BITS_PER_BYTE)
+        | (uint32_t)pData[3];
+}
+
+// Writes a 16-bit big-endian value.
+static inline void AudioLib_WriteU16BE(uint8_t* pData, uint16_t value)
+{
+    pData[0] = (uint8_t)(value >> AUDIOLIB_BITS_PER_BYTE);
+    pData[1] = (uint8_t)value;
+}
+
+// Swaps the bytes of a 16-bit value.
+static inline uint16_t AudioLib_SwapU16(uint16_t value)
+{
+    return (uint16_t)((value << AUDIOLIB_BITS_PER_BYTE) | (value >> AUDIOLIB_BITS_PER_BYTE));
+}
+
+// Returns pointer to snd data
+const uint8_t* J3DAPI AudioLib_ParseWaveFileHeader(const uint8_t* pData, int* pType, uint32_t* pSampleRate, uint32_t* pBitsPerSample, uint32_t* pNumChannels, uint32_t* pExtraInfo, uint32_t* pSoundDataSize, uint32_t* pExtraDataOffset, uint32_t* pSoundDataOffset)
+{
+    bool bCompressed = false;
+    if ( pType )
+    {
+        *pType = AUDIOLIB_FILETYPE_UNKNOWN;
+    }
+
+    if ( !pData )
+    {
+        return NULL;
+    }
+
+    if ( pExtraDataOffset )
+    {
+        *pExtraDataOffset = 0;
+    }
+
+    if ( pSoundDataOffset )
+    {
+        *pSoundDataOffset = 0;
+    }
+
+    // Skip the MCMP container header: the index of entries followed by a size prefixed block
+    if ( memeq(pData, AUDIOLIB_MCMP_MAGIC, sizeof(AUDIOLIB_MCMP_MAGIC) - 1) )
+    {
+        uint16_t count = AudioLib_ReadU16BE(pData + AUDIOLIB_MCMP_MAGIC_SIZE);
+        pData += (AUDIOLIB_MCMP_ENTRY_SIZE * count) + AUDIOLIB_MCMP_HEADER_SIZE;
+
+        count = AudioLib_ReadU16BE(pData);
+        pData += count + sizeof(uint16_t);
+        bCompressed = true;
+    }
+
+    if ( memeq(pData, AUDIOLIB_INDYWV_MAGIC, sizeof(AUDIOLIB_INDYWV_MAGIC) - 1) )
+    {
+        if ( pType )
+        {
+            *pType = AUDIOLIB_FILETYPE_INDYWV;
+        }
+
+        if ( pSampleRate )
+        {
+            *pSampleRate = AudioLib_ReadU32LE(pData + AUDIOLIB_INDYWV_SAMPLERATE_OFFSET);
+        }
+
+        if ( pBitsPerSample )
+        {
+            *pBitsPerSample = AudioLib_ReadU32LE(pData + AUDIOLIB_INDYWV_BITS_OFFSET);
+        }
+
+        if ( pNumChannels )
+        {
+            *pNumChannels = AudioLib_ReadU32LE(pData + AUDIOLIB_INDYWV_CHANNELS_OFFSET);
+        }
+
+        if ( pExtraInfo )
+        {
+            *pExtraInfo = AudioLib_ReadU32LE(pData + AUDIOLIB_INDYWV_DATASIZE_OFFSET);
+        }
+
+        if ( pSoundDataSize )
+        {
+            *pSoundDataSize = AudioLib_ReadU32LE(pData + AUDIOLIB_INDYWV_DATASIZE_OFFSET);
+        }
+
+        uint32_t extraDataSize = 0;
+        if ( pExtraDataOffset && pSoundDataOffset )
+        {
+            extraDataSize = AudioLib_ReadU32LE(pData + AUDIOLIB_INDYWV_EXTRASIZE_OFFSET);
+            *pSoundDataOffset = extraDataSize;
+            if ( *pSoundDataOffset )
+            {
+                *pExtraDataOffset = (uint32_t)(uintptr_t)(pData + AUDIOLIB_INDYWV_HEADER_SIZE);
+            }
+            else
+            {
+                *pExtraDataOffset = 0;
+            }
+        }
+
+        return pData + AUDIOLIB_INDYWV_HEADER_SIZE + extraDataSize;
+    }
+
+    if ( memeq(pData, AUDIOLIB_RIFF_MAGIC, sizeof(AUDIOLIB_RIFF_MAGIC) - 1) )
+    {
+        const uint8_t* pEnd = pData + AudioLib_ReadU32LE(pData + AUDIOLIB_CONTAINER_SIZE_OFFSET) + AUDIOLIB_CHUNK_HEADER_SIZE;
+        if ( !memeq(pData + AUDIOLIB_CONTAINER_FORMTYPE_OFFSET, AUDIOLIB_RIFF_WAVEFMT_MAGIC, sizeof(AUDIOLIB_RIFF_WAVEFMT_MAGIC) - 1) )
+        {
+            return NULL;
+        }
+
+        if ( AudioLib_ReadS16LE(pData + AUDIOLIB_RIFF_FMT_CHUNK_OFFSET + AUDIOLIB_RIFF_FMT_FORMAT_OFFSET) != AUDIOLIB_RIFF_FORMAT_PCM )
+        {
+            return NULL;
+        }
+
+        if ( pType )
+        {
+            *pType = bCompressed ? AUDIOLIB_FILETYPE_WAV_COMPRESSED : AUDIOLIB_FILETYPE_WAV;
+        }
+
+        pData += AUDIOLIB_RIFF_FMT_CHUNK_OFFSET;
+        uint32_t size = AudioLib_ReadU32LE(pData);
+        if ( pSampleRate )
+        {
+            *pSampleRate = AudioLib_ReadU32LE(pData + AUDIOLIB_RIFF_FMT_SAMPLERATE_OFFSET);
+        }
+
+        if ( pBitsPerSample )
+        {
+            *pBitsPerSample = AudioLib_ReadS16LE(pData + AUDIOLIB_RIFF_FMT_BITS_OFFSET);
+        }
+
+        if ( pNumChannels )
+        {
+            *pNumChannels = AudioLib_ReadS16LE(pData + AUDIOLIB_RIFF_FMT_CHANNELS_OFFSET);
+        }
+
+        if ( pExtraInfo )
+        {
+            *pExtraInfo = 1;
+        }
+
+        // Walk the chunks until the data chunk, remembering the sync chunk
+        do
+        {
+            pData += size + AUDIOLIB_CHUNK_HEADER_SIZE;
+            size = AudioLib_ReadU32LE(pData);
+            if ( memeq(pData - AUDIOLIB_CHUNK_TAG_SIZE, AUDIOLIB_RIFF_SYNC_CHUNK, sizeof(AUDIOLIB_RIFF_SYNC_CHUNK) - 1) && pExtraDataOffset && pSoundDataOffset )
+            {
+                *pExtraDataOffset = (uint32_t)(uintptr_t)(pData + AUDIOLIB_CHUNK_SIZE_SIZE);
+                *pSoundDataOffset = size;
+            }
+        } while ( pData < pEnd && !memeq(pData - AUDIOLIB_CHUNK_TAG_SIZE, AUDIOLIB_RIFF_DATA_CHUNK, sizeof(AUDIOLIB_RIFF_DATA_CHUNK) - 1) );
+
+        if ( pData < pEnd )
+        {
+            if ( pSoundDataSize )
+            {
+                *pSoundDataSize = size;
+            }
+
+            return pData + AUDIOLIB_CHUNK_SIZE_SIZE;
+        }
+
+        return NULL;
+    }
+
+    if ( memeq(pData, AUDIOLIB_IMUS_MAGIC, sizeof(AUDIOLIB_IMUS_MAGIC) - 1) )
+    {
+        uint32_t size = AudioLib_ReadU32BE(pData + AUDIOLIB_IMUS_SIZE_OFFSET);
+        if ( !memeq(pData + AUDIOLIB_IMUS_FRMT_OFFSET, AUDIOLIB_IMUS_FRMT_MAGIC, sizeof(AUDIOLIB_IMUS_FRMT_MAGIC) - 1) )
+        {
+            return NULL;
+        }
+
+        if ( pType )
+        {
+            *pType = bCompressed ? AUDIOLIB_FILETYPE_IMUS_COMPRESSED : AUDIOLIB_FILETYPE_IMUS;
+        }
+
+        pData += AUDIOLIB_IMUS_FORMAT_OFFSET;
+        if ( pBitsPerSample )
+        {
+            *pBitsPerSample = AudioLib_ReadU32BE(pData);
+        }
+
+        if ( pSampleRate )
+        {
+            *pSampleRate = AudioLib_ReadU32BE(pData + AUDIOLIB_IMUS_FORMAT_SAMPLERATE);
+        }
+
+        if ( pNumChannels )
+        {
+            *pNumChannels = AudioLib_ReadU32BE(pData + AUDIOLIB_IMUS_FORMAT_CHANNELS);
+        }
+
+        if ( pExtraInfo )
+        {
+            *pExtraInfo = 1;
+        }
+
+        if ( pSoundDataSize )
+        {
+            *pSoundDataSize = AudioLib_ReadU32BE(&pData[size - AUDIOLIB_IMUS_DATA_SIZE_OFFSET_BACK]);
+        }
+
+        return pData + size - AUDIOLIB_IMUS_DATA_OFFSET_BACK;
+    }
+
+    if ( bCompressed )
+    {
+        return NULL;
+    }
+
+    if ( memeq(pData, AUDIOLIB_AIFF_MAGIC, sizeof(AUDIOLIB_AIFF_MAGIC) - 1) )
+    {
+        const uint8_t* pEnd = pData + AudioLib_ReadU32BE(pData + AUDIOLIB_CONTAINER_SIZE_OFFSET) + AUDIOLIB_CHUNK_HEADER_SIZE;
+        if ( !memeq(pData + AUDIOLIB_CONTAINER_FORMTYPE_OFFSET, AUDIOLIB_AIFF_COMM_MAGIC, sizeof(AUDIOLIB_AIFF_COMM_MAGIC) - 1) )
+        {
+            return NULL;
+        }
+
+        if ( pType )
+        {
+            *pType = AUDIOLIB_FILETYPE_AIFF;
+        }
+
+        pData += AUDIOLIB_AIFF_COMM_OFFSET;
+        uint32_t size = AudioLib_ReadU32BE(pData);
+        if ( pSampleRate )
+        {
+            // Only the exponent byte of the extended sample rate is examined
+            if ( pData[AUDIOLIB_AIFF_COMM_RATE_EXP_OFFSET] == AUDIOLIB_AIFF_RATE_EXP_44100 )
+            {
+                *pSampleRate = AUDIOLIB_AIFF_RATE_44100;
+            }
+            else if ( pData[AUDIOLIB_AIFF_COMM_RATE_EXP_OFFSET] == AUDIOLIB_AIFF_RATE_EXP_11025 )
+            {
+                *pSampleRate = AUDIOLIB_AIFF_RATE_11025;
+            }
+            else
+            {
+                *pSampleRate = AUDIOLIB_AIFF_RATE_22050;
+            }
+        }
+
+        if ( pBitsPerSample )
+        {
+            *pBitsPerSample = pData[AUDIOLIB_AIFF_COMM_BITS_OFFSET];
+        }
+
+        if ( pNumChannels )
+        {
+            *pNumChannels = pData[AUDIOLIB_AIFF_COMM_CHANNELS_OFFSET];
+        }
+
+        if ( pExtraInfo )
+        {
+            *pExtraInfo = 0;
+        }
+
+        // Walk the chunks until the sound data chunk
+        do
+        {
+            pData += size + AUDIOLIB_CHUNK_HEADER_SIZE;
+            size = AudioLib_ReadU32BE(pData);
+        } while ( pData < pEnd && !memeq(pData - AUDIOLIB_CHUNK_TAG_SIZE, AUDIOLIB_AIFF_SSND_CHUNK, sizeof(AUDIOLIB_AIFF_SSND_CHUNK) - 1) );
+
+        if ( pData < pEnd )
+        {
+            if ( pSoundDataSize )
+            {
+                *pSoundDataSize = size - AUDIOLIB_AIFF_SSND_HEADER_SIZE;
+            }
+
+            return pData + AUDIOLIB_CHUNK_SIZE_SIZE + AUDIOLIB_AIFF_SSND_HEADER_SIZE;
+        }
+
+        return NULL;
+    }
+
+    return NULL;
+}
+
+int J3DAPI AudioLib_Compress(tAudioCompressorState* pCompressorState, uint8_t* pOutBuffer, const uint8_t* pInBuffer, int size, unsigned int numChannels)
+{
+    if ( numChannels > AUDIOLIB_ADPCM_CHANNEL_BIAS )
+    {
+        // ADPCM stream: the compressor state precedes the compressed block
+        numChannels -= AUDIOLIB_ADPCM_CHANNEL_BIAS;
+
+        *pOutBuffer++ = numChannels > 1 ? ~pCompressorState->aStepIndex[0] : pCompressorState->aStepIndex[0]; // Negative step index marks stereo
+        AudioLib_WriteU16BE(pOutBuffer, (uint16_t)pCompressorState->aPrevSample[0]);
+        pOutBuffer += sizeof(uint16_t);
+
+        if ( numChannels > 1 )
+        {
+            *pOutBuffer++ = pCompressorState->aStepIndex[1];
+            AudioLib_WriteU16BE(pOutBuffer, (uint16_t)pCompressorState->aPrevSample[1]);
+            pOutBuffer += sizeof(uint16_t);
+        }
+
+        return (AUDIOLIB_ADPCM_CHANNEL_HEADER_SIZE * numChannels) + AudioLib_CompressBlock(pCompressorState, pOutBuffer, (int16_t*)pInBuffer, size / (sizeof(int16_t) * numChannels), numChannels, 1, 1);
+    }
+
+    // WVSM stream
+    uint8_t* pStart = pOutBuffer;
+    memcpy(pOutBuffer, AudioLib_aWVSMHeader, sizeof(AudioLib_aWVSMHeader));
+    pOutBuffer += sizeof(AudioLib_aWVSMHeader);
+
+    while ( size )
+    {
+        unsigned int blockSize = AUDIOLIB_WVSM_BLOCK_SIZE;
+        if ( (unsigned int)size > AUDIOLIB_WVSM_BLOCK_SIZE )
+        {
+            size -= AUDIOLIB_WVSM_BLOCK_SIZE;
+        }
+        else
+        {
+            blockSize = size;
+            size = 0;
+        }
+
+        pOutBuffer += AudioLib_WVSMCompressBlock(pOutBuffer, pInBuffer, blockSize, NULL);
+        pInBuffer += AUDIOLIB_WVSM_BLOCK_SIZE;
+    }
+
+    // TODO: [BUG] The header size is added to the size of the output which already includes the header, so the returned size is 10 bytes too large.
+    return (int)(pOutBuffer + sizeof(AudioLib_aWVSMHeader) - pStart);
+}
+
+void J3DAPI AudioLib_ResetCompressor(tAudioCompressorState* pState)
+{
+    pState->aStepIndex[0] = pState->aStepIndex[1] = 0;
+    pState->aPrevSample[0] = pState->aPrevSample[1] = 0;
+}
+
+void J3DAPI AudioLib_Uncompress(tAudioCompressorState* pCompressorState, uint8_t* pOutSndData, const uint8_t* pCompressedData, unsigned int size)
+{
+    unsigned int numChannels = 1;
+    pCompressorState->aStepIndex[0] = *pCompressedData++;
+    if ( pCompressorState->aStepIndex[0] < 0 )
+    {
+        pCompressorState->aStepIndex[0] = ~pCompressorState->aStepIndex[0];
+        ++numChannels;
+    }
+
+    pCompressorState->aPrevSample[0] = AudioLib_ReadU16BE(pCompressedData);
+    pCompressedData += sizeof(uint16_t);
+
+    if ( numChannels > 1 )
+    {
+        pCompressorState->aStepIndex[1] = *pCompressedData++;
+        pCompressorState->aPrevSample[1] = AudioLib_ReadU16BE(pCompressedData);
+        pCompressedData += sizeof(uint16_t);
+    }
+
+    // Stereo header with the fixed WVSM signature values
+    if ( numChannels == 2
+        && pCompressorState->aPrevSample[0] == AUDIOLIB_WVSM_STEREO_PREV_SAMPLE0
+        && pCompressorState->aStepIndex[1] == AUDIOLIB_WVSM_STEREO_STEP_INDEX
+        && pCompressorState->aPrevSample[1] == AUDIOLIB_WVSM_STEREO_PREV_SAMPLE1
+        && memeq(pCompressedData, AUDIOLIB_WVSM_MAGIC, sizeof(AUDIOLIB_WVSM_MAGIC) - 1) )
+    {
+        pCompressedData += sizeof(AUDIOLIB_WVSM_MAGIC) - 1;
+        while ( size )
+        {
+            unsigned int blockSize = AUDIOLIB_WVSM_BLOCK_SIZE;
+            if ( size > AUDIOLIB_WVSM_BLOCK_SIZE )
+            {
+                size -= AUDIOLIB_WVSM_BLOCK_SIZE;
+            }
+            else
+            {
+                blockSize = size;
+                size = 0;
+            }
+
+            pCompressedData += AudioLib_WVSMUncompressBlock(pOutSndData, pCompressedData, blockSize);
+            pOutSndData += AUDIOLIB_WVSM_BLOCK_SIZE;
+        }
+    }
+    else
+    {
+        AudioLib_UncompressBlock(pCompressorState, pOutSndData, pCompressedData, size / (sizeof(int16_t) * numChannels), numChannels, 1);
+    }
 }
 
 int J3DAPI AudioLib_GetMouthPosition(uint8_t* pLipSyncData, int msecTime, uint8_t* pMouthPosX, uint8_t* pMouthPosY)
@@ -719,383 +1030,516 @@ int J3DAPI AudioLib_GenerateLipSyncBlock(uint8_t* pOutData, const uint8_t* pSndD
 }
 
 // ADPCM compression
-int J3DAPI AudioLib_CompressBlock(tAudioCompressorState* pCompressorState, uint8_t* pOutBuffer, int16_t* a3, int a4, unsigned int numChannels, int a6, int bStateInitialized)
+//
+// IMA-ADPCM style codec with a variable code width. Every channel is coded on its own, one after another (the channels
+// of the interleaved input are not interleaved in the output), and starts from the step index and predicted sample
+// stored in the compressor state.
+//
+// For each sample:
+//  1. The step size is looked up from the step index (AudioLib_aStepTable) and also the width of the code
+//     (AudioLib_aStepBits, 4 to 7 bits including the sign bit). The width grows with the step so loud passages get more bits.
+//  2. The difference to the predicted sample is split into a sign and a magnitude.
+//  3. The magnitude is quantized by successive approximation: starting with the most significant magnitude bit, the
+//     step is subtracted from the difference if it fits, the bit is set in the code and the step is halved for the next bit.
+//     The subtracted steps add up to the delta the decoder will reconstruct. A non-zero code gets one more halved step (rounding).
+//  4. The code (sign bit on top) is written to the bit stream, most significant bit first.
+//  5. If all magnitude bits are set the code is the escape code and the raw 16-bit sample follows in the stream, and the
+//     prediction is set to that sample. Otherwise the signed delta is added to the prediction and the result is clamped to 16 bits.
+//  6. The step index is adjusted by a table indexed by the code width and the code (AudioLib_aIndexTableTable): small codes
+//     lower the index by one and large codes raise it by up to six, then it is clamped to the step table range.
+//
+// The state is written back after each channel so a stream can be compressed in multiple calls. Returns the size of the written data.
+int J3DAPI AudioLib_CompressBlock(tAudioCompressorState* pCompressorState, uint8_t* pOutBuffer, int16_t* pInBuffer, int numSamples, unsigned int numChannels, int bNativeByteOrder, int bStateInitialized)
 {
-    return J3D_TRAMPOLINE_CALL(AudioLib_CompressBlock, pCompressorState, pOutBuffer, a3, a4, numChannels, a6, bStateInitialized);
+    uint8_t* pCurOut   = pOutBuffer;
+    int bitPos         = 0;
+    uint16_t bitBuffer = 0;
+
+    if ( !bStateInitialized )
+    {
+        AudioLib_ResetCompressor(pCompressorState);
+    }
+
+    for ( unsigned int channel = 0; channel < numChannels; ++channel )
+    {
+        // Load the state of the channel; samples of the channel are interleaved in the input
+        int16_t* pSample = &pInBuffer[channel];
+        int index        = pCompressorState->aStepIndex[channel];
+        int predSample   = pCompressorState->aPrevSample[channel];
+
+        for ( unsigned int i = 0; i < (unsigned int)numSamples; ++i, pSample += numChannels )
+        {
+            // TODO: [BUG] The sample is not sign-extended when the input is byte swapped (bNativeByteOrder == 0), so negative samples are coded as large positive ones.
+            int sample = bNativeByteOrder ? *pSample : AudioLib_SwapU16(*(uint16_t*)pSample);
+
+            // Step 1: step size and code width of the current step index. The escape code has all magnitude bits set.
+            int step        = AudioLib_aStepTable[index];
+            int diff        = sample - predSample;
+            uint8_t numBits = AudioLib_aStepBits[index];
+            int signBit     = 1 << (numBits - 1);
+            uint8_t escape  = (uint8_t)(signBit - 1);
+
+            // Step 2: split the difference to the prediction into sign and magnitude
+            uint8_t sign = 0;
+            if ( diff < 0 )
+            {
+                sign = (uint8_t)signBit;
+                diff = -diff;
+            }
+
+            // Step 3: quantize the magnitude to the step, one bit at a time starting with the most significant magnitude bit
+            uint8_t code = 0;
+            int delta    = 0;
+            for ( int bit = signBit >> 1; bit != 0; bit >>= 1 )
+            {
+                if ( diff >= step )
+                {
+                    code |= bit;
+                    diff -= step;
+                    delta += step;
+                }
+
+                step >>= 1;
+            }
+
+            // Rounding: a non-zero code also gets the last halved step
+            if ( code )
+            {
+                delta += step;
+            }
+
+            // Step 4: append the code and the sign to the bit stream. A byte is written once the bit buffer holds a complete byte.
+            uint8_t freeBits = 8 - (bitPos & 7);
+            bitBuffer <<= numBits;
+            bitBuffer |= code | sign;
+            bitPos += numBits;
+            if ( numBits >= freeBits )
+            {
+                *pCurOut++ = (uint8_t)(bitBuffer >> (numBits - freeBits));
+            }
+
+            // Step 5: update the prediction
+            if ( code == escape )
+            {
+                // Escape code: store the raw 16-bit sample, big endian, behind the code and use it as the new prediction
+                predSample = sample;
+                bitBuffer <<= 8;
+                bitBuffer |= (predSample >> 8) & 0xFF;
+                *pCurOut++ = (uint8_t)(bitBuffer >> (bitPos & 7));
+                bitBuffer <<= 8;
+                bitBuffer |= predSample & 0xFF;
+                *pCurOut++ = (uint8_t)(bitBuffer >> (bitPos & 7));
+            }
+            else
+            {
+                // The decoder reconstructs the same delta
+                predSample += sign ? -delta : delta;
+                predSample = STDMATH_CLAMP(predSample, AUDIOLIB_SAMPLE_MIN, AUDIOLIB_SAMPLE_MAX);
+            }
+
+            // Step 6: adapt the step index to the size of the code
+            index += AudioLib_aIndexTableTable[numBits][code];
+            index = STDMATH_CLAMP(index, 0, AUDIOLIB_MAX_STEP_INDEX);
+        }
+
+        // Save the state of the channel
+        pCompressorState->aStepIndex[channel]  = (int8_t)index;
+        pCompressorState->aPrevSample[channel] = (int16_t)predSample;
+    }
+
+    // Flush the remaining bits padded with zeros to a full byte
+    if ( bitPos & 7 )
+    {
+        bitBuffer <<= 8 - (bitPos & 7);
+        *pCurOut++ = bitBuffer & 0xFF;
+    }
+
+    return (int)(pCurOut - pOutBuffer);
+}
+
+// Builds the lookup table of the decoder: for every step index and every 6-bit code the sum of the step halves
+// selected by the code bits, the most significant bit selecting the whole step. This is the delta the encoder builds up bit by bit.
+static void AudioLib_InitDeltaTable(void)
+{
+    // For each step and code, sum the step fractions selected by the code bits
+    for ( unsigned int code = 0; code < AUDIOLIB_DELTA_CODE_COUNT; ++code )
+    {
+        for ( unsigned int stepIdx = 0; stepIdx < AUDIOLIB_NUM_STEPS; ++stepIdx )
+        {
+            uint16_t step = AudioLib_aStepTable[stepIdx];
+            int delta     = 0;
+            for ( unsigned int bit = AUDIOLIB_DELTA_CODE_COUNT >> 1; bit != 0; bit >>= 1 )
+            {
+                if ( code & bit )
+                {
+                    delta += step;
+                }
+
+                step >>= 1;
+            }
+
+            AudioLib_aDeltaTable[code + stepIdx * AUDIOLIB_DELTA_CODE_COUNT] = (uint16_t)delta;
+        }
+    }
+
+    AudioLib_bDeltaTableInitialized = 1;
 }
 
 // ADPCM decompress
-void J3DAPI AudioLib_UncompressBlock(tAudioCompressorState* pCompressorState, uint8_t* pOutData, const uint8_t* pInData, int size, unsigned int numChannels, int bStateInited)
+//
+// Inverse of AudioLib_CompressBlock. Every channel is decoded on its own from the step index and the previous sample of the
+// compressor state, and written to the interleaved output.
+//
+// For each sample:
+//  1. The code width (4 to 7 bits including the sign bit) is taken from the step index and the code is read from the bit stream,
+//     most significant bit first.
+//  2. The sign bit is split off the code.
+//  3. If the magnitude bits are all set (escape code) the raw 16-bit sample follows in the stream and is used as is.
+//  4. Otherwise the delta is the sum of step fractions looked up in the delta table (built by AudioLib_InitDeltaTable), plus
+//     a rounding step for non-zero codes. It is subtracted from or added to the previous sample depending on the sign
+//     and the result is clamped to 16 bits.
+//  5. The sample becomes the new prediction and the step index is adapted by the same table as in the encoder.
+//
+// The state is written back after each channel.
+void J3DAPI AudioLib_UncompressBlock(tAudioCompressorState* pCompressorState, uint8_t* pOutData, const uint8_t* pInData, int numSamples, unsigned int numChannels, int bStateInitialized)
 {
-    J3D_TRAMPOLINE_CALL(AudioLib_UncompressBlock, pCompressorState, pOutData, pInData, size, numChannels, bStateInited);
+    if ( !AudioLib_bDeltaTableInitialized )
+    {
+        AudioLib_InitDeltaTable();
+    }
+
+    if ( !bStateInitialized )
+    {
+        AudioLib_ResetCompressor(pCompressorState);
+    }
+
+    const uint8_t* pIn = pInData;
+    int bitPos         = 0;
+
+    // The bit buffer holds the 16 bits around the current read position
+    uint16_t bitBuffer = *pIn++;
+    bitBuffer <<= 8;
+    bitBuffer |= *pIn++;
+
+    // Channels are stored one after another and decoded into interleaved output
+    for ( unsigned int channel = 0; channel < numChannels; ++channel )
+    {
+        // Load the state of the channel; the channel is written interleaved to the output
+        int index      = pCompressorState->aStepIndex[channel];
+        int predSample = pCompressorState->aPrevSample[channel];
+        int16_t* pOut  = (int16_t*)pOutData + channel;
+
+        for ( int numSamplesLeft = numSamples; numSamplesLeft != 0; --numSamplesLeft )
+        {
+            // Step 1: read the code from the bit buffer. The buffer holds 16 bits and is refilled by a byte when a byte was consumed.
+            uint8_t numBits = AudioLib_aStepBits[index];
+            int signBit     = 1 << (numBits - 1);
+            uint8_t escape  = (uint8_t)(signBit - 1);
+
+            bitPos += numBits;
+            unsigned int code = (bitBuffer >> (AUDIOLIB_BITBUFFER_BITS - bitPos)) & ((1u << numBits) - 1u);
+            if ( bitPos > 7 )
+            {
+                bitPos -= 8;
+                bitBuffer = (uint16_t)((bitBuffer << 8) | *pIn++);
+            }
+
+            // Step 2: split off the sign bit
+            bool bNegative = (code & signBit) != 0;
+            if ( bNegative )
+            {
+                code ^= signBit;
+            }
+
+            int sample;
+            if ( code == escape )
+            {
+                // Step 3: escape code, the raw 16-bit sample follows in the stream, not byte aligned
+                uint16_t nextBuffer = (uint16_t)((bitBuffer << 8) | *pIn++);
+                uint8_t lowByte     = (uint8_t)(nextBuffer >> (8 - bitPos));
+                sample              = (int16_t)(((bitBuffer << bitPos) & 0xFF00u) | lowByte);
+                bitBuffer           = (uint16_t)((nextBuffer << 8) | *pIn++);
+            }
+            else
+            {
+                // Step 4: delta from the delta table, the code is aligned to the 6 table bits
+                int delta = AudioLib_aDeltaTable[(code << (AUDIOLIB_MAX_STEP_BITS - numBits)) | (index << AUDIOLIB_DELTA_CODE_BITS)];
+                if ( code )
+                {
+                    delta += AudioLib_aStepTable[index] >> (numBits - 1);
+                }
+
+                sample = bNegative ? predSample - delta : predSample + delta;
+                sample = STDMATH_CLAMP(sample, AUDIOLIB_SAMPLE_MIN, AUDIOLIB_SAMPLE_MAX);
+            }
+
+            // Step 5: output the sample, use it as the prediction and adapt the step index
+            predSample = sample;
+            *pOut      = (int16_t)sample;
+            pOut += numChannels;
+
+            index += AudioLib_aIndexTableTable[numBits][code];
+            index = STDMATH_CLAMP(index, 0, AUDIOLIB_MAX_STEP_INDEX);
+        }
+
+        // Save the state of the channel
+        pCompressorState->aStepIndex[channel]  = (int8_t)index;
+        pCompressorState->aPrevSample[channel] = (int16_t)predSample;
+    }
 }
 
-//int J3DAPI AudioLib_WVSMCompressBlock(uint8_t* pOutBuffer, const uint8_t* pInBuffer, int blockSize, FILE* pFile)
-//{
-//    return J3D_TRAMPOLINE_CALL(AudioLib_WVSMCompressBlock, pOutBuffer, pInBuffer, blockSize, pFile);
-//}
-
+// WVSM decompression of one block of up to AUDIOLIB_WVSM_BLOCK_SIZE bytes of stereo 16-bit PCM.
+//
+// The compressed block holds a big endian size (skipped here), a shift byte (left channel shift in the high nibble, right
+// channel shift in the low nibble) and then the samples alternating left and right. A sample is a signed byte which is scaled
+// back by the shift of its channel, or the escape byte 0x80 followed by the raw 16-bit sample, big endian, for samples that
+// did not fit. Returns the number of consumed bytes.
 int J3DAPI AudioLib_WVSMUncompressBlock(uint8_t* pOutBuffer, const uint8_t* pInBuffer, int blockSize)
 {
-    return J3D_TRAMPOLINE_CALL(AudioLib_WVSMUncompressBlock, pOutBuffer, pInBuffer, blockSize);
+    const uint8_t* pIn = pInBuffer;
+    int16_t* pOut      = (int16_t*)pOutBuffer;
+    int numSamples     = (blockSize & ~1) >> 1;
+
+    pIn += AUDIOLIB_WVSM_BLOCK_HEADER_SIZE; // Skip compressed block size
+
+    // Per channel shifts applied to the stored 8-bit samples
+    int shifts     = *pIn++;
+    int leftShift  = shifts >> 4;
+    int rightShift = shifts & 0xF;
+
+    for ( int i = 0; i < numSamples; i += 2 )
+    {
+        // Left sample
+        int left = *pIn++;
+        if ( left == AUDIOLIB_WVSM_ESCAPE )
+        {
+            // Escape: raw 16-bit sample
+            int value = *pIn++ << 8;
+            *pOut++   = (int16_t)(value + *pIn++);
+        }
+        else
+        {
+            left    = (int8_t)left;
+            *pOut++ = (int16_t)(left * (1 << leftShift));
+        }
+
+        if ( i + 1 == numSamples )
+        {
+            break;
+        }
+
+        // Right sample
+        int right = *pIn++;
+        if ( right == AUDIOLIB_WVSM_ESCAPE )
+        {
+            // Escape: raw 16-bit sample
+            int value = *pIn++ << 8;
+            *pOut++   = (int16_t)(value + *pIn++);
+        }
+        else
+        {
+            right   = (int8_t)right;
+            *pOut++ = (int16_t)(right * (1 << rightShift));
+        }
+    }
+
+    return (int)(pIn - pInBuffer);
 }
 
+// WVSM compression of one block of up to AUDIOLIB_WVSM_BLOCK_SIZE bytes of stereo 16-bit PCM, inverse of AudioLib_WVSMUncompressBlock.
+//
+// The block is written as: big endian compressed size (without the size field), a shift byte (left channel shift in the
+// high nibble, right channel shift in the low nibble) and the samples alternating left and right. Every sample is stored
+// as a signed byte, the 16-bit sample divided by the shift of its channel (rounded away from zero), or as the escape byte
+// 0x80 followed by the big endian 16-bit sample, with the low bits lost to the shift already cleared, if it did not fit into the byte.
+//
+// Algorithm:
+//  1. Histogram: for each channel count the samples by bit length of their magnitude. The histogram index is the bit length plus one.
+//  2. Start with the largest shift (8) and lower it while no sample needs it, i.e. while no sample of the channel has a
+//     magnitude of k + 7 bits, so every sample fits into a byte. Samples with k + 7 bits fit exactly.
+//  3. Lowering a shift further gives the channel one more bit of precision but all samples of the highest bit length become
+//     escapes (3 bytes instead of one). With a budget of 192 escapes per block, repeatedly lower the shift of the channel
+//     whose escapes cost less until the budget is exhausted.
+//  4. Write the block, optionally logging the histograms to pFile.
+//
+// Returns the size of the written block including the size field.
 int J3DAPI AudioLib_WVSMCompressBlock(uint8_t* pOutBuffer, const uint8_t* pInBuffer, int blockSize, FILE* pFile)
 {
-    const uint8_t* pInBuffer_1;
-    int size_1;
-    unsigned int sampleCount;
-    int curLeftSamp;
-    const uint8_t* v8;
-    int i;
-    int curRightSamp;
-    int j;
-    int kRight_1;
-    int* pLeft;
-    int kLeft;
-    int* pRight;
-    int rsavedBits;
-    int lsavedBits_1;
-    int numSlots;
-    int* pRight_1;
-    int* pLeft_1;
-    int v21;
-    int leftOffset;
-    char kRight_2;
-    int* v24;
-    int v25;
-    int* v26;
-    int v27;
-    const int16_t* pCurIn;
-    uint8_t* pCurOut;
-    int curLeftSample;
-    const int16_t* pRightIn;
-    int leftSampleOffseted;
-    int leftSampeCompressed;
-    int v34;
-    uint8_t* v35;
-    int curRightSampe;
-    uint8_t* pRightOut;
-    int rightSampleOffseted;
-    int rightSampleCompressed;
-    int v40;
-    uint8_t* v41;
-    int compressedSize;
-    int kRight;
-    int v44;
-    unsigned int kLeft_1;
-    int lsavedBits;
-    int v47;
-    int rightOffset;
-    int leftBits[17];
-    int rightBits[17];
-    int blockSizea;
+    // Fixed: Histograms have one more entry than the original (17), the sample -32768 has a bit length of 17 and wrote past the end of the arrays
+    int leftBits[AUDIOLIB_WVSM_HISTOGRAM_SIZE]  = { 0 };
+    int rightBits[AUDIOLIB_WVSM_HISTOGRAM_SIZE] = { 0 };
 
-    pInBuffer_1 = pInBuffer;
+    int numValues = blockSize >> 1; // Number of 16-bit samples of both channels
 
-    memset(leftBits, 0, sizeof(leftBits));
-
-    size_1 = blockSize >> 1;
-    blockSizea = size_1;
-
-    memset(rightBits, 0, sizeof(rightBits));
-
-    if ( size_1 > 0 )
+    // Step 1: histogram of the bit length of the magnitude of the left and right samples
+    const int16_t* pIn = (const int16_t*)pInBuffer;
+    for ( int i = 0; i < numValues; i += 2 )
     {
-        int outOfBoundsLeft = 0;
-        int outOfBoundsRight = 0;
-        sampleCount = (unsigned int)(size_1 + 1) >> 1;
+        int sample = *pIn++;
+        sample = sample < 0 ? -sample : sample;
 
-        // Note in debug version of Indy3D.exe the loop is the same only the loop range is different.
-        // In debug version the loop range is defined as counter = 0; while(counter < size_1) {... counter += 2; }
-        // This change still causes the rightBits or leftBits to be rad out of bounds,
-        // so the change must be somewhere else in order for the debug version to run normally
-        do
+        int numBits = 1;
+        for ( ; sample; sample >>= 1 )
         {
-            curLeftSamp = *(int16_t*)pInBuffer_1;
-            v8 = pInBuffer_1 + 2;
-            if ( curLeftSamp < 0 )
-            {
-                curLeftSamp = -curLeftSamp;
-            }
-
-            for ( i = 0; curLeftSamp; ++i ) // [ADD] Fixed init i value (orig. i = 1) which caused out of bounds access
-            {
-                curLeftSamp >>= 1;
-            }
-
-            pInBuffer_1 = v8 + 2;
-
-            if ( i > 16 ) // [ADD] bound check fix
-            {
-                i = 16;
-                outOfBoundsLeft++;
-            }
-            ++leftBits[i];
-
-            curRightSamp = *((int16_t*)pInBuffer_1 - 1);
-            if ( curRightSamp < 0 )
-            {
-                curRightSamp = -curRightSamp;
-            }
-
-            for ( j = 0; curRightSamp; ++j ) // [ADD] Fixed init j value (orig. j = 1)
-            {
-                curRightSamp >>= 1;
-            }
-
-            --sampleCount;
-
-            if ( j > 16 ) // [ADD] bound check fix
-            {
-                j = 16;
-                outOfBoundsRight++;
-            }
-            ++rightBits[j];
-        } while ( sampleCount );
-
-        if ( outOfBoundsLeft || outOfBoundsRight )
-        {
-            // TODO: make separate log function var for audio lib
-          /*  if (Sound_pHS) {
-                Sound_pHS->logWarning("AudioLib_WVSMCompressBlock: %d left bits out of bounds, %d right bits out of bounds\n", outOfBoundsLeft, outOfBoundsRight);
-            }*/
+            ++numBits;
         }
+
+        ++leftBits[numBits];
+
+        sample = *pIn++;
+        sample = sample < 0 ? -sample : sample;
+
+        numBits = 1;
+        for ( ; sample; sample >>= 1 )
+        {
+            ++numBits;
+        }
+
+        ++rightBits[numBits];
     }
 
-    kRight_1 = 8;
-
-    pLeft = &leftBits[16];
-    for ( kLeft = 8; kLeft > 0; --kLeft )
+    // Step 2: the smallest shift of each channel for which all samples fit into a byte
+    int kLeft  = AUDIOLIB_WVSM_MAX_SHIFT;
+    int kRight = AUDIOLIB_WVSM_MAX_SHIFT;
+    while ( kLeft > 0 && !leftBits[kLeft + AUDIOLIB_WVSM_MAX_SHIFT] )
     {
-        if ( *pLeft )
-        {
-            break;
-        }
-
-        --pLeft;
+        --kLeft;
     }
 
-    v44 = kLeft;
-
-    pRight = &rightBits[16];
-    do
+    while ( kRight > 0 && !rightBits[kRight + AUDIOLIB_WVSM_MAX_SHIFT] )
     {
-        if ( *pRight )
-        {
-            break;
-        }
+        --kRight;
+    }
 
-        --kRight_1;
-        --pRight;
-    } while ( kRight_1 > 0 );
-
-    rsavedBits = 0;
-    lsavedBits_1 = 0;
-
-    kRight = kRight_1;
-    numSlots = 192;
-    pRight_1 = &rightBits[kRight_1 + 8];
-    pLeft_1 = &leftBits[kLeft + 8];
-    do
+    // Step 3: spend the escape budget on lowering the shifts
+    int numSlotsLeft = AUDIOLIB_WVSM_MAX_ESCAPES;
+    int leftSaved    = 0;
+    int rightSaved   = 0;
+    while ( numSlotsLeft )
     {
-        if ( kLeft <= 0 )
+        bool bLeft;
+        if ( kLeft > 0 && kRight > 0 )
         {
-            if ( kRight <= 0 )
-            {
-                break;
-            }
-
-            v21 = 0;
+            // Both shifts can be lowered, take the channel with fewer escapes
+            bLeft = leftBits[kLeft + AUDIOLIB_WVSM_MAX_SHIFT] < rightBits[kRight + AUDIOLIB_WVSM_MAX_SHIFT];
         }
-
-        else if ( kRight <= 0 )
+        else if ( kLeft > 0 )
         {
-            v21 = 1;
+            bLeft = true;
+        }
+        else if ( kRight > 0 )
+        {
+            bLeft = false;
         }
         else
         {
-            v21 = *pLeft_1 < *pRight_1;
-            kLeft = v44;
+            break;
         }
 
-        if ( v21 )
+        if ( bLeft )
         {
-            if ( *pLeft_1 > numSlots )
+            if ( leftBits[kLeft + AUDIOLIB_WVSM_MAX_SHIFT] > numSlotsLeft )
             {
                 break;
             }
 
-            numSlots -= *pLeft_1;
+            numSlotsLeft -= leftBits[kLeft + AUDIOLIB_WVSM_MAX_SHIFT];
             --kLeft;
-            --pLeft_1;
-            v44 = kLeft;
-            ++lsavedBits_1;
+            ++leftSaved;
         }
         else
         {
-            if ( *pRight_1 > numSlots )
+            if ( rightBits[kRight + AUDIOLIB_WVSM_MAX_SHIFT] > numSlotsLeft )
             {
                 break;
             }
 
-            numSlots -= *pRight_1--;
+            numSlotsLeft -= rightBits[kRight + AUDIOLIB_WVSM_MAX_SHIFT];
             --kRight;
-            ++rsavedBits;
+            ++rightSaved;
         }
-    } while ( numSlots );
-
-    lsavedBits = lsavedBits_1;
-    if ( kLeft )
-    {
-        leftOffset = 1 << (kLeft - 1);
-        v47 = leftOffset;
-    }
-    else
-    {
-        v47 = 0;
-        leftOffset = 0;
     }
 
-    kRight_2 = kRight;
-    if ( kRight )
-    {
-        rightOffset = 1 << (kRight - 1);
-    }
-    else
-    {
-        rightOffset = 0;
-    }
+    // Rounding offset of each channel, half of the shifted out range
+    int leftOffset  = kLeft ? 1 << (kLeft - 1) : 0;
+    int rightOffset = kRight ? 1 << (kRight - 1) : 0;
 
+    // Step 4: log the histograms
     if ( pFile )
     {
         fprintf(pFile, "L = %4d:", kLeft);
-        v24 = leftBits;
-        v25 = 16;
-        do
+        for ( int i = 0; i < AUDIOLIB_WVSM_NUM_BIT_LENGTHS - 1; ++i )
         {
-            fprintf(pFile, "%4d,", *v24++);
-            --v25;
-        } while ( v25 );
+            fprintf(pFile, "%4d,", leftBits[i]);
+        }
 
-        fprintf(pFile, "%4d\n", leftBits[16]);
+        fprintf(pFile, "%4d\n", leftBits[AUDIOLIB_WVSM_NUM_BIT_LENGTHS - 1]);
 
         fprintf(pFile, "R = %4d:", kRight);
-        v26 = rightBits;
-        v27 = 16;
-        do
+        for ( int i = 0; i < AUDIOLIB_WVSM_NUM_BIT_LENGTHS - 1; ++i )
         {
-            fprintf(pFile, "%4d,", *v26++);
-            --v27;
-        } while ( v27 );
+            fprintf(pFile, "%4d,", rightBits[i]);
+        }
 
-        fprintf(pFile, "%4d\n", rightBits[16]);
+        fprintf(pFile, "%4d\n", rightBits[AUDIOLIB_WVSM_NUM_BIT_LENGTHS - 1]);
 
-        fprintf(pFile, "%d escape slots used, %dL/%dR bits saved\n\n", 192 - numSlots, lsavedBits, rsavedBits);
-        kLeft |= (v44 & 0xff);
-        leftOffset = v47;
-        kRight_2 = kRight;
+        fprintf(pFile, "%d escape slots used, %dL/%dR bits saved\n\n", AUDIOLIB_WVSM_MAX_ESCAPES - numSlotsLeft, leftSaved, rightSaved);
     }
 
-    pCurIn = (const int16_t*)pInBuffer;
-    *pOutBuffer = 0;
-    pOutBuffer[2] = kRight_2 + 16 * kLeft;      // assign sample expander kRight_2 | (kLeft << 4)
-    pCurOut = pOutBuffer + 3;
+    // Block header: the size is written last, followed by the shifts
+    uint8_t* pCurOut = pOutBuffer;
+    *pCurOut++ = 0;
+    *pCurOut++ = 0;
+    *pCurOut++ = (uint8_t)((kLeft << 4) + kRight);
 
-    // compressing block
-    if ( blockSizea > 0 )
+    // Write the samples
+    pIn = (const int16_t*)pInBuffer;
+    for ( int i = 0; i < numValues; i += 2 )
     {
-        kLeft_1 = (unsigned int)(blockSizea + 1) >> 1;// TODO: make new int var
-        while ( 1 )
+        // Left sample: round away from zero, clamp, shift
+        int sample = *pIn++;
+        sample = sample < 0 ? sample - leftOffset : sample + leftOffset;
+        sample = sample < -32767 ? -32767 : sample;
+        sample = sample > 32767 ? 32767 : sample;
+        sample >>= kLeft;
+
+        int value = sample * (1 << kLeft); // Sample with the shifted out bits cleared
+        if ( sample > 127 || sample < -127 )
         {
-            curLeftSample = *pCurIn;
-            pRightIn = pCurIn + 1;
-            if ( curLeftSample >= 0 )
-            {
-                leftSampleOffseted = leftOffset + curLeftSample;
-            }
-            else
-            {
-                leftSampleOffseted = curLeftSample - leftOffset;
-            }
+            // Escape: raw 16-bit sample, big endian
+            *pCurOut++ = AUDIOLIB_WVSM_ESCAPE;
+            *pCurOut++ = (uint8_t)(value >> 8);
+            *pCurOut++ = (uint8_t)value;
+        }
+        else
+        {
+            *pCurOut++ = (uint8_t)sample;
+        }
 
-            if ( leftSampleOffseted < -32767 )
-            {
-                leftSampleOffseted = -32767;
-            }
+        // Right sample
+        sample = *pIn++;
+        sample = sample < 0 ? sample - rightOffset : sample + rightOffset;
+        sample = sample < -32767 ? -32767 : sample;
+        sample = sample > 32767 ? 32767 : sample;
+        sample >>= kRight;
 
-            if ( leftSampleOffseted > 32767 )
-            {
-                leftSampleOffseted = 32767;
-            }
-
-            leftSampeCompressed = leftSampleOffseted >> kLeft;
-            v34 = leftSampeCompressed << kLeft; // leftSampleOffseted could be used instead
-            if ( leftSampeCompressed > 127 || leftSampeCompressed < -127 )
-            {
-                *pCurOut = 0x80;
-                v35 = pCurOut + 1;
-                *v35 = (v34 >> 8) & 0xff;
-                pCurOut = v35 + 1;
-                *pCurOut = v34;
-            }
-            else
-            {
-                *pCurOut = leftSampeCompressed;
-            }
-
-            curRightSampe = *pRightIn;
-            pRightOut = pCurOut + 1;
-            pCurIn = pRightIn + 1;
-            if ( curRightSampe >= 0 )
-            {
-                rightSampleOffseted = rightOffset + curRightSampe;
-            }
-            else
-            {
-                rightSampleOffseted = curRightSampe - rightOffset;
-            }
-
-            if ( rightSampleOffseted < -32767 )
-            {
-                rightSampleOffseted = -32767;
-            }
-
-            if ( rightSampleOffseted > 32767 )
-            {
-                rightSampleOffseted = 32767;
-            }
-
-            rightSampleCompressed = rightSampleOffseted >> kRight;
-            v40 = rightSampleCompressed << kRight;// rightSampleOffseted could be used instead
-            if ( rightSampleCompressed > 127 || rightSampleCompressed < -127 )
-            {
-                *pRightOut = 0x80;
-                v41 = pRightOut + 1;
-                *v41 = (v40 >> 8) & 0xff;
-                pRightOut = v41 + 1;
-                *pRightOut = v40;
-            }
-            else
-            {
-                *pRightOut = rightSampleCompressed;
-            }
-
-            pCurOut = pRightOut + 1;
-            if ( !--kLeft_1 )
-            {
-                break;
-            }
-
-            leftOffset = v47;
+        value = sample * (1 << kRight);
+        if ( sample > 127 || sample < -127 )
+        {
+            *pCurOut++ = AUDIOLIB_WVSM_ESCAPE;
+            *pCurOut++ = (uint8_t)(value >> 8);
+            *pCurOut++ = (uint8_t)value;
+        }
+        else
+        {
+            *pCurOut++ = (uint8_t)sample;
         }
     }
 
-    compressedSize = pCurOut - pOutBuffer;
-
-    // assign be compressed size to the begin of out block
-    *pOutBuffer = (uint16_t)((uint16_t)pCurOut - (uint16_t)pOutBuffer - 2) >> 8;
-    pOutBuffer[1] = (uint8_t)pCurOut - (uint8_t)pOutBuffer - 2;
+    // Store the compressed size, without the size field, big endian at the start of the block
+    int compressedSize = (int)(pCurOut - pOutBuffer);
+    pOutBuffer[0] = (uint8_t)((compressedSize - AUDIOLIB_WVSM_BLOCK_HEADER_SIZE) >> 8);
+    pOutBuffer[1] = (uint8_t)(compressedSize - AUDIOLIB_WVSM_BLOCK_HEADER_SIZE);
 
     return compressedSize;
 }

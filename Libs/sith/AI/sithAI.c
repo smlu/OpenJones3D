@@ -725,8 +725,8 @@ int J3DAPI sithAI_ProcessUnhandledEvent(SithAIControlBlock* pLocal, SithAIEventT
                 return 1;
             }
 
-            sithAIMove_AISetMovePos(pLocal, &pLocal->vecUnknown5, 1.7f);
-            sithAIMove_AISetLookPosEyeLevel(pLocal, &pLocal->vecUnknown5);
+            sithAIMove_AISetMovePos(pLocal, &pLocal->lastGoalSeenPos, 1.7f);
+            sithAIMove_AISetLookPosEyeLevel(pLocal, &pLocal->lastGoalSeenPos);
             return 0;
         }
         case SITHAI_EVENT_TOUCHED:

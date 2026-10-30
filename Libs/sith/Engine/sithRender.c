@@ -100,7 +100,7 @@ static float sithRender_maxLightCollectDistance = SITHRENDER_MAXLIGHTCOLLECTDIST
 static SithRenderSectorQueue sithRender_visitedSectorQueue = { 0 };
 
 // Rendering vars
-static bool sithRender_bResetCameraAspect;
+bool sithRender_bResetCameraAspect; // Note: Exported for sithDSS
 static size_t sithRender_curCamSectorIdx; // Not used for anything particular
 
 static size_t sithRender_numRenderedSectors;

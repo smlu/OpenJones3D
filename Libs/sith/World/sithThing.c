@@ -1,9 +1,12 @@
 #include "sithThing.h"
 #include <j3dcore/j3dhook.h>
 
+#include <math.h>
+
 #include <rdroid/Engine/rdPuppet.h>
 #include <rdroid/Engine/rdThing.h>
 #include <rdroid/Math/rdMatrix.h>
+#include <rdroid/Math/rdMath.h>
 #include <rdroid/Math/rdVector.h>
 #include <rdroid/Primitives/rdModel3.h>
 #include <rdroid/Primitives/rdParticle.h>
@@ -97,13 +100,18 @@ static_assert(sizeof(CndAIControlInfo) == 68, "sizeof(CndAIControlInfo) == 68");
 static_assert(sizeof(float) == 4, "sizeof(float) == 4");
 static_assert(sizeof(rdVector3) == 12, "sizeof(rdVector3) == 12");
 
-#define sithThing_prevQuetzAttachInfo J3D_DECL_FAR_VAR(sithThing_prevQuetzAttachInfo, SithQuetzAttachInfo*)
-#define sithThing_curQuetzAttachInfo J3D_DECL_FAR_VAR(sithThing_curQuetzAttachInfo, SithQuetzAttachInfo*)
-#define sithThing_dword_5612B8 J3D_DECL_FAR_VAR(sithThing_dword_5612B8, int)
+static SithQuetzAttachInfo* sithThing_prevQuetzAttachInfo = NULL;
+static SithQuetzAttachInfo* sithThing_curQuetzAttachInfo  = NULL;
+static bool sithThing_bQuetzTurningSharp = false; // Set when the Quetz tail turns in one direction faster than sithThing_quetzMaxTurnRate, it lengthens the tail segments
 
 static bool bThingStartup = false; // Added: Init to false, Note original it looks like this symbol name was named bThingStartup without prefix 'sithThing_'
 
 static SithThingUnknownFunc sithThing_pfUnknownFunc = NULL; // Fixed: Init to NULL
+
+static float sithThing_quetzStretchMinRatio = 0.3f;
+static float sithThing_quetzScaleBase       = 1.0f;
+static float sithThing_quetzScalePerAttach  = 0.07f;
+static float sithThing_quetzMaxTurnRate     = 25.0f;
 
 static uint32_t sithThing_curSignature = 1u;
 static uint16_t sithThing_guidEntropy  = 1u;
@@ -340,14 +348,14 @@ void sithThing_InstallHooks(void)
     J3D_HOOKFUNC(sithThing_GetFreeThingIndex);
     J3D_HOOKFUNC(sithThing_ParseThingPlacement);
     J3D_HOOKFUNC(sithThing_CreateQuetzUserBlock);
-    //J3D_HOOKFUNC(sithThing_UpdateQuetzUserBlock);
+    J3D_HOOKFUNC(sithThing_UpdateQuetzUserBlock);
 }
 
 void sithThing_ResetGlobals(void)
 {
     STD_ZEROMEM(&sithThing_prevQuetzAttachInfo, sizeof(sithThing_prevQuetzAttachInfo));
     STD_ZEROMEM(&sithThing_curQuetzAttachInfo, sizeof(sithThing_curQuetzAttachInfo));
-    STD_ZEROMEM(&sithThing_dword_5612B8, sizeof(sithThing_dword_5612B8));
+    sithThing_bQuetzTurningSharp = false;
 }
 
 int J3DAPI sithThing_WriteThingsListBinary(tFileHandle fh, const SithWorld* pWorld, size_t numThings, const SithThing* aThings)
@@ -1317,7 +1325,171 @@ cleanup:
 
 void J3DAPI sithThing_UpdateQuetzUserBlock(SithThing* pThing)
 {
-    J3D_TRAMPOLINE_CALL(sithThing_UpdateQuetzUserBlock, pThing);
+    if ( !sithThing_CreateQuetzUserBlock(pThing) )
+    {
+        return;
+    }
+
+    rdVector3 velNorm;
+    rdVector_Normalize3(&velNorm, &pThing->moveInfo.physics.velocity);
+
+    float dot = rdVector_Dot3(&pThing->orient.lvec, &velNorm);
+    dot = STDMATH_CLAMP(dot, 0.0f, 1.0f);
+
+    const float amount = pThing->distanceMoved * dot;
+
+    size_t attachNum      = 0;
+    bool bTurnFlipped     = false;
+    SithThing* pPrevThing = pThing;
+
+    // Fixed: The original leaves bTurnConsistent, firstAngle and totalAngle uninitialized (also in the debug build),
+    //        so a Quetz without tail segments reads stack garbage. Zero-initialized here.
+    bool bTurnConsistent  = false;
+    float firstAngle      = 0.0f;
+    float totalAngle      = 0.0f;
+
+    sithThing_prevQuetzAttachInfo = NULL;
+    sithThing_curQuetzAttachInfo  = pThing->userblock.pQuetz->aAttachInfos;
+
+    for ( SithThing* pAttachedThing = pThing->pAttachedThing; pAttachedThing; pAttachedThing = pAttachedThing->pNextAttachedThing )
+    {
+        if ( (pAttachedThing->attach.flags & SITH_ATTACH_TAIL) == 0 )
+        {
+            continue;
+        }
+
+        float ratio = (sithThing_curQuetzAttachInfo->remaining -= amount) / sithThing_curQuetzAttachInfo->length;
+        ratio = STDMATH_CLAMP(ratio, 0.0f, 1.0f);
+
+        rdVector3 vec = { 0.0f, sithThing_curQuetzAttachInfo->offsetPrevY, 0.0f };
+
+        rdVector3 offset;
+        rdMatrix_TransformVector34(&offset, &vec, &pPrevThing->orient);
+        offset.z = offset.z + sithThing_curQuetzAttachInfo->offsetZ;
+
+        rdVector3 dir;
+        rdVector_Scale3(&dir, &sithThing_curQuetzAttachInfo->vecDirectionNextAttach, ratio);
+        rdVector_MultAcc3(&dir, &sithThing_curQuetzAttachInfo->vecDirection, 1.0f - ratio);
+        rdVector_Normalize3Acc(&dir);
+
+        rdMatrix34 orient;
+        rdMatrix_BuildFromLook34(&orient, &dir);
+        rdMatrix_PreRotate34(&orient, &sithThing_curQuetzAttachInfo->rotation);
+        pAttachedThing->orient = orient;
+
+        vec.y = sithThing_curQuetzAttachInfo->offsetY;
+
+        rdVector3 attachOffset;
+        rdMatrix_TransformVector34(&attachOffset, &vec, &pAttachedThing->orient);
+
+        rdVector3 newPos;
+        rdVector_Add3(&newPos, &offset, &attachOffset);
+        rdVector_Add3Acc(&newPos, &pPrevThing->pos);
+
+        rdVector3 moveNorm;
+        rdVector_Sub3(&moveNorm, &newPos, &pAttachedThing->pos);
+
+        rdVector_Scale3(&pAttachedThing->moveInfo.physics.velocity, &moveNorm, sithTime_g_fps);
+        pAttachedThing->moveInfo.physics.deltaVelocity = moveNorm;
+        pAttachedThing->moveDir = moveNorm;
+
+        float moveDist = rdVector_Normalize3Acc(&moveNorm);
+        if ( moveDist != 0.0f )
+        {
+            rdVector3 attachPos;
+            rdVector_ScaleAdd3(&attachPos, &pAttachedThing->orient.uvec, sithThing_curQuetzAttachInfo->uvecOffset, &pAttachedThing->pos);
+
+            SithSector* pNewSector = sithCollision_FindSectorInRadius(pAttachedThing->pInSector, &pAttachedThing->pos, &attachPos, 0.0f);
+            pAttachedThing->pos = attachPos;
+            sithThing_SetSector(pAttachedThing, pNewSector, /*bNotify=*/1);
+
+            sithCollision_MoveThing(pAttachedThing, &moveNorm, moveDist, 4);
+
+            rdVector_ScaleAdd3(&attachPos, &pAttachedThing->orient.uvec, -sithThing_curQuetzAttachInfo->uvecOffset, &pAttachedThing->pos);
+            pNewSector = sithCollision_FindSectorInRadius(pAttachedThing->pInSector, &pAttachedThing->pos, &attachPos, 0.0f);
+            pAttachedThing->pos = attachPos;
+            sithThing_SetSector(pAttachedThing, pNewSector, /*bNotify=*/1);
+        }
+
+        if ( ratio <= sithThing_quetzStretchMinRatio
+            || (!sithThing_prevQuetzAttachInfo && pThing->userblock.pQuetz->bResetSegment)
+            || bTurnFlipped )
+        {
+            pThing->userblock.pQuetz->bResetSegment = 0;
+
+            const float prevAngle = rdMath_DeltaAngleNormalized(&sithThing_curQuetzAttachInfo->vecDirection, &sithThing_curQuetzAttachInfo->vecDirectionNextAttach, &rdroid_g_zVector3);
+
+            sithThing_curQuetzAttachInfo->vecDirection = pPrevThing->orient.lvec;
+            sithThing_curQuetzAttachInfo->vecDirection.z = 0.0f;
+            rdVector_Normalize3Acc(&sithThing_curQuetzAttachInfo->vecDirection);
+
+            sithThing_curQuetzAttachInfo->vecDirectionNextAttach = pAttachedThing->orient.lvec;
+            sithThing_curQuetzAttachInfo->vecDirectionNextAttach.z = 0.0f;
+            rdVector_Normalize3Acc(&sithThing_curQuetzAttachInfo->vecDirectionNextAttach);
+
+            const float angle = rdMath_DeltaAngleNormalized(&sithThing_curQuetzAttachInfo->vecDirection, &sithThing_curQuetzAttachInfo->vecDirectionNextAttach, &rdroid_g_zVector3);
+            bTurnFlipped = (prevAngle < 0.0f ? -1 : 1) != (angle < 0.0f ? -1 : 1);
+
+            float sinAngle, cosAngle;
+            if ( sithThing_prevQuetzAttachInfo )
+            {
+                stdMath_SinCos(sithThing_prevQuetzAttachInfo->rotation.x, &sinAngle, &cosAngle);
+                sithThing_curQuetzAttachInfo->length = fabsf(sithThing_curQuetzAttachInfo->offsetY) * cosAngle;
+            }
+            else
+            {
+                sithThing_curQuetzAttachInfo->length = fabsf(sithThing_curQuetzAttachInfo->offsetPrevY);
+            }
+
+            stdMath_SinCos(sithThing_curQuetzAttachInfo->rotation.x, &sinAngle, &cosAngle);
+            sithThing_curQuetzAttachInfo->length = fabsf(sithThing_curQuetzAttachInfo->offsetY) * cosAngle + sithThing_curQuetzAttachInfo->length;
+
+            if ( sithThing_bQuetzTurningSharp )
+            {
+                const float scale = (float)attachNum * sithThing_quetzScalePerAttach + sithThing_quetzScaleBase;
+                sithThing_curQuetzAttachInfo->length = sithThing_curQuetzAttachInfo->length * scale;
+            }
+
+            sithThing_curQuetzAttachInfo->remaining = sithThing_curQuetzAttachInfo->length;
+        }
+
+        rdVector3 prevDir = { pPrevThing->orient.lvec.x, pPrevThing->orient.lvec.y, 0.0f };
+        rdVector_Normalize3Acc(&prevDir);
+
+        rdVector3 attachDir = { pAttachedThing->orient.lvec.x, pAttachedThing->orient.lvec.y, 0.0f };
+        rdVector_Normalize3Acc(&attachDir);
+
+        if ( !sithThing_prevQuetzAttachInfo )
+        {
+            firstAngle      = rdMath_DeltaAngleNormalized(&prevDir, &attachDir, &rdroid_g_zVector3);
+            totalAngle      = firstAngle;
+            bTurnConsistent = true;
+        }
+        else
+        {
+            const float nextAngle = rdMath_DeltaAngleNormalized(&prevDir, &attachDir, &rdroid_g_zVector3);
+            totalAngle = totalAngle + nextAngle;
+            if ( (firstAngle < 0.0f ? -1 : 1) != (nextAngle < 0.0f ? -1 : 1) )
+            {
+                bTurnConsistent = false;
+            }
+        }
+
+        pPrevThing = pAttachedThing;
+        sithThing_prevQuetzAttachInfo = sithThing_curQuetzAttachInfo;
+        sithThing_curQuetzAttachInfo++;
+        attachNum++;
+    }
+
+    sithThing_bQuetzTurningSharp = false;
+    if ( bTurnConsistent )
+    {
+        const float avgAngle = fabsf(totalAngle / (float)pThing->userblock.pQuetz->numAttachInfos);
+        if ( avgAngle > sithThing_quetzMaxTurnRate )
+        {
+            sithThing_bQuetzTurningSharp = true;
+        }
+    }
 }
 
 int sithThing_Startup(void)
@@ -1855,7 +2027,7 @@ void J3DAPI sithThing_UpdateMove(SithThing* pThing, float secDeltaTime)
             SITH_ASSERTREL(!pQuetzUserBlock->bPosFudged);
 
             pQuetzUserBlock->bPosFudged = 1;
-            pQuetzUserBlock->unknown393 = 0.18000001f;
+            pQuetzUserBlock->posFudge = 0.18000001f;
 
             rdVector3 newPos;
             rdVector_ScaleAdd3(&newPos, &pThing->orient.uvec, 0.18f, &pThing->pos);
@@ -2155,7 +2327,7 @@ float J3DAPI sithThing_ScaleCombatDamage(const SithThing* pThing, SithThing* pHi
                 damage *= sithGetCombatDamageScalar() * 0.5f;
             }
 
-            if ( (pLocal->mode & (SITHAI_MODE_FLEEING | SITHAI_MODE_UNKNOWN_10)) == 0 )
+            if ( (pLocal->mode & (SITHAI_MODE_FLEEING | SITHAI_MODE_DODGING)) == 0 )
             {
                 return damage;
             }
@@ -4476,8 +4648,8 @@ int J3DAPI sithThing_CreateQuetzUserBlock(SithThing* pThing)
     SithQuetzUserBlock* pQuetz = pThing->userblock.pQuetz;
     STD_ZEROMEM(pQuetz, sizeof(SithQuetzUserBlock));
 
-    pQuetz->strike.unknown0 = 0;
-    pQuetz->strike.unknown3 = 0;
+    pQuetz->strike.mode = SITHQUETZSTRIKE_MODE_NONE;
+    pQuetz->strike.numSnapShots = 0;
 
     size_t attNum = 0;
     SithThing* pPrevThing = pThing;
@@ -4485,42 +4657,42 @@ int J3DAPI sithThing_CreateQuetzUserBlock(SithThing* pThing)
     {
         if ( (pAttachedThing->attach.flags & SITH_ATTACH_TAIL) != 0 )
         {
-            pQuetz->aAttachInfos[attNum].unknown0 = -0.045000002f;
-            pQuetz->aAttachInfos[attNum].unknown2 = -0.045000002f;
-            STD_ZEROMEM(&pQuetz->aAttachInfos[attNum].vecUnknown11, sizeof(pQuetz->aAttachInfos[attNum].vecUnknown11));
+            pQuetz->aAttachInfos[attNum].offsetPrevY = -0.045000002f;
+            pQuetz->aAttachInfos[attNum].offsetY     = -0.045000002f;
+            STD_ZEROMEM(&pQuetz->aAttachInfos[attNum].rotation, sizeof(pQuetz->aAttachInfos[attNum].rotation));
 
             if ( attNum == 0 )
             {
-                pQuetz->aAttachInfos[0].unknown1           = pAttachedThing->attach.posOffset.z - 0.02f;
-                pQuetz->aAttachInfos[0].unknown0           = 0.0f;
-                pQuetz->aAttachInfos[0].vecUnknown11.pitch = 40.0f;
-                pQuetz->aAttachInfos[0].unknown14          = 0.055f;
+                pQuetz->aAttachInfos[0].offsetZ        = pAttachedThing->attach.posOffset.z - 0.02f;
+                pQuetz->aAttachInfos[0].offsetPrevY    = 0.0f;
+                pQuetz->aAttachInfos[0].rotation.pitch = 40.0f;
+                pQuetz->aAttachInfos[0].uvecOffset     = 0.055f;
             }
             else if ( attNum == 1 )
             {
-                pQuetz->aAttachInfos[1].unknown1 = pAttachedThing->attach.posOffset.z - pPrevThing->attach.posOffset.z;
-                pQuetz->aAttachInfos[1].vecUnknown11.x = 25.0f;
-                pQuetz->aAttachInfos[1].unknown14      = 0.103f;
+                pQuetz->aAttachInfos[1].offsetZ    = pAttachedThing->attach.posOffset.z - pPrevThing->attach.posOffset.z;
+                pQuetz->aAttachInfos[1].rotation.x = 25.0f;
+                pQuetz->aAttachInfos[1].uvecOffset = 0.103f;
             }
             else if ( attNum == 2 )
             {
-                pQuetz->aAttachInfos[2].unknown1       = pAttachedThing->attach.posOffset.z - pPrevThing->attach.posOffset.z;
-                pQuetz->aAttachInfos[2].vecUnknown11.x = 10.0f;
-                pQuetz->aAttachInfos[2].unknown14      = 0.118f;
+                pQuetz->aAttachInfos[2].offsetZ    = pAttachedThing->attach.posOffset.z - pPrevThing->attach.posOffset.z;
+                pQuetz->aAttachInfos[2].rotation.x = 10.0f;
+                pQuetz->aAttachInfos[2].uvecOffset = 0.118f;
             }
             else
             {
-                pQuetz->aAttachInfos[attNum].unknown1  = pAttachedThing->attach.posOffset.z - pPrevThing->attach.posOffset.z;
-                pQuetz->aAttachInfos[attNum].unknown14 = 0.12f;
+                pQuetz->aAttachInfos[attNum].offsetZ    = pAttachedThing->attach.posOffset.z - pPrevThing->attach.posOffset.z;
+                pQuetz->aAttachInfos[attNum].uvecOffset = 0.12f;
             }
 
-            pQuetz->aAttachInfos[attNum].unknown9 = pQuetz->aAttachInfos[attNum].unknown0 + pQuetz->aAttachInfos[attNum].unknown2;
-            if ( pQuetz->aAttachInfos[attNum].unknown9 < 0.0f )
+            pQuetz->aAttachInfos[attNum].length = pQuetz->aAttachInfos[attNum].offsetPrevY + pQuetz->aAttachInfos[attNum].offsetY;
+            if ( pQuetz->aAttachInfos[attNum].length < 0.0f )
             {
-                pQuetz->aAttachInfos[attNum].unknown9 = -pQuetz->aAttachInfos[attNum].unknown9;
+                pQuetz->aAttachInfos[attNum].length = -pQuetz->aAttachInfos[attNum].length;
             }
 
-            pQuetz->aAttachInfos[attNum].unknown10 = pQuetz->aAttachInfos[attNum].unknown9;
+            pQuetz->aAttachInfos[attNum].remaining = pQuetz->aAttachInfos[attNum].length;
 
             pQuetz->aAttachInfos[attNum].vecDirection   = pPrevThing->orient.lvec;
             pQuetz->aAttachInfos[attNum].vecDirection.z = 0.0f;
