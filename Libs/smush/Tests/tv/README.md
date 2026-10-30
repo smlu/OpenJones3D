@@ -17,10 +17,10 @@ depend on `Indy3D.exe` or game assets.
 
 | Fixture | Procedures (v1.0 address) | Cases |
 | --- | --- | --- |
-| `Flobject/Bloc16Asm.tv` | `dbloc16_Interpolate` (`0x004EDEF0`), `dbloc16_Codec2` (`0x004EDF70`, and through it the private `Block8`/`Block4`/`Block2` at `0x004EE02C`/`0x004EE3C4`/`0x004EE58C`) | 16 + 122 |
-| `Decode/DecodeAsm.tv` | `decode_Lut8` (`0x004F0590`), `decode_Lut16` (`0x004F0632`), `decode_RGBAto555` (`0x004F06E8`), `decode_555toRGBA` (`0x004F0762`), `decode_RGBAto565` (`0x004F07E6`), `decode_565toRGBA` (`0x004F0860`), `decode_RGBAto565B` (`0x004F08E4`), `decode_565BtoRGBA` (`0x004F0951`) | 269 |
-| `Sound/MixerAsm.tv` | `mixer_MemCopy` (`0x004EC560`), `mixer_MemFill` (`0x004EC598`), `mixer_Lut16` (`0x004EC5F7`), `mixer_Lut16Add` (`0x004EC62C`), `mixer_Fill16` (`0x004EC664`), `mixer_Lut8` (`0x004EC67F`), `mixer_Lut8Add` (`0x004EC6AD`), `mixer_FillB` (`0x004EC6DD`) | 346 |
-| `Bitmap/BitmapAsm.tv` | `blit_Masm` (`0x004F2220`), `blit_MemCopy` (`0x004F04D0`), `blit_MemCopyB` (`0x004F04F8`) | 320 |
+| `Flobject/Bloc16Asm.tv` | `dbloc16_Interpolate` (`0x004EDEF0`), `dbloc16_Codec2` (`0x004EDF70`, and through it the private `Block8`/`Block4`/`Block2` at `0x004EE02C`/`0x004EE3C4`/`0x004EE58C`) | 22 + 158 |
+| `Decode/DecodeAsm.tv` | `decode_Lut8` (`0x004F0590`), `decode_Lut16` (`0x004F0632`), `decode_RGBAto555` (`0x004F06E8`), `decode_555toRGBA` (`0x004F0762`), `decode_RGBAto565` (`0x004F07E6`), `decode_565toRGBA` (`0x004F0860`), `decode_RGBAto565B` (`0x004F08E4`), `decode_565BtoRGBA` (`0x004F0951`) | 299 |
+| `Sound/MixerAsm.tv` | `mixer_MemCopy` (`0x004EC560`), `mixer_MemFill` (`0x004EC598`), `mixer_Lut16` (`0x004EC5F7`), `mixer_Lut16Add` (`0x004EC62C`), `mixer_Fill16` (`0x004EC664`), `mixer_Lut8` (`0x004EC67F`), `mixer_Lut8Add` (`0x004EC6AD`), `mixer_FillB` (`0x004EC6DD`) | 360 |
+| `Bitmap/BitmapAsm.tv` | `blit_Masm` (`0x004F2220`), `blit_MemCopy` (`0x004F04D0`), `blit_MemCopyB` (`0x004F04F8`) | 332 |
 
 ### File Format
 
@@ -97,6 +97,20 @@ stay untouched.
   pitches, heights 0, 1, 2, -1, -5, row offsets above 16 bits, pitches and rows
   above 16 bits (truncated), negative rows and columns, and in-place scrolls in
   every direction by 1-5 bytes.
+- Edge cases (98, appended after the cases above, every one captured from
+  retail v1.0 like the rest): `blit_Masm` over a whole 640x480 16-bit screen,
+  its last pixel, last row and last column, pitch 0, a width and a height above
+  16 bits; `blit_MemCopy`/`mixer_MemCopy`/`blit_MemCopyB`/`mixer_MemFill`/
+  `mixer_FillB` above 64 KB (aligned, misaligned and overlapping) with fill
+  values that have no and all bits set; `mixer_Lut*` over 65537 samples with the
+  last table; `mixer_Fill16` with 1, 4097 and 65537 words at the rails
+  (`0x0000`, `0x8000`, `0x7FFF`); every pixel converter over 65537 pixels and
+  with misaligned (1-3 byte) source and destination; `decode_Lut8`/`Lut16`
+  with 1, 2 and 4-byte destinations over 65537 pixels; `dbloc16_Interpolate`
+  of one pixel, no rows, stride 0, 0xFFFF rows, a row count of 0x10000 (low word
+  0) and a 640-byte stride; `dbloc16_Codec2` at 640x480 and 320x200, one block
+  row or column at 2047/2048/2049 (one below, at and above the byte-truncated
+  block count limit), 2x2, 9x1 and 1x9.
 
 ### Quirks Preserved
 
@@ -129,13 +143,16 @@ stay untouched.
 - Every case was executed twice inside the capture with 4096 guard bytes around
   every buffer, `0x00` in one run and `0xFF` in the other. Cases that faulted,
   wrote a guard byte or produced different results in the two runs were dropped.
-  None of the cases listed here were dropped.
+  None of the cases listed here were dropped, the edge cases included.
 
 ### Provenance
 
 - Capture harness: a temporary C file built with MSVC (x86, static CRT) as
   `Jones3D.dll` and kept outside the repository (SHA-256 of the source used:
-  `88abe7ed457177fe9eed733b18dc02d0dff5b0c3d0c2bdcad42f2f3a617c8b1f`).
+  `377402d56c98beb44459cac7ba1697c9c830b16fa4ee5a78cb45eb5997cd2b70`; the
+  edge cases were added to the end of each generator of the earlier harness,
+  `88abe7ed457177fe9eed733b18dc02d0dff5b0c3d0c2bdcad42f2f3a617c8b1f`, whose
+  cases are byte-identical prefixes of the new fixtures).
   It contains no hooks. `Jones3D.exe` (this repository's launcher) starts
   `Indy3D.exe` suspended and injects the DLL from its own directory; `DllMain`
   calls the original procedures at the addresses above on the generated inputs,
@@ -154,10 +171,10 @@ stay untouched.
 ### SHA-256
 
 ```text
-9b5e26ad3569a73855ceaffce861bf0029bc9df936335bcd17bc271e945858c6  Bitmap/BitmapAsm.tv
-ead2c40c7cce3b26eca60b5f43a499a8dd6efa6c37a400ff078e581cf555e40e  Decode/DecodeAsm.tv
-fdeadd2d6d36d71877f76a1d7229866fe1e75cc27605b50922b3d09654c428c6  Flobject/Bloc16Asm.tv
-f0c03dc6d84525b517efb1c3f9195d68ecf577f502c2ea443ab9c7f29785b374  Sound/MixerAsm.tv
+c2d12b30e5e42d82a1aef096d9a81dcf3d22150bcc52552daf57d07a3d66ba20  Bitmap/BitmapAsm.tv
+4435a75e343ee8b2d61467ffcf593e90c216434206fe7e7a1c1b5c5ef78d7ad8  Decode/DecodeAsm.tv
+b4864ce89c394f57520bf8c1165e4da1711bed28850bce250d36aeee01b07f94  Flobject/Bloc16Asm.tv
+b20124d8d6b9a337da219ccce9f5f487526c3ab60a23149fe5d5a04b951520f1  Sound/MixerAsm.tv
 ```
 
 ## Smush C Modules: Original-Engine Test Vectors
@@ -182,10 +199,10 @@ never launch or depend on `Indy3D.exe` or game assets.
 
 | Fixture | Functions (v1.0 address) | Records |
 | --- | --- | --- |
-| `Sound/MixerVec.tv` | `mixer_Init` (`0x004EC720`), `mixer_Setup` (`0x004EC860`), `mixer_Free`, `mixer_Clear`, `mixer_Feed`, `mixer_Add` and through it the eight `mixer_Mono*`/`Stereo*` resamplers (`0x004ECC30`-`0x004EDA70`), `mixer_Output` | 40 |
-| `Flobject/Bloc16Vec.tv` | `dbloc16_MakeGlyphs` (`0x004E8AD0`), `dbloc16_MakeTables` (`0x004E8990`), `dbloc16_Average`, `dbloc16_Scale`, `dbloc16_ScalePal`, `dbloc16_DecodeFrame` (`0x004E8FB0`) with `Alloc`, `Free`, `BuildLut`, `Parse`, `Query`, `Name`, `Configure`, `Register`/`Startup`/`Shutdown`, and through them `decode_Run`, `decode_Rle*`, `decode_Convert`, `mixer_Blit` and the codec 2 assembly | 145 |
-| `Decode/DecodeVec.tv` | `decode_Convert` (`0x004EE930`), `decode_ToRGBA` (`0x004EEB70`), `decode_Begin`, `decode_MakeTable`, `decode_Run`, `decode_Rle` | 44 |
-| `Lec/LecShareVec.tv` | `LecShare_Match` (`0x004EBA90`), `NameLen`, `Strip`, `NameCmp`, `NameNCmp`, `Init`, `Reset`, `Publish`, `Unpublish`, `Subscribe`, `Unsubscribe`, `BatchSubscribe`, `BatchUnsubscribe`, `Enumerate`, `Count`, `Find` | 43 |
+| `Sound/MixerVec.tv` | `mixer_Init` (`0x004EC720`), `mixer_Setup` (`0x004EC860`), `mixer_Free`, `mixer_Clear`, `mixer_Feed`, `mixer_Add` and through it the eight `mixer_Mono*`/`Stereo*` resamplers (`0x004ECC30`-`0x004EDA70`), `mixer_Output` | 85 |
+| `Flobject/Bloc16Vec.tv` | `dbloc16_MakeGlyphs` (`0x004E8AD0`), `dbloc16_MakeTables` (`0x004E8990`), `dbloc16_Average`, `dbloc16_Scale`, `dbloc16_ScalePal`, `dbloc16_DecodeFrame` (`0x004E8FB0`) with `Alloc`, `Free`, `BuildLut`, `Parse`, `Query`, `Name`, `Configure`, `Register`/`Startup`/`Shutdown`, and through them `decode_Run`, `decode_Rle*`, `decode_Convert`, `mixer_Blit` and the codec 2 assembly | 182 |
+| `Decode/DecodeVec.tv` | `decode_Convert` (`0x004EE930`), `decode_ToRGBA` (`0x004EEB70`), `decode_Begin`, `decode_MakeTable`, `decode_Run`, `decode_Rle` | 55 |
+| `Lec/LecShareVec.tv` | `LecShare_Match` (`0x004EBA90`), `NameLen`, `Strip`, `NameCmp`, `NameNCmp`, `Init`, `Reset`, `Publish`, `Unpublish`, `Subscribe`, `Unsubscribe`, `BatchSubscribe`, `BatchUnsubscribe`, `Enumerate`, `Count`, `Find` | 45 |
 | `File/FramestreamVec.tv` | `framestream_Tick` (`0x004EBE20`) and through it `Fetch`, `Continue`, `Present`, `Header`, `blit_Fill`; `Reset`, `Open`, `Seek`, `Mode`, `IsOpen`, `Stall` | 21 |
 | `File/StdfileVec.tv` | `stdfile_Register`/`Startup`/`Shutdown`/`Unregister` and every slot of `FILE=insane_stdfile` (`open`-`putc`, `0x004E98D0`-`0x004E9B00`) | 46 |
 | `File/ZfilioVec.tv` | `zfilio_Register`, `Configure`, `Startup`, `Shutdown`, `Unregister` and every slot of `FILIO=insane_zfilio` (`open`-`flush`, `0x004E9CD0`-`0x004E9FF0`) | 40 |
@@ -256,11 +273,27 @@ synthetic streams by offset.
   reads, lazy seeks from every origin, tell, write and flush on gz and chained
   files, the handle allocation failure, the full extension table and a startup
   without the debug service.
+- Edge cases (at the end of their areas): `mixer_Feed` of full-scale 16-bit
+  sources (`0x7FFF`, `0x8000`, `0xFFFF`, `0x0000`) in all four 16-bit formats,
+  eight times over the whole accumulator at full volume and extreme pans, then
+  `mixer_Output` of all 512 frames clipping at both rails; feeds at the
+  accumulator's edges (one source frame over 512 output frames, 512 into one,
+  the last frame alone, ratios around 1 and 2, a zero-length feed) in every
+  format; `mixer_Output` of one frame; the clip table for headroom 0, 1, 8 and
+  4. D_bloc16 scenes at 640x480, 8x8 with clipping and 2x2 (every codec), and
+  `mixer_Blit` with clipping at 320x200 (565) and 8x8 (RGBA). `decode_Convert`
+  of 0, 1, 0x4FF, 0x500 and 0x501 pixels for six format pairs, every format's
+  all-zero and all-one source to RGBA and 565, `decode_MakeTable` from all-zero
+  and all-one palettes to every format, `decode_Run` of 0 and 1 pixels.
+  `LecShare_Match` with an entry ending at every byte from 0x1FFA to 0x2002
+  (around the end of the 0x1FFF-byte parse buffer), a 300-character name
+  (`Match`, `NameLen`, `NameCmp`) and `NameNCmp` with `n` = `INT_MAX` and
+  `INT_MIN`.
 
 ### Known Differences
 
 `TestOriginalStdfile` reports IGNORED while these differences remain (all other
-records must match):
+records must match; the edge cases above revealed no new difference):
 
 - `stdfile_printf` formats with the CRT. The original's VC5 CRT prints three
   exponent digits (`1.234568e+004`) and rounds decimal halves up (`%.0f` of 0.5
@@ -292,6 +325,10 @@ entries differ by one; the port does not depend on the x87 state.
   (`_heap_init` `0x004FE1F0`, `_cfltcvt_init` `0x004F6710`; the executable's CRT
   start-up has not run), runs every area, writes the fixtures and a helper
   thread terminates the process.
+- Inputs kept out of the edge cases because the original would write or read
+  outside its buffers without a check: `mixer_Output` of more frames than the
+  accumulator holds and `mixer_Feed` with `offset + n` beyond it; codec 2
+  frames whose motion vectors leave the bitmap margins.
 - Every area ran twice in the capture, with the stubs filling fresh memory with
   `0x00` and with `0xFF`; records that differed would have been written as
   unstable. None did. Two complete runs in fresh processes produced
@@ -305,10 +342,10 @@ entries differ by one; the port does not depend on the x87 state.
 ### SHA-256
 
 ```text
-0a777a76764aa51c69d82ca59724f31aeca7afec1004fd80008d97a6e9ee158f  Sound/MixerVec.tv
-79aaae14a21caec487c7b730f858d5f760da02098e8f82498e84022c81428885  Flobject/Bloc16Vec.tv
-039e6cd8ef4811fa23211148f72f30f504708c6856c41530fb594026a9fb421a  Decode/DecodeVec.tv
-355bcaf2f507750dc607cb508f6bfd73af9e2785b4098d039bd066a73f467bde  Lec/LecShareVec.tv
+cccdbd4d04577439cb0605ce63b1ebdfd3c30d7f76c5f4a2bc42b40272ce51b6  Sound/MixerVec.tv
+94ab19a9430cafc3a72279c405c4283ec8763921b3397c12379a736a4f5910b2  Flobject/Bloc16Vec.tv
+76562b8ebce175dd8e05afda22a3a8a464fba3135b49942204b47db8783c094e  Decode/DecodeVec.tv
+6b2775dfb483d1956bd493e411755f249f376218405d7ef1a7a4c31412f87a07  Lec/LecShareVec.tv
 712d1387d19a17ece07397b4d704fe41c9d18aefa0085041ad449e795b5b0434  File/FramestreamVec.tv
 552e0d2ed4957918631e5705f39152802b7f8a7f6b9a184d37e23eea94bbcef9  File/StdfileVec.tv
 c0e97700430a58d8bab144c9a26b1f34fc3c81bfb94121bdbf24fce72fbcd20b  File/ZfilioVec.tv

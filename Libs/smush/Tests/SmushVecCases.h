@@ -867,6 +867,96 @@ static void SmushVec_RunMixer(const SmushVecApi* pApi, SmushVecSink* pSink, uint
     SmushVec_AllocFlush("mixer_Setup fail 2");
     SmushVec_Int(pApi->mixer_Output(aOut, 4), "mixer_Output after free rc");
     sv.failAlloc = 0;
+
+    // Edge cases: full-scale 16-bit sources (both signed rails, both unsigned rails) fed eight times over the whole
+    // accumulator at full volume and extreme pans, so that mixer_Output clips at both rails
+    SmushVec_AllocReset();
+    SmushVec_Int(pApi->mixer_Init(&sv.memory, 4, 256, 0, 0, 0), "edge mixer_Init rc");
+    SmushVec_AllocFlush("edge mixer_Init");
+    pAcc = (int32_t*)sv.allocs[0].p;
+    if ( !pAcc )
+    {
+        return;
+    }
+
+    static uint8_t aEdgeSrc[1024 * 4 + 64];
+    static const uint16_t aRails[] = { 0x7FFF, 0x8000, 0xFFFF, 0x0000 };
+    for ( size_t k = 0; k < sizeof(aRails) / sizeof(aRails[0]); ++k )
+    {
+        for ( int i = 0; i < 1024; ++i )
+        {
+            aEdgeSrc[i * 2]     = (uint8_t)aRails[k];
+            aEdgeSrc[i * 2 + 1] = (uint8_t)(aRails[k] >> 8);
+        }
+
+        SmushVec_SectionBegin("edge mixer rail 0x%04X", aRails[k]);
+        for ( int format = 2; format <= 5; ++format )
+        {
+            int sampleSize = 2 * ((format & 1) ? 2 : 1);
+            pApi->mixer_Clear();
+            for ( int rep = 0; rep < 8; ++rep )
+            {
+                pApi->mixer_Feed(aEdgeSrc, 0, 512, 512 * sampleSize, 0, 127, (rep & 1) ? 127 : -127, format);
+            }
+
+            SmushVec_HashRec(pAcc, 4096, "edge mixer_Feed format %d sample 0x%04X x8", format, aRails[k]);
+            memset(aOut, 0xEE, sizeof(aOut));
+            SmushVec_Int(pApi->mixer_Output(aOut, 512), "edge mixer_Output 512 format %d rc", format);
+            SmushVec_HashRec(aOut, sizeof(aOut), "edge mixer_Output 512 format %d sample 0x%04X", format, aRails[k]);
+        }
+
+        SmushVec_SectionEnd();
+    }
+
+    // Positions at the accumulator's edges: one source frame stretched over all 512 frames, all of them squeezed into
+    // one, the last frame alone, the whole accumulator at ratios around 1 and 2, and a zero-length feed
+    static const struct { int count, n, offset; } aEdgeRates[] = {
+        { 1, 512, 0 }, { 512, 1, 0 }, { 1, 1, 511 }, { 2, 1, 511 }, { 511, 512, 0 }, { 513, 512, 0 }, { 1023, 512, 0 }, { 1024, 512, 0 },
+        { 256, 512, 0 }, { 256, 256, 256 }, { 0, 10, 0 },
+    };
+    SmushVec_RandBytes(aEdgeSrc, sizeof(aEdgeSrc), 0xED6E0000u);
+    for ( int format = 0; format < 6; ++format )
+    {
+        int sampleSize = (format >= 2 ? 2 : 1) * ((format & 1) ? 2 : 1);
+        SmushVec_SectionBegin("edge mixer_Feed positions format %d", format);
+        for ( size_t r = 0; r < sizeof(aEdgeRates) / sizeof(aEdgeRates[0]); ++r )
+        {
+            if ( aEdgeRates[r].count * sampleSize > 1024 * 4 )
+            {
+                continue;
+            }
+
+            pApi->mixer_Clear();
+            pApi->mixer_Feed(aEdgeSrc, aEdgeRates[r].offset, aEdgeRates[r].n, aEdgeRates[r].count * sampleSize, 0, 127, 0, format);
+            SmushVec_HashRec(pAcc, 4096, "edge mixer_Feed format %d count %d n %d offset %d", format, aEdgeRates[r].count, aEdgeRates[r].n,
+                aEdgeRates[r].offset);
+        }
+
+        SmushVec_SectionEnd();
+    }
+
+    // mixer_Output of one frame and of the whole accumulator
+    memset(aOut, 0xEE, sizeof(aOut));
+    SmushVec_Int(pApi->mixer_Output(aOut, 1), "edge mixer_Output 1 rc");
+    SmushVec_Raw(aOut, 16, "edge mixer_Output 1");
+
+    // The clip table for the smallest, no and a large headroom, then the default again
+    static const int aHeadroom[] = { 1, 0, 8, 4 };
+    for ( size_t i = 0; i < sizeof(aHeadroom) / sizeof(aHeadroom[0]); ++i )
+    {
+        SmushVec_Int(pApi->mixer_Free(&sv.memory), "edge mixer_Free rc");
+        SmushVec_AllocFlush("edge mixer_Free");
+        SmushVec_AllocReset();
+        SmushVec_Int(pApi->mixer_Init(&sv.memory, aHeadroom[i], 64, 0, 0, 0), "edge mixer_Init headroom %d rc", aHeadroom[i]);
+        SmushVec_AllocFlush("edge mixer_Init headroom");
+        if ( sv.allocs[1].p && aHeadroom[i] )
+        {
+            SmushVec_HashRec(sv.allocs[1].p, (uint32_t)(aHeadroom[i] << 16), "edge mixer_Setup clip table headroom %d", aHeadroom[i]);
+        }
+    }
+
+    SmushVec_Int(pApi->mixer_Free(&sv.memory), "edge mixer_Free last rc");
+    SmushVec_AllocFlush("edge mixer_Free last");
 }
 
 /* ------------------------------------------------------------------------------------------------------------------- */
@@ -1230,6 +1320,11 @@ static const SmushVecFrame smushvec_framesMixer[] = {
     { 0, 0, 0, 0 }, { 1, 2, 1, 0 }, { 2, 6, 2, 0 }, { 3, 2, 2, 0 }, { 4, 7, 0, 0 }, { 5, 2, 1, 0 },
 };
 
+// Edge cases: every codec once in sequence, then rotation 3 (none) on the same buffers
+static const SmushVecFrame smushvec_framesEdge[] = {
+    { 0, 0, 0, 0 }, { 1, 2, 1, 0 }, { 2, 2, 2, 0 }, { 3, 5, 0, 0 }, { 4, 8, 0, 0 }, { 5, 6, 0, 0 }, { 6, 7, 0, 0 }, { 7, 1, 0, 0 }, { 8, 2, 3, 0 },
+};
+
 static void SmushVec_RunBloc16(const SmushVecApi* pApi, SmushVecSink* pSink, uint8_t fill)
 {
     SmushVec_Begin(pApi, pSink, fill);
@@ -1350,6 +1445,21 @@ static void SmushVec_RunBloc16(const SmushVecApi* pApi, SmushVecSink* pSink, uin
     for ( size_t i = 0; i < sizeof(aScenes) / sizeof(aScenes[0]); ++i )
     {
         SmushVec_RunScene(&aScenes[i]);
+    }
+
+    // Edge cases: the largest screen size, a single block, a 2x2 frame (smaller than a block), and mixer_Blit clipping
+    // a full-size and a single-block frame at the clip rectangle's edges
+    static const SmushVecScene aEdgeScenes[] = {
+        { "edge 640x480", 640, 480, 0, 1, 2, smushvec_fmt565, 0, smushvec_framesEdge, sizeof(smushvec_framesEdge) / sizeof(smushvec_framesEdge[0]) },
+        { "edge 8x8 clip", 8, 8, 0, 1, 2, smushvec_fmt565, 1, smushvec_framesEdge, sizeof(smushvec_framesEdge) / sizeof(smushvec_framesEdge[0]) },
+        { "edge 2x2", 2, 2, 0, 1, 2, smushvec_fmt565, 0, smushvec_framesOdd, sizeof(smushvec_framesOdd) / sizeof(smushvec_framesOdd[0]) },
+        { "edge mixer blit 565 320x200 clip", 320, 200, 1, 1, 2, smushvec_fmt565, 1, smushvec_framesMixer, sizeof(smushvec_framesMixer) / sizeof(smushvec_framesMixer[0]) },
+        { "edge mixer blit RGBA 8x8 clip", 8, 8, 1, 2, 4, smushvec_fmtRGBA, 1, smushvec_framesMixer, sizeof(smushvec_framesMixer) / sizeof(smushvec_framesMixer[0]) },
+    };
+
+    for ( size_t i = 0; i < sizeof(aEdgeScenes) / sizeof(aEdgeScenes[0]); ++i )
+    {
+        SmushVec_RunScene(&aEdgeScenes[i]);
     }
 
     // Parse through the published interface: depth changes and allocation failures (bitmap 2, then the lookup table)
@@ -1603,6 +1713,82 @@ static void SmushVec_RunDecode(const SmushVecApi* pApi, SmushVecSink* pSink, uin
     }
 
     SmushVec_SectionEnd();
+
+    // Edge cases: zero and one pixel, the 0x500-pixel chunk boundary (one below, exactly, one above)
+    static const int aEdgeCounts[] = { 0, 1, 0x4FF, 0x500, 0x501 };
+    static const int aEdgePairs[][2] = { { 0, 2 }, { 2, 7 }, { 7, 1 }, { 5, 3 }, { 9, 10 }, { 12, 8 } };
+    for ( size_t p = 0; p < sizeof(aEdgePairs) / sizeof(aEdgePairs[0]); ++p )
+    {
+        SmushVec_SectionBegin("edge decode_Convert %s to %s", smushvec_formats[aEdgePairs[p][0]].pName, smushvec_formats[aEdgePairs[p][1]].pName);
+        for ( size_t i = 0; i < sizeof(aEdgeCounts) / sizeof(aEdgeCounts[0]); ++i )
+        {
+            SmushVec_MakeBitmap(&src, &smushvec_formats[aEdgePairs[p][0]], aPalette);
+            SmushVec_MakeBitmap(&dst, &smushvec_formats[aEdgePairs[p][1]], NULL);
+            SmushVec_RandBytes(aSrc, sizeof(aSrc), 0xED9E0000u + (uint32_t)(p * 16 + i));
+            memset(aDst, 0xEE, sizeof(aDst));
+            int rc = pApi->decode_Convert(aSrc, &src, aEdgeCounts[i], NULL, aDst, &dst, NULL);
+            SmushVec_Int(rc, "edge decode_Convert n %d rc", aEdgeCounts[i]);
+            SmushVec_HashRec(aDst, sizeof(aDst), "edge decode_Convert n %d", aEdgeCounts[i]);
+        }
+
+        SmushVec_SectionEnd();
+    }
+
+    // Sources with no and every bit set, from every format to RGBA and to 565
+    for ( int fillByte = 0; fillByte < 2; ++fillByte )
+    {
+        SmushVec_SectionBegin("edge decode_Convert source bytes 0x%02X", fillByte ? 0xFF : 0x00);
+        for ( int f = 0; f < numFormats; ++f )
+        {
+            static const int aTo[] = { 7, 2 };
+            for ( int t = 0; t < 2; ++t )
+            {
+                SmushVec_MakeBitmap(&src, &smushvec_formats[f], aPalette);
+                SmushVec_MakeBitmap(&dst, &smushvec_formats[aTo[t]], NULL);
+                memset(aSrc, fillByte ? 0xFF : 0x00, 37 * 4 + 16);
+                memset(aDst, 0xEE, 37 * 4 + 16);
+                int rc = pApi->decode_Convert(aSrc, &src, 37, NULL, aDst, &dst, NULL);
+                SmushVec_Int(rc, "edge decode_Convert %s to %s rc", smushvec_formats[f].pName, smushvec_formats[aTo[t]].pName);
+                SmushVec_Raw(aDst, 37 * 4 + 16, "edge decode_Convert %s to %s", smushvec_formats[f].pName, smushvec_formats[aTo[t]].pName);
+            }
+        }
+
+        SmushVec_SectionEnd();
+    }
+
+    // Lookup tables from palettes with no and every bit set
+    uint8_t aEdgePalette[1024];
+    for ( int fillByte = 0; fillByte < 2; ++fillByte )
+    {
+        memset(aEdgePalette, fillByte ? 0xFF : 0x00, sizeof(aEdgePalette));
+        SmushVec_SectionBegin("edge decode_MakeTable palette bytes 0x%02X", fillByte ? 0xFF : 0x00);
+        for ( int d = 0; d < numFormats; ++d )
+        {
+            SmushVec_MakeBitmap(&src, &smushvec_formats[0], aEdgePalette);
+            SmushVec_MakeBitmap(&dst, &smushvec_formats[d], NULL);
+            memset(aTable, 0xEE, 1024 + 16);
+            SmushVec_Int(pApi->decode_MakeTable(&src, &dst, aTable, NULL), "edge decode_MakeTable to %s rc", smushvec_formats[d].pName);
+            SmushVec_Raw(aTable, 1024 + 16, "edge decode_MakeTable to %s", smushvec_formats[d].pName);
+        }
+
+        SmushVec_SectionEnd();
+    }
+
+    // decode_Run of zero and one pixel
+    SmushVec_SectionBegin("edge decode_Run");
+    for ( int ps = 1; ps <= 4; ++ps )
+    {
+        for ( int n = 0; n <= 1; ++n )
+        {
+            memset(&dst, 0, sizeof(dst));
+            dst.pixelSize = ps;
+            memset(aDst, 0xEE, 64);
+            pApi->decode_Run(aDst, &dst, n, (uint8_t*)aPixels[1]);
+            SmushVec_Raw(aDst, 64, "edge decode_Run size %d n %d", ps, n);
+        }
+    }
+
+    SmushVec_SectionEnd();
 }
 
 /* ------------------------------------------------------------------------------------------------------------------- */
@@ -1834,6 +2020,48 @@ static void SmushVec_RunLec(const SmushVecApi* pApi, SmushVecSink* pSink, uint8_
     SmushVec_Int(pApi->LecShare_Count(NULL), "LecShare_Count after unpublish");
     SmushVec_SectionEnd();
     pApi->LecShare_Reset(NULL, NULL);
+
+    // Edge cases: an entry that ends at each of the last bytes of the 0x1FFF-byte parse buffer and just behind it
+    {
+        char* pLong = (char*)malloc(0x2100);
+        SmushVec_SectionBegin("edge LecShare_Match parse buffer end");
+        for ( int end = 0x1FFA; end <= 0x2002; ++end )
+        {
+            for ( int i = 0; i < end; ++i )
+            {
+                pLong[i] = (char)('a' + i % 26);
+            }
+
+            memcpy(pLong + end - 11, " FILIO=edge", 11);
+            pLong[end] = 0;
+            SmushVec_Str((const char*)(intptr_t)pApi->LecShare_Match("FILIO", pLong), "edge LecShare_Match entry ending at 0x%X", end);
+        }
+
+        SmushVec_SectionEnd();
+        free(pLong);
+    }
+
+    // A 300-character name: matched, measured, stripped and compared
+    {
+        static char aLongName[301];
+        static char aLongList[400];
+        for ( int i = 0; i < 300; ++i )
+        {
+            aLongName[i] = (char)('A' + i % 26);
+        }
+
+        aLongName[300] = 0;
+        snprintf(aLongList, sizeof(aLongList), "X=1 %s=long_value Y=2", aLongName);
+        SmushVec_SectionBegin("edge LecShare long name");
+        SmushVec_Str((const char*)(intptr_t)pApi->LecShare_Match(aLongName, aLongList), "edge LecShare_Match long name");
+        SmushVec_Str((const char*)(intptr_t)pApi->LecShare_Match("X", aLongList), "edge LecShare_Match after long name");
+        SmushVec_Int(pApi->LecShare_NameLen(aLongList + 4), "edge LecShare_NameLen long name");
+        SmushVec_Int(pApi->LecShare_NameCmp(aLongName, aLongName), "edge LecShare_NameCmp long name");
+        SmushVec_Int(pApi->LecShare_NameNCmp("abc", "ABC", 0x7FFFFFFF), "edge LecShare_NameNCmp n INT_MAX");
+        SmushVec_Int(pApi->LecShare_NameNCmp("abc", "ABD", 0x7FFFFFFF), "edge LecShare_NameNCmp n INT_MAX differs");
+        SmushVec_Int(pApi->LecShare_NameNCmp("abc", "ABD", (int)0x80000000), "edge LecShare_NameNCmp n INT_MIN");
+        SmushVec_SectionEnd();
+    }
 }
 
 /* ------------------------------------------------------------------------------------------------------------------- */
