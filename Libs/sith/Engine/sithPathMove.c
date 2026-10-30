@@ -169,11 +169,11 @@ void J3DAPI sithPathMove_RotatePivot(SithThing* pThing, const rdVector3* pOffset
     sithSoundClass_PlayModeFirst(pThing, SITHSOUNDCLASS_STARTMOVE);
     sithSoundClass_PlayModeFirst(pThing, SITHSOUNDCLASS_MOVING);
 
-    rdVector_Copy3(&pThing->moveInfo.pathMovement.rotOffset, pOffset);
-    rdMatrix_Copy34(&pThing->moveInfo.pathMovement.curOrient, &pThing->orient);
+    pThing->moveInfo.pathMovement.rotOffset = *pOffset;
+    pThing->moveInfo.pathMovement.curOrient = pThing->orient;
     rdVector_Sub3(&pThing->moveInfo.pathMovement.curOrient.dvec, &pThing->pos, &pThing->moveInfo.pathMovement.rotOffset);
 
-    rdVector_Copy3(&pThing->moveInfo.pathMovement.goalPYR, pRot);
+    pThing->moveInfo.pathMovement.goalPYR = *pRot;
 
     pThing->moveInfo.pathMovement.rotDeltaTime    = 1.0f / rotTime;
     pThing->moveInfo.pathMovement.rotDelta        = 0.0f;
@@ -285,10 +285,10 @@ void J3DAPI sithPathMove_RotateToPYR(SithThing* pThing, rdVector3* pyr, float ti
     {
         pPath->rotDeltaTime = 1.0f / time;
 
-        rdMatrix_Copy34(&pPath->curOrient, &pThing->orient);
-        rdVector_Copy3(&pPath->curOrient.dvec, &rdroid_g_zeroVector3);
-        rdVector_Copy3(&pPath->goalPYR, &nexGoalPYR);
-        rdVector_Copy3(&pPath->rotateToPYR, pyr);
+        pPath->curOrient = pThing->orient;
+        pPath->curOrient.dvec = rdroid_g_zeroVector3;
+        pPath->goalPYR = nexGoalPYR;
+        pPath->rotateToPYR = *pyr;
 
         pPath->mode |= SITH_PATHMOVE_ROTATE;
         pPath->mode &= ~SITH_PATHMOVE_ROTATE_PIVOT;
@@ -343,8 +343,8 @@ int J3DAPI sithPathMove_ParseArg(const StdConffileArg* pArg, SithThing* pThing, 
             }
 
             const size_t frameNum = pThing->moveInfo.pathMovement.numFrames;
-            rdVector_Copy3(&pThing->moveInfo.pathMovement.aFrames[frameNum].pos, &pos);
-            rdVector_Copy3(&pThing->moveInfo.pathMovement.aFrames[frameNum].pyr, &pyr);
+            pThing->moveInfo.pathMovement.aFrames[frameNum].pos = pos;
+            pThing->moveInfo.pathMovement.aFrames[frameNum].pyr = pyr;
             pThing->moveInfo.pathMovement.numFrames = frameNum + 1;
             return 1;
         }
@@ -502,7 +502,7 @@ void J3DAPI sithPathMove_UpdateRotate(SithThing* pThing, float simTime)
     rdVector_Scale3(&deltaPYR, &pPath->goalPYR, rotDelta);
 
     rdMatrix34 curOrient;
-    rdMatrix_Copy34(&curOrient, &pPath->curOrient);
+    curOrient = pPath->curOrient;
     rdMatrix_PostRotate34(&curOrient, &deltaPYR);
 
     if ( (pPath->mode & SITH_PATHMOVE_ROTATE_PIVOT) != 0 )
@@ -521,7 +521,7 @@ void J3DAPI sithPathMove_UpdateRotate(SithThing* pThing, float simTime)
                 {
                     rotDelta = movedDist / moveDist * deltaTime + pPath->rotDelta;
                     rdVector_Scale3(&deltaPYR, &pPath->goalPYR, rotDelta);
-                    rdMatrix_Copy34(&curOrient, &pPath->curOrient);
+                    curOrient = pPath->curOrient;
                     rdMatrix_PreRotate34(&curOrient, &deltaPYR);
                 }
             }
@@ -529,7 +529,7 @@ void J3DAPI sithPathMove_UpdateRotate(SithThing* pThing, float simTime)
     }
 
     pPath->rotDelta = rotDelta;
-    rdVector_Copy3(&pThing->orient.dvec, &rdroid_g_zeroVector3);
+    pThing->orient.dvec = rdroid_g_zeroVector3;
     sithCollision_ApplyThingOrient(pThing, &curOrient);
 
     if ( pPath->rotDelta >= 1.0f || pPath->rotDelta <= -1.0f )
@@ -537,7 +537,7 @@ void J3DAPI sithPathMove_UpdateRotate(SithThing* pThing, float simTime)
         if ( (pPath->mode & SITH_PATHMOVE_ROTATE_PIVOT) == 0 )
         {
             rdMatrix_BuildRotate34(&curOrient, &pPath->rotateToPYR);
-            rdVector_Copy3(&pThing->orient.dvec, &rdroid_g_zeroVector3);
+            pThing->orient.dvec = rdroid_g_zeroVector3;
             sithCollision_ApplyThingOrient(pThing, &curOrient);
         }
 
