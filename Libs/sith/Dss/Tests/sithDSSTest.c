@@ -192,6 +192,7 @@ static void sithDSSTest_PrintDeltas(const char* pTitle, const uint8_t* pRec, siz
     p += 4;
     printf("    %s: ret %08x asserts/errors/status/malloc %u/%u/%u/%u, events %u bytes, %u state changes\n", pTitle, sithDSSTest_Rd32(pRec),
         pRec[4] | (pRec[5] << 8), pRec[6] | (pRec[7] << 8), pRec[8] | (pRec[9] << 8), pRec[10] | (pRec[11] << 8), evSize, numDeltas);
+
     for ( uint32_t i = 0; i < numDeltas && p < pRec + recSize; ++i )
     {
         uint32_t off = sithDSSTest_Rd32(p);
