@@ -1193,6 +1193,8 @@ TEST(AudioLib, TestOriginalParseWaveFileHeader)
     // Headers of every container the parser handles (RIFF WAVE with and without sync chunk, INDYWV with and without
     // extra data, iMUS, AIFF with each rate exponent, MCMP wrapped files) and the well-formed variants it rejects.
     // Each output pointer is passed or omitted as recorded in the case, so untouched outputs are checked as well.
+    // The edge cases add fields at their limits (sign extended 16-bit fields, wrapping sizes), chunk and container sizes
+    // at the end-of-file comparison, unusual chunk layouts and every stable prefix of one file per container.
     AudioLibTestVector vec;
     AudioLibTest_OpenVector(&vec, "ParseWaveFileHeader.tv", AUDIOLIB_TEST_KIND_PARSE);
     TEST_ASSERT_GREATER_THAN_UINT32(0, vec.numCases);
@@ -1346,6 +1348,7 @@ TEST(AudioLib, TestOriginalUncompressBlock)
     // Decodes the original encoder's blocks, chains of blocks carrying the decoder state, a garbage state with the
     // reset flag, and pseudo-random bit streams, which reach every sample width, escape codes, saturation and the
     // full step index range in both channel layouts.
+    // The edge cases decode constant bit patterns and tiny blocks from states at the limits of the step index and sample.
     AudioLibTestVector vec;
     AudioLibTest_OpenVector(&vec, "UncompressBlock.tv", AUDIOLIB_TEST_KIND_UNCOMPRESSBLOCK);
     TEST_ASSERT_GREATER_THAN_UINT32(0, vec.numCases);
@@ -1545,6 +1548,7 @@ TEST(AudioLib, TestOriginalWVSMUncompressBlock)
 {
     // Blocks written by the original WVSM encoder for several signals and block sizes, hand-assembled blocks with 0x80
     // escapes, shifts and odd sample counts, and pseudo-random byte streams. The consumed byte count is compared too.
+    // The edge cases add full-scale blocks, blocks of escapes only, the largest shifts and one-sample blocks.
     AudioLibTestVector vec;
     AudioLibTest_OpenVector(&vec, "WVSMUncompressBlock.tv", AUDIOLIB_TEST_KIND_WVSMUNCOMPRESS);
     TEST_ASSERT_GREATER_THAN_UINT32(0, vec.numCases);
