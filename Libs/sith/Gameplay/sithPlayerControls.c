@@ -118,7 +118,6 @@ static int J3DAPI sithPlayerControls_ProcessDeadPlayer(SithThing* pThing, float 
 static void J3DAPI sithPlayerControls_ProcessFallingMove(SithThing* pThing, float secDeltaTime);
 static void J3DAPI sithPlayerControls_ProcessSwimMove(SithThing* pThing, float secDeltaTime);
 static void J3DAPI sithPlayerControls_ProcessHangMove(SithThing* pThing, float secDeltaTime);
-static void J3DAPI sithPlayerControls_ProcessWeaponAim(SithThing* pThing, float secDeltaTime);
 
 static int J3DAPI sithPlayerControls_CheckAimRange(SithThing* pThing, const rdVector3* pStartPos, const rdVector3* pTargetPos, float cosFarAimCone, float cosCloseAimCone, float cosVerticalLimit, float maxAimDist);
 static int J3DAPI sithPlayerControls_GetPushPullMoveNorm(rdVector3* moveNorm, const rdVector3* pLVect, float angle);
@@ -899,9 +898,9 @@ void J3DAPI sithPlayerControls_ProcessLookControls(SithThing* pThing, float secD
 
 void J3DAPI sithPlayerControls_ProcessGeneralMove(SithThing* pThing, float secDeltaTime)
 {
-    sithPlayerActions_g_pCurLedgeThingModelFace = NULL;
-    sithPlayerActions_g_pCurLedgeThingModel     = NULL;
-    sithPlayerActions_g_pCurLedgeSurface        = NULL;
+    sithPlayerActions_g_pCurHitLedgeModelFace = NULL;
+    sithPlayerActions_g_pCurHitLedgeModel     = NULL;
+    sithPlayerActions_g_pCurHitLedgeSurface   = NULL;
 
     // Handle jump direction input when in jump ready state
     if ( pThing->thingInfo.actorInfo.bControlsDisabled )
@@ -2353,13 +2352,13 @@ void J3DAPI sithPlayerControls_ProcessHangMove(SithThing* pThing, float secDelta
             if ( pLedgeSurf )
             {
                 sithThing_AttachThingToClimbSurface(pThing, pLedgeSurf);
-                sithPlayerActions_g_pCurLedgeSurface = pLedgeSurf;
+                sithPlayerActions_g_pCurHitLedgeSurface = pLedgeSurf;
             }
             else
             {
                 sithThing_AttachThingToThingFace(pThing, pLedgeThing, pLedgeFace, pLedgeMesh->apVertices, /*bNoImpactUpdate=*/1);
-                sithPlayerActions_g_pCurLedgeThingModelFace = pLedgeFace;
-                sithPlayerActions_g_pCurLedgeThingModel     = pLedgeModel;
+                sithPlayerActions_g_pCurHitLedgeModelFace = pLedgeFace;
+                sithPlayerActions_g_pCurHitLedgeModel     = pLedgeModel;
             }
         }
     }
@@ -2388,13 +2387,13 @@ void J3DAPI sithPlayerControls_ProcessHangMove(SithThing* pThing, float secDelta
             if ( pLedgeSurf )
             {
                 sithThing_AttachThingToClimbSurface(pThing, pLedgeSurf);
-                sithPlayerActions_g_pCurLedgeSurface = pLedgeSurf;
+                sithPlayerActions_g_pCurHitLedgeSurface = pLedgeSurf;
             }
             else
             {
                 sithThing_AttachThingToThingFace(pThing, pLedgeThing, pLedgeFace, pLedgeMesh->apVertices, 1);
-                sithPlayerActions_g_pCurLedgeThingModelFace = pLedgeFace;
-                sithPlayerActions_g_pCurLedgeThingModel     = pLedgeModel;
+                sithPlayerActions_g_pCurHitLedgeModelFace = pLedgeFace;
+                sithPlayerActions_g_pCurHitLedgeModel     = pLedgeModel;
             }
         }
     }
@@ -5206,10 +5205,17 @@ void J3DAPI sithPlayerControls_ProcessPushPullMove(SithThing* pThing, float secD
         //
         rdVector3 pullDir = RDVECTOR_NEG3(pushPullMoveNorm);
         float pullMoveDist = pThing->collide.movesize + 0.19f;
+        // Fixed: [v1.2] Start the search from a position lowered by 0.05 for the statue movable thing `2marpushstatue`
+        rdVector3 startPos = sithPlayerControls_pMovableThing->pos;
+        if ( streq(sithPlayerControls_pMovableThing->aName, "2marpushstatue") )
+        {
+            startPos.z -= 0.05f;
+        }
+
         sithCollision_SearchForCollisions(
             sithPlayerControls_pMovableThing->pInSector,
             sithPlayerControls_pMovableThing,
-            &sithPlayerControls_pMovableThing->pos,
+            &startPos,
             &pullDir,
             pullMoveDist,
             searchRadius,
@@ -5473,10 +5479,17 @@ void J3DAPI sithPlayerControls_ProcessPushPullMove(SithThing* pThing, float secD
         //
         // Check if movable thing can be pushed to new position
         //
+        // Fixed: [v1.2] Start the search from a position lowered by 0.05 for the statue movable thing `2marpushstatue`
+        rdVector3 startPos = sithPlayerControls_pMovableThing->pos;
+        if ( streq(sithPlayerControls_pMovableThing->aName, "2marpushstatue") )
+        {
+            startPos.z -= 0.05f;
+        }
+
         sithCollision_SearchForCollisions(
             sithPlayerControls_pMovableThing->pInSector,
             sithPlayerControls_pMovableThing,
-            &sithPlayerControls_pMovableThing->pos,
+            &startPos,
             &pushPullMoveNorm,
             0.19f, // move distance
             searchRadius,

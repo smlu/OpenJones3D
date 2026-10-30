@@ -96,9 +96,6 @@ static int sithWeapon_playerBackHolsterSwapRefNum;
 static SithControlFunction sithWeapon_bufferedWaponKeyId;
 static SithWeaponActorKilledCallback sithWeapon_pfActorKilledCallback;
 
-SithThing* J3DAPI sithWeapon_WeaponFire(SithThing* pShooter, const SithThing* pProjectileTemplate, const rdVector3* pFireDir, rdVector3* pFirePos, tSoundHandle hFireSnd, SithPuppetSubMode submode, float extra, SithFireProjectileFlags projectileFlags, float secDeltaTime);
-SithThing* J3DAPI sithWeapon_WeaponFireProjectile(SithThing* pShooter, const SithThing* pProjectileTemplate, const rdVector3* pFireDir, rdVector3* pFirePos, tSoundHandle hFireSnd, SithPuppetSubMode submode, float extra, SithFireProjectileFlags flags, float secDeltaTime);
-
 void J3DAPI sithWeapon_HandleImpact(SithThing* pWeapon);
 int sithWeapon_IsLocalPlayerUnableToUseWeapon(void);
 
@@ -1405,6 +1402,7 @@ int J3DAPI sithWeapon_ProcessWeaponControls(SithThing* pThing, float secDeltaTim
                     if ( curWeaponID == SITHWEAPON_WHIP && sithWeapon_ActivateWhip(pThing, pItem->pCog) == 1 )
                     {
                         sithWeapon_bLocalPlayerAiming = 0;
+                        sithWeapon_deactivatedPlayerWeaponID = SITHWEAPON_NOWEAPONDESELECTED; // Fixed: [v1.2] Also clear the deactivated player weapon id when the whip is activated, like the buffered key id
                         sithWeapon_bufferedWaponKeyId = -1;
                         return 0;
                     }

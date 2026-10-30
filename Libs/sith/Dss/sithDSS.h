@@ -91,13 +91,14 @@ typedef enum eSithDSSType
     SITHDSS_WELCOME             = 33,
     SITHDSS_JOIN                = 34,
     SITHDSS_DESTROYTHING        = 35,
+    SITHDSS_JOINSTATUS          = 36,
     SITHDSS_PLAYSOUNDMODE       = 37,
     SITHDSS_PING                = 38,
     SITHDSS_PONG                = 39,
     SITHDSS_MOVEPOS             = 40,
     SITHDSS_CHECKMEMBERSHIPLIST = 41,
     SITHDSS_QUIT                = 42,
-    SITHDSS_UNKNOWN_44          = 44,
+    SITHDSS_ENDSECTION          = 44,
     SITHDSS_VOICESTATE          = 45,
     SITHDSS_VEHICLECONTROLSTATE = 46,
     SITHDSS_HUDSTATE            = 47,
@@ -108,7 +109,7 @@ typedef enum eSithDSSType
 int J3DAPI sithDSS_SurfaceStatus(const SithSurface* pSurf, DPID idTo, unsigned int outstream);
 int J3DAPI sithDSS_ProcessSurfaceStatus(const SithMessage* pMsg);
 
-int J3DAPI sithDSS_SectorStatus(const SithSector* pSector, DPID a2, unsigned int outstream);
+int J3DAPI sithDSS_SectorStatus(const SithSector* pSector, DPID idTo, unsigned int outstream);
 int J3DAPI sithDSS_SyncSeenSectors(DPID idTo, unsigned int outstream);
 
 int J3DAPI sithDSS_ProcessSyncSeenSecors(const SithMessage* pMsg);
@@ -141,8 +142,8 @@ int J3DAPI sithDSS_ProcessSyncGameState(const SithMessage* pMsg);
 int J3DAPI sithDSS_SyncVehicleControlState(DPID idTo, unsigned int outstream);
 int J3DAPI sithDSS_ProcessVehicleControlsState(const SithMessage* pMsg);
 
-int J3DAPI sithDSS_sub_4B3760(DPID idTo, unsigned int outstream);
-int J3DAPI sithDSS_sub_4B3790(const SithMessage* pMsg);
+int J3DAPI sithDSS_SendEndSection(DPID idTo, unsigned int outstream);
+int J3DAPI sithDSS_ProcessEndSection(const SithMessage* pMsg);
 
 // Functions for de-serializing data from stream
 static inline int8_t J3DAPI sithDSS_ReadInt8(uint8_t** stream);
@@ -337,12 +338,14 @@ void sithDSS_ReadMat34(uint8_t** stream, rdMatrix34* mat)
 void sithDSS_ReadString(uint8_t** stream, char* str, int length)
 {
     memcpy(str, *stream, length);
+    str[length - 1] = 0; // Note, the original always null terminates the string
     *stream += length;
 }
 
 void sithDSS_ReadWString(uint8_t** stream, wchar_t* str, int length)
 {
     memcpy(str, *stream, length * sizeof(wchar_t));
+    str[length - 1] = 0; // Note, the original always null terminates the string
     *stream += length * sizeof(wchar_t);
 }
 

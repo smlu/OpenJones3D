@@ -639,10 +639,10 @@ Stored in:
 | `SITHAI_MODE_ATTACKING` | `0x00000002` | AI is attacking. |
 | `SITHAI_MODE_SEARCHING` | `0x00000004` | AI is searching. |
 | `SITHAI_MODE_TURNING` | `0x00000008` | AI is turning. |
-| `SITHAI_MODE_UNKNOWN_10` | `0x00000010` | Undecoded AI mode bit. |
+| `SITHAI_MODE_DODGING` | `0x00000010` | AI is dodging a threat. |
 | `SITHAI_MODE_TOUGHSKIN` | `0x00000020` | Tough-skin behavior. |
 | `SITHAI_MODE_NOCHECKFORCLIFF` | `0x00000040` | Skip cliff checks. |
-| `SITHAI_MODE_UNKNOWN_80` | `0x00000080` | Undecoded AI mode bit. |
+| `SITHAI_MODE_LOOKING` | `0x00000080` | A look target is set. |
 | `SITHAI_MODE_BLOCK` | `0x00000100` | Blocking mode. |
 | `SITHAI_MODE_ACTIVE` | `0x00000200` | AI is active. |
 | `SITHAI_MODE_TARGETVISIBLE` | `0x00000400` | Current target is visible. |
@@ -650,12 +650,12 @@ Stored in:
 | `SITHAI_MODE_SLEEPING` | `0x00001000` | AI is sleeping. |
 | `SITHAI_MODE_DISABLED` | `0x00002000` | AI is disabled. |
 | `SITHAI_MODE_CIRCLESTRAFING` | `0x00004000` | AI is circle-strafing. |
-| `SITHAI_MODE_UNKNOWN_8000` | `0x00008000` | Undecoded AI mode bit. |
+| `SITHAI_MODE_MATCHVELOCITY` | `0x00008000` | AI is matching the goal velocity. |
 | `SITHAI_MODE_WANTALLEVENTS` | `0x00010000` | Receive all AI events. |
 | `SITHAI_MODE_LOSTSIGHTOFGOAL` | `0x00020000` | Lost sight of current goal. |
 | `SITHAI_MODE_INSTINCTUSEWPNTS` | `0x00040000` | Instinct logic may use waypoints. |
 | `SITHAI_MODE_CHASE_GOAL` | `0x00080000` | Chase current goal. |
-| `SITHAI_MODE_UNKNOWN_100000` | `0x00100000` | Undecoded AI mode bit. |
+| `SITHAI_MODE_BERSERK` | `0x00100000` | AI is berserk (stands and fires, closes to melee, never retreats). |
 | `SITHAI_MODE_WALLCRAWLING` | `0x00200000` | AI is wall-crawling. |
 | `SITHAI_MODE_UNKNOWN_400000` | `0x00400000` | Undecoded AI mode bit. |
 | `SITHAI_MODE_HUNTING` | `0x00800000` | AI is hunting. |
@@ -677,21 +677,21 @@ Stored in:
 
 | Flag | Value | Meaning |
 | --- | ---: | --- |
-| `SITHAI_SUBMODE_UNKNOWN_1` | `0x00000001` | Undecoded AI submode bit. |
+| `SITHAI_SUBMODE_MOVETARGETLOCKED` | `0x00000001` | Explicit move target set; look and move requests are ignored. |
 | `SITHAI_SUBMODE_UNKNOWN_2` | `0x00000002` | Undecoded AI submode bit. |
 | `SITHAI_SUBMODE_UNKNOWN_4` | `0x00000004` | Undecoded AI submode bit. |
 | `SITHAI_SUBMODE_UNKNOWN_8` | `0x00000008` | Undecoded AI submode bit. |
-| `SITHAI_SUBMODE_UNKNOWN_10` | `0x00000010` | Undecoded AI submode bit. |
+| `SITHAI_SUBMODE_ALIGNING` | `0x00000010` | Turning to face the move direction before moving. |
 | `SITHAI_SUBMODE_SKIPCHECKFIREFOV` | `0x00000020` | Skip fire-FOV checks. |
 | `SITHAI_SUBMODE_FIREADDEYEOFFSET` | `0x00000040` | Add eye offset when firing. |
 | `SITHAI_SUBMODE_NOMOVEBACKWARDS` | `0x00000080` | Do not move backward. |
-| `SITHAI_SUBMODE_UNKNOWN_100` | `0x00000100` | Undecoded AI submode bit. |
+| `SITHAI_SUBMODE_MOVEFORWARD` | `0x00000100` | Can only move forward along the facing direction. |
 | `SITHAI_SUBMODE_CONTINUOUSMOTION` | `0x00000200` | Use continuous motion. |
-| `SITHAI_SUBMODE_UNKNOWN_400` | `0x00000400` | Undecoded AI submode bit. |
-| `SITHAI_SUBMODE_UNKNOWN_800` | `0x00000800` | Undecoded AI submode bit. |
+| `SITHAI_SUBMODE_HEADTRACKINGENABLED` | `0x00000400` | Head tracking is enabled. |
+| `SITHAI_SUBMODE_HEADTRACKINGTARGET` | `0x00000800` | Head follows the target instead of the look position. |
 | `SITHAI_SUBMODE_HEADTRACKINGMOTION` | `0x00001000` | Use head-tracking motion. |
 | `SITHAI_SUBMODE_BODYTRACKINGMOTION` | `0x00002000` | Use body-tracking motion. |
-| `SITHAI_SUBMODE_UNKNOWN_4000` | `0x00004000` | Undecoded AI submode bit. |
+| `SITHAI_SUBMODE_NEWMOVE` | `0x00004000` | A new move was started this tick. |
 | `SITHAI_SUBMODE_CONTINUOUSWPNTMOTION` | `0x00008000` | Continuous waypoint motion. |
 | `SITHAI_SUBMODE_SEMICONTINUOUSWPNTMOTION` | `0x00010000` | Semi-continuous waypoint motion. |
 | `SITHAI_SUBMODE_SEMICONTINUOUSMOTION` | `0x00020000` | Semi-continuous motion. |

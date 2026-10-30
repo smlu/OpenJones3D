@@ -209,6 +209,14 @@ float J3DAPI sithActor_DamageActor(SithThing* pActor, SithThing* pThing, float d
     SITH_ASSERTREL(pActor && (damage > 0.0f));
     SITH_ASSERTREL(pActor->type == SITH_THING_ACTOR || pActor->type == SITH_THING_PLAYER);
 
+    // Fixed: [v1.2] Do not play damage sound when the player damages itself with these damage types
+    bool bPlayedDamageSound = false;
+    if ( pActor->type == SITH_THING_PLAYER && pActor == pThing
+        && (damageType == SITH_DAMAGE_IMP1 || damageType == SITH_DAMAGE_2000 || damageType == SITH_DAMAGE_IMP4) )
+    {
+        bPlayedDamageSound = true;
+    }
+
     if ( pActor->type == SITH_THING_PLAYER
         && (pActor->moveStatus == SITHPLAYERMOVE_RAFT_BOARDING
             || pActor->moveStatus == SITHPLAYERMOVE_RAFT_UNBOARDING_LEFT
@@ -240,7 +248,7 @@ float J3DAPI sithActor_DamageActor(SithThing* pActor, SithThing* pThing, float d
             return 0.0f;
         }
 
-        if ( pThing->pParent->type == SITH_THING_PLAYER )
+        if ( !bPlayedDamageSound && pThing->pParent->type == SITH_THING_PLAYER ) // Fixed: [v1.2] bPlayedDamageSound check
         {
             sithActor_PlayDamageSoundFx(pActor, damageType);
         }
@@ -263,7 +271,11 @@ float J3DAPI sithActor_DamageActor(SithThing* pActor, SithThing* pThing, float d
     }
 
     pActor->thingInfo.actorInfo.health = pActor->thingInfo.actorInfo.health - damage;
-    sithActor_PlayDamageSoundFx(pActor, damageType);
+    if ( !bPlayedDamageSound ) // Fixed: [v1.2] bPlayedDamageSound check
+    {
+        sithActor_PlayDamageSoundFx(pActor, damageType);
+    }
+
     if ( pThing )
     {
         if ( pThing != pActor && pActor->controlType == SITH_CT_AI )

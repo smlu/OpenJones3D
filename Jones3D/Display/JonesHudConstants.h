@@ -504,7 +504,8 @@ static const rdVector4 JonesHud_aCreditFontColors[12] =
 };
 
 // TODO: Update flags to be represented as hex numbers
-static tJonesCreditEntry JonesHud_aCredits[325] =
+// Fixed: [v1.2] Increased count from 325 to 327 for the two added records
+static tJonesCreditEntry JonesHud_aCredits[327] =
 {
     { "gen_4_pyramid.mat", 4, 1 },
     { "JONES_STR_HGAME", 2, 1 },
@@ -725,8 +726,8 @@ static tJonesCreditEntry JonesHud_aCredits[325] =
     { "JONES_STR_TBOOKDSN", 16, 6 },
     { "PATTY HILL", 1, 0 },
     { "JONES_STR_TPRSP", 16, 6 },
+    { "JOSH MOORE", 1, 0 }, // Fixed: [v1.2] Swapped order with HEATHER TWIST
     { "HEATHER TWIST", 1, 0 },
-    { "JOSH MOORE", 1, 0 },
     { "JONES_STR_TSHOPCOORD", 16, 6 },
     { "ANNE BARSON", 1, 0 },
     { "gen_4_hammer&sickle.mat", 4, 7 },
@@ -762,6 +763,8 @@ static tJonesCreditEntry JonesHud_aCredits[325] =
     { "JEREMY SALESIN", 1, 0 },
     { "JONES_STR_TCTRLR", 16, 8 },
     { "TOM McCARTHY", 1, 0 },
+    { "Director of Sales Operations", 16, 8 }, // Fixed: [v1.2] Credit title and name
+    { "JASON HORSTMAN", 1, 0 },
     { "JONES_STR_TQADIR", 16, 8 },
     { "MARK CARTWRIGHT", 1, 0 },
     { "JONES_STR_TQAMGR", 16, 8 },

@@ -556,12 +556,14 @@ void J3DAPI sithWhip_CreatePlayerWhip(SithThing* pThing)
     if ( !pTemplate )
     {
         // TODO: maybe add debug log
+        sithWhip_pWhipThing = NULL; // Fixed: [v1.2] Clear whip thing pointer on early exit
         return;
     }
 
     int handMeshIdx = sithThing_GetThingMeshIndex(pThing, "inrhand"); // Altered: Moved down here from the start of the scope
     if ( handMeshIdx == -1 )
     {
+        sithWhip_pWhipThing = NULL; // Fixed: [v1.2] Clear whip thing pointer on early exit
         return;
     }
 

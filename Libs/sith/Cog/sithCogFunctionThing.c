@@ -225,7 +225,7 @@ void J3DAPI sithCogFunctionThing_CreateLaser(SithCog* pCog)
     if ( !sithCogExec_PopVector(pCog, &endPos) )
     {
         STDLOG_ERROR("Cog %s: Invalid end pos vector in CreateLaser!\n", pCog->aName);
-        bArgError = true; // Fixed: Set bArgError to true so we don't proceed with creating laser thing
+        bArgError = true; // Fixed: [v1.2] Set bArgError to true so we don't proceed with creating laser thing
     }
 
     rdVector3 offset;
@@ -5412,17 +5412,17 @@ void J3DAPI sithCogFunctionThing_StartQuetzAnim(SithCog* pCog)
 
     switch ( mode )
     {
-        case 2:
-            sithAIMove_sub_49AB80(pThing->controlInfo.aiControl.pLocal);
+        case SITHQUETZSTRIKE_MODE_ANIM2:
+            sithAIMove_StartQuetzAnim2(pThing->controlInfo.aiControl.pLocal);
             break;
-        case 3:
-            sithAIMove_sub_49AC50(pThing->controlInfo.aiControl.pLocal);
+        case SITHQUETZSTRIKE_MODE_ANIM3:
+            sithAIMove_StartQuetzAnim3(pThing->controlInfo.aiControl.pLocal);
             break;
-        case 4:
-            sithAIMove_sub_49B1B0(pThing->controlInfo.aiControl.pLocal);
+        case SITHQUETZSTRIKE_MODE_ANIM4:
+            sithAIMove_StartQuetzAnim4(pThing->controlInfo.aiControl.pLocal);
             break;
-        case 5:
-            sithAIMove_sub_49AF80(pThing->controlInfo.aiControl.pLocal);
+        case SITHQUETZSTRIKE_MODE_ANIM5:
+            sithAIMove_StartQuetzAnim5(pThing->controlInfo.aiControl.pLocal);
             break;
         default:
             return;

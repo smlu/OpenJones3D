@@ -901,7 +901,7 @@ int J3DAPI jonesConfig_GameSaveSetData(HWND hDlg, int a2, GameSaveMsgBoxData* pD
 
 INT_PTR CALLBACK jonesConfig_ExitGameDlgProc(HWND hWnd, UINT uMsg, WPARAM wparam, LPARAM lparam);
 
-void* J3DAPI jonesConfig_sub_405F60(HWND hWnd);
+void* J3DAPI jonesConfig_GameFileDialog_HandleWM_COMMAND(HWND hWnd);
 UINT_PTR CALLBACK jonesConfig_LoadGameDialogHookProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
 int J3DAPI jonesConfig_ShowLoadGameWarningMsgBox(HWND hWnd);
 BOOL J3DAPI jonesConfig_LoadGameDialogInit(HWND hDlg, int a2, LPOPENFILENAME pofn);
@@ -986,7 +986,7 @@ int J3DAPI jonesConfig_GameOverDialogInit(HWND hDlg, int a2, GameOverDialogData*
 void J3DAPI jonesConfig_GameOverDialog_HandleWM_COMMAND(HWND hWnd, uint16_t ctrlID);
 
 INT_PTR CALLBACK jonesConfig_StatisticsDialogProc(HWND hwnd, UINT uMsg, WPARAM wPAram, LPARAM lParam);
-int J3DAPI jonesConfig_sub_40D100(int a1, HWND hWnd, int a3, int a4);
+int J3DAPI jonesConfig_StatisticProc_HandleWM_HSCROLL(int a1, HWND hWnd, int a3, int a4);
 int J3DAPI jonesConfig_DrawImageOnDialogItem(HWND hDlg, HDC hdcWnd, HDC hdcCtrl, int nIDDlgItem, HBITMAP hImage, HBITMAP hMask);
 int J3DAPI jonesConfig_SetStatisticsDialogForLevel(HWND hDlg, int levelNum, int* a3);
 void J3DAPI jonesConfig_DrawStatisticDialogIQPoints(HWND hwnd, JonesDialogImageInfo** ppImageInfo, int dlgID, int iqpoints);
@@ -1060,7 +1060,7 @@ void jonesConfig_InstallHooks(void)
     J3D_HOOKFUNC(jonesConfig_GameSaveSetData);
     J3D_HOOKFUNC(jonesConfig_MsgBoxDlg_HandleWM_COMMAND);
     J3D_HOOKFUNC(jonesConfig_GetLoadGameFilePath);
-    J3D_HOOKFUNC(jonesConfig_sub_405F60);
+    J3D_HOOKFUNC(jonesConfig_GameFileDialog_HandleWM_COMMAND);
     J3D_HOOKFUNC(jonesConfig_LoadGameDialogHookProc);
     J3D_HOOKFUNC(jonesConfig_ShowLoadGameWarningMsgBox);
     J3D_HOOKFUNC(jonesConfig_LoadGameDialogInit);
@@ -1134,7 +1134,7 @@ void jonesConfig_InstallHooks(void)
     J3D_HOOKFUNC(jonesConfig_GameOverDialog_HandleWM_COMMAND);
     J3D_HOOKFUNC(jonesConfig_ShowStatisticsDialog);
     J3D_HOOKFUNC(jonesConfig_StatisticsDialogProc);
-    J3D_HOOKFUNC(jonesConfig_sub_40D100);
+    J3D_HOOKFUNC(jonesConfig_StatisticProc_HandleWM_HSCROLL);
     J3D_HOOKFUNC(jonesConfig_UpdateCurrentLevelNum);
     J3D_HOOKFUNC(jonesConfig_DrawImageOnDialogItem);
     J3D_HOOKFUNC(jonesConfig_SetStatisticsDialogForLevel);
@@ -1422,53 +1422,64 @@ void J3DAPI jonesConfig_ControlToString(size_t controlId, char* pDest)
 
     memset(pDest, 0, JONESCONFIG_CONTROLSTRING_MAXLEN);
 
+    char aKeyName[256]; // Fixed: [v1.2] Buffer for key name
+
     char* pJonesString = NULL;
     if ( controlId < JONESCONFIG_JOYAXISKID_UP )
     {
         switch ( controlId )
         {
+            // Fixed: [v1.2] Key name is now queried from the system keyboard layout instead of being hardcoded
+            case DIK_1:
+            case DIK_2:
+            case DIK_3:
+            case DIK_4:
+            case DIK_5:
+            case DIK_6:
+            case DIK_7:
+            case DIK_8:
+            case DIK_9:
+            case DIK_0:
+            case DIK_Q:
+            case DIK_W:
+            case DIK_E:
+            case DIK_R:
+            case DIK_T:
+            case DIK_Y:
+            case DIK_U:
+            case DIK_I:
+            case DIK_O:
+            case DIK_P:
+            case DIK_A:
+            case DIK_S:
+            case DIK_D:
+            case DIK_F:
+            case DIK_G:
+            case DIK_H:
+            case DIK_J:
+            case DIK_K:
+            case DIK_L:
+            case DIK_SEMICOLON:
+            case DIK_APOSTROPHE:
+            case DIK_GRAVE:
+            case DIK_BACKSLASH:
+            case DIK_Z:
+            case DIK_X:
+            case DIK_C:
+            case DIK_V:
+            case DIK_B:
+            case DIK_N:
+            case DIK_M:
+            case DIK_PERIOD:
+            case DIK_SLASH:
+                // TODO: [BUG] Result is not checked, on failure aKeyName is uninitialized (as in the original)
+                GetKeyNameTextA(((controlId & 0x7F) | ((controlId & 0x80) << 1)) << 16, aKeyName, sizeof(aKeyName) - 1);
+                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, aKeyName);
+                stdUtil_ToUpper(pDest); // Note, original calls _strupr
+                return;
+
             case DIK_ESCAPE:
                 pJonesString = "JONES_STR_ESCAPE";
-                break;
-
-            case DIK_1:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "1");
-                break;
-
-            case DIK_2:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "2");
-                break;
-
-            case DIK_3:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "3");
-                break;
-
-            case DIK_4:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "4");
-                break;
-
-            case DIK_5:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "5");
-                break;
-
-            case DIK_6:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "6");
-                break;
-
-            case DIK_7:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "7");
-                break;
-
-            case DIK_8:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "8");
-                break;
-
-            case DIK_9:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "9");
-                break;
-
-            case DIK_0:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "0");
                 break;
 
             case DIK_MINUS:
@@ -1487,46 +1498,6 @@ void J3DAPI jonesConfig_ControlToString(size_t controlId, char* pDest)
                 pJonesString = "JONES_STR_TAB";
                 break;
 
-            case DIK_Q:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "Q");
-                break;
-
-            case DIK_W:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "W");
-                break;
-
-            case DIK_E:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "E");
-                break;
-
-            case DIK_R:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "R");
-                break;
-
-            case DIK_T:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "T");
-                break;
-
-            case DIK_Y:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "Y");
-                break;
-
-            case DIK_U:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "U");
-                break;
-
-            case DIK_I:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "I");
-                break;
-
-            case DIK_O:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "O");
-                break;
-
-            case DIK_P:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "P");
-                break;
-
             case DIK_LBRACKET:
                 pJonesString = "JONES_STR_LEFT_BRCKT";
                 break;
@@ -1543,100 +1514,12 @@ void J3DAPI jonesConfig_ControlToString(size_t controlId, char* pDest)
                 pJonesString = "JONES_STR_LEFT_CTRL";
                 break;
 
-            case DIK_A:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "A");
-                break;
-
-            case DIK_S:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "S");
-                break;
-
-            case DIK_D:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "D");
-                break;
-
-            case DIK_F:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "F");
-                break;
-
-            case DIK_G:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "G");
-                break;
-
-            case DIK_H:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "H");
-                break;
-
-            case DIK_J:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "J");
-                break;
-
-            case DIK_K:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "K");
-                break;
-
-            case DIK_L:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "L");
-                break;
-
-            case DIK_SEMICOLON:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, ";");
-                break;
-
-            case DIK_APOSTROPHE:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "'");
-                break;
-
-            case DIK_GRAVE:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "`");
-                break;
-
             case DIK_LSHIFT:
                 pJonesString = "JONES_STR_LEFT_SHIFT";
                 break;
 
-            case DIK_BACKSLASH:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "\\");
-                break;
-
-            case DIK_Z:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "Z");
-                break;
-
-            case DIK_X:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "X");
-                break;
-
-            case DIK_C:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "C");
-                break;
-
-            case DIK_V:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "V");
-                break;
-
-            case DIK_B:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "B");
-                break;
-
-            case DIK_N:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "N");
-                break;
-
-            case DIK_M:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "M");
-                break;
-
             case DIK_COMMA:
                 pJonesString = "JONES_STR_COMMA";
-                break;
-
-            case DIK_PERIOD:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, ".");
-                break;
-
-            case DIK_SLASH:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "/");
                 break;
 
             case DIK_RSHIFT:
@@ -3721,7 +3604,7 @@ UINT_PTR CALLBACK jonesConfig_SaveGameDialogHookProc(HWND hDlg, UINT uMsg, WPARA
         }
         case WM_COMMAND:
         {
-            jonesConfig_sub_405F60(hDlg);
+            jonesConfig_GameFileDialog_HandleWM_COMMAND(hDlg);
             return 0;
         }
         case WM_CLOSE:
@@ -4193,7 +4076,7 @@ int J3DAPI jonesConfig_GetLoadGameFilePath(HWND hWnd, char* pDestNdsPath)
     return 1;
 }
 
-void* J3DAPI jonesConfig_sub_405F60(HWND hWnd)
+void* J3DAPI jonesConfig_GameFileDialog_HandleWM_COMMAND(HWND hWnd)
 {
     return (void*)GetWindowLongPtr(hWnd, DWL_USER);
 }
@@ -4208,7 +4091,7 @@ UINT_PTR CALLBACK jonesConfig_LoadGameDialogHookProc(HWND hDlg, UINT uMsg, WPARA
         }
         case WM_COMMAND:
         {
-            jonesConfig_sub_405F60(hDlg);
+            jonesConfig_GameFileDialog_HandleWM_COMMAND(hDlg);
             return FALSE;
         }
         case WM_CLOSE:
@@ -8612,7 +8495,7 @@ INT_PTR CALLBACK jonesConfig_StatisticsDialogProc(HWND hwnd, UINT uMsg, WPARAM w
                 pData = (int*)GetWindowLongPtr(hwnd, DWL_USER);
                 hScroll = GetDlgItem(hwnd, 1162);
                 hTextStatTitle = GetDlgItem(hwnd, 1158);
-                jonesConfig_sub_40D100((int)hwnd, (HWND)lParam, (uint16_t)wPAram, HIWORD(wPAram));
+                jonesConfig_StatisticProc_HandleWM_HSCROLL((int)hwnd, (HWND)lParam, (uint16_t)wPAram, HIWORD(wPAram));
                 scrollPos = GetScrollPos(hScroll, 2);
                 if ( scrollPos != pData[2] )
                 {
@@ -8700,7 +8583,7 @@ INT_PTR CALLBACK jonesConfig_StatisticsDialogProc(HWND hwnd, UINT uMsg, WPARAM w
     return result;
 }
 
-int J3DAPI jonesConfig_sub_40D100(int a1, HWND hWnd, int a3, int a4)
+int J3DAPI jonesConfig_StatisticProc_HandleWM_HSCROLL(int a1, HWND hWnd, int a3, int a4)
 {
     J3D_UNUSED(a1);
 
@@ -9620,7 +9503,7 @@ void J3DAPI jonesConfig_AddStoreCartItem(HWND hDlg, tStoreCartState* pCart)
             ListView_GetItem(hItemsList, &lvitem);
 
             int storeItemIdx = HIWORD(lvitem.lParam);//  HIWORD
-            if ( storeItemIdx > -1 ) // Fixed: Added check for bonusMapItemIdx > -1
+            if ( storeItemIdx > -1 ) // Fixed: [v1.2] Added check for bonusMapItemIdx > -1
             {
                 if ( JonesHud_aStoreItems[storeItemIdx].menuID == JONESHUD_MENU_INVITEM_BONUSMAP )
                 {
@@ -9633,7 +9516,7 @@ void J3DAPI jonesConfig_AddStoreCartItem(HWND hDlg, tStoreCartState* pCart)
 
         if ( pCart->balance >= total )
         {
-            if ( bonusMapItemIdx > -1 && JonesHud_aStoreItems[bonusMapItemIdx].menuID == JONESHUD_MENU_INVITEM_BONUSMAP ) // Fixed: Added check for bonusMapItemIdx > -1
+            if ( bonusMapItemIdx > -1 && JonesHud_aStoreItems[bonusMapItemIdx].menuID == JONESHUD_MENU_INVITEM_BONUSMAP ) // Fixed: [v1.2] Added check for bonusMapItemIdx > -1
             {
                 const char* pDlgText = jonesString_GetString("JONES_STR_PERU");
                 if ( pDlgText )
@@ -9692,7 +9575,7 @@ void J3DAPI jonesConfig_AddStoreCartItem(HWND hDlg, tStoreCartState* pCart)
         {
             const char* pDlgText = NULL;
             if ( bonusMapItemIdx > -1 && JonesHud_aStoreItems[bonusMapItemIdx].menuID == JONESHUD_MENU_INVITEM_BONUSMAP )
-            { // Fixed: Added check for bonusMapItemIdx > -1
+            { // Fixed: [v1.2] Added check for bonusMapItemIdx > -1
                 pDlgText = jonesString_GetString("JONES_STR_NOPERU");
             }
             else if ( selectedCount == 1 )
@@ -9759,7 +9642,7 @@ void J3DAPI jonesConfig_StoreDialog_HandleWM_COMMAND(HWND hWnd, WPARAM wParam)
         case 1:
         case 2:
         {
-            if ( pCart->balance <= 0 )
+            if ( pCart->balance < 0 ) // Fixed: [v1.2] Changed from `balance <= 0` so the purchase confirmation is also shown when the balance is exactly 0
             {
                 EndDialog(hWnd, wParam);
             }
@@ -9888,7 +9771,7 @@ int J3DAPI jonesConfig_ShowDialogInsertCD(HWND hWnd, LPARAM dwInitParam)
     ShowCursor(1);
     GetWindowLongPtr(hWnd, GWL_HINSTANCE); // TODO: ??
     int btnNum = JonesDialog_ShowDialog(MAKEINTRESOURCE(167), hWnd, jonesConfig_DialogInsertCDProc, dwInitParam);
-    ShowCursor(0);
+    // Fixed: [v1.2] Removed ShowCursor(0), the cursor is now hidden when the dialog is closed in jonesConfig_InsertCD_HandleWM_COMMAND
     return btnNum; // 1 - ok or 2 - quit
 }
 
@@ -9951,12 +9834,16 @@ int J3DAPI jonesConfig_InsertCD_HandleWM_COMMAND(HWND hWnd, int nResult)
             return cdNum;
         }
 
-        return EndDialog(hWnd, nResult);
+        int bEnded = EndDialog(hWnd, nResult);
+        ShowCursor(0); // Fixed: [v1.2] Added ShowCursor(0)
+        return bEnded;
     }
 
     if ( nResult == 2 ) // quit
     {
-        return EndDialog(hWnd, nResult);
+        int bEnded = EndDialog(hWnd, nResult);
+        ShowCursor(0); // Fixed: [v1.2] Added ShowCursor(0)
+        return bEnded;
     }
 
     return cdNum;
