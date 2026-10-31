@@ -97,7 +97,7 @@ J3D_EXTERN_C_START
  * @param endAddress The end address of the region to modify
  * @return true if successful, false otherwise
  */
-inline bool J3DStartHookContext(J3DHookContext* pCtx, uintptr_t startAddress, uintptr_t endAddress)
+static inline bool J3DStartHookContext(J3DHookContext* pCtx, uintptr_t startAddress, uintptr_t endAddress)
 {
     if ( endAddress <= startAddress ) {
         return false;
@@ -113,7 +113,7 @@ inline bool J3DStartHookContext(J3DHookContext* pCtx, uintptr_t startAddress, ui
  * @param pCtx The pointer to a J3DHookContext structure
  * @return true if successful, false otherwise
  */
-inline bool J3DEndHookContext(J3DHookContext* pCtx)
+static inline bool J3DEndHookContext(J3DHookContext* pCtx)
 {
     DWORD temp;
     return VirtualProtect((LPVOID)pCtx->startAddress, pCtx->size, pCtx->oldProtect, &temp);
