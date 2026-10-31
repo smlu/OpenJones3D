@@ -141,13 +141,6 @@ things-in-view state (`0x00585478` to `0x00585728`). Engine globals: `sithMain_g
 
 ### Known Differences
 
-- `CanSeeTarget_edge_nan_distance`, `CanSeeTarget_sweeprand_edge_nan_distance`: with a NaN distance the original
-  `sithAIUtil_CanSeeTarget` skips the distance dependent part of the chance. The original compares with
-  `fcomp` / `fnstsw ax` / `test ah, 1` / `jne` (`0x0049FF52` to `0x0049FF5D`), and an unordered compare sets the C0 flag,
-  so a NaN counts as "less than 2". The reconstruction tests `!(distance < 2.0f)`, which is true for a NaN, and
-  enters that part (its comment states the opposite; `distance >= 2.0f` would match the original). The distances
-  come from `sqrt` based lengths and are never NaN in the game. `TestOriginalCanSeeTarget` expects exactly these two
-  cases to differ and is reported as ignored. The implementation is unchanged.
 - `MakeRandPoint_edge_rand_ulp`, `MakeRoamPos_edge_rand_ulp`: `SITH_RAND()` (`Libs/sith/Main/sithMain.h`) is
   `(double)rand() * (1.0 / RAND_MAX)` in the reconstruction and `(float)rand() * (1.0f / RAND_MAX)` in the original
   (`fild`, `fmul dword ptr [0x005079E8]`, for example at `0x0049FB0F`), so a random number that is used as a float

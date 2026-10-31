@@ -2799,7 +2799,7 @@ int J3DAPI sithAIUtil_CanSeeTarget(const SithAIControlBlock* pLocal, SithThing* 
         return 1;
     }
 
-    if ( !(distance < 2.0f) ) // Note, not distance >= 2.0f so that NaN distance is handled as in the original
+    if ( distance >= 2.0f ) // Note, a NaN distance skips the block like in the original (fcomp, test ah, 1 treats NaN as less than 2)
     {
         if ( (pLocal->mode & SITHAI_MODE_ACTIVE) == 0 )
         {

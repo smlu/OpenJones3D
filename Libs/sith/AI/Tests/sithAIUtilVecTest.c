@@ -343,15 +343,11 @@ TEST(sithAIUtil, TestOriginalGetDistanceToTargetPos)
 }
 
 
-// Known difference: with a NaN distance the original treats the distance as below 2 (the compare of the x87 code is
-// true for unordered operands), the reconstruction does not; no caller can produce a NaN distance
 TEST(sithAIUtil, TestOriginalCanSeeTarget)
 {
-    static const char* const aKnown[] = { "CanSeeTarget_edge_nan_distance", "CanSeeTarget_sweeprand_edge_nan_distance" };
     unsigned int numFailed = sithVecTest_RunCases(&sithAIUtilVec_suite, &sithAIUtilVecTest_fixture, "CanSeeTarget_",
         sithAIUtilVecTest_aFailText, sizeof(sithAIUtilVecTest_aFailText));
-    sithVecTest_ExpectKnownDifferences(numFailed, sithAIUtilVecTest_aFailText, aKnown, (unsigned int)SITHVEC_ARRAYLEN(aKnown),
-        "A NaN distance: the original skips the distance dependent part (x87 compare of a NaN counts as less), the reconstruction enters it; see tv/sithAIUtil/README.md.");
+    TEST_ASSERT_EQUAL_UINT_MESSAGE(0, numFailed, sithAIUtilVecTest_aFailText);
 }
 
 
