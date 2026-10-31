@@ -26,6 +26,9 @@
 #include <std/General/stdUtil.h>
 #include <std/Win95/stdComm.h>
 
+#include <stdlib.h>
+#include <string.h>
+
 #define SITHMULTI_MAX_REMOVEDSTATICTHINGS 256
 #define SITHMULTI_PLAYERNAME_LEN          16   // Length of the player name field in welcome/sync messages, in characters
 #define SITHMULTI_CHAT_MAXLEN             128  // Max length of the chat text in chat message
@@ -226,6 +229,9 @@ int J3DAPI sithMulti_ProcessWelcome(const SithMessage* pMsg)
     // TODO: [BUG] playerNum is read from the message and used as an index into sithPlayer_g_aPlayers without a range check
     wchar_t awName[SITHMULTI_PLAYERNAME_LEN];
     SITHDSS_POPWSTRING(awName, STD_ARRAYLEN(awName));
+
+    // The original copies with wcsncpy, which zero pads the name field up to its terminator
+    memset(sithPlayer_g_aPlayers[playerNum].awName, 0, sizeof(awName));
     STD_WSTRCPY(sithPlayer_g_aPlayers[playerNum].awName, awName);
 
     if ( playerId == sithMessage_g_localPlayerId )
@@ -484,6 +490,9 @@ int J3DAPI sithMulti_ProcessJoinRequest(const SithMessage* pMsg)
 
     wchar_t awName[SITHMULTI_PLAYERNAME_LEN];
     SITHDSS_POPWSTRING(awName, STD_ARRAYLEN(awName));
+
+    // The original copies with wcsncpy, which zero pads the name field up to its terminator
+    memset(sithPlayer_g_aPlayers[sithMulti_curWelcomePlayerNum].awName, 0, sizeof(awName));
     STD_WSTRCPY(sithPlayer_g_aPlayers[sithMulti_curWelcomePlayerNum].awName, awName);
 
     int clientChecksum = SITHDSS_POPINT32();
@@ -786,7 +795,9 @@ size_t J3DAPI sithMulti_Respawn(SithThing* pPlayer)
         return aPlayerNums[0];
     }
 
-    size_t spawnIdx = (size_t)(SITH_RANDF() * numFound);
+    // The original multiplies by the float constant 1/RAND_MAX and truncates the extended precision product (exact in
+    // double); rounding to float first picks the next slot when rand() * numFound is a multiple of RAND_MAX
+    size_t spawnIdx = (size_t)((double)rand() * (float)(1.0 / RAND_MAX) * (double)numFound);
     spawnIdx = STDMATH_CLAMP(spawnIdx, 0, numFound - 1);
     size_t playerNum = aPlayerNums[spawnIdx];
 

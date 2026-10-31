@@ -297,29 +297,18 @@ SITHMULTITEST_FAMILY(StopWelcomingPlayer, "StopWelcomingPlayer_")
         sithMultiTest_ExpectKnownDifferences(numFailed, aKnown, STD_ARRAYLEN(aKnown), message); \
     }
 
-// The original copies the player name of a welcome with wcsncpy(awName, pName, 15), which zero pads the name up to 15
-// characters; sithMulti_ProcessWelcome copies it with STD_WSTRCPY, which leaves the characters of a longer previous
-// name behind the terminator. The names are equal; the bytes after the terminator differ.
-SITHMULTITEST_KNOWNFAMILY(ProcessWelcome, "ProcessWelcome_",
-    "sithMulti_ProcessWelcome does not zero pad the player name to 15 characters like the original; see tv/sithMulti/README.md.",
-    "ProcessWelcome_staleName ", "ProcessWelcome_last24 ", "ProcessWelcome_pastNumPlayers ", "ProcessWelcome_emptyName ")
+SITHMULTITEST_FAMILY(ProcessWelcome, "ProcessWelcome_")
 
 // The original prints "Starting welcome of player %d." through the error print, the reconstruction through the status
-// print (SITHLOG_STATUS, marked TODO in sithMulti_ProcessJoinRequest); every accepted join request differs in the
-// error and status counts. ProcessJoinRequest_staleName also differs in the zero padding of the name as above.
+// print (SITHLOG_STATUS, an intentional change marked TODO in sithMulti_ProcessJoinRequest); every accepted join
+// request differs in the error and status counts.
 SITHMULTITEST_KNOWNFAMILY(ProcessJoinRequest, "ProcessJoinRequest_",
-    "sithMulti_ProcessJoinRequest logs the start of a welcome as status instead of error and does not zero pad the name; see tv/sithMulti/README.md.",
+    "sithMulti_ProcessJoinRequest logs the start of a welcome as status instead of error (intentional); see tv/sithMulti/README.md.",
     "ProcessJoinRequest_levelCase ", "ProcessJoinRequest_levelUnterminated ", "ProcessJoinRequest_joins ", "ProcessJoinRequest_unterminatedName ",
     "ProcessJoinRequest_staleName ", "ProcessJoinRequest_last24 ", "ProcessJoinRequest_emptyLevel ", "ProcessJoinRequest_checksumIntMin ",
     "ProcessJoinRequest_twoFreeSlots ")
 
-// The original computes rand() * (float)(1 / 32767) * numFound in x87 extended precision and truncates; the float
-// constant is slightly below 1/32767, so a product that is an integer in exact arithmetic truncates to the integer
-// below. The reconstruction (SITH_RANDF() * numFound) rounds to float first and gets the integer itself. Only reachable
-// when rand() * numFound is a multiple of 32767 (numFound 7, 14 or 21).
-SITHMULTITEST_KNOWNFAMILY(Respawn, "Respawn_",
-    "sithMulti_Respawn picks the next respawn slot when rand() * numFound is a multiple of 32767 (float rounding); see tv/sithMulti/README.md.",
-    "Respawn_edge_7slots4681 ", "Respawn_edge_7slots9362 ", "Respawn_edge_14slots4681 ", "Respawn_edge_21slots14043 ", "Respawn_edge_7slots28086 ")
+SITHMULTITEST_FAMILY(Respawn, "Respawn_")
 
 // Every case of the table must be in the fixture and the other way around
 TEST(sithMulti, TestFixtureCoversAllCases)

@@ -147,22 +147,17 @@ number of warning prints instead of `stdMemory_Malloc` calls (`sithMulti` alloca
 
 ### Known Differences
 
-- `ProcessWelcome_staleName`, `_last24`, `_pastNumPlayers`, `_emptyName`: the original copies the name of a welcome
-  with `wcsncpy(awName, pName, 15)`, which writes zeros up to 15 characters; `sithMulti_ProcessWelcome` copies it with
-  `STD_WSTRCPY`, which stops at the terminator and leaves the characters of a longer previous name behind it. The
-  names are equal, the bytes of `SithPlayer::awName` after the terminator differ.
 - `ProcessJoinRequest_levelCase`, `_levelUnterminated`, `_joins`, `_unterminatedName`, `_staleName`, `_last24`,
   `_emptyLevel`, `_checksumIntMin`, `_twoFreeSlots` (every accepted join request): the original prints
-  "Starting welcome of player %d." through `pErrorPrint`, `sithMulti_ProcessJoinRequest` through `SITHLOG_STATUS`
-  (one error print less, one status print more). `_staleName` also differs in the zero padding of the name as above.
-- `Respawn_edge_7slots4681`, `_7slots9362`, `_14slots4681`, `_21slots14043`, `_7slots28086`: the original computes
-  `rand() * 3.0518509e-05f * numFound` in x87 extended precision (the float constant is slightly below 1/32767) and
-  truncates, so an exact integer product truncates to the integer below; `sithMulti_Respawn` rounds `SITH_RANDF()` to
-  float first and gets the integer itself, picking the next respawn slot. Only reachable when `rand() * numFound` is
-  a multiple of 32767 (32767 = 7 * 31 * 151, so with 7, 14 or 21 slots).
+  "Starting welcome of player %d." through `pErrorPrint`, `sithMulti_ProcessJoinRequest` intentionally through
+  `SITHLOG_STATUS` (one error print less, one status print more).
 
-`TestOriginalProcessWelcome`, `TestOriginalProcessJoinRequest` and `TestOriginalRespawn` expect exactly these cases to
-differ and are reported as ignored; any other difference fails them.
+`TestOriginalProcessJoinRequest` expects exactly these cases to differ and is reported as ignored; any other
+difference fails it.
+
+The name copies of `ProcessWelcome`/`ProcessJoinRequest` (the original zero pads the name to its 16 characters) and
+the respawn index of `Respawn` (the original truncates the product of `rand()`, the float constant 1/32767 and the slot
+count without rounding it to float; the `Respawn_edge_*` cases) differed in the first reconstruction and now match.
 
 ### Inputs Kept Out Of The Corpus
 
