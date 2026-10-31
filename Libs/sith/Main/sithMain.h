@@ -14,7 +14,7 @@
 J3D_EXTERN_C_START
 
 #define SITH_RAND() ((double)rand() * (double)(1.0f / RAND_MAX))
-#define SITH_RANDF() ((float)SITH_RAND())
+#define SITH_RANDF() ((float)rand() * (1.0f / RAND_MAX))
 
 #define SITHLOG_DEBUG(format, ...) \
     J3DLOG_DEBUG(sith_g_pHS, format, ##__VA_ARGS__)
