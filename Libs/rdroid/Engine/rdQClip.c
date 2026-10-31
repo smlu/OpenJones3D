@@ -3,7 +3,7 @@
 
 #include <rdroid/Engine/rdClip.h>
 #include <rdroid/Main/rdroid.h>
-#include <rdroid/Math/rdvector.h>
+#include <rdroid/Math/rdVector.h>
 #include <rdroid/RTI/symbols.h>
 
 #include <std/General/stdUtil.h>

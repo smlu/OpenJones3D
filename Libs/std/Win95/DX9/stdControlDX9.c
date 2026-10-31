@@ -8,7 +8,7 @@
 #include <std/General/stdUtil.h>
 #include <std/RTI/symbols.h>
 
-#include <Xinput.h>
+#include <xinput.h>
 #pragma comment(lib,"Xinput.lib")
 
 #include <wbemidl.h>

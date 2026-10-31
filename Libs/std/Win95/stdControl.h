@@ -12,7 +12,7 @@
 #  endif
 #include <dinput.h>
 #  if defined(J3D_TEST)
-#       include <Xinput.h>
+#       include <xinput.h>
 #  endif
 #endif
 

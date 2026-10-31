@@ -4,7 +4,7 @@
 #include <j3dcore/j3dhook.h>
 #include <std/Win95/stdWin95.h>
 
-#include <CommCtrl.h> // InitCommonControls
+#include <commctrl.h> // InitCommonControls
 #include <initguid.h> // DEFINE_GUID
 
 

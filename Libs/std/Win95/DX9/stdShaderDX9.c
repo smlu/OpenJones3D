@@ -7,7 +7,7 @@
 #include <std/Win95/std3D.h>
 
 #include <d3d9.h>
-#include <D3Dcommon.h>
+#include <d3dcommon.h>
 #include <d3dcompiler.h>
 #pragma comment(lib,"d3dcompiler.lib")
 
