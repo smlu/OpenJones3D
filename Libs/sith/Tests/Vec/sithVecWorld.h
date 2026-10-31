@@ -288,6 +288,8 @@ static int sithVec_stubAllocFail;            // stdMemory_Malloc returns NULL fr
 static int sithVec_stubFindSectorMode;       // sithCollision_FindSectorInRadius: 0 returns the start sector, 1 the next sector
 static float sithVec_stubMoveScale;          // sithCollision_MoveThing moves pos by dir * dist * scale and returns dist * scale
 static uint32_t sithVec_stubRandSeed;        // state of the rand stub
+static int sithVec_stubFindSectorNullFrom;   // sithCollision_FindSectorInRadius returns NULL from this call number (1 based) of a case, 0: never
+static int sithVec_numFindSectorCalls;       // calls of sithCollision_FindSectorInRadius in the current case
 
 SITHVEC_STUB void* J3DAPI sithVec_stdMemory_Malloc(size_t size, const char* pFilename, size_t line)
 {
@@ -326,6 +328,12 @@ SITHVEC_STUB SithSector* J3DAPI sithVec_sithCollision_FindSectorInRadius(SithSec
     sithVec_Ev(SITHVEC_EV_FINDSECTORINRADIUS, 2, SITHVEC_P(pStartSector), sithVec_FloatBits(radius));
     sithVec_EvWords(pStartPos, sizeof(*pStartPos));
     sithVec_EvWords(pEndPos, sizeof(*pEndPos));
+    ++sithVec_numFindSectorCalls;
+    if ( sithVec_stubFindSectorNullFrom && sithVec_numFindSectorCalls >= sithVec_stubFindSectorNullFrom )
+    {
+        return NULL;
+    }
+
     if ( sithVec_stubFindSectorMode == 1 && pStartSector )
     {
         size_t next = ((size_t)(pStartSector - sithVec_arena.sectors) + 1u) % SITHVEC_NUMSECTORS;
@@ -517,6 +525,8 @@ static void sithVec_ResetStubs(void)
 {
     sithVec_stubAllocFail      = 0;
     sithVec_stubFindSectorMode = 0;
+    sithVec_stubFindSectorNullFrom = 0;
+    sithVec_numFindSectorCalls = 0;
     sithVec_stubMoveScale      = 1.0f;
     sithVec_stubRandSeed       = 1u;
 }

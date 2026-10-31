@@ -102,3 +102,15 @@ sith_add_vec_test(sithAIInstinctVecTests
     ADDRS   "${SITH_DIR}/AI/Tests/sithAIInstinctVecAddrs.h"
     TV_DIR  "${SITH_DIR}/AI/Tests/tv/sithAIInstinct"
 )
+
+# The instinct functions of sithAIInstinct.c (all but sithAIInstinct_InitInstincts)
+sith_add_vec_test(sithAIInstinctFnVecTests
+    TEST    sith.AIInstinctFn
+    SOURCES "${SITH_DIR}/AI/Tests/sithAIInstinctFnVecTest.c"
+    TESTED  "${SITH_DIR}/AI/Tests/sithAIInstinctFnVecTested.c"
+    SEAMS   "${SITH_DIR}/AI/Tests/sithAIInstinctFnVecSeams.def"
+    ADDRS   "${SITH_DIR}/AI/Tests/sithAIInstinctFnVecAddrs.h"
+    TV_DIR  "${SITH_DIR}/AI/Tests/tv/sithAIInstinctFn"
+)
+# Many cases (the fixture has more than a thousand): allow slow runners
+set_tests_properties(sith.AIInstinctFn PROPERTIES TIMEOUT 180)

@@ -1,0 +1,30 @@
+// Force-included into the sources of sithAIInstinctFnVecTests after Libs/sith/Tests/Vec/sithVecTestAddrs.h: redirects
+// the engine globals the instinct functions use to static storage (defined in sithAIInstinctFnVecTest.c).
+#ifndef SITH_AI_TESTS_SITHAIINSTINCTFNVECADDRS_H
+#define SITH_AI_TESTS_SITHAIINSTINCTFNVECADDRS_H
+
+SITHVEC_REDIRECT_DECL(uint32_t, sithTime_g_msecGameTime);
+SITHVEC_REDIRECT_DECL(float, sithTime_g_secGameTime);
+SITHVEC_REDIRECT_DECL(size_t, sithMain_g_frameNumber);
+SITHVEC_REDIRECT_DECL(SithMode, sithMain_g_sith_mode);
+SITHVEC_REDIRECT_DECL(SithThing*, sithPlayer_g_pLocalPlayerThing);
+SITHVEC_REDIRECT_DECL(int, sithPlayerControls_g_bCutsceneMode);
+SITHVEC_REDIRECT_DECL(SithAIAwarenessSector*, sithAIAwareness_g_aSectors);
+
+#undef sithTime_g_msecGameTime_ADDR
+#undef sithTime_g_secGameTime_ADDR
+#undef sithMain_g_frameNumber_ADDR
+#undef sithMain_g_sith_mode_ADDR
+#undef sithPlayer_g_pLocalPlayerThing_ADDR
+#undef sithPlayerControls_g_bCutsceneMode_ADDR
+#undef sithAIAwareness_g_aSectors_ADDR
+
+#define sithTime_g_msecGameTime_ADDR SITHVEC_REDIRECT_ADDR(sithTime_g_msecGameTime)
+#define sithTime_g_secGameTime_ADDR SITHVEC_REDIRECT_ADDR(sithTime_g_secGameTime)
+#define sithMain_g_frameNumber_ADDR SITHVEC_REDIRECT_ADDR(sithMain_g_frameNumber)
+#define sithMain_g_sith_mode_ADDR SITHVEC_REDIRECT_ADDR(sithMain_g_sith_mode)
+#define sithPlayer_g_pLocalPlayerThing_ADDR SITHVEC_REDIRECT_ADDR(sithPlayer_g_pLocalPlayerThing)
+#define sithPlayerControls_g_bCutsceneMode_ADDR SITHVEC_REDIRECT_ADDR(sithPlayerControls_g_bCutsceneMode)
+#define sithAIAwareness_g_aSectors_ADDR SITHVEC_REDIRECT_ADDR(sithAIAwareness_g_aSectors)
+
+#endif // SITH_AI_TESTS_SITHAIINSTINCTFNVECADDRS_H
