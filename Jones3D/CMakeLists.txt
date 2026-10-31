@@ -22,7 +22,9 @@ set(JONES3D_EXE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/exemain.cpp")
 # Create the executable and DLL targets
 if (JONES3D_STANDALONE)
     # Added: One self-contained Jones3D.exe instead of a DLL plus an injector (exemain.cpp).
-    add_executable(Jones3D WIN32 ${JONES3D_DLL_SOURCES} ${JONES3D_DLL_HEADERS})
+    # Added: Compile the dialog resources into the standalone exe so its DialogBoxParam calls find their templates.
+    enable_language(RC)
+    add_executable(Jones3D WIN32 ${JONES3D_DLL_SOURCES} ${JONES3D_DLL_HEADERS} Indy3D.rc)
 
     # Set DPI awareness
     set_property(TARGET Jones3D PROPERTY VS_DPI_AWARE "PerMonitor")
