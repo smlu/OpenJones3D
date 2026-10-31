@@ -1,5 +1,5 @@
-#include <Windows.h>
-#include <DbgHelp.h>
+#include <windows.h>
+#include <dbghelp.h>
 #include <unity_fixture.h>
 
 #include <stdint.h>

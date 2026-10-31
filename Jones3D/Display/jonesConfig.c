@@ -19,7 +19,7 @@
 
 #include <sith/Devices/sithControl.h>
 #include <sith/Devices/sithSoundMixer.h>
-#include <sith/DSS/sithGamesave.h>
+#include <sith/Dss/sithGamesave.h>
 #include <sith/Engine/sithRender.h>
 #include <sith/Gameplay/sithOverlayMap.h>
 #include <sith/Gameplay/sithPlayer.h>

@@ -1,7 +1,7 @@
 #include "JonesControl.h"
 #include <j3dcore/j3dhook.h>
 
-#include <Jones3D/Display/JonesConfig.h>
+#include <Jones3D/Display/jonesConfig.h>
 #include <Jones3D/Display/JonesConsole.h>
 #include <Jones3D/Main/JonesMain.h>
 #include <Jones3D/RTI/symbols.h>

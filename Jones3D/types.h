@@ -1,8 +1,8 @@
 #ifndef JONES3D_TYPES_H
 #define JONES3D_TYPES_H
 #define STRICT
-#include <Windows.h>
-#include <CommCtrl.h>
+#include <windows.h>
+#include <commctrl.h>
 #include <stdint.h>
 
 #include <j3dcore/j3d.h>
