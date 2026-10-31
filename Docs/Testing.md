@@ -233,6 +233,8 @@ startup and a stable module-level CTest entry.
 | `soundTests` | `sound` | Deterministic lip-sync generation and lookup, AudioLib codec and header vectors | Available |
 | `smushTests` | `smush` | INSANE movie player: core, bitmap, codec, sound, stream areas and original-engine assembly vectors | Available |
 | `sithTests` | `sith` | World thing/template I/O and voice lip-sync | Available |
+| `sithThingQuetzVecTests` | `sith.ThingQuetz` | Original-engine vectors of the Quetz tail functions (world-state harness, `Libs/sith/Tests/Vec`) | Available |
+| `sithAIInstinctVecTests` | `sith.AIInstinct` | Original-engine vectors of the instinct registration (world-state harness) | Available |
 | `sithDSSTests` | `sith.DSS` | Original-engine vectors of the DSS and DSS thing save/network serialization functions | Available |
 
 Name CTest entries after the owning module when the executable covers that whole module, such as `std`. When an executable covers only a subarea, use the owning module first and a short area name second, separated by a dot, such as `j3dcore.Macros`. Use labels that match the owning module, such as `j3dcore`, `std`, `rdroid`, `sith`, `sound`, or `Jones3D`.

@@ -1,0 +1,18 @@
+// Engine functions that the Quetz functions of sithThing.c call and that the vector tests replace with the stubs of
+// Libs/sith/Tests/Vec/sithVecWorld.h (see Libs/sith/Tests/Vec/README.md).
+//  SITHVEC_SEAM:   engine calls with side effects; the capture harness patches the original function to jump to the stub
+//  SITHVEC_LOOKUP: pure lookups that read engine globals; the harness leaves the original running on the synthetic
+//                  world and verifies the stub against it
+// Each name N is replaced by sithVec_N in the tested source. sithThing_SetSector and the sithThing_ValidateThingPointer
+// it calls are defined in sithThing.c itself and run unchanged on both sides.
+SITHVEC_SEAM(stdMemory_Malloc)
+SITHVEC_SEAM(sithCollision_FindSectorInRadius)
+SITHVEC_SEAM(sithCollision_MoveThing)
+SITHVEC_LOOKUP(sithSector_ValidateSectorPointer)
+SITHVEC_SEAM(rdVector_Normalize3)
+SITHVEC_SEAM(rdVector_Normalize3Acc)
+SITHVEC_SEAM(rdMatrix_TransformVector34)
+SITHVEC_SEAM(rdMatrix_BuildFromLook34)
+SITHVEC_SEAM(rdMatrix_PreRotate34)
+SITHVEC_SEAM(rdMath_DeltaAngleNormalized)
+SITHVEC_SEAM(stdMath_SinCos)

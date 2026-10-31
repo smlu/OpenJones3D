@@ -80,3 +80,25 @@ function(sith_add_vec_test TARGET)
         TIMEOUT 60
     )
 endfunction()
+
+set(SITH_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../..")
+
+# sithThing_CreateQuetzUserBlock, sithThing_UpdateQuetzUserBlock
+sith_add_vec_test(sithThingQuetzVecTests
+    TEST    sith.ThingQuetz
+    SOURCES "${SITH_DIR}/World/Tests/sithThingQuetzVecTest.c"
+    TESTED  "${SITH_DIR}/World/Tests/sithThingVecTested.c"
+    SEAMS   "${SITH_DIR}/World/Tests/sithThingQuetzVecSeams.def"
+    ADDRS   "${SITH_DIR}/World/Tests/sithThingQuetzVecAddrs.h"
+    TV_DIR  "${SITH_DIR}/World/Tests/tv/sithThingQuetz"
+)
+
+# sithAIInstinct_InitInstincts and the instinct registry of sithAI.c (sithAI_RegisterInstinct, sithAI_FindInstinct)
+sith_add_vec_test(sithAIInstinctVecTests
+    TEST    sith.AIInstinct
+    SOURCES "${SITH_DIR}/AI/Tests/sithAIInstinctVecTest.c"
+    TESTED  "${SITH_DIR}/AI/Tests/sithAIVecTested.c"
+    SEAMS   "${SITH_DIR}/AI/Tests/sithAIInstinctVecSeams.def"
+    ADDRS   "${SITH_DIR}/AI/Tests/sithAIInstinctVecAddrs.h"
+    TV_DIR  "${SITH_DIR}/AI/Tests/tv/sithAIInstinct"
+)

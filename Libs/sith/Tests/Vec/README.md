@@ -5,7 +5,12 @@ classes, the instinct registry, puppets, file statics kept between frames, and t
 It generalizes the approach of the DSS vectors (`Libs/sith/Dss/Tests`) and follows the original-engine I/O vector
 rules of [Docs/Testing.md](../../../../Docs/Testing.md).
 
-Suites are registered in `CMakeLists.txt`; each has a fixture README with its provenance.
+Suites:
+
+| Suite | Executable / CTest entry | Cases | Fixture and provenance |
+| --- | --- | --- | --- |
+| sithThing Quetz (`sithThing_CreateQuetzUserBlock`, `sithThing_UpdateQuetzUserBlock`) | `sithThingQuetzVecTests` / `sith.ThingQuetz` | `World/Tests/sithThingVecQuetz.h` | [World/Tests/tv/sithThingQuetz](../../World/Tests/tv/sithThingQuetz/README.md) |
+| sithAIInstinct (`sithAIInstinct_InitInstincts`, `sithAI_RegisterInstinct`, `sithAI_FindInstinct`) | `sithAIInstinctVecTests` / `sith.AIInstinct` | `AI/Tests/sithAIInstinctVec.h` | [AI/Tests/tv/sithAIInstinct](../../AI/Tests/tv/sithAIInstinct/README.md) |
 
 ### How It Works
 
