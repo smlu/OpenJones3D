@@ -300,7 +300,7 @@ void stdColor_DecodeRGBA(uint32_t encoded, const ColorInfo* ci, uint8_t* r, uint
 uint32_t stdColor_Recode(uint32_t encoded, const ColorInfo* pSrcCI, const ColorInfo* pDestCI); // Added
 
 // Added
-inline void stdColor_CalcColorBits(uint32_t bitmask, uint32_t* cbpp, int32_t* posShift, int32_t* posShiftRight)
+static inline void stdColor_CalcColorBits(uint32_t bitmask, uint32_t* cbpp, int32_t* posShift, int32_t* posShiftRight)
 {
     if ( !cbpp || !posShift || !posShiftRight )
     {

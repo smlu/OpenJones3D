@@ -57,7 +57,7 @@ void rdCamera_ResetGlobals(void)
     memset(&rdCamera_g_camMatrix, 0, sizeof(rdCamera_g_camMatrix));
 }
 
-inline float rdCamera_ClampFOV(float fov)
+static inline float rdCamera_ClampFOV(float fov)
 {
     return STDMATH_CLAMP(fov, RDCAMERA_FOVMIN, RDCAMERA_FOVMAX);
 }
