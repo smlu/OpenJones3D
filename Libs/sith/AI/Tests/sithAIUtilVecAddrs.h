@@ -1,0 +1,40 @@
+// Force-included into the sources of sithAIUtilVecTests after Libs/sith/Tests/Vec/sithVecTestAddrs.h: redirects the
+// engine globals the tested sithAIUtil functions use to static storage (defined in sithAIUtilVecTest.c).
+#ifndef SITH_AI_TESTS_SITHAIUTILVECADDRS_H
+#define SITH_AI_TESTS_SITHAIUTILVECADDRS_H
+
+#include <sith/types.h>
+
+SITHVEC_REDIRECT_DECL(size_t, sithMain_g_frameNumber);
+SITHVEC_REDIRECT_DECL(size_t, sithMain_g_curRenderTick);
+SITHVEC_REDIRECT_DECL(SithMode, sithMain_g_sith_mode);
+SITHVEC_REDIRECT_DECL(uint32_t, sithTime_g_msecGameTime);
+SITHVEC_REDIRECT_DECL(float, sithTime_g_secGameTime);
+SITHVEC_REDIRECT_DECL(float, sithTime_g_frameTimeFlex);
+SITHVEC_REDIRECT_DECL(SithThing*, sithPlayer_g_pLocalPlayerThing);
+SITHVEC_REDIRECT_DECL(SithAIControlBlock, sithAI_g_aControlBlocks[256]);
+SITHVEC_REDIRECT_DECL(int, sithAI_g_lastUsedAIIndex);
+SITHVEC_REDIRECT_DECL(int, sithAIUtil_g_bRenderAIWpnts);
+
+#undef sithMain_g_frameNumber_ADDR
+#define sithMain_g_frameNumber_ADDR SITHVEC_REDIRECT_ADDR(sithMain_g_frameNumber)
+#undef sithMain_g_curRenderTick_ADDR
+#define sithMain_g_curRenderTick_ADDR SITHVEC_REDIRECT_ADDR(sithMain_g_curRenderTick)
+#undef sithMain_g_sith_mode_ADDR
+#define sithMain_g_sith_mode_ADDR SITHVEC_REDIRECT_ADDR(sithMain_g_sith_mode)
+#undef sithTime_g_msecGameTime_ADDR
+#define sithTime_g_msecGameTime_ADDR SITHVEC_REDIRECT_ADDR(sithTime_g_msecGameTime)
+#undef sithTime_g_secGameTime_ADDR
+#define sithTime_g_secGameTime_ADDR SITHVEC_REDIRECT_ADDR(sithTime_g_secGameTime)
+#undef sithTime_g_frameTimeFlex_ADDR
+#define sithTime_g_frameTimeFlex_ADDR SITHVEC_REDIRECT_ADDR(sithTime_g_frameTimeFlex)
+#undef sithPlayer_g_pLocalPlayerThing_ADDR
+#define sithPlayer_g_pLocalPlayerThing_ADDR SITHVEC_REDIRECT_ADDR(sithPlayer_g_pLocalPlayerThing)
+#undef sithAI_g_aControlBlocks_ADDR
+#define sithAI_g_aControlBlocks_ADDR SITHVEC_REDIRECT_ADDR(sithAI_g_aControlBlocks)
+#undef sithAI_g_lastUsedAIIndex_ADDR
+#define sithAI_g_lastUsedAIIndex_ADDR SITHVEC_REDIRECT_ADDR(sithAI_g_lastUsedAIIndex)
+#undef sithAIUtil_g_bRenderAIWpnts_ADDR
+#define sithAIUtil_g_bRenderAIWpnts_ADDR SITHVEC_REDIRECT_ADDR(sithAIUtil_g_bRenderAIWpnts)
+
+#endif // SITH_AI_TESTS_SITHAIUTILVECADDRS_H

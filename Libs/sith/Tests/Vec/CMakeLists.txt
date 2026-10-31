@@ -123,3 +123,12 @@ sith_add_vec_test(sithAIMoveVecTests
     ADDRS   "${SITH_DIR}/AI/Tests/sithAIMoveVecAddrs.h"
     TV_DIR  "${SITH_DIR}/AI/Tests/tv/sithAIMove"
 )
+# sithAIUtil: waypoints, sight and distance, firing, path checks and point creation, things in view
+sith_add_vec_test(sithAIUtilVecTests
+    TEST    sith.AIUtil
+    SOURCES "${SITH_DIR}/AI/Tests/sithAIUtilVecTest.c"
+    TESTED  "${SITH_DIR}/AI/Tests/sithAIUtilVecTested.c"
+    SEAMS   "${SITH_DIR}/AI/Tests/sithAIUtilVecSeams.def"
+    ADDRS   "${SITH_DIR}/AI/Tests/sithAIUtilVecAddrs.h"
+    TV_DIR  "${SITH_DIR}/AI/Tests/tv/sithAIUtil"
+)
