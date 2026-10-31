@@ -143,6 +143,7 @@ static void dssv_RndVec4(rdVector4* v) { v->x = dssv_RndF(); v->y = dssv_RndF();
 // Host services (sith_g_pHS / std_g_pHS). Calls are only counted, text is not compared.
 // ---------------------------------------------------------------------------------------------------------------
 static unsigned dssv_numAsserts, dssv_numErrors, dssv_numStatus, dssv_numMallocs;
+static unsigned dssv_numWarnings; // not part of the DSS records (the sithMulti records hold it)
 static int dssv_bAllocFail; // when set stdMemory_Malloc returns NULL
 
 #define DSSV_MAXALLOCS 64
@@ -152,7 +153,7 @@ static unsigned dssv_numAllocs;
 static void J3DAPI dssv_hsAssert(const char* pCond, const char* pFile, int line) { (void)pCond; (void)pFile; (void)line; ++dssv_numAsserts; }
 static void dssv_hsStatus(const char* pFmt, ...) { (void)pFmt; ++dssv_numStatus; }
 static void dssv_hsMessage(const char* pFmt, ...) { (void)pFmt; }
-static void dssv_hsWarning(const char* pFmt, ...) { (void)pFmt; }
+static void dssv_hsWarning(const char* pFmt, ...) { (void)pFmt; ++dssv_numWarnings; }
 static void dssv_hsError(const char* pFmt, ...) { (void)pFmt; ++dssv_numErrors; }
 static void dssv_hsDebug(const char* pFmt, ...) { (void)pFmt; }
 

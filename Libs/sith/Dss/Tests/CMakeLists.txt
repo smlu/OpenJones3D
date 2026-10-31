@@ -71,3 +71,64 @@ set_tests_properties(sith.DSS PROPERTIES
     LABELS "unit;sith;${SITHDSS_TEST_BACKEND_LABEL}"
     TIMEOUT 60
 )
+
+# Original-engine vector tests of sithMulti (multiplayer messages and state). sithMulti.c is compiled in
+# sithMultiTested.c (for access to its module state); its engine calls are replaced by the stubs of sithMultiVec.h
+# through the rename list of sithMultiSeams.def (name -> msv_name). The cases reuse the DSS state builder.
+set(SITHMULTI_TEST_SOURCES
+    sithMultiTestRunner.c
+    sithMultiTest.c
+)
+
+set(SITHMULTI_TESTED_SOURCES
+    sithMultiTested.c
+)
+
+file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/sithMultiSeams.def" SITHMULTI_SEAM_LINES REGEX "^MSV_SEAM\\(")
+set(SITHMULTI_SEAM_RENAMES "")
+foreach(SEAM_LINE IN LISTS SITHMULTI_SEAM_LINES)
+    string(REGEX REPLACE "^MSV_SEAM\\(([A-Za-z0-9_]+)\\).*$" "\\1" SEAM_NAME "${SEAM_LINE}")
+    list(APPEND SITHMULTI_SEAM_RENAMES "${SEAM_NAME}=msv_${SEAM_NAME}")
+endforeach()
+
+set_property(SOURCE ${SITHMULTI_TESTED_SOURCES} PROPERTY COMPILE_DEFINITIONS ${SITHMULTI_SEAM_RENAMES})
+
+if (MSVC)
+    set_property(SOURCE ${SITHMULTI_TESTED_SOURCES} ${SITHMULTI_TEST_SOURCES} APPEND PROPERTY COMPILE_OPTIONS
+        "/FI${CMAKE_CURRENT_SOURCE_DIR}/sithMultiTestAddrs.h")
+endif()
+
+add_executable(sithMultiTests
+    ${SITHMULTI_TEST_SOURCES}
+    ${SITHMULTI_TESTED_SOURCES}
+)
+
+target_link_libraries(sithMultiTests PRIVATE
+    sith
+    sound
+    unity
+    w32util
+)
+
+target_compile_definitions(sithMultiTests PRIVATE
+    J3D_TEST
+    J3D_LOCAL_SITH_RTI
+    SITH_MULTI_TV_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tv/sithMulti"
+)
+
+if (MSVC)
+    target_link_options(sithMultiTests PRIVATE /BASE:0x20000000 /DYNAMICBASE:NO)
+endif()
+
+set_target_properties(sithMultiTests PROPERTIES
+    FOLDER "Tests/Libs/sith"
+)
+
+source_group("Tests" FILES ${SITHMULTI_TEST_SOURCES})
+source_group("Tested Sources" FILES ${SITHMULTI_TESTED_SOURCES})
+
+add_test(NAME sith.Multi COMMAND sithMultiTests)
+set_tests_properties(sith.Multi PROPERTIES
+    LABELS "unit;sith;${SITHDSS_TEST_BACKEND_LABEL}"
+    TIMEOUT 60
+)
