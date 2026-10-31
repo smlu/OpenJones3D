@@ -43,6 +43,9 @@ void Zfilio_TestSetGz(const ZfilioTestGz* pGz)
 #endif
 
 // The executable's zlib is reached through trampolines (the tests replace it)
+// Altered: A standalone build has no executable zlib. gzopen fails, so zfilio_open reads the file through the plain chained FILIO path.
+// The exe's gzio passed non-gz files through unchanged, so raw .snm data reads the same, and the other wrappers are never reached.
+// TODO: [COMPAT] Files that really are gz-compressed (.gz, .znm) can't be read in standalone builds.
 static gzFile Zfilio_gzopen(const char* pPath, const char* pMode)
 {
 #if defined(J3D_TEST)
@@ -52,7 +55,13 @@ static gzFile Zfilio_gzopen(const char* pPath, const char* pMode)
     }
 #endif
 
+#if defined(J3D_STANDALONE)
+    J3D_UNUSED(pPath);
+    J3D_UNUSED(pMode);
+    return NULL;
+#else
     return J3D_TRAMPOLINE_CALL(gzopen, pPath, pMode);
+#endif
 }
 
 static int Zfilio_gzclose(gzFile file)
@@ -64,7 +73,12 @@ static int Zfilio_gzclose(gzFile file)
     }
 #endif
 
+#if defined(J3D_STANDALONE)
+    J3D_UNUSED(file);
+    return -1;
+#else
     return J3D_TRAMPOLINE_CALL(gzclose, file);
+#endif
 }
 
 static int Zfilio_gzread(gzFile file, void* pBuf, unsigned int len)
@@ -76,7 +90,14 @@ static int Zfilio_gzread(gzFile file, void* pBuf, unsigned int len)
     }
 #endif
 
+#if defined(J3D_STANDALONE)
+    J3D_UNUSED(file);
+    J3D_UNUSED(pBuf);
+    J3D_UNUSED(len);
+    return -1;
+#else
     return J3D_TRAMPOLINE_CALL(gzread, file, pBuf, len);
+#endif
 }
 
 static int Zfilio_gzwrite(gzFile file, const void* pBuf, unsigned int len)
@@ -88,7 +109,14 @@ static int Zfilio_gzwrite(gzFile file, const void* pBuf, unsigned int len)
     }
 #endif
 
+#if defined(J3D_STANDALONE)
+    J3D_UNUSED(file);
+    J3D_UNUSED(pBuf);
+    J3D_UNUSED(len);
+    return 0;
+#else
     return J3D_TRAMPOLINE_CALL(gzwrite, file, pBuf, len);
+#endif
 }
 
 static int Zfilio_gzflush(gzFile file, int flush)
@@ -100,7 +128,13 @@ static int Zfilio_gzflush(gzFile file, int flush)
     }
 #endif
 
+#if defined(J3D_STANDALONE)
+    J3D_UNUSED(file);
+    J3D_UNUSED(flush);
+    return -1;
+#else
     return J3D_TRAMPOLINE_CALL(gzflush, file, flush);
+#endif
 }
 
 static long Zfilio_gzseek(gzFile file, long offset, int whence)
@@ -112,7 +146,14 @@ static long Zfilio_gzseek(gzFile file, long offset, int whence)
     }
 #endif
 
+#if defined(J3D_STANDALONE)
+    J3D_UNUSED(file);
+    J3D_UNUSED(offset);
+    J3D_UNUSED(whence);
+    return -1;
+#else
     return J3D_TRAMPOLINE_CALL(gzseek, file, offset, whence);
+#endif
 }
 
 void Zfilio_InstallHooks(void)
