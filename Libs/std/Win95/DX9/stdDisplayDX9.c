@@ -1652,7 +1652,8 @@ static int J3DAPI stdDisplay_EnumerateVideoModes(UINT adapter)
             }
 
             int bpp = stdDisplay_BppFromD3DFormat(mode.Format);
-            if ( bpp < 16 || mode.RefreshRate < STDDISPLAY_MINFRAMERATE || mode.RefreshRate > STDDISPLAY_MAXFRAMERATE )
+            // Fixed: RefreshRate 0 means the adapter default in D3D9. Rejecting it left no modes and crashed JonesMain_LoadSettings.
+            if ( bpp < 16 || ( mode.RefreshRate != 0 && ( mode.RefreshRate < STDDISPLAY_MINFRAMERATE || mode.RefreshRate > STDDISPLAY_MAXFRAMERATE ) ) )
             {
                 continue;
             }
