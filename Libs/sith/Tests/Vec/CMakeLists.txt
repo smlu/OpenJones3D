@@ -1,0 +1,82 @@
+# Original-engine vector suites of the sith world-state harness (see README.md). Every suite is its own executable so
+# each can compile its tested sources with its own seam renames.
+#
+# sith_add_vec_test(<target>
+#     TEST    <CTest name>
+#     SOURCES <test sources>                (the suite's test source; the shared runner is added)
+#     TESTED  <tested sources>              (compiled with the seam renames: name -> sithVec_name)
+#     SEAMS   <seams .def files>            (SITHVEC_SEAM(name) / SITHVEC_LOOKUP(name) lines)
+#     ADDRS   <address header>              (force-included after sithVecTestAddrs.h)
+#     TV_DIR  <fixture directory>)          (SITHVEC_TV_DIR)
+function(sith_add_vec_test TARGET)
+    cmake_parse_arguments(SV "" "TEST;ADDRS;TV_DIR" "SOURCES;TESTED;SEAMS" ${ARGN})
+
+    # Re-run the configuration when a seams file changes
+    set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${SV_SEAMS})
+
+    set(SV_RENAMES "")
+    foreach(SV_SEAM_FILE IN LISTS SV_SEAMS)
+        file(STRINGS "${SV_SEAM_FILE}" SV_SEAM_LINES REGEX "^SITHVEC_(SEAM|LOOKUP)\\(")
+        foreach(SV_SEAM_LINE IN LISTS SV_SEAM_LINES)
+            string(REGEX REPLACE "^SITHVEC_[A-Z]+\\(([A-Za-z0-9_]+)\\).*$" "\\1" SV_SEAM_NAME "${SV_SEAM_LINE}")
+            list(APPEND SV_RENAMES "${SV_SEAM_NAME}=sithVec_${SV_SEAM_NAME}")
+        endforeach()
+    endforeach()
+
+    if (SV_RENAMES)
+        set_property(SOURCE ${SV_TESTED} PROPERTY COMPILE_DEFINITIONS ${SV_RENAMES})
+    endif()
+
+    # Engine globals of the original executable are redirected to static memory, rand to the deterministic stub
+    if (MSVC)
+        set_property(SOURCE ${SV_TESTED} ${SV_SOURCES} APPEND PROPERTY COMPILE_OPTIONS
+            "/FI${CMAKE_CURRENT_FUNCTION_LIST_DIR}/sithVecTestAddrs.h" "/FI${SV_ADDRS}")
+    endif()
+
+    add_executable(${TARGET}
+        "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/sithVecTestRunner.c"
+        ${SV_SOURCES}
+        ${SV_TESTED}
+    )
+
+    target_include_directories(${TARGET} PRIVATE "${CMAKE_CURRENT_FUNCTION_LIST_DIR}")
+
+    target_link_libraries(${TARGET} PRIVATE
+        sith
+        sound
+        unity
+        w32util
+    )
+
+    target_compile_definitions(${TARGET} PRIVATE
+        J3D_TEST
+        J3D_LOCAL_SITH_RTI
+        SITHVEC_TV_DIR="${SV_TV_DIR}"
+    )
+
+    # The records normalize the addresses of the synthetic state (sithVec_NormWord); that only works when they cannot
+    # be confused with the generated integers and floats. Load the image high and fixed.
+    if (MSVC)
+        target_link_options(${TARGET} PRIVATE /BASE:0x20000000 /DYNAMICBASE:NO)
+    endif()
+
+    set_target_properties(${TARGET} PROPERTIES
+        FOLDER "Tests/Libs/sith"
+    )
+
+    source_group("Tests" FILES ${SV_SOURCES})
+    source_group("Tested Sources" FILES ${SV_TESTED})
+
+    set(SV_BACKEND_LABEL "")
+    if (J3D_DIRECTX6)
+        set(SV_BACKEND_LABEL "DirectX6")
+    elseif (J3D_DIRECTX9)
+        set(SV_BACKEND_LABEL "DirectX9")
+    endif()
+
+    add_test(NAME ${SV_TEST} COMMAND ${TARGET})
+    set_tests_properties(${SV_TEST} PROPERTIES
+        LABELS "unit;sith;${SV_BACKEND_LABEL}"
+        TIMEOUT 60
+    )
+endfunction()
