@@ -288,12 +288,12 @@ void J3DAPI sithAIUtil_UpdateGoalSight(SithAIControlBlock* pLocal)
             }
 
             pLocal->lastGoalSeenPos = pTarget->pos;
-            pLocal->msecGoalSeen  = sithTime_g_msecGameTime;
+            pLocal->msecGoalSeen   = sithTime_g_msecGameTime;
         }
     }
     else
     {
-        pLocal->goalPos       = pLocal->movePos;
+        pLocal->goalPos           = pLocal->movePos;
         pLocal->targetSightState2 = sithAIUtil_GetDistanceToTargetPos(pOwner, &pOwner->pos, &pLocal->goalPos, -1.0f, pLocal->pClass->sightDistance, 0.0f, &pLocal->toGoal, &pLocal->targetDistance);
 
         if ( pLocal->targetSightState2 == SITHAI_SIGHT_VISIBLE )
