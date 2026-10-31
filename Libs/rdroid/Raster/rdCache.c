@@ -9,6 +9,7 @@
 #include <std/General/stdUtil.h>
 #include <std/Win95/std3D.h>
 
+#include <float.h>
 #include <math.h>
 #include <stdlib.h>
 
