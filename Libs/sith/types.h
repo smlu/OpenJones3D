@@ -1602,7 +1602,7 @@ static_assert(sizeof(SithEventParams) == 16, "sizeof(SithEventParams) == 16");
 
 typedef struct sSithAIRegisteredInstinct
 {
-    char aName[63];
+    char aName[64];
     SithAIInstinctFunc pfInstinct;
     SithAIMode updateModes;
     SithAIMode updateBlockModes;
