@@ -138,6 +138,26 @@ if (MSVC)
         "$<$<CONFIG:DEBUG>:/ZI>"
     )
     add_link_options("/Brepro")
+elseif(MINGW)
+    # MinGW-w64 i686 build used for unit tests on Linux.
+    # -msse2/-mfpmath=sse to match the MSVC i386 SSE2 code generation, -fno-strict-aliasing to
+    # keep bit relayout behavior of the original code paths the same.
+    # -mlong-double-64 makes long double 8 bytes like on MSVC (i686 GCC defaults to 12) and keeps
+    # the 64-bit form that the UCRT scanf/printf conversion specifiers expect.
+    add_compile_options(
+        "$<$<COMPILE_LANGUAGE:C>:-std=gnu11>" # keep CMAKE_C_EXTENSIONS from forcing -std=c11, tests rely on GNU behavior
+        -fms-extensions
+        -msse2
+        -mfpmath=sse
+        -fno-strict-aliasing
+        -mlong-double-64
+        -Wall
+        -Wno-unused
+        -Wno-missing-braces
+        -Wno-switch
+        -Wno-parentheses
+    )
+    add_link_options(-static-libgcc)
 else()
     message(FATAL_ERROR "Unsupported compiler: ${CMAKE_CXX_COMPILER_ID}")
 endif()

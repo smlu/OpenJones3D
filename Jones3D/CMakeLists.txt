@@ -27,13 +27,26 @@ add_library(Jones3D_DLL SHARED ${JONES3D_DLL_SOURCES} ${JONES3D_DLL_HEADERS})
 add_dependencies(Jones3D Jones3D_DLL)
 
 # Add Unicode character set for Jones3D.exe
-target_compile_definitions(Jones3D PRIVATE _UNICODE )
+# Added: UNICODE besides _UNICODE - exemain.cpp calls the explicit wide API functions
+# (CreateProcessW etc.) and both character-set macros must be defined for the Win32 headers
+# to select the wide struct types (STARTUPINFOW) on every compiler.
+target_compile_definitions(Jones3D PRIVATE _UNICODE UNICODE)
 
 # Set DPI awareness
 set_property(TARGET Jones3D PROPERTY VS_DPI_AWARE "PerMonitor")
 
 # Rename the DLL target output
 set_target_properties(Jones3D_DLL PROPERTIES OUTPUT_NAME "Jones3D")
+
+# Altered: MinGW GCC prefixes shared library outputs with "lib" by default; the DLL must stay "Jones3D.dll".
+if (MINGW)
+    set_target_properties(Jones3D_DLL PROPERTIES PREFIX "")
+endif()
+
+# Added: MinGW equivalent of the MSVC CRT "wmain" entry point used by exemain.cpp.
+if (MINGW)
+    target_link_options(Jones3D PRIVATE -municode)
+endif()
 
 # Keep executable and DLL linker databases separate for incremental MSVC builds.
 set_target_properties(Jones3D PROPERTIES PDB_NAME "Jones3D_EXE")
@@ -43,7 +56,7 @@ target_include_directories(Jones3D_DLL PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)
 
 # Link against Libs project
 target_link_libraries(Jones3D_DLL PRIVATE Libs)
-target_link_libraries(Jones3D_DLL PRIVATE Comctl32.lib)
+target_link_libraries(Jones3D_DLL PRIVATE comctl32)
 
 # Organize source files in Visual Studio
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${JONES3D_DLL_SOURCES} ${JONES3D_DLL_HEADERS})

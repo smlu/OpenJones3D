@@ -13,7 +13,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC j3dcore)
 target_link_libraries(${PROJECT_NAME} PUBLIC rdroid)
 target_link_libraries(${PROJECT_NAME} PUBLIC std)
 target_link_libraries(${PROJECT_NAME} PUBLIC dsound)
-target_link_libraries(${PROJECT_NAME} PUBLIC Winmm) # timeGetTime
+target_link_libraries(${PROJECT_NAME} PUBLIC winmm) # timeGetTime
 set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE C)
 
 # Organize source files in Visual Studio
