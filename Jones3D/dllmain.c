@@ -147,10 +147,13 @@
 
 static const char* appName = "Open Jones 3D";
 
+#if !defined(J3D_STANDALONE)
 bool InstallHooks(void);
+#endif
 bool ResetGlobals(void);
 static bool RemoveDirect3D3ResolutionCap(void);
 
+#if !defined(J3D_STANDALONE)
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD  dwReason, LPVOID lpReserved)
 {
     J3D_UNUSED(hModule);
@@ -206,6 +209,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD  dwReason, LPVOID lpReserved)
     }
     return TRUE;
 }
+#endif
 
 int Startup(const char* aCmd)
 {
@@ -236,6 +240,24 @@ int WINAPI Indy3D_WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lp
     return -1;
 }
 
+#if defined(J3D_STANDALONE)
+// Added: Standalone entry point. Does what DllMain does when injected, then what the retail exe's WinMain hook runs, with no hooks to install.
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd)
+{
+    // Enable HIDPI
+    SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
+
+    if ( !ResetGlobals() )
+    {
+        printf("CRITICAL ERROR: Failed to reset global vars!\n");
+        MessageBox(NULL, "Failed to reset global variables!", "Jones3D", MB_ICONINFORMATION | MB_DEFBUTTON1);
+    }
+
+    return Indy3D_WinMain(hInstance, hPrevInstance, lpCmdLine, nShowCmd);
+}
+#endif
+
+#if !defined(J3D_STANDALONE)
 bool InstallHooks(void)
 {
     J3DHookContext ctx;
@@ -384,13 +406,16 @@ bool InstallHooks(void)
 
     return J3DEndHookContext(&ctx);
 }
+#endif
 
 bool ResetGlobals(void)
 {
+#if !defined(J3D_STANDALONE)
     J3DHookContext ctx;
     if ( !J3DStartHookContext(&ctx, EXE_RDATA_START_ADDR, EXE_RDATA_END_ADDR) ) {
         return false;
     }
+#endif
 
     AudioLib_ResetGlobals();
     SoundDriver_ResetGlobals();
@@ -521,7 +546,12 @@ bool ResetGlobals(void)
     wkernel_ResetGlobals();
     wuRegistry_ResetGlobals();
 
+#if !defined(J3D_STANDALONE)
     return J3DEndHookContext(&ctx);
+#else
+    // Altered: There is no executable to unprotect in standalone builds.
+    return true;
+#endif
 }
 
 void* memfind(const void* l, size_t l_len, const void* s, size_t s_len)
