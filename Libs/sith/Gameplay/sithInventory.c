@@ -12,6 +12,16 @@
 #include <std/General/stdUtil.h>
 #include <std/Win95/stdComm.h>
 
+#ifdef J3D_STANDALONE
+// Added: Standalone builds have no retail executable to hold these. *_ResetGlobals sets the starting values.
+int sithInventory_g_bInitInventory;
+int sithInventory_g_bSendDeactivateMessage;
+int sithInventory_g_dword_56B750;
+int sithInventory_g_dword_56B754;
+SithInventoryType sithInventory_g_aTypes[SITHINVENTORY_MAXTYPES];
+SithPowerKeybind sithInventory_g_aPowerKeybinds[20];
+#endif
+
 void sithInventory_InstallHooks(void)
 {
     J3D_HOOKFUNC(sithInventory_RegisterType);

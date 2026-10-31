@@ -35,28 +35,60 @@ typedef enum eSithRenderThingTraversal
                                                                                   // max number of collected things - SITHRENDER_MAX_VISIBLE_THING_SECTORS
                                                                                   // The new default distance - 60m was determined based on the light flickering issue in Babylon level (court yard)
 
+#if defined(J3D_STANDALONE)
+extern float sithRender_g_fogDensity;
+#else
 #define sithRender_g_fogDensity J3D_DECL_FAR_VAR(sithRender_g_fogDensity, float)
+#endif
 // extern float sithRender_g_fogDensity ;
 
+#if defined(J3D_STANDALONE)
+extern size_t sithRender_g_numDrawnThings;
+#else
 #define sithRender_g_numDrawnThings J3D_DECL_FAR_VAR(sithRender_g_numDrawnThings, size_t)
+#endif
 // extern int sithRender_g_numDrawnThings;
 
+#if defined(J3D_STANDALONE)
+extern size_t sithRender_g_numArchPolys;
+#else
 #define sithRender_g_numArchPolys J3D_DECL_FAR_VAR(sithRender_g_numArchPolys, size_t)
+#endif
 // extern int sithRender_g_numArchPolys;
 
+#if defined(J3D_STANDALONE)
+extern size_t sithRender_g_numAlphaArchPolys;
+#else
 #define sithRender_g_numAlphaArchPolys J3D_DECL_FAR_VAR(sithRender_g_numAlphaArchPolys, size_t)
+#endif
 // extern int sithRender_g_numAlphaArchPolys;
 
+#if defined(J3D_STANDALONE)
+extern size_t sithRender_g_numThingPolys;
+#else
 #define sithRender_g_numThingPolys J3D_DECL_FAR_VAR(sithRender_g_numThingPolys, size_t)
+#endif
 // extern int sithRender_g_numThingPolys;
 
+#if defined(J3D_STANDALONE)
+extern size_t sithRender_g_numAlphaThingPoly;
+#else
 #define sithRender_g_numAlphaThingPoly J3D_DECL_FAR_VAR(sithRender_g_numAlphaThingPoly, size_t)
+#endif
 // extern int sithRender_g_numAlphaThingPoly;
 
+#if defined(J3D_STANDALONE)
+extern size_t sithRender_g_numVisibleAdjoins;
+#else
 #define sithRender_g_numVisibleAdjoins J3D_DECL_FAR_VAR(sithRender_g_numVisibleAdjoins, size_t)
+#endif
 // extern int sithRender_g_numVisibleAdjoins;
 
+#if defined(J3D_STANDALONE)
+extern size_t sithRender_g_numVisibleSectors;
+#else
 #define sithRender_g_numVisibleSectors J3D_DECL_FAR_VAR(sithRender_g_numVisibleSectors, size_t)
+#endif
 // extern int sithRender_g_numVisibleSectors;
 
 // Set when the camera aspect ratio/FOV was altered by the render and needs to be reset, serialized by DSS

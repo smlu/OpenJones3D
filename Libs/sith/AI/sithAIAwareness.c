@@ -15,6 +15,11 @@
 #include <std/General/stdMath.h>
 #include <std/General/stdUtil.h>
 
+#ifdef J3D_STANDALONE
+// Added: Standalone builds have no retail executable to hold these. *_ResetGlobals sets the starting values.
+SithAIAwarenessSector* sithAIAwareness_g_aSectors;
+#endif
+
 static bool bOpened = false; // Added: Init to false
 
 static size_t numEvents;

@@ -9,7 +9,11 @@
 
 J3D_EXTERN_C_START
 
+#if defined(J3D_STANDALONE)
+extern int sithAIUtil_g_bRenderAIWpnts;
+#else
 #define sithAIUtil_g_bRenderAIWpnts J3D_DECL_FAR_VAR(sithAIUtil_g_bRenderAIWpnts, int)
+#endif
 // extern int sithAIUtil_g_bRenderAIWpnts;
 
 void J3DAPI sithAIUtil_UpdateTargetSight(SithAIControlBlock* pLocal, SithAIUtilFireFlags flags);

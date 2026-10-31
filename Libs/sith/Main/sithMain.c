@@ -49,6 +49,14 @@
 #include <std/General/stdUtil.h>
 #include <std/Win95/stdComm.h>
 
+#ifdef J3D_STANDALONE
+// Added: Standalone builds have no retail executable to hold these. *_ResetGlobals sets the starting values.
+size_t sithMain_g_frameNumber;
+SithMode sithMain_g_sith_mode;
+size_t sithMain_g_curRenderTick;
+tHostServices* sith_g_pHS;
+#endif
+
 #define SITH_PATHSIZE 128
 #define SITH_DEFAULTGAMEDIFFICULTY 5
 

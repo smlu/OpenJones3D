@@ -11,13 +11,25 @@
 
 J3D_EXTERN_C_START
 
+#if defined(J3D_STANDALONE)
+extern int sithAI_g_bOpen;
+#else
 #define sithAI_g_bOpen J3D_DECL_FAR_VAR(sithAI_g_bOpen, int)
+#endif
 // extern int sithAI_g_bOpen;
 
+#if defined(J3D_STANDALONE)
+extern SithAIControlBlock sithAI_g_aControlBlocks[256];
+#else
 #define sithAI_g_aControlBlocks J3D_DECL_FAR_ARRAYVAR(sithAI_g_aControlBlocks, SithAIControlBlock(*)[256])
+#endif
 // extern SithAIControlBlock sithAI_g_aControlBlocks[256];
 
+#if defined(J3D_STANDALONE)
+extern int sithAI_g_lastUsedAIIndex;
+#else
 #define sithAI_g_lastUsedAIIndex J3D_DECL_FAR_VAR(sithAI_g_lastUsedAIIndex, int)
+#endif
 // extern int sithAI_g_lastUsedAIIndex;
 
 int sithAI_Startup(void);

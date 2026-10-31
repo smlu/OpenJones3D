@@ -23,6 +23,23 @@
 #include <std/General/stdUtil.h>
 #include <std/Win95/stdComm.h>
 
+#ifdef J3D_STANDALONE
+// Added: Standalone builds have no retail executable to hold these. *_ResetGlobals sets the starting values.
+int sithPlayer_g_bPlayerInPor;
+int sithPlayer_g_impFireType;
+size_t sithPlayer_g_playerNum;
+size_t sithPlayer_g_numPlayers;
+SithThing* sithPlayer_g_pLocalPlayerThing;
+SithPlayer* sithPlayer_g_pLocalPlayer;
+int sithPlayer_g_bPlayerInvulnerable;
+int sithPlayer_g_bInAetheriumSector;
+int sithPlayer_g_bGuybrush;
+int sithPlayer_g_curLevelNum;
+int sithPlayer_g_bBonusMapBought;
+SithPlayer sithPlayer_g_aPlayers[SITHPLAYER_MAX_PLAYERS];
+float sithPlayer_g_impState;
+#endif
+
 static wchar_t sithPlayer_awLocalPlayerName[64] = { 0 }; // Added: Init to 0
 
 void sithPlayer_InstallHooks(void)

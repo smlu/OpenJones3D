@@ -29,6 +29,12 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef J3D_STANDALONE
+// Added: Standalone builds have no retail executable to hold these. *_ResetGlobals sets the starting values.
+DPID sithMulti_g_serverId;
+SithMessage sithMulti_g_message;
+#endif
+
 #define SITHMULTI_MAX_REMOVEDSTATICTHINGS 256
 #define SITHMULTI_PLAYERNAME_LEN          16   // Length of the player name field in welcome/sync messages, in characters
 #define SITHMULTI_CHAT_MAXLEN             128  // Max length of the chat text in chat message

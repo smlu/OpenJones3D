@@ -21,6 +21,13 @@
 #include <std/General/stdUtil.h>
 #include <stdlib.h>
 
+#ifdef J3D_STANDALONE
+// Added: Standalone builds have no retail executable to hold these. *_ResetGlobals sets the starting values.
+int sithAI_g_bOpen;
+SithAIControlBlock sithAI_g_aControlBlocks[256];
+int sithAI_g_lastUsedAIIndex;
+#endif
+
 static size_t numFreeAIs = 0; // Added: Init to 0
 static size_t aFreeAIIndices[STD_ARRAYLEN(sithAI_g_aControlBlocks)];
 

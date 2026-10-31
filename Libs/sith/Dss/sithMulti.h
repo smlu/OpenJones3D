@@ -11,10 +11,18 @@ J3D_EXTERN_C_START
 
 #define SITHMULTI_CHECKPLAYER_TASKID 2u
 
+#if defined(J3D_STANDALONE)
+extern DPID sithMulti_g_serverId;
+#else
 #define sithMulti_g_serverId J3D_DECL_FAR_VAR(sithMulti_g_serverId, DPID)
+#endif
 // extern DPID sithMulti_g_serverId;
 
+#if defined(J3D_STANDALONE)
+extern SithMessage sithMulti_g_message;
+#else
 #define sithMulti_g_message J3D_DECL_FAR_VAR(sithMulti_g_message, SithMessage)
+#endif
 // extern SithMessage sithMulti_g_message;
 
 void sithMulti_OpenGame(void); // Added

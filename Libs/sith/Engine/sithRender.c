@@ -43,6 +43,18 @@
 #include <math.h>
 #include <stdint.h>
 
+#ifdef J3D_STANDALONE
+// Added: Standalone builds have no retail executable to hold these. *_ResetGlobals sets the starting values.
+float sithRender_g_fogDensity;
+size_t sithRender_g_numDrawnThings;
+size_t sithRender_g_numArchPolys;
+size_t sithRender_g_numAlphaArchPolys;
+size_t sithRender_g_numThingPolys;
+size_t sithRender_g_numAlphaThingPoly;
+size_t sithRender_g_numVisibleAdjoins;
+size_t sithRender_g_numVisibleSectors;
+#endif
+
 typedef struct sSithRenderSectorQueueEntry
 {
     SithSector* pSector;

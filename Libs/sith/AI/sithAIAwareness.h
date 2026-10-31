@@ -13,7 +13,11 @@ J3D_EXTERN_C_START
 #define SITHAIAWARENESS_NUMTYPES  4u
 #define SITHAIAWARENESS_MAXEVENTS 32u
 
+#if defined(J3D_STANDALONE)
+extern SithAIAwarenessSector* sithAIAwareness_g_aSectors;
+#else
 #define sithAIAwareness_g_aSectors J3D_DECL_FAR_VAR(sithAIAwareness_g_aSectors, SithAIAwarenessSector*)
+#endif
 // extern SithAIAwarenessSector *sithAIAwareness_g_aSectors;
 
 int sithAIAwareness_Open(void);

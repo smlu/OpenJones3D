@@ -10,7 +10,11 @@
 
 J3D_EXTERN_C_START
 
+#if defined(J3D_STANDALONE)
+extern int sithPlayerControls_g_bCutsceneMode;
+#else
 #define sithPlayerControls_g_bCutsceneMode J3D_DECL_FAR_VAR(sithPlayerControls_g_bCutsceneMode, int)
+#endif
 // extern int sithPlayerControls_g_bCutsceneMode;
 
 extern bool sithPlayerControls_bActionKeyActive;
