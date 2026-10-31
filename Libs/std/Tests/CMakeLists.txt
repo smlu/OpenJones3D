@@ -162,14 +162,19 @@ target_include_directories(stdTests PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}"
 )
 
+if (JONES3D_SHADER_HEADER_DIR)
+    # The std test target compiles the DX9 sources directly; point it at the precompiled shader headers as well.
+    target_include_directories(stdTests PRIVATE ${JONES3D_SHADER_HEADER_DIR})
+endif()
+
 target_link_libraries(stdTests PRIVATE
     j3dcore
     j3dTestSupport
     jansson::jansson
-    Dbghelp
-    Gdi32
-    Ole32
-    Winmm
+    dbghelp
+    gdi32
+    ole32
+    winmm
 )
 
 if (J3D_DIRECTX6)
@@ -182,9 +187,9 @@ elseif(J3D_DIRECTX9)
         d3dcompiler
         dinput8
         dxguid
-        Xinput
+        xinput
         wbemuuid
-        OleAut32
+        oleaut32
     )
 endif()
 
@@ -220,14 +225,19 @@ if (JONES3D_BUILD_SYSTEM_TESTS)
         "${CMAKE_CURRENT_SOURCE_DIR}"
     )
 
+    if (JONES3D_SHADER_HEADER_DIR)
+        # The std system test target compiles the DX9 sources directly; point it at the precompiled shader headers as well.
+        target_include_directories(stdSystemTests PRIVATE ${JONES3D_SHADER_HEADER_DIR})
+    endif()
+
     target_link_libraries(stdSystemTests PRIVATE
         j3dcore
         j3dTestSupport
         jansson::jansson
-        Dbghelp
-        Gdi32
-        Ole32
-        Winmm
+        dbghelp
+        gdi32
+        ole32
+        winmm
     )
 
     if (J3D_DIRECTX6)
@@ -240,9 +250,9 @@ if (JONES3D_BUILD_SYSTEM_TESTS)
             d3dcompiler
             dinput8
             dxguid
-            Xinput
+            xinput
             wbemuuid
-            OleAut32
+            oleaut32
         )
     endif()
 
@@ -277,14 +287,19 @@ if (JONES3D_BUILD_DISRUPTIVE_SYSTEM_TESTS)
         "${CMAKE_CURRENT_SOURCE_DIR}"
     )
 
+    if (JONES3D_SHADER_HEADER_DIR)
+        # The std disruptive system test target compiles the DX9 sources directly; point it at the precompiled shader headers as well.
+        target_include_directories(stdDisruptiveSystemTests PRIVATE ${JONES3D_SHADER_HEADER_DIR})
+    endif()
+
     target_link_libraries(stdDisruptiveSystemTests PRIVATE
         j3dcore
         j3dTestSupport
         jansson::jansson
-        Dbghelp
-        Gdi32
-        Ole32
-        Winmm
+        dbghelp
+        gdi32
+        ole32
+        winmm
     )
 
     if (J3D_DIRECTX6)
@@ -297,9 +312,9 @@ if (JONES3D_BUILD_DISRUPTIVE_SYSTEM_TESTS)
             d3dcompiler
             dinput8
             dxguid
-            Xinput
+            xinput
             wbemuuid
-            OleAut32
+            oleaut32
         )
     endif()
 

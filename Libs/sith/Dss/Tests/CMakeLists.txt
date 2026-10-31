@@ -33,6 +33,13 @@ add_executable(sithDSSTests
     ${SITHDSS_TESTED_SOURCES}
 )
 
+# Same force-include as the MSVC /FI above; the target contains only the two source lists, so the
+# option scope is identical. (Per-source set_property does not expand the SHELL: prefix.)
+if (MINGW)
+    target_compile_options(sithDSSTests PRIVATE
+        "SHELL:-include ${CMAKE_CURRENT_SOURCE_DIR}/sithDSSTestAddrs.h")
+endif()
+
 target_link_libraries(sithDSSTests PRIVATE
     sith
     sound
@@ -50,6 +57,8 @@ target_compile_definitions(sithDSSTests PRIVATE
 # when the addresses cannot be confused with the generated integers and floats. Load the image high and fixed.
 if (MSVC)
     target_link_options(sithDSSTests PRIVATE /BASE:0x20000000 /DYNAMICBASE:NO)
+elseif(MINGW)
+    target_link_options(sithDSSTests PRIVATE -Wl,--image-base=0x20000000 -Wl,--disable-dynamicbase)
 endif()
 
 set_target_properties(sithDSSTests PROPERTIES
