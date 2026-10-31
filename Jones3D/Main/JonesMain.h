@@ -9,10 +9,18 @@
 
 J3D_EXTERN_C_START
 
+#if defined(J3D_STANDALONE)
+extern char JonesMain_g_aErrorBuffer[1024];
+#else
 #define JonesMain_g_aErrorBuffer J3D_DECL_FAR_ARRAYVAR(JonesMain_g_aErrorBuffer, char(*)[1024])
+#endif
 // extern char JonesMain_g_aErrorBuffer[1024] ;
 
+#if defined(J3D_STANDALONE)
+extern HANDLE JonesMain_g_mainMutex;
+#else
 #define JonesMain_g_mainMutex J3D_DECL_FAR_VAR(JonesMain_g_mainMutex, HANDLE)
+#endif
 // extern HANDLE JonesMain_g_mainMutex;
 
 int J3DAPI JonesMain_Startup(const char* lpCmdLine);

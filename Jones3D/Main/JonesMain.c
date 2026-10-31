@@ -62,6 +62,12 @@
 #include <stdint.h>
 #include <windowsx.h> // helper macros for win32 controls (combo-box, list-view ...)
 
+#ifdef J3D_STANDALONE
+// Added: Standalone builds have no retail executable to hold these. *_ResetGlobals sets the starting values.
+char JonesMain_g_aErrorBuffer[1024];
+HANDLE JonesMain_g_mainMutex;
+#endif
+
 #define JONES_QUICKSAVE_TEXTSHOWTIME    1000u // 1 sec
 #define JONES_QUICKSAVE_TEXTSHOWTIMERID 1u 
 

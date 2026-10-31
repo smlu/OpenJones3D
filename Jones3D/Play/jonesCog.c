@@ -22,6 +22,14 @@
 #include <std/General/std.h>
 #include <std/General/stdUtil.h>
 
+#ifdef J3D_STANDALONE
+// Added: Standalone builds have no retail executable to hold these. *_ResetGlobals sets the starting values.
+int jonesCog_g_bShowHealthHUD;
+int jonesCog_g_bMenuVisible;
+int jonesCog_g_bEnableGamesave;
+int jonesCog_g_dword_17EFFCC;
+#endif
+
 static int jonesCog_curCutsceneType     = -1;
 static int jonesCog_bInterfaceEnabled   = -1;
 static bool jonesCog_bOverlayMapVisible = false;
