@@ -12,6 +12,7 @@ Suites:
 | sithThing Quetz (`sithThing_CreateQuetzUserBlock`, `sithThing_UpdateQuetzUserBlock`) | `sithThingQuetzVecTests` / `sith.ThingQuetz` | `World/Tests/sithThingVecQuetz.h` | [World/Tests/tv/sithThingQuetz](../../World/Tests/tv/sithThingQuetz/README.md) |
 | sithAIInstinct (`sithAIInstinct_InitInstincts`, `sithAI_RegisterInstinct`, `sithAI_FindInstinct`) | `sithAIInstinctVecTests` / `sith.AIInstinct` | `AI/Tests/sithAIInstinctVec.h` | [AI/Tests/tv/sithAIInstinct](../../AI/Tests/tv/sithAIInstinct/README.md) |
 | sithAIInstinct functions (`sithAIInstinct_Listen` ... `sithAIInstinct_SnakePlaySlitherSound`, all but `InitInstincts`) | `sithAIInstinctFnVecTests` / `sith.AIInstinctFn` | `AI/Tests/sithAIInstinctFnVec.h`, `AI/Tests/sithAIInstinctFnVecCases.inc` | [AI/Tests/tv/sithAIInstinctFn](../../AI/Tests/tv/sithAIInstinctFn/README.md) |
+| sithAIMove (all functions of `sithAIMove.c`: update, turn, move, look/move positions, special moves, head tracking, Quetzalcoatl strike) | `sithAIMoveVecTests` / `sith.AIMove` | `AI/Tests/sithAIMoveVec.h`, `AI/Tests/sithAIMoveVecCases.h` | [AI/Tests/tv/sithAIMove](../../AI/Tests/tv/sithAIMove/README.md) |
 
 ### How It Works
 

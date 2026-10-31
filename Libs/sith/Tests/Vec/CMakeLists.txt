@@ -114,3 +114,12 @@ sith_add_vec_test(sithAIInstinctFnVecTests
 )
 # Many cases (the fixture has more than a thousand): allow slow runners
 set_tests_properties(sith.AIInstinctFn PROPERTIES TIMEOUT 180)
+# sithAIMove: the update, turn, move, look, special move, head tracking and Quetzalcoatl strike functions
+sith_add_vec_test(sithAIMoveVecTests
+    TEST    sith.AIMove
+    SOURCES "${SITH_DIR}/AI/Tests/sithAIMoveVecTest.c"
+    TESTED  "${SITH_DIR}/AI/Tests/sithAIMoveVecTested.c"
+    SEAMS   "${SITH_DIR}/AI/Tests/sithAIMoveVecSeams.def"
+    ADDRS   "${SITH_DIR}/AI/Tests/sithAIMoveVecAddrs.h"
+    TV_DIR  "${SITH_DIR}/AI/Tests/tv/sithAIMove"
+)
