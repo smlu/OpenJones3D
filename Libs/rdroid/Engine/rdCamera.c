@@ -14,6 +14,13 @@
 
 #include <std/Win95/stdDisplay.h>
 
+#ifdef J3D_STANDALONE
+// Added: Standalone builds have no retail executable to hold these. *_ResetGlobals sets the starting values.
+rdVector3 rdCamera_g_camPYR;
+rdCamera* rdCamera_g_pCurCamera;
+rdMatrix34 rdCamera_g_camMatrix;
+#endif
+
 static bool rdCamera_bOverlayDepthRange = false;
 
 void J3DAPI rdCamera_BuildFOV(rdCamera* pCamera);

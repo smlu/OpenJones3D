@@ -11,6 +11,11 @@
 #include <std/General/stdUtil.h>
 #include <std/Win95/stdDisplay.h>
 
+#ifdef J3D_STANDALONE
+// Added: Standalone builds have no retail executable to hold these. *_ResetGlobals sets the starting values.
+int rdClip_g_faceStatus;
+#endif
+
 #include<math.h>
 
 static rdVector2 rdClip_aWorkTVerts[MAX_CLIP_VERTICIES] = { 0 };
