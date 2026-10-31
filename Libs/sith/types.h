@@ -1668,11 +1668,11 @@ struct sSithThingSwapEntry
 typedef struct sSithQuetzSnapShot
 {
     float time;
-    float angle1;
-    float angle2;
-    float angle3;
-    float angle4;
-    float angle5;
+    float neckPitch;
+    float neckYaw;
+    float headPitch;
+    float headYaw;
+    float jawPitch;
 } SithQuetzSnapShot;
 
 typedef enum eSithQuetzStrikeMode

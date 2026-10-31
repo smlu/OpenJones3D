@@ -28,6 +28,11 @@
 #include <std/General/stdMath.h>
 #include <std/General/stdUtil.h>
 
+// Node indices of the Quetzalcoatl puppet's head joints in olv_qu_head.3do
+#define SITHAIMOVE_QUETZ_NODE_NECKUP 1  // quneckup
+#define SITHAIMOVE_QUETZ_NODE_HEAD   2  // quhead
+#define SITHAIMOVE_QUETZ_NODE_JAW    28 // qujaw
+
 static float sithAIMove_maxTurnSpeed = 0.0049999999f;
 static float sithAIMove_maxWalkSpeed = 0.27000001f;
 static float sithAIMove_minWalkSpeed = 0.001f;
@@ -2408,7 +2413,7 @@ void J3DAPI sithAIMove_GetQuetzStrikeAngles(SithAIControlBlock* pLocal, float* p
 
     float yaw = rdMath_DeltaAngleNormalized(&pOwner->orient.lvec, &lookDir, &pOwner->orient.uvec);
     *pYaw     = yaw;
-    *pHeadYaw = -pOwner->renderData.apTweakedAngles[2].y;
+    *pHeadYaw = -pOwner->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_HEAD].y;
 
     // Horizontal distance
     float distance = rdVector_Dist2((const rdVector2*)&pOwner->pos, (const rdVector2*)&pTarget->pos);
@@ -2418,7 +2423,7 @@ void J3DAPI sithAIMove_GetQuetzStrikeAngles(SithAIControlBlock* pLocal, float* p
     *pPitch = (distance - sithAIMove_quetzStrikeMinDist) * pitchScale + sithAIMove_quetzStrikeNearPitch;
 
     float headPitchScale = (sithAIMove_quetzStrikeFarHeadPitch - sithAIMove_quetzStrikeNearHeadPitch) / (sithAIMove_quetzStrikeMaxDist - sithAIMove_quetzStrikeMinDist);
-    *pHeadPitch = (distance - sithAIMove_quetzStrikeMinDist) * headPitchScale + sithAIMove_quetzStrikeNearHeadPitch - pOwner->renderData.apTweakedAngles[2].x;
+    *pHeadPitch = (distance - sithAIMove_quetzStrikeMinDist) * headPitchScale + sithAIMove_quetzStrikeNearHeadPitch - pOwner->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_HEAD].x;
 }
 
 void J3DAPI sithAIMove_UpdateQuetzStrike(SithAIControlBlock* pLocal, float secDeltaTime)
@@ -2446,11 +2451,11 @@ void J3DAPI sithAIMove_UpdateQuetzStrike(SithAIControlBlock* pLocal, float secDe
         float angleHeadPitch;
         sithAIMove_GetQuetzStrikeAngles(pLocal, &angle, &pitchAngle, &headYaw, &angleHeadPitch);
 
-        pStrike->aSnapShots[1].angle1 = 20.0f;
-        pStrike->aSnapShots[1].angle2 = angle * 0.5f;
-        pStrike->aSnapShots[1].angle3 = pThing->renderData.apTweakedAngles[2].pitch - 20.0f;
-        pStrike->aSnapShots[1].angle4 = pThing->renderData.apTweakedAngles[2].yaw + headYaw * 0.5f;
-        pStrike->aSnapShots[1].angle5 = pStrike->aSnapShots[0].angle5;
+        pStrike->aSnapShots[1].neckPitch = 20.0f;
+        pStrike->aSnapShots[1].neckYaw   = angle * 0.5f;
+        pStrike->aSnapShots[1].headPitch = pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_HEAD].pitch - 20.0f;
+        pStrike->aSnapShots[1].headYaw   = pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_HEAD].yaw + headYaw * 0.5f;
+        pStrike->aSnapShots[1].jawPitch  = pStrike->aSnapShots[0].jawPitch;
     }
     else if ( pStrike->snapShot == 2 )
     {
@@ -2460,11 +2465,11 @@ void J3DAPI sithAIMove_UpdateQuetzStrike(SithAIControlBlock* pLocal, float secDe
         float angleHeadPitch;
         sithAIMove_GetQuetzStrikeAngles(pLocal, &angle, &pitchAngle, &headYaw, &angleHeadPitch);
 
-        pStrike->aSnapShots[2].angle1 = pitchAngle * 0.9f;
-        pStrike->aSnapShots[2].angle2 = angle * 0.9f;
-        pStrike->aSnapShots[2].angle3 = pThing->renderData.apTweakedAngles[2].pitch + angleHeadPitch * 0.9f;
-        pStrike->aSnapShots[2].angle4 = pThing->renderData.apTweakedAngles[2].yaw + headYaw * 0.9f;
-        pStrike->aSnapShots[2].angle5 = -30.0f;
+        pStrike->aSnapShots[2].neckPitch = pitchAngle * 0.9f;
+        pStrike->aSnapShots[2].neckYaw   = angle * 0.9f;
+        pStrike->aSnapShots[2].headPitch = pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_HEAD].pitch + angleHeadPitch * 0.9f;
+        pStrike->aSnapShots[2].headYaw   = pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_HEAD].yaw + headYaw * 0.9f;
+        pStrike->aSnapShots[2].jawPitch  = -30.0f;
     }
     else if ( pStrike->snapShot == 3 )
     {
@@ -2474,11 +2479,11 @@ void J3DAPI sithAIMove_UpdateQuetzStrike(SithAIControlBlock* pLocal, float secDe
         float angleHeadPitch;
         sithAIMove_GetQuetzStrikeAngles(pLocal, &angle, &pitchAngle, &headYaw, &angleHeadPitch);
 
-        pStrike->aSnapShots[3].angle1 = pitchAngle;
-        pStrike->aSnapShots[3].angle2 = angle;
-        pStrike->aSnapShots[3].angle3 = pThing->renderData.apTweakedAngles[2].pitch + angleHeadPitch;
-        pStrike->aSnapShots[3].angle4 = pThing->renderData.apTweakedAngles[2].yaw + headYaw;
-        pStrike->aSnapShots[3].angle5 = 20.0f;
+        pStrike->aSnapShots[3].neckPitch = pitchAngle;
+        pStrike->aSnapShots[3].neckYaw   = angle;
+        pStrike->aSnapShots[3].headPitch = pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_HEAD].pitch + angleHeadPitch;
+        pStrike->aSnapShots[3].headYaw   = pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_HEAD].yaw + headYaw;
+        pStrike->aSnapShots[3].jawPitch  = 20.0f;
     }
     else if ( pStrike->snapShot == 4 )
     {
@@ -2488,16 +2493,16 @@ void J3DAPI sithAIMove_UpdateQuetzStrike(SithAIControlBlock* pLocal, float secDe
         float angleHeadPitch;
         sithAIMove_GetQuetzStrikeAngles(pLocal, &angle, &pitchAngle, &headYaw, &angleHeadPitch);
 
-        pStrike->aSnapShots[4].angle1 = 10.0f;
-        pStrike->aSnapShots[4].angle2 = angle * 0.4f;
-        pStrike->aSnapShots[4].angle3 = pThing->renderData.apTweakedAngles[2].pitch - 10.0f;
-        pStrike->aSnapShots[4].angle4 = pThing->renderData.apTweakedAngles[2].yaw + headYaw * 0.4f;
-        pStrike->aSnapShots[4].angle5 = pStrike->aSnapShots[0].angle5;
+        pStrike->aSnapShots[4].neckPitch = 10.0f;
+        pStrike->aSnapShots[4].neckYaw   = angle * 0.4f;
+        pStrike->aSnapShots[4].headPitch = pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_HEAD].pitch - 10.0f;
+        pStrike->aSnapShots[4].headYaw   = pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_HEAD].yaw + headYaw * 0.4f;
+        pStrike->aSnapShots[4].jawPitch  = pStrike->aSnapShots[0].jawPitch;
     }
     else if ( pStrike->snapShot == pStrike->numSnapShots - 1 )
     {
-        pSnapShot->angle3 = pThing->renderData.apTweakedAngles[2].pitch;
-        pSnapShot->angle4 = pThing->renderData.apTweakedAngles[2].yaw;
+        pSnapShot->headPitch = pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_HEAD].pitch;
+        pSnapShot->headYaw   = pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_HEAD].yaw;
     }
 
     if ( remainder >= secDeltaTime )
@@ -2511,21 +2516,23 @@ void J3DAPI sithAIMove_UpdateQuetzStrike(SithAIControlBlock* pLocal, float secDe
         float ratio       = timeElapsed / length;
         ratio = STDMATH_CLAMP(ratio, 0.0f, 1.0f);
 
-        pThing->renderData.apTweakedAngles[1].pitch  = (pSnapShot->angle1 - pPrevSnapShot->angle1) * ratio + pPrevSnapShot->angle1;
-        pThing->renderData.apTweakedAngles[1].yaw    = (pSnapShot->angle2 - pPrevSnapShot->angle2) * ratio + pPrevSnapShot->angle2;
-        pThing->renderData.apTweakedAngles[2].pitch  = (pSnapShot->angle3 - pPrevSnapShot->angle3) * ratio + pPrevSnapShot->angle3;
-        pThing->renderData.apTweakedAngles[2].yaw    = (pSnapShot->angle4 - pPrevSnapShot->angle4) * ratio + pPrevSnapShot->angle4;
-        pThing->renderData.apTweakedAngles[28].pitch = (pSnapShot->angle5 - pPrevSnapShot->angle5) * ratio + pPrevSnapShot->angle5;
+        pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_NECKUP].pitch  = (pSnapShot->neckPitch - pPrevSnapShot->neckPitch) * ratio + pPrevSnapShot->neckPitch;
+        pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_NECKUP].yaw    = (pSnapShot->neckYaw - pPrevSnapShot->neckYaw) * ratio + pPrevSnapShot->neckYaw;
+        pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_HEAD].pitch  = (pSnapShot->headPitch - pPrevSnapShot->headPitch) * ratio + pPrevSnapShot->headPitch;
+        pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_HEAD].yaw    = (pSnapShot->headYaw - pPrevSnapShot->headYaw) * ratio + pPrevSnapShot->headYaw;
+        pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_JAW].pitch = (pSnapShot->jawPitch - pPrevSnapShot->jawPitch) * ratio + pPrevSnapShot->jawPitch;
     }
     else
     {
         pStrike->snapShot++;
         pStrike->curTime = pSnapShot->time;
-        pThing->renderData.apTweakedAngles[1].pitch  = pSnapShot->angle1;
-        pThing->renderData.apTweakedAngles[1].yaw    = pSnapShot->angle2;
-        pThing->renderData.apTweakedAngles[2].pitch  = pSnapShot->angle3;
-        pThing->renderData.apTweakedAngles[2].yaw    = pSnapShot->angle4;
-        pThing->renderData.apTweakedAngles[28].pitch = pSnapShot->angle5;
+
+        pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_NECKUP].pitch  = pSnapShot->neckPitch;
+        pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_NECKUP].yaw    = pSnapShot->neckYaw;
+        pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_HEAD].pitch  = pSnapShot->headPitch;
+        pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_HEAD].yaw    = pSnapShot->headYaw;
+        pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_JAW].pitch = pSnapShot->jawPitch;
+
         if ( pStrike->snapShot == pStrike->numSnapShots )
         {
             pStrike->mode = SITHQUETZSTRIKE_MODE_NONE;
@@ -2558,7 +2565,7 @@ void J3DAPI sithAIMove_GetQuetzAnim2Angles(SithAIControlBlock* pLocal, float* pY
 
     float yaw = rdMath_DeltaAngleNormalized(&pOwner->orient.lvec, &planeDir, &pOwner->orient.uvec);
     *pYaw       = yaw;
-    *pHeadYaw   = -pOwner->renderData.apTweakedAngles[2].yaw;
+    *pHeadYaw   = -pOwner->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_HEAD].yaw;
     *pHeadPitch = 50.0f;
     *pPitch     = -30.0f;
 }
@@ -2588,11 +2595,11 @@ void J3DAPI sithAIMove_UpdateQuetzAnim2(SithAIControlBlock* pLocal, float secDel
         float angleHeadPitch;
         sithAIMove_GetQuetzAnim2Angles(pLocal, &angle, &pitchAngle, &headYaw, &angleHeadPitch);
 
-        pStrike->aSnapShots[1].angle1 = 20.0f;
-        pStrike->aSnapShots[1].angle2 = angle * 0.5f;
-        pStrike->aSnapShots[1].angle3 = pThing->renderData.apTweakedAngles[2].pitch + 10.0f;
-        pStrike->aSnapShots[1].angle4 = pThing->renderData.apTweakedAngles[2].yaw + headYaw * 0.5f;
-        pStrike->aSnapShots[1].angle5 = pStrike->aSnapShots[0].angle5;
+        pStrike->aSnapShots[1].neckPitch = 20.0f;
+        pStrike->aSnapShots[1].neckYaw   = angle * 0.5f;
+        pStrike->aSnapShots[1].headPitch = pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_HEAD].pitch + 10.0f;
+        pStrike->aSnapShots[1].headYaw   = pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_HEAD].yaw + headYaw * 0.5f;
+        pStrike->aSnapShots[1].jawPitch  = pStrike->aSnapShots[0].jawPitch;
     }
     else if ( pStrike->snapShot == 2 )
     {
@@ -2602,16 +2609,16 @@ void J3DAPI sithAIMove_UpdateQuetzAnim2(SithAIControlBlock* pLocal, float secDel
         float angleHeadPitch;
         sithAIMove_GetQuetzAnim2Angles(pLocal, &angle, &pitchAngle, &headYaw, &angleHeadPitch);
 
-        pStrike->aSnapShots[2].angle1 = pitchAngle;
-        pStrike->aSnapShots[2].angle2 = angle;
-        pStrike->aSnapShots[2].angle3 = pThing->renderData.apTweakedAngles[2].pitch + angleHeadPitch;
-        pStrike->aSnapShots[2].angle4 = pThing->renderData.apTweakedAngles[2].yaw + headYaw;
-        pStrike->aSnapShots[2].angle5 = -70.0f;
+        pStrike->aSnapShots[2].neckPitch = pitchAngle;
+        pStrike->aSnapShots[2].neckYaw   = angle;
+        pStrike->aSnapShots[2].headPitch = pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_HEAD].pitch + angleHeadPitch;
+        pStrike->aSnapShots[2].headYaw   = pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_HEAD].yaw + headYaw;
+        pStrike->aSnapShots[2].jawPitch  = -70.0f;
     }
     else if ( pStrike->snapShot == pStrike->numSnapShots - 1 )
     {
-        pSnapShot->angle3 = pThing->renderData.apTweakedAngles[2].pitch;
-        pSnapShot->angle4 = pThing->renderData.apTweakedAngles[2].yaw;
+        pSnapShot->headPitch = pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_HEAD].pitch;
+        pSnapShot->headYaw   = pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_HEAD].yaw;
     }
 
     if ( remainder >= secDeltaTime )
@@ -2625,21 +2632,23 @@ void J3DAPI sithAIMove_UpdateQuetzAnim2(SithAIControlBlock* pLocal, float secDel
         float ratio       = timeElapsed / length;
         ratio = STDMATH_CLAMP(ratio, 0.0f, 1.0f);
 
-        pThing->renderData.apTweakedAngles[1].pitch  = (pSnapShot->angle1 - pPrevSnapShot->angle1) * ratio + pPrevSnapShot->angle1;
-        pThing->renderData.apTweakedAngles[1].yaw    = (pSnapShot->angle2 - pPrevSnapShot->angle2) * ratio + pPrevSnapShot->angle2;
-        pThing->renderData.apTweakedAngles[2].pitch  = (pSnapShot->angle3 - pPrevSnapShot->angle3) * ratio + pPrevSnapShot->angle3;
-        pThing->renderData.apTweakedAngles[2].yaw    = (pSnapShot->angle4 - pPrevSnapShot->angle4) * ratio + pPrevSnapShot->angle4;
-        pThing->renderData.apTweakedAngles[28].pitch = (pSnapShot->angle5 - pPrevSnapShot->angle5) * ratio + pPrevSnapShot->angle5;
+        pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_NECKUP].pitch  = (pSnapShot->neckPitch - pPrevSnapShot->neckPitch) * ratio + pPrevSnapShot->neckPitch;
+        pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_NECKUP].yaw    = (pSnapShot->neckYaw - pPrevSnapShot->neckYaw) * ratio + pPrevSnapShot->neckYaw;
+        pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_HEAD].pitch  = (pSnapShot->headPitch - pPrevSnapShot->headPitch) * ratio + pPrevSnapShot->headPitch;
+        pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_HEAD].yaw    = (pSnapShot->headYaw - pPrevSnapShot->headYaw) * ratio + pPrevSnapShot->headYaw;
+        pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_JAW].pitch = (pSnapShot->jawPitch - pPrevSnapShot->jawPitch) * ratio + pPrevSnapShot->jawPitch;
     }
     else
     {
         pStrike->snapShot++;
         pStrike->curTime = pSnapShot->time;
-        pThing->renderData.apTweakedAngles[1].pitch  = pSnapShot->angle1;
-        pThing->renderData.apTweakedAngles[1].yaw    = pSnapShot->angle2;
-        pThing->renderData.apTweakedAngles[2].pitch  = pSnapShot->angle3;
-        pThing->renderData.apTweakedAngles[2].yaw    = pSnapShot->angle4;
-        pThing->renderData.apTweakedAngles[28].pitch = pSnapShot->angle5;
+
+        pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_NECKUP].pitch  = pSnapShot->neckPitch;
+        pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_NECKUP].yaw    = pSnapShot->neckYaw;
+        pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_HEAD].pitch  = pSnapShot->headPitch;
+        pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_HEAD].yaw    = pSnapShot->headYaw;
+        pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_JAW].pitch = pSnapShot->jawPitch;
+
         if ( pStrike->snapShot == pStrike->numSnapShots )
         {
             pStrike->mode = SITHQUETZSTRIKE_MODE_NONE;
@@ -2670,8 +2679,8 @@ void J3DAPI sithAIMove_UpdateQuetzAnim3(SithAIControlBlock* pLocal, float secDel
 
     if ( pStrike->snapShot == pStrike->numSnapShots - 1 )
     {
-        pSnapShot->angle3 = pThing->renderData.apTweakedAngles[2].pitch;
-        pSnapShot->angle4 = pThing->renderData.apTweakedAngles[2].yaw;
+        pSnapShot->headPitch = pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_HEAD].pitch;
+        pSnapShot->headYaw   = pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_HEAD].yaw;
     }
 
     if ( timeLeft >= secDeltaTime )
@@ -2685,21 +2694,23 @@ void J3DAPI sithAIMove_UpdateQuetzAnim3(SithAIControlBlock* pLocal, float secDel
         float ratio       = timeElapsed / period;
         ratio = STDMATH_CLAMP(ratio, 0.0f, 1.0f);
 
-        pThing->renderData.apTweakedAngles[1].pitch  = (pSnapShot->angle1 - pPrevSnapShot->angle1) * ratio + pPrevSnapShot->angle1;
-        pThing->renderData.apTweakedAngles[1].yaw    = (pSnapShot->angle2 - pPrevSnapShot->angle2) * ratio + pPrevSnapShot->angle2;
-        pThing->renderData.apTweakedAngles[2].pitch  = (pSnapShot->angle3 - pPrevSnapShot->angle3) * ratio + pPrevSnapShot->angle3;
-        pThing->renderData.apTweakedAngles[2].yaw    = (pSnapShot->angle4 - pPrevSnapShot->angle4) * ratio + pPrevSnapShot->angle4;
-        pThing->renderData.apTweakedAngles[28].pitch = (pSnapShot->angle5 - pPrevSnapShot->angle5) * ratio + pPrevSnapShot->angle5;
+        pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_NECKUP].pitch  = (pSnapShot->neckPitch - pPrevSnapShot->neckPitch) * ratio + pPrevSnapShot->neckPitch;
+        pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_NECKUP].yaw    = (pSnapShot->neckYaw - pPrevSnapShot->neckYaw) * ratio + pPrevSnapShot->neckYaw;
+        pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_HEAD].pitch  = (pSnapShot->headPitch - pPrevSnapShot->headPitch) * ratio + pPrevSnapShot->headPitch;
+        pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_HEAD].yaw    = (pSnapShot->headYaw - pPrevSnapShot->headYaw) * ratio + pPrevSnapShot->headYaw;
+        pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_JAW].pitch = (pSnapShot->jawPitch - pPrevSnapShot->jawPitch) * ratio + pPrevSnapShot->jawPitch;
     }
     else
     {
         pStrike->snapShot++;
         pStrike->curTime = pSnapShot->time;
-        pThing->renderData.apTweakedAngles[1].pitch  = pSnapShot->angle1;
-        pThing->renderData.apTweakedAngles[1].yaw    = pSnapShot->angle2;
-        pThing->renderData.apTweakedAngles[2].pitch  = pSnapShot->angle3;
-        pThing->renderData.apTweakedAngles[2].yaw    = pSnapShot->angle4;
-        pThing->renderData.apTweakedAngles[28].pitch = pSnapShot->angle5;
+
+        pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_NECKUP].pitch  = pSnapShot->neckPitch;
+        pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_NECKUP].yaw    = pSnapShot->neckYaw;
+        pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_HEAD].pitch  = pSnapShot->headPitch;
+        pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_HEAD].yaw    = pSnapShot->headYaw;
+        pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_JAW].pitch = pSnapShot->jawPitch;
+
         if ( pStrike->snapShot == pStrike->numSnapShots )
         {
             pStrike->mode = SITHQUETZSTRIKE_MODE_NONE;
@@ -2730,8 +2741,8 @@ void J3DAPI sithAIMove_UpdateQuetzAnim5(SithAIControlBlock* pLocal, float secDel
 
     if ( pStrike->snapShot == pStrike->numSnapShots - 1 )
     {
-        pSnapShot->angle3 = pThing->renderData.apTweakedAngles[2].pitch;
-        pSnapShot->angle4 = pThing->renderData.apTweakedAngles[2].yaw;
+        pSnapShot->headPitch = pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_HEAD].pitch;
+        pSnapShot->headYaw   = pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_HEAD].yaw;
     }
 
     if ( timeLeft >= secDeltaTime )
@@ -2745,21 +2756,23 @@ void J3DAPI sithAIMove_UpdateQuetzAnim5(SithAIControlBlock* pLocal, float secDel
         float ratio       = timeElapsed / period;
         ratio = STDMATH_CLAMP(ratio, 0.0f, 1.0f);
 
-        pThing->renderData.apTweakedAngles[1].pitch  = (pSnapShot->angle1 - pPrevSnapShot->angle1) * ratio + pPrevSnapShot->angle1;
-        pThing->renderData.apTweakedAngles[1].yaw    = (pSnapShot->angle2 - pPrevSnapShot->angle2) * ratio + pPrevSnapShot->angle2;
-        pThing->renderData.apTweakedAngles[2].pitch  = (pSnapShot->angle3 - pPrevSnapShot->angle3) * ratio + pPrevSnapShot->angle3;
-        pThing->renderData.apTweakedAngles[2].yaw    = (pSnapShot->angle4 - pPrevSnapShot->angle4) * ratio + pPrevSnapShot->angle4;
-        pThing->renderData.apTweakedAngles[28].pitch = (pSnapShot->angle5 - pPrevSnapShot->angle5) * ratio + pPrevSnapShot->angle5;
+        pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_NECKUP].pitch  = (pSnapShot->neckPitch - pPrevSnapShot->neckPitch) * ratio + pPrevSnapShot->neckPitch;
+        pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_NECKUP].yaw    = (pSnapShot->neckYaw - pPrevSnapShot->neckYaw) * ratio + pPrevSnapShot->neckYaw;
+        pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_HEAD].pitch  = (pSnapShot->headPitch - pPrevSnapShot->headPitch) * ratio + pPrevSnapShot->headPitch;
+        pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_HEAD].yaw    = (pSnapShot->headYaw - pPrevSnapShot->headYaw) * ratio + pPrevSnapShot->headYaw;
+        pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_JAW].pitch = (pSnapShot->jawPitch - pPrevSnapShot->jawPitch) * ratio + pPrevSnapShot->jawPitch;
     }
     else
     {
         pStrike->snapShot++;
         pStrike->curTime = pSnapShot->time;
-        pThing->renderData.apTweakedAngles[1].pitch  = pSnapShot->angle1;
-        pThing->renderData.apTweakedAngles[1].yaw    = pSnapShot->angle2;
-        pThing->renderData.apTweakedAngles[2].pitch  = pSnapShot->angle3;
-        pThing->renderData.apTweakedAngles[2].yaw    = pSnapShot->angle4;
-        pThing->renderData.apTweakedAngles[28].pitch = pSnapShot->angle5;
+
+        pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_NECKUP].pitch  = pSnapShot->neckPitch;
+        pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_NECKUP].yaw    = pSnapShot->neckYaw;
+        pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_HEAD].pitch  = pSnapShot->headPitch;
+        pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_HEAD].yaw    = pSnapShot->headYaw;
+        pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_JAW].pitch = pSnapShot->jawPitch;
+
         if ( pStrike->snapShot == pStrike->numSnapShots )
         {
             pStrike->mode = SITHQUETZSTRIKE_MODE_NONE;
@@ -2799,21 +2812,23 @@ void J3DAPI sithAIMove_UpdateQuetzAnim4(SithAIControlBlock* pLocal, float secDel
         float ratio       = timeElapsed / period;
         ratio = STDMATH_CLAMP(ratio, 0.0f, 1.0f);
 
-        pThing->renderData.apTweakedAngles[1].pitch  = (pSnapShot->angle1 - pPrevSnapShot->angle1) * ratio + pPrevSnapShot->angle1;
-        pThing->renderData.apTweakedAngles[1].yaw    = (pSnapShot->angle2 - pPrevSnapShot->angle2) * ratio + pPrevSnapShot->angle2;
-        pThing->renderData.apTweakedAngles[2].pitch  = (pSnapShot->angle3 - pPrevSnapShot->angle3) * ratio + pPrevSnapShot->angle3;
-        pThing->renderData.apTweakedAngles[2].yaw    = (pSnapShot->angle4 - pPrevSnapShot->angle4) * ratio + pPrevSnapShot->angle4;
-        pThing->renderData.apTweakedAngles[28].pitch = (pSnapShot->angle5 - pPrevSnapShot->angle5) * ratio + pPrevSnapShot->angle5;
+        pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_NECKUP].pitch  = (pSnapShot->neckPitch - pPrevSnapShot->neckPitch) * ratio + pPrevSnapShot->neckPitch;
+        pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_NECKUP].yaw    = (pSnapShot->neckYaw - pPrevSnapShot->neckYaw) * ratio + pPrevSnapShot->neckYaw;
+        pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_HEAD].pitch  = (pSnapShot->headPitch - pPrevSnapShot->headPitch) * ratio + pPrevSnapShot->headPitch;
+        pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_HEAD].yaw    = (pSnapShot->headYaw - pPrevSnapShot->headYaw) * ratio + pPrevSnapShot->headYaw;
+        pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_JAW].pitch = (pSnapShot->jawPitch - pPrevSnapShot->jawPitch) * ratio + pPrevSnapShot->jawPitch;
     }
     else
     {
         pStrike->snapShot++;
         pStrike->curTime = pSnapShot->time;
-        pThing->renderData.apTweakedAngles[1].pitch  = pSnapShot->angle1;
-        pThing->renderData.apTweakedAngles[1].yaw    = pSnapShot->angle2;
-        pThing->renderData.apTweakedAngles[2].pitch  = pSnapShot->angle3;
-        pThing->renderData.apTweakedAngles[2].yaw    = pSnapShot->angle4;
-        pThing->renderData.apTweakedAngles[28].pitch = pSnapShot->angle5;
+
+        pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_NECKUP].pitch  = pSnapShot->neckPitch;
+        pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_NECKUP].yaw    = pSnapShot->neckYaw;
+        pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_HEAD].pitch  = pSnapShot->headPitch;
+        pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_HEAD].yaw    = pSnapShot->headYaw;
+        pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_JAW].pitch = pSnapShot->jawPitch;
+
         if ( pStrike->snapShot == pStrike->numSnapShots )
         {
             pStrike->mode = SITHQUETZSTRIKE_MODE_NONE;
@@ -2876,24 +2891,24 @@ void J3DAPI sithAIMove_StartQuetzStrike(SithAIControlBlock* pLocal)
     pStrike->curTime  = 0.0f;
     pStrike->snapShot = 0;
 
-    pStrike->aSnapShots[0].time   = 0.0f;
-    pStrike->aSnapShots[0].angle1 = pThing->renderData.apTweakedAngles[1].pitch;
-    pStrike->aSnapShots[0].angle2 = pThing->renderData.apTweakedAngles[1].yaw;
-    pStrike->aSnapShots[0].angle3 = pThing->renderData.apTweakedAngles[2].pitch;
-    pStrike->aSnapShots[0].angle4 = pThing->renderData.apTweakedAngles[2].yaw;
-    pStrike->aSnapShots[0].angle5 = pThing->renderData.apTweakedAngles[28].pitch;
+    pStrike->aSnapShots[0].time      = 0.0f;
+    pStrike->aSnapShots[0].neckPitch = pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_NECKUP].pitch;
+    pStrike->aSnapShots[0].neckYaw   = pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_NECKUP].yaw;
+    pStrike->aSnapShots[0].headPitch = pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_HEAD].pitch;
+    pStrike->aSnapShots[0].headYaw   = pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_HEAD].yaw;
+    pStrike->aSnapShots[0].jawPitch  = pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_JAW].pitch;
 
     pStrike->aSnapShots[1].time = 0.11f;
     pStrike->aSnapShots[2].time = 0.24f;
     pStrike->aSnapShots[3].time = 0.3f;
     pStrike->aSnapShots[4].time = 0.5f;
 
-    pStrike->aSnapShots[5].time   = 0.7f;
-    pStrike->aSnapShots[5].angle1 = pThing->renderData.apTweakedAngles[1].pitch;
-    pStrike->aSnapShots[5].angle2 = pThing->renderData.apTweakedAngles[1].yaw;
-    pStrike->aSnapShots[5].angle3 = pThing->renderData.apTweakedAngles[2].pitch;
-    pStrike->aSnapShots[5].angle4 = pThing->renderData.apTweakedAngles[2].yaw;
-    pStrike->aSnapShots[5].angle5 = pThing->renderData.apTweakedAngles[28].pitch;
+    pStrike->aSnapShots[5].time      = 0.7f;
+    pStrike->aSnapShots[5].neckPitch = pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_NECKUP].pitch;
+    pStrike->aSnapShots[5].neckYaw   = pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_NECKUP].yaw;
+    pStrike->aSnapShots[5].headPitch = pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_HEAD].pitch;
+    pStrike->aSnapShots[5].headYaw   = pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_HEAD].yaw;
+    pStrike->aSnapShots[5].jawPitch  = pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_JAW].pitch;
 
     pStrike->mode         = SITHQUETZSTRIKE_MODE_STRIKE;
     pStrike->numSnapShots = 6;
@@ -2911,23 +2926,23 @@ void J3DAPI sithAIMove_StartQuetzAnim2(SithAIControlBlock* pLocal)
     pStrike->curTime  = 0.0f;
     pStrike->snapShot = 0;
 
-    pStrike->aSnapShots[0].time   = 0.0f;
-    pStrike->aSnapShots[0].angle1 = pThing->renderData.apTweakedAngles[1].pitch;
-    pStrike->aSnapShots[0].angle2 = pThing->renderData.apTweakedAngles[1].yaw;
-    pStrike->aSnapShots[0].angle3 = pThing->renderData.apTweakedAngles[2].pitch;
-    pStrike->aSnapShots[0].angle4 = pThing->renderData.apTweakedAngles[2].yaw;
-    pStrike->aSnapShots[0].angle5 = pThing->renderData.apTweakedAngles[28].pitch;
+    pStrike->aSnapShots[0].time      = 0.0f;
+    pStrike->aSnapShots[0].neckPitch = pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_NECKUP].pitch;
+    pStrike->aSnapShots[0].neckYaw   = pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_NECKUP].yaw;
+    pStrike->aSnapShots[0].headPitch = pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_HEAD].pitch;
+    pStrike->aSnapShots[0].headYaw   = pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_HEAD].yaw;
+    pStrike->aSnapShots[0].jawPitch  = pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_JAW].pitch;
 
     pStrike->aSnapShots[1].time = 0.11f;
 
     pStrike->aSnapShots[2].time = 0.24f;
 
-    pStrike->aSnapShots[3].time   = 0.5f;
-    pStrike->aSnapShots[3].angle1 = pThing->renderData.apTweakedAngles[1].pitch;
-    pStrike->aSnapShots[3].angle2 = pThing->renderData.apTweakedAngles[1].yaw;
-    pStrike->aSnapShots[3].angle3 = pThing->renderData.apTweakedAngles[2].pitch;
-    pStrike->aSnapShots[3].angle4 = pThing->renderData.apTweakedAngles[2].yaw;
-    pStrike->aSnapShots[3].angle5 = pThing->renderData.apTweakedAngles[28].pitch;
+    pStrike->aSnapShots[3].time      = 0.5f;
+    pStrike->aSnapShots[3].neckPitch = pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_NECKUP].pitch;
+    pStrike->aSnapShots[3].neckYaw   = pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_NECKUP].yaw;
+    pStrike->aSnapShots[3].headPitch = pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_HEAD].pitch;
+    pStrike->aSnapShots[3].headYaw   = pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_HEAD].yaw;
+    pStrike->aSnapShots[3].jawPitch  = pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_JAW].pitch;
 
     pStrike->mode         = SITHQUETZSTRIKE_MODE_ANIM2;
     pStrike->numSnapShots = 4;
@@ -2945,110 +2960,110 @@ void J3DAPI sithAIMove_StartQuetzAnim3(SithAIControlBlock* pLocal)
     pStrike->curTime  = 0.0f;
     pStrike->snapShot = 0;
 
-    pStrike->aSnapShots[0].time   = 0.0f;
-    pStrike->aSnapShots[0].angle1 = pThing->renderData.apTweakedAngles[1].pitch;
-    pStrike->aSnapShots[0].angle2 = pThing->renderData.apTweakedAngles[1].yaw;
-    pStrike->aSnapShots[0].angle3 = pThing->renderData.apTweakedAngles[2].pitch;
-    pStrike->aSnapShots[0].angle4 = pThing->renderData.apTweakedAngles[2].yaw;
-    pStrike->aSnapShots[0].angle5 = pThing->renderData.apTweakedAngles[28].pitch;
+    pStrike->aSnapShots[0].time      = 0.0f;
+    pStrike->aSnapShots[0].neckPitch = pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_NECKUP].pitch;
+    pStrike->aSnapShots[0].neckYaw   = pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_NECKUP].yaw;
+    pStrike->aSnapShots[0].headPitch = pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_HEAD].pitch;
+    pStrike->aSnapShots[0].headYaw   = pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_HEAD].yaw;
+    pStrike->aSnapShots[0].jawPitch  = pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_JAW].pitch;
 
-    pStrike->aSnapShots[1].time   = 0.1f;
-    pStrike->aSnapShots[1].angle1 = -10.0f;
-    pStrike->aSnapShots[1].angle2 = 0.0f;
-    pStrike->aSnapShots[1].angle3 = 50.0f;
-    pStrike->aSnapShots[1].angle4 = 0.0f;
-    pStrike->aSnapShots[1].angle5 = -40.0f;
+    pStrike->aSnapShots[1].time      = 0.1f;
+    pStrike->aSnapShots[1].neckPitch = -10.0f;
+    pStrike->aSnapShots[1].neckYaw   = 0.0f;
+    pStrike->aSnapShots[1].headPitch = 50.0f;
+    pStrike->aSnapShots[1].headYaw   = 0.0f;
+    pStrike->aSnapShots[1].jawPitch  = -40.0f;
 
-    pStrike->aSnapShots[2].time   = 0.3f;
-    pStrike->aSnapShots[2].angle1 = -15.0f;
-    pStrike->aSnapShots[2].angle2 = 30.0f;
-    pStrike->aSnapShots[2].angle3 = 60.0f;
-    pStrike->aSnapShots[2].angle4 = 50.0f;
-    pStrike->aSnapShots[2].angle5 = -60.0f;
+    pStrike->aSnapShots[2].time      = 0.3f;
+    pStrike->aSnapShots[2].neckPitch = -15.0f;
+    pStrike->aSnapShots[2].neckYaw   = 30.0f;
+    pStrike->aSnapShots[2].headPitch = 60.0f;
+    pStrike->aSnapShots[2].headYaw   = 50.0f;
+    pStrike->aSnapShots[2].jawPitch  = -60.0f;
 
-    pStrike->aSnapShots[3].time   = 0.6f;
-    pStrike->aSnapShots[3].angle1 = -12.0f;
-    pStrike->aSnapShots[3].angle2 = -30.0f;
-    pStrike->aSnapShots[3].angle3 = 55.0f;
-    pStrike->aSnapShots[3].angle4 = -50.0f;
-    pStrike->aSnapShots[3].angle5 = -50.0f;
+    pStrike->aSnapShots[3].time      = 0.6f;
+    pStrike->aSnapShots[3].neckPitch = -12.0f;
+    pStrike->aSnapShots[3].neckYaw   = -30.0f;
+    pStrike->aSnapShots[3].headPitch = 55.0f;
+    pStrike->aSnapShots[3].headYaw   = -50.0f;
+    pStrike->aSnapShots[3].jawPitch  = -50.0f;
 
-    pStrike->aSnapShots[4].time   = 0.9f;
-    pStrike->aSnapShots[4].angle1 = -15.0f;
-    pStrike->aSnapShots[4].angle2 = 30.0f;
-    pStrike->aSnapShots[4].angle3 = 60.0f;
-    pStrike->aSnapShots[4].angle4 = 50.0f;
-    pStrike->aSnapShots[4].angle5 = -35.0f;
+    pStrike->aSnapShots[4].time      = 0.9f;
+    pStrike->aSnapShots[4].neckPitch = -15.0f;
+    pStrike->aSnapShots[4].neckYaw   = 30.0f;
+    pStrike->aSnapShots[4].headPitch = 60.0f;
+    pStrike->aSnapShots[4].headYaw   = 50.0f;
+    pStrike->aSnapShots[4].jawPitch  = -35.0f;
 
-    pStrike->aSnapShots[5].time   = 1.2f;
-    pStrike->aSnapShots[5].angle1 = -12.0f;
-    pStrike->aSnapShots[5].angle2 = -30.0f;
-    pStrike->aSnapShots[5].angle3 = 55.0f;
-    pStrike->aSnapShots[5].angle4 = -50.0f;
-    pStrike->aSnapShots[5].angle5 = -50.0f;
+    pStrike->aSnapShots[5].time      = 1.2f;
+    pStrike->aSnapShots[5].neckPitch = -12.0f;
+    pStrike->aSnapShots[5].neckYaw   = -30.0f;
+    pStrike->aSnapShots[5].headPitch = 55.0f;
+    pStrike->aSnapShots[5].headYaw   = -50.0f;
+    pStrike->aSnapShots[5].jawPitch  = -50.0f;
 
-    pStrike->aSnapShots[6].time   = 1.5f;
-    pStrike->aSnapShots[6].angle1 = -15.0f;
-    pStrike->aSnapShots[6].angle2 = 30.0f;
-    pStrike->aSnapShots[6].angle3 = 60.0f;
-    pStrike->aSnapShots[6].angle4 = 50.0f;
-    pStrike->aSnapShots[6].angle5 = -60.0f;
+    pStrike->aSnapShots[6].time      = 1.5f;
+    pStrike->aSnapShots[6].neckPitch = -15.0f;
+    pStrike->aSnapShots[6].neckYaw   = 30.0f;
+    pStrike->aSnapShots[6].headPitch = 60.0f;
+    pStrike->aSnapShots[6].headYaw   = 50.0f;
+    pStrike->aSnapShots[6].jawPitch  = -60.0f;
 
-    pStrike->aSnapShots[7].time   = 1.8f;
-    pStrike->aSnapShots[7].angle1 = -12.0f;
-    pStrike->aSnapShots[7].angle2 = -30.0f;
-    pStrike->aSnapShots[7].angle3 = 55.0f;
-    pStrike->aSnapShots[7].angle4 = -50.0f;
-    pStrike->aSnapShots[7].angle5 = -50.0f;
+    pStrike->aSnapShots[7].time      = 1.8f;
+    pStrike->aSnapShots[7].neckPitch = -12.0f;
+    pStrike->aSnapShots[7].neckYaw   = -30.0f;
+    pStrike->aSnapShots[7].headPitch = 55.0f;
+    pStrike->aSnapShots[7].headYaw   = -50.0f;
+    pStrike->aSnapShots[7].jawPitch  = -50.0f;
 
-    pStrike->aSnapShots[8].time   = 2.1f;
-    pStrike->aSnapShots[8].angle1 = -15.0f;
-    pStrike->aSnapShots[8].angle2 = 30.0f;
-    pStrike->aSnapShots[8].angle3 = 60.0f;
-    pStrike->aSnapShots[8].angle4 = 50.0f;
-    pStrike->aSnapShots[8].angle5 = -35.0f;
+    pStrike->aSnapShots[8].time      = 2.1f;
+    pStrike->aSnapShots[8].neckPitch = -15.0f;
+    pStrike->aSnapShots[8].neckYaw   = 30.0f;
+    pStrike->aSnapShots[8].headPitch = 60.0f;
+    pStrike->aSnapShots[8].headYaw   = 50.0f;
+    pStrike->aSnapShots[8].jawPitch  = -35.0f;
 
-    pStrike->aSnapShots[9].time   = 2.4f;
-    pStrike->aSnapShots[9].angle1 = -12.0f;
-    pStrike->aSnapShots[9].angle2 = -30.0f;
-    pStrike->aSnapShots[9].angle3 = 55.0f;
-    pStrike->aSnapShots[9].angle4 = -50.0f;
-    pStrike->aSnapShots[9].angle5 = -50.0f;
+    pStrike->aSnapShots[9].time      = 2.4f;
+    pStrike->aSnapShots[9].neckPitch = -12.0f;
+    pStrike->aSnapShots[9].neckYaw   = -30.0f;
+    pStrike->aSnapShots[9].headPitch = 55.0f;
+    pStrike->aSnapShots[9].headYaw   = -50.0f;
+    pStrike->aSnapShots[9].jawPitch  = -50.0f;
 
-    pStrike->aSnapShots[10].time   = 2.7f;
-    pStrike->aSnapShots[10].angle1 = -15.0f;
-    pStrike->aSnapShots[10].angle2 = 30.0f;
-    pStrike->aSnapShots[10].angle3 = 60.0f;
-    pStrike->aSnapShots[10].angle4 = 50.0f;
-    pStrike->aSnapShots[10].angle5 = -60.0f;
+    pStrike->aSnapShots[10].time      = 2.7f;
+    pStrike->aSnapShots[10].neckPitch = -15.0f;
+    pStrike->aSnapShots[10].neckYaw   = 30.0f;
+    pStrike->aSnapShots[10].headPitch = 60.0f;
+    pStrike->aSnapShots[10].headYaw   = 50.0f;
+    pStrike->aSnapShots[10].jawPitch  = -60.0f;
 
-    pStrike->aSnapShots[11].time   = 3.0f;
-    pStrike->aSnapShots[11].angle1 = -12.0f;
-    pStrike->aSnapShots[11].angle2 = -30.0f;
-    pStrike->aSnapShots[11].angle3 = 55.0f;
-    pStrike->aSnapShots[11].angle4 = -50.0f;
-    pStrike->aSnapShots[11].angle5 = -50.0f;
+    pStrike->aSnapShots[11].time      = 3.0f;
+    pStrike->aSnapShots[11].neckPitch = -12.0f;
+    pStrike->aSnapShots[11].neckYaw   = -30.0f;
+    pStrike->aSnapShots[11].headPitch = 55.0f;
+    pStrike->aSnapShots[11].headYaw   = -50.0f;
+    pStrike->aSnapShots[11].jawPitch  = -50.0f;
 
-    pStrike->aSnapShots[12].time   = 3.3f;
-    pStrike->aSnapShots[12].angle1 = -10.0f;
-    pStrike->aSnapShots[12].angle2 = 0.0f;
-    pStrike->aSnapShots[12].angle3 = 20.0f;
-    pStrike->aSnapShots[12].angle4 = 0.0f;
-    pStrike->aSnapShots[12].angle5 = -15.0f;
+    pStrike->aSnapShots[12].time      = 3.3f;
+    pStrike->aSnapShots[12].neckPitch = -10.0f;
+    pStrike->aSnapShots[12].neckYaw   = 0.0f;
+    pStrike->aSnapShots[12].headPitch = 20.0f;
+    pStrike->aSnapShots[12].headYaw   = 0.0f;
+    pStrike->aSnapShots[12].jawPitch  = -15.0f;
 
-    pStrike->aSnapShots[13].time   = 3.7f;
-    pStrike->aSnapShots[13].angle1 = 0.0f;
-    pStrike->aSnapShots[13].angle2 = 0.0f;
-    pStrike->aSnapShots[13].angle3 = 5.0f;
-    pStrike->aSnapShots[13].angle4 = 0.0f;
-    pStrike->aSnapShots[13].angle5 = -10.0f;
+    pStrike->aSnapShots[13].time      = 3.7f;
+    pStrike->aSnapShots[13].neckPitch = 0.0f;
+    pStrike->aSnapShots[13].neckYaw   = 0.0f;
+    pStrike->aSnapShots[13].headPitch = 5.0f;
+    pStrike->aSnapShots[13].headYaw   = 0.0f;
+    pStrike->aSnapShots[13].jawPitch  = -10.0f;
 
-    pStrike->aSnapShots[14].time   = 5.0f;
-    pStrike->aSnapShots[14].angle1 = pThing->renderData.apTweakedAngles[1].pitch;
-    pStrike->aSnapShots[14].angle2 = pThing->renderData.apTweakedAngles[1].yaw;
-    pStrike->aSnapShots[14].angle3 = pThing->renderData.apTweakedAngles[2].pitch;
-    pStrike->aSnapShots[14].angle4 = pThing->renderData.apTweakedAngles[2].yaw;
-    pStrike->aSnapShots[14].angle5 = pThing->renderData.apTweakedAngles[28].pitch;
+    pStrike->aSnapShots[14].time      = 5.0f;
+    pStrike->aSnapShots[14].neckPitch = pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_NECKUP].pitch;
+    pStrike->aSnapShots[14].neckYaw   = pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_NECKUP].yaw;
+    pStrike->aSnapShots[14].headPitch = pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_HEAD].pitch;
+    pStrike->aSnapShots[14].headYaw   = pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_HEAD].yaw;
+    pStrike->aSnapShots[14].jawPitch  = pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_JAW].pitch;
 
     pStrike->mode         = SITHQUETZSTRIKE_MODE_ANIM3;
     pStrike->numSnapShots = 15;
@@ -3066,75 +3081,75 @@ void J3DAPI sithAIMove_StartQuetzAnim5(SithAIControlBlock* pLocal)
     pStrike->curTime  = 0.0f;
     pStrike->snapShot = 0;
 
-    pStrike->aSnapShots[0].time   = 0.0f;
-    pStrike->aSnapShots[0].angle1 = pThing->renderData.apTweakedAngles[1].pitch;
-    pStrike->aSnapShots[0].angle2 = pThing->renderData.apTweakedAngles[1].yaw;
-    pStrike->aSnapShots[0].angle3 = pThing->renderData.apTweakedAngles[2].pitch;
-    pStrike->aSnapShots[0].angle4 = pThing->renderData.apTweakedAngles[2].yaw;
-    pStrike->aSnapShots[0].angle5 = pThing->renderData.apTweakedAngles[28].pitch;
+    pStrike->aSnapShots[0].time      = 0.0f;
+    pStrike->aSnapShots[0].neckPitch = pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_NECKUP].pitch;
+    pStrike->aSnapShots[0].neckYaw   = pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_NECKUP].yaw;
+    pStrike->aSnapShots[0].headPitch = pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_HEAD].pitch;
+    pStrike->aSnapShots[0].headYaw   = pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_HEAD].yaw;
+    pStrike->aSnapShots[0].jawPitch  = pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_JAW].pitch;
 
-    pStrike->aSnapShots[1].time   = 0.1f;
-    pStrike->aSnapShots[1].angle1 = -10.0f;
-    pStrike->aSnapShots[1].angle2 = 0.0f;
-    pStrike->aSnapShots[1].angle3 = 50.0f;
-    pStrike->aSnapShots[1].angle4 = 0.0f;
-    pStrike->aSnapShots[1].angle5 = -40.0f;
+    pStrike->aSnapShots[1].time      = 0.1f;
+    pStrike->aSnapShots[1].neckPitch = -10.0f;
+    pStrike->aSnapShots[1].neckYaw   = 0.0f;
+    pStrike->aSnapShots[1].headPitch = 50.0f;
+    pStrike->aSnapShots[1].headYaw   = 0.0f;
+    pStrike->aSnapShots[1].jawPitch  = -40.0f;
 
-    pStrike->aSnapShots[2].time   = 0.3f;
-    pStrike->aSnapShots[2].angle1 = -15.0f;
-    pStrike->aSnapShots[2].angle2 = 30.0f;
-    pStrike->aSnapShots[2].angle3 = 60.0f;
-    pStrike->aSnapShots[2].angle4 = 50.0f;
-    pStrike->aSnapShots[2].angle5 = -60.0f;
+    pStrike->aSnapShots[2].time      = 0.3f;
+    pStrike->aSnapShots[2].neckPitch = -15.0f;
+    pStrike->aSnapShots[2].neckYaw   = 30.0f;
+    pStrike->aSnapShots[2].headPitch = 60.0f;
+    pStrike->aSnapShots[2].headYaw   = 50.0f;
+    pStrike->aSnapShots[2].jawPitch  = -60.0f;
 
-    pStrike->aSnapShots[3].time   = 0.6f;
-    pStrike->aSnapShots[3].angle1 = -12.0f;
-    pStrike->aSnapShots[3].angle2 = -30.0f;
-    pStrike->aSnapShots[3].angle3 = 55.0f;
-    pStrike->aSnapShots[3].angle4 = -50.0f;
-    pStrike->aSnapShots[3].angle5 = -50.0f;
+    pStrike->aSnapShots[3].time      = 0.6f;
+    pStrike->aSnapShots[3].neckPitch = -12.0f;
+    pStrike->aSnapShots[3].neckYaw   = -30.0f;
+    pStrike->aSnapShots[3].headPitch = 55.0f;
+    pStrike->aSnapShots[3].headYaw   = -50.0f;
+    pStrike->aSnapShots[3].jawPitch  = -50.0f;
 
-    pStrike->aSnapShots[4].time   = 0.9f;
-    pStrike->aSnapShots[4].angle1 = -15.0f;
-    pStrike->aSnapShots[4].angle2 = 30.0f;
-    pStrike->aSnapShots[4].angle3 = 60.0f;
-    pStrike->aSnapShots[4].angle4 = 50.0f;
-    pStrike->aSnapShots[4].angle5 = -35.0f;
+    pStrike->aSnapShots[4].time      = 0.9f;
+    pStrike->aSnapShots[4].neckPitch = -15.0f;
+    pStrike->aSnapShots[4].neckYaw   = 30.0f;
+    pStrike->aSnapShots[4].headPitch = 60.0f;
+    pStrike->aSnapShots[4].headYaw   = 50.0f;
+    pStrike->aSnapShots[4].jawPitch  = -35.0f;
 
-    pStrike->aSnapShots[5].time   = 1.2f;
-    pStrike->aSnapShots[5].angle1 = -12.0f;
-    pStrike->aSnapShots[5].angle2 = -30.0f;
-    pStrike->aSnapShots[5].angle3 = 55.0f;
-    pStrike->aSnapShots[5].angle4 = -50.0f;
-    pStrike->aSnapShots[5].angle5 = -50.0f;
+    pStrike->aSnapShots[5].time      = 1.2f;
+    pStrike->aSnapShots[5].neckPitch = -12.0f;
+    pStrike->aSnapShots[5].neckYaw   = -30.0f;
+    pStrike->aSnapShots[5].headPitch = 55.0f;
+    pStrike->aSnapShots[5].headYaw   = -50.0f;
+    pStrike->aSnapShots[5].jawPitch  = -50.0f;
 
-    pStrike->aSnapShots[6].time   = 1.5f;
-    pStrike->aSnapShots[6].angle1 = -15.0f;
-    pStrike->aSnapShots[6].angle2 = 30.0f;
-    pStrike->aSnapShots[6].angle3 = 60.0f;
-    pStrike->aSnapShots[6].angle4 = 50.0f;
-    pStrike->aSnapShots[6].angle5 = -60.0f;
+    pStrike->aSnapShots[6].time      = 1.5f;
+    pStrike->aSnapShots[6].neckPitch = -15.0f;
+    pStrike->aSnapShots[6].neckYaw   = 30.0f;
+    pStrike->aSnapShots[6].headPitch = 60.0f;
+    pStrike->aSnapShots[6].headYaw   = 50.0f;
+    pStrike->aSnapShots[6].jawPitch  = -60.0f;
 
-    pStrike->aSnapShots[7].time   = 1.8f;
-    pStrike->aSnapShots[7].angle1 = -12.0f;
-    pStrike->aSnapShots[7].angle2 = -30.0f;
-    pStrike->aSnapShots[7].angle3 = 55.0f;
-    pStrike->aSnapShots[7].angle4 = -50.0f;
-    pStrike->aSnapShots[7].angle5 = -50.0f;
+    pStrike->aSnapShots[7].time      = 1.8f;
+    pStrike->aSnapShots[7].neckPitch = -12.0f;
+    pStrike->aSnapShots[7].neckYaw   = -30.0f;
+    pStrike->aSnapShots[7].headPitch = 55.0f;
+    pStrike->aSnapShots[7].headYaw   = -50.0f;
+    pStrike->aSnapShots[7].jawPitch  = -50.0f;
 
-    pStrike->aSnapShots[8].time   = 2.1f;
-    pStrike->aSnapShots[8].angle1 = -15.0f;
-    pStrike->aSnapShots[8].angle2 = 30.0f;
-    pStrike->aSnapShots[8].angle3 = 60.0f;
-    pStrike->aSnapShots[8].angle4 = 50.0f;
-    pStrike->aSnapShots[8].angle5 = -35.0f;
+    pStrike->aSnapShots[8].time      = 2.1f;
+    pStrike->aSnapShots[8].neckPitch = -15.0f;
+    pStrike->aSnapShots[8].neckYaw   = 30.0f;
+    pStrike->aSnapShots[8].headPitch = 60.0f;
+    pStrike->aSnapShots[8].headYaw   = 50.0f;
+    pStrike->aSnapShots[8].jawPitch  = -35.0f;
 
-    pStrike->aSnapShots[9].time   = 3.0f;
-    pStrike->aSnapShots[9].angle1 = pThing->renderData.apTweakedAngles[1].pitch;
-    pStrike->aSnapShots[9].angle2 = pThing->renderData.apTweakedAngles[1].yaw;
-    pStrike->aSnapShots[9].angle3 = pThing->renderData.apTweakedAngles[2].pitch;
-    pStrike->aSnapShots[9].angle4 = pThing->renderData.apTweakedAngles[2].yaw;
-    pStrike->aSnapShots[9].angle5 = pThing->renderData.apTweakedAngles[28].pitch;
+    pStrike->aSnapShots[9].time      = 3.0f;
+    pStrike->aSnapShots[9].neckPitch = pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_NECKUP].pitch;
+    pStrike->aSnapShots[9].neckYaw   = pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_NECKUP].yaw;
+    pStrike->aSnapShots[9].headPitch = pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_HEAD].pitch;
+    pStrike->aSnapShots[9].headYaw   = pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_HEAD].yaw;
+    pStrike->aSnapShots[9].jawPitch  = pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_JAW].pitch;
 
     pStrike->mode         = SITHQUETZSTRIKE_MODE_ANIM5;
     pStrike->numSnapShots = 10;
@@ -3152,26 +3167,26 @@ void J3DAPI sithAIMove_StartQuetzAnim4(SithAIControlBlock* pLocal)
     pStrike->curTime  = 0.0f;
     pStrike->snapShot = 0;
 
-    pStrike->aSnapShots[0].time   = 0.0f;
-    pStrike->aSnapShots[0].angle1 = pThing->renderData.apTweakedAngles[1].pitch;
-    pStrike->aSnapShots[0].angle2 = pThing->renderData.apTweakedAngles[1].yaw;
-    pStrike->aSnapShots[0].angle3 = pThing->renderData.apTweakedAngles[2].pitch;
-    pStrike->aSnapShots[0].angle4 = pThing->renderData.apTweakedAngles[2].yaw;
-    pStrike->aSnapShots[0].angle5 = pThing->renderData.apTweakedAngles[28].pitch;
+    pStrike->aSnapShots[0].time      = 0.0f;
+    pStrike->aSnapShots[0].neckPitch = pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_NECKUP].pitch;
+    pStrike->aSnapShots[0].neckYaw   = pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_NECKUP].yaw;
+    pStrike->aSnapShots[0].headPitch = pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_HEAD].pitch;
+    pStrike->aSnapShots[0].headYaw   = pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_HEAD].yaw;
+    pStrike->aSnapShots[0].jawPitch  = pThing->renderData.apTweakedAngles[SITHAIMOVE_QUETZ_NODE_JAW].pitch;
 
-    pStrike->aSnapShots[1].time   = 1.6f;
-    pStrike->aSnapShots[1].angle1 = 0.0f;
-    pStrike->aSnapShots[1].angle2 = 0.0f;
-    pStrike->aSnapShots[1].angle3 = 0.0f;
-    pStrike->aSnapShots[1].angle4 = 0.0f;
-    pStrike->aSnapShots[1].angle5 = -60.0f;
+    pStrike->aSnapShots[1].time      = 1.6f;
+    pStrike->aSnapShots[1].neckPitch = 0.0f;
+    pStrike->aSnapShots[1].neckYaw   = 0.0f;
+    pStrike->aSnapShots[1].headPitch = 0.0f;
+    pStrike->aSnapShots[1].headYaw   = 0.0f;
+    pStrike->aSnapShots[1].jawPitch  = -60.0f;
 
-    pStrike->aSnapShots[2].time   = 5.0f;
-    pStrike->aSnapShots[2].angle1 = 0.0f;
-    pStrike->aSnapShots[2].angle2 = 0.0f;
-    pStrike->aSnapShots[2].angle3 = 0.0f;
-    pStrike->aSnapShots[2].angle4 = 0.0f;
-    pStrike->aSnapShots[2].angle5 = -60.0f;
+    pStrike->aSnapShots[2].time      = 5.0f;
+    pStrike->aSnapShots[2].neckPitch = 0.0f;
+    pStrike->aSnapShots[2].neckYaw   = 0.0f;
+    pStrike->aSnapShots[2].headPitch = 0.0f;
+    pStrike->aSnapShots[2].headYaw   = 0.0f;
+    pStrike->aSnapShots[2].jawPitch  = -60.0f;
 
     pStrike->mode         = SITHQUETZSTRIKE_MODE_ANIM4;
     pStrike->numSnapShots = 3;
