@@ -132,7 +132,7 @@ static bool stdDisplay_RestoreTrackedVBufferSurfaces(void);
 static inline void J3DAPI stdDisplay_SetAspectRatio(StdVideoMode* pMode);
 static inline int J3DAPI stdDisplay_SetWindowMode(HWND hWnd, StdVideoMode* pDisplayMode);
 static inline int J3DAPI stdDisplay_SetFullscreenMode(HWND hwnd, const StdVideoMode* pDisplayMode, size_t numBackBuffers);
-static int J3DAPI stdDisplay_InitBuffers(PDIRECT3DDEVICE9 pDevice, StdVideoMode* pDisplayMode, bool bWindowMode, size_t numBuffers);
+static int J3DAPI stdDisplay_InitBuffers(LPDIRECT3DDEVICE9 pDevice, StdVideoMode* pDisplayMode, bool bWindowMode, size_t numBuffers);
 
 static void stdDisplay_ReleaseBuffers(void);
 static void stdDisplay_ReleaseBuffersInternal(bool bReleaseOnly);
@@ -2006,7 +2006,7 @@ int J3DAPI stdDisplay_SetFullscreenMode(HWND hwnd, const StdVideoMode* pDisplayM
     return 1;
 }
 
-int J3DAPI stdDisplay_InitBuffers(PDIRECT3DDEVICE9 pDevice, StdVideoMode* pDisplayMode, bool bWindowMode, size_t numBuffers)
+int J3DAPI stdDisplay_InitBuffers(LPDIRECT3DDEVICE9 pDevice, StdVideoMode* pDisplayMode, bool bWindowMode, size_t numBuffers)
 {
     J3D_UNUSED(numBuffers);
 
