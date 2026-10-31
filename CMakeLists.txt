@@ -42,6 +42,7 @@ option(JONES3D_BUILD_DISRUPTIVE_SYSTEM_TESTS "Build opt-in system tests that can
 option(JONES3D_QOL_IMPROVEMENTS "Enable quality-of-life improvements" ON)
 option(JONES3D_SPEEDRUN_BUILD "Enable vanilla bugs and glitches used in speedruns" OFF)
 option(JONES3D_RUNTIME_GUARDS "Enable runtime safety guards for hardened release behavior" OFF)
+option(JONES3D_STANDALONE "Build without the retail executable: no hooks and no fixed retail addresses" OFF)
 
 # --- GAPI options ---
 # Add an option to enable DirectX 9 support. Default is ON.
@@ -64,6 +65,12 @@ endif()
 
 if (JONES3D_RUNTIME_GUARDS)
     set(J3D_RUNTIME_GUARDS ON)
+endif()
+
+if (JONES3D_STANDALONE)
+    # Added: test targets provide their own fake retail globals, which standalone definitions would collide with.
+    set(JONES3D_BUILD_TESTS OFF)
+    add_compile_definitions(J3D_STANDALONE J3D_LOCAL_RTI J3D_LOCAL_SITH_RTI J3D_LOCAL_RDROID_RTI)
 endif()
 
 if (JONES3D_BUILD_TESTS)
@@ -198,6 +205,7 @@ jones3d_print_config_entry("Graphics API" "${JONES3D_GAPI_NAME}")
 jones3d_print_config_option("QOL improvements" JONES3D_QOL_IMPROVEMENTS)
 jones3d_print_config_option("Runtime guards" JONES3D_RUNTIME_GUARDS)
 jones3d_print_config_option("Speedrun build" JONES3D_SPEEDRUN_BUILD)
+jones3d_print_config_option("Standalone" JONES3D_STANDALONE)
 jones3d_print_config_option("Build programs" JONES3D_BUILD_PROGRAMS)
 jones3d_print_config_option("Build tests" JONES3D_BUILD_TESTS)
 jones3d_print_config_option("Build system tests" JONES3D_BUILD_SYSTEM_TESTS)

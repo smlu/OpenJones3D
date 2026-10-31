@@ -18,6 +18,7 @@
 #define _J3D_CALLFUNCFAR_HELPER(func_addr, func_type, ...) \
     ((func_type)func_addr)(__VA_ARGS__)
 
+#if !defined(J3D_STANDALONE)
 /**
 * @brief Simplified macro wrapper for CALLFUNCFAR.
 *
@@ -27,6 +28,10 @@
 */
 #define J3D_TRAMPOLINE_CALL(func_name, ...) \
     J3D_CALLFUNCFAR(func_name##_ADDR, func_name##_TYPE, ##__VA_ARGS__)
+#else
+// Added: A standalone build has no retail executable, so reaching a fixed address is a compile error naming the symbol.
+#define J3D_TRAMPOLINE_CALL(func_name, ...) J3D_STANDALONE_FAR_CALL_##func_name
+#endif
 
 /**
 * @brief Redirects the original function to a specified hook function.
@@ -44,6 +49,7 @@
 #define J3D_HOOKFUNC(func) \
     J3DHookFunction(func##_ADDR, (void*)func)
 
+#if !defined(J3D_STANDALONE)
 /**
 * @brief Declares a variable at a specific memory address.
 *
@@ -77,6 +83,11 @@
 */
 #define J3D_DECL_FAR_ARRAYVAR(var_name, var_type) \
     (*(var_type)(var_name##_ADDR))
+#else
+// Added: A standalone build has no retail executable, so reaching a fixed address is a compile error naming the symbol.
+#define J3D_DECL_FAR_VAR(var_name, var_type) J3D_STANDALONE_FAR_GLOBAL_##var_name
+#define J3D_DECL_FAR_ARRAYVAR(var_name, var_type) J3D_STANDALONE_FAR_GLOBAL_##var_name
+#endif
 
 J3D_EXTERN_C_START
 
