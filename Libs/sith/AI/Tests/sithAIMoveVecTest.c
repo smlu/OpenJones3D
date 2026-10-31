@@ -37,12 +37,40 @@ TEST(sithAIMove, TestFixtureCoversAllCases)
     sithVecTest_AssertFixtureCoversSuite(&sithAIMoveVecTest_fixture, &sithAIMoveVec_suite);
 }
 
+static void sithAIMoveVecTest_CheckResult(unsigned int numFailed)
+{
+#ifdef J3D_QOL_IMPROVEMENTS
+    // The QOL fix of sithAIMove_UpdateMineCar queries the move state of the actor (one more AI call and a defined result);
+    // the legacy build matches the original, see tv/sithAIMove/README.md
+    static const char* const aKnown[] = {
+        "Update_turn_minecar",
+        "UpdateMineCar_turn_right",
+        "UpdateMineCar_turn_left",
+        "UpdateMineCar_turn_behind",
+        "UpdateMineCar_slowzone",
+        "UpdateMineCar_turn_45",
+        "UpdateMineCar_mesh0",
+        "UpdateMineCar_tilted",
+        "UpdateMineCar_random_tweak_right",
+        "UpdateMineCar_random_tweak_left",
+        "UpdateMineCar_edge_limit_below",
+        "UpdateMineCar_zero_dt",
+        "UpdateMineCar_zero_dt_behind",
+        "UpdateMineCar_negative_rate",
+    };
+    sithVecTest_ExpectKnownDifferences(numFailed, sithAIMoveVecTest_aFailText, aKnown, (unsigned int)SITHVEC_ARRAYLEN(aKnown),
+        "sithAIMove_UpdateMineCar queries the move state (QOL); see tv/sithAIMove/README.md.");
+#else
+    TEST_ASSERT_EQUAL_UINT_MESSAGE(0, numFailed, sithAIMoveVecTest_aFailText);
+#endif
+}
+
 #define SITHAIMOVEVEC_TEST(name, prefix)                                                                                       \
     TEST(sithAIMove, TestOriginal##name)                                                                                       \
     {                                                                                                                          \
         unsigned int numFailed = sithVecTest_RunCases(&sithAIMoveVec_suite, &sithAIMoveVecTest_fixture, prefix,                \
             sithAIMoveVecTest_aFailText, sizeof(sithAIMoveVecTest_aFailText));                                                 \
-        TEST_ASSERT_EQUAL_UINT_MESSAGE(0, numFailed, sithAIMoveVecTest_aFailText);                                             \
+        sithAIMoveVecTest_CheckResult(numFailed);                                                                              \
     }
 
 SITHAIMOVEVEC_TEST_LIST(SITHAIMOVEVEC_TEST)

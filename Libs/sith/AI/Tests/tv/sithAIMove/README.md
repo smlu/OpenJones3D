@@ -140,7 +140,9 @@ Thresholds on angles that the stub trigonometry produces (exactly 1, 40, 60 degr
 
 ### Known Differences
 
-None. The reconstruction reproduces every case of the corpus.
+- With `J3D_QOL_IMPROVEMENTS`, the fix of `sithAIMove_UpdateMineCar` queries `sithAIMove_AIGetMoveState` where the
+  original never assigns its `moveState` local. That is one more AI call, so the cases listed in `sithAIMoveVecTest.c`
+  are expected to differ. The legacy build matches the original in every case.
 
 ### Provenance And Regeneration
 
