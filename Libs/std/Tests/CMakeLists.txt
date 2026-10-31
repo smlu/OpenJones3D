@@ -163,8 +163,10 @@ target_include_directories(stdTests PRIVATE
 )
 
 if (JONES3D_SHADER_HEADER_DIR)
-    # The std test target compiles the DX9 sources directly; point it at the precompiled shader headers as well.
+    # The std test target compiles the DX9 sources directly; add the generated shader
+    # headers to its include path and wait for them to be generated first.
     target_include_directories(stdTests PRIVATE ${JONES3D_SHADER_HEADER_DIR})
+    add_dependencies(stdTests std_shaders)
 endif()
 
 target_link_libraries(stdTests PRIVATE
@@ -226,8 +228,10 @@ if (JONES3D_BUILD_SYSTEM_TESTS)
     )
 
     if (JONES3D_SHADER_HEADER_DIR)
-        # The std system test target compiles the DX9 sources directly; point it at the precompiled shader headers as well.
+        # The std system test target compiles the DX9 sources directly; add the generated shader
+        # headers to its include path and wait for them to be generated first.
         target_include_directories(stdSystemTests PRIVATE ${JONES3D_SHADER_HEADER_DIR})
+        add_dependencies(stdSystemTests std_shaders)
     endif()
 
     target_link_libraries(stdSystemTests PRIVATE
@@ -288,8 +292,10 @@ if (JONES3D_BUILD_DISRUPTIVE_SYSTEM_TESTS)
     )
 
     if (JONES3D_SHADER_HEADER_DIR)
-        # The std disruptive system test target compiles the DX9 sources directly; point it at the precompiled shader headers as well.
+        # The std disruptive system test target compiles the DX9 sources directly; add the generated
+        # shader headers to its include path and wait for them to be generated first.
         target_include_directories(stdDisruptiveSystemTests PRIVATE ${JONES3D_SHADER_HEADER_DIR})
+        add_dependencies(stdDisruptiveSystemTests std_shaders)
     endif()
 
     target_link_libraries(stdDisruptiveSystemTests PRIVATE

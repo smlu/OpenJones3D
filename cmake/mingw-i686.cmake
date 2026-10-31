@@ -8,6 +8,8 @@
 
 set(CMAKE_SYSTEM_NAME Windows)
 set(CMAKE_SYSTEM_PROCESSOR x86)
+# Executables built for Windows (e.g. the std_hlslc shader compiler) run under Wine.
+set(CMAKE_CROSSCOMPILING_EMULATOR wine)
 
 set(CMAKE_C_COMPILER i686-w64-mingw32-gcc)
 set(CMAKE_CXX_COMPILER i686-w64-mingw32-g++)
