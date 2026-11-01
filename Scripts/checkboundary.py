@@ -31,12 +31,18 @@ ROOT_FOLDER = f"{SCRIPT_DIR}/../"
 # Allowlist file with one "<repo path> <allowed count>" per line, maintained by --update
 ALLOWLIST_FILE = "Scripts/boundary-allowlist.txt"
 
-# Paths in the platform layer, directories or single files. Everything there may
-# use Windows and DirectX freely and is not counted.
+# Backends and platform implementation files. Everything there may use Windows and
+# DirectX freely and is not counted. Interface headers are not listed, so their
+# leaks count.
 PLATFORM_PATHS = [
-    "Libs/std/Win95/",
-    "Libs/wkernel/",
-    "Libs/w32util/",
+    "Libs/std/Win95/DX6/",
+    "Libs/std/Win95/DX9/",
+    "Libs/std/Win95/stdComm.c",
+    "Libs/std/Win95/stdConsole.c",
+    "Libs/std/Win95/stdGob.c",
+    "Libs/std/Win95/stdWin95.c",
+    "Libs/wkernel/wkernel.c",
+    "Libs/w32util/wuRegistry.c",
     "Libs/sound/DriverDX6.c",
     "Libs/sound/DriverDX9.c",
 ]
