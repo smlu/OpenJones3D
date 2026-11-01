@@ -1,24 +1,28 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#include "types.h" // Should be included first due to Windows.h / CommCtrl.h conflict
+#include <Jones3D/types.h> // Should be included first due to Windows.h / CommCtrl.h conflict
+
+// Added: Moved here from Jones3D/Indy3D.h; this is the only file that defines and hooks the entry point
+int __stdcall Indy3D_WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd);
+
 
 #include <j3dcore/j3d.h>
 #include <j3dcore/j3dhook.h>
 
-#include "Display/jonesConfig.h"
-#include "Display/JonesConsole.h"
-#include "Display/JonesDisplay.h"
-#include "Display/JonesHud.h"
-#include "Gui/JonesDialog.h"
-#include "Main/JonesFile.h"
-#include "Main/JonesMain.h"
-#include "Main/jonesString.h"
-#include "Play/jonesCog.h"
-#include "Play/JonesControl.h"
-#include "Play/jonesInventory.h"
-#include "RTI/addresses.h"
-#include "RTI/symbols.h"
+#include <Jones3D/Display/jonesConfig.h>
+#include <Jones3D/Display/JonesConsole.h>
+#include <Jones3D/Display/JonesDisplay.h>
+#include <Jones3D/Display/JonesHud.h>
+#include <Jones3D/Gui/JonesDialog.h>
+#include <Jones3D/Main/JonesFile.h>
+#include <Jones3D/Main/JonesMain.h>
+#include <Jones3D/Main/jonesString.h>
+#include <Jones3D/Play/jonesCog.h>
+#include <Jones3D/Play/JonesControl.h>
+#include <Jones3D/Play/jonesInventory.h>
+#include <Jones3D/RTI/addresses.h>
+#include <Jones3D/RTI/symbols.h>
 
 #include <rdroid/Engine/rdCamera.h>
 #include <rdroid/Engine/rdCanvas.h>
@@ -142,6 +146,7 @@
 
 #include <w32util/wuRegistry.h>
 #include <wkernel/wkernel.h>
+#include <wkernel/wkernelWin32.h>
 
 #include <string.h>
 

@@ -47,6 +47,7 @@ PLATFORM_PATHS = [
     "Libs/std/Win95/stdSysTagsWin32.h",
     "Libs/std/Win95/stdWin95.c",
     "Libs/wkernel/wkernel.c",
+    "Libs/wkernel/wkernelWin32.h",
     "Libs/w32util/wuRegistry.c",
     "Libs/sound/DriverDX6.c",
     "Libs/sound/DriverDX9.c",

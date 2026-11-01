@@ -1,5 +1,6 @@
 #include <std/Win95/stdSysTagsWin32.h>
 #include "wkernel.h"
+#include "wkernelWin32.h"
 #include "wkernel/RTI/symbols.h"
 
 #include <j3dcore/j3dhook.h>
@@ -198,7 +199,18 @@ void J3DAPI wkernel_SetWindowStyle(LONG dwNewLong)
     }
 }
 
-BOOL J3DAPI wkernel_SetWindowSize(int width, int height)
+// Added: Window styles for windowed and fullscreen display
+void wkernel_SetWindowedStyle(void)
+{
+    wkernel_SetWindowStyle(WS_VISIBLE | WS_OVERLAPPEDWINDOW);
+}
+
+void wkernel_SetFullscreenStyle(void)
+{
+    wkernel_SetWindowStyle(WS_POPUP | WS_VISIBLE);
+}
+
+int J3DAPI wkernel_SetWindowSize(int width, int height)
 {
     return SetWindowPos(
         wkernel_hwnd,

@@ -8,15 +8,21 @@
 
 J3D_EXTERN_C_START
 
-int J3DAPI wkernel_Run(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd, LPCSTR lpWindowName); // Note, process proc must be set before
+// Altered: wkernel_Run, wkernel_SetWindowStyle and wkernel_SetWindowProc moved to
+// wkernel/wkernelWin32.h with the WKERNELWNDPROC typedef; they use Win32 types.
+// Added: wkernel_SetWindowSize returns int instead of BOOL, matching the int
+// error convention the other wkernel functions use.
+int J3DAPI wkernel_SetWindowSize(int width, int height);
+int wkernel_PeekProcessEvents(void);
+int wkernel_ProcessEvents(void);
+
+// Added: Window styles for windowed and fullscreen display
+void wkernel_SetWindowedStyle(void);   // wkernel_SetWindowStyle(WS_VISIBLE | WS_OVERLAPPEDWINDOW)
+void wkernel_SetFullscreenStyle(void); // wkernel_SetWindowStyle(WS_POPUP | WS_VISIBLE)
+
 WKERNELPROC J3DAPI wkernel_SetProcessProc(WKERNELPROC pfProc);
 WKERNELSTARTUPPROC J3DAPI wkernel_SetStartupCallback(WKERNELSTARTUPPROC pfOnStartup);
 WKERNELSHUTDOWNPROC J3DAPI wkernel_SetShutdownCallback(WKERNELSHUTDOWNPROC pfOnShutdown);
-void J3DAPI wkernel_SetWindowStyle(LONG dwNewLong);
-BOOL J3DAPI wkernel_SetWindowSize(int width, int height);
-void J3DAPI wkernel_SetWindowProc(WKERNELWNDPROC pfProc); // Window process
-int wkernel_PeekProcessEvents(void);
-int wkernel_ProcessEvents(void);
 
 // Helper hooking functions
 void wkernel_InstallHooks(void);

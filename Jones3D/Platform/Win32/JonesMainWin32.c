@@ -25,6 +25,7 @@
 #include <std/Win95/stdWin95.h>
 
 #include <wkernel/wkernel.h>
+#include <wkernel/wkernelWin32.h>
 
 #include <stdint.h>
 
@@ -36,9 +37,12 @@
 
 static bool JonesMain_bWndMsgProcessed;
 
-// Both live in Jones3D/Main/JonesMain.c / JonesDevDialogWin32.c.
+// The dev dialog functions live in JonesDevDialogWin32.c.
 INT_PTR CALLBACK JonesMain_DevDialogProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
 void J3DAPI JonesMain_DevDialogUpdateRadioButtons(HWND hDlg, const JonesState* pState);
+int J3DAPI JonesMain_InitDevDialog(HWND hDlg, WPARAM wParam, JonesState* pConfig);
+void J3DAPI JonesMain_DevDialogHandleCommand(HWND hWnd, int controlId, LPARAM lParam, int notifyCode);
+void J3DAPI JonesMain_DevDialogInitDisplayDevices(HWND hDlg, JonesState* pConfig);
 
 int J3DAPI JonesMain_GameWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, int* pReturnVal);
 void J3DAPI JonesMain_HandleWMGetMinMaxInfo(HWND hwnd, LPMINMAXINFO pMinMaxInfo);
@@ -426,4 +430,7 @@ void JonesMainSys_InstallHooks(void)
     J3D_HOOKFUNC(JonesMain_ShowDevDialog);
     J3D_HOOKFUNC(JonesMain_DevDialogProc);
     J3D_HOOKFUNC(JonesMain_DevDialogUpdateRadioButtons);
+    J3D_HOOKFUNC(JonesMain_InitDevDialog);
+    J3D_HOOKFUNC(JonesMain_DevDialogHandleCommand);
+    J3D_HOOKFUNC(JonesMain_DevDialogInitDisplayDevices);
 }

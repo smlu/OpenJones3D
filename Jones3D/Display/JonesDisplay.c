@@ -92,11 +92,11 @@ int J3DAPI JonesDisplay_Startup(JonesDisplaySettings* pSettings)
 
     if ( pSettings->bWindowMode )
     {
-        wkernel_SetWindowStyle(WS_VISIBLE | WS_OVERLAPPEDWINDOW); // 0x10CF0000
+        wkernel_SetWindowedStyle(); // Altered: window style moved behind the wkernel platform interface
     }
     else
     {
-        wkernel_SetWindowStyle(WS_POPUP | WS_VISIBLE);
+        wkernel_SetFullscreenStyle(); // Altered: window style moved behind the wkernel platform interface
     }
 
     JonesDisplay_primaryDisplayNum = pSettings->displayDeviceNum;

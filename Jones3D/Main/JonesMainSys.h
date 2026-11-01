@@ -6,6 +6,12 @@
 
 J3D_EXTERN_C_START
 
+// Returns the display environment built at startup; NULL before that. Read-only.
+StdDisplayEnvironment* JonesMain_GetStartupDisplayEnv(void); // Implemented in Jones3D/Main/JonesMain.c
+
+// Returns the current video mode built from Jones.cfg at startup. Read-only.
+StdVideoMode* JonesMain_GetCurVideoMode(void); // Implemented in Jones3D/Main/JonesMain.c
+
 // Starts the timer that hides the quicksave text.
 void JonesMainSys_StartQuickSaveTimer(tSysWindow hWnd); // Implemented in Jones3D/Platform/Win32/JonesMainWin32.c
 
