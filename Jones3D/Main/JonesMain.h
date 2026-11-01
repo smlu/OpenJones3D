@@ -46,6 +46,9 @@ void JonesMain_RestartGame(void); // Added; restarts the game from beginning (1s
 void JonesMain_RestartLevel(void); // Added; restarts current level
 size_t JonesMain_GetCurrentLevelNum(void);
 
+// Added: Read the engine frame counter (advances in the game state only).
+size_t JonesMain_GetFrameCount(void);
+
 void JonesMain_SetBonusLevel(void);
 void JonesMain_ShowEndCredits(void);
 

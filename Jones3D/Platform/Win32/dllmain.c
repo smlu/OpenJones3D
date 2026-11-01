@@ -16,6 +16,7 @@ int __stdcall Indy3D_WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR
 #include <Jones3D/Display/JonesHud.h>
 #include <Jones3D/Platform/Win32/JonesDialog.h>
 #include <Jones3D/Main/JonesFile.h>
+#include <Jones3D/Main/JonesGlobals.h>
 #include <Jones3D/Main/JonesMain.h>
 #include <Jones3D/Main/jonesString.h>
 #include <Jones3D/Play/jonesCog.h>
@@ -422,132 +423,23 @@ bool ResetGlobals(void)
     }
 #endif
 
-    AudioLib_ResetGlobals();
+    // Altered: the shared resets moved to Jones3D/Main/JonesGlobals.c (the native Null
+    // platform runs them through Jones3D_ResetAllGlobals). The modules that only exist
+    // on Windows stay here, called in their original positions between the shared runs.
+    Jones3D_ResetGlobalsBeforeSoundDriver();
     SoundDriver_ResetGlobals();
-    JonesConsole_ResetGlobals();
-    JonesControl_ResetGlobals();
+    Jones3D_ResetGlobalsBeforeJonesDialog();
     JonesDialog_ResetGlobals();
-    JonesDisplay_ResetGlobals();
-    JonesFile_ResetGlobals();
-    JonesHud_ResetGlobals();
-    JonesMain_ResetGlobals();
-    Smush_ResetGlobals();
-    Sound_ResetGlobals();
-    jonesCog_ResetGlobals();
+    Jones3D_ResetGlobalsBeforeJonesConfig();
     jonesConfig_ResetGlobals();
-    jonesInventory_ResetGlobals();
-    jonesString_ResetGlobals();
-    rdCache_ResetGlobals();
-    rdCamera_ResetGlobals();
-    rdCanvas_ResetGlobals();
-    rdClip_ResetGlobals();
-    rdFace_ResetGlobals();
-    rdFont_ResetGlobals();
-    rdKeyframe_ResetGlobals();
-    rdLight_ResetGlobals();
-    rdMaterial_ResetGlobals();
-    rdMath_ResetGlobals();
-    rdMatrix_ResetGlobals();
-    rdModel3_ResetGlobals();
-    rdParticle_ResetGlobals();
-    rdPolyline_ResetGlobals();
-    rdPrimit2_ResetGlobals();
-    rdPrimit3_ResetGlobals();
-    rdPuppet_ResetGlobals();
-    rdQClip_ResetGlobals();
-    rdSprite_ResetGlobals();
-    rdThing_ResetGlobals();
-    rdVector_ResetGlobals();
-    rdWallpaper_ResetGlobals();
-    rdroid_ResetGlobals();
-    sithAIAwareness_ResetGlobals();
-    sithAIClass_ResetGlobals();
-    sithAIInstinct_ResetGlobals();
-    sithAIMove_ResetGlobals();
-    sithAIUtil_ResetGlobals();
-    sithAI_ResetGlobals();
-    sithActor_ResetGlobals();
-    sithAnimate_ResetGlobals();
-    sithCamera_ResetGlobals();
-    sithCogExec_ResetGlobals();
-    sithCogFunctionAI_ResetGlobals();
-    sithCogFunctionPlayer_ResetGlobals();
-    sithCogFunctionSector_ResetGlobals();
-    sithCogFunctionSound_ResetGlobals();
-    sithCogFunctionSurface_ResetGlobals();
-    sithCogFunctionThing_ResetGlobals();
-    sithCogFunction_ResetGlobals();
-    sithCogParse_ResetGlobals();
-    sithCogYacc_ResetGlobals();
-    sithCog_ResetGlobals();
-    sithCollision_ResetGlobals();
-    sithComm_ResetGlobals();
-    sithCommand_ResetGlobals();
-    sithConsole_ResetGlobals();
-    sithControl_ResetGlobals();
-    sithDSSCog_ResetGlobals();
-    sithDSSThing_ResetGlobals();
-    sithDSS_ResetGlobals();
-    sithEvent_ResetGlobals();
-    sithExplosion_ResetGlobals();
-    sithFX_ResetGlobals();
-    sithGamesave_ResetGlobals();
-    sithIntersect_ResetGlobals();
-    sithInventory_ResetGlobals();
-    sithItem_ResetGlobals();
-    sithMain_ResetGlobals();
-    sithMaterial_ResetGlobals();
-    sithModel_ResetGlobals();
-    sithMulti_ResetGlobals();
-    sithOverlayMap_ResetGlobals();
-    sithPVS_ResetGlobals();
-    sithParticle_ResetGlobals();
-    sithPathMove_ResetGlobals();
-    sithPhysics_ResetGlobals();
-    sithPlayerActions_ResetGlobals();
-    sithPlayerControls_ResetGlobals();
-    sithPlayer_ResetGlobals();
-    sithPuppet_ResetGlobals();
-    sithRender_ResetGlobals();
-    sithRenderSky_ResetGlobals();
-    sithSector_ResetGlobals();
-    sithShadow_ResetGlobals();
-    sithSoundClass_ResetGlobals();
-    sithSoundMixer_ResetGlobals();
-    sithSound_ResetGlobals();
-    sithSprite_ResetGlobals();
-    sithString_ResetGlobals();
-    sithSurface_ResetGlobals();
-    sithTemplate_ResetGlobals();
-    sithThing_ResetGlobals();
-    sithTime_ResetGlobals();
-    sithVehicleControls_ResetGlobals();
-    sithVoice_ResetGlobals();
-    sithWeapon_ResetGlobals();
-    sithWhip_ResetGlobals();
-    sithWorld_ResetGlobals();
-    std3D_ResetGlobals();
-    stdBmp_ResetGlobals();
-    stdCircBuf_ResetGlobals();
-    stdColor_ResetGlobals();
+    Jones3D_ResetGlobalsBeforeStdComm();
     stdComm_ResetGlobals();
-    stdConffile_ResetGlobals();
+    Jones3D_ResetGlobalsBeforeStdConsole();
     stdConsole_ResetGlobals();
     stdControl_ResetGlobals();
-    stdDisplay_ResetGlobals();
-    stdEffect_ResetGlobals();
-    stdFileUtil_ResetGlobals();
-    stdFnames_ResetGlobals();
-    stdGob_ResetGlobals();
-    stdHashtbl_ResetGlobals();
-    stdLinkList_ResetGlobals();
-    stdMath_ResetGlobals();
-    stdMemory_ResetGlobals();
-    stdPlatform_ResetGlobals();
-    stdStrTable_ResetGlobals();
-    stdUtil_ResetGlobals();
+    Jones3D_ResetGlobalsBeforeStdWin95();
     stdWin95_ResetGlobals();
-    std_ResetGlobals();
+    Jones3D_ResetGlobalsBeforeWkernel();
     wkernel_ResetGlobals();
     wuRegistry_ResetGlobals();
 

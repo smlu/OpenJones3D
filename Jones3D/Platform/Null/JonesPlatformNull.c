@@ -13,9 +13,11 @@
 #include <Jones3D/Main/JonesMainSys.h>
 #include <Jones3D/Display/JonesHudSys.h>
 #include <Jones3D/Display/jonesConfig.h>
+#include <Jones3D/Platform/Null/JonesPlatformNull.h>
 #include <Jones3D/types.h>
 #include <sith/Dss/sithGamesave.h>
 
+#include <std/General/stdFnames.h>
 #include <std/General/stdUtil.h>
 
 // Altered: Answers IDCANCEL (2), the value Windows dialogs hand back when the user
@@ -141,6 +143,14 @@ bool JonesHudSys_IsProcessRunning(tSysHandle hProcess)
 
 static int jonesConfig_bStartup = 0;
 
+// Added: --load path handed to the Null load-game dialog by JonesPlatformNull_SetLoadPath.
+static const char* jonesPlatformNull_pLoadPath = NULL;
+
+void JonesPlatformNull_SetLoadPath(const char* pPath)
+{
+    jonesPlatformNull_pLoadPath = pPath;
+}
+
 int jonesConfig_Startup(void)
 {
     if ( jonesConfig_bStartup )
@@ -164,10 +174,26 @@ void jonesConfig_Shutdown(void)
 int J3DAPI jonesConfig_GetLoadGameFilePath(tSysWindow hWnd, char* pDestNdsPath)
 {
     J3D_UNUSED(hWnd);
-    J3D_UNUSED(pDestNdsPath);
-    // Altered: The Windows OpenFileName dialog returns 1 with a chosen path and 2 when
-    // the user cancels; there is no game list on this platform, so the dialog cancels.
-    return JONESPLATFORM_NULL_IDCANCEL;
+
+    // Added: JonesPlatformNull_SetLoadPath lets the headless runner answer the dialog
+    // the way a chosen file does; without one it still cancels.
+    if ( !jonesPlatformNull_pLoadPath || !jonesPlatformNull_pLoadPath[0] || !pDestNdsPath )
+    {
+        // Altered: The Windows OpenFileName dialog returns 1 with a chosen path and 2 when
+        // the user cancels; there is no game list on this platform, so the dialog cancels.
+        return JONESPLATFORM_NULL_IDCANCEL;
+    }
+
+    // Added: Fill pDestNdsPath the way the Windows dialog does on success (the OpenFileName
+    // result forced to the .nds extension, then copied) and return its success value.
+    char aPath[JONESCONFIG_GAMESAVE_FILEPATHSIZE] = { 0 };
+    stdUtil_StringCopy(aPath, STD_ARRAYLEN(aPath), jonesPlatformNull_pLoadPath);
+    stdFnames_ChangeExtEx(aPath, STD_ARRAYLEN(aPath), "nds");
+    stdUtil_StringCopy(pDestNdsPath, JONESCONFIG_GAMESAVE_FILEPATHSIZE, aPath);
+
+    // Added: One-shot, so a later load-game request (from a menu) cancels again.
+    jonesPlatformNull_pLoadPath = NULL;
+    return 1;
 }
 
 int J3DAPI jonesConfig_GetSaveGameFilePath(tSysWindow hWnd, char* pOutFilePath)

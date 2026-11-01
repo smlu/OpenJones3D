@@ -2274,6 +2274,13 @@ size_t JonesMain_GetCurrentLevelNum(void)
     return JonesMain_curLevelNum;
 }
 
+size_t JonesMain_GetFrameCount(void)
+{
+    // Added: Read-only view of the engine's frame counter for the headless Null runner;
+    // it only advances in JonesMain_ProcessGame through JonesMain_PrintFramerate.
+    return JonesMain_frameCount;
+}
+
 void J3DAPI JonesMain_LogErrorToFile(const char* pErrorText)
 {
     // Fixed: cache pErrorText, this prevents accidental override of pErrorText when it's cached in jonesString_GetString

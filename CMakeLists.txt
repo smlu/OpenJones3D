@@ -43,6 +43,10 @@ option(JONES3D_QOL_IMPROVEMENTS "Enable quality-of-life improvements" ON)
 option(JONES3D_SPEEDRUN_BUILD "Enable vanilla bugs and glitches used in speedruns" OFF)
 option(JONES3D_RUNTIME_GUARDS "Enable runtime safety guards for hardened release behavior" OFF)
 option(JONES3D_STANDALONE "Build without the retail executable: no hooks and no fixed retail addresses" OFF)
+# Added: Sanitizer flags for the native Null build (Jones3D-headless); they are GCC/Clang
+# options with no MSVC equivalent here, so Windows builds reject the option instead of
+# silently ignoring it.
+option(JONES3D_SANITIZE "Add address and undefined behavior sanitizer flags to native builds" OFF)
 
 # --- GAPI options ---
 # Add an option to enable DirectX 9 support. Default is ON.
@@ -213,6 +217,16 @@ elseif(NOT WIN32 AND (CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU"))
     endif()
 else()
     message(FATAL_ERROR "Unsupported compiler: ${CMAKE_CXX_COMPILER_ID}")
+endif()
+
+# Added: Sanitizer flags for the native Null build; must be set before the subdirectories
+# so every native target (engine libs, Jones3DGame, Jones3D-headless) is instrumented.
+if (JONES3D_SANITIZE)
+    if (WIN32)
+        message(FATAL_ERROR "JONES3D_SANITIZE is only supported on native (non-Windows) builds")
+    endif()
+    add_compile_options(-fsanitize=address,undefined -fno-omit-frame-pointer)
+    add_link_options(-fsanitize=address,undefined)
 endif()
 
 # Add Libs subdirectory
