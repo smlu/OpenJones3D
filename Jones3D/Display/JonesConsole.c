@@ -110,7 +110,7 @@ int JonesConsole_Startup(void)
         return 1;
     }
 
-    sithConsole_RegisterPrintFunctions(JonesConsole_PrintText, 0, JonesConsole_FlushToDisplay);
+    sithConsole_RegisterPrintFunctions((SithConsoleWriteTextFunc)JonesConsole_PrintText, 0, JonesConsole_FlushToDisplay); // Altered: Cast keeps the original's returned text index while matching the callback type
 
     memset(JonesConsole_aUnused_552770, 0, sizeof(JonesConsole_aUnused_552770));// TODO: ??
 

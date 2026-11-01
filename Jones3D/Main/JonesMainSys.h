@@ -37,6 +37,10 @@ bool JonesMainSys_GetComputerName(char* pDst, size_t size); // Implemented in Jo
 // Closes a platform handle such as the one CreateMutex returned. Returns true on success.
 bool JonesMainSys_CloseHandle(tSysHandle handle); // Implemented in Jones3D/Platform/Win32/JonesMainWin32.c
 
+// Shows a modal message box with no owner window, always with MB_TASKMODAL and with MB_ICONSTOP
+// when bIconStop is set. Returns the MessageBox result (the button the user chose).
+int JonesMainSys_ShowFatalMessage(const char* pText, const char* pTitle, bool bIconStop); // Implemented in Jones3D/Platform/Win32/JonesMainWin32.c
+
 // Registers the RTI hook targets that now live in the Win32 platform files.
 void JonesMainSys_InstallHooks(void); // Implemented in Jones3D/Platform/Win32/JonesMainWin32.c
 

@@ -449,3 +449,11 @@ bool JonesMainSys_CloseHandle(tSysHandle handle)
 {
     return CloseHandle(handle) != 0;
 }
+
+// Shows a modal message box with no owner window, matching the original MessageBox calls:
+// always MB_TASKMODAL, plus MB_ICONSTOP when bIconStop. Returns the MessageBox result.
+int JonesMainSys_ShowFatalMessage(const char* pText, const char* pTitle, bool bIconStop)
+{
+    UINT uType = MB_TASKMODAL | (bIconStop ? MB_ICONSTOP : 0);
+    return MessageBox(NULL, pText, pTitle, uType);
+}

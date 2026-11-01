@@ -49,6 +49,7 @@
 #include <std/General/stdMath.h>
 #include <std/General/stdMemory.h>
 #include <std/General/stdPlatform.h>
+#include <std/General/stdPlatformSys.h>
 #include <std/General/stdUtil.h>
 #include <std/Win95/std3D.h>
 #include <std/Win95/stdConsole.h>
@@ -1171,7 +1172,7 @@ void JonesMain_PrintFramerate(void)
 
 J3DNORETURN void JonesMain_FatalErrorUnknown(void)
 {
-    MessageBox(NULL, "Unknown error", "Unable to continue Error", MB_TASKMODAL | MB_ICONSTOP);
+    JonesMainSys_ShowFatalMessage("Unknown error", "Unable to continue Error", true); // Altered: MessageBox moved behind the platform interface
     JonesMain_Shutdown();
     exit(1);
 }
@@ -1685,7 +1686,7 @@ int JonesMain_CloseWindow(void)
 
 int J3DAPI JonesMain_Log(int textColor, const char* ptext)
 {
-    OutputDebugString(ptext); // Added
+    stdPlatformSys_DebugOutput(ptext); // Added
     if ( JonesMain_state.outputMode == JONES_OUTPUTMODE_CONSOLE )
     {
         stdConsole_WriteConsole(ptext, textColor);
@@ -2178,7 +2179,7 @@ J3DNORETURN void J3DAPI JonesMain_Assert(const char* pErrorText, const char* pSr
 {
     if ( JonesMain_bAssertTriggered )
     {
-        DebugBreak();
+        stdPlatformSys_DebugBreak(); // Altered: DebugBreak moved behind the platform interface
         exit(1);
     }
     JonesMain_bAssertTriggered = true;
@@ -2205,11 +2206,11 @@ J3DNORETURN void J3DAPI JonesMain_Assert(const char* pErrorText, const char* pSr
     std_g_pHS->pErrorPrint("ASSERT: %s", aErrorText);
 
     // Added: Log callstack backtrace
-    stdPlatform_PrintStackTrace(std_g_pHS->pErrorPrint, /*numFrames=*/64);
+    stdPlatform_PrintStackTrace((tStackTracePrintFunc)std_g_pHS->pErrorPrint, /*numFrames=*/64); // Altered: Cast the variadic print function to the matching signature
 
-    MessageBox(NULL, aErrorText, "Assert Handler", MB_TASKMODAL);
+    JonesMainSys_ShowFatalMessage(aErrorText, "Assert Handler", false); // Altered: MessageBox moved behind the platform interface
 
-    DebugBreak();
+    stdPlatformSys_DebugBreak(); // Altered: DebugBreak moved behind the platform interface
     JonesMain_Shutdown();
     exit(1);
 }
@@ -2513,12 +2514,10 @@ size_t J3DAPI JonesMain_FindClosestVideoMode(const StdDisplayEnvironment* pList,
 
 bool J3DAPI JonesMain_CurDisplaySupportsBPP(const JonesDisplaySettings* pSettings, size_t bpp)
 {
-#if defined(J3D_DIRECTX9)
+    // Altered: Was the DirectX 9 branch; the rule needs no D3D names, so it is now the only one
+    // and also serves the Null platform. The paused DirectX 6 build would need its format query back.
     J3D_UNUSED(pSettings);
     if ( bpp == 24 || bpp == 32 ) return 1;
-#else // Altered: Removed the J3D_DIRECTX6 branch; J3D_DIRECTX6 is never set now
-#error "Unsupported 3D API"
-#endif
 
     return false;
 }
