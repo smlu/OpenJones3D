@@ -39,6 +39,14 @@ function(sith_add_vec_test TARGET)
         ${SV_TESTED}
     )
 
+    # Same force-include as the MSVC /FI above; per-source set_property does not expand the SHELL:
+    # prefix, so the option is target-wide (it also reaches the shared runner).
+    if (MINGW)
+        target_compile_options(${TARGET} PRIVATE
+            "SHELL:-include ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/sithVecTestAddrs.h"
+            "SHELL:-include ${SV_ADDRS}")
+    endif()
+
     target_include_directories(${TARGET} PRIVATE "${CMAKE_CURRENT_FUNCTION_LIST_DIR}")
 
     target_link_libraries(${TARGET} PRIVATE
@@ -58,6 +66,8 @@ function(sith_add_vec_test TARGET)
     # be confused with the generated integers and floats. Load the image high and fixed.
     if (MSVC)
         target_link_options(${TARGET} PRIVATE /BASE:0x20000000 /DYNAMICBASE:NO)
+    elseif(MINGW)
+        target_link_options(${TARGET} PRIVATE -Wl,--image-base=0x20000000 -Wl,--disable-dynamicbase)
     endif()
 
     set_target_properties(${TARGET} PROPERTIES

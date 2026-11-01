@@ -112,6 +112,13 @@ add_executable(sithMultiTests
     ${SITHMULTI_TESTED_SOURCES}
 )
 
+# Same force-include as the MSVC /FI above; the target contains only the two source lists, so the
+# option scope is identical. (Per-source set_property does not expand the SHELL: prefix.)
+if (MINGW)
+    target_compile_options(sithMultiTests PRIVATE
+        "SHELL:-include ${CMAKE_CURRENT_SOURCE_DIR}/sithMultiTestAddrs.h")
+endif()
+
 target_link_libraries(sithMultiTests PRIVATE
     sith
     sound
@@ -127,6 +134,8 @@ target_compile_definitions(sithMultiTests PRIVATE
 
 if (MSVC)
     target_link_options(sithMultiTests PRIVATE /BASE:0x20000000 /DYNAMICBASE:NO)
+elseif(MINGW)
+    target_link_options(sithMultiTests PRIVATE -Wl,--image-base=0x20000000 -Wl,--disable-dynamicbase)
 endif()
 
 set_target_properties(sithMultiTests PROPERTIES
