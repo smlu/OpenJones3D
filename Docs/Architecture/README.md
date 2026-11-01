@@ -34,6 +34,7 @@ OpenJones3D keeps that original layering intact on purpose. The project is not a
 - [Rendering-And-Visibility.md](Rendering-And-Visibility.md) explains the camera stack, sector visibility, PVS, off-screen thing/light collection, dynamic lighting, and the DX6/DX9 rendering layers.
 - [Scripting-AI-And-Audio.md](Scripting-AI-And-Audio.md) explains the COG VM, AI control blocks and awareness propagation, and the audio stack.
 - [Sound-System.md](Sound-System.md) explains the low-level sound engine, the gameplay-aware mixer, sound classes, voice playback, and the main OpenJones3D audio extensions.
+- [Platform-Layer.md](Platform-Layer.md) explains how engine code is separated from Windows and DirectX: the layers, the patterns, and how the separation is enforced.
 - [QOL-And-Compatibility.md](QOL-And-Compatibility.md) explains the `J3D_QOL_IMPROVEMENTS` compatibility model and the main places where OpenJones3D intentionally diverges from legacy behavior.
 
 ## Source Layout
