@@ -7,8 +7,6 @@
 #include <j3dcore/j3dhook.h>
 #include <std/RTI/symbols.h>
 
-#include <time.h>
-
 void stdFileUtil_InstallHooks(void)
 {
     J3D_HOOKFUNC(stdFileUtil_NewFind);
@@ -20,24 +18,6 @@ void stdFileUtil_InstallHooks(void)
 
 void stdFileUtil_ResetGlobals(void)
 {}
-
-static time_t FileTimeToUnixTime(const FILETIME* ft)
-{
-    // Windows FILETIME starts on January 1, 1601
-    // Unix time starts on January 1, 1970
-    // The difference between the two epochs is 11644473600 seconds
-    static const ULONGLONG EPOCH_DIFF = 11644473600ULL;
-
-    ULARGE_INTEGER ull;
-    ull.LowPart  = ft->dwLowDateTime;
-    ull.HighPart = ft->dwHighDateTime;
-
-    // Convert from 100-nanosecond intervals to seconds and adjust the epoch
-    ull.QuadPart /= 10000000ULL; // Convert to seconds
-    ull.QuadPart -= EPOCH_DIFF;  // Subtract the epoch difference
-
-    return (time_t)ull.QuadPart;
-}
 
 FindFileData* J3DAPI stdFileUtil_NewFind(const char* path, int mode, const char* pFilter)
 {
@@ -84,57 +64,6 @@ FindFileData* J3DAPI stdFileUtil_NewFind(const char* path, int mode, const char*
     return pData;
 }
 
-void J3DAPI stdFileUtil_DisposeFind(FindFileData* ffData)
-{
-    if ( ffData )
-    {
-        if ( ffData->nFoundFiles && ffData->handle != INVALID_HANDLE_VALUE )
-        {
-            FindClose(ffData->handle);
-        }
-        stdMemory_Free(ffData);
-    }
-}
-
-int J3DAPI stdFileUtil_FindNext(FindFileData* ffData, tFoundFileInfo* pFileInfo)
-{
-    WIN32_FIND_DATA findData;
-
-    if ( !ffData )
-    {
-        return 0;
-    }
-
-    // Added: Release-build guard before writing search-result metadata.
-    STD_GUARD(pFileInfo, 0);
-
-    int nFoundFiles = ffData->nFoundFiles;
-    if ( nFoundFiles )
-    {
-        if ( !FindNextFile(ffData->handle, &findData) )
-        {
-            return 0;
-        }
-    }
-    else
-    {
-        ffData->handle = FindFirstFile(ffData->aSearchFilter, &findData);
-        if ( ffData->handle == INVALID_HANDLE_VALUE )
-        {
-            return 0;
-        }
-    }
-
-    // Fixed: Count only successful results so a failed first search can be retried safely.
-    ffData->nFoundFiles = nFoundFiles + 1;
-    STD_STRCPY(pFileInfo->aName, findData.cFileName);
-
-    // Altered: Keep the original 32-bit field conversion explicit until tFoundFileInfo can use time_t.
-    pFileInfo->lastChanged  = (uint32_t)FileTimeToUnixTime(&findData.ftLastWriteTime);
-    pFileInfo->bIsDirectory = (findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
-    return 1;
-}
-
 int J3DAPI stdFileUtil_FindQuick(const char* pPath, int mode, const char* pFilter, tFoundFileInfo* pFileInfo)
 {
     FindFileData* pFileData = stdFileUtil_NewFind(pPath, mode, pFilter);
@@ -168,31 +97,3 @@ int J3DAPI stdFileUtil_CountMatches(const char* pPath, int mode, const char* pFi
     return count;
 }
 
-int J3DAPI stdFileUtil_MkDir(const char* pPath)
-{
-    return CreateDirectoryA(pPath, NULL);
-}
-
-int J3DAPI stdFileUtil_FileExists(const char* pFilename)
-{
-    WIN32_FIND_DATAA findFileData;
-    HANDLE hFind = FindFirstFileA(pFilename, &findFileData);
-    if ( hFind == INVALID_HANDLE_VALUE )
-    {
-        return 0;
-    }
-
-    // Fixed: FindFirstFileA returns a search handle that must be closed.
-    FindClose(hFind);
-    return 1;
-}
-
-int J3DAPI stdFileUtil_RmDir(const char* pDir)
-{
-    return RemoveDirectoryA(pDir);
-}
-
-int J3DAPI stdFileUtil_DelFile(const char* pFilename)
-{
-    return DeleteFileA(pFilename);
-}

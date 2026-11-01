@@ -119,6 +119,7 @@ set(STD_TESTED_SOURCES
     "${STD_GENERAL_SOURCE_DIR}/stdColor.c"
     "${STD_GENERAL_SOURCE_DIR}/stdCircBuf.c"
     "${STD_WIN95_SOURCE_DIR}/stdConsole.c"
+    "${STD_WIN95_SOURCE_DIR}/stdFileUtilWin32.c"
     "${STD_WIN95_SOURCE_DIR}/stdGob.c"
     "${STD_WIN95_SOURCE_DIR}/stdPlatformWin32.c"
     "${STD_WIN95_SOURCE_DIR}/stdWin95.c"

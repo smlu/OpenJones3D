@@ -39,6 +39,7 @@ PLATFORM_PATHS = [
     "Libs/std/Win95/DX9/",
     "Libs/std/Win95/stdComm.c",
     "Libs/std/Win95/stdConsole.c",
+    "Libs/std/Win95/stdFileUtilWin32.c",
     "Libs/std/Win95/stdGob.c",
     "Libs/std/Win95/stdPlatformWin32.c",
     "Libs/std/Win95/stdWin95.c",
