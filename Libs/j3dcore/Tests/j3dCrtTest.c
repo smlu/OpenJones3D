@@ -13,6 +13,12 @@
 
 #include <j3dcore/j3d.h>
 
+#if !defined(_WIN32)
+// Added: the path-resolution tests create and remove a real directory tree beside the binary.
+#include <sys/stat.h>
+#include <unistd.h>
+#endif
+
 #ifndef STRUNCATE
 #define STRUNCATE 80
 #endif
@@ -320,6 +326,108 @@ TEST(j3dCrt, TestFopenS)
 #endif
 }
 
+#if !defined(_WIN32)
+// Added: the path-resolution tests create a real directory tree beside the test binary. The shim's
+// resolver is the non-Windows equivalent of the case-insensitive Windows path lookup.
+#define J3DCRTTEST_DIR "j3dCrtTestDir"
+
+static void j3dCrtTest_CleanTree(void)
+{
+    remove(J3DCRTTEST_DIR "/Sub/File.TXT");
+    remove(J3DCRTTEST_DIR "/Sub/new.txt");
+    rmdir(J3DCRTTEST_DIR "/Sub");
+    rmdir(J3DCRTTEST_DIR "/sub");
+    rmdir(J3DCRTTEST_DIR);
+}
+
+static void j3dCrtTest_MakeTree(void)
+{
+    FILE* pFile;
+
+    j3dCrtTest_CleanTree();
+    mkdir(J3DCRTTEST_DIR, 0777);
+    mkdir(J3DCRTTEST_DIR "/Sub", 0777);
+
+    pFile = j3dcrt_fopen(J3DCRTTEST_DIR "/Sub/File.TXT", "wb");
+    TEST_ASSERT_NOT_NULL(pFile);
+    TEST_ASSERT_EQUAL_size_t(1, fwrite("x", 1, 1, pFile));
+    fclose(pFile);
+}
+
+TEST(j3dCrt, TestResolvePath)
+{
+    char aPath[260];
+
+    j3dCrtTest_MakeTree();
+
+    // Backslashes become slashes, and components that exist in another letter case are rewritten.
+    TEST_ASSERT_EQUAL_STRING(J3DCRTTEST_DIR "/Sub/File.TXT",
+        j3dcrt_ResolvePath(J3DCRTTEST_DIR "\\sub\\file.txt", aPath, sizeof(aPath)));
+    TEST_ASSERT_EQUAL_PTR(aPath, j3dcrt_ResolvePath("j3dcrttestdir\\SUB\\FILE.TXT", aPath, sizeof(aPath)));
+    TEST_ASSERT_EQUAL_STRING(J3DCRTTEST_DIR "/Sub/File.TXT", aPath);
+
+    // A component that matches nothing, and everything after it, stay as given, so a file that does
+    // not exist yet can still be created in a directory that does.
+    TEST_ASSERT_EQUAL_STRING(J3DCRTTEST_DIR "/Sub/new.txt",
+        j3dcrt_ResolvePath(J3DCRTTEST_DIR "\\sub\\new.txt", aPath, sizeof(aPath)));
+    TEST_ASSERT_EQUAL_STRING("j3dCrtMissingDir/new.txt",
+        j3dcrt_ResolvePath("j3dCrtMissingDir\\new.txt", aPath, sizeof(aPath)));
+    TEST_ASSERT_EQUAL_STRING("j3dCrtMissingDir/sub/file.txt",
+        j3dcrt_ResolvePath("j3dCrtMissingDir\\sub\\file.txt", aPath, sizeof(aPath)));
+
+    // A name that exists with the case it was written in wins over a differently cased sibling.
+    mkdir(J3DCRTTEST_DIR "/sub", 0777);
+    TEST_ASSERT_EQUAL_STRING(J3DCRTTEST_DIR "/sub",
+        j3dcrt_ResolvePath(J3DCRTTEST_DIR "\\sub", aPath, sizeof(aPath)));
+
+    // Of two entries that only differ in letter case, the resolver picks the one that sorts first.
+    TEST_ASSERT_EQUAL_STRING(J3DCRTTEST_DIR "/Sub",
+        j3dcrt_ResolvePath(J3DCRTTEST_DIR "\\SUB", aPath, sizeof(aPath)));
+
+    j3dCrtTest_CleanTree();
+}
+
+TEST(j3dCrt, TestFopenResolvePath)
+{
+    struct stat st;
+    char        aPath[260];
+    FILE*       pFile;
+    int         ch;
+
+    j3dCrtTest_MakeTree();
+
+    // The path does not exist with the case it is written in, and j3dcrt_fopen opens it anyway.
+    TEST_ASSERT_EQUAL_INT(-1, stat(J3DCRTTEST_DIR "/sub/file.txt", &st));
+    pFile = j3dcrt_fopen(J3DCRTTEST_DIR "\\sub\\file.txt", "rb");
+    TEST_ASSERT_NOT_NULL(pFile);
+    TEST_ASSERT_EQUAL_INT('x', fgetc(pFile));
+    TEST_ASSERT_EQUAL_INT(EOF, fgetc(pFile));
+    fclose(pFile);
+
+    pFile = fopen("j3dCrttestdir\\Sub\\FILE.TXT", "rb"); // Added: the fopen macro routes here.
+    TEST_ASSERT_NOT_NULL(pFile);
+    fclose(pFile);
+
+    // A new file is created in the directory the resolver found, under the name it was given.
+    pFile = j3dcrt_fopen(J3DCRTTEST_DIR "\\sub\\new.txt", "wb");
+    TEST_ASSERT_NOT_NULL(pFile);
+    TEST_ASSERT_EQUAL_size_t(1, fwrite("y", 1, 1, pFile));
+    fclose(pFile);
+    TEST_ASSERT_EQUAL_INT(0, stat(J3DCRTTEST_DIR "/Sub/new.txt", &st));
+    TEST_ASSERT_EQUAL_INT(-1, stat(J3DCRTTEST_DIR "/Sub/New.txt", &st));
+
+    // A file in a directory that does not exist cannot be opened for reading.
+    TEST_ASSERT_NULL(j3dcrt_fopen(J3DCRTTEST_DIR "\\sub\\missing.txt", "rb"));
+    TEST_ASSERT_NULL(j3dcrt_fopen("j3dCrtMissingDir\\file.txt", "rb"));
+    TEST_ASSERT_NULL(j3dcrt_fopen(NULL, "rb"));
+
+    TEST_ASSERT_EQUAL_STRING(J3DCRTTEST_DIR "/Sub/File.TXT",
+        j3dcrt_ResolvePath(J3DCRTTEST_DIR "\\sub\\file.txt", aPath, sizeof(aPath)));
+
+    j3dCrtTest_CleanTree();
+}
+#endif // !_WIN32
+
 TEST(j3dCrt, TestStrcmpi)
 {
     TEST_ASSERT_EQUAL_INT(0, _strcmpi("Jones", "jONES"));
@@ -449,6 +557,10 @@ TEST_GROUP_RUNNER(j3dCrt)
     RUN_TEST_CASE(j3dCrt, TestSprintfS);
     RUN_TEST_CASE(j3dCrt, TestVsnwprintfS);
     RUN_TEST_CASE(j3dCrt, TestFopenS);
+#if !defined(_WIN32)
+    RUN_TEST_CASE(j3dCrt, TestResolvePath);
+    RUN_TEST_CASE(j3dCrt, TestFopenResolvePath);
+#endif
     RUN_TEST_CASE(j3dCrt, TestStrcmpi);
     RUN_TEST_CASE(j3dCrt, TestIsnan);
     RUN_TEST_CASE(j3dCrt, TestSscanfS);

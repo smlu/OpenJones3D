@@ -77,10 +77,12 @@ void J3DAPI stdStartup(tHostServices* pHS)
         // TODO: Remove when all round and rand float functions are replaced && updated
         // TODO: consider setting FE_DOWNWARD for round functions (lrintf); i.e.: fesetround(FE_DOWNWARD) to mimic same behavior as OG
         short  tmp = 0;
-#ifdef _MSC_VER
+#if defined(_MSC_VER)
         __asm  fnstcw word ptr[tmp];
-#else
+#elif defined(__i386__) || defined(__x86_64__)
         __asm__ __volatile__("fnstcw %0" : "=m"(tmp)); // Altered: GCC/MinGW inline assembler syntax for the same instruction
+#else
+        // Added: fnstcw is an x87 instruction, so on other architectures the control word stays 0.
 #endif
         word_183962C = tmp;
 

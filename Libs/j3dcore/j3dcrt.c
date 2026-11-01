@@ -10,6 +10,13 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
+#include <dirent.h>
+#include <sys/stat.h>
+
+// Added: j3dcrt.h routes every engine fopen through j3dcrt_fopen below, so this file names the
+// C runtime entry point directly instead of the macro while implementing it.
+#undef fopen
+
 #if defined(__GNUC__)
 // The scanned formats are built internally from recovered engine format strings.
 #pragma GCC diagnostic ignored "-Wformat-security"
@@ -363,7 +370,182 @@ int _vsnwprintf_s(wchar_t* pBuf, size_t bufSize, size_t count, const wchar_t* pF
     return j3dcrt_WPrintS(pBuf, bufSize, count, pFormat, args);
 }
 
-// Mirrors Microsoft's fopen_s: opens pFilename with fopen, stores null in *ppFile and returns
+// Added: the path size the resolver writes, matching the Windows MAX_PATH limit the engine's path
+// buffers are sized for. A longer path is passed to the C runtime unresolved.
+#define J3DCRT_MAXPATH 260
+
+// Added: the longest directory entry name the resolver matches, and the search order it picks from:
+// case-insensitive name order with the byte order breaking ties, so the choice does not depend on
+// the order the directory is read in.
+#define J3DCRT_MAXNAME 256
+
+// Added: looks up one path component in an existing directory: reports the first entry whose name
+// matches pName case-insensitively in the order above through pNameOut. Returns false when the
+// directory can not be opened or holds no such entry.
+static bool j3dcrt_FindPathEntry(const char* pDirPath, const char* pName, char* pNameOut, size_t nameSize)
+{
+    DIR* pDir = opendir(pDirPath);
+    if ( !pDir )
+    {
+        return false;
+    }
+
+    bool           bMatched = false;
+    struct dirent* pEntry;
+    while ( ( pEntry = readdir(pDir) ) != NULL )
+    {
+        if ( strcasecmp(pEntry->d_name, pName) != 0 || strlen(pEntry->d_name) >= nameSize )
+        {
+            continue;
+        }
+
+        if ( !bMatched || strcasecmp(pEntry->d_name, pNameOut) < 0 ||
+            ( strcasecmp(pEntry->d_name, pNameOut) == 0 && strcmp(pEntry->d_name, pNameOut) < 0 ) )
+        {
+            strcpy_s(pNameOut, nameSize, pEntry->d_name);
+            bMatched = true;
+        }
+    }
+
+    closedir(pDir);
+    return bMatched;
+}
+
+// Added: Windows paths are case-insensitive and use backslashes. Writes the real path of pPath to
+// pOut, truncating to size bytes: backslashes become slashes and every component that does not
+// exist with the case it is written in is replaced by the first case-insensitive match in its
+// directory. Components that match nothing, and everything after them, stay as given so a file that
+// does not exist yet can still be created. Returns pOut.
+char* j3dcrt_ResolvePath(const char* pPath, char* pOut, size_t size)
+{
+    struct stat st;
+
+    if ( !pOut || size == 0 )
+    {
+        return pOut;
+    }
+
+    pOut[0] = '\0';
+    if ( !pPath )
+    {
+        return pOut;
+    }
+
+    size_t outLen    = 0;
+    size_t cur       = 0;
+    bool   bAbsolute = false;
+    if ( pPath[0] == '/' )
+    {
+        // Added: a leading slash is absolute on both platforms and resolves from the root.
+        bAbsolute = true;
+        cur       = 1;
+        pOut[outLen] = '/';
+        ++outLen;
+    }
+    else if ( pPath[0] == '\\' )
+    {
+        // Added: a leading backslash is a Windows drive-relative path. There is no drive to root it
+        // against here, so it resolves against the current directory like a plain relative path.
+        cur = 1;
+    }
+
+    while ( pPath[cur] && outLen + 1 < size )
+    {
+        pOut[outLen] = ( pPath[cur] == '\\' ) ? '/' : pPath[cur];
+        ++cur;
+        ++outLen;
+    }
+    pOut[outLen] = '\0';
+
+    size_t compStart = ( bAbsolute ) ? 1 : 0;
+    while ( compStart < outLen )
+    {
+        size_t compEnd = compStart;
+        while ( compEnd < outLen && pOut[compEnd] != '/' )
+        {
+            ++compEnd;
+        }
+
+        char aComp[J3DCRT_MAXNAME];
+        size_t compLen = compEnd - compStart;
+        if ( compLen == 0 || compLen >= sizeof(aComp) )
+        {
+            // An empty component ("//" or a trailing slash) and an unmatchably long name stay as given.
+            break;
+        }
+
+        memcpy(aComp, pOut + compStart, compLen);
+        aComp[compLen] = '\0';
+
+        // A component that exists with the case it was written in is already the real name.
+        char chTail   = pOut[compEnd];
+        pOut[compEnd] = '\0';
+        bool bExact   = ( stat(pOut, &st) == 0 );
+        pOut[compEnd] = chTail;
+        if ( bExact )
+        {
+            compStart = compEnd + 1;
+            continue;
+        }
+
+        char aMatch[J3DCRT_MAXNAME];
+        bool bFound;
+        if ( compStart == 0 )
+        {
+            bFound = j3dcrt_FindPathEntry(".", aComp, aMatch, sizeof(aMatch));
+        }
+        else
+        {
+            char chFirst    = pOut[compStart];
+            pOut[compStart] = '\0';
+            bFound          = j3dcrt_FindPathEntry(pOut, aComp, aMatch, sizeof(aMatch));
+            pOut[compStart] = chFirst;
+        }
+        if ( !bFound )
+        {
+            break;
+        }
+
+        size_t matchLen = strlen(aMatch);
+        size_t newLen   = outLen - compLen + matchLen;
+        if ( newLen + 1 > size )
+        {
+            // The real name does not fit the caller's buffer, so the path stays as given.
+            break;
+        }
+
+        memmove(pOut + compStart + matchLen, pOut + compEnd, outLen - compEnd + 1);
+        memcpy(pOut + compStart, aMatch, matchLen);
+        outLen    = newLen;
+        compStart = compStart + matchLen + 1;
+    }
+
+    return pOut;
+}
+
+// Added: fopen on the resolved path, so the engine's backslash and mixed-case path spellings open
+// the real file the way they do on Windows. Returns the FILE*, or NULL with errno set when the file
+// can not be opened. A path longer than J3DCRT_MAXPATH is used unresolved.
+FILE* j3dcrt_fopen(const char* pName, const char* pMode)
+{
+    char aPath[J3DCRT_MAXPATH];
+
+    if ( !pName )
+    {
+        errno = EINVAL;
+        return NULL;
+    }
+
+    if ( strlen(pName) >= sizeof(aPath) )
+    {
+        return fopen(pName, pMode);
+    }
+
+    j3dcrt_ResolvePath(pName, aPath, sizeof(aPath));
+    return fopen(aPath, pMode);
+}
+
+// Mirrors Microsoft's fopen_s: opens pFilename with j3dcrt_fopen, stores null in *ppFile and returns
 // the errno value when it fails, and 0 on success.
 errno_t fopen_s(FILE** ppFile, const char* pFilename, const char* pMode)
 {
@@ -378,7 +560,7 @@ errno_t fopen_s(FILE** ppFile, const char* pFilename, const char* pMode)
         return EINVAL;
     }
 
-    *ppFile = fopen(pFilename, pMode);
+    *ppFile = j3dcrt_fopen(pFilename, pMode);
     if ( !*ppFile )
     {
         return errno ? errno : EIO;

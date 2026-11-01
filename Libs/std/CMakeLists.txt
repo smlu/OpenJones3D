@@ -7,7 +7,9 @@ list(FILTER SOURCES EXCLUDE REGEX ".*/Tests/.*")
 list(FILTER HEADERS EXCLUDE REGEX ".*/Tests/.*")
 
 # Added: The Null platform has no Windows or DirectX backend: exclude the Win95 backend tree
-# (DX6/DX9 device code, Windows console/comm/bmp/gob services) and every Win32-specific file.
+# (DX6/DX9 device code, Windows console/comm services) and every Win32-specific file. stdGob.c is
+# built here: its memory-mapped-file branch, which is dead because the streamed path is always
+# chosen, is the only part guarded out for non-Windows.
 if(J3D_PLATFORM_NULL)
     list(FILTER SOURCES EXCLUDE REGEX ".*/Win95/DX6/.*")
     list(FILTER SOURCES EXCLUDE REGEX ".*/Win95/DX9/.*")
@@ -16,7 +18,6 @@ if(J3D_PLATFORM_NULL)
     list(FILTER SOURCES EXCLUDE REGEX "stdWin95\\.c$")
     list(FILTER SOURCES EXCLUDE REGEX "stdComm\\.c$")
     list(FILTER SOURCES EXCLUDE REGEX "stdConsole\\.c$")
-    list(FILTER SOURCES EXCLUDE REGEX "stdGob\\.c$")
 else()
     # Windows builds never compile the Null backend sources.
     list(FILTER SOURCES EXCLUDE REGEX ".*/Null/.*")

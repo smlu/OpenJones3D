@@ -15,8 +15,6 @@ static char stdGob_aEntryNameBuff[128] = { 0 };
 static tHostServices stdGob_hs   = { 0 };
 static tHostServices* stdGob_pHS = NULL;
 
-// TODO: The file read functions don't have implemented interacting with memory mapped file.
-
 static bool stdGob_IsEntryInBounds(const tGobFileEntry* pEntry, size_t gobSize)
 {
     if ( pEntry->offset < 0 || pEntry->size < 0 )
@@ -121,6 +119,7 @@ int J3DAPI stdGob_LoadEntry(Gob* pGob, const char* pFilename, int numFileHandles
 
     if ( bMMapFile )
     {
+#if defined(_WIN32)
         pGob->hFile = CreateFileA(pGob->aFilePath, GENERIC_READ, FILE_SHARE_READ, NULL, CREATE_ALWAYS | CREATE_NEW, FILE_FLAG_RANDOM_ACCESS, NULL);
         STD_ASSERTREL(pGob->hFile != NULL);
         STD_ASSERTREL(pGob->hFile != (HANDLE)((HFILE)-1));
@@ -146,6 +145,7 @@ int J3DAPI stdGob_LoadEntry(Gob* pGob, const char* pFilename, int numFileHandles
         {
             CloseHandle(pGob->hFile);
         }
+#endif
     }
 
     pGob->bFileMap = 0;
@@ -277,6 +277,7 @@ void J3DAPI stdGob_FreeEntry(Gob* pGob)
 
     if ( pGob->bFileMap )
     {
+#if defined(_WIN32)
         // Fixed: Release all mmap resources and keep the handle state clear.
         if ( pGob->pBase )
         {
@@ -301,7 +302,7 @@ void J3DAPI stdGob_FreeEntry(Gob* pGob)
             LocalFree(pGob->aHandles);
             pGob->aHandles = NULL;
         }
-
+#endif
         pGob->bFileMap = 0;
     }
 
@@ -460,6 +461,7 @@ int J3DAPI stdGob_FileEOF(GobFileHandle* pHandle)
     return pHandle->offset >= pHandle->pEntry->size;
 }
 
+// TODO: The file read functions don't have implemented interacting with memory mapped file.
 size_t J3DAPI stdGob_FileRead(GobFileHandle* pHandle, void* data, const size_t size)
 {
     // Added: Release-build guard before reading through the Gob handle.
