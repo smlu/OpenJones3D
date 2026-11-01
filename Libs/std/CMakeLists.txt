@@ -74,6 +74,13 @@ set(EXTRA_LIBS
     jansson::jansson
 )
 
+# Added: the Null platform links no DirectX backend, but stdJSON.c still needs jansson.
+if (J3D_PLATFORM_NULL)
+    target_link_libraries(${PROJECT_NAME} PUBLIC
+        ${EXTRA_LIBS}
+    )
+endif()
+
 if (J3D_DIRECTX6)
     target_link_libraries(${PROJECT_NAME} PUBLIC
         DirectX61c::ddraw

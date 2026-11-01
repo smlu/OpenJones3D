@@ -1310,7 +1310,7 @@ void J3DAPI SoundDriver_RestoreSoundBufferData(tSysSoundBuffer* pDSBuf)
 {
     if ( SoundDriver_pfGetSoundBufferData )
     {
-        uint32_t dataSize = 0;  // Added: Init to 0
+        size_t dataSize = 0;  // Added: Init to 0. Altered: size_t to match SoundDriverGetSoundBufferDataFunc
         unsigned int bCompressed = 0; // Added: Init to 0
         uint8_t* pSoundData = SoundDriver_pfGetSoundBufferData(pDSBuf, &dataSize, &bCompressed);
         if ( bCompressed )

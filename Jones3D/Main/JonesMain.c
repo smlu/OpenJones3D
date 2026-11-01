@@ -70,10 +70,10 @@ tSysHandle JonesMain_g_mainMutex;
 
 #define JONES_FPSPRINT_INTERVAL  2000u // 2 sec
 
-#define JONES_LOGCONSOLE_ERRORCOLOR    FOREGROUND_RED | FOREGROUND_INTENSITY
-#define JONES_LOGCONSOLE_WARNINGRCOLOR FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_INTENSITY
-#define JONES_LOGCONSOLE_STATUSCOLOR   FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY
-#define JONES_LOGCONSOLE_DEBUGCOLOR    FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE
+#define JONES_LOGCONSOLE_ERRORCOLOR    STDCONSOLE_COLOR_RED | STDCONSOLE_COLOR_INTENSITY
+#define JONES_LOGCONSOLE_WARNINGRCOLOR STDCONSOLE_COLOR_RED | STDCONSOLE_COLOR_GREEN | STDCONSOLE_COLOR_INTENSITY
+#define JONES_LOGCONSOLE_STATUSCOLOR   STDCONSOLE_COLOR_RED | STDCONSOLE_COLOR_GREEN | STDCONSOLE_COLOR_BLUE | STDCONSOLE_COLOR_INTENSITY
+#define JONES_LOGCONSOLE_DEBUGCOLOR    STDCONSOLE_COLOR_RED | STDCONSOLE_COLOR_GREEN | STDCONSOLE_COLOR_BLUE
 
 static bool JonesMain_bStartup = false; // Added: Init to false
 
@@ -404,7 +404,7 @@ int J3DAPI JonesMain_Startup(const char* lpCmdLine)
             };
 
             // Startup console
-            stdConsole_Startup("Debug", FOREGROUND_RED | FOREGROUND_BLUE | FOREGROUND_GREEN, /*bShowMinimized=*/0); // White text
+            stdConsole_Startup("Debug", STDCONSOLE_COLOR_RED | STDCONSOLE_COLOR_BLUE | STDCONSOLE_COLOR_GREEN, /*bShowMinimized=*/0); // White text
 
         } break;
 
@@ -960,7 +960,7 @@ void JonesMain_Shutdown(void)
 
     if ( JonesMain_g_mainMutex )
     {
-        CloseHandle(JonesMain_g_mainMutex);
+        JonesMainSys_CloseHandle(JonesMain_g_mainMutex);
     }
 }
 
@@ -1870,7 +1870,7 @@ int JonesMain_PlayIntroMovie(void)
         }
     }
 
-    Sleep(100u);
+    stdPlatform_Sleep(100u);
 
     if ( memcmp(&stdColor_cfRGB555, &videoMode.rasterInfo.colorInfo, 44) == 0 )
     {

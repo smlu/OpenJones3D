@@ -2,6 +2,13 @@
 #include <j3dcore/j3dhook.h>
 #include <std/RTI/symbols.h>
 
+// The console attributes callers use are the Windows console's own values, checked here so a
+// shared-header change cannot silently alter the colors the original console produced.
+static_assert(STDCONSOLE_COLOR_BLUE == FOREGROUND_BLUE, "STDCONSOLE_COLOR_BLUE must equal FOREGROUND_BLUE");
+static_assert(STDCONSOLE_COLOR_GREEN == FOREGROUND_GREEN, "STDCONSOLE_COLOR_GREEN must equal FOREGROUND_GREEN");
+static_assert(STDCONSOLE_COLOR_RED == FOREGROUND_RED, "STDCONSOLE_COLOR_RED must equal FOREGROUND_RED");
+static_assert(STDCONSOLE_COLOR_INTENSITY == FOREGROUND_INTENSITY, "STDCONSOLE_COLOR_INTENSITY must equal FOREGROUND_INTENSITY");
+
 static HANDLE stdConsole_hInput     = 0;
 static HANDLE stdConsole_hOutput    = 0;
 static int stdConsole_textAttribute = 0;

@@ -6,7 +6,8 @@
 
 J3D_EXTERN_C_START
 
-typedef uint8_t* (J3DAPI* SoundDriverGetSoundBufferDataFunc)(tSysSoundBuffer* pDSBuf, uint32_t* pSoundDataSize, uint32_t* pbCompressed);
+// Fixed: size_t* matches Sound_GetSoundBufferData, the Sound.c function passed to SoundDriver_Open
+typedef uint8_t* (J3DAPI* SoundDriverGetSoundBufferDataFunc)(tSysSoundBuffer* pDSBuf, size_t* pSoundDataSize, uint32_t* pbCompressed);
 
 int J3DAPI SoundDriver_Open(int bNoSound3D, int bGlobalFocus, tSysWindow hwnd, tDirectSound* pDirectSound, SoundCalcListenerSoundMixFunc pfCalcListenerSoundMix, SoundDriverGetSoundBufferDataFunc pfGetSoundBufferData, tPrintfFunc pfLogError);
 void SoundDriver_Close(void);

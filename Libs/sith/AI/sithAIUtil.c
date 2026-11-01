@@ -1265,7 +1265,7 @@ int J3DAPI sithAIUtil_AIFindNearestWpnt(SithThing* pThing, int bCheckPath)
     }
 
     // Step 1: Sort the waypoints by their squared distance to the thing, nearest first
-    qsort(sithAIUtil_aWpntDistances, numDist, sizeof(SithAIWaypointDistance), sithAIUtil_CompareAIWpntDistances);
+    qsort(sithAIUtil_aWpntDistances, numDist, sizeof(SithAIWaypointDistance), (int (*)(const void*, const void*))sithAIUtil_CompareAIWpntDistances);
     idWpnt = sithAIUtil_aWpntDistances[0].num;
     float pathDist;
     rdVector3 hitNorm;

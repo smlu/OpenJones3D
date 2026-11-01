@@ -442,3 +442,10 @@ bool JonesMainSys_GetComputerName(char* pDst, size_t size)
     DWORD nSize = (DWORD)size;
     return GetComputerName(pDst, &nSize) != 0;
 }
+
+// Closes a platform handle such as the one CreateMutex returned, matching CloseHandle.
+// Returns true on success, false when the handle is invalid or already closed.
+bool JonesMainSys_CloseHandle(tSysHandle handle)
+{
+    return CloseHandle(handle) != 0;
+}

@@ -223,7 +223,7 @@ void J3DAPI rdCache_SendFaceListToHardware(size_t numPolys, rdCacheProcEntry* pC
 
     if ( pfSort == rdCache_ProcFaceDistanceCompare )
     {
-        qsort(pCurPoly, numPolys, sizeof(rdCacheProcEntry), pfSort);
+        qsort(pCurPoly, numPolys, sizeof(rdCacheProcEntry), (int (*)(const void*, const void*))pfSort);
     }
 
 LABEL_4:

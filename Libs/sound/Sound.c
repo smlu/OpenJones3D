@@ -159,7 +159,7 @@ uint32_t Sound_GetEntropyFromChannelHandle(tSoundChannelHandle handle); // Added
 size_t J3DAPI Sound_GetFreeCache(size_t bankNum, size_t requiredSize);
 void J3DAPI Sound_IncreaseFreeCache(size_t bankNum, size_t nSize);
 size_t J3DAPI Sound_WriteSoundFilepathToBank(size_t bankNum, const char* pName, size_t len);
-size_t Sound_GetDeltaTime(void);
+uint32_t Sound_GetDeltaTime(void);
 
 uint8_t* J3DAPI Sound_GetSoundBufferData(tSysSoundBuffer* pSndBuf, size_t* pDataSize, uint32_t* pbCompressed);
 int J3DAPI Sound_MemFileSeek(tFileHandle fh, int offset, int origin);

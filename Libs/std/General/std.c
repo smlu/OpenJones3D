@@ -149,7 +149,7 @@ int stdConsolePrintf(const char* pFormat, ...)
     vsnprintf_s(std_g_genBuffer, STD_ARRAYLEN(std_g_genBuffer), STD_ARRAYLEN(std_g_genBuffer) - 1, pFormat, args);
     va_end(args);
 
-    stdConsole_WriteConsole(std_g_genBuffer, FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
+    stdConsole_WriteConsole(std_g_genBuffer, STDCONSOLE_COLOR_RED | STDCONSOLE_COLOR_GREEN | STDCONSOLE_COLOR_BLUE);
     return sizeof(std_g_genBuffer);
 }
 

@@ -34,6 +34,9 @@ void JonesMainSys_ClearWindowProc(void); // Implemented in Jones3D/Platform/Win3
 // success; on failure it follows the GetComputerName semantics and may leave pDst untouched.
 bool JonesMainSys_GetComputerName(char* pDst, size_t size); // Implemented in Jones3D/Platform/Win32/JonesMainWin32.c
 
+// Closes a platform handle such as the one CreateMutex returned. Returns true on success.
+bool JonesMainSys_CloseHandle(tSysHandle handle); // Implemented in Jones3D/Platform/Win32/JonesMainWin32.c
+
 // Registers the RTI hook targets that now live in the Win32 platform files.
 void JonesMainSys_InstallHooks(void); // Implemented in Jones3D/Platform/Win32/JonesMainWin32.c
 

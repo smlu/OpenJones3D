@@ -590,7 +590,7 @@ void J3DAPI sithCogExec_PushStack(SithCog* pCog, SithCogSymbolValue* pValue)
     {
         SITHLOG_ERROR("Stack overflow in script %s.  Bottom element discarded.\n", pCog->pScript->aName);
         STD_MOVEMEM(pCog->stack, &pCog->stack[1], (STD_ARRAYLEN(pCog->stack) - 1) * sizeof(SithCogSymbolValue)); // Fixed: the ranges overlap, STD_MOVEMEM instead of STD_COPYMEM
-        static_assert((STD_ARRAYLEN(pCog->stack) - 1) * sizeof(SithCogSymbolValue) == 4080, "STD_ARRAYLEN(pCog->stack) - 1 * sizeof(SithCogSymbolValue) == 4080");
+        J3D_ASSERT_SIZE32((STD_ARRAYLEN(pCog->stack) - 1) * sizeof(SithCogSymbolValue) == 4080, "STD_ARRAYLEN(pCog->stack) - 1 * sizeof(SithCogSymbolValue) == 4080");
         --pCog->stackSize; /// TODO: make sure the call stack size is STD_ARRAYLEN(pCog->stack) - 1
     }
 

@@ -1046,7 +1046,7 @@ int J3DAPI sithCommand_MatList(const SithConsoleCommand* pFunc, const char* pArg
         }
     }
 
-    qsort(aMatInfo, pWorld->numMaterials, sizeof(SithCommandMatInfo), sithCommand_CompareMatInfos);
+    qsort(aMatInfo, pWorld->numMaterials, sizeof(SithCommandMatInfo), (int (*)(const void*, const void*))sithCommand_CompareMatInfos);
     for ( int i = pWorld->numMaterials - 1; i >= 0; --i )
     {
         if ( aMatInfo[i].memPerSurf )

@@ -42,6 +42,7 @@
 #include <std/Win95/stdComm.h>
 
 #include <errno.h>
+#include <stdlib.h>
 
 #define SITHWEAPON_MAX_PROJECTILE_RICOCHETS 6
 

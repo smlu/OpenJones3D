@@ -892,7 +892,7 @@ void J3DAPI sithWorld_GetMemoryUsage(const SithWorld* pWorld, size_t(*aMemUsed)[
     (*aCount)[7] = pWorld->numCogs;
     for ( size_t i = 0; i < pWorld->numCogs; ++i )
     {
-        (*aMemUsed)[7] += sizeof(SithCogSymbol) * pWorld->aCogs[i].pSymbolTable->numUsedSymbols + sizeof(SithCog) + sizeof(SithCogSymbolTable); static_assert((sizeof(SithCog) + sizeof(SithCogSymbolTable)) == 0x5100, "");
+        (*aMemUsed)[7] += sizeof(SithCogSymbol) * pWorld->aCogs[i].pSymbolTable->numUsedSymbols + sizeof(SithCog) + sizeof(SithCogSymbolTable); J3D_ASSERT_SIZE32((sizeof(SithCog) + sizeof(SithCogSymbolTable)) == 0x5100, "");
     }
 
     (*aCount)[10] = pWorld->numModels;
@@ -1523,7 +1523,7 @@ int J3DAPI sithWorld_LoadEntryBinary(SithWorld* pWorld, const char* pFilePath)
         sithWorld_UpdateLoadProgress(progress);
         STD_STRCPY(aCurSection, aBinarySectionParsers[i].pName);
 
-        Sleep(0); // ??
+        stdPlatform_Sleep(0); // ??
                   // From win32 docs: A value of zero causes the thread to relinquish the remainder of its time slice to any other thread
                   //                 that is ready to run. If there are no other threads ready to run, the function returns immediately, and the thread continues execution.
 

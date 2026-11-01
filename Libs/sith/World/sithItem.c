@@ -15,6 +15,7 @@
 #include <std/Win95/stdComm.h>
 
 #include <errno.h>
+#include <stdlib.h>
 
 void sithItem_InstallHooks(void)
 {

@@ -75,6 +75,24 @@ tStdTime stdPlatform_GetTimeMsec(void)
 #endif
 }
 
+void J3DAPI stdPlatform_Sleep(uint32_t msec)
+{
+    Sleep(msec);
+}
+
+void J3DAPI stdPlatform_GetLocalTime(StdLocalTime* pTime)
+{
+    SYSTEMTIME sysTime;
+    GetLocalTime(&sysTime);
+
+    pTime->year   = sysTime.wYear;
+    pTime->month  = sysTime.wMonth;
+    pTime->day    = sysTime.wDay;
+    pTime->hour   = sysTime.wHour;
+    pTime->minute = sysTime.wMinute;
+    pTime->second = sysTime.wSecond;
+}
+
 bool J3DAPI stdPlatform_DirExists(const char* pPath)
 {
     DWORD dwAttrib = GetFileAttributes(pPath);

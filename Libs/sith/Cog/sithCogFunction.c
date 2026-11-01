@@ -34,6 +34,7 @@
 #include <std/General/stdFnames.h>
 #include <std/General/stdMath.h>
 #include <std/General/stdMemory.h>
+#include <std/General/stdPlatform.h>
 #include <std/General/stdUtil.h>
 #include <std/Win95/stdComm.h>
 #include <stdbool.h>
@@ -91,25 +92,25 @@ void J3DAPI sithCogFunction_GetSourceType(SithCog* pCog)
 
 void J3DAPI sithCogFunction_GetSysDate(SithCog* pCog)
 {
-    SYSTEMTIME date;
-    GetLocalTime(&date);
+    StdLocalTime date;
+    stdPlatform_GetLocalTime(&date);
 
     rdVector3 vec;
-    vec.x = (float)date.wYear;
-    vec.y = (float)date.wMonth;
-    vec.z = (float)date.wDay;
+    vec.x = (float)date.year;
+    vec.y = (float)date.month;
+    vec.z = (float)date.day;
     sithCogExec_PushVector(pCog, &vec);
 }
 
 void J3DAPI sithCogFunction_GetSysTime(SithCog* pCog)
 {
-    SYSTEMTIME time;
-    GetLocalTime(&time);
+    StdLocalTime time;
+    stdPlatform_GetLocalTime(&time);
 
     rdVector3 vec;
-    vec.x = (float)time.wHour;
-    vec.y = (float)time.wMinute;
-    vec.z = (float)time.wSecond;
+    vec.x = (float)time.hour;
+    vec.y = (float)time.minute;
+    vec.z = (float)time.second;
     sithCogExec_PushVector(pCog, &vec);
 }
 
