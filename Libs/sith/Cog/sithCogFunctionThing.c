@@ -225,7 +225,7 @@ void J3DAPI sithCogFunctionThing_CreateLaser(SithCog* pCog)
     if ( !sithCogExec_PopVector(pCog, &endPos) )
     {
         STDLOG_ERROR("Cog %s: Invalid end pos vector in CreateLaser!\n", pCog->aName);
-        bArgError = true; // Fixed: Set bArgError to true so we don't proceed with creating laser thing
+        bArgError = true; // Fixed: [v1.2] Set bArgError to true so we don't proceed with creating laser thing
     }
 
     rdVector3 offset;
