@@ -276,7 +276,7 @@ int J3DAPI animframe_Parse(const uint8_t* pData, int size)
     return 0;
 }
 
-uint32_t J3DAPI animframe_Decode(void* pBitmap, int a2, int a3, int a4, void* pPalette, int* pOutA, int* pOutB, uint32_t flags, int a9, int a10, const uint8_t* pData, int size)
+uint32_t J3DAPI animframe_Decode(void* pBitmap, intptr_t a2, int a3, int a4, void* pPalette, int* pOutA, int* pOutB, uint32_t flags, int a9, int a10, const uint8_t* pData, int size) // Altered: a2 carries a clip MixerRect*, so intptr_t
 {
     int seen        = 0;
     uint32_t result = 0;
@@ -504,7 +504,7 @@ void* J3DAPI animframe_Fetch(int n)
     return NULL;
 }
 
-void J3DAPI animframe_Draw(void* pBitmap, int a2, int a3, int a4, void* pPalette, int a6, int a7, int a8)
+void J3DAPI animframe_Draw(void* pBitmap, intptr_t a2, int a3, int a4, void* pPalette, int a6, int a7, int a8) // Altered: a2 carries the clip MixerRect* through to Blit
 {
     if ( animframe_pDisplay && (a7 & 2) )
     {

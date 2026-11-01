@@ -292,7 +292,7 @@ int J3DAPI animplay_GetTime(AnimPlay* pPlay)
     return pPlay->interval2 * 1000 / ANIMPLAY_TIMER_FREQUENCY;
 }
 
-int J3DAPI animplay_Pace(AnimPlay* pPlay, void* a2, int a3, int a4, int a5, void* a6, int* a7, int* a8, int a9, int a10)
+int J3DAPI animplay_Pace(AnimPlay* pPlay, void* a2, intptr_t a3, int a4, int a5, void* a6, int* a7, int* a8, int a9, int a10) // Altered: a3 carries a clip MixerRect*, so intptr_t
 {
     if ( pPlay->done == 0 )
     {
@@ -313,7 +313,7 @@ int J3DAPI animplay_Pace(AnimPlay* pPlay, void* a2, int a3, int a4, int a5, void
     return -1;
 }
 
-void J3DAPI animplay_Draw(AnimPlay* pPlay, void* pBitmap, int a3, int a4, int a5, void* pPalette, int a7, int a8, int a9)
+void J3DAPI animplay_Draw(AnimPlay* pPlay, void* pBitmap, intptr_t a3, int a4, int a5, void* pPalette, int a7, int a8, int a9) // Altered: a3 carries the clip MixerRect*, so intptr_t
 {
     J3D_UNUSED(pPlay);
     animplay_pFrame->Draw(pBitmap, a3, a4, a5, pPalette, a7, a8, a9);
@@ -367,7 +367,7 @@ int J3DAPI animplay_IsDone(AnimPlay* pPlay)
     return 0;
 }
 
-int J3DAPI animplay_Step(AnimPlay* pPlay, void* a2, int a3, int a4, int a5, void* a6, int* a7, int* a8, int a9, int a10)
+int J3DAPI animplay_Step(AnimPlay* pPlay, void* a2, intptr_t a3, int a4, int a5, void* a6, int* a7, int* a8, int a9, int a10) // Altered: a3 carries a clip MixerRect*, so intptr_t
 {
     if ( pPlay->state == ANIMPLAY_STATE_WAITING )
     {

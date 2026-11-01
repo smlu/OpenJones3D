@@ -408,7 +408,7 @@ void J3DAPI sithParticle_CacheAdd(rdParticle* pParticle)
     SITH_ASSERTREL(strlen(pParticle->aName) > 0);
     SITH_ASSERTREL(sithParticle_pHashtable != NULL);
 
-    (tLinkListNode*)stdHashtbl_Add(sithParticle_pHashtable, pParticle->aName, pParticle);
+    stdHashtbl_Add(sithParticle_pHashtable, pParticle->aName, pParticle);
 }
 
 void J3DAPI sithParticle_CacheRemove(const rdParticle* pParticle)

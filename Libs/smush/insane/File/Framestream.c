@@ -58,7 +58,7 @@ void J3DAPI framestream_Close(FrameStream* pFrames)
     J3D_UNUSED(pFrames);
 }
 
-int J3DAPI framestream_Tick(FrameStream* pFrames, void* pBitmap, int a3, int a4, int a5, void* pPalette, int* pOutA, int* pOutB, int flags, int a10, int a11)
+int J3DAPI framestream_Tick(FrameStream* pFrames, void* pBitmap, intptr_t a3, int a4, int a5, void* pPalette, int* pOutA, int* pOutB, int flags, int a10, int a11) // Altered: a3 carries a clip MixerRect*, so intptr_t
 {
     if ( pFrames->stalled )
     {
@@ -314,7 +314,7 @@ int J3DAPI framestream_Continue(FrameStream* pFrames)
     return 0;
 }
 
-int J3DAPI framestream_Present(FrameStream* pFrames, void* pBitmap, int a3, int a4, int a5, void* pPalette, int* pOutA, int* pOutB, int flags, int a10, int a11)
+int J3DAPI framestream_Present(FrameStream* pFrames, void* pBitmap, intptr_t a3, int a4, int a5, void* pPalette, int* pOutA, int* pOutB, int flags, int a10, int a11) // Altered: a3 carries a clip MixerRect*, so intptr_t
 {
     if ( !((flags | pFrames->outFlags) & FRAMESTREAM_FLAG_NOFILL) )
     {

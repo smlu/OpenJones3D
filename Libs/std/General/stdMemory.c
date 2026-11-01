@@ -182,7 +182,7 @@ void* J3DAPI stdMemory_Malloc(size_t size, const char* pFilename, size_t line)
     }
 
     pHeap->header.number    = stdMemory_g_curState.totalAllocs;
-    pHeap->header.id        = (uint32_t)pHeap;
+    pHeap->header.id        = (uint32_t)(uintptr_t)pHeap; // Altered: uintptr_t step; id is a low-32-bit integrity cookie
     pHeap->header.size      = size;
     pHeap->header.pFilename = pFilename;
     pHeap->header.line      = line;
@@ -221,7 +221,7 @@ void J3DAPI stdMemory_Free(void* pBytes)
 
     tMemoryHeader* pHeader = STDMEMORY_GETHEADER(pBytes);
 
-    STD_ASSERTREL((pHeader != NULL) && ((uint32_t)pHeader == pHeader->id));
+    STD_ASSERTREL((pHeader != NULL) && ((uint32_t)(uintptr_t)pHeader == pHeader->id)); // Altered: uintptr_t step; id is a low-32-bit integrity cookie
     STD_ASSERTREL(pHeader->magic == STDMEMORY_HEADERMAGIC);
     STD_ASSERTREL(*(uint32_t*)((uint8_t*)pBytes + pHeader->size) == STDMEMORY_HEADERMAGIC);
 
@@ -261,7 +261,7 @@ void* J3DAPI stdMemory_Realloc(void* pBytes, size_t size, const char* pFilename,
     }
 
     tMemoryHeader* pHeader = STDMEMORY_GETHEADER(pBytes);
-    STD_ASSERTREL((pHeader != NULL) && ((uint32_t)pHeader == pHeader->id));
+    STD_ASSERTREL((pHeader != NULL) && ((uint32_t)(uintptr_t)pHeader == pHeader->id)); // Altered: uintptr_t step; id is a low-32-bit integrity cookie
 
     size_t curSize = pHeader->size;
     // Fixed: Avoid total-byte accounting overflow when a reallocation grows.
@@ -276,7 +276,7 @@ void* J3DAPI stdMemory_Realloc(void* pBytes, size_t size, const char* pFilename,
         return NULL;
     }
 
-    pHeap->header.id        = (uint32_t)pHeap;
+    pHeap->header.id        = (uint32_t)(uintptr_t)pHeap; // Altered: uintptr_t step; id is a low-32-bit integrity cookie
     pHeap->header.size      = size;
     pHeap->header.pFilename = pFilename;
     pHeap->header.line      = line;

@@ -1127,7 +1127,7 @@ int J3DAPI sithAIInstinct_Talk(SithAIControlBlock* pLocal, SithAIInstinct* pInst
 
         case SITHAI_EVENT_MODECHANGED:
         {
-            SithAIMode prevMode = (SithAIMode)(int)pObject;
+            SithAIMode prevMode = (SithAIMode)(intptr_t)pObject;
             if ( (pLocal->mode & SITHAI_MODE_BERSERK) != 0 && (prevMode & SITHAI_MODE_BERSERK) == 0 )
             {
                 sithSoundMixer_StopAllSoundsThing(pLocal->pOwner);
@@ -1170,7 +1170,7 @@ int J3DAPI sithAIInstinct_Talk(SithAIControlBlock* pLocal, SithAIInstinct* pInst
                 return 0;
             }
 
-            hChannel = sithSoundClass_PlayModeRandom(pLocal->pOwner, (SithSoundClassMode)(int)pObject);
+            hChannel = sithSoundClass_PlayModeRandom(pLocal->pOwner, (SithSoundClassMode)(intptr_t)pObject);
             bSuccess = true;
             break;
         }
@@ -2427,7 +2427,7 @@ int J3DAPI sithAIInstinct_HumanCombatMove(SithAIControlBlock* pLocal, SithAIInst
     {
         case SITHAI_EVENT_MODECHANGED:
         {
-            if ( (pLocal->mode & SITHAI_MODE_CHASE_GOAL) != 0 && ((SithAIMode)pObject & SITHAI_MODE_CHASE_GOAL) == 0 )
+            if ( (pLocal->mode & SITHAI_MODE_CHASE_GOAL) != 0 && ((SithAIMode)(intptr_t)pObject & SITHAI_MODE_CHASE_GOAL) == 0 )
             {
                 if ( (pLocal->mode & SITHAI_MODE_UNKNOWN_1000000) != 0 )
                 {
@@ -2741,7 +2741,7 @@ int J3DAPI sithAIInstinct_Roam(SithAIControlBlock* pLocal, SithAIInstinct* pInst
 
     if ( event == SITHAI_EVENT_MODECHANGED && pThing )
     {
-        SithAIMode prevMode = (SithAIMode)pThing;
+        SithAIMode prevMode = (SithAIMode)(intptr_t)pThing;
         if ( (pLocal->mode & SITHAI_MODE_SEARCHING) != 0 && (prevMode & SITHAI_MODE_SEARCHING) == 0 )
         {
             pState->msecNextUpdate = sithTime_g_msecGameTime + SITHAIINSTINCT_ROAM_INTERVAL(pInstinct);
@@ -2846,7 +2846,7 @@ int J3DAPI sithAIInstinct_ReturnHome(SithAIControlBlock* pLocal, SithAIInstinct*
     {
         case SITHAI_EVENT_MODECHANGED:
         {
-            SithAIMode prevMode = (SithAIMode)pObject;
+            SithAIMode prevMode = (SithAIMode)(intptr_t)pObject;
             if ( (pLocal->mode & SITHAI_MODE_SEARCHING) != 0 && (prevMode & SITHAI_MODE_SEARCHING) == 0 )
             {
                 sithAIMove_AISetMovePos(pLocal, &pLocal->homePos, 1.2f);
@@ -2940,7 +2940,7 @@ int J3DAPI sithAIInstinct_Flee(SithAIControlBlock* pLocal, SithAIInstinct* pInst
             {
                 if ( pThing )
                 {
-                    SithAIMode prevMode = (SithAIMode)pThing;
+                    SithAIMode prevMode = (SithAIMode)(intptr_t)pThing;
                     if ( (pLocal->mode & SITHAI_MODE_FLEEING) != 0 && (prevMode & SITHAI_MODE_FLEEING) == 0 )
                     {
                         rdVector_Neg3Acc(&direction);

@@ -92,7 +92,7 @@ typedef struct sBl16Interface
     int  (*GetFlags)(void);
     void (*Reset)(void);
     int  (*Parse)(const Bl16Parse* pData, int size);
-    int  (*Decode)(void* pBitmap, int clip, int x, int y, void* pPalette, const uint8_t* pData, int size, int flags, int unused9, int unused10);
+    int  (*Decode)(void* pBitmap, intptr_t clip, int x, int y, void* pPalette, const uint8_t* pData, int size, int flags, int unused9, int unused10); // Altered: clip carries a MixerRect*
     int  (*Query1)(void);
     int  (*Query)(const Bl16Header* pData, int tag, int* pX, int* pY, int* pWidth, int* pHeight);
 } Bl16Interface;
@@ -149,7 +149,7 @@ void dbloc16_Reset(void);
 int J3DAPI dbloc16_Parse(const Bl16Parse* pData, int size);
 int J3DAPI dbloc16_Alloc(int width, int height, int depth);
 void dbloc16_Free(void);
-int J3DAPI dbloc16_Decode(void* pBitmap, int clip, int x, int y, void* pPalette, const uint8_t* pData, int size, int flags, int unused9, int unused10);
+int J3DAPI dbloc16_Decode(void* pBitmap, intptr_t clip, int x, int y, void* pPalette, const uint8_t* pData, int size, int flags, int unused9, int unused10); // Altered: clip carries a MixerRect*
 int dbloc16_Query1(void); // Folded onto 0x004E8260; no address of its own, never hook
 int J3DAPI dbloc16_Query(const Bl16Header* pData, int tag, int* pX, int* pY, int* pWidth, int* pHeight);
 void J3DAPI dbloc16_MakeTables(int width);

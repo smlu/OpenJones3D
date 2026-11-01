@@ -78,8 +78,8 @@ typedef struct sAnimPlayTable
     int  (*Play)(int a1, int a2, int a3, int a4, int a5, int a6, int a7, int a8, int a9, int a10, int a11, int a12, int a13);
     int  (*Create)(AnimPlay** ppPlay, const char* pName, int rate, int ringSize, int frameSize, int flags);
     int  (*GetTime)(AnimPlay* pPlay);
-    int  (*Pace)(AnimPlay* pPlay, void* a2, int a3, int a4, int a5, void* a6, int* a7, int* a8, int a9, int a10);
-    void (*Draw)(AnimPlay* pPlay, void* pBitmap, int a3, int a4, int a5, void* pPalette, int a7, int a8, int a9);
+    int  (*Pace)(AnimPlay* pPlay, void* a2, intptr_t a3, int a4, int a5, void* a6, int* a7, int* a8, int a9, int a10); // Altered: a3 carries a clip MixerRect*
+    void (*Draw)(AnimPlay* pPlay, void* pBitmap, intptr_t a3, int a4, int a5, void* pPalette, int a7, int a8, int a9); // Altered: a3 carries a clip MixerRect*
     void (*Destroy)(AnimPlay** ppPlay);
     int  (*IsOpen)(AnimPlay* pPlay);
     void (*Stall)(AnimPlay* pPlay);

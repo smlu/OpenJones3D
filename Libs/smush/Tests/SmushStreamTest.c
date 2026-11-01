@@ -522,7 +522,7 @@ TEST(SmushStream, streamer_FillAdvanceAndPercent)
     TEST_ASSERT_FALSE(pStreamer->IsActive(pStream));
 
     // The next advance returns the frame address, skipping the sector offset
-    int pFrame = pStreamer->Advance(pStream, 16);
+    intptr_t pFrame = pStreamer->Advance(pStream, 16);
     TEST_ASSERT_EQUAL_PTR(pStream->pBuf + 8, (void*)(intptr_t)pFrame);
     TEST_ASSERT_EQUAL_INT(0, pStream->skip);
     TEST_ASSERT_EQUAL_INT(8 + 16, pStream->pending);
@@ -588,7 +588,7 @@ TEST(SmushStream, streamer_InRangeAndCancel)
 // ---------------------------------------------------------------------------------------------------------------------
 // Framestream: the chunk state machine over mock streamer/frame services
 // ---------------------------------------------------------------------------------------------------------------------
-static int Test_advanceQueue[8];
+static intptr_t Test_advanceQueue[8]; // Altered: intptr_t to match the widened StreamerInterface.Advance
 static int Test_numAdvance;
 static int Test_advanceIndex;
 static int Test_lastAdvanceArg[8];
@@ -607,7 +607,7 @@ static int Test_lastRate;
 static int Test_numRewind;
 static void* Test_fetchResult;
 
-static int Test_StreamerAdvance(Stream* pStream, int n)
+static intptr_t Test_StreamerAdvance(Stream* pStream, int n) // Altered: intptr_t to match the widened StreamerInterface.Advance
 {
     (void)pStream;
     Test_lastAdvanceArg[Test_advanceIndex & 7] = n;
@@ -627,7 +627,7 @@ static int Test_StreamerSetFile(Stream* pStream, const char* pName, int offset)
 static StreamerInterface Test_streamer = { NULL, NULL, Test_StreamerSetFile, Test_StreamerIsActive, NULL, Test_StreamerAdvance, Test_StreamerReset, NULL };
 
 static int Test_FrameParse(const uint8_t* pData, int size) { (void)pData; ++Test_numParse; Test_lastParseSize = size; return 0; }
-static uint32_t Test_FrameDecode(void* pBitmap, int a2, int a3, int a4, void* pPalette, int* pOutA, int* pOutB, uint32_t flags, int a9, int a10, const uint8_t* pData, int size)
+static uint32_t Test_FrameDecode(void* pBitmap, intptr_t a2, int a3, int a4, void* pPalette, int* pOutA, int* pOutB, uint32_t flags, int a9, int a10, const uint8_t* pData, int size)
 {
     (void)pBitmap; (void)a2; (void)a3; (void)a4; (void)pPalette; (void)pOutA; (void)pOutB; (void)a9; (void)a10; (void)pData;
     ++Test_numDecode;
@@ -756,8 +756,8 @@ TEST(SmushStream, framestream_TickReadsChunkHeaderAndParsesFLHD)
 
     // Size 5 is rounded up to an even 6
     SmushStreamTest_ChunkHeader(head, "FLHD", 5);
-    Test_advanceQueue[0] = (int)(intptr_t)head;
-    Test_advanceQueue[1] = (int)(intptr_t)body;
+    Test_advanceQueue[0] = (intptr_t)head;
+    Test_advanceQueue[1] = (intptr_t)body;
     Test_advanceQueue[2] = -1; // next header not ready
 
     TEST_ASSERT_EQUAL_INT(5, framestream_Tick(&play, NULL, 0, 0, 0, NULL, NULL, NULL, 0, 0, 0));
@@ -780,7 +780,7 @@ TEST(SmushStream, framestream_TickReportsStreamErrorsAndInvalidTags)
 
     SmushStreamTest_ResetFramestreamMocks();
     SmushStreamTest_ChunkHeader(head, "Zq!x", 2);
-    Test_advanceQueue[0] = (int)(intptr_t)head;
+    Test_advanceQueue[0] = (intptr_t)head;
     TEST_ASSERT_EQUAL_INT(-2, framestream_Tick(&play, NULL, 0, 0, 0, NULL, NULL, NULL, 0, 0, 0));
     TEST_ASSERT_EQUAL_STRING("Read invalid frame header Zq!x -- CD may be dirty or damaged.", Test_lastError);
     SmushStreamTest_StopFramestream();
@@ -796,8 +796,8 @@ TEST(SmushStream, framestream_TickPresentsFrameAndEndsStream)
     play.flagsIn = 0;
 
     SmushStreamTest_ChunkHeader(head, "FRME", 8);
-    Test_advanceQueue[0] = (int)(intptr_t)head;
-    Test_advanceQueue[1] = (int)(intptr_t)body;
+    Test_advanceQueue[0] = (intptr_t)head;
+    Test_advanceQueue[1] = (intptr_t)body;
 
     // Flag 4 in a9 skips the clear of the destination bitmap (which is a null here)
     int result = framestream_Tick(&play, NULL, 0, 0, 0, NULL, NULL, NULL, 4, 0, 0);
@@ -1222,7 +1222,7 @@ static int Test_DecGetTag(void) { return 'DEC1'; }
 static int Test_DecGetFlags(void) { return 0x10; }
 static void Test_DecReset(void) { ++Test_decoderResets; }
 static int Test_DecParse(const uint8_t* pData, int size) { (void)pData; ++Test_decoderParses; Test_decoderLastSize = size; return 0; }
-static uint32_t Test_DecDecode(void* pBitmap, int a2, int a3, int a4, void* pPalette, const uint8_t* pData, int size, int mode, int a9, int a10)
+static uint32_t Test_DecDecode(void* pBitmap, intptr_t a2, int a3, int a4, void* pPalette, const uint8_t* pData, int size, int mode, int a9, int a10)
 {
     (void)pBitmap; (void)a2; (void)a3; (void)a4; (void)pPalette; (void)pData; (void)mode; (void)a9; (void)a10;
     ++Test_decoderDecodes;
@@ -1237,7 +1237,7 @@ static int Test_displayPresents;
 static int Test_displayPalettes;
 static AnimFrameDisplayInfo Test_displayInfo;
 static AnimFrameDisplayInfo* Test_DispGetInfo(void) { return &Test_displayInfo; }
-static void Test_DispBlit(void* pBitmap, int a3, int a4, int a2) { (void)pBitmap; (void)a3; (void)a4; (void)a2; ++Test_displayBlits; }
+static void Test_DispBlit(void* pBitmap, int a3, int a4, intptr_t a2) { (void)pBitmap; (void)a3; (void)a4; (void)a2; ++Test_displayBlits; }
 static void Test_DispPresent(void* pPalette) { (void)pPalette; ++Test_displayPresents; }
 static void Test_DispSetPalette(int a, int b, int count) { (void)a; (void)b; (void)count; ++Test_displayPalettes; }
 static AnimFrameDisplayService Test_display = { NULL, Test_DispGetInfo, Test_DispBlit, NULL, Test_DispPresent, NULL, Test_DispSetPalette };

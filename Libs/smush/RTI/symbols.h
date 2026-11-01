@@ -33,13 +33,13 @@
 #define animplay_Play_TYPE int (J3DAPI*)(int, int, int, int, int, int, int, int, int, int, int, int, int)
 #define animplay_Create_TYPE int (J3DAPI*)(AnimPlay**, const char*, int, int, int, int)
 #define animplay_GetTime_TYPE int (J3DAPI*)(AnimPlay*)
-#define animplay_Pace_TYPE int (J3DAPI*)(AnimPlay*, void*, int, int, int, void*, int*, int*, int, int)
-#define animplay_Draw_TYPE void (J3DAPI*)(AnimPlay*, void*, int, int, int, void*, int, int, int)
+#define animplay_Pace_TYPE int (J3DAPI*)(AnimPlay*, void*, intptr_t, int, int, void*, int*, int*, int, int) // Altered: a3 carries a clip MixerRect*
+#define animplay_Draw_TYPE void (J3DAPI*)(AnimPlay*, void*, intptr_t, int, int, void*, int, int, int) // Altered: a3 carries a clip MixerRect*
 #define animplay_Destroy_TYPE void (J3DAPI*)(AnimPlay**)
 #define animplay_SetRate_TYPE void (J3DAPI*)(AnimPlay*, int)
 #define animplay_Rewind_TYPE void (J3DAPI*)(AnimPlay*)
 #define animplay_IsDone_TYPE int (J3DAPI*)(AnimPlay*)
-#define animplay_Step_TYPE int (J3DAPI*)(AnimPlay*, void*, int, int, int, void*, int*, int*, int, int)
+#define animplay_Step_TYPE int (J3DAPI*)(AnimPlay*, void*, intptr_t, int, int, void*, int*, int*, int, int) // Altered: a3 carries a clip MixerRect*
 #define animplay_TickCallback_TYPE void (J3DAPI*)(int, int)
 #define animplay_PaceCallback_TYPE void (J3DAPI*)(int, int)
 #define animplay_DebugName_TYPE const char* (J3DAPI*)(int)
@@ -53,10 +53,10 @@
 #define animframe_Shutdown_TYPE void (*)(void)
 #define animframe_ResetDecoders_TYPE void (*)(void)
 #define animframe_Parse_TYPE int (J3DAPI*)(const uint8_t*, int)
-#define animframe_Decode_TYPE uint32_t (J3DAPI*)(void*, int, int, int, void*, int*, int*, uint32_t, int, int, const uint8_t*, int)
+#define animframe_Decode_TYPE uint32_t (J3DAPI*)(void*, intptr_t, int, int, void*, int*, int*, uint32_t, int, int, const uint8_t*, int) // Altered: a2 carries a clip MixerRect*
 #define animframe_Load_TYPE void (J3DAPI*)(const int16_t*, int)
 #define animframe_Fetch_TYPE void* (J3DAPI*)(int)
-#define animframe_Draw_TYPE void (J3DAPI*)(void*, int, int, int, void*, int, int, int)
+#define animframe_Draw_TYPE void (J3DAPI*)(void*, intptr_t, int, int, void*, int, int, int) // Altered: a2 carries a clip MixerRect*
 #define animframe_DebugName_TYPE const char* (J3DAPI*)(int)
 #define animframe_SetDebug_TYPE void (J3DAPI*)(int)
 #define animframe_GetDebug_TYPE int (*)(void)
@@ -73,7 +73,7 @@
 #define streamer_SetFile_TYPE int (J3DAPI*)(Stream*, const char*, int)
 #define streamer_Prime_TYPE int (J3DAPI*)(Stream*)
 #define streamer_IsActive_TYPE int (J3DAPI*)(Stream*)
-#define streamer_Advance_TYPE int (J3DAPI*)(Stream*, int)
+#define streamer_Advance_TYPE intptr_t (J3DAPI*)(Stream*, int) // Altered: intptr_t return, matches the widened interface
 #define streamer_Cancel_TYPE int (J3DAPI*)(Stream*)
 #define streamer_InRange_TYPE int (J3DAPI*)(Stream*, int)
 #define streamer_Percent_TYPE int (J3DAPI*)(Stream*)
@@ -139,7 +139,7 @@
 #define dwave_GetFlags_TYPE int (*)(void)
 #define dwave_Reset_TYPE void (*)(void)
 #define dwave_Parse_TYPE int (J3DAPI*)(const uint8_t*, int)
-#define dwave_Decode_TYPE uint32_t (J3DAPI*)(void*, int, int, int, void*, const uint8_t*, int, int, int, int)
+#define dwave_Decode_TYPE uint32_t (J3DAPI*)(void*, intptr_t, int, int, void*, const uint8_t*, int, int, int, int) // Altered: clip carries a MixerRect*
 #define dwave_DecodeVima_TYPE void (J3DAPI*)(int16_t*, const uint8_t*, uint32_t, uint32_t)
 
 // insane/Flobject/D_bloc16.c
@@ -154,7 +154,7 @@
 #define dbloc16_Parse_TYPE int (J3DAPI*)(const Bl16Parse*, int)
 #define dbloc16_Alloc_TYPE int (J3DAPI*)(int, int, int)
 #define dbloc16_Free_TYPE void (*)(void)
-#define dbloc16_Decode_TYPE int (J3DAPI*)(void*, int, int, int, void*, const uint8_t*, int, int, int, int)
+#define dbloc16_Decode_TYPE int (J3DAPI*)(void*, intptr_t, int, int, void*, const uint8_t*, int, int, int, int) // Altered: clip carries a MixerRect*
 #define dbloc16_Query_TYPE int (J3DAPI*)(const Bl16Header*, int, int*, int*, int*, int*)
 #define dbloc16_MakeTables_TYPE void (J3DAPI*)(int)
 #define dbloc16_MakeGlyphs_TYPE void (J3DAPI*)(int)
@@ -267,10 +267,10 @@
 
 // insane/File/Framestream.c
 #define framestream_Reset_TYPE int (J3DAPI*)(FrameStream*)
-#define framestream_Tick_TYPE int (J3DAPI*)(FrameStream*, void*, int, int, int, void*, int*, int*, int, int, int)
+#define framestream_Tick_TYPE int (J3DAPI*)(FrameStream*, void*, intptr_t, int, int, void*, int*, int*, int, int, int) // Altered: a3 carries a clip MixerRect*
 #define framestream_Fetch_TYPE void (J3DAPI*)(FrameStream*, int)
 #define framestream_Continue_TYPE int (J3DAPI*)(FrameStream*)
-#define framestream_Present_TYPE int (J3DAPI*)(FrameStream*, void*, int, int, int, void*, int*, int*, int, int, int)
+#define framestream_Present_TYPE int (J3DAPI*)(FrameStream*, void*, intptr_t, int, int, void*, int*, int*, int, int, int) // Altered: a3 carries a clip MixerRect*
 #define framestream_Header_TYPE void (J3DAPI*)(FrameStream*, const FrameHeader*, void*, int*)
 #define framestream_IsOpen_TYPE int (J3DAPI*)(FrameStream*)
 #define framestream_Stall_TYPE void (J3DAPI*)(FrameStream*)

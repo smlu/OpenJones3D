@@ -198,6 +198,19 @@ elseif(NOT WIN32 AND (CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU"))
         -Wno-parentheses
         -Wno-unknown-pragmas
     )
+    if (CMAKE_C_COMPILER_ID MATCHES "Clang")
+        # Added: fail the native build on any cast that truncates a pointer (or widens an int
+        # into one) so 64-bit builds stay pointer-safe. Clang only: these warning groups have
+        # no GCC equivalent. Windows compile flags are unchanged.
+        add_compile_options(
+            -Werror=pointer-to-int-cast
+            -Werror=int-to-pointer-cast
+            -Werror=void-pointer-to-int-cast
+            -Werror=void-pointer-to-enum-cast
+            -Werror=pointer-to-enum-cast
+            -Werror=int-conversion
+        )
+    endif()
 else()
     message(FATAL_ERROR "Unsupported compiler: ${CMAKE_CXX_COMPILER_ID}")
 endif()

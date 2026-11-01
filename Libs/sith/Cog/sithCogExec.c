@@ -1032,7 +1032,7 @@ SithCogSymbolValue* J3DAPI sithCogExec_GetPointerValue(SithCogSymbolValue* pDest
     pDest->type = SITHCOG_VALUE_POINTER;
     if ( pValue->type == SITHCOG_VALUE_SYMBOLID )
     {
-        SithCogSymbol* pSymbol = sithCogParse_GetSymbolByID(pCog->pSymbolTable, (unsigned int)pValue->val.pointerValue);
+        SithCogSymbol* pSymbol = sithCogParse_GetSymbolByID(pCog->pSymbolTable, (unsigned int)(uintptr_t)pValue->val.pointerValue);
         SITH_ASSERTREL(pSymbol != NULL);
         if ( pSymbol->value.type == SITHCOG_VALUE_POINTER )
         {

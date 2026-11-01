@@ -307,7 +307,7 @@ int J3DAPI streamer_IsActive(Stream* pStream)
     return 0;
 }
 
-int J3DAPI streamer_Advance(Stream* pStream, int n)
+intptr_t J3DAPI streamer_Advance(Stream* pStream, int n) // Altered: returns intptr_t so the frame address survives 64-bit
 {
     if ( pStream->busy || !pStream->hFile )
     {
@@ -374,10 +374,10 @@ int J3DAPI streamer_Advance(Stream* pStream, int n)
     {
         int offset    = pStream->skip;
         pStream->skip = 0;
-        return (int)(pStream->pWrite + offset);
+        return (intptr_t)(pStream->pWrite + offset); // Altered: intptr_t keeps the whole ring-buffer address
     }
 
-    return (int)pStream->pWrite;
+    return (intptr_t)pStream->pWrite; // Altered: intptr_t keeps the whole ring-buffer address
 }
 
 int J3DAPI streamer_Cancel(Stream* pStream)

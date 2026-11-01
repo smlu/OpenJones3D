@@ -11,7 +11,8 @@
 /*
  * The `STREAMER=insane_streamer` service Cdstream.c publishes (`streamer_interface`): the animation player (Pcplay.c)
  * creates and fills a stream through it, the frame stream (Framestream.c) advances it. `Advance` returns the frame's
- * address, or a negative code (-1 not ready, -2 frame too large), as an int.
+ * address, or a negative code (-1 not ready, -2 frame too large).
+ * Altered: `Advance` returns intptr_t, not int, so the ring-buffer address survives 64-bit; the codes are unchanged.
  */
 
 J3D_EXTERN_C_START
@@ -63,7 +64,7 @@ typedef struct sStreamerInterface
     int  (*SetFile)(Stream* pStream, const char* pName, int startOffset);
     int  (*IsActive)(Stream* pStream);
     void (*Fill)(Stream* pStream, int limit);
-    int  (*Advance)(Stream* pStream, int n);
+    intptr_t (*Advance)(Stream* pStream, int n); // Altered: intptr_t so a ring-buffer address fits
     void (*Reset)(Stream* pStream);
     int  (*Percent)(Stream* pStream);
 } StreamerInterface;
@@ -80,7 +81,7 @@ void J3DAPI streamer_Fill(Stream* pStream, int limit);
 int J3DAPI streamer_SetFile(Stream* pStream, const char* pName, int startOffset);
 int J3DAPI streamer_Prime(Stream* pStream);
 int J3DAPI streamer_IsActive(Stream* pStream);
-int J3DAPI streamer_Advance(Stream* pStream, int n);
+intptr_t J3DAPI streamer_Advance(Stream* pStream, int n); // Altered: intptr_t return, see the StreamerInterface note
 int J3DAPI streamer_Cancel(Stream* pStream);
 int J3DAPI streamer_InRange(Stream* pStream, int n);
 int J3DAPI streamer_Percent(Stream* pStream);

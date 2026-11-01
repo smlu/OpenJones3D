@@ -17,8 +17,8 @@ typedef struct sAnimFrameTable
 {
     void (*Reset)(void);
     int  (*Parse)(const uint8_t* pData, int size);
-    uint32_t (*Decode)(void* pBitmap, int a2, int a3, int a4, void* pPalette, int* pOutA, int* pOutB, uint32_t flags, int a9, int a10, const uint8_t* pData, int size);
-    void (*Draw)(void* pBitmap, int a2, int a3, int a4, void* pPalette, int a6, int a7, int a8);
+    uint32_t (*Decode)(void* pBitmap, intptr_t a2, int a3, int a4, void* pPalette, int* pOutA, int* pOutB, uint32_t flags, int a9, int a10, const uint8_t* pData, int size); // Altered: a2 carries a clip MixerRect*
+    void (*Draw)(void* pBitmap, intptr_t a2, int a3, int a4, void* pPalette, int a6, int a7, int a8); // Altered: a2 carries the same clip MixerRect* as Decode
     void (*Load)(const int16_t* pData, int size);
     void* (*Fetch)(int n);
 } AnimFrameTable;
@@ -34,7 +34,7 @@ typedef struct sFlobDecoder
     int  (*GetFlags)(void);
     void (*Reset)(void);
     int  (*Parse)(const uint8_t* pData, int size);
-    uint32_t (*Decode)(void* pBitmap, int a2, int a3, int a4, void* pPalette, const uint8_t* pData, int size, int mode, int a9, int a10);
+    uint32_t (*Decode)(void* pBitmap, intptr_t a2, int a3, int a4, void* pPalette, const uint8_t* pData, int size, int mode, int a9, int a10); // Altered: a2 carries a clip MixerRect*
 } FlobDecoder;
 J3D_ASSERT_SIZE32(sizeof(FlobDecoder) == 0x18, "sizeof(FlobDecoder) == 0x18");
 
@@ -50,7 +50,7 @@ typedef struct sAnimFrameDisplayService
 {
     void* pfn00;
     AnimFrameDisplayInfo* (*GetInfo)(void);
-    void (*Blit)(void* pBitmap, int a3, int a4, int a2);
+    void (*Blit)(void* pBitmap, int a3, int a4, intptr_t a2); // Altered: a2 carries the clip MixerRect*
     void* pfn0C;
     void (*Present)(void* pPalette);
     void* pfn14;
@@ -73,10 +73,10 @@ int animframe_Startup(void);
 void animframe_Shutdown(void);
 void animframe_ResetDecoders(void);
 int J3DAPI animframe_Parse(const uint8_t* pData, int size);
-uint32_t J3DAPI animframe_Decode(void* pBitmap, int a2, int a3, int a4, void* pPalette, int* pOutA, int* pOutB, uint32_t flags, int a9, int a10, const uint8_t* pData, int size);
+uint32_t J3DAPI animframe_Decode(void* pBitmap, intptr_t a2, int a3, int a4, void* pPalette, int* pOutA, int* pOutB, uint32_t flags, int a9, int a10, const uint8_t* pData, int size); // Altered: a2 carries a clip MixerRect*
 void J3DAPI animframe_Load(const int16_t* pData, int size);
 void* J3DAPI animframe_Fetch(int n);
-void J3DAPI animframe_Draw(void* pBitmap, int a2, int a3, int a4, void* pPalette, int a6, int a7, int a8);
+void J3DAPI animframe_Draw(void* pBitmap, intptr_t a2, int a3, int a4, void* pPalette, int a6, int a7, int a8); // Altered: a2 carries the same clip MixerRect* as Decode
 const char* J3DAPI animframe_DebugName(int index);
 void J3DAPI animframe_SetDebug(int flags);
 int animframe_GetDebug(void);

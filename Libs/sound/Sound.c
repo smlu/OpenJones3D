@@ -29,9 +29,6 @@
 #define SOUND_LIPSYNC_END_MARGIN_MSEC     25u
 #define SOUND_MILLISECONDS_PER_SECOND     1000u
 
-// Sound load constants and macros
-#define SOUND_LOADSTATICIDXMASK 0x12344321 // Mask for static sound index
-
 // Sound handle constants & helper macros
 #define SOUND_HANDLE_ENTROPY_MAX   1111111u // Note, max 555555 handles per handle type (sound or channel)
 #define SOUND_HANDLE_MIN           1234u
@@ -170,6 +167,7 @@ void J3DAPI Sound_MemFileFree(void);
 
 void Sound_StopAllNonStaticSounds(void);
 
+static tSoundHandle Sound_LoadToBank(const char* pFilepath, uint32_t* sndIdx, size_t bankNum);
 static size_t Sound_GetLipSyncCurrentPosition(tSysSoundBuffer* pSoundBuffer);
 static void Sound_ResetLipSyncCompressor(tAudioCompressorState* pCompressorState);
 static void Sound_UncompressLipSyncData(tAudioCompressorState* pCompressorState, uint8_t* pOutSndData, const uint8_t* pCompressedData, unsigned int size);
@@ -1117,14 +1115,12 @@ size_t Sound_GetMemoryUsage(void)
 
 tSoundHandle J3DAPI Sound_Load(const char* pFilepath, uint32_t* sndIdx)
 {
-    // Set bank number
-    size_t bankNum = SOUNDBANK_NORMAL_NUM;
-    if ( sndIdx && *sndIdx == SOUND_LOADSTATICIDXMASK )
-    {
-        sndIdx = (uint32_t*)sndIdx[1]; // The actual index is stored in the second parameter
-        bankNum = SOUNDBANK_STATIC_NUM;
-    }
+    return Sound_LoadToBank(pFilepath, sndIdx, SOUNDBANK_NORMAL_NUM);
+}
 
+// Altered: takes the bank as a parameter instead of reading a uint32_t* smuggled through sndIdx[1]
+static tSoundHandle Sound_LoadToBank(const char* pFilepath, uint32_t* sndIdx, size_t bankNum)
+{
     // Extract filename from file path
     size_t curPathPos     = strlen(pFilepath);
     const char* pFilename = &pFilepath[curPathPos];
@@ -1357,11 +1353,8 @@ tSoundHandle J3DAPI Sound_Load(const char* pFilepath, uint32_t* sndIdx)
 
 tSoundHandle J3DAPI Sound_LoadStatic(const char* pFilename, uint32_t* sndIdx)
 {
-    uint32_t aSndIdx[2];
-    aSndIdx[0] = SOUND_LOADSTATICIDXMASK;
-    aSndIdx[1] = (uint32_t)sndIdx;
-
-    tSoundHandle hSnd = Sound_Load(pFilename, aSndIdx);
+    // Altered: loads straight into the static bank instead of packing sndIdx into aSndIdx[1] as a uint32_t
+    tSoundHandle hSnd = Sound_LoadToBank(pFilename, sndIdx, SOUNDBANK_STATIC_NUM);
     soundbank_lastImportedBankNum = SOUNDBANK_STATIC_NUM;
     return hSnd;
 }

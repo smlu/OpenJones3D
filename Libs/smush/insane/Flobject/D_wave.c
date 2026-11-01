@@ -212,7 +212,7 @@ int J3DAPI dwave_Parse(const uint8_t* pData, int size)
     return 0;
 }
 
-uint32_t J3DAPI dwave_Decode(void* pBitmap, int clip, int x, int y, void* pPalette, const uint8_t* pData, int size, int flags, int unused9, int unused10)
+uint32_t J3DAPI dwave_Decode(void* pBitmap, intptr_t clip, int x, int y, void* pPalette, const uint8_t* pData, int size, int flags, int unused9, int unused10) // Altered: clip carries a MixerRect*, so intptr_t
 {
     J3D_UNUSED(pBitmap); J3D_UNUSED(clip); J3D_UNUSED(x); J3D_UNUSED(y); J3D_UNUSED(pPalette);
     J3D_UNUSED(size); J3D_UNUSED(flags); J3D_UNUSED(unused9); J3D_UNUSED(unused10);

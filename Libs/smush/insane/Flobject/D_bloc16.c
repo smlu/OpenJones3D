@@ -321,7 +321,7 @@ void dbloc16_Free(void)
     dbloc16_size   = 0;
 }
 
-int J3DAPI dbloc16_Decode(void* pBitmap, int clip, int x, int y, void* pPalette, const uint8_t* pData, int size, int flags, int unused9, int unused10)
+int J3DAPI dbloc16_Decode(void* pBitmap, intptr_t clip, int x, int y, void* pPalette, const uint8_t* pData, int size, int flags, int unused9, int unused10) // Altered: clip carries a MixerRect*, so intptr_t
 {
     J3D_UNUSED(size); J3D_UNUSED(unused9); J3D_UNUSED(unused10);
     return dbloc16_DecodeFrame(pBitmap, (MixerRect*)clip, x, y, pPalette, (Bl16Header*)pData, flags);

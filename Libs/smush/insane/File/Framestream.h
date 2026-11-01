@@ -75,10 +75,10 @@ J3D_ASSERT_SIZE32(sizeof(FrameHeader) == 0x416, "sizeof(FrameHeader) == 0x416");
 
 int J3DAPI framestream_Reset(FrameStream* pFrames);
 void J3DAPI framestream_Close(FrameStream* pFrames); // Folded onto 0x004EE700; no address of its own, never hook
-int J3DAPI framestream_Tick(FrameStream* pFrames, void* pBitmap, int a3, int a4, int a5, void* pPalette, int* pOutA, int* pOutB, int flags, int a10, int a11);
+int J3DAPI framestream_Tick(FrameStream* pFrames, void* pBitmap, intptr_t a3, int a4, int a5, void* pPalette, int* pOutA, int* pOutB, int flags, int a10, int a11); // Altered: a3 carries a clip MixerRect* to the decoder
 void J3DAPI framestream_Fetch(FrameStream* pFrames, int size);
 int J3DAPI framestream_Continue(FrameStream* pFrames);
-int J3DAPI framestream_Present(FrameStream* pFrames, void* pBitmap, int a3, int a4, int a5, void* pPalette, int* pOutA, int* pOutB, int flags, int a10, int a11);
+int J3DAPI framestream_Present(FrameStream* pFrames, void* pBitmap, intptr_t a3, int a4, int a5, void* pPalette, int* pOutA, int* pOutB, int flags, int a10, int a11); // Altered: a3 carries a clip MixerRect* to the decoder
 void J3DAPI framestream_Header(FrameStream* pFrames, const FrameHeader* pHeader, void* pPalette, int* pFlags);
 int J3DAPI framestream_IsOpen(FrameStream* pFrames);
 void J3DAPI framestream_Stall(FrameStream* pFrames);

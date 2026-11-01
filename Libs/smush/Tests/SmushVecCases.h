@@ -109,7 +109,7 @@ typedef struct sSmushVecApi
 
     /* File/Framestream.c and the player globals it reads */
     int (J3DAPI* framestream_Reset)(AnimPlay* pFrames);
-    int (J3DAPI* framestream_Tick)(AnimPlay* pFrames, void* a2, int a3, int a4, int a5, void* a6, int* a7, int* a8, int a9, int a10, int a11);
+    int (J3DAPI* framestream_Tick)(AnimPlay* pFrames, void* a2, intptr_t a3, int a4, int a5, void* a6, int* a7, int* a8, int a9, int a10, int a11);
     int (J3DAPI* framestream_Open)(AnimPlay* pFrames, const char* pName, int flags, int seekLen, int seekTo, int hold);
     void (J3DAPI* framestream_Seek)(AnimPlay* pFrames, int length, int to);
     int (J3DAPI* framestream_Mode)(AnimPlay* pFrames, int op);
@@ -2134,7 +2134,7 @@ static int SmushVec_StreamIsActive(Stream* pStream)
     return smushvec_fs.isActive;
 }
 
-static int SmushVec_StreamAdvance(Stream* pStream, int n)
+static intptr_t SmushVec_StreamAdvance(Stream* pStream, int n) // Altered: intptr_t to match the widened StreamerInterface.Advance
 {
     SmushVec_Log8('a');
     SmushVec_Log8(pStream == smushvec_pStream);
@@ -2159,7 +2159,7 @@ static int SmushVec_StreamAdvance(Stream* pStream, int n)
         return smushvec_fs.atEnd++ ? -1 : 0;
     }
 
-    int p = (int)(intptr_t)(smushvec_fs.pData + smushvec_fs.pos);
+    intptr_t p = (intptr_t)(smushvec_fs.pData + smushvec_fs.pos);
     smushvec_fs.pos += n;
     return p;
 }
@@ -2183,7 +2183,7 @@ static int SmushVec_FrameParse(const uint8_t* pData, int size)
     return 0;
 }
 
-static uint32_t SmushVec_FrameDecode(void* pBitmap, int a2, int a3, int a4, void* pPalette, int* pOutA, int* pOutB, uint32_t flags, int a9, int a10, const uint8_t* pData, int size)
+static uint32_t SmushVec_FrameDecode(void* pBitmap, intptr_t a2, int a3, int a4, void* pPalette, int* pOutA, int* pOutB, uint32_t flags, int a9, int a10, const uint8_t* pData, int size)
 {
     SmushVec_Log8('d');
     SmushVec_Log32(pBitmap != NULL);

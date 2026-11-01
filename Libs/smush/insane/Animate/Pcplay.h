@@ -53,13 +53,13 @@ void animplay_Shutdown(void);
 int J3DAPI animplay_Play(int pName, int rate, int flags, int a4, int a5, int width, int height, int a8, int a9, int pfCallback, int loops, int ringSize, int frameSize);
 int J3DAPI animplay_Create(AnimPlay** ppPlay, const char* pName, int rate, int ringSize, int frameSize, int flags);
 int J3DAPI animplay_GetTime(AnimPlay* pPlay);
-int J3DAPI animplay_Pace(AnimPlay* pPlay, void* a2, int a3, int a4, int a5, void* a6, int* a7, int* a8, int a9, int a10);
-void J3DAPI animplay_Draw(AnimPlay* pPlay, void* pBitmap, int a3, int a4, int a5, void* pPalette, int a7, int a8, int a9);
+int J3DAPI animplay_Pace(AnimPlay* pPlay, void* a2, intptr_t a3, int a4, int a5, void* a6, int* a7, int* a8, int a9, int a10); // Altered: a3 carries a clip MixerRect* to the decoder
+void J3DAPI animplay_Draw(AnimPlay* pPlay, void* pBitmap, intptr_t a3, int a4, int a5, void* pPalette, int a7, int a8, int a9); // Altered: a3 carries the clip MixerRect* to animframe_Draw
 void J3DAPI animplay_Destroy(AnimPlay** ppPlay);
 void J3DAPI animplay_SetRate(AnimPlay* pPlay, int rate);
 void J3DAPI animplay_Rewind(AnimPlay* pPlay);
 int J3DAPI animplay_IsDone(AnimPlay* pPlay);
-int J3DAPI animplay_Step(AnimPlay* pPlay, void* a2, int a3, int a4, int a5, void* a6, int* a7, int* a8, int a9, int a10);
+int J3DAPI animplay_Step(AnimPlay* pPlay, void* a2, intptr_t a3, int a4, int a5, void* a6, int* a7, int* a8, int a9, int a10); // Altered: a3 carries a clip MixerRect* to the decoder
 void J3DAPI animplay_TickCallback(int index, int param);
 void J3DAPI animplay_PaceCallback(int index, int param);
 const char* J3DAPI animplay_DebugName(int index);
