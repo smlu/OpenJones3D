@@ -46,6 +46,5 @@ Libs/std/Win95/stdDisplay.h 12
 Libs/std/Win95/stdShader.h 1
 Libs/std/Win95/stdWin95.h 6
 Libs/std/types.h 65
-Libs/w32util/wuRegistry.h 3
 Libs/wkernel/types.h 4
 Libs/wkernel/wkernel.h 6

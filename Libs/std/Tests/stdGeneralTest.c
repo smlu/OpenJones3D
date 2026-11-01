@@ -245,10 +245,9 @@ int J3DAPI stdConsole_WriteConsole(const char* pText, uint32_t textAttribute)
     return StdGeneralTest_DebugPrint("%s", pText ? pText : "");
 }
 
-int J3DAPI wuRegistry_Startup(HKEY hKey, LPCSTR lpSubKey)
+int J3DAPI wuRegistry_StartupLocalMachine(const char* pSubKey)
 {
-    J3D_UNUSED(hKey);
-    J3D_UNUSED(lpSubKey);
+    J3D_UNUSED(pSubKey);
     stdGeneralTest_bRegistryStarted = true;
     return 0;
 }

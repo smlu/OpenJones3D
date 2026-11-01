@@ -1,8 +1,11 @@
+#include <windows.h>
 #include "wuRegistry.h"
 #include <j3dcore/j3dhook.h>
 #include <w32util/RTI/symbols.h>
 #include <std/General/std.h>
 #include <std/General/stdUtil.h>
+
+int J3DAPI wuRegistry_Startup(HKEY hKey, LPCSTR lpSubKey);
 
 static bool wuRegistry_bStarted = false;
 static LPCSTR appSubKey = NULL;
@@ -71,6 +74,12 @@ int J3DAPI wuRegistry_Startup(HKEY rootKey, LPCSTR subKey)
     }
 
     return 1;
+}
+
+// Added: Machine-wide root opener so callers above the platform layer need no HKEY.
+int J3DAPI wuRegistry_StartupLocalMachine(const char* pSubKey)
+{
+    return wuRegistry_Startup(HKEY_LOCAL_MACHINE, pSubKey);
 }
 
 bool wuRegistry_HasStarted(void)

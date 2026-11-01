@@ -284,7 +284,7 @@ int J3DAPI JonesMain_Startup(const char* lpCmdLine)
     JonesDisplay_UpdateDualScreenWindowSize(&JonesMain_state.displaySettings);
     JonesFile_Startup(&JonesMain_hs);
 
-    if ( wuRegistry_Startup(HKEY_LOCAL_MACHINE, "Software\\LucasArts Entertainment Company LLC\\Indiana Jones and the Infernal Machine\\v1.0") )
+    if ( wuRegistry_StartupLocalMachine("Software\\LucasArts Entertainment Company LLC\\Indiana Jones and the Infernal Machine\\v1.0") )
     {
         JonesMain_LogErrorToFile("Couldn't open the registry.");
         JonesMain_CloseWindow();
