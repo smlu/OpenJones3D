@@ -43,6 +43,7 @@ PLATFORM_PATHS = [
     "Libs/std/Win95/stdFileUtilWin32.c",
     "Libs/std/Win95/stdGob.c",
     "Libs/std/Win95/stdPlatformWin32.c",
+    "Libs/std/Win95/stdSysTagsWin32.h",
     "Libs/std/Win95/stdWin95.c",
     "Libs/wkernel/wkernel.c",
     "Libs/w32util/wuRegistry.c",
@@ -145,6 +146,7 @@ ENGINE_OWNED_NAMES = {
     "tSysDrawContext",
     "tSysFont",
     "tSysHandle",
+    "tSysInstance",
     "tSysSoundBuffer",
     "tSysWindow",
 }

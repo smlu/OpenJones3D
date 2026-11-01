@@ -1,3 +1,4 @@
+#include <std/Win95/stdSysTagsWin32.h>
 #include "wkernel.h"
 #include "wkernel/RTI/symbols.h"
 

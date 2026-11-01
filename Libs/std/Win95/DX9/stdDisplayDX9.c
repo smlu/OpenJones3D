@@ -1,3 +1,4 @@
+#include <std/Win95/stdSysTagsWin32.h>
 #include <std/Win95/std3D.h>
 #include <std/Win95/stdDisplay.h>
 #include <std/Win95/stdWin95.h>

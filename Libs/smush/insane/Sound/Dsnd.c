@@ -2,8 +2,7 @@
 // Added: Inside this backend the opaque types are the real DirectSound and window types, so no casts are needed.
 #define sSysSoundBuffer IDirectSoundBuffer8
 #define sSysSoundDevice IDirectSound8
-#define sSysWindow HWND__
-#include <smush/insane/Sound/Dsnd.h>
+#include <std/Win95/stdSysTagsWin32.h>
 #include <j3dcore/j3d.h>
 #include <j3dcore/j3dhook.h>
 #include <smush/RTI/symbols.h>

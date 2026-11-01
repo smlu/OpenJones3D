@@ -64,8 +64,8 @@ int J3DAPI sithSound_Startup(int bSound3D)
         flags = SOUNDOPEN_NO3DSOUND;
     }
 
-    const HWND hwnd = stdWin95_GetWindow();
-    Sound_Open(flags, SITHSOUND_MAXCHANNELS, sithSoundMixer_GetThingInfo, sithSoundMixer_CalcCameraRelativeSoundMix, (tSysWindow)hwnd);
+    const tSysWindow hwnd = stdWin95_GetWindow();
+    Sound_Open(flags, SITHSOUND_MAXCHANNELS, sithSoundMixer_GetThingInfo, sithSoundMixer_CalcCameraRelativeSoundMix, hwnd);
 
     Sound_Set3DGlobals(10.0f, 0.5f, 2.5f, 1.0f, 1.0f);
     Sound_EnableLoad(1);

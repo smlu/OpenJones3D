@@ -17,11 +17,11 @@ extern char JonesMain_g_aErrorBuffer[1024];
 // extern char JonesMain_g_aErrorBuffer[1024] ;
 
 #if defined(J3D_STANDALONE)
-extern HANDLE JonesMain_g_mainMutex;
+extern tSysHandle JonesMain_g_mainMutex;
 #else
-#define JonesMain_g_mainMutex J3D_DECL_FAR_VAR(JonesMain_g_mainMutex, HANDLE)
+#define JonesMain_g_mainMutex J3D_DECL_FAR_VAR(JonesMain_g_mainMutex, tSysHandle)
 #endif
-// extern HANDLE JonesMain_g_mainMutex;
+// extern tSysHandle JonesMain_g_mainMutex;
 
 int J3DAPI JonesMain_Startup(const char* lpCmdLine);
 void JonesMain_Shutdown(void);
@@ -63,8 +63,8 @@ void J3DAPI JonesMain_BindToggleMenuControlKeys(const size_t* paKeyIds, size_t n
 void J3DAPI JonesMain_LogErrorToFile(const char* pErrorText);
 J3DNORETURN void JonesMain_FatalErrorUnknown(void); // Added
 
-int J3DAPI JonesMain_ShowDevDialog(HWND hWnd, JonesState* pConfig);
-int J3DAPI JonesMain_ShowDisplayOptions(HWND hWnd, JonesState* pState); // Added
+int J3DAPI JonesMain_ShowDevDialog(tSysWindow hWnd, JonesState* pConfig);
+int J3DAPI JonesMain_ShowDisplayOptions(tSysWindow hWnd, JonesState* pState); // Added
 
 size_t J3DAPI JonesMain_FindClosestVideoMode(const StdDisplayEnvironment* pList, const StdVideoMode* pVideoMode, size_t deviceNum);
 

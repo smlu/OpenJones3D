@@ -1,3 +1,4 @@
+#include <std/Win95/stdSysTagsWin32.h>
 #include "stdWin95SystemTestSupport.h"
 
 #include <unity_fixture.h>

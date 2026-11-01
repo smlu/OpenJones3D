@@ -1,7 +1,7 @@
 // Added: Inside this backend the opaque types are the real DirectSound and window types, so no casts are needed.
 #define sSysSoundBuffer IDirectSoundBuffer8
 #define sSysSoundDevice IDirectSound8
-#define sSysWindow HWND__
+#include <std/Win95/stdSysTagsWin32.h>
 
 #include "Driver.h"
 

@@ -1,3 +1,4 @@
+#include <std/Win95/stdSysTagsWin32.h>
 #include "jonesConfig.h"
 #include <j3dcore/j3dhook.h>
 
@@ -9884,7 +9885,7 @@ int J3DAPI jonesConfig_InitPurchaseMessageBox(HWND hDlg, int a2, tStoreCartState
     return 1;
 }
 
-int J3DAPI jonesConfig_ShowDialogInsertCD(HWND hWnd, LPARAM dwInitParam)
+int J3DAPI jonesConfig_ShowDialogInsertCD(HWND hWnd, intptr_t dwInitParam)
 {
     ShowCursor(1);
     GetWindowLongPtr(hWnd, GWL_HINSTANCE); // TODO: ??

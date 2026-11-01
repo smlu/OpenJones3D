@@ -1,3 +1,4 @@
+#include <std/Win95/stdSysTagsWin32.h>
 #include "JonesDialog.h"
 #include <j3dcore/j3dhook.h>
 

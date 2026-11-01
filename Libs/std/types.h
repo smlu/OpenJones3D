@@ -24,6 +24,7 @@ J3D_EXTERN_C_START
 // Added: Opaque platform handles. Only the platform layer knows what they point to and casts them.
 typedef struct sSysHandle* tSysHandle;
 typedef struct sSysWindow* tSysWindow;
+typedef struct sSysInstance* tSysInstance;
 typedef struct sSysDrawContext* tSysDrawContext;
 typedef struct sSysBitmap* tSysBitmap;
 typedef struct sSysFont* tSysFont;
