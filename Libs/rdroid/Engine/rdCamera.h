@@ -53,8 +53,8 @@ void J3DAPI rdCamera_SetAttenuation(rdCamera* pCamera, float min, float max);
 int J3DAPI rdCamera_AddLight(rdCamera* pCamera, rdLight* pLight, const rdVector3* pPos);
 int J3DAPI rdCamera_ClearLights(rdCamera* pCamera);
 
-void J3DAPI rdCamera_sub_4C60B0(bool bEnable);
-bool rdCamera_sub_506861(void); // Added
+void J3DAPI rdCamera_SetOverlayDepthRange(bool bEnable);
+bool rdCamera_IsOverlayDepthRangeEnabled(void); // Added
 
 // Helper hooking functions
 void rdCamera_InstallHooks(void);

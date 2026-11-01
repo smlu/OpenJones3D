@@ -212,7 +212,7 @@
 #define jonesConfig_GameSaveSetData_ADDR 0x00405B30
 #define jonesConfig_MsgBoxDlg_HandleWM_COMMAND_ADDR 0x00405BF0
 #define jonesConfig_GetLoadGameFilePath_ADDR 0x00405C50
-#define jonesConfig_sub_405F60_ADDR 0x00405F60
+#define jonesConfig_GameFileDialog_HandleWM_COMMAND_ADDR 0x00405F60
 #define jonesConfig_LoadGameDialogHookProc_ADDR 0x00405F70
 #define jonesConfig_ShowLoadGameWarningMsgBox_ADDR 0x00406580
 #define jonesConfig_LoadGameDialogInit_ADDR 0x004065C0
@@ -286,7 +286,7 @@
 #define jonesConfig_GameOverDialog_HandleWM_COMMAND_ADDR 0x0040CBB0
 #define jonesConfig_ShowStatisticsDialog_ADDR 0x0040CC20
 #define jonesConfig_StatisticsDialogProc_ADDR 0x0040CC80
-#define jonesConfig_sub_40D100_ADDR 0x0040D100
+#define jonesConfig_StatisticProc_HandleWM_HSCROLL_ADDR 0x0040D100
 #define jonesConfig_UpdateCurrentLevelNum_ADDR 0x0040D1D0
 #define jonesConfig_DrawImageOnDialogItem_ADDR 0x0040D1E0
 #define jonesConfig_SetStatisticsDialogForLevel_ADDR 0x0040D300

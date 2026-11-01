@@ -87,7 +87,7 @@
 #define rdCamera_SetAttenuation_ADDR 0x004C5F70
 #define rdCamera_AddLight_ADDR 0x004C5FF0
 #define rdCamera_ClearLights_ADDR 0x004C6090
-#define rdCamera_sub_4C60B0_ADDR 0x004C60B0
+#define rdCamera_SetOverlayDepthRange_ADDR 0x004C60B0
 #define rdCache_Startup_ADDR 0x004C6D60
 #define rdCache_AdvanceFrame_ADDR 0x004C6D80
 #define rdCache_GetFrameNum_ADDR 0x004C6DB0
@@ -268,7 +268,7 @@
 #define rdFont_bFontColorSet_ADDR 0x005E10D0
 #define rdCamera_g_camPYR_ADDR 0x005E10D8
 #define rdCamera_g_pCurCamera_ADDR 0x005E10E4
-#define rdCamera_dword_5E10E8_ADDR 0x005E10E8
+#define rdCamera_bOverlayDepthRange_ADDR 0x005E10E8
 #define rdCamera_g_camMatrix_ADDR 0x0183B9E0
 #define rdCache_aProcFaces_ADDR 0x005E10F8
 #define rdCache_aVertIntensities_ADDR 0x005E28F8

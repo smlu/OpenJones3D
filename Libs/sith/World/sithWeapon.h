@@ -55,6 +55,7 @@ void J3DAPI sithWeapon_DeselectWeapon(SithThing* pThing);
 int J3DAPI sithWeapon_IsMountingWeapon(const SithThing* pThing);
 int J3DAPI sithWeapon_HasWeaponSelected(const SithThing* pThing);
 
+SithThing* J3DAPI sithWeapon_WeaponFire(SithThing* pShooter, const SithThing* pProjectileTemplate, const rdVector3* pFireDir, rdVector3* pFirePos, tSoundHandle hFireSnd, SithPuppetSubMode submode, float extra, SithFireProjectileFlags projectileFlags, float secDeltaTime);
 int J3DAPI sithWeapon_GetAimOrient(rdMatrix34* pOutOrient, SithThing* pShooter, const rdMatrix34* pStartOrient, const rdVector3* pFireOffset, float autoAimFovX, float autoAimFovZ);
 SithThing* J3DAPI sithWeapon_FireProjectile(SithThing* pShooter, const SithThing* pProjectile, tSoundHandle hFireSnd, SithPuppetSubMode submode, rdVector3* pFireOffset, rdVector3* pAimError, float extra, SithFireProjectileFlags flags, float autoAimFovX, float autoAimFovZ);
 
@@ -88,6 +89,7 @@ SithWeaponId J3DAPI sithWeapon_GetWeaponForControlKey(SithControlFunction keyID)
 
 SithThing* J3DAPI sithWeapon_FireProjectileEx(SithThing* pShooter, const SithThing* pProjectile, tSoundHandle hSndFire, SithPuppetSubMode submode, rdVector3* pFirePos, const rdVector3* pTargetPos, float extra, SithFireProjectileFlags flags, float autoAinFovX, float autoAimFovZ, const rdVector3* pFireOffset, int bUseFireOffset);
 void J3DAPI sithWeapon_CreateWeaponFireFx(SithThing* pThing, rdVector3* pos);
+SithThing* J3DAPI sithWeapon_WeaponFireProjectile(SithThing* pShooter, const SithThing* pProjectileTemplate, const rdVector3* pFireDir, rdVector3* pFirePos, tSoundHandle hFireSnd, SithPuppetSubMode submode, float extra, SithFireProjectileFlags flags, float secDeltaTime);
 int J3DAPI sithWeapon_ActivateWhip(SithThing* pThing, SithCog* pCog);
 
 // Helper hooking functions

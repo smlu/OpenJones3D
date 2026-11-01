@@ -33,6 +33,8 @@ void J3DAPI sithPlayerControls_RotateAimJointsEx(SithThing* pThing, float pitch,
 void J3DAPI sithPlayerControls_ResetAimJoints(SithThing* pThing);
 void J3DAPI sithPlayerControls_ResetAimJointsEx(SithThing* pThing, float secDeltaTime); //New
 
+void J3DAPI sithPlayerControls_ProcessWeaponAim(SithThing* pThing, float secDeltaTime);
+
 SithThing* sithPlayerControls_GetTargetThing(void);
 
 SithThing* J3DAPI sithPlayerControls_GetVehicleBoardedThing();

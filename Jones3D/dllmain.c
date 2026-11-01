@@ -111,6 +111,8 @@
 #include <sith/World/sithWeapon.h>
 #include <sith/World/sithWorld.h>
 
+#include <smush/SmushPlay.h>
+
 #include <sound/AudioLib.h>
 #include <sound/Driver.h>
 #include <sound/Sound.h>
@@ -253,6 +255,8 @@ bool InstallHooks(void)
     JonesFile_InstallHooks();
     JonesHud_InstallHooks();
     JonesMain_InstallHooks();
+
+    Smush_InstallHooks();
 
     Sound_InstallHooks();
 
@@ -397,6 +401,7 @@ bool ResetGlobals(void)
     JonesFile_ResetGlobals();
     JonesHud_ResetGlobals();
     JonesMain_ResetGlobals();
+    Smush_ResetGlobals();
     Sound_ResetGlobals();
     jonesCog_ResetGlobals();
     jonesConfig_ResetGlobals();

@@ -169,7 +169,7 @@ rdKeyframe* J3DAPI sithPuppet_KeyCacheFind(const char* pName);
 void J3DAPI sithPuppet_KeyCacheAdd(rdKeyframe* pKeyframe);
 void J3DAPI sithPuppet_KeyCacheRemove(rdKeyframe* pKeyframe);
 
-float J3DAPI sithPuppet_GetThingLocalVelocityAxis(SithThing* pThing, size_t* pAxis, float* pVelX, float* pVelY, float* pVelZ); // Added: From debug version
+float J3DAPI sithPuppet_GetThingLocalVelocityAxis(SithThing* pThing, SithThingMoveAxis* pAxis, float* pVelX, float* pVelY, float* pVelZ); // Added: From debug version
 
 SithPuppetTrack* J3DAPI sithPuppet_GetModeTrackImpl(const SithThing* pThing, SithPuppetSubMode submode);
 
@@ -725,7 +725,7 @@ float J3DAPI sithPuppet_UpdateThingMove(SithThing* pThing, rdPuppetTrackCallback
 
     //int v10 = 0x3E4CCCCD; // This is leftover from debug version
 
-    size_t axis;
+    SithThingMoveAxis axis;
     float velX, velY, velZ;
     float moveSpeed = sithPuppet_GetThingLocalVelocityAxis(pThing, &axis, &velX, &velY, &velZ);
 
@@ -757,7 +757,7 @@ float J3DAPI sithPuppet_UpdateThingMove(SithThing* pThing, rdPuppetTrackCallback
     {
         case SITHPLAYERMOVE_STILL:
         {
-            if ( axis <= 1 ) // right or forward
+            if ( axis <= SITHTHING_MOVEAXIS_Y )
             {
                 // Check if negative speed, that is walk back
                 if ( moveSpeed < 0.0f )
@@ -776,7 +776,7 @@ float J3DAPI sithPuppet_UpdateThingMove(SithThing* pThing, rdPuppetTrackCallback
                     pThing->moveStatus = SITHPLAYERMOVE_WALKING;
                 }
             }
-            else if ( axis == 2 ) // up
+            else if ( axis == SITHTHING_MOVEAXIS_Z )
             {
                 if ( moveSpeed >= 0.0f || (pThing->moveInfo.physics.flags & SITH_PF_FLY) != 0 )
                 {
@@ -818,14 +818,14 @@ float J3DAPI sithPuppet_UpdateThingMove(SithThing* pThing, rdPuppetTrackCallback
         }
         case SITHPLAYERMOVE_WALKING:
         {
-            if ( axis == 0 ) // left
+            if ( axis == SITHTHING_MOVEAXIS_X )
             {
                 if ( moveSpeed != 0.0f )
                 {
                     submode = SITHPUPPETSUBMODE_WALK;
                 }
             }
-            else if ( axis == 1 ) // forward
+            else if ( axis == SITHTHING_MOVEAXIS_Y )
             {
                 if ( moveSpeed < 0.0f )
                 {
@@ -852,7 +852,7 @@ float J3DAPI sithPuppet_UpdateThingMove(SithThing* pThing, rdPuppetTrackCallback
         }
         case SITHPLAYERMOVE_RUNNING:
         {
-            if ( axis == 0 ) // left
+            if ( axis == SITHTHING_MOVEAXIS_X )
             {
                 if ( moveSpeed == 0.0f )
                 {
@@ -864,7 +864,7 @@ float J3DAPI sithPuppet_UpdateThingMove(SithThing* pThing, rdPuppetTrackCallback
                     submode = SITHPUPPETSUBMODE_RUN;
                 }
             }
-            else if ( axis == 1 ) // forward
+            else if ( axis == SITHTHING_MOVEAXIS_Y )
             {
                 if ( moveSpeed == 0.0f )
                 {
@@ -902,7 +902,7 @@ float J3DAPI sithPuppet_UpdateThingMove(SithThing* pThing, rdPuppetTrackCallback
         {
             if ( !pThing->thingInfo.actorInfo.bForceMovePlay )
             {
-                if ( axis == 1 ) // forward
+                if ( axis == SITHTHING_MOVEAXIS_Y )
                 {
                     if ( moveSpeed < 0.0f )
                     {
@@ -1014,7 +1014,7 @@ float J3DAPI sithPuppet_UpdateThingMove(SithThing* pThing, rdPuppetTrackCallback
                 bSwimming = true;
             }
 
-            if ( axis == 1 ) // Forward axis Y
+            if ( axis == SITHTHING_MOVEAXIS_Y )
             {
 
                 if ( moveSpeed < -0.04f ) // Swim backward
@@ -3404,7 +3404,7 @@ void J3DAPI sithPuppet_KeyCacheRemove(rdKeyframe* pKeyframe)
     stdHashtbl_Remove(sithPuppet_pKeyHashtable, pKeyframe->aName);
 }
 
-float J3DAPI sithPuppet_GetThingLocalVelocityAxis(SithThing* pThing, size_t* pAxis, float* pVelX, float* pVelY, float* pVelZ)
+float J3DAPI sithPuppet_GetThingLocalVelocityAxis(SithThing* pThing, SithThingMoveAxis* pAxis, float* pVelX, float* pVelY, float* pVelZ)
 {
     SITH_ASSERTREL(pAxis);
     SITH_ASSERTREL(pThing);
@@ -3423,7 +3423,7 @@ float J3DAPI sithPuppet_GetThingLocalVelocityAxis(SithThing* pThing, size_t* pAx
         *pVelX = 0.0f;
         *pVelY = 0.0f;
         *pVelZ = 0.0f;
-        *pAxis = 99;
+        *pAxis = SITHTHING_MOVEAXIS_NONE;
         return 0.0f;
     }
 
@@ -3437,7 +3437,7 @@ float J3DAPI sithPuppet_GetThingLocalVelocityAxis(SithThing* pThing, size_t* pAx
         && (pThing->pInSector->flags & SITH_SECTOR_AETHERIUM) == 0 )
     {
         // Falling
-        *pAxis = 2;  // Up
+        *pAxis = SITHTHING_MOVEAXIS_Z;
         *pVelX = velocity.x;
         *pVelY = velocity.y;
         *pVelZ = pPhysics->velocity.z;
@@ -3451,7 +3451,7 @@ float J3DAPI sithPuppet_GetThingLocalVelocityAxis(SithThing* pThing, size_t* pAx
         float x = fabsf(velocity.x);
         if ( y <= (double)x )
         {
-            *pAxis = 0; // Left
+            *pAxis = SITHTHING_MOVEAXIS_X;
             *pVelX = velocity.x;
             *pVelY = velocity.y;
             *pVelZ = pPhysics->velocity.z;
@@ -3459,7 +3459,7 @@ float J3DAPI sithPuppet_GetThingLocalVelocityAxis(SithThing* pThing, size_t* pAx
         }
         else
         {
-            *pAxis = 1; // Forward
+            *pAxis = SITHTHING_MOVEAXIS_Y;
             *pVelX = velocity.x;
             *pVelY = velocity.y;
             *pVelZ = pPhysics->velocity.z;

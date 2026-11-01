@@ -901,7 +901,7 @@ int J3DAPI jonesConfig_GameSaveSetData(HWND hDlg, int a2, GameSaveMsgBoxData* pD
 
 INT_PTR CALLBACK jonesConfig_ExitGameDlgProc(HWND hWnd, UINT uMsg, WPARAM wparam, LPARAM lparam);
 
-void* J3DAPI jonesConfig_sub_405F60(HWND hWnd);
+void* J3DAPI jonesConfig_GameFileDialog_HandleWM_COMMAND(HWND hWnd);
 UINT_PTR CALLBACK jonesConfig_LoadGameDialogHookProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
 int J3DAPI jonesConfig_ShowLoadGameWarningMsgBox(HWND hWnd);
 BOOL J3DAPI jonesConfig_LoadGameDialogInit(HWND hDlg, int a2, LPOPENFILENAME pofn);
@@ -986,7 +986,7 @@ int J3DAPI jonesConfig_GameOverDialogInit(HWND hDlg, int a2, GameOverDialogData*
 void J3DAPI jonesConfig_GameOverDialog_HandleWM_COMMAND(HWND hWnd, uint16_t ctrlID);
 
 INT_PTR CALLBACK jonesConfig_StatisticsDialogProc(HWND hwnd, UINT uMsg, WPARAM wPAram, LPARAM lParam);
-int J3DAPI jonesConfig_sub_40D100(int a1, HWND hWnd, int a3, int a4);
+int J3DAPI jonesConfig_StatisticProc_HandleWM_HSCROLL(int a1, HWND hWnd, int a3, int a4);
 int J3DAPI jonesConfig_DrawImageOnDialogItem(HWND hDlg, HDC hdcWnd, HDC hdcCtrl, int nIDDlgItem, HBITMAP hImage, HBITMAP hMask);
 int J3DAPI jonesConfig_SetStatisticsDialogForLevel(HWND hDlg, int levelNum, int* a3);
 void J3DAPI jonesConfig_DrawStatisticDialogIQPoints(HWND hwnd, JonesDialogImageInfo** ppImageInfo, int dlgID, int iqpoints);
@@ -1060,7 +1060,7 @@ void jonesConfig_InstallHooks(void)
     J3D_HOOKFUNC(jonesConfig_GameSaveSetData);
     J3D_HOOKFUNC(jonesConfig_MsgBoxDlg_HandleWM_COMMAND);
     J3D_HOOKFUNC(jonesConfig_GetLoadGameFilePath);
-    J3D_HOOKFUNC(jonesConfig_sub_405F60);
+    J3D_HOOKFUNC(jonesConfig_GameFileDialog_HandleWM_COMMAND);
     J3D_HOOKFUNC(jonesConfig_LoadGameDialogHookProc);
     J3D_HOOKFUNC(jonesConfig_ShowLoadGameWarningMsgBox);
     J3D_HOOKFUNC(jonesConfig_LoadGameDialogInit);
@@ -1134,7 +1134,7 @@ void jonesConfig_InstallHooks(void)
     J3D_HOOKFUNC(jonesConfig_GameOverDialog_HandleWM_COMMAND);
     J3D_HOOKFUNC(jonesConfig_ShowStatisticsDialog);
     J3D_HOOKFUNC(jonesConfig_StatisticsDialogProc);
-    J3D_HOOKFUNC(jonesConfig_sub_40D100);
+    J3D_HOOKFUNC(jonesConfig_StatisticProc_HandleWM_HSCROLL);
     J3D_HOOKFUNC(jonesConfig_UpdateCurrentLevelNum);
     J3D_HOOKFUNC(jonesConfig_DrawImageOnDialogItem);
     J3D_HOOKFUNC(jonesConfig_SetStatisticsDialogForLevel);
@@ -3721,7 +3721,7 @@ UINT_PTR CALLBACK jonesConfig_SaveGameDialogHookProc(HWND hDlg, UINT uMsg, WPARA
         }
         case WM_COMMAND:
         {
-            jonesConfig_sub_405F60(hDlg);
+            jonesConfig_GameFileDialog_HandleWM_COMMAND(hDlg);
             return 0;
         }
         case WM_CLOSE:
@@ -4193,7 +4193,7 @@ int J3DAPI jonesConfig_GetLoadGameFilePath(HWND hWnd, char* pDestNdsPath)
     return 1;
 }
 
-void* J3DAPI jonesConfig_sub_405F60(HWND hWnd)
+void* J3DAPI jonesConfig_GameFileDialog_HandleWM_COMMAND(HWND hWnd)
 {
     return (void*)GetWindowLongPtr(hWnd, DWL_USER);
 }
@@ -4208,7 +4208,7 @@ UINT_PTR CALLBACK jonesConfig_LoadGameDialogHookProc(HWND hDlg, UINT uMsg, WPARA
         }
         case WM_COMMAND:
         {
-            jonesConfig_sub_405F60(hDlg);
+            jonesConfig_GameFileDialog_HandleWM_COMMAND(hDlg);
             return FALSE;
         }
         case WM_CLOSE:
@@ -8612,7 +8612,7 @@ INT_PTR CALLBACK jonesConfig_StatisticsDialogProc(HWND hwnd, UINT uMsg, WPARAM w
                 pData = (int*)GetWindowLongPtr(hwnd, DWL_USER);
                 hScroll = GetDlgItem(hwnd, 1162);
                 hTextStatTitle = GetDlgItem(hwnd, 1158);
-                jonesConfig_sub_40D100((int)hwnd, (HWND)lParam, (uint16_t)wPAram, HIWORD(wPAram));
+                jonesConfig_StatisticProc_HandleWM_HSCROLL((int)hwnd, (HWND)lParam, (uint16_t)wPAram, HIWORD(wPAram));
                 scrollPos = GetScrollPos(hScroll, 2);
                 if ( scrollPos != pData[2] )
                 {
@@ -8700,7 +8700,7 @@ INT_PTR CALLBACK jonesConfig_StatisticsDialogProc(HWND hwnd, UINT uMsg, WPARAM w
     return result;
 }
 
-int J3DAPI jonesConfig_sub_40D100(int a1, HWND hWnd, int a3, int a4)
+int J3DAPI jonesConfig_StatisticProc_HandleWM_HSCROLL(int a1, HWND hWnd, int a3, int a4)
 {
     J3D_UNUSED(a1);
 
