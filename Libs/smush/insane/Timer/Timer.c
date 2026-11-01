@@ -3,11 +3,10 @@
 #include <j3dcore/j3d.h>
 #include <j3dcore/j3dhook.h>
 #include <smush/RTI/symbols.h>
+#include <smush/insane/Timer/TimerSys.h>
 #include <string.h>
 #include <setjmp.h>
 #include <stdlib.h>
-#include <windows.h>
-#include <mmsystem.h> // timeGetTime
 
 static LecModule timer_module = { timer_Register, timer_Unregister, timer_Startup, timer_Shutdown };
 static TimerInterface timer_interface = {
@@ -33,10 +32,8 @@ static LecShare* timer_pShare;
 static int timer_pollPrev;
 static int timer_pollCur;
 static TimerEntry timer_entries[TIMER_COUNT + 1];
-static HANDLE timer_hThread;
 static void* timer_pParam;
 static int timer_tickLen;
-static HANDLE timer_hEvent;
 static int timer_reent;
 static int timer_inTick;
 static int timer_savedReent;
@@ -95,47 +92,10 @@ int J3DAPI timer_Start(int divisor, int limit)
         }
 
         timer_tickLen = TIMER_TICKLEN;
-        timer_hEvent  = CreateEvent(NULL, FALSE, FALSE, NULL);
-
-        DWORD id;
-        timer_hThread = CreateThread(NULL, 0, timer_Thread, NULL, 0, &id);
-        SetThreadPriority(timer_hThread, THREAD_PRIORITY_TIME_CRITICAL);
+        timer_SysStartThread();
         timer_reserved = -1;
     }
 
-    return 0;
-}
-
-DWORD WINAPI timer_Thread(LPVOID pArg)
-{
-    (void)pArg;
-
-    CRITICAL_SECTION cs;
-    InitializeCriticalSection(&cs);
-
-    ldiv_t step = ldiv(1000, TIMER_THREAD_RATE);
-    int frac    = 0;
-    int timeout = 0;
-    int next    = timeGetTime();
-    while ( WaitForSingleObject(timer_hEvent, timeout) != 0 )
-    {
-        EnterCriticalSection(&cs);
-        timer_Tick();
-        frac += step.rem;
-        next += step.quot;
-        if ( frac >= TIMER_THREAD_RATE )
-        {
-            frac -= TIMER_THREAD_RATE;
-            next++;
-        }
-
-        LeaveCriticalSection(&cs);
-
-        int delta = next - timeGetTime();
-        timeout   = delta > 0 ? delta : 0;
-    }
-
-    DeleteCriticalSection(&cs);
     return 0;
 }
 
@@ -143,10 +103,7 @@ void timer_Stop(void)
 {
     if ( --timer_refs == 0 )
     {
-        SetEvent(timer_hEvent);
-        WaitForSingleObject(timer_hThread, INFINITE);
-        CloseHandle(timer_hThread);
-        CloseHandle(timer_hEvent);
+        timer_SysStopThread();
     }
 }
 
@@ -377,7 +334,7 @@ void Timer_InstallHooks(void)
     J3D_HOOKFUNC(timer_Startup);
     J3D_HOOKFUNC(timer_Shutdown);
     J3D_HOOKFUNC(timer_Start);
-    J3D_HOOKFUNC(timer_Thread);
+    timer_SysInstallHooks();
     J3D_HOOKFUNC(timer_Stop);
     J3D_HOOKFUNC(timer_Pause);
     J3D_HOOKFUNC(timer_Resume);
@@ -405,10 +362,9 @@ void Timer_ResetGlobals(void)
     timer_pollPrev = 0;
     timer_pollCur  = 0;
     memset(timer_entries, 0, sizeof(timer_entries));
-    timer_hThread         = NULL;
+    timer_SysResetGlobals();
     timer_pParam          = NULL;
     timer_tickLen         = 0;
-    timer_hEvent          = NULL;
     timer_reent           = 0;
     timer_inTick          = 0;
     timer_savedReent      = 0;

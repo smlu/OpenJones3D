@@ -32,8 +32,6 @@ Libs/sith/types.h 8
 Libs/smush/SmushPlay.c 2
 Libs/smush/SmushPlay.h 1
 Libs/smush/insane/Sound/Dsnd.c 40
-Libs/smush/insane/Timer/Timer.c 8
-Libs/smush/insane/Timer/Timer.h 3
 Libs/sound/Driver.h 20
 Libs/sound/Sound.c 6
 Libs/sound/Sound.h 1

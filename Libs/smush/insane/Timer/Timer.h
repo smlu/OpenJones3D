@@ -60,7 +60,6 @@ void timer_Unregister(void);
 int timer_Startup(void);
 void timer_Shutdown(void);
 int J3DAPI timer_Start(int divisor, int limit);
-DWORD WINAPI timer_Thread(LPVOID pArg);
 void timer_Stop(void);
 void timer_Pause(void);
 void timer_Resume(void);

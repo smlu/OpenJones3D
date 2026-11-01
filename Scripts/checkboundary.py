@@ -47,6 +47,7 @@ PLATFORM_PATHS = [
     "Libs/w32util/wuRegistry.c",
     "Libs/sound/DriverDX6.c",
     "Libs/sound/DriverDX9.c",
+    "Libs/smush/insane/Timer/TimerWin32.c",
 ]
 
 # Files exempt from the check because they are the Windows injector and the dialog
