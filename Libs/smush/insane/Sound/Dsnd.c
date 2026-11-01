@@ -1,4 +1,8 @@
 // Dsnd.c: the DirectSound driver (`SNDDRIVER=insane_dsnd`) (original 0x004E74B0-0x004E7D60).
+// Added: Inside this backend the opaque types are the real DirectSound and window types, so no casts are needed.
+#define sSysSoundBuffer IDirectSoundBuffer8
+#define sSysSoundDevice IDirectSound8
+#define sSysWindow HWND__
 #include <smush/insane/Sound/Dsnd.h>
 #include <j3dcore/j3d.h>
 #include <j3dcore/j3dhook.h>

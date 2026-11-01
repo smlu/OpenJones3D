@@ -78,12 +78,12 @@ static LecModuleEntry smushplay_aModules[] = {
 
 static int smushplay_volume = SMUSHPLAY_MAX_VOLUME;
 
-static HWND smushplay_hWnd;
+static tSysWindow smushplay_hWnd;
 static AnimPlay* smushplay_pPlay;
 static int smushplay_bAbort;
 static int(__cdecl* smushplay_pfBlit)(const SmushBitmap* pBitmap, int a2);
 
-int J3DAPI SmushPlay_SysStartup(HWND hwnd, tDirectSound* pDSound)
+int J3DAPI SmushPlay_SysStartup(tSysWindow hwnd, tDirectSound* pDSound)
 {
     smushplay_hWnd = hwnd;
     smushplay_pShare = LecShare_Init(lec_Log, smushplay_aModules, "READANIM=insane_auto FILIO=insane_zfilio", "");

@@ -1,4 +1,19 @@
+// Added: Inside this backend the opaque types are the real DirectSound and window types, so no casts are needed.
+#define sSysSoundBuffer IDirectSoundBuffer8
+#define sSysSoundDevice IDirectSound8
+#define sSysWindow HWND__
+
 #include "Driver.h"
+
+#include <mmreg.h>
+#if defined (J3D_DIRECTX6)
+#include <DirectX6/dsound.h>
+#elif defined (J3D_DIRECTX9)
+#include <dsound.h>
+#else
+#error "Unsuported system sound API. Please define J3D_DIRECTX6 or J3D_DIRECTX9 in your project."
+#endif
+
 #include <j3dcore/j3dhook.h>
 
 #include <rdroid/Math/rdVector.h>

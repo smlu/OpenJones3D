@@ -49,7 +49,7 @@ typedef struct sSmushBitmap
 } SmushBitmap;
 static_assert(sizeof(SmushBitmap) == 0x54, "sizeof(SmushBitmap) == 0x54");
 
-int J3DAPI SmushPlay_SysStartup(HWND hwnd, tDirectSound* pDSound);
+int J3DAPI SmushPlay_SysStartup(tSysWindow hwnd, tDirectSound* pDSound);
 void SmushPlay_SysShutdown(void);
 void J3DAPI SmushPlay_SetGlobalVolume(size_t volume);
 int J3DAPI SmushPlay_PlayMovie(const char* pFilename, int rate, int flags, int a4, int a5, int width, int height, int a8, int a9, int(__cdecl* pBlit)(const SmushBitmap* pBitmap, int a2), int loops, int ringSize, int frameSize);

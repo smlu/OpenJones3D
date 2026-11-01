@@ -27,13 +27,6 @@ Libs/sith/Engine/sithCollision.c 1
 Libs/sith/Engine/sithRenderSky.c 2
 Libs/sith/Gameplay/sithOverlayMap.c 4
 Libs/sith/types.h 8
-Libs/smush/SmushPlay.c 2
-Libs/smush/SmushPlay.h 1
-Libs/smush/insane/Sound/Dsnd.c 40
-Libs/sound/Driver.h 20
-Libs/sound/Sound.c 6
-Libs/sound/Sound.h 1
-Libs/sound/types.h 8
 Libs/std/General/stdBmp.c 7
 Libs/std/General/stdBmp.h 1
 Libs/std/Win95/std3D.h 6

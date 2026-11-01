@@ -2027,7 +2027,7 @@ int JonesMain_PlayIntroMovie(void)
 
     tDirectSound* pDSound = SoundDriver_GetDSound();
     HWND hwnd = stdWin95_GetWindow();
-    SmushPlay_SysStartup(hwnd, pDSound);
+    SmushPlay_SysStartup((tSysWindow)hwnd, pDSound);
     SmushPlay_SetGlobalVolume((size_t)(JonesMain_state.soundSettings.maxSoundVolume * 127.0f));
 
     StdVideoMode videoMode;

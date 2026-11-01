@@ -1,27 +1,15 @@
 #ifndef SOUND_TYPES_H
 #define SOUND_TYPES_H
 #include <stdint.h>
-#include <mmreg.h>
+#include <std/types.h>
 #include <j3dcore/j3d.h>
 #include <rdroid/types.h>
 
-#if defined (J3D_DIRECTX6)
-#include <DirectX6/dsound.h>
-#elif defined (J3D_DIRECTX9)
-#include <dsound.h>
-#else
-#error "Unsuported system sound API. Please define J3D_DIRECTX6 or J3D_DIRECTX9 in your project."
-#endif
-
 J3D_EXTERN_C_START
 
-#if defined (J3D_DIRECTX6)
-typedef IDirectSoundBuffer tSysSoundBuffer;
-#elif defined (J3D_DIRECTX9)
-typedef IDirectSoundBuffer8 tSysSoundBuffer;
-#else
-#error "Unsuported system sound API. Please define J3D_DIRECTX6 or J3D_DIRECTX9 in your project."
-#endif
+// Added: Opaque sound types. Each backend defines what they are.
+typedef struct sSysSoundBuffer tSysSoundBuffer;
+typedef struct sSysSoundDevice tDirectSound;
 
 typedef enum eSoundOpenFlags
 {

@@ -6,17 +6,9 @@
 
 J3D_EXTERN_C_START
 
-#if defined (J3D_DIRECTX6)
-typedef IDirectSound tDirectSound;
-#elif defined (J3D_DIRECTX9)
-typedef IDirectSound8 tDirectSound;
-#else
-#error "Unsuported system sound API. Please define J3D_DIRECTX6 or J3D_DIRECTX9 in your project."
-#endif
-
 typedef uint8_t* (J3DAPI* SoundDriverGetSoundBufferDataFunc)(tSysSoundBuffer* pDSBuf, uint32_t* pSoundDataSize, uint32_t* pbCompressed);
 
-int J3DAPI SoundDriver_Open(int bNoSound3D, int bGlobalFocus, HWND hwnd, tDirectSound* pDirectSound, SoundCalcListenerSoundMixFunc pfCalcListenerSoundMix, SoundDriverGetSoundBufferDataFunc pfGetSoundBufferData, tPrintfFunc pfLogError);
+int J3DAPI SoundDriver_Open(int bNoSound3D, int bGlobalFocus, tSysWindow hwnd, tDirectSound* pDirectSound, SoundCalcListenerSoundMixFunc pfCalcListenerSoundMix, SoundDriverGetSoundBufferDataFunc pfGetSoundBufferData, tPrintfFunc pfLogError);
 void SoundDriver_Close(void);
 
 void J3DAPI SoundDriver_SetMaxVolume(float volume);

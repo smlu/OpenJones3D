@@ -48,6 +48,7 @@ PLATFORM_PATHS = [
     "Libs/w32util/wuRegistry.c",
     "Libs/sound/DriverDX6.c",
     "Libs/sound/DriverDX9.c",
+    "Libs/smush/insane/Sound/Dsnd.c",
     "Libs/smush/insane/Timer/TimerWin32.c",
 ]
 
@@ -144,6 +145,7 @@ ENGINE_OWNED_NAMES = {
     "tSysDrawContext",
     "tSysFont",
     "tSysHandle",
+    "tSysSoundBuffer",
     "tSysWindow",
 }
 

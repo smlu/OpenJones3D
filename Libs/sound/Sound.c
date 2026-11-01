@@ -99,7 +99,7 @@ static int Sound_bNoSoundCompression;
 static int Sound_bNoLipSync;
 
 // Misc vars
-static HWND Sound_hwnd;
+static tSysWindow Sound_hwnd;
 static tDirectSound* Sound_pDirectSound;
 
 // 3D sound vars
@@ -426,7 +426,7 @@ void Sound_Shutdown(void)
     }
 }
 
-int J3DAPI Sound_Open(SoundOpenFlags flags, size_t maxSoundChannels, SoundGetThingInfoCallback pfGetThingInfo, SoundCalcListenerSoundMixFunc pfCalcListenerSoundMix, HWND hwnd)
+int J3DAPI Sound_Open(SoundOpenFlags flags, size_t maxSoundChannels, SoundGetThingInfoCallback pfGetThingInfo, SoundCalcListenerSoundMixFunc pfCalcListenerSoundMix, tSysWindow hwnd)
 {
     if ( Sound_state == SOUNDSTATE_OPEN )
     {
