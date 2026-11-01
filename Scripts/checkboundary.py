@@ -35,6 +35,7 @@ ALLOWLIST_FILE = "Scripts/boundary-allowlist.txt"
 # DirectX freely and is not counted. Interface headers are not listed, so their
 # leaks count.
 PLATFORM_PATHS = [
+    "Jones3D/Platform/Win32/",
     "Libs/std/Win95/DX6/",
     "Libs/std/Win95/DX9/",
     "Libs/std/Win95/stdComm.c",

@@ -7,7 +7,7 @@ Jones3D/Display/jonesConfig.c 925
 Jones3D/Gui/JonesDialog.c 109
 Jones3D/Gui/JonesDialog.h 28
 Jones3D/Indy3D.h 3
-Jones3D/Main/JonesMain.c 144
+Jones3D/Main/JonesMain.c 31
 Jones3D/dllmain.c 23
 Jones3D/types.h 21
 Libs/j3dcore/j3d.h.in 4
