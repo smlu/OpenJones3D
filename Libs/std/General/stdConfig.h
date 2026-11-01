@@ -11,6 +11,21 @@
 
 J3D_EXTERN_C_START
 
+// Added: Reads settings stored by an older version, used when a key isn't in the JSON config.
+typedef struct sStdConfigFallback
+{
+    bool (*pfHasStarted)(void);
+    int (J3DAPI* pfGetInt)(const char* pKey, int defaultValue);
+    float (J3DAPI* pfGetFloat)(const char* pKey, float defaultValue);
+    int (J3DAPI* pfGetStr)(const char* pKey, char* pDstStr, size_t size, const char* pDefaultValue); // Returns 0 on success
+} StdConfigFallback;
+
+/**
+ * Sets the fallback reader. The struct is copied. Call before stdConfig_Startup, which fails while no
+ * fallback is set or pfHasStarted returns false. Stays set across stdConfig_Shutdown.
+ */
+void stdConfig_SetFallback(const StdConfigFallback* pFallback);
+
 bool J3DAPI stdConfig_Startup(const char* pConfigPath);
 bool stdConfig_HasStarted(void);
 void J3DAPI stdConfig_Shutdown(void);

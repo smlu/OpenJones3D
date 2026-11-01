@@ -292,6 +292,9 @@ int J3DAPI JonesMain_Startup(const char* lpCmdLine)
     }
 
     // Added: Initialize new config module
+    // Added: Register the registry-based fallback reader so stdConfig no longer depends on w32util directly.
+    const StdConfigFallback fallback = { wuRegistry_HasStarted, wuRegistry_GetInt, wuRegistry_GetFloat, wuRegistry_GetStr };
+    stdConfig_SetFallback(&fallback);
     if ( !stdConfig_Startup("Jones.cfg") )
     {
         JonesMain_LogErrorToFile("Couldn't open the config file.");

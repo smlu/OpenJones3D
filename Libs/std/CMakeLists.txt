@@ -62,16 +62,14 @@ elseif(J3D_DIRECTX9)
 
     if (MINGW)
         # GCC ignores the #pragma comment(lib, ...) hints in stdControlDX9.c and stdShaderDX9.c
-        # (overdue XInput/wbemuuid/d3dcompiler/oleaut32/ole32), and the w32util functions used by
-        # stdConfig.c resolve only after w32util is added here (GNU ld is order-sensitive; CMake
-        # repeats cyclic static libraries on the link line).
+        # (overdue XInput/wbemuuid/d3dcompiler/oleaut32/ole32), so they are added here
+        # (GNU ld is order-sensitive; CMake repeats cyclic static libraries on the link line).
         target_link_libraries(${PROJECT_NAME} PUBLIC
             xinput
             wbemuuid
             d3dcompiler_47
             ole32
             oleaut32
-            w32util
         )
 
         # Wine has no MSVC shader compiler, so build the hlslc D3DCompile wrapper (cmake/shaders/hlslc.c)
