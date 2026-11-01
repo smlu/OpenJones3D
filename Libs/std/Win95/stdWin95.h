@@ -10,8 +10,8 @@ void J3DAPI stdWin95_SetWindow(tSysWindow hwnd);
 tSysWindow J3DAPI stdWin95_GetWindow();
 void J3DAPI stdWin95_SetInstance(tSysInstance hinstance);
 tSysInstance stdWin95_GetInstance(void);
-void J3DAPI stdWin95_SetGuid(const GUID* pGuid);
-const GUID* J3DAPI stdWin95_GetGuid(void); // Added
+void J3DAPI stdWin95_SetGuid(const tSysGuid* pGuid);
+const tSysGuid* J3DAPI stdWin95_GetGuid(void); // Added
 
 // Helper hooking functions
 void stdWin95_InstallHooks(void);

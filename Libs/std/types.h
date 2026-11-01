@@ -1,24 +1,10 @@
 #ifndef STD_TYPES_H
 #define STD_TYPES_H
 
-#if defined(J3D_DIRECTX6)
-#undef DIRECT3D_VERSION
-#include <d3d.h>
-#include <ddraw.h>
-#include <DirectX6/dplay.h>
-#elif defined(J3D_DIRECTX9)
-#undef DIRECT3D_VERSION
-#ifdef J3D_DEBUG
-#define D3D_DEBUG_INFO // TODO: comment out when done
-#endif
-#include <d3d9.h>
-#else
-#error "Unsupported GAPI"
-#endif
-
 #include <stdint.h>
 #include <wchar.h>
 #include <j3dcore/j3d.h>
+#include <stdBackendTypes.h>
 
 J3D_EXTERN_C_START
 // Added: Opaque platform handles. Only the platform layer knows what they point to and casts them.
@@ -28,6 +14,35 @@ typedef struct sSysInstance* tSysInstance;
 typedef struct sSysDrawContext* tSysDrawContext;
 typedef struct sSysBitmap* tSysBitmap;
 typedef struct sSysFont* tSysFont;
+
+// Added: Opaque renderer types. Each backend defines what they are.
+typedef struct sSysDisplayDevice tSysDisplayDevice;
+typedef struct sSysDevice3D tSysDevice3D;
+typedef struct sSysSurface tSysSurface;
+typedef struct sSysTexture tSysTexture;
+
+// Added: Types embedded by value. Engine code can hold them but can't read them. A backend defines
+// STD_SYS_BACKEND_TYPES and its real types first, and asserts that the sizes match.
+#if !defined(STD_SYS_BACKEND_TYPES)
+typedef struct sSysSurfaceDesc { _Alignas(STD_SYS_ALIGN) uint8_t aData[STD_SYS_SURFACEDESC_SIZE]; } tSysSurfaceDesc;
+typedef struct sSysDisplayDeviceCaps { _Alignas(STD_SYS_ALIGN) uint8_t aData[STD_SYS_DISPLAYCAPS_SIZE]; } tSysDisplayDeviceCaps;
+typedef struct sSysDevice3DDesc { _Alignas(STD_SYS_ALIGN) uint8_t aData[STD_SYS_DEVICE3DDESC_SIZE]; } tSysDevice3DDesc;
+typedef struct sSysPixelFormat { _Alignas(STD_SYS_ALIGN) uint8_t aData[STD_SYS_PIXELFORMAT_SIZE]; } tSysPixelFormat;
+typedef struct sSysGuid { _Alignas(STD_SYS_ALIGN) uint8_t aData[STD_SYS_GUID_SIZE]; } tSysGuid;
+#endif
+
+// DirectPlay
+#define DPID_ALLPLAYERS   0
+#define DPSEND_GUARANTEED 0x00000001
+#define DPERR_GENERIC     ((int)0x80004005)
+typedef uint32_t DPID;
+
+// Added: Keep shared color-key conversion code buildable without including DirectDraw.
+typedef struct sDDColorKey
+{
+    uint32_t dwColorSpaceLowValue;
+    uint32_t dwColorSpaceHighValue;
+} DDCOLORKEY, *LPDDCOLORKEY;
 
 // Added: A transformed and lit vertex. The layout is a contract: backends can pass it to APIs that use this layout.
 typedef struct sStdVertexTL
@@ -44,46 +59,6 @@ static_assert(sizeof(StdVertexTL) == 32, "sizeof(StdVertexTL) == 32");
 #define STD_COLOR_ARGB(a, r, g, b)  ((uint32_t)((((a) & 0xffu) << 24) | (((r) & 0xffu) << 16) | (((g) & 0xffu) << 8) | ((b) & 0xffu)))
 #define STD_COLOR_FROM_FLOATS(r, g, b, a) STD_COLOR_ARGB((uint32_t)((a) * 255.f), (uint32_t)((r) * 255.f), (uint32_t)((g) * 255.f), (uint32_t)((b) * 255.f))
 #define STD_COLOR_FROM_FLOATS_RGB(r, g, b) STD_COLOR_ARGB(0xff, (uint32_t)((r) * 255.f), (uint32_t)((g) * 255.f), (uint32_t)((b) * 255.f))
-
-#if defined(J3D_DIRECTX6)
-// Direct3D & DirectDraw
-typedef DDCAPS_DX6 tSysDisplayDeviceCaps;
-typedef IDirectDraw4 tSysDisplayDevice;
-
-typedef D3DDEVICEDESC tSysDevice3DDesc;
-typedef IDirect3DDevice3 tSysDevice3D;
-
-typedef DDPIXELFORMAT tSysPixelFormat;
-typedef DDSURFACEDESC2 tSysSurfaceDesc;
-typedef IDirectDrawSurface4 tSysSurface;
-typedef IDirect3DTexture2 tSysTexture;
-
-#elif defined(J3D_DIRECTX9)
-// DirectPlay
-#define DPID_ALLPLAYERS   0
-#define DPSEND_GUARANTEED 0x00000001
-#define DPERR_GENERIC     E_FAIL
-typedef uint32_t DPID;
-
-// Direct3D stuff
-typedef D3DCAPS9 tSysDisplayDeviceCaps;
-typedef IDirect3DDevice9 tSysDisplayDevice;
-
-typedef D3DCAPS9 tSysDevice3DDesc;
-typedef IDirect3DDevice9 tSysDevice3D;
-
-typedef D3DFORMAT tSysPixelFormat;
-typedef D3DSURFACE_DESC tSysSurfaceDesc;
-typedef IDirect3DSurface9 tSysSurface;
-typedef IDirect3DTexture9 tSysTexture;
-// Added: Keep shared color-key conversion code buildable in DX9 without including DirectDraw.
-typedef struct sDDColorKey
-{
-    uint32_t dwColorSpaceLowValue;
-    uint32_t dwColorSpaceHighValue;
-} DDCOLORKEY, *LPDDCOLORKEY;
-
-#endif // J3D_DIRECTX6
 
 typedef enum eStdColorFormatType
 {
@@ -389,15 +364,10 @@ typedef struct sVBuffer
 
 struct sSystemTexture
 {
-#ifdef J3D_DIRECTX6
-    tSysSurfaceDesc desc;
-    tSysTexture* pTexture;
-#else 
     // VBuffer storage - completely device independent
     tVBuffer** apMipmaps;  // Array of VBuffer pointers (one per mip level)
     size_t numMipLevels;    // Number of mip levels
     tSysPixelFormat format; // DirectX format for video memory texture
-#endif
     tSysTexture* pCachedTexture;
     size_t textureSize;
     size_t frameNum;
@@ -426,7 +396,7 @@ typedef struct sStdDisplayDevice
     size_t totalVideoMemory;
     size_t freeVideoMemory;
     tSysDisplayDeviceCaps caps;
-    GUID guid;
+    tSysGuid guid;
 } StdDisplayDevice;
 //static_assert(sizeof(StdDisplayDevice) == 672, "sizeof(StdDisplayDevice) == 672");
 
@@ -458,7 +428,7 @@ typedef struct sDevice3D
     size_t totalMemory;
     size_t availableMemory;
     tSysDevice3DDesc d3dDesc;
-    GUID duid;
+    tSysGuid duid;
     int unknown146;
     int unknown147;
     int unknown148;
@@ -539,7 +509,7 @@ typedef struct sDevice3D
 
 typedef struct sDXStatus
 {
-    HRESULT code;
+    int32_t code; // Altered: int32_t instead of HRESULT, same size
     const char* text;
 } DXStatus;
 static_assert(sizeof(DXStatus) == 8, "sizeof(DXStatus) == 8");
@@ -629,7 +599,7 @@ static_assert(sizeof(StdCommPlayerInfo) == 44, "sizeof(StdCommPlayerInfo) == 44"
 
 typedef struct sStdCommSessionSettings
 {
-    GUID guid;
+    tSysGuid guid;
     int maxPlayers;
     int numCurrentPlayers;
     wchar_t aSessionName[64];

@@ -1,4 +1,4 @@
-#include <std/Win95/stdSysTagsWin32.h>
+#include <std/Win95/DX9/stdSysTypesDX9.h>
 #include <std/Win95/std3D.h>
 #include <std/Win95/stdDisplay.h>
 #include <std/Win95/stdWin95.h>
@@ -2711,7 +2711,8 @@ int J3DAPI stdDisplay_SetBufferClipper(int bFrontBuffer)
     return 1; // Success - clipping is handled automatically
 }
 
-HRESULT J3DAPI stdDisplay_RemoveBufferClipper(int bFrontBuffer)
+// Altered: Returns int instead of HRESULT, 0 is success.
+int J3DAPI stdDisplay_RemoveBufferClipper(int bFrontBuffer)
 {
     J3D_UNUSED(bFrontBuffer);
 

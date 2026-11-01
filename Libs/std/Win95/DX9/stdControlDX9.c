@@ -1,4 +1,4 @@
-#include <std/Win95/stdSysTagsWin32.h>
+#include <std/Win95/DX9/stdSysTypesDX9.h>
 #include <std/Win95/stdControl.h>
 #include <std/Win95/stdControlTestApi.h>
 #include <std/Win95/stdWin95.h>

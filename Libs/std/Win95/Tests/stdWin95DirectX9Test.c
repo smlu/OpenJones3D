@@ -1,3 +1,4 @@
+#include <std/Win95/DX9/stdSysTypesDX9.h>
 #include <unity_fixture.h>
 #include <j3dcore/j3d.h>
 

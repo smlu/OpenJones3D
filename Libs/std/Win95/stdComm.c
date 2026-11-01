@@ -1,3 +1,4 @@
+#include <std/Win95/DX9/stdSysTypesDX9.h>
 #include "stdComm.h"
 
 #include <j3dcore/j3dhook.h>
@@ -71,14 +72,16 @@ int J3DAPI stdComm_GetGame(size_t gameNum, StdCommGame* pGame)
     return 0;
 }
 
-HRESULT J3DAPI stdComm_CreateGame(const StdCommGame* pSettings)
+// Altered: Returns int instead of HRESULT, 0 is success.
+int J3DAPI stdComm_CreateGame(const StdCommGame* pSettings)
 {
     STD_ASSERTREL(pSettings);
     STDLOG_FATAL("stdComm_CreateGame not implemented!");
     return 0; // success
 }
 
-HRESULT J3DAPI stdComm_SetGameParams(StdCommGame* pSettings)
+// Altered: Returns int instead of HRESULT, 0 is success.
+int J3DAPI stdComm_SetGameParams(StdCommGame* pSettings)
 {
     J3D_UNUSED(pSettings);
     STD_ASSERTREL(bGameActive && bGameHost);

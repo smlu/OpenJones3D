@@ -2514,23 +2514,10 @@ size_t J3DAPI JonesMain_FindClosestVideoMode(const StdDisplayEnvironment* pList,
 
 bool J3DAPI JonesMain_CurDisplaySupportsBPP(const JonesDisplaySettings* pSettings, size_t bpp)
 {
-#if defined(J3D_DIRECTX6)
-    StdDisplayInfo* pDisplay = &JonesMain_pStartupDisplayEnv->aDisplayInfos[pSettings->displayDeviceNum];
-    switch ( bpp )
-    {
-        case 8:
-            return(pDisplay->aDevices[pSettings->device3DNum].d3dDesc.dwDeviceRenderBitDepth & DDBD_8) != 0;
-        case 16:
-            return (pDisplay->aDevices[pSettings->device3DNum].d3dDesc.dwDeviceRenderBitDepth & DDBD_16) != 0;
-        case 24:
-            return (pDisplay->aDevices[pSettings->device3DNum].d3dDesc.dwDeviceRenderBitDepth & DDBD_24) != 0;
-        case 32:
-            return (pDisplay->aDevices[pSettings->device3DNum].d3dDesc.dwDeviceRenderBitDepth & DDBD_32) != 0;
-    }
-#elif defined(J3D_DIRECTX9)
+#if defined(J3D_DIRECTX9)
     J3D_UNUSED(pSettings);
     if ( bpp == 24 || bpp == 32 ) return 1;
-#else 
+#else // Altered: Removed the J3D_DIRECTX6 branch; J3D_DIRECTX6 is never set now
 #error "Unsupported 3D API"
 #endif
 

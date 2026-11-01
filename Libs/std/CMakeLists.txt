@@ -34,6 +34,12 @@ add_library(${PROJECT_NAME} STATIC ${SOURCES} ${HEADERS} ${SHADERS} ${SHADER_INC
 # Add global includes
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)
 
+# Added: The DirectX 9 backend directory holds the backend types defines and the DirectX 9 API
+# interface (std/types.h includes stdBackendTypes.h from here unconditionally).
+if (J3D_DIRECTX9)
+    target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/Win95/DX9)
+endif()
+
 # Link libraries
 target_link_libraries(${PROJECT_NAME} PUBLIC 
     j3dcore

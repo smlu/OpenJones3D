@@ -145,11 +145,20 @@ FORBIDDEN_PATTERNS = [
 ENGINE_OWNED_NAMES = {
     "DPID",
     "tSysBitmap",
+    "tSysDevice3D",
+    "tSysDevice3DDesc",
+    "tSysDisplayDevice",
+    "tSysDisplayDeviceCaps",
     "tSysDrawContext",
     "tSysFont",
+    "tSysGuid",
     "tSysHandle",
     "tSysInstance",
+    "tSysPixelFormat",
     "tSysSoundBuffer",
+    "tSysSurface",
+    "tSysSurfaceDesc",
+    "tSysTexture",
     "tSysWindow",
 }
 

@@ -7745,23 +7745,11 @@ int J3DAPI jonesConfig_DisplaySettings_Get3DDeviceSupportsBPP(const StdDisplayIn
         return 0;
     }
 
-#if defined(J3D_DIRECTX6)
-    switch ( bpp )
-    {
-        case 16:
-            return pDisplayInfo->aDevices[pSettings->device3DNum].d3dDesc.dwDeviceRenderBitDepth & DDBD_16;
-
-        case 24:
-            return pDisplayInfo->aDevices[pSettings->device3DNum].d3dDesc.dwDeviceRenderBitDepth & DDBD_24;
-
-        case 32:
-            return pDisplayInfo->aDevices[pSettings->device3DNum].d3dDesc.dwDeviceRenderBitDepth & DDBD_32;
-    }
-#elif defined(J3D_DIRECTX9)
+#if defined(J3D_DIRECTX9)
     J3D_UNUSED(pDisplayInfo);
     J3D_UNUSED(pSettings);
     if ( bpp == 24 || bpp == 32 ) return 1;
-#else
+#else // Altered: Removed the J3D_DIRECTX6 branch; J3D_DIRECTX6 is never set now
 #error "Unsupported 3D API"
 #endif
 

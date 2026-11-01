@@ -164,6 +164,14 @@ target_include_directories(stdTests PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}"
 )
 
+# Added: The tested sources compile the DX9 backend, whose stdSysTypesDX9.h and stdBackendTypes.h
+# live in this directory.
+if (J3D_DIRECTX9)
+    target_include_directories(stdTests PRIVATE
+        "${STD_SOURCE_DIR}/Win95/DX9"
+    )
+endif()
+
 if (JONES3D_SHADER_HEADER_DIR)
     # The std test target compiles the DX9 sources directly; add the generated shader
     # headers to its include path and wait for them to be generated first.
@@ -229,6 +237,14 @@ if (JONES3D_BUILD_SYSTEM_TESTS)
         "${CMAKE_CURRENT_SOURCE_DIR}"
     )
 
+    # Added: The tested sources compile the DX9 backend, whose stdSysTypesDX9.h and stdBackendTypes.h
+    # live in this directory.
+    if (J3D_DIRECTX9)
+        target_include_directories(stdSystemTests PRIVATE
+            "${STD_SOURCE_DIR}/Win95/DX9"
+        )
+    endif()
+
     if (JONES3D_SHADER_HEADER_DIR)
         # The std system test target compiles the DX9 sources directly; add the generated shader
         # headers to its include path and wait for them to be generated first.
@@ -292,6 +308,14 @@ if (JONES3D_BUILD_DISRUPTIVE_SYSTEM_TESTS)
     target_include_directories(stdDisruptiveSystemTests PRIVATE
         "${CMAKE_CURRENT_SOURCE_DIR}"
     )
+
+    # Added: The tested sources compile the DX9 backend, whose stdSysTypesDX9.h and stdBackendTypes.h
+    # live in this directory.
+    if (J3D_DIRECTX9)
+        target_include_directories(stdDisruptiveSystemTests PRIVATE
+            "${STD_SOURCE_DIR}/Win95/DX9"
+        )
+    endif()
 
     if (JONES3D_SHADER_HEADER_DIR)
         # The std disruptive system test target compiles the DX9 sources directly; add the generated

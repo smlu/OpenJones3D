@@ -5,5 +5,7 @@
 
 #define sSysWindow   HWND__
 #define sSysInstance HINSTANCE__
+#define sSysDrawContext HDC__
+#define sSysBitmap HBITMAP__
 
 #endif // STD_STDSYSTAGSWIN32_H

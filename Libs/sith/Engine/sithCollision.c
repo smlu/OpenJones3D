@@ -603,7 +603,7 @@ void J3DAPI sithCollision_ApplyThingOrient(SithThing* pThing, rdMatrix34* pOrien
 float J3DAPI sithCollision_MoveThing(SithThing* pThing, const rdVector3* moveNorm, float moveDist, int flags)
 {
     float damage;
-    BOOL v11;
+    int v11; // Altered: int, not the Windows BOOL
     SithThingMoveStatus moveStatus;
     float v17;
     float v18;

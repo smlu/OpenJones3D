@@ -1,6 +1,7 @@
 #ifndef STD_STDVERTEX_DX9_H
 #define STD_STDVERTEX_DX9_H
 
+#include <std/Win95/DX9/stdSysTypesDX9.h>
 #include <std/types.h>
 
 // Added: Keeps the original Direct3D names for the engine-owned transformed and

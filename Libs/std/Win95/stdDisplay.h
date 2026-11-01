@@ -20,10 +20,7 @@ int J3DAPI stdDisplay_Open(size_t deviceNum);
 bool stdDisplay_IsOpen(void); // Added
 void stdDisplay_Close(void);
 
-#ifdef J3D_DIRECTX9
-LPDIRECT3D9 stdDisplay_GetDirect3D(void);
 size_t stdDisplay_GetAdapterNum(size_t deviceNum);
-#endif
 
 tSysDisplayDevice* stdDisplay_GetSystemDevice(void); // Can be retrieved after display system is opened
 
@@ -68,16 +65,18 @@ int J3DAPI stdDisplay_SaveScreen(const char* pFilename);
 
 void J3DAPI stdDisplay_SetDefaultResolution(uint32_t width, uint32_t height);
 
-HDC stdDisplay_GetFrontBufferDC(void);
-void J3DAPI stdDisplay_ReleaseFrontBufferDC(HDC hdc);
+tSysDrawContext stdDisplay_GetFrontBufferDC(void);
+void J3DAPI stdDisplay_ReleaseFrontBufferDC(tSysDrawContext hdc);
 
-HDC stdDisplay_GetBackBufferDC(void);
-void J3DAPI stdDisplay_ReleaseBackBufferDC(HDC hdc);
+tSysDrawContext stdDisplay_GetBackBufferDC(void);
+void J3DAPI stdDisplay_ReleaseBackBufferDC(tSysDrawContext hdc);
 
 int stdDisplay_FlipToGDISurface(void);
 
+// Added: Returns 0 on success, non-zero when the clipper could not be set or removed.
 int J3DAPI stdDisplay_SetBufferClipper(int bFrontBuffer);
-HRESULT J3DAPI stdDisplay_RemoveBufferClipper(int bFrontBuffer);
+// Altered: Returns int instead of HRESULT, 0 is success.
+int J3DAPI stdDisplay_RemoveBufferClipper(int bFrontBuffer);
 
 int stdDisplay_CanRenderWindowed(void);
 int stdDisplay_IsFullscreen(void);
@@ -91,10 +90,6 @@ uint32_t J3DAPI stdDisplay_EncodeFromRGB565(uint16_t pixel);
 // Helper hooking functions
 void stdDisplay_InstallHooks(void);
 void stdDisplay_ResetGlobals(void);
-
-#if defined(J3D_TEST) && defined(J3D_DIRECTX9)
-void stdDisplay_TestGetPresentParameters(D3DPRESENT_PARAMETERS* pParams);
-#endif
 
 J3D_EXTERN_C_END
 #endif // STD_STDDISPLAY_H
