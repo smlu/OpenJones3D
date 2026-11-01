@@ -17,6 +17,7 @@
 #endif
 
 #include <stdint.h>
+#include <wchar.h>
 #include <j3dcore/j3d.h>
 
 J3D_EXTERN_C_START

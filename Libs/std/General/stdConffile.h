@@ -6,6 +6,7 @@
 #include <std/types.h>
 #include <std/RTI/addresses.h>
 
+#include <stdarg.h>
 #include <stdio.h>
 
 J3D_EXTERN_C_START

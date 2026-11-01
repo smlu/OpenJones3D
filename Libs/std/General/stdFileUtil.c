@@ -7,6 +7,8 @@
 #include <j3dcore/j3dhook.h>
 #include <std/RTI/symbols.h>
 
+#include <time.h>
+
 void stdFileUtil_InstallHooks(void)
 {
     J3D_HOOKFUNC(stdFileUtil_NewFind);

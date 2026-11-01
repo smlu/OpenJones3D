@@ -43,6 +43,7 @@
 #include <sound/Sound.h>
 
 #include <math.h>
+#include <stdlib.h>
 #include <windowsx.h>
 
 // Joystick AXIS key IDs

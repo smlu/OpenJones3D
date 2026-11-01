@@ -16,6 +16,8 @@
 #include <std/General/stdUtil.h>
 #include <std/Win95/stdComm.h>
 
+#include <stdlib.h>
+
 static tHashTable* sithSoundClass_pHashtblModes;
 static tHashTable* sithSoundClass_pHashTable;
 

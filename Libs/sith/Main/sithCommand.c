@@ -32,6 +32,9 @@
 #include <std/General/stdUtil.h>
 #include <std/Win95/stdComm.h>
 
+#include <stdlib.h>
+#include <wchar.h>
+
 typedef struct sSithCommandMatInfo
 {
     size_t num;

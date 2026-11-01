@@ -19,6 +19,8 @@
 #include <std/General/stdMath.h>
 #include <std/General/stdUtil.h>
 
+#include <stdlib.h>
+
 static bool sithExplosion_bExpandFadeSet = false;
 
 void sithExplosion_InstallHooks(void)

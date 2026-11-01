@@ -16,6 +16,7 @@
 #include <std/General/stdUtil.h>
 
 #include <stdio.h>
+#include <stdlib.h>
 
 static SithGameStatistics* jonesInventory_pGameStatistics;
 static uint32_t jonesInventory_msecStatisticsGameTime;

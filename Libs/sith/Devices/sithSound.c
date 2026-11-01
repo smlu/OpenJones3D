@@ -13,6 +13,8 @@
 #include <std/General/stdUtil.h>
 #include <std/Win95/stdWin95.h>
 
+#include <stdlib.h>
+
 static bool bStartup = false; // Added: Init to false
 static bool bSkipRestoringSounds;
 

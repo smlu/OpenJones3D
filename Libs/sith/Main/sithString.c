@@ -7,6 +7,8 @@
 #include <std/General/stdMemory.h>
 #include <std/General/stdStrTable.h>
 
+#include <wchar.h>
+
 static tStringTable sithStringsTbl;
 static tStringTable voiceStringsTbl;
 static bool bStartup = false;

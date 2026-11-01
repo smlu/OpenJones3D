@@ -1,7 +1,9 @@
 #include "sithThing.h"
 #include <j3dcore/j3dhook.h>
 
+#include <errno.h>
 #include <math.h>
+#include <stdlib.h>
 
 #include <rdroid/Engine/rdPuppet.h>
 #include <rdroid/Engine/rdThing.h>

@@ -11,6 +11,8 @@
 #include <std/types.h>
 #include <std/General/std.h>
 
+#include <wchar.h>
+
 J3D_EXTERN_C_START
 
 #define SITH_RAND() ((double)rand() * (1.0 / RAND_MAX))

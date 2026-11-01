@@ -12,6 +12,8 @@
 
 #include <std/types.h>
 
+#include <wchar.h>
+
 J3D_EXTERN_C_START
 
 //Helper macros for data serialization / de-serialization

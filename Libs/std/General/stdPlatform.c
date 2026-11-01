@@ -2,6 +2,9 @@
 #define STRICT
 #include <windows.h> // timeGetTime, include first to avoid undefined warning due to WIN32_LEAN_AND_MEAN
 #include <dbghelp.h>
+#include <ctype.h>
+#include <stdarg.h>
+#include <stdlib.h>
 #include <wchar.h>
 
 #include "std.h"

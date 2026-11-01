@@ -60,6 +60,7 @@
 #include <w32util/wuRegistry.h>
 
 #include <stdint.h>
+#include <stdlib.h>
 #include <windowsx.h> // helper macros for win32 controls (combo-box, list-view ...)
 
 #ifdef J3D_STANDALONE

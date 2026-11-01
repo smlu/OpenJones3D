@@ -5,6 +5,8 @@
 #include <std/types.h>
 #include <std/RTI/addresses.h>
 
+#include <wchar.h>
+
 J3D_EXTERN_C_START
 
 #define STDLOG_DEBUG(format, ...) \

@@ -10,6 +10,8 @@
 #include <std/Win95/std3D.h>
 #include <std/Win95/stdDisplay.h>
 
+#include <stdlib.h>
+
 D3DTLVERTEX rdPrimit2_aD3DVertices[2];
 
 void rdPrimit2_InstallHooks(void)

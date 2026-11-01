@@ -9,6 +9,8 @@
 #include <std/General/std.h>
 #include <std/General/stdUtil.h>
 
+#include <wchar.h>
+
 J3D_EXTERN_C_START
 
 typedef enum eSithConsoleFlags // Added

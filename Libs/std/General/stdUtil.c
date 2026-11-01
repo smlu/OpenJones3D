@@ -5,6 +5,7 @@
 #include <std/General/stdPlatform.h>
 #include <std/RTI/symbols.h>
 
+#include <stdarg.h>
 #include <string.h>
 #include <wchar.h>
 #include <ctype.h>

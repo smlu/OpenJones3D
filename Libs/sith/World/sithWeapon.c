@@ -41,6 +41,8 @@
 #include <std/General/stdUtil.h>
 #include <std/Win95/stdComm.h>
 
+#include <errno.h>
+
 #define SITHWEAPON_MAX_PROJECTILE_RICOCHETS 6
 
 #define SITHWEAPON_TIMENOTSET -1.0f

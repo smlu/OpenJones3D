@@ -19,6 +19,8 @@
 #include <std/General/stdMemory.h>
 #include <std/General/stdUtil.h>
 
+#include <stdlib.h>
+
 #ifdef J3D_STANDALONE
 // Added: Standalone builds have no retail executable to hold these. *_ResetGlobals sets the starting values.
 int rdModel3_g_numDrawnFaces;

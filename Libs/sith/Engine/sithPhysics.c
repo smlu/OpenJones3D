@@ -2,6 +2,7 @@
 #include <j3dcore/j3dhook.h>
 
 #include <float.h>
+#include <stdlib.h>
 
 #include <rdroid/Math/rdMath.h>
 #include <rdroid/Math/rdMatrix.h>

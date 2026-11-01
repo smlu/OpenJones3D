@@ -15,6 +15,8 @@
 #include <std/General/stdMath.h>
 #include <std/General/stdMemory.h>
 
+#include <stdlib.h>
+
 
 void J3DAPI sithPathMove_FollowNextPath(SithThing* pThing);
 void J3DAPI sithPathMove_SendMessageBlocked(SithThing* pThing);

@@ -14,6 +14,8 @@
 
 #include <std/Win95/stdComm.h>
 
+#include <errno.h>
+
 void sithItem_InstallHooks(void)
 {
     J3D_HOOKFUNC(sithItem_PlayerCollisionHandler);

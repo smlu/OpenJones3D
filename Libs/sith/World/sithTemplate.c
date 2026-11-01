@@ -12,6 +12,8 @@
 
 #include <rdroid/Engine/rdThing.h>
 
+#include <stdlib.h>
+
 #define SITHTEMPLAT_MAXFILETEMPLATES   3072u
 #define SITHTEMPLAT_MAXCACHEDTEMPLATES 1024u
 

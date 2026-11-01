@@ -17,6 +17,8 @@
 #include <std/General/stdMemory.h>
 #include <std/General/stdUtil.h>
 
+#include <stdlib.h>
+
 #define SITHPARTICLE_MAXWORLDPARTICLES 64u // load particel when now particles allocated
 
 static tHashTable* sithParticle_pHashtable;

@@ -17,6 +17,8 @@
 #include <std/General/stdMemory.h>
 #include <std/General/stdUtil.h>
 
+#include <stdlib.h>
+
 #define SITHSPRITE_STATICBUFFER_EXTRACAPACITY_DFLT 128
 size_t sithSprite_staticBufferExtraCapacity = 0;
 

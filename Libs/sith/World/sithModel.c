@@ -13,6 +13,7 @@
 #include <std/General/stdUtil.h>
 #include <std/types.h>
 
+#include <stdlib.h>
 #include <string.h>
 
 #define SITHMODEL_DEFAULTMODEL    "dflt.3do"

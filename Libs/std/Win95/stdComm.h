@@ -4,6 +4,8 @@
 #include <std/types.h>
 #include <std/RTI/addresses.h>
 
+#include <wchar.h>
+
 J3D_EXTERN_C_START
 
 #define STDCOMM_MAX_PLAYERS 24U

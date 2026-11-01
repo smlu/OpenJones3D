@@ -1,6 +1,7 @@
 #ifndef STD_STDUTIL_H
 #define STD_STDUTIL_H
 #include <string.h>
+#include <wchar.h>
 #include <j3dcore/j3d.h>
 #include <std/types.h>
 #include <std/RTI/addresses.h>

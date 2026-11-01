@@ -7,6 +7,8 @@
 #include <sith/RTI/addresses.h>
 #include <std/types.h>
 
+#include <wchar.h>
+
 J3D_EXTERN_C_START
 
 typedef enum eSithMessageStream

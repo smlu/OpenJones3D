@@ -2,6 +2,7 @@
 #include <j3dcore/j3dhook.h>
 
 #include <math.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include <rdroid/Math/rdMath.h>

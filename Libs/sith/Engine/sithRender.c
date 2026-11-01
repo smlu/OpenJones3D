@@ -40,6 +40,7 @@
 #include  <std/Win95/std3D.h>
 #include  <std/Win95/stdDisplay.h>
 
+#include <float.h>
 #include <math.h>
 #include <stdint.h>
 

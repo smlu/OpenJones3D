@@ -53,6 +53,7 @@
 
 #include <math.h>
 #include <stdbool.h>
+#include <stdlib.h>
 
 #define JONESHUD_CREDITS_SPEEDFACTOR    0.5f // default 1.5
 

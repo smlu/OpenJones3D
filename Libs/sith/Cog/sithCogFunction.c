@@ -37,6 +37,8 @@
 #include <std/General/stdUtil.h>
 #include <std/Win95/stdComm.h>
 #include <stdbool.h>
+#include <stdlib.h>
+#include <time.h>
 
 static bool bPrintEnabled = false; // Added
 

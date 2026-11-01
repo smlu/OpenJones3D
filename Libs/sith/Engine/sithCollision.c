@@ -25,6 +25,8 @@
 
 #include <std/General/stdUtil.h>
 
+#include <float.h>
+
 #define SITHCOLLISION_STACKSIZE 4 
 
 static int stackLevel = -1;
