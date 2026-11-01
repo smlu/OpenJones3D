@@ -2,6 +2,7 @@
 
 #include <std/General/stdUtil.h>
 #include <std/Win95/stdControl.h>
+#include <std/Win95/stdControlTestApi.h>
 
 #include "stdWin95SystemTestSupport.h"
 

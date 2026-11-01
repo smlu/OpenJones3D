@@ -317,43 +317,43 @@ static const char* jonesConfig_apDialogIconFiles[6] =
 
 // Keyboard default keysets
 
-static const size_t aActionWalkFwdKeys[2]     = { DIK_UP   , JONESCONFIG_JOYAXISKID_UP };
-static const size_t aActionWalkBackKeys[2]    = { DIK_DOWN , JONESCONFIG_JOYAXISKID_DOWN };
-static const size_t aActionTurnLeftKeys[2]    = { DIK_LEFT , JONESCONFIG_JOYAXISKID_LEFT };
-static const size_t aActionTurnRightKeys[2]   = { DIK_RIGHT, JONESCONFIG_JOYAXISKID_RIGHT };
-static const size_t aActionStepLeftKeys[1]    = { DIK_A };
-static const size_t aActionStepRightKeys[1]   = { DIK_S };
-static const size_t aActionCrawlKeys[1]       = { DIK_C };
-static const size_t aActionRunKeys[2]         = { DIK_LSHIFT, DIK_RSHIFT };
-static const size_t aActionRollKeys[1]        = { DIK_Z };
-static const size_t aActionJumpKeys[4]        = { DIK_X, DIK_LMENU, DIK_RMENU, STDCONTROL_JOYSTICK_GETBUTTON(0, 1) };
-static const size_t aActionLookKeys[2]        = { DIK_INSERT, DIK_NUMPAD0 };
-static const size_t aActionActivateKeys[3]    = { DIK_LCONTROL, DIK_RCONTROL, STDCONTROL_JOYSTICK_GETBUTTON(0, 0) };
-static const size_t aActionToggleMapKeys[1]   = { DIK_SPACE };
-static const size_t aActionPrevWeaponKeys[1]  = { DIK_COMMA };
-static const size_t aActionNextWeaponKeys[1]  = { DIK_PERIOD };
-static const size_t aActionToggleLightKeys[1] = { DIK_L };
-static const size_t aActionFistsKeys[1]       = { DIK_0 };
-static const size_t aActionWhipKeys[1]        = { DIK_1 };
-static const size_t aActionMauserKeys[1]      = { DIK_4 };
-static const size_t aActionPPSH41Keys[1]      = { DIK_7 };
-static const size_t aActionPistolKeys[1]      = { DIK_2 };
-static const size_t aActionSimonovKeys[1]     = { DIK_5 };
-static const size_t aActionTokarevKeys[1]     = { DIK_3 };
-static const size_t aActionToz34Keys[1]       = { DIK_8 };
-static const size_t aActionBazookaKeys[1]     = { DIK_9 };
-static const size_t aActionMacheteKeys[1]     = { DIK_6 };
-static const size_t aActionSatchelKeys[1]     = { DIK_P };
-static const size_t aActionGrenadeKeys[1]     = { DIK_G };
-static const size_t aActionMapKeys[1]         = { DIK_M };
-static const size_t aActionInterfaceKeys[1]   = { DIK_I };
-static const size_t aActionHealthKeys[1]      = { DIK_H };
-static const size_t aActionIMP1Keys[1]        = { DIK_Q };
-static const size_t aActionIMP2Keys[1]        = { DIK_W };
-static const size_t aActionIMP3Keys[1]        = { DIK_E };
-static const size_t aActionIMP4Keys[1]        = { DIK_R };
-static const size_t aActionIMP5Keys[1]        = { DIK_T };
-static const size_t aActionChalk[1]           = { DIK_K };
+static const size_t aActionWalkFwdKeys[2]     = { STDKEY_UP   , JONESCONFIG_JOYAXISKID_UP };
+static const size_t aActionWalkBackKeys[2]    = { STDKEY_DOWN , JONESCONFIG_JOYAXISKID_DOWN };
+static const size_t aActionTurnLeftKeys[2]    = { STDKEY_LEFT , JONESCONFIG_JOYAXISKID_LEFT };
+static const size_t aActionTurnRightKeys[2]   = { STDKEY_RIGHT, JONESCONFIG_JOYAXISKID_RIGHT };
+static const size_t aActionStepLeftKeys[1]    = { STDKEY_A };
+static const size_t aActionStepRightKeys[1]   = { STDKEY_S };
+static const size_t aActionCrawlKeys[1]       = { STDKEY_C };
+static const size_t aActionRunKeys[2]         = { STDKEY_LSHIFT, STDKEY_RSHIFT };
+static const size_t aActionRollKeys[1]        = { STDKEY_Z };
+static const size_t aActionJumpKeys[4]        = { STDKEY_X, STDKEY_LMENU, STDKEY_RMENU, STDCONTROL_JOYSTICK_GETBUTTON(0, 1) };
+static const size_t aActionLookKeys[2]        = { STDKEY_INSERT, STDKEY_NUMPAD0 };
+static const size_t aActionActivateKeys[3]    = { STDKEY_LCONTROL, STDKEY_RCONTROL, STDCONTROL_JOYSTICK_GETBUTTON(0, 0) };
+static const size_t aActionToggleMapKeys[1]   = { STDKEY_SPACE };
+static const size_t aActionPrevWeaponKeys[1]  = { STDKEY_COMMA };
+static const size_t aActionNextWeaponKeys[1]  = { STDKEY_PERIOD };
+static const size_t aActionToggleLightKeys[1] = { STDKEY_L };
+static const size_t aActionFistsKeys[1]       = { STDKEY_0 };
+static const size_t aActionWhipKeys[1]        = { STDKEY_1 };
+static const size_t aActionMauserKeys[1]      = { STDKEY_4 };
+static const size_t aActionPPSH41Keys[1]      = { STDKEY_7 };
+static const size_t aActionPistolKeys[1]      = { STDKEY_2 };
+static const size_t aActionSimonovKeys[1]     = { STDKEY_5 };
+static const size_t aActionTokarevKeys[1]     = { STDKEY_3 };
+static const size_t aActionToz34Keys[1]       = { STDKEY_8 };
+static const size_t aActionBazookaKeys[1]     = { STDKEY_9 };
+static const size_t aActionMacheteKeys[1]     = { STDKEY_6 };
+static const size_t aActionSatchelKeys[1]     = { STDKEY_P };
+static const size_t aActionGrenadeKeys[1]     = { STDKEY_G };
+static const size_t aActionMapKeys[1]         = { STDKEY_M };
+static const size_t aActionInterfaceKeys[1]   = { STDKEY_I };
+static const size_t aActionHealthKeys[1]      = { STDKEY_H };
+static const size_t aActionIMP1Keys[1]        = { STDKEY_Q };
+static const size_t aActionIMP2Keys[1]        = { STDKEY_W };
+static const size_t aActionIMP3Keys[1]        = { STDKEY_E };
+static const size_t aActionIMP4Keys[1]        = { STDKEY_R };
+static const size_t aActionIMP5Keys[1]        = { STDKEY_T };
+static const size_t aActionChalk[1]           = { STDKEY_K };
 
 static const JonesConfigControlAction jonesConfig_aDefaultControlSet[JONESCONTROL_ACTION_NUMACTIONS] =
 {
@@ -398,8 +398,8 @@ static const JonesConfigControlAction jonesConfig_aDefaultControlSet[JONESCONTRO
 
 // Joystick 2 Axis 4 buttons default keysets
 
-static const size_t aActionCrawlJoyButtons[2]     = { DIK_C, STDCONTROL_JOYSTICK_GETBUTTON(0, 2) };
-static const size_t aActionInterfaceJoyButtons[2] = { DIK_I, STDCONTROL_JOYSTICK_GETBUTTON(0, 3) };
+static const size_t aActionCrawlJoyButtons[2]     = { STDKEY_C, STDCONTROL_JOYSTICK_GETBUTTON(0, 2) };
+static const size_t aActionInterfaceJoyButtons[2] = { STDKEY_I, STDCONTROL_JOYSTICK_GETBUTTON(0, 3) };
 
 static const JonesConfigControlAction jonesConfig_aDfault2Axis4Button[JONESCONTROL_ACTION_NUMACTIONS] =
 {
@@ -444,10 +444,10 @@ static const JonesConfigControlAction jonesConfig_aDfault2Axis4Button[JONESCONTR
 
 // Joystick 2 Axis 8 buttons default keysets
 
-static const size_t aActionRollJoyButtons[2]         = { DIK_CAPITAL, STDCONTROL_JOYSTICK_GETBUTTON(0, 4) };
-static const size_t aActionNextWeaponJoyButtons[2]   = { DIK_PERIOD, STDCONTROL_JOYSTICK_GETBUTTON(0, 5) };
-static const size_t aActionToggleWeaponJoyButtons[2] = { DIK_SPACE, STDCONTROL_JOYSTICK_GETBUTTON(0, 6) };
-static const size_t aActionLookJoyButtons[3]         = { DIK_INSERT, DIK_NUMPAD0, STDCONTROL_JOYSTICK_GETBUTTON(0, 7) };
+static const size_t aActionRollJoyButtons[2]         = { STDKEY_CAPITAL, STDCONTROL_JOYSTICK_GETBUTTON(0, 4) };
+static const size_t aActionNextWeaponJoyButtons[2]   = { STDKEY_PERIOD, STDCONTROL_JOYSTICK_GETBUTTON(0, 5) };
+static const size_t aActionToggleWeaponJoyButtons[2] = { STDKEY_SPACE, STDCONTROL_JOYSTICK_GETBUTTON(0, 6) };
+static const size_t aActionLookJoyButtons[3]         = { STDKEY_INSERT, STDKEY_NUMPAD0, STDCONTROL_JOYSTICK_GETBUTTON(0, 7) };
 
 static const JonesConfigControlAction jonesConfig_aDefault2Axis8Button[JONESCONTROL_ACTION_NUMACTIONS] =
 {
@@ -492,14 +492,14 @@ static const JonesConfigControlAction jonesConfig_aDefault2Axis8Button[JONESCONT
 
 // Side Winder Gamepad default keysets found in debug version
 
-static const size_t aActionToggleStepLeftSideWinderGamePadButtons[2]  = { DIK_LBRACKET, STDCONTROL_JOYSTICK_GETBUTTON(0, 6) };
-static const size_t aActionToggleStepRightSideWinderGamePadButtons[2] = { DIK_RBRACKET, STDCONTROL_JOYSTICK_GETBUTTON(0, 7) };
-static const size_t aActionToggleCrawlSideWinderGamePadButtons[2]     = { DIK_C       , STDCONTROL_JOYSTICK_GETBUTTON(0, 2) };
-static const size_t aActionToggleRunSideWinderGamePadButtons[2]       = { DIK_CAPITAL , STDCONTROL_JOYSTICK_GETBUTTON(0, 3) };
-static const size_t aActionLookSideWinderGamePadButtons[3]            = { DIK_INSERT  , DIK_NUMPAD0, STDCONTROL_JOYSTICK_GETBUTTON(0, 5) };
-static const size_t aActionToggleWeaponSideWinderGamePadButtons[2]    = { DIK_SPACE   , STDCONTROL_JOYSTICK_GETBUTTON(0, 9) };
-static const size_t aActionNextWeaponSideWinderGamePad[2]             = { DIK_PERIOD  , STDCONTROL_JOYSTICK_GETBUTTON(0, 4) };
-static const size_t aActionToggleInterfaceSideWinderGamePadButtons[2] = { DIK_I       , STDCONTROL_JOYSTICK_GETBUTTON(0, 8) };
+static const size_t aActionToggleStepLeftSideWinderGamePadButtons[2]  = { STDKEY_LBRACKET, STDCONTROL_JOYSTICK_GETBUTTON(0, 6) };
+static const size_t aActionToggleStepRightSideWinderGamePadButtons[2] = { STDKEY_RBRACKET, STDCONTROL_JOYSTICK_GETBUTTON(0, 7) };
+static const size_t aActionToggleCrawlSideWinderGamePadButtons[2]     = { STDKEY_C       , STDCONTROL_JOYSTICK_GETBUTTON(0, 2) };
+static const size_t aActionToggleRunSideWinderGamePadButtons[2]       = { STDKEY_CAPITAL , STDCONTROL_JOYSTICK_GETBUTTON(0, 3) };
+static const size_t aActionLookSideWinderGamePadButtons[3]            = { STDKEY_INSERT  , STDKEY_NUMPAD0, STDCONTROL_JOYSTICK_GETBUTTON(0, 5) };
+static const size_t aActionToggleWeaponSideWinderGamePadButtons[2]    = { STDKEY_SPACE   , STDCONTROL_JOYSTICK_GETBUTTON(0, 9) };
+static const size_t aActionNextWeaponSideWinderGamePad[2]             = { STDKEY_PERIOD  , STDCONTROL_JOYSTICK_GETBUTTON(0, 4) };
+static const size_t aActionToggleInterfaceSideWinderGamePadButtons[2] = { STDKEY_I       , STDCONTROL_JOYSTICK_GETBUTTON(0, 8) };
 
 static const JonesConfigControlAction jonesConfig_aDefaultSideWinderGamepad[JONESCONTROL_ACTION_NUMACTIONS] =
 {
@@ -1428,423 +1428,423 @@ void J3DAPI jonesConfig_ControlToString(size_t controlId, char* pDest)
     {
         switch ( controlId )
         {
-            case DIK_ESCAPE:
+            case STDKEY_ESCAPE:
                 pJonesString = "JONES_STR_ESCAPE";
                 break;
 
-            case DIK_1:
+            case STDKEY_1:
                 stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "1");
                 break;
 
-            case DIK_2:
+            case STDKEY_2:
                 stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "2");
                 break;
 
-            case DIK_3:
+            case STDKEY_3:
                 stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "3");
                 break;
 
-            case DIK_4:
+            case STDKEY_4:
                 stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "4");
                 break;
 
-            case DIK_5:
+            case STDKEY_5:
                 stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "5");
                 break;
 
-            case DIK_6:
+            case STDKEY_6:
                 stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "6");
                 break;
 
-            case DIK_7:
+            case STDKEY_7:
                 stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "7");
                 break;
 
-            case DIK_8:
+            case STDKEY_8:
                 stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "8");
                 break;
 
-            case DIK_9:
+            case STDKEY_9:
                 stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "9");
                 break;
 
-            case DIK_0:
+            case STDKEY_0:
                 stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "0");
                 break;
 
-            case DIK_MINUS:
+            case STDKEY_MINUS:
                 pJonesString = "JONES_STR_MINUS";
                 break;
 
-            case DIK_EQUALS:
+            case STDKEY_EQUALS:
                 pJonesString = "JONES_STR_EQUAL";
                 break;
 
-            case DIK_BACK:
+            case STDKEY_BACK:
                 pJonesString = "JONES_STR_BACK";
                 break;
 
-            case DIK_TAB:
+            case STDKEY_TAB:
                 pJonesString = "JONES_STR_TAB";
                 break;
 
-            case DIK_Q:
+            case STDKEY_Q:
                 stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "Q");
                 break;
 
-            case DIK_W:
+            case STDKEY_W:
                 stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "W");
                 break;
 
-            case DIK_E:
+            case STDKEY_E:
                 stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "E");
                 break;
 
-            case DIK_R:
+            case STDKEY_R:
                 stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "R");
                 break;
 
-            case DIK_T:
+            case STDKEY_T:
                 stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "T");
                 break;
 
-            case DIK_Y:
+            case STDKEY_Y:
                 stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "Y");
                 break;
 
-            case DIK_U:
+            case STDKEY_U:
                 stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "U");
                 break;
 
-            case DIK_I:
+            case STDKEY_I:
                 stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "I");
                 break;
 
-            case DIK_O:
+            case STDKEY_O:
                 stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "O");
                 break;
 
-            case DIK_P:
+            case STDKEY_P:
                 stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "P");
                 break;
 
-            case DIK_LBRACKET:
+            case STDKEY_LBRACKET:
                 pJonesString = "JONES_STR_LEFT_BRCKT";
                 break;
 
-            case DIK_RBRACKET:
+            case STDKEY_RBRACKET:
                 pJonesString = "JONES_STR_RIGHT_BRCKT";
                 break;
 
-            case DIK_RETURN:
+            case STDKEY_RETURN:
                 pJonesString = "JONES_STR_ENTER";
                 break;
 
-            case DIK_LCONTROL:
+            case STDKEY_LCONTROL:
                 pJonesString = "JONES_STR_LEFT_CTRL";
                 break;
 
-            case DIK_A:
+            case STDKEY_A:
                 stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "A");
                 break;
 
-            case DIK_S:
+            case STDKEY_S:
                 stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "S");
                 break;
 
-            case DIK_D:
+            case STDKEY_D:
                 stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "D");
                 break;
 
-            case DIK_F:
+            case STDKEY_F:
                 stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "F");
                 break;
 
-            case DIK_G:
+            case STDKEY_G:
                 stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "G");
                 break;
 
-            case DIK_H:
+            case STDKEY_H:
                 stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "H");
                 break;
 
-            case DIK_J:
+            case STDKEY_J:
                 stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "J");
                 break;
 
-            case DIK_K:
+            case STDKEY_K:
                 stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "K");
                 break;
 
-            case DIK_L:
+            case STDKEY_L:
                 stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "L");
                 break;
 
-            case DIK_SEMICOLON:
+            case STDKEY_SEMICOLON:
                 stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, ";");
                 break;
 
-            case DIK_APOSTROPHE:
+            case STDKEY_APOSTROPHE:
                 stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "'");
                 break;
 
-            case DIK_GRAVE:
+            case STDKEY_GRAVE:
                 stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "`");
                 break;
 
-            case DIK_LSHIFT:
+            case STDKEY_LSHIFT:
                 pJonesString = "JONES_STR_LEFT_SHIFT";
                 break;
 
-            case DIK_BACKSLASH:
+            case STDKEY_BACKSLASH:
                 stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "\\");
                 break;
 
-            case DIK_Z:
+            case STDKEY_Z:
                 stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "Z");
                 break;
 
-            case DIK_X:
+            case STDKEY_X:
                 stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "X");
                 break;
 
-            case DIK_C:
+            case STDKEY_C:
                 stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "C");
                 break;
 
-            case DIK_V:
+            case STDKEY_V:
                 stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "V");
                 break;
 
-            case DIK_B:
+            case STDKEY_B:
                 stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "B");
                 break;
 
-            case DIK_N:
+            case STDKEY_N:
                 stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "N");
                 break;
 
-            case DIK_M:
+            case STDKEY_M:
                 stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "M");
                 break;
 
-            case DIK_COMMA:
+            case STDKEY_COMMA:
                 pJonesString = "JONES_STR_COMMA";
                 break;
 
-            case DIK_PERIOD:
+            case STDKEY_PERIOD:
                 stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, ".");
                 break;
 
-            case DIK_SLASH:
+            case STDKEY_SLASH:
                 stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "/");
                 break;
 
-            case DIK_RSHIFT:
+            case STDKEY_RSHIFT:
                 pJonesString = "JONES_STR_RIGHT_SHIFT";
                 break;
 
-            case DIK_MULTIPLY:
+            case STDKEY_MULTIPLY:
                 pJonesString = "JONES_STR_NUMPAD_MULT";
                 break;
 
-            case DIK_LMENU:
+            case STDKEY_LMENU:
                 pJonesString = "JONES_STR_LEFT_ALT";
                 break;
 
-            case DIK_SPACE:
+            case STDKEY_SPACE:
                 pJonesString = "JONES_STR_SPACE";
                 break;
 
-            case DIK_CAPITAL:
+            case STDKEY_CAPITAL:
                 pJonesString = "JONES_STR_CAPS";
                 break;
 
-            case DIK_F1:
+            case STDKEY_F1:
                 pJonesString = "JONES_STR_F1";
                 break;
 
-            case DIK_F2:
+            case STDKEY_F2:
                 pJonesString = "JONES_STR_F2";
                 break;
 
-            case DIK_F3:
+            case STDKEY_F3:
                 pJonesString = "JONES_STR_F3";
                 break;
 
-            case DIK_F4:
+            case STDKEY_F4:
                 pJonesString = "JONES_STR_F4";
                 break;
 
-            case DIK_F5:
+            case STDKEY_F5:
                 pJonesString = "JONES_STR_F5";
                 break;
 
-            case DIK_F6:
+            case STDKEY_F6:
                 pJonesString = "JONES_STR_F6";
                 break;
 
-            case DIK_F7:
+            case STDKEY_F7:
                 pJonesString = "JONES_STR_F7";
                 break;
 
-            case DIK_F8:
+            case STDKEY_F8:
                 pJonesString = "JONES_STR_F8";
                 break;
 
-            case DIK_F9:
+            case STDKEY_F9:
                 pJonesString = "JONES_STR_F9";
                 break;
 
-            case DIK_F10:
+            case STDKEY_F10:
                 pJonesString = "JONES_STR_F10";
                 break;
 
-            case DIK_NUMLOCK:
+            case STDKEY_NUMLOCK:
                 pJonesString = "JONES_STR_NUMLOCK";
                 break;
 
-            case DIK_NUMPAD7:
+            case STDKEY_NUMPAD7:
                 pJonesString = "JONES_STR_NUMPAD_7";
                 break;
 
-            case DIK_NUMPAD8:
+            case STDKEY_NUMPAD8:
                 pJonesString = "JONES_STR_NUMPAD_8";
                 break;
 
-            case DIK_NUMPAD9:
+            case STDKEY_NUMPAD9:
                 pJonesString = "JONES_STR_NUMPAD_9";
                 break;
 
-            case DIK_SUBTRACT:
+            case STDKEY_SUBTRACT:
                 pJonesString = "JONES_STR_NUMPAD_MINUS";
                 break;
 
-            case DIK_NUMPAD4:
+            case STDKEY_NUMPAD4:
                 pJonesString = "JONES_STR_NUMPAD_4";
                 break;
 
-            case DIK_NUMPAD5:
+            case STDKEY_NUMPAD5:
                 pJonesString = "JONES_STR_NUMPAD_5";
                 break;
 
-            case DIK_NUMPAD6:
+            case STDKEY_NUMPAD6:
                 pJonesString = "JONES_STR_NUMPAD_6";
                 break;
 
-            case DIK_ADD:
+            case STDKEY_ADD:
                 pJonesString = "JONES_STR_NUMPAD_PLUS";
                 break;
 
-            case DIK_NUMPAD1:
+            case STDKEY_NUMPAD1:
                 pJonesString = "JONES_STR_NUMPAD_1";
                 break;
 
-            case DIK_NUMPAD2:
+            case STDKEY_NUMPAD2:
                 pJonesString = "JONES_STR_NUMPAD_2";
                 break;
 
-            case DIK_NUMPAD3:
+            case STDKEY_NUMPAD3:
                 pJonesString = "JONES_STR_NUMPAD_3";
                 break;
 
-            case DIK_NUMPAD0:
+            case STDKEY_NUMPAD0:
                 pJonesString = "JONES_STR_NUMPAD_0";
                 break;
 
-            case DIK_DECIMAL:
+            case STDKEY_DECIMAL:
                 pJonesString = "JONES_STR_NUMPAD_DOT";
                 break;
 
-            case DIK_F11:
+            case STDKEY_F11:
                 pJonesString = "JONES_STR_F11";
                 break;
 
-            case DIK_F12:
+            case STDKEY_F12:
                 pJonesString = "JONES_STR_F12";
                 break;
 
-            case DIK_F13:
+            case STDKEY_F13:
                 pJonesString = "JONES_STR_F13";
                 break;
 
-            case DIK_F14:
+            case STDKEY_F14:
                 pJonesString = "JONES_STR_F14";
                 break;
 
-            case DIK_F15:
+            case STDKEY_F15:
                 pJonesString = "JONES_STR_F15";
                 break;
 
-            case DIK_NUMPADEQUALS:
+            case STDKEY_NUMPADEQUALS:
                 pJonesString = "JONES_STR_NUMPAD_EQL";
                 break;
 
-            case DIK_NUMPADENTER:
+            case STDKEY_NUMPADENTER:
                 pJonesString = "JONES_STR_NUMPAD_ENTER";
                 break;
 
-            case DIK_RCONTROL:
+            case STDKEY_RCONTROL:
                 pJonesString = "JONES_STR_RIGHT_CTRL";
                 break;
 
-            case DIK_NUMPADCOMMA:
+            case STDKEY_NUMPADCOMMA:
                 pJonesString = "JONES_STR_NUMPAD_COMMA";
                 break;
 
-            case DIK_DIVIDE:
+            case STDKEY_DIVIDE:
                 pJonesString = "JONES_STR_NUMPAD_DIV";
                 break;
 
-            case DIK_RMENU:
+            case STDKEY_RMENU:
                 pJonesString = "JONES_STR_RIGHT_ALT";
                 break;
 
-            case DIK_HOME:
+            case STDKEY_HOME:
                 pJonesString = "JONES_STR_HOME";
                 break;
 
-            case DIK_UP:
+            case STDKEY_UP:
                 pJonesString = "JONES_STR_UPARRW";
                 break;
 
-            case DIK_PRIOR:
+            case STDKEY_PRIOR:
                 pJonesString = "JONES_STR_PAGEUP";
                 break;
 
-            case DIK_LEFT:
+            case STDKEY_LEFT:
                 pJonesString = "JONES_STR_LEFTARRW";
                 break;
 
-            case DIK_RIGHT:
+            case STDKEY_RIGHT:
                 pJonesString = "JONES_STR_RGHTARRW";
                 break;
 
-            case DIK_END:
+            case STDKEY_END:
                 pJonesString = "JONES_STR_END";
                 break;
 
-            case DIK_DOWN:
+            case STDKEY_DOWN:
                 pJonesString = "JONES_STR_DNARRW";
                 break;
 
-            case DIK_NEXT:
+            case STDKEY_NEXT:
                 pJonesString = "JONES_STR_PGDN";
                 break;
 
-            case DIK_INSERT:
+            case STDKEY_INSERT:
                 pJonesString = "JONES_STR_INSERT";
                 break;
 
-            case DIK_DELETE:
+            case STDKEY_DELETE:
                 pJonesString = "JONES_STR_DELETE";
                 break;
 
-            case DIK_LWIN:
+            case STDKEY_LWIN:
                 pJonesString = "JONES_STR_LEFT_WND";
                 break;
 
-            case DIK_RWIN:
+            case STDKEY_RWIN:
                 pJonesString = "JONES_STR_RIGHT_WND";
                 break;
 
@@ -6887,10 +6887,10 @@ void J3DAPI jonesConfig_AssignControlKey_ReadKey(HWND hWnd)
                 pData->controlId = keyNum;
                 switch ( keyNum )
                 {
-                    case DIK_ESCAPE:
-                    case DIK_MINUS:
-                    case DIK_EQUALS:
-                    case DIK_F4:
+                    case STDKEY_ESCAPE:
+                    case STDKEY_MINUS:
+                    case STDKEY_EQUALS:
+                    case STDKEY_F4:
                     {
                         // Non mappable key, skip
                         const char* pMsgText = jonesString_GetString("JONES_STR_NO_MAP");
@@ -6907,16 +6907,16 @@ void J3DAPI jonesConfig_AssignControlKey_ReadKey(HWND hWnd)
                         memset(pData->aControlName, 0, sizeof(pData->aControlName));
                         return;
                     }
-                    case DIK_1:
-                    case DIK_2:
-                    case DIK_3:
-                    case DIK_4:
-                    case DIK_5:
-                    case DIK_6:
-                    case DIK_7:
-                    case DIK_8:
-                    case DIK_9:
-                    case DIK_0:
+                    case STDKEY_1:
+                    case STDKEY_2:
+                    case STDKEY_3:
+                    case STDKEY_4:
+                    case STDKEY_5:
+                    case STDKEY_6:
+                    case STDKEY_7:
+                    case STDKEY_8:
+                    case STDKEY_9:
+                    case STDKEY_0:
                     {
                         if ( pData->actionId >= JONESCONTROL_ACTION_BAZOOKA && pData->actionId <= JONESCONTROL_ACTION_GRENADE ) // 16 - fist; 27 - grenade
                         {

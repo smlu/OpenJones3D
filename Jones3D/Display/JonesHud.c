@@ -2264,29 +2264,29 @@ void JonesHud_ProcessInventoryMenu(void)
                 ++v2;
             }
 
-            bActivateKeyPressed |= JonesHud_GetKey(DIK_RETURN);
-            if ( JonesHud_GetKey(DIK_NUMPADENTER) | bActivateKeyPressed )
+            bActivateKeyPressed |= JonesHud_GetKey(STDKEY_RETURN);
+            if ( JonesHud_GetKey(STDKEY_NUMPADENTER) | bActivateKeyPressed )
             {
                 JonesHud_MenuActivateItem();
             }
 
-            else if ( JonesHud_GetKey(DIK_UP) )
+            else if ( JonesHud_GetKey(STDKEY_UP) )
             {
                 JonesHud_MenuMoveUp();
             }
 
-            else if ( JonesHud_GetKey(DIK_DOWN) )
+            else if ( JonesHud_GetKey(STDKEY_DOWN) )
             {
                 JonesHud_MenuMoveDown();
             }
         }
 
-        if ( JonesHud_GetKey(DIK_RIGHT) )
+        if ( JonesHud_GetKey(STDKEY_RIGHT) )
         {
             JonesHud_MenuMoveRight();
         }
 
-        else if ( JonesHud_GetKey(DIK_LEFT) )
+        else if ( JonesHud_GetKey(STDKEY_LEFT) )
         {
             JonesHud_MenuMoveLeft();
         }
@@ -2600,19 +2600,19 @@ int J3DAPI JonesHud_GetKey(unsigned int keyId)
     JonesHud_bKeyStateUpdated = 0;
     switch ( keyId )
     {
-        case DIK_UP:
+        case STDKEY_UP:
             bKeyPressed = sithControl_GetKey(SITHCONTROL_FORWARD, &numPressed);
             break;
 
-        case DIK_LEFT:
+        case STDKEY_LEFT:
             bKeyPressed = sithControl_GetKey(SITHCONTROL_TURNLEFT, &numPressed);
             break;
 
-        case DIK_RIGHT:
+        case STDKEY_RIGHT:
             bKeyPressed = sithControl_GetKey(SITHCONTROL_TURNRIGHT, &numPressed);
             break;
 
-        case DIK_DOWN:
+        case STDKEY_DOWN:
             bKeyPressed = sithControl_GetKey(SITHCONTROL_BACK, &numPressed);
             break;
 

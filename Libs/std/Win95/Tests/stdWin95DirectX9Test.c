@@ -9,6 +9,11 @@
 #include <std/Win95/DX9/stdShaderDX9.h>
 #include <std/Win95/stdControl.h>
 
+#ifndef DIRECTINPUT_VERSION
+#  define DIRECTINPUT_VERSION 0x0800
+#endif
+#include <dinput.h>
+
 TEST_GROUP(stdWin95DirectX9);
 
 TEST_SETUP(stdWin95DirectX9)

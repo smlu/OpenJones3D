@@ -1344,8 +1344,8 @@ void JonesMain_ProcessMenu(void)
     }
 
     int numPressed;
-    bMenuKeyPressed |= stdControl_ReadKey(DIK_ESCAPE, &numPressed);
-    if ( bMenuKeyPressed && !JonesMain_bMenuToggled && !stdControl_ReadKey(DIK_RCONTROL, &numPressed) && !stdControl_ReadKey(DIK_LCONTROL, &numPressed) )
+    bMenuKeyPressed |= stdControl_ReadKey(STDKEY_ESCAPE, &numPressed);
+    if ( bMenuKeyPressed && !JonesMain_bMenuToggled && !stdControl_ReadKey(STDKEY_RCONTROL, &numPressed) && !stdControl_ReadKey(STDKEY_LCONTROL, &numPressed) )
     {
         if ( JonesConsole_g_bVisible )
         {
@@ -1835,7 +1835,7 @@ int JonesMain_ProcessCredits(void)
 
         stdControl_ReadControls();
         int numEscPressed;
-        if ( !JonesMain_bEndCredits && stdControl_ReadKey(DIK_ESCAPE, &numEscPressed) )
+        if ( !JonesMain_bEndCredits && stdControl_ReadKey(STDKEY_ESCAPE, &numEscPressed) )
         {
             JonesMain_bEndCredits = true;
         }
