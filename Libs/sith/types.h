@@ -1562,6 +1562,26 @@ typedef struct sSithCogSymbolValue
 } SithCogSymbolValue;
 J3D_ASSERT_SIZE32(sizeof(SithCogSymbolValue) == 16, "sizeof(SithCogSymbolValue) == 16");
 
+// Added: Disk layout of SithCogSymbolValue for savegame (NdsHeader) records. The runtime union holds a
+// pointer, which is 8 bytes on a 64-bit build, but the file slot always stored a 4-byte value. Replacing
+// the pointer members with uint32_t keeps the record at the exact 32-bit size on every platform.
+typedef union sSithCogValueDisk
+{
+    uint32_t pointerValue;
+    float floatValue;
+    int intValue;
+    uint32_t pString;
+    rdVector3 vecValue;
+} SithCogValueDisk;
+static_assert(sizeof(SithCogValueDisk) == 12, "sizeof(SithCogValueDisk) == 12");
+
+typedef struct sSithCogSymbolValueDisk
+{
+    SithCogValueType type;
+    SithCogValueDisk val;
+} SithCogSymbolValueDisk;
+static_assert(sizeof(SithCogSymbolValueDisk) == 16, "sizeof(SithCogSymbolValueDisk) == 16");
+
 typedef struct sSithCogSymbol
 {
     size_t id;
@@ -3209,18 +3229,20 @@ typedef struct sCndSurfaceVertInfo
     rdVector4 color;
 } CndSurfaceVertInfo;
 
+// Altered: the former size_t counters were 4 bytes on 32-bit; uint32_t keeps this struct, and the
+// NdsHeader savegame record that embeds it, byte-identical on 64-bit builds.
 typedef struct sSithLevelStatistic
 {
     uint32_t elapsedTime;
-    size_t numFoundTreasures;
-    size_t numSeenHints;
+    uint32_t numFoundTreasures;
+    uint32_t numSeenHints;
     int difficultyPenalty;
     uint32_t curElapsedSec;
-    size_t numIQUpdates;
+    uint32_t numIQUpdates;
     int levelStartIQPoints;
     int iqPoints;
 } SithLevelStatistic;
-J3D_ASSERT_SIZE32(sizeof(SithLevelStatistic) == 32, "sizeof(SithLevelStatistic) == 42");
+J3D_ASSERT_SIZE32(sizeof(SithLevelStatistic) == 32, "sizeof(SithLevelStatistic) == 32");
 
 typedef struct sSithGameStatistics
 {
@@ -3242,10 +3264,11 @@ typedef struct sNdsHeader
     SithGameStatistics gameStatistics;
     int32_t bThumbnail;
     int32_t perflevel;
-    SithCogSymbolValue aCogGlobalValues[16];
+    SithCogSymbolValueDisk aCogGlobalValues[16]; // Altered: disk layout, the runtime value union holds a pointer
     uint32_t localPlayerNum;
 } NdsHeader;
-J3D_ASSERT_SIZE32(sizeof(NdsHeader) == 1188, "sizeof(NdsHeader) == 1188");
+// Fixed: the struct is now built from fixed-width members, so the 32-bit savegame size holds on every platform.
+static_assert(sizeof(NdsHeader) == 1188, "sizeof(NdsHeader) == 1188");
 
 typedef struct sSithMineCarControlsState
 {

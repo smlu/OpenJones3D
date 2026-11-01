@@ -80,14 +80,14 @@ typedef struct sCndWorld
     uint32_t aSurfaces;
     uint32_t numSectors;
     uint32_t aSectors;
-    size_t numAIClasses;
-    size_t sizeAIClasses;
+    uint32_t numAIClasses;
+    uint32_t sizeAIClasses;
     uint32_t aAIClasses;
     uint32_t numModels;
     uint32_t sizeModels;
     uint32_t aModels;
-    size_t numSprites;
-    size_t sizeSprites;
+    uint32_t numSprites;
+    uint32_t sizeSprites;
     uint32_t aSprites;
     uint32_t numKeyframes;
     uint32_t sizeKeyframes;
@@ -113,7 +113,9 @@ typedef struct sCndWorld
     uint32_t sizePVS;
     uint32_t aPVS;
 } CndWorld;
-J3D_ASSERT_SIZE32(sizeof(CndWorld) == 1564, "sizeof(CndWorld) == 1564");
+// Fixed: the former size_t fields are now uint32_t (4 bytes on 32-bit), so every field is fixed-width
+// and the cnd record keeps the exact 32-bit size on 64-bit builds too.
+static_assert(sizeof(CndWorld) == 1564, "sizeof(CndWorld) == 1564");
 
 static bool bWorldStartup = false; // Altered: Init to 0
 

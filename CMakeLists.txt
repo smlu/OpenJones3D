@@ -202,6 +202,9 @@ elseif(NOT WIN32 AND (CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU"))
         -Wno-parentheses
         -Wno-unknown-pragmas
     )
+    # Added: glibc's backtrace_symbols in stdPlatformNull needs the engine symbols exported to the
+    # dynamic symbol table to name the frames of the headless runner.
+    add_link_options(-rdynamic)
     if (CMAKE_C_COMPILER_ID MATCHES "Clang")
         # Added: fail the native build on any cast that truncates a pointer (or widens an int
         # into one) so 64-bit builds stay pointer-safe. Clang only: these warning groups have

@@ -554,7 +554,30 @@ int J3DAPI sithGamesave_RestoreFile(const char* pFilename, int bNotify)
         SithCogSymbol* pSymbol = sithCogParse_GetSymbol(sithCog_g_pSymbolTable, aText);
         if ( pSymbol )
         {
-            pSymbol->value = header.aCogGlobalValues[i];
+            // Fixed: the header now holds the fixed-width disk layout, so convert field by field.
+            // Globals carry numbers; the pointer, string and symbol-id kinds are zeroed on save (see
+            // sithGamesave_SaveFile), so only the 4-byte slot value is ever restored. Pointer-typed
+            // values that are really integer ids come back through uintptr_t, like on 32-bit.
+            const SithCogSymbolValueDisk* pDiskValue = &header.aCogGlobalValues[i];
+            pSymbol->value.type = pDiskValue->type;
+            switch ( pDiskValue->type )
+            {
+                case SITHCOG_VALUE_FLOAT:
+                    pSymbol->value.val.floatValue = pDiskValue->val.floatValue;
+                    break;
+
+                case SITHCOG_VALUE_INT:
+                    pSymbol->value.val.intValue = pDiskValue->val.intValue;
+                    break;
+
+                case SITHCOG_VALUE_VECTOR:
+                    pSymbol->value.val.vecValue = pDiskValue->val.vecValue;
+                    break;
+
+                default:
+                    pSymbol->value.val.pointerValue = (void*)(uintptr_t)pDiskValue->val.pointerValue;
+                    break;
+            }
         }
     }
 
@@ -734,7 +757,29 @@ int J3DAPI sithGamesave_SaveFile(const char* pFilename)
         SithCogSymbol* pCogSym = sithCogParse_GetSymbol(sithCog_g_pSymbolTable, aGlobalSym);
         if ( pCogSym )
         {
-            header.aCogGlobalValues[i] = pCogSym->value;
+            // Fixed: convert field by field into the fixed-width disk layout. A pointer-typed value is
+            // stored as its truncated 4-byte form, exactly the bytes the 32-bit build wrote for the
+            // pointer member; pointer, string and symbol-id values are then reset like the original.
+            header.aCogGlobalValues[i].type = pCogSym->value.type;
+            switch ( pCogSym->value.type )
+            {
+                case SITHCOG_VALUE_FLOAT:
+                    header.aCogGlobalValues[i].val.floatValue = pCogSym->value.val.floatValue;
+                    break;
+
+                case SITHCOG_VALUE_INT:
+                    header.aCogGlobalValues[i].val.intValue = pCogSym->value.val.intValue;
+                    break;
+
+                case SITHCOG_VALUE_VECTOR:
+                    header.aCogGlobalValues[i].val.vecValue = pCogSym->value.val.vecValue;
+                    break;
+
+                default:
+                    header.aCogGlobalValues[i].val.pointerValue = (uint32_t)(uintptr_t)pCogSym->value.val.pointerValue;
+                    break;
+            }
+
             if ( pCogSym->value.type >= SITHCOG_VALUE_POINTER && (pCogSym->value.type <= SITHCOG_VALUE_SYMBOLID || pCogSym->value.type == SITHCOG_VALUE_STRING) )
             {
                 // For some reason reset symbol if it is a string, pointer or symbol id

@@ -5,6 +5,8 @@
 #include <time.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdarg.h>
+#include <execinfo.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 
@@ -13,6 +15,7 @@
 #include <std/General/std.h>
 #include <std/General/stdPlatform.h>
 #include <std/General/stdPlatformSys.h>
+#include <std/General/stdUtil.h>
 
 // Added: POSIX clock is used to honor the tStdTime wrap contract. The Windows timeGetTime
 // wraps at 2^32 (~49.7 days), so mask the nanosecond-converted milliseconds the same way.
@@ -64,17 +67,49 @@ bool J3DAPI stdPlatform_DirExists(const char* pPath)
     return stat(pPath, &st) == 0 && S_ISDIR(st.st_mode);
 }
 
-// Added: No unwinding debugger support on the Null platform; the Windows version prints a
-// mini-dump style trace. Nothing is printed here, so the call stays observable-log free.
+#define STDPLATFORM_STACKTRACE_MAXFRAMES 128 // Added: cap for the glibc backtrace capture buffer
+
+// Added: glibc unwinds the calling thread; backtrace_symbols needs the engine's symbols in the dynamic
+// symbol table, so native builds link with -rdynamic (root CMakeLists). Prints through the caller's
+// printf-style function, like the Windows version prints through its logging host service.
 void stdPlatform_PrintStackTrace(tStackTracePrintFunc pfPrintFunc, size_t numFrames)
 {
-    J3D_UNUSED(pfPrintFunc);
-    J3D_UNUSED(numFrames);
+    void* aFrames[STDPLATFORM_STACKTRACE_MAXFRAMES];
+    size_t numWant     = J3DMIN(numFrames, (size_t)STDPLATFORM_STACKTRACE_MAXFRAMES);
+    int numFramesFound = backtrace(aFrames, (int)numWant);
+
+    pfPrintFunc("\n==================== STACK TRACE ====================\n");
+
+    char** ppNames = backtrace_symbols(aFrames, numFramesFound);
+    if ( !ppNames )
+    {
+        pfPrintFunc("  backtrace_symbols failed\n");
+        return;
+    }
+
+    for ( int i = 0; i < numFramesFound; ++i )
+    {
+        pfPrintFunc("  [%d] %s\n", i, ppNames[i]);
+    }
+
+    free(ppNames); // backtrace_symbols mallocs this block; release it with the matching allocator
 }
 
-// Added: No JIT debugger: break into abort, matching the DebugBreak contract (never returns).
+// Added: variadic sink printing the stack trace to stderr, used when no logging host is available.
+static void stdPlatform_StackTracePrintStderr(const char* pFormat, ...)
+{
+    va_list args;
+    va_start(args, pFormat);
+    vfprintf(stderr, pFormat, args);
+    va_end(args);
+    fflush(stderr);
+}
+
+// Added: No JIT debugger: dump the stack to stderr, then break into abort, matching the DebugBreak
+// contract (never returns).
 void stdPlatformSys_DebugBreak(void)
 {
+    stdPlatform_PrintStackTrace(stdPlatform_StackTracePrintStderr, 64u);
     abort();
 }
 

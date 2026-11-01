@@ -1470,7 +1470,7 @@ int J3DAPI Sound_SkipSoundFileSection(tFileHandle fh)
         return 0;
     }
 
-    Sound_pHS->pFileSeek(fh, sizeof(SoundInfo) * numSounds, 1); // skip sound info list
+    Sound_pHS->pFileSeek(fh, sizeof(SoundInfoDisk) * numSounds, 1); // Fixed: skip the bank's fixed-width disk records, not the in-memory SoundInfo size
     Sound_pHS->pFileSeek(fh, sizeData, 1);         // skip sound data list
     Sound_pHS->pFileSeek(fh, sizeof(uint32_t), 1); // skip next handle
     return 1;
@@ -3305,6 +3305,43 @@ void Sound_StopAllNonStaticSounds(void)
     }
 }
 
+// Added: the banks serialize SoundInfo records through the fixed-width SoundInfoDisk layout, so 64-bit
+// builds store and load the same bytes a 32-bit build stored raw. pLipSyncData keeps the original
+// semantics: a 32-bit build wrote the pointer value itself, so store its truncated form.
+static void Sound_SoundInfoToDisk(SoundInfoDisk* pDst, const SoundInfo* pSrc)
+{
+    pDst->hSnd           = pSrc->hSnd;
+    pDst->bankNum        = pSrc->bankNum;
+    pDst->filePathOffset = pSrc->filePathOffset;
+    pDst->nameOffset     = pSrc->nameOffset;
+    pDst->dataOffset     = pSrc->dataOffset;
+    pDst->pLipSyncData   = (uint32_t)(uintptr_t)pSrc->pLipSyncData;
+    pDst->sampleRate     = pSrc->sampleRate;
+    pDst->sempleBitSize  = pSrc->sempleBitSize;
+    pDst->numChannels    = pSrc->numChannels;
+    pDst->dataSize       = pSrc->dataSize;
+    pDst->bCompressed    = pSrc->bCompressed;
+    pDst->idx            = pSrc->idx;
+}
+
+// Added: restores the in-memory record from a disk record; the pointer field comes back from the stored
+// 4 bytes, 0 meaning NULL, exactly what a raw 32-bit read of a bank produced.
+static void Sound_SoundInfoFromDisk(SoundInfo* pDst, const SoundInfoDisk* pSrc)
+{
+    pDst->hSnd           = pSrc->hSnd;
+    pDst->bankNum        = pSrc->bankNum;
+    pDst->filePathOffset = pSrc->filePathOffset;
+    pDst->nameOffset     = pSrc->nameOffset;
+    pDst->dataOffset     = pSrc->dataOffset;
+    pDst->pLipSyncData   = (uint8_t*)(uintptr_t)pSrc->pLipSyncData;
+    pDst->sampleRate     = pSrc->sampleRate;
+    pDst->sempleBitSize  = pSrc->sempleBitSize;
+    pDst->numChannels    = pSrc->numChannels;
+    pDst->dataSize       = pSrc->dataSize;
+    pDst->bCompressed    = pSrc->bCompressed;
+    pDst->idx            = pSrc->idx;
+}
+
 int J3DAPI Sound_ExportBank(tFileHandle fh, size_t bankNum)
 {
     // Write num sound infos
@@ -3320,9 +3357,16 @@ int J3DAPI Sound_ExportBank(tFileHandle fh, size_t bankNum)
     }
 
     // Write sound infos
-    if ( Sound_pHS->pFileWrite(fh, soundbank_apSoundInfos[bankNum], sizeof(SoundInfo) * soundbank_aNumSounds[bankNum]) != sizeof(SoundInfo) * soundbank_aNumSounds[bankNum] )
+    // Altered: write record by record through the fixed-width disk layout; the bytes match what the
+    // 32-bit build stored raw, including the truncated pLipSyncData pointer value.
+    for ( size_t i = 0; i < soundbank_aNumSounds[bankNum]; ++i )
     {
-        return 0;
+        SoundInfoDisk soundInfoDisk;
+        Sound_SoundInfoToDisk(&soundInfoDisk, &soundbank_apSoundInfos[bankNum][i]);
+        if ( Sound_pHS->pFileWrite(fh, &soundInfoDisk, sizeof(soundInfoDisk)) != sizeof(soundInfoDisk) )
+        {
+            return 0;
+        }
     }
 
     // Write sound data
@@ -3381,7 +3425,15 @@ int J3DAPI Sound_ImportBank(tFileHandle fh, size_t bankNum)
     }
 
     // Read sound infos, sound data and next handle
-    Sound_ReadFile(fh, soundbank_apSoundInfos[bankNum], sizeof(SoundInfo) * soundbank_aNumSounds[bankNum]);
+    // Altered: read the infos record by record through the fixed-width disk layout. pLipSyncData comes
+    // back from the stored 4 bytes (0 = NULL), the same bits a raw 32-bit read produced.
+    for ( size_t i = 0; i < soundbank_aNumSounds[bankNum]; ++i )
+    {
+        SoundInfoDisk soundInfoDisk;
+        Sound_ReadFile(fh, &soundInfoDisk, sizeof(soundInfoDisk));
+        Sound_SoundInfoFromDisk(&soundbank_apSoundInfos[bankNum][i], &soundInfoDisk);
+    }
+
     Sound_ReadFile(fh, soundbank_apSoundCache[bankNum], soundbank_aUsedCacheSizes[bankNum]);
     Sound_ReadFile(fh, &Sound_handleEntropy, sizeof(uint32_t));
 

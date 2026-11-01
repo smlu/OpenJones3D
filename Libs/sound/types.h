@@ -93,6 +93,26 @@ typedef struct sSoundInfo
 } SoundInfo;
 J3D_ASSERT_SIZE32(sizeof(SoundInfo) == 48, "sizeof(SoundInfo) == 48"); // Note the size must stay 48 bytes due to bank serialization to CND file
 
+// Added: Serialized form of a SoundInfo record in the sound banks. The 32-bit build stored the raw
+// pLipSyncData pointer (4 bytes) into the file; keeping that slot a uint32_t makes every record the
+// exact 48-byte 32-bit layout on all platforms. The in-memory SoundInfo keeps the real pointer.
+typedef struct sSoundInfoDisk
+{
+    tSoundHandle hSnd;
+    uint32_t bankNum;
+    uint32_t filePathOffset;
+    uint32_t nameOffset;
+    uint32_t dataOffset;
+    uint32_t pLipSyncData;
+    uint32_t sampleRate;
+    uint32_t sempleBitSize;
+    uint32_t numChannels;
+    uint32_t dataSize;
+    uint32_t bCompressed;
+    uint32_t idx;
+} SoundInfoDisk;
+static_assert(sizeof(SoundInfoDisk) == 48, "sizeof(SoundInfoDisk) == 48");
+
 typedef struct sSoundChannel
 {
     tSoundChannelHandle handle;

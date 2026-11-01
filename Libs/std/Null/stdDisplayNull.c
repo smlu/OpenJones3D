@@ -460,6 +460,16 @@ tVBuffer* J3DAPI stdDisplay_VBufferNew(const tRasterInfo* pRasterInfo, int bUseV
     J3D_UNUSED(bUseVSurface);
     J3D_UNUSED(bUseVideoMemory);
 
+    // Added: the assert is compiled out in release builds, so log the offending format first.
+    if ( (pRasterInfo->colorInfo.bpp % 8) != 0 )
+    {
+        STDLOG_ERROR("stdDisplay_VBufferNew: Invalid bpp %u for %u x %u buffer.\n",
+            pRasterInfo->colorInfo.bpp,
+            pRasterInfo->width,
+            pRasterInfo->height
+        );
+    }
+
     STD_ASSERTREL((pRasterInfo->colorInfo.bpp % 8) == 0);
 
     // Added: The bUseVSurface branch creates a hardware surface on Windows; the Null
