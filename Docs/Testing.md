@@ -235,8 +235,11 @@ startup and a stable module-level CTest entry.
 | `sithTests` | `sith` | World thing/template I/O and voice lip-sync | Available |
 | `sithThingQuetzVecTests` | `sith.ThingQuetz` | Original-engine vectors of the Quetz tail functions (world-state harness, `Libs/sith/Tests/Vec`) | Available |
 | `sithAIInstinctVecTests` | `sith.AIInstinct` | Original-engine vectors of the instinct registration (world-state harness) | Available |
+| `sithAIInstinctFnVecTests` | `sith.AIInstinctFn` | Original-engine vectors of the instinct functions (world-state harness) | Available |
+| `sithAIMoveVecTests` | `sith.AIMove` | Original-engine vectors of AI movement and turning (world-state harness) | Available |
 | `sithAIUtilVecTests` | `sith.AIUtil` | Original-engine vectors of the AI utility functions: waypoints, sight, firing, path checks (world-state harness) | Available |
 | `sithDSSTests` | `sith.DSS` | Original-engine vectors of the DSS and DSS thing save/network serialization functions | Available |
+| `sithMultiTests` | `sith.Multi` | Original-engine vectors of multiplayer state and synchronization | Available |
 
 Name CTest entries after the owning module when the executable covers that whole module, such as `std`. When an executable covers only a subarea, use the owning module first and a short area name second, separated by a dot, such as `j3dcore.Macros`. Use labels that match the owning module, such as `j3dcore`, `std`, `rdroid`, `sith`, `sound`, or `Jones3D`.
 
@@ -650,8 +653,15 @@ Each profile enables `JONES3D_BUILD_TESTS` and disables
 `JONES3D_BUILD_SYSTEM_TESTS`. The MSVC Win32 build workflow uploads its build tree
 with the exact checked-out source revision and configuration. The reusable test
 workflow checks out that revision, restores the build at its original workspace
-path, requires all four suites (`j3dcore.Macros`, `std`, `sound`, and `sith`),
-and runs them with finite timeouts. Test failures and missing suites fail the job;
+path, discovers every registered CTest suite, and runs them all with finite
+timeouts, without a test-name filter. New suites registered in the CI build are
+included automatically. Discovery also requires the existing 13 suites:
+
+- `j3dcore.Macros`, `rdroid.Math`, `std`, `sound`, and `smush`
+- `sith`, `sith.DSS`, `sith.Multi`, and `sith.ThingQuetz`
+- `sith.AIInstinct`, `sith.AIInstinctFn`, `sith.AIMove`, and `sith.AIUtil`
+
+Test failures, missing required suites, and empty discovery fail the job.
 JUnit results and CTest logs are uploaded even when tests fail.
 
 Each build workflow calls its reusable test workflow with `needs: build` after
