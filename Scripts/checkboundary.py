@@ -132,6 +132,17 @@ FORBIDDEN_PATTERNS = [
     "tSys[A-Z]\\w*",
 ]
 
+# Names that would match above but are engine types now: opaque handles or fixed-size
+# typedefs with no platform type behind them. Add a name when its conversion is done.
+ENGINE_OWNED_NAMES = {
+    "DPID",
+    "tSysBitmap",
+    "tSysDrawContext",
+    "tSysFont",
+    "tSysHandle",
+    "tSysWindow",
+}
+
 # Source file types that are scanned.
 SCAN_EXTENSIONS = (".c", ".cpp", ".h", ".rc")
 
@@ -356,6 +367,8 @@ def scan_file(path: str) -> List[Match]:
         matches.append((line_of(include_match.start()), directive))
 
     for ident_match in IDENTIFIER_PATTERN.finditer(masked):
+        if ident_match.group(0) in ENGINE_OWNED_NAMES:
+            continue
         matches.append((line_of(ident_match.start()), ident_match.group(0)))
 
     return matches

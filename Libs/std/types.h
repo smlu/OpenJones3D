@@ -21,6 +21,12 @@
 #include <j3dcore/j3d.h>
 
 J3D_EXTERN_C_START
+// Added: Opaque platform handles. Only the platform layer knows what they point to and casts them.
+typedef struct sSysHandle* tSysHandle;
+typedef struct sSysWindow* tSysWindow;
+typedef struct sSysDrawContext* tSysDrawContext;
+typedef struct sSysBitmap* tSysBitmap;
+typedef struct sSysFont* tSysFont;
 
 #if defined(J3D_DIRECTX6)
 // Direct3D & DirectDraw
@@ -40,7 +46,7 @@ typedef IDirect3DTexture2 tSysTexture;
 #define DPID_ALLPLAYERS   0
 #define DPSEND_GUARANTEED 0x00000001
 #define DPERR_GENERIC     E_FAIL
-typedef DWORD DPID;
+typedef uint32_t DPID;
 
 // Direct3D stuff
 #define D3DRGBA D3DCOLOR_COLORVALUE
@@ -61,8 +67,8 @@ typedef IDirect3DTexture9 tSysTexture;
 // Added: Keep shared color-key conversion code buildable in DX9 without including DirectDraw.
 typedef struct sDDColorKey
 {
-    DWORD dwColorSpaceLowValue;
-    DWORD dwColorSpaceHighValue;
+    uint32_t dwColorSpaceLowValue;
+    uint32_t dwColorSpaceHighValue;
 } DDCOLORKEY, *LPDDCOLORKEY;
 
 typedef struct sD3DTLVERTEX
@@ -252,9 +258,9 @@ struct sGob
     GobFileHandle* aHandles;
     GobFileHandle* pCurHandle;
     int bFileMap;
-    LPVOID pBase;
-    HANDLE hFile;
-    HANDLE hMapFile;
+    void* pBase;
+    tSysHandle hFile;
+    tSysHandle hMapFile;
 };
 static_assert(sizeof(Gob) == 172, "sizeof(Gob) == 172");
 
@@ -270,7 +276,7 @@ typedef struct sFindFileData
     float unknown;
     int nFoundFiles;
     char aSearchFilter[128];
-    HANDLE handle;
+    tSysHandle handle;
 } FindFileData;
 static_assert(sizeof(FindFileData) == 140, "sizeof(FindFileData) == 140");
 
