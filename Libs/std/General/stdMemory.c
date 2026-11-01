@@ -317,6 +317,15 @@ void* J3DAPI stdMemory_Realloc(void* pBytes, size_t size, const char* pFilename,
 
 void* J3DAPI stdMemory_BlockMalloc(size_t size)
 {
+#if defined(J3D_64BIT)
+    // Altered: The block zones assume a 32-bit header. They have no effect on game behavior, so 64-bit builds use the C allocator.
+    if ( !size )
+    {
+        return NULL;
+    }
+
+    return malloc(size);
+#endif
     // Fixed: Avoid zero-sized zone allocation and null best-block assertions.
     if ( !size )
     {
@@ -472,6 +481,11 @@ void* J3DAPI stdMemory_BlockMalloc(size_t size)
 
 void J3DAPI stdMemory_BlockFree(void* pMemory)
 {
+#if defined(J3D_64BIT)
+    // Altered: The block zones assume a 32-bit header. They have no effect on game behavior, so 64-bit builds use the C allocator.
+    free(pMemory); // free(NULL) is a no-op, matching the guarded release behavior below.
+    return;
+#endif
     STD_ASSERTREL(pMemory); // Fixed: Moved this check to the top before extracting header to prevent dereferencing NULL pointer
     // Added: Keep release builds from dereferencing NULL block pointers.
     STD_GUARD_VOID(pMemory);
@@ -555,6 +569,11 @@ void* J3DAPI stdMemory_BlockRealloc(void* pMemory, size_t size)
         return NULL;
     }
 
+#if defined(J3D_64BIT)
+    // Altered: The block zones assume a 32-bit header. They have no effect on game behavior, so 64-bit builds use the C allocator.
+    // Placed after the NULL and zero-size checks above so their existing return meaning is kept.
+    return realloc(pMemory, size);
+#endif
     tMemoryBlockHeader* pHeader = STDMEMORYBLOCK_ZONE_GETHEADER_FROMDATA(pMemory); // Fixed: Moved this line here to ensue pMemory is not NULL. Originally was at the top before null checks.
 
     void* pNewData = stdMemory_BlockMalloc(size);
@@ -583,6 +602,11 @@ void* J3DAPI stdMemory_BlockRealloc(void* pMemory, size_t size)
 
 void* J3DAPI stdMemory_BlockAlloc(size_t size)
 {
+#if defined(J3D_64BIT)
+    // Altered: The block zones assume a 32-bit header. They have no effect on game behavior, so 64-bit builds use the C allocator.
+    STD_ASSERTREL(0); // Added: Unreachable on 64-bit; stdMemory_BlockMalloc uses malloc directly.
+    return NULL;
+#endif
     // Fixed: Reject zero-sized and header-overflowing direct block allocations.
     if ( !size || size > SIZE_MAX - sizeof(tMemoryBlockHeader) )
     {
