@@ -3304,23 +3304,59 @@ void J3DAPI JonesMain_DevDialogUpdateRadioButtons(HWND hDlg, const JonesState* p
 
 size_t J3DAPI JonesMain_FindClosestVideoMode(const StdDisplayEnvironment* pList, const StdVideoMode* pVideoMode, size_t deviceNum)
 {
-    size_t videoMode = 0;
+    size_t   otherSizeAnyRateMode      = 0; // last matching-bpp mode; 0 when no mode has the requested bit depth
+    size_t   otherSizeMatchRateMode    = 0;
+    bool     bOtherSizeMatchRateFound  = false;
+    size_t   sameSizeOtherRateMode     = 0;
+    uint32_t sameSizeOtherRateDistance = 0;
+    bool     bSameSizeOtherRateFound   = false;
+
     StdDisplayInfo* pDisplay = &pList->aDisplayInfos[deviceNum];
     for ( size_t i = 0; i < pList->aDisplayInfos[deviceNum].numModes; ++i )
     {
-        if ( pDisplay->aModes[i].rasterInfo.colorInfo.bpp == pVideoMode->rasterInfo.colorInfo.bpp && // Fixed: Changed hardcoded 16 BPP check to pVideoMode BPP compare
-            (pDisplay->aModes[i].refreshRate == 0 || pDisplay->aModes[i].refreshRate == pVideoMode->refreshRate) ) // Added: Add refresh rate check
+        if ( pDisplay->aModes[i].rasterInfo.colorInfo.bpp == pVideoMode->rasterInfo.colorInfo.bpp ) // Fixed: Changed hardcoded 16 BPP check to pVideoMode BPP compare
         {
-            if ( pDisplay->aModes[i].rasterInfo.width == pVideoMode->rasterInfo.width && pDisplay->aModes[i].rasterInfo.height == pVideoMode->rasterInfo.height )
+            const bool bRateMatches = pDisplay->aModes[i].refreshRate == 0 || pDisplay->aModes[i].refreshRate == pVideoMode->refreshRate; // Added: Add refresh rate check
+
+            otherSizeAnyRateMode = i;
+
+            if ( bRateMatches )
             {
-                return i; // exact
+                bOtherSizeMatchRateFound = true;
+                otherSizeMatchRateMode   = i;
             }
 
-            videoMode = i; // closest
+            if ( pDisplay->aModes[i].rasterInfo.width == pVideoMode->rasterInfo.width && pDisplay->aModes[i].rasterInfo.height == pVideoMode->rasterInfo.height )
+            {
+                if ( bRateMatches )
+                {
+                    return i; // exact
+                }
+
+                // Fixed: Fall back to the same size at the closest available rate. Nothing matched before when the
+                // requested rate was absent, so the game silently ran at the first listed mode.
+                const uint32_t rateDistance = pDisplay->aModes[i].refreshRate > pVideoMode->refreshRate ? pDisplay->aModes[i].refreshRate - pVideoMode->refreshRate : pVideoMode->refreshRate - pDisplay->aModes[i].refreshRate;
+                if ( !bSameSizeOtherRateFound || rateDistance < sameSizeOtherRateDistance )
+                {
+                    bSameSizeOtherRateFound   = true;
+                    sameSizeOtherRateDistance = rateDistance;
+                    sameSizeOtherRateMode     = i;
+                }
+            }
         }
     }
 
-    return videoMode;
+    if ( bSameSizeOtherRateFound )
+    {
+        return sameSizeOtherRateMode;
+    }
+
+    if ( bOtherSizeMatchRateFound )
+    {
+        return otherSizeMatchRateMode;
+    }
+
+    return otherSizeAnyRateMode; // 0 when no mode has the requested bit depth
 }
 
 bool J3DAPI JonesMain_CurDisplaySupportsBPP(const JonesDisplaySettings* pSettings, size_t bpp)

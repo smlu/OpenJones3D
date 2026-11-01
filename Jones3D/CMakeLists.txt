@@ -14,6 +14,8 @@ set(JONES3D_POST_BUILD_COPY_DIR "" CACHE PATH "Destination folder for the post-b
 # Collect Jones3D DLL sources
 file(GLOB_RECURSE JONES3D_DLL_SOURCES *.c)
 file(GLOB_RECURSE JONES3D_DLL_HEADERS *.h)
+list(FILTER JONES3D_DLL_SOURCES EXCLUDE REGEX ".*/Tests/.*")
+list(FILTER JONES3D_DLL_HEADERS EXCLUDE REGEX ".*/Tests/.*")
 list(REMOVE_ITEM JONES3D_DLL_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/sha256.h")
 
 # Jones3D EXE sources
@@ -103,3 +105,7 @@ endif()
 #     )
 #     COMMENT "Copying DLL to ${OUTPUT_DIR_NATIVE}"
 # )
+
+if (JONES3D_BUILD_TESTS)
+    add_subdirectory(Main/Tests)
+endif()
