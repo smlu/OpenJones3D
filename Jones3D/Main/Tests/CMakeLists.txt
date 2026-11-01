@@ -10,6 +10,8 @@ get_filename_component(JONES3D_TEST_GAME_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../..
 file(GLOB_RECURSE JONES3D_TEST_GAME_SOURCES "${JONES3D_TEST_GAME_ROOT}/*.c")
 list(FILTER JONES3D_TEST_GAME_SOURCES EXCLUDE REGEX ".*/Tests/.*")
 list(FILTER JONES3D_TEST_GAME_SOURCES EXCLUDE REGEX ".*/dllmain\\.c$")
+# Added: Windows test builds never compile the Null platform backend sources.
+list(FILTER JONES3D_TEST_GAME_SOURCES EXCLUDE REGEX ".*/Platform/Null/.*")
 
 add_executable(jones3dTests
     ${JONES3D_TEST_SOURCES}

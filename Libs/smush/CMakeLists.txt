@@ -11,6 +11,9 @@ list(FILTER HEADERS EXCLUDE REGEX ".*/Tests/.*")
 if(J3D_PLATFORM_NULL)
     list(FILTER SOURCES EXCLUDE REGEX "Dsnd\\.c$")
     list(FILTER SOURCES EXCLUDE REGEX "TimerWin32\\.c$")
+else()
+    # Windows builds never compile the Null backend sources.
+    list(FILTER SOURCES EXCLUDE REGEX ".*Null\\.c$")
 endif()
 
 add_library(${PROJECT_NAME} STATIC ${SOURCES} ${HEADERS})

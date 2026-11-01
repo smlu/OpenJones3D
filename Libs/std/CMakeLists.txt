@@ -17,6 +17,10 @@ if(J3D_PLATFORM_NULL)
     list(FILTER SOURCES EXCLUDE REGEX "stdComm\\.c$")
     list(FILTER SOURCES EXCLUDE REGEX "stdConsole\\.c$")
     list(FILTER SOURCES EXCLUDE REGEX "stdGob\\.c$")
+else()
+    # Windows builds never compile the Null backend sources.
+    list(FILTER SOURCES EXCLUDE REGEX ".*/Null/.*")
+    list(FILTER SOURCES EXCLUDE REGEX ".*Null\\.c$")
 endif()
 
 # Remove DirectX 6/9 specific files based on the build option

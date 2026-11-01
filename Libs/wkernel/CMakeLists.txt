@@ -3,17 +3,21 @@ project(wkernel C)
 file(GLOB_RECURSE SOURCES *.c)
 file(GLOB_RECURSE HEADERS *.h)
 
-# Added: The Null platform has no Windows kernel services: build headers only, no .c files
-# (wkernel.c calls the Win32 API and stays a Windows-only interface for upper modules).
+# Added: The Null platform has no Windows kernel services, so only the wkernelNull.c stub
+# is compiled (wkernel.c calls the Win32 API and stays a Windows-only file).
 if(J3D_PLATFORM_NULL)
-    add_library(${PROJECT_NAME} INTERFACE ${HEADERS})
-    target_include_directories(${PROJECT_NAME} INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/..)
-    target_link_libraries(${PROJECT_NAME} INTERFACE j3dcore std comctl32)
+    file(GLOB NULL_SOURCES *Null.c)
+    add_library(${PROJECT_NAME} STATIC ${NULL_SOURCES} ${HEADERS})
 else()
+    # Windows builds never compile the Null backend sources.
+    list(FILTER SOURCES EXCLUDE REGEX ".*Null\\.c$")
     add_library(${PROJECT_NAME} STATIC ${SOURCES} ${HEADERS})
+endif()
 
-    target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)
-    target_link_libraries(${PROJECT_NAME} PUBLIC j3dcore std comctl32)
+target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)
+target_link_libraries(${PROJECT_NAME} PUBLIC j3dcore std)
+if(WIN32)
+    target_link_libraries(${PROJECT_NAME} PUBLIC comctl32)
 endif()
 
 # Organize source files in Visual Studio

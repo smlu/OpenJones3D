@@ -9,6 +9,9 @@ list(FILTER HEADERS EXCLUDE REGEX ".*/Tests/.*")
 # Added: The Null platform has no Windows platform layer: exclude the Win32-specific files.
 if(J3D_PLATFORM_NULL)
     list(FILTER SOURCES EXCLUDE REGEX ".*Win32\\.c$")
+else()
+    # Windows builds never compile the Null backend sources.
+    list(FILTER SOURCES EXCLUDE REGEX ".*Null\\.c$")
 endif()
 
 add_library(${PROJECT_NAME} STATIC ${SOURCES} ${HEADERS})

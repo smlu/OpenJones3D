@@ -9,6 +9,9 @@ list(FILTER HEADERS EXCLUDE REGEX ".*/Tests/.*")
 # Added: The Null platform has no DirectSound driver: exclude the backend driver files.
 if(J3D_PLATFORM_NULL)
     list(FILTER SOURCES EXCLUDE REGEX "DriverDX.*\\.c$")
+else()
+    # Windows builds never compile the Null backend sources.
+    list(FILTER SOURCES EXCLUDE REGEX ".*Null\\.c$")
 endif()
 
 # Remove DirectX 6/9 specific files based on the build option
