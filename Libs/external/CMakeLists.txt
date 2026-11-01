@@ -11,7 +11,8 @@ set(EXTERNAL_MODULES
     jansson
 )
 
-if (JONES3D_BUILD_TESTS)
+# Altered: the Null platform enables unity for its native j3dcore.Crt test target.
+if (JONES3D_BUILD_TESTS OR J3D_PLATFORM_NULL)
     set(EXTERNAL_MODULES
         ${EXTERNAL_MODULES}
         unity
@@ -32,7 +33,7 @@ if (MSVC)
     set(JANSSON_STATIC_CRT OFF)
 endif ()
 
-if (JONES3D_BUILD_TESTS)
+if (JONES3D_BUILD_TESTS OR J3D_PLATFORM_NULL)
     set(UNITY_EXTENSION_FIXTURE ON CACHE BOOL "Compiles Unity with the fixture extension." FORCE)
 endif()
 

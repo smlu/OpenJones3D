@@ -86,6 +86,11 @@ if (JONES3D_BUILD_TESTS)
     enable_testing()
 else()
     set(JONES3D_BUILD_SYSTEM_TESTS OFF)
+    # Added: the Null platform has no Windows test suite, but its native CRT shim test
+    # (j3dcore.Crt in Libs/j3dcore/Tests) needs testing enabled from the root.
+    if (J3D_PLATFORM_NULL)
+        enable_testing()
+    endif()
 endif()
 
 if (NOT JONES3D_BUILD_SYSTEM_TESTS)

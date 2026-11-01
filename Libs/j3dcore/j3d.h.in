@@ -74,6 +74,7 @@
 #   endif
 #   include <strings.h>
 #   include <wchar.h>
+#   include <j3dcore/j3dcrt.h>
 #   define strcmpi strcasecmp
 #   define strncmpi strncasecmp
 #   define wstrcmpi wcscasecmp

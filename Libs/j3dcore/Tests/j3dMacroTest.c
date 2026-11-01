@@ -355,10 +355,12 @@ TEST_GROUP_RUNNER(j3dMacros)
 }
 
 void TEST_j3dMacros_GROUP_RUNNER(void);
+void TEST_j3dCrt_GROUP_RUNNER(void);
 
 static void runAllTests(void)
 {
     TEST_j3dMacros_GROUP_RUNNER();
+    TEST_j3dCrt_GROUP_RUNNER();
 }
 
 int main(int argc, const char* argv[])
