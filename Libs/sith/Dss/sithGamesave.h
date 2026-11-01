@@ -35,8 +35,8 @@ int sithGamesave_Process(void);
 void J3DAPI sithGamesave_NotifyRestored(const char* pFilePath); // Notify master cog the game has been restored from a save file
 
 void J3DAPI sithGamesave_SetThumbnailImage(tVBuffer* pVBuffer);
-HBITMAP sithGamesave_CreateThumbnail(void);
-HBITMAP J3DAPI sithGamesave_LoadThumbnail(const char* pFilename); // Function reads the thumbnail from the nds save file
+tSysBitmap sithGamesave_CreateThumbnail(void);
+tSysBitmap J3DAPI sithGamesave_LoadThumbnail(const char* pFilename); // Function reads the thumbnail from the nds save file
 
 void J3DAPI sithGamesave_SetPreviousLevelFilename(const char* pFilename);
 const char* sithGamesave_GetPreviousLevelFilename(void);

@@ -30,6 +30,10 @@ void JonesMainSys_UseIntroWindowProc(void); // Implemented in Jones3D/Platform/W
 // Removes the window message handler so DefWindowProc handles events.
 void JonesMainSys_ClearWindowProc(void); // Implemented in Jones3D/Platform/Win32/JonesMainWin32.c
 
+// Copies the computer name of the host into pDst of at most size characters. Returns true on
+// success; on failure it follows the GetComputerName semantics and may leave pDst untouched.
+bool JonesMainSys_GetComputerName(char* pDst, size_t size); // Implemented in Jones3D/Platform/Win32/JonesMainWin32.c
+
 // Registers the RTI hook targets that now live in the Win32 platform files.
 void JonesMainSys_InstallHooks(void); // Implemented in Jones3D/Platform/Win32/JonesMainWin32.c
 

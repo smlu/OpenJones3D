@@ -1,6 +1,5 @@
 #include "JonesMain.h"
 #include <Jones3D/Main/JonesMainSys.h>
-#include <windows.h> // Fixed: types.h no longer includes windows.h; needed for GetComputerName
 #include <j3dcore/j3dhook.h>
 
 #include <Jones3D/Display/jonesConfig.h>
@@ -2329,9 +2328,9 @@ void J3DAPI JonesMain_LogErrorToFile(const char* pErrorText)
 void J3DAPI JonesMain_LoadSettings(StdDisplayEnvironment* pDisplayEnv, JonesState* pConfig)
 {
     // Set local player name to computer name
-    DWORD nSize     = STD_ARRAYLEN(pConfig->waPlayerName);
-    CHAR aText[128] = { 0 }; // Added: Init to 0
-    if ( GetComputerName(aText, &nSize) )
+    size_t nSize    = STD_ARRAYLEN(pConfig->waPlayerName);
+    char aText[128] = { 0 }; // Added: Init to 0
+    if ( JonesMainSys_GetComputerName(aText, nSize) ) // Altered: GetComputerName moved to JonesMainSys_GetComputerName
     {
         STD_TOWSTR(pConfig->waPlayerName, aText);
     }

@@ -434,3 +434,11 @@ void JonesMainSys_InstallHooks(void)
     J3D_HOOKFUNC(JonesMain_DevDialogHandleCommand);
     J3D_HOOKFUNC(JonesMain_DevDialogInitDisplayDevices);
 }
+
+// Copies the computer name of the host into pDst of at most size characters, matching GetComputerName.
+// Returns true on success, false when the name does not fit or the call failed.
+bool JonesMainSys_GetComputerName(char* pDst, size_t size)
+{
+    DWORD nSize = (DWORD)size;
+    return GetComputerName(pDst, &nSize) != 0;
+}

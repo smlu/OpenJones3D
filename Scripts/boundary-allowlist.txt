@@ -2,11 +2,5 @@
 # Maintained with: python Scripts/checkboundary.py --update, covered by --check.
 # Files with no matches need no entry. Sorted by path.
 
-Jones3D/Display/JonesHud.c 9
-Jones3D/Main/JonesMain.c 2
 Libs/j3dcore/j3d.h.in 4
 Libs/j3dcore/j3dhook.h 4
-Libs/sith/Dss/sithGamesave.c 9
-Libs/sith/Dss/sithGamesave.h 2
-Libs/std/General/stdBmp.c 7
-Libs/std/General/stdBmp.h 1

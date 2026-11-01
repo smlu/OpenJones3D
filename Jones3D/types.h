@@ -1,6 +1,5 @@
 #ifndef JONES3D_TYPES_H
 #define JONES3D_TYPES_H
-#define STRICT
 #include <stdint.h>
 
 #include <j3dcore/j3d.h>

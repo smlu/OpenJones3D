@@ -118,6 +118,7 @@ set(STD_TESTED_SOURCES
     "${STD_GENERAL_SOURCE_DIR}/stdEffect.c"
     "${STD_GENERAL_SOURCE_DIR}/stdColor.c"
     "${STD_GENERAL_SOURCE_DIR}/stdCircBuf.c"
+    "${STD_WIN95_SOURCE_DIR}/stdBmpWin32.c"
     "${STD_WIN95_SOURCE_DIR}/stdConsole.c"
     "${STD_WIN95_SOURCE_DIR}/stdFileUtilWin32.c"
     "${STD_WIN95_SOURCE_DIR}/stdGob.c"

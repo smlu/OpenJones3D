@@ -1,7 +1,6 @@
 #include "JonesHud.h"
 #include "JonesHudConstants.h"
-#include <windows.h> // Fixed: types.h no longer includes windows.h; needed for GetExitCodeProcess
-#include <shellapi.h> // Needed for SHELLEXECUTEINFOA, ShellExecuteA
+#include <Jones3D/Display/JonesHudSys.h>
 
 #include <j3dcore/j3dhook.h>
 
@@ -169,7 +168,7 @@ static JonesHudMenuItem* JonesHud_pCurInvChangedItem   = NULL;
 static rdMaterial* JonesHud_pArrowUp   = NULL; // unused
 static rdMaterial* JonesHud_pArrowDown = NULL; // unused
 
-static HANDLE JonesHud_hProcessHelp; // Unused anymore
+static tSysHandle JonesHud_hProcessHelp; // Unused anymore
 
 static int JonesHud_msecItemChangedShowDuration  = 2000;
 static float JonesHud_itemChangedSlideEaseInRate = 4000.0f;
@@ -340,7 +339,7 @@ void J3DAPI JonesHud_RenderChangedItem(const JonesHudMenuItem* pItem, float scal
 
 void JonesHud_InitializeGameStatistics(void);
 
-HANDLE J3DAPI JonesHud_OpenHelp(HANDLE process);
+tSysHandle J3DAPI JonesHud_OpenHelp(tSysHandle process);
 
 void JonesHud_InstallHooks(void)
 {
@@ -3371,10 +3370,7 @@ void JonesHud_MenuActivateItem(void)
             //       so this scope could be skipped
             if ( JonesHud_hProcessHelp )
             {
-                DWORD exitCode;
-                GetExitCodeProcess(JonesHud_hProcessHelp, &exitCode);
-                if ( exitCode != STILL_ACTIVE )
-                    //if ( exitCode != 259 )
+                if ( !JonesHudSys_IsProcessRunning(JonesHud_hProcessHelp) ) // Altered: GetExitCodeProcess check moved to JonesHudSys_IsProcessRunning
                 {
                     JonesHud_hProcessHelp = NULL;
                 }
@@ -4280,41 +4276,6 @@ int JonesHud_ShowLevelCompleted(void)
 
     sithGamesave_UnlockGameStatistics();
     return bBoughtBounusMap;
-}
-
-HANDLE J3DAPI JonesHud_OpenHelp(HANDLE process)
-{
-    J3D_UNUSED(process);
-
-    wchar_t* pwString = sithString_GetString("SITHSTRING_HELPFILE");
-    HANDLE hProcess = NULL;
-    if ( !pwString )
-    {
-        return hProcess;
-    }
-
-    char* pFilename = stdUtil_ToAString(pwString);
-    char aPath[128] = { 0 };
-    stdConfig_GetString(SITH_CFG_INSTALLPATH, aPath, sizeof(aPath), "");
-    if ( pFilename && strlen(aPath) )
-    {
-        SHELLEXECUTEINFOA execInfo = { 0 };
-        execInfo.cbSize      = 60;
-        execInfo.fMask       = 80;
-        execInfo.lpVerb      = "open";
-        execInfo.lpFile      = pFilename;
-        execInfo.lpDirectory = aPath;
-        execInfo.nShow       = 1;
-        ShellExecuteExA(&execInfo);
-        hProcess = execInfo.hProcess;
-    }
-
-    if ( pFilename )
-    {
-        STDFREE(pFilename);
-    }
-
-    return hProcess;
 }
 
 void J3DAPI JonesHud_ShowGameOverDialog(int bPlayDiedMusic)
