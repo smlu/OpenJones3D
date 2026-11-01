@@ -83,6 +83,10 @@ if (NOT JONES3D_BUILD_SYSTEM_TESTS)
     set(JONES3D_BUILD_DISRUPTIVE_SYSTEM_TESTS OFF)
 endif()
 
+if(NOT JONES3D_USE_DIRECTX9)
+    message(FATAL_ERROR "The DirectX 6 build is paused: its backend isn't updated for the platform layer. Configure with -DJONES3D_USE_DIRECTX9=ON.")
+endif()
+
 if(JONES3D_USE_DIRECTX9)
     set(JONES3D_GAPI_NAME "DirectX 9")
     set(J3D_DIRECTX9 ON) # Set the variable for the header template
