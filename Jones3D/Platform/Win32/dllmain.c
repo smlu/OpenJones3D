@@ -14,7 +14,7 @@ int __stdcall Indy3D_WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR
 #include <Jones3D/Display/JonesConsole.h>
 #include <Jones3D/Display/JonesDisplay.h>
 #include <Jones3D/Display/JonesHud.h>
-#include <Jones3D/Gui/JonesDialog.h>
+#include <Jones3D/Platform/Win32/JonesDialog.h>
 #include <Jones3D/Main/JonesFile.h>
 #include <Jones3D/Main/JonesMain.h>
 #include <Jones3D/Main/jonesString.h>

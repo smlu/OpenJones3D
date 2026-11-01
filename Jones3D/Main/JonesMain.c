@@ -1,8 +1,8 @@
 #include "JonesMain.h"
 #include <Jones3D/Main/JonesMainSys.h>
+#include <windows.h> // Fixed: types.h no longer includes windows.h; needed for GetComputerName
 #include <j3dcore/j3dhook.h>
 
-#include <Jones3D/Gui/JonesDialog.h>
 #include <Jones3D/Display/jonesConfig.h>
 #include <Jones3D/Display/JonesConsole.h>
 #include <Jones3D/Display/JonesDisplay.h>

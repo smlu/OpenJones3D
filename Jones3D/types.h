@@ -1,8 +1,6 @@
 #ifndef JONES3D_TYPES_H
 #define JONES3D_TYPES_H
 #define STRICT
-#include <windows.h>
-#include <commctrl.h>
 #include <stdint.h>
 
 #include <j3dcore/j3d.h>
@@ -255,12 +253,7 @@ typedef enum eJonesLogLevel
     JONES_LOGLEVEL_VERBOSE = 2,
 } JonesLogLevel;
 
-typedef struct sJonesDialogData JonesDialogData;
-
 typedef int (J3DAPI* JonesMainProcessFunc)();
-typedef void (J3DAPI* JonesDialogReleaseDCFunc)(HDC);
-typedef HDC(*JonesDialogGetDrawBufferDCFunc)(void);
-typedef int (*JonesDialogFlipPageFunc)(void);
 
 typedef struct sJonesResource
 {
@@ -359,18 +352,6 @@ typedef struct sJonesResourcesOld
     JonesResource cd;
 } JonesResourcesOld;
 
-typedef struct sJonesDialogGameState
-{
-    int bFrontBufferClipper;
-    int bBackBufferClipper;
-    int bOffScreenDBIAllocSkipped;
-    int bScreenDBIAllocSkipped;
-    int unknown4;
-    int bControlsActive;
-    int bGamePaused;
-    int unknown7;
-} JonesDialogGameState;
-
 typedef struct sJonesConsoleTextLine
 {
     char aLine[128];
@@ -381,30 +362,6 @@ typedef struct sJonesConsoleTextLine
     int unknown4;
 } JonesConsoleTextLine;
 
-typedef struct sJonesDialogCursorInfo
-{
-    POINT point[2];
-    HCURSOR hCursor;
-    ICONINFO info;
-    SIZE size;
-    HDC hDrawDC;
-    RECT rect;
-    HWND aHwnd[10];
-    int numHandels;
-} JonesDialogCursorInfo;
-
-struct sJonesDialogData
-{
-    uint32_t dwSize;
-    LPOFNHOOKPROC lpfnPrevHook;
-    WNDPROC lpfnWndProc;
-    LPARAM lPrevCustData;
-    LPVOID lpUserData;
-    RECT rcWindow;
-    int unknown9;
-    JonesDialogData* pExtraData;
-};
-
 typedef struct sJonesControlsScheme
 {
     int bModified;
@@ -412,17 +369,6 @@ typedef struct sJonesControlsScheme
     char aName[128];
 } JonesControlsScheme;
 static_assert(sizeof(JonesControlsScheme) == 1464, "sizeof(JonesControlsScheme) == 1464");
-
-typedef struct sJonesControlsConfig
-{
-    LONG maxNameLen;
-    size_t numDeleteSchemes;
-    char (*paDeleteSchemes)[128];
-    size_t numSchemes;
-    int selectedShemeIdx; // cane be -1
-    JonesControlsScheme* aSchemes;
-} JonesControlsConfig;
-static_assert(sizeof(JonesControlsConfig) == 24, "sizeof(JonesControlsConfig) == 24");
 
 typedef struct sStoreItem
 {
@@ -433,43 +379,6 @@ typedef struct sStoreItem
     int price;
     int unitsPerItem;
 } tStoreItem;
-
-typedef struct sStoreCartState
-{
-    int* apItemsState;
-    HICON aItemIcons[14];
-    HIMAGELIST hList;
-    int total;
-    int balance;
-    int bDragging;
-    int dragListId;
-    int unknown20;
-    int cartListWidth;
-} tStoreCartState;
-
-typedef struct sJonesDialogImageInfo
-{
-    HDC hdcFront;
-    HDC hdcBack;
-    HBITMAP hBmp;
-    int unknown3;
-    int unknown4;
-} JonesDialogImageInfo;
-
-typedef struct sLevelCompletedDialogState
-{
-    int* balance;
-    int* apItemsState;
-    int unknown2;
-    int elapsedTime;
-    int iqPoints;
-    int numFoundTrasures;
-    int foundTreasureValue;
-    int totalTreasureValue;
-    JonesDialogImageInfo* pIQImageInfo;
-    SithGameStatistics* pStatistics;
-    int unknown10;
-} tLevelCompletedDialogState;
 
 typedef struct sMenuItemOrientInfo
 {
@@ -492,17 +401,6 @@ typedef struct sJonesHudRect
     float height;
 } JonesHudRect;
 
-typedef struct sJonesDialogFontInfo
-{
-    HFONT hFont;
-    HFONT hControlFont;
-    int bWindowMode;
-    float fontScaleX;
-    float fontScaleY;
-    int dialogID;
-} JonesDialogFontInfo;
-static_assert(sizeof(JonesDialogFontInfo) == 24, "sizeof(JonesDialogFontInfo) == 24");
-
 typedef struct sGameSaveMsgBoxData
 {
     int dialogID;
@@ -516,15 +414,6 @@ typedef struct sGameOverDialogData
     tSoundChannelHandle sndChnlMusic;
     tSoundHandle hSndMusic;
 } GameOverDialogData;
-
-typedef struct sGDIDIBSectionInfo
-{
-    HBITMAP hBitmap;
-    HDC hScreenDC;
-    PBYTE pPixels;
-    BITMAPINFO bmpInfo;
-    int bHasDC;
-} GDIDIBSectionInfo;
 
 J3D_EXTERN_C_END
 #endif //JONES3D_TYPES_H

@@ -1,5 +1,7 @@
 #include "JonesHud.h"
 #include "JonesHudConstants.h"
+#include <windows.h> // Fixed: types.h no longer includes windows.h; needed for GetExitCodeProcess
+#include <shellapi.h> // Needed for SHELLEXECUTEINFOA, ShellExecuteA
 
 #include <j3dcore/j3dhook.h>
 

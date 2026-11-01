@@ -3,7 +3,7 @@
 #include <Jones3D/Main/JonesMainSys.h>
 
 #include <j3dcore/j3dhook.h>
-#include <Jones3D/Gui/JonesDialog.h>
+#include <Jones3D/Platform/Win32/JonesDialog.h>
 #include <Jones3D/Display/JonesConsole.h>
 #include <Jones3D/Display/JonesHud.h>
 #include <Jones3D/Main/jonesString.h>

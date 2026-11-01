@@ -1,12 +1,12 @@
 #include <std/Win95/stdSysTagsWin32.h>
-#include "jonesConfig.h"
+#include <Jones3D/Display/jonesConfig.h>
 #include <j3dcore/j3dhook.h>
 
 #include <Jones3D/Display/JonesDisplay.h>
 #include <Jones3D/Display/JonesHud.h>
 #include <Jones3D/Display/JonesHudConstants.h>
 #include <Jones3D/Display/JonesReticle.h>
-#include <Jones3D/Gui/JonesDialog.h>
+#include <Jones3D/Platform/Win32/JonesDialog.h>
 #include <Jones3D/Main/JonesFile.h>
 #include <Jones3D/Main/JonesLevel.h>
 #include <Jones3D/Main/JonesMain.h>

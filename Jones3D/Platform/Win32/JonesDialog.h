@@ -1,6 +1,7 @@
 #ifndef JONES3D_JONESDIALOG_H
 #define JONES3D_JONESDIALOG_H
 #include <Jones3D/types.h>
+#include <Jones3D/Platform/Win32/JonesDialogTypes.h>
 #include <Jones3D/RTI/addresses.h>
 #include <j3dcore/j3d.h>
 #include <rdroid/types.h>
