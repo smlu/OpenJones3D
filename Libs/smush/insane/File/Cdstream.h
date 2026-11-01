@@ -54,7 +54,7 @@ struct sStream
     int reopen;                                 /* 0x108 */
     int (*pfnRetry)(int code, const char* pName); /* 0x10C */
 };
-static_assert(sizeof(Stream) == 0x110, "sizeof(Stream) == 0x110");
+J3D_ASSERT_SIZE32(sizeof(Stream) == 0x110, "sizeof(Stream) == 0x110");
 
 typedef struct sStreamerInterface
 {
@@ -67,7 +67,7 @@ typedef struct sStreamerInterface
     void (*Reset)(Stream* pStream);
     int  (*Percent)(Stream* pStream);
 } StreamerInterface;
-static_assert(sizeof(StreamerInterface) == 0x20, "sizeof(StreamerInterface) == 0x20");
+J3D_ASSERT_SIZE32(sizeof(StreamerInterface) == 0x20, "sizeof(StreamerInterface) == 0x20");
 
 int J3DAPI streamer_Register(LecShare* pShare, void* pParam);
 void streamer_Unregister(void);

@@ -494,7 +494,7 @@ void J3DAPI sithSoundMixer_SetSectorAmbientSound(SithSector* pSector, tSoundHand
 
 int J3DAPI sithSoundMixer_GameSave(tFileHandle fh)
 {
-    static_assert(sizeof(sithSoundMixer_hCurAmbientChannel) == 4, "sizeof(sithSoundMixer_hCurAmbientChannel) == 4");
+    J3D_ASSERT_SIZE32(sizeof(sithSoundMixer_hCurAmbientChannel) == 4, "sizeof(sithSoundMixer_hCurAmbientChannel) == 4");
     return sith_g_pHS->pFileWrite(fh, &sithSoundMixer_hCurAmbientChannel, sizeof(sithSoundMixer_hCurAmbientChannel)) != sizeof(sithSoundMixer_hCurAmbientChannel)
         || Sound_Save(fh) == 0;
 }

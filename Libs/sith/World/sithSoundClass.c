@@ -310,7 +310,7 @@ int J3DAPI sithSoundClass_WriteSoundClassesListBinary(tFileHandle fh, const Sith
 {
     for ( size_t i = 0; i < pWorld->numSoundClasses; ++i )
     {
-        static_assert(sizeof(pWorld->aSoundClasses[i].aName) == 64, "sizeof(pWorld->aSoundClasses[i].aName)");
+        J3D_ASSERT_SIZE32(sizeof(pWorld->aSoundClasses[i].aName) == 64, "sizeof(pWorld->aSoundClasses[i].aName)");
         if ( sith_g_pHS->pFileWrite(fh, &pWorld->aSoundClasses[i].aName, sizeof(pWorld->aSoundClasses[i].aName)) != sizeof(pWorld->aSoundClasses[i].aName) )
         {
             return 1;

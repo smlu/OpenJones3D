@@ -6,6 +6,11 @@ file(GLOB_RECURSE HEADERS *.h)
 list(FILTER SOURCES EXCLUDE REGEX ".*/Tests/.*")
 list(FILTER HEADERS EXCLUDE REGEX ".*/Tests/.*")
 
+# Added: The Null platform has no Windows platform layer: exclude the Win32-specific files.
+if(J3D_PLATFORM_NULL)
+    list(FILTER SOURCES EXCLUDE REGEX ".*Win32\\.c$")
+endif()
+
 add_library(${PROJECT_NAME} STATIC ${SOURCES} ${HEADERS})
 
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)

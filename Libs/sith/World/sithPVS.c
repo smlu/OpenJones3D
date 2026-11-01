@@ -143,7 +143,7 @@ syntax_error:
 
 int J3DAPI sithPVS_WritePVSBinary(tFileHandle fh, const SithWorld* pWorld)
 {
-    static_assert(sizeof(pWorld->sizePVS) == sizeof(uint32_t), "sizeof(pWorld->sizePVS) == sizeof(uint32_t)");
+    J3D_ASSERT_SIZE32(sizeof(pWorld->sizePVS) == sizeof(uint32_t), "sizeof(pWorld->sizePVS) == sizeof(uint32_t)");
     if ( sith_g_pHS->pFileWrite(fh, &pWorld->sizePVS, sizeof(uint32_t)) != sizeof(uint32_t) )
     {
         return 1;

@@ -40,7 +40,7 @@ typedef struct sTimerInterface
     int  (*GetTickLen)(void);
     void (*Sync)(int ticks);
 } TimerInterface;
-static_assert(sizeof(TimerInterface) == 0x24, "sizeof(TimerInterface) == 0x24");
+J3D_ASSERT_SIZE32(sizeof(TimerInterface) == 0x24, "sizeof(TimerInterface) == 0x24");
 
 typedef struct sTimerEntry
 {
@@ -53,7 +53,7 @@ typedef struct sTimerEntry
     int running;        /* 0x18 */
     int total;          /* 0x1C */
 } TimerEntry;
-static_assert(sizeof(TimerEntry) == 0x20, "sizeof(TimerEntry) == 0x20");
+J3D_ASSERT_SIZE32(sizeof(TimerEntry) == 0x20, "sizeof(TimerEntry) == 0x20");
 
 int J3DAPI timer_Register(LecShare* pShare, void* pParam);
 void timer_Unregister(void);

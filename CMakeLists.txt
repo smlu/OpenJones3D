@@ -49,6 +49,15 @@ option(JONES3D_STANDALONE "Build without the retail executable: no hooks and no 
 option(JONES3D_USE_DIRECTX9 "Build with DirectX 9 support" ON)
 #---------------------
 
+if(NOT WIN32)
+    # Added: Native non-Windows build: no DirectX backend exists yet, so configure a Null
+    # platform without the Windows backends and without the retail-executable hooks.
+    set(J3D_PLATFORM_NULL ON)
+    set(JONES3D_STANDALONE ON CACHE BOOL "" FORCE)
+    set(JONES3D_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+    set(JONES3D_BUILD_PROGRAMS OFF CACHE BOOL "" FORCE)
+endif()
+
 if (JONES3D_QOL_IMPROVEMENTS)
     set(J3D_QOL_IMPROVEMENTS ON)
 else()
@@ -83,11 +92,11 @@ if (NOT JONES3D_BUILD_SYSTEM_TESTS)
     set(JONES3D_BUILD_DISRUPTIVE_SYSTEM_TESTS OFF)
 endif()
 
-if(NOT JONES3D_USE_DIRECTX9)
+if(WIN32 AND NOT JONES3D_USE_DIRECTX9)
     message(FATAL_ERROR "The DirectX 6 build is paused: its backend isn't updated for the platform layer. Configure with -DJONES3D_USE_DIRECTX9=ON.")
 endif()
 
-if(JONES3D_USE_DIRECTX9)
+if(WIN32 AND JONES3D_USE_DIRECTX9)
     set(JONES3D_GAPI_NAME "DirectX 9")
     set(J3D_DIRECTX9 ON) # Set the variable for the header template
     if (NOT JONES3D_QOL_IMPROVEMENTS)
@@ -97,7 +106,7 @@ if(JONES3D_USE_DIRECTX9)
             set(JONES3D_BUILD_SUFFIX "-dx9-legacy") # Pure legacy behavior
         endif()
     endif()
-else()
+elseif(WIN32)
     set(JONES3D_GAPI_NAME "DirectX 6.1c (original)")
     set(J3D_DIRECTX6 ON) # Set the variable for the header template
     set(J3D_COLORKEYSUPPORTED ON)
@@ -110,6 +119,9 @@ else()
             set(JONES3D_BUILD_SUFFIX "-legacy") # Pure legacy behavior
         endif()
     endif()
+else()
+    # Added: The Null platform has no graphics backend yet (non-Windows configure only).
+    set(JONES3D_GAPI_NAME "Null")
 endif()
 
 # Keep configuration-specific headers in the build tree so DX6 and DX9 builds can coexist.
@@ -169,6 +181,18 @@ elseif(MINGW)
         -Wno-parentheses
     )
     add_link_options(-static-libgcc)
+elseif(NOT WIN32 AND (CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU"))
+    # Added: Native Clang/GCC non-Windows build of the engine libraries (Null platform,
+    # Windows engine .c files are intentionally not validated). -fms-extensions like the
+    # MinGW branch, -fno-strict-aliasing to keep the original bit relayout of the code paths.
+    add_compile_options(
+        "$<$<COMPILE_LANGUAGE:C>:-std=gnu11>"
+        -fms-extensions
+        -fno-strict-aliasing
+        -Wno-switch
+        -Wno-parentheses
+        -Wno-unknown-pragmas
+    )
 else()
     message(FATAL_ERROR "Unsupported compiler: ${CMAKE_CXX_COMPILER_ID}")
 endif()

@@ -770,7 +770,7 @@ void J3DAPI sithCogExec_PushVectorOp(SithCog* pCog)
     SITH_ASSERTREL(pCog && pCog->pScript);
     rdVector_Copy3(&value.val.vecValue, (const rdVector3*)&pCog->pScript->pCode[pCog->execPos]);
     pCog->execPos += sizeof(value.val.vecValue) / sizeof(*pCog->pScript->pCode);
-    static_assert(sizeof(value.val.vecValue) / sizeof(*pCog->pScript->pCode) == 3, "sizeof(value.val.vecValue) / sizeof(*pCog->pScript->pCode) == 3");
+    J3D_ASSERT_SIZE32(sizeof(value.val.vecValue) / sizeof(*pCog->pScript->pCode) == 3, "sizeof(value.val.vecValue) / sizeof(*pCog->pScript->pCode) == 3");
 
     value.type = SITHCOG_VALUE_VECTOR;
     sithCogExec_PushStack(pCog, &value);

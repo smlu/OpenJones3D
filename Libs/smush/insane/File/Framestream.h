@@ -71,7 +71,7 @@ typedef struct sFrameHeader
     char palette[0x400];    /* 0x16 */
 } FrameHeader;
 #pragma pack(pop)
-static_assert(sizeof(FrameHeader) == 0x416, "sizeof(FrameHeader) == 0x416");
+J3D_ASSERT_SIZE32(sizeof(FrameHeader) == 0x416, "sizeof(FrameHeader) == 0x416");
 
 int J3DAPI framestream_Reset(FrameStream* pFrames);
 void J3DAPI framestream_Close(FrameStream* pFrames); // Folded onto 0x004EE700; no address of its own, never hook

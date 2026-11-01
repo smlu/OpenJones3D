@@ -146,7 +146,7 @@ int J3DAPI sithAIClass_ReadStaticAIClassesListBinary(tFileHandle fh, SithWorld* 
     for ( size_t i = 0; i < numAIClasses; ++i )
     {
         char aFilename[64];
-        static_assert(sizeof(aFilename) == sizeof(pWorld->aAIClasses[i].aName), "Array size mismatch");
+        J3D_ASSERT_SIZE32(sizeof(aFilename) == sizeof(pWorld->aAIClasses[i].aName), "Array size mismatch");
         if ( sith_g_pHS->pFileRead(fh, aFilename, STD_ARRAYLEN(aFilename)) != STD_ARRAYLEN(aFilename) || !sithAIClass_Load(pWorld, aFilename) )
         {
             // TODO: maybe add logging here

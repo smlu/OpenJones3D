@@ -1,6 +1,11 @@
 cmake_minimum_required(VERSION 3.15)
 project(Jones3D)
 
+# Added: The Null platform builds no Jones3D target yet; the headless runner comes in a later slice.
+if (J3D_PLATFORM_NULL)
+    return()
+endif()
+
 # Option to enable or disable the post-build command.
 # When set to ON, a post-build step will be added that copies the
 # output files (.dll and .exe) to a specified directory.

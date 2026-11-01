@@ -192,7 +192,7 @@ struct srdMaterial
     size_t numCels;
     tSystemTexture* aTextures;
 };
-static_assert(sizeof(rdMaterial) == 92, "sizeof(rdMaterial) == 92");
+J3D_ASSERT_SIZE32(sizeof(rdMaterial) == 92, "sizeof(rdMaterial) == 92");
 
 typedef struct srdGlyphMetrics
 {
@@ -203,7 +203,7 @@ typedef struct srdGlyphMetrics
     int baselineOriginY;
     int baselineOriginX;
 } rdGlyphMetrics;
-static_assert(sizeof(rdGlyphMetrics) == 24, "sizeof(rdGlyphMetrics) == 24");
+J3D_ASSERT_SIZE32(sizeof(rdGlyphMetrics) == 24, "sizeof(rdGlyphMetrics) == 24");
 
 typedef struct srdFont
 {
@@ -213,7 +213,7 @@ typedef struct srdFont
     int32_t fontSize;
     rdMaterial* pMaterial;
 } rdFont;
-static_assert(sizeof(rdFont) == 20, "sizeof(rdFont) == 20");
+J3D_ASSERT_SIZE32(sizeof(rdFont) == 20, "sizeof(rdFont) == 20");
 
 typedef struct srdMatHeader // Originally was probably named tMaterialHeader
 {
@@ -224,7 +224,7 @@ typedef struct srdMatHeader // Originally was probably named tMaterialHeader
     uint32_t numTextures;
     ColorInfo colorInfo;
 } rdMatHeader;
-static_assert(sizeof(rdMatHeader) == 76, "sizeof(rdMatHeader) == 76");
+J3D_ASSERT_SIZE32(sizeof(rdMatHeader) == 76, "sizeof(rdMatHeader) == 76");
 
 struct srdVector3
 {
@@ -247,7 +247,7 @@ struct srdVector3
         float roll;
     };
 };
-static_assert(sizeof(struct srdVector3) == 12, "sizeof(struct srdVector3) == 12");
+J3D_ASSERT_SIZE32(sizeof(struct srdVector3) == 12, "sizeof(struct srdVector3) == 12");
 
 typedef struct srdMatrix34
 {
@@ -256,7 +256,7 @@ typedef struct srdMatrix34
     rdVector3 uvec;
     rdVector3 dvec;
 } rdMatrix34;
-static_assert(sizeof(rdMatrix34) == 48, "sizeof(rdMatrix34) == 48");
+J3D_ASSERT_SIZE32(sizeof(rdMatrix34) == 48, "sizeof(rdMatrix34) == 48");
 
 typedef struct srdClipFrustum
 {
@@ -276,7 +276,7 @@ typedef struct srdClipFrustum
     rdVector3 topPlaneNormal;
     rdVector3 bottomPlaneNormal;
 } rdClipFrustum;
-static_assert(sizeof(rdClipFrustum) == 92, "sizeof(rdClipFrustum) == 92");
+J3D_ASSERT_SIZE32(sizeof(rdClipFrustum) == 92, "sizeof(rdClipFrustum) == 92");
 
 struct srdVector4
 {
@@ -301,14 +301,14 @@ struct srdVector4
         float alpha;
     };
 };
-static_assert(sizeof(struct srdVector4) == sizeof(rdVector3) + sizeof(float), "sizeof(struct srdVector4) == sizeof(rdVector3) + sizeof(float)");
+J3D_ASSERT_SIZE32(sizeof(struct srdVector4) == sizeof(rdVector3) + sizeof(float), "sizeof(struct srdVector4) == sizeof(rdVector3) + sizeof(float)");
 
 typedef struct srdVector2
 {
     float x;
     float y;
 } rdVector2;
-static_assert(sizeof(rdVector2) == 8, "sizeof(rdVector2) == 8");
+J3D_ASSERT_SIZE32(sizeof(rdVector2) == 8, "sizeof(rdVector2) == 8");
 
 typedef struct srdCanvas
 {
@@ -350,7 +350,7 @@ typedef struct srdCamera
     float attenuationMin;
     float attenuationMax;
 } rdCamera;
-static_assert(sizeof(rdCamera) == 2168, "sizeof(rdCamera) == 2168");
+J3D_ASSERT_SIZE32(sizeof(rdCamera) == 2168, "sizeof(rdCamera) == 2168");
 
 struct srdModel3HNode
 {
@@ -367,7 +367,7 @@ struct srdModel3HNode
     rdVector3 pyr;
     rdMatrix34 meshOrient;
 };
-static_assert(sizeof(rdModel3HNode) == 240, "sizeof(rdModel3HNode) == 240");
+J3D_ASSERT_SIZE32(sizeof(rdModel3HNode) == 240, "sizeof(rdModel3HNode) == 240");
 
 struct srdFace
 {
@@ -384,7 +384,7 @@ struct srdFace
     rdVector4 extraLight;
     rdVector3 normal;
 };
-static_assert(sizeof(rdFace) == 72, "sizeof(rdFace) == 72");
+J3D_ASSERT_SIZE32(sizeof(rdFace) == 72, "sizeof(rdFace) == 72");
 
 typedef struct srdModel3Mesh
 {
@@ -405,14 +405,14 @@ typedef struct srdModel3Mesh
     float radius;
     int someFaceFlags;
 } rdModel3Mesh;
-static_assert(sizeof(rdModel3Mesh) == 136, "sizeof(rdModel3Mesh) == 136");
+J3D_ASSERT_SIZE32(sizeof(rdModel3Mesh) == 136, "sizeof(rdModel3Mesh) == 136");
 
 typedef struct srdModel3GeoSet
 {
     size_t numMeshes;
     rdModel3Mesh* aMeshes;
 } rdModel3GeoSet;
-static_assert(sizeof(rdModel3GeoSet) == 8, "sizeof(rdModel3GeoSet) == 8");
+J3D_ASSERT_SIZE32(sizeof(rdModel3GeoSet) == 8, "sizeof(rdModel3GeoSet) == 8");
 
 struct srdModel3
 {
@@ -429,7 +429,7 @@ struct srdModel3
     float size;
     rdVector3 insertOffset;
 };
-static_assert(sizeof(rdModel3) == 144, "sizeof(rdModel3) == 144");
+J3D_ASSERT_SIZE32(sizeof(rdModel3) == 144, "sizeof(rdModel3) == 144");
 
 typedef struct srdPolyline
 {
@@ -444,7 +444,7 @@ typedef struct srdPolyline
 
     rdPolylineFlags flags; // Added: new field
 } rdPolyline;
-static_assert(sizeof(rdPolyline) == 164, "sizeof(rdPolyline) == 164");
+J3D_ASSERT_SIZE32(sizeof(rdPolyline) == 164, "sizeof(rdPolyline) == 164");
 
 typedef struct srdParticle
 {
@@ -460,7 +460,7 @@ typedef struct srdParticle
     float radius;
     rdVector3 insertOffset;
 } rdParticle;
-static_assert(sizeof(rdParticle) == 112, "sizeof(rdParticle) == 112");
+J3D_ASSERT_SIZE32(sizeof(rdParticle) == 112, "sizeof(rdParticle) == 112");
 
 typedef struct srdSprite3
 {
@@ -488,7 +488,7 @@ typedef union srdThingData
     rdCamera* pCamera;
     rdLight* pLight;
 } rdThingData;
-static_assert(sizeof(rdThingData) == 4, "sizeof(rdThingData) == 4");
+J3D_ASSERT_SIZE32(sizeof(rdThingData) == 4, "sizeof(rdThingData) == 4");
 
 typedef struct srdKeyframeNodeEntry
 {
@@ -499,7 +499,7 @@ typedef struct srdKeyframeNodeEntry
     rdVector3 dpos;
     rdVector3 drot;
 } rdKeyframeNodeEntry;
-static_assert(sizeof(rdKeyframeNodeEntry) == 56, "sizeof(rdKeyframeNodeEntry) == 56");
+J3D_ASSERT_SIZE32(sizeof(rdKeyframeNodeEntry) == 56, "sizeof(rdKeyframeNodeEntry) == 56");
 
 typedef struct srdKeyframeNode
 {
@@ -508,7 +508,7 @@ typedef struct srdKeyframeNode
     size_t numEntries;
     rdKeyframeNodeEntry* aEntries;
 } rdKeyframeNode;
-static_assert(sizeof(rdKeyframeNode) == 76, "sizeof(rdKeyframeNode) == 76");
+J3D_ASSERT_SIZE32(sizeof(rdKeyframeNode) == 76, "sizeof(rdKeyframeNode) == 76");
 
 struct srdKeyframe
 {
@@ -524,7 +524,7 @@ struct srdKeyframe
     float aMarkerFrames[RDKEYFRAME_MAX_MARKERS];
     rdKeyMarkerType aMarkerTypes[RDKEYFRAME_MAX_MARKERS];
 };
-static_assert(sizeof(rdKeyframe) == 224, "sizeof(rdKeyframe) == 224");
+J3D_ASSERT_SIZE32(sizeof(rdKeyframe) == 224, "sizeof(rdKeyframe) == 224");
 
 typedef struct srdPuppetTrack
 {
@@ -543,7 +543,7 @@ typedef struct srdPuppetTrack
     rdPuppetTrackCallback pfCallback;
     uint32_t guid;
 } rdPuppetTrack;
-static_assert(sizeof(rdPuppetTrack) == 308, "sizeof(rdPuppetTrack) == 308");
+J3D_ASSERT_SIZE32(sizeof(rdPuppetTrack) == 308, "sizeof(rdPuppetTrack) == 308");
 
 typedef struct srdPuppet
 {
@@ -551,7 +551,7 @@ typedef struct srdPuppet
     rdThing* pThing;
     rdPuppetTrack aTracks[RDPUPPET_MAX_TRACKS];
 } rdPuppet;
-static_assert(sizeof(rdPuppet) == 2472, "sizeof(rdPuppet) == 2472");
+J3D_ASSERT_SIZE32(sizeof(rdPuppet) == 2472, "sizeof(rdPuppet) == 2472");
 
 struct srdThing
 {
@@ -596,7 +596,7 @@ typedef struct srdMatRecordHeader
     float Unknown7;
     uint32_t textureNum;
 } rdMatRecordHeader;
-static_assert(sizeof(rdMatRecordHeader) == 40, "sizeof(rdMatRecordHeader) == 40");
+J3D_ASSERT_SIZE32(sizeof(rdMatRecordHeader) == 40, "sizeof(rdMatRecordHeader) == 40");
 
 typedef struct srdWallLine
 {
@@ -621,7 +621,7 @@ struct srdCacheProcEntry
     rdVector4 extraLight;
     float distance;
 };
-static_assert(sizeof(rdCacheProcEntry) == 48, "sizeof(rdCacheProcEntry) == 48");
+J3D_ASSERT_SIZE32(sizeof(rdCacheProcEntry) == 48, "sizeof(rdCacheProcEntry) == 48");
 
 typedef struct srdMatCelInfo
 {
@@ -632,7 +632,7 @@ typedef struct srdMatCelInfo
     int unknown3;
     float unknown4;
 } rdMatCelInfo;
-static_assert(sizeof(rdMatCelInfo) == 24, "sizeof(rdMatCelInfo) == 24");
+J3D_ASSERT_SIZE32(sizeof(rdMatCelInfo) == 24, "sizeof(rdMatCelInfo) == 24");
 
 typedef struct srdMatTextureHeader
 {
@@ -643,7 +643,7 @@ typedef struct srdMatTextureHeader
     int unknown2;
     uint32_t numMipLevels;
 } rdMatTextureHeader;
-static_assert(sizeof(rdMatTextureHeader) == 24, "sizeof(rdMatTextureHeader) == 24");
+J3D_ASSERT_SIZE32(sizeof(rdMatTextureHeader) == 24, "sizeof(rdMatTextureHeader) == 24");
 
 
 typedef struct srdMatTextureCelInfo

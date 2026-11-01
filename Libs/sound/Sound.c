@@ -504,27 +504,27 @@ int J3DAPI Sound_Save(tFileHandle fh)
     // section marker (header magic)
     if ( Sound_pHS->pFileWrite(fh, &Sound_serMagic, sizeof(Sound_serMagic)) != sizeof(Sound_serMagic) )
     {
-        static_assert(sizeof(Sound_serMagic) == 4, "sizeof(Sound_sermagic) == 4");
+        J3D_ASSERT_SIZE32(sizeof(Sound_serMagic) == 4, "sizeof(Sound_sermagic) == 4");
         return 0;
     }
 
     if ( Sound_pHS->pFileWrite(fh, &Sound_pausedRefCount, sizeof(Sound_pausedRefCount)) != sizeof(Sound_pausedRefCount) )
     {
-        static_assert(sizeof(Sound_pausedRefCount) == 4, "sizeof(Sound_pausedRefCount) == 4");
+        J3D_ASSERT_SIZE32(sizeof(Sound_pausedRefCount) == 4, "sizeof(Sound_pausedRefCount) == 4");
         return 0;
     }
 
     const uint32_t curDetlatTime = Sound_GetDeltaTime();
     if ( Sound_pHS->pFileWrite(fh, &curDetlatTime, sizeof(curDetlatTime)) != sizeof(curDetlatTime) )
     {
-        static_assert(sizeof(curDetlatTime) == 4, "sizeof(curDetlatTime) == 4");
+        J3D_ASSERT_SIZE32(sizeof(curDetlatTime) == 4, "sizeof(curDetlatTime) == 4");
         return 0;
     }
 
     const uint32_t curDetlatPauseTime = SoundDriver_GetTimeMsec() - Sound_msecPauseStartTime;
     if ( Sound_pHS->pFileWrite(fh, &curDetlatPauseTime, sizeof(curDetlatPauseTime)) != sizeof(curDetlatPauseTime) )
     {
-        static_assert(sizeof(curDetlatPauseTime) == 4, "sizeof(curDetlatPauseTime) == 4");
+        J3D_ASSERT_SIZE32(sizeof(curDetlatPauseTime) == 4, "sizeof(curDetlatPauseTime) == 4");
         return 0;
     }
 
@@ -554,7 +554,7 @@ int J3DAPI Sound_Save(tFileHandle fh)
                 const uint32_t nameLen = strlen((const char*)&aSndCache[pSndInfo->filePathOffset]) + 1;
                 if ( Sound_pHS->pFileWrite(fh, &nameLen, sizeof(nameLen)) != sizeof(nameLen) )
                 {
-                    static_assert(sizeof(nameLen) == 4, "sizeof(nameLen) == 4");
+                    J3D_ASSERT_SIZE32(sizeof(nameLen) == 4, "sizeof(nameLen) == 4");
                     return 0;
                 }
 
@@ -568,7 +568,7 @@ int J3DAPI Sound_Save(tFileHandle fh)
                 const uint32_t bankNum = pSndInfo->bankNum;
                 if ( Sound_pHS->pFileWrite(fh, &bankNum, sizeof(bankNum)) != sizeof(bankNum) )
                 {
-                    static_assert(sizeof(bankNum) == 4, "sizeof(bankNum) == 4");
+                    J3D_ASSERT_SIZE32(sizeof(bankNum) == 4, "sizeof(bankNum) == 4");
                     return 0;
                 }
 
@@ -576,99 +576,99 @@ int J3DAPI Sound_Save(tFileHandle fh)
                 const uint32_t sndIdx = pSndInfo->idx;
                 if ( Sound_pHS->pFileWrite(fh, &sndIdx, sizeof(sndIdx)) != sizeof(sndIdx) )
                 {
-                    static_assert(sizeof(sndIdx) == 4, "sizeof(sndIdx) == 4");
+                    J3D_ASSERT_SIZE32(sizeof(sndIdx) == 4, "sizeof(sndIdx) == 4");
                     return 0;
                 }
 
                 const uint32_t hSnd = pSndInfo->hSnd;
                 if ( Sound_pHS->pFileWrite(fh, &hSnd, sizeof(hSnd)) != sizeof(hSnd) )
                 {
-                    static_assert(sizeof(hSnd) == 4, "sizeof(hSnd) == 4");
+                    J3D_ASSERT_SIZE32(sizeof(hSnd) == 4, "sizeof(hSnd) == 4");
                     return 0;
                 }
 
                 if ( Sound_pHS->pFileWrite(fh, &pCurChannel->handle, sizeof(pCurChannel->handle)) != sizeof(pCurChannel->handle) )
                 {
-                    static_assert(sizeof(pCurChannel->handle) == 4, "sizeof(pCurChannel->handle) == 4");
+                    J3D_ASSERT_SIZE32(sizeof(pCurChannel->handle) == 4, "sizeof(pCurChannel->handle) == 4");
                     return 0;
                 }
 
                 if ( Sound_pHS->pFileWrite(fh, &pCurChannel->priority, sizeof(pCurChannel->priority)) != sizeof(pCurChannel->priority) )
                 {
-                    static_assert(sizeof(pCurChannel->priority) == 4, "sizeof(pCurChannel->handle) == 4");
+                    J3D_ASSERT_SIZE32(sizeof(pCurChannel->priority) == 4, "sizeof(pCurChannel->handle) == 4");
 
                     return 0;
                 }
 
                 if ( Sound_pHS->pFileWrite(fh, &pCurChannel->thingId, sizeof(pCurChannel->thingId)) != sizeof(pCurChannel->thingId) )
                 {
-                    static_assert(sizeof(pCurChannel->thingId) == 4, "sizeof(pCurChannel->thingId) == 4");
+                    J3D_ASSERT_SIZE32(sizeof(pCurChannel->thingId) == 4, "sizeof(pCurChannel->thingId) == 4");
                     return 0;
                 }
 
                 if ( Sound_pHS->pFileWrite(fh, &pCurChannel->playPos.x, sizeof(pCurChannel->playPos.x)) != sizeof(pCurChannel->playPos.x) )
                 {
-                    static_assert(sizeof(pCurChannel->playPos.x) == 4, "sizeof(pCurChannel->playPos.x) == 4");
+                    J3D_ASSERT_SIZE32(sizeof(pCurChannel->playPos.x) == 4, "sizeof(pCurChannel->playPos.x) == 4");
                     return 0;
                 }
 
                 if ( Sound_pHS->pFileWrite(fh, &pCurChannel->playPos.y, sizeof(pCurChannel->playPos.y)) != sizeof(pCurChannel->playPos.y) )
                 {
-                    static_assert(sizeof(pCurChannel->playPos.y) == 4, "sizeof(pCurChannel->playPos.y) == 4");
+                    J3D_ASSERT_SIZE32(sizeof(pCurChannel->playPos.y) == 4, "sizeof(pCurChannel->playPos.y) == 4");
                     return 0;
                 }
 
                 if ( Sound_pHS->pFileWrite(fh, &pCurChannel->playPos.z, sizeof(pCurChannel->playPos.z)) != sizeof(pCurChannel->playPos.z) )
                 {
-                    static_assert(sizeof(pCurChannel->playPos.z) == 4, "sizeof(pCurChannel->playPos.z) == 4");
+                    J3D_ASSERT_SIZE32(sizeof(pCurChannel->playPos.z) == 4, "sizeof(pCurChannel->playPos.z) == 4");
                     return 0;
                 }
 
                 if ( Sound_pHS->pFileWrite(fh, &pCurChannel->volume, sizeof(pCurChannel->volume)) != sizeof(pCurChannel->volume) )
                 {
-                    static_assert(sizeof(pCurChannel->volume) == 4, "sizeof(pCurChannel->volume) == 4");
+                    J3D_ASSERT_SIZE32(sizeof(pCurChannel->volume) == 4, "sizeof(pCurChannel->volume) == 4");
                     return 0;
                 }
 
                 if ( Sound_pHS->pFileWrite(fh, &pCurChannel->pitch, sizeof(pCurChannel->pitch)) != sizeof(pCurChannel->pitch) )
                 {
-                    static_assert(sizeof(pCurChannel->pitch) == 4, "sizeof(pCurChannel->pitch) == 4");
+                    J3D_ASSERT_SIZE32(sizeof(pCurChannel->pitch) == 4, "sizeof(pCurChannel->pitch) == 4");
                     return 0;
                 }
 
                 if ( Sound_pHS->pFileWrite(fh, &pCurChannel->sampleRate, sizeof(pCurChannel->sampleRate)) != sizeof(pCurChannel->sampleRate) )
                 {
-                    static_assert(sizeof(pCurChannel->sampleRate) == 4, "sizeof(pCurChannel->sampleRate) == 4");
+                    J3D_ASSERT_SIZE32(sizeof(pCurChannel->sampleRate) == 4, "sizeof(pCurChannel->sampleRate) == 4");
                     return 0;
                 }
 
                 if ( Sound_pHS->pFileWrite(fh, &pCurChannel->flags, sizeof(pCurChannel->flags)) != sizeof(pCurChannel->flags) )
                 {
-                    static_assert(sizeof(pCurChannel->flags) == 4, "sizeof(pCurChannel->flags) == 4");
+                    J3D_ASSERT_SIZE32(sizeof(pCurChannel->flags) == 4, "sizeof(pCurChannel->flags) == 4");
                     return 0;
                 }
 
                 if ( Sound_pHS->pFileWrite(fh, &pCurChannel->guid, sizeof(pCurChannel->guid)) != sizeof(pCurChannel->guid) )
                 {
-                    static_assert(sizeof(pCurChannel->guid) == 4, "sizeof(pCurChannel->guid) == 4");
+                    J3D_ASSERT_SIZE32(sizeof(pCurChannel->guid) == 4, "sizeof(pCurChannel->guid) == 4");
                     return 0;
                 }
 
                 if ( Sound_pHS->pFileWrite(fh, &pCurChannel->minRadius, sizeof(pCurChannel->minRadius)) != sizeof(pCurChannel->minRadius) )
                 {
-                    static_assert(sizeof(pCurChannel->minRadius) == 4, "sizeof(pCurChannel->minRadius) == 4");
+                    J3D_ASSERT_SIZE32(sizeof(pCurChannel->minRadius) == 4, "sizeof(pCurChannel->minRadius) == 4");
                     return 0;
                 }
 
                 if ( Sound_pHS->pFileWrite(fh, &pCurChannel->maxRadius, sizeof(pCurChannel->maxRadius)) != sizeof(pCurChannel->maxRadius) )
                 {
-                    static_assert(sizeof(pCurChannel->maxRadius) == 4, "sizeof(pCurChannel->maxRadius) == 4");
+                    J3D_ASSERT_SIZE32(sizeof(pCurChannel->maxRadius) == 4, "sizeof(pCurChannel->maxRadius) == 4");
                     return 0;
                 }
 
                 if ( Sound_pHS->pFileWrite(fh, &pCurChannel->envflags, sizeof(pCurChannel->envflags)) != sizeof(pCurChannel->envflags) )
                 {
-                    static_assert(sizeof(pCurChannel->envflags) == 4, "sizeof(pCurChannel->envflags) == 4");
+                    J3D_ASSERT_SIZE32(sizeof(pCurChannel->envflags) == 4, "sizeof(pCurChannel->envflags) == 4");
                     return 0;
                 }
             }
@@ -678,11 +678,11 @@ int J3DAPI Sound_Save(tFileHandle fh)
     // Marks end of list
     if ( Sound_pHS->pFileWrite(fh, &Sound_serSoundListEnd, sizeof(Sound_serSoundListEnd)) != sizeof(Sound_serSoundListEnd) )
     {
-        static_assert(sizeof(Sound_serSoundListEnd) == 4, "sizeof(Sound_serSoundListEnd) == 4");
+        J3D_ASSERT_SIZE32(sizeof(Sound_serSoundListEnd) == 4, "sizeof(Sound_serSoundListEnd) == 4");
         return 0;
     }
 
-    static_assert(sizeof(Sound_aFades) == 1152, "sizeof(Sound_aFades) == 1152");
+    J3D_ASSERT_SIZE32(sizeof(Sound_aFades) == 1152, "sizeof(Sound_aFades) == 1152");
     return Sound_pHS->pFileWrite(fh, &Sound_handleEntropy, sizeof(uint32_t)) == sizeof(uint32_t)
         && Sound_pHS->pFileWrite(fh, Sound_aFades, sizeof(Sound_aFades)) == sizeof(Sound_aFades);
 }

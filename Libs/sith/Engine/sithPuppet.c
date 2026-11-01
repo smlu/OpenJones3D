@@ -51,7 +51,7 @@ typedef struct sCndKeyframeMarker
     float frame;
     rdKeyMarkerType type;
 } CndKeyframeMarker;
-static_assert(sizeof(CndKeyframeMarker) == 8, "sizeof(CndKeyframeMarker) == 8");
+J3D_ASSERT_SIZE32(sizeof(CndKeyframeMarker) == 8, "sizeof(CndKeyframeMarker) == 8");
 
 typedef struct sCndKeyframeInfo
 {
@@ -64,7 +64,7 @@ typedef struct sCndKeyframeInfo
     uint32_t numJoints;
     uint32_t numNodes;
 } CndKeyframeInfo;
-static_assert(sizeof(CndKeyframeInfo) == 92, "sizeof(CndKeyframeInfo) == 92");
+J3D_ASSERT_SIZE32(sizeof(CndKeyframeInfo) == 92, "sizeof(CndKeyframeInfo) == 92");
 
 typedef struct sCndKeyframeNode
 {
@@ -72,7 +72,7 @@ typedef struct sCndKeyframeNode
     uint32_t nodeNum;
     uint32_t numEntries;
 } CndKeyframeNode;
-static_assert(sizeof(CndKeyframeNode) == 72, "sizeof(CndKeyframeNode) == 72");
+J3D_ASSERT_SIZE32(sizeof(CndKeyframeNode) == 72, "sizeof(CndKeyframeNode) == 72");
 
 static tHashTable* sithPuppet_pHashtblSubmodes;
 static tHashTable* sithPuppet_pClassHashtable;
@@ -3098,7 +3098,7 @@ int J3DAPI sithPuppet_ReadStaticKeyframesListBinary(tFileHandle fh, SithWorld* p
             STD_ZEROMEM(aInfos, sizeInfos);
 
             uint32_t aSizes[3]; // Note must be 32 bit int
-            static_assert(sizeof(aSizes) == 12, "sizeof(aSizes) == 12");
+            J3D_ASSERT_SIZE32(sizeof(aSizes) == 12, "sizeof(aSizes) == 12");
             if ( sith_g_pHS->pFileRead(fh, aSizes, sizeof(aSizes)) == sizeof(aSizes) )
             {
                 size_t sizeMarkers = sizeof(CndKeyframeMarker) * aSizes[0];

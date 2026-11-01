@@ -84,7 +84,7 @@ typedef struct sSoundInterface
     int  (*Query)(int a1, int tag, int* pA, int* pB);
     int  (*Control)(int a1, int tag, int a3, int a4);
 } SoundInterface;
-static_assert(sizeof(SoundInterface) == 0x40, "sizeof(SoundInterface) == 0x40");
+J3D_ASSERT_SIZE32(sizeof(SoundInterface) == 0x40, "sizeof(SoundInterface) == 0x40");
 
 /* A track: the ring buffer a chunk is copied into and its playback state. The timer thread writes `state`. */
 typedef struct sSoundTrack
@@ -106,7 +106,7 @@ typedef struct sSoundTrack
     int position;                   /* 0x2C */
     int total;                      /* 0x30 */
 } SoundTrack;
-static_assert(sizeof(SoundTrack) == 0x34, "sizeof(SoundTrack) == 0x34");
+J3D_ASSERT_SIZE32(sizeof(SoundTrack) == 0x34, "sizeof(SoundTrack) == 0x34");
 
 /* The callback's per-track playback cursor (local to sound_Callback; packed, unaligned fields). */
 #pragma pack(push, 1)
@@ -129,7 +129,7 @@ typedef struct sSndChannel
     int loopLeft;                   /* 0x32 */
 } SndChannel;
 #pragma pack(pop)
-static_assert(sizeof(SndChannel) == 0x36, "sizeof(SndChannel) == 0x36");
+J3D_ASSERT_SIZE32(sizeof(SndChannel) == 0x36, "sizeof(SndChannel) == 0x36");
 
 int J3DAPI sound_Register(LecShare* pShare, void* pParam);
 void sound_Unregister(void);

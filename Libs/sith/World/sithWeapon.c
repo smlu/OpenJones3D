@@ -2253,16 +2253,16 @@ int sithWeapon_IsLocalPlayerUnableToUseWeapon(void)
 
 int J3DAPI sithWeapon_Save(tFileHandle fh)
 {
-    static_assert(sizeof(sithWeapon_bPlayerWeaponActivated) == 4, "sizeof(sithWeapon_bPlayerWeaponActivated) == 4");
-    static_assert(sizeof(sithWeapon_bLocalPlayerAiming) == 4, "sizeof(sithWeapon_bLocalPlayerAiming) == 4");
-    static_assert(sizeof(sithWeapon_lastPlayerWeaponID) == 4, "sizeof(sithWeapon_lastPlayerWeaponID) == 4");
-    static_assert(sizeof(sithWeapon_bufferedWaponKeyId) == 4, "sizeof(sithWeapon_bufferedWaponKeyId) == 4");
-    static_assert(sizeof(sithWeapon_deactivatedPlayerWeaponID) == 4, "sizeof(sithWeapon_deactivatedPlayerWeaponID) == 4");
-    static_assert(sizeof(sithWeapon_playerWhipHolsterSwapRefNum) == 4, "sizeof(sithWeapon_playerWhipHolsterSwapRefNum) == 4");
-    static_assert(sizeof(sithWeapon_playerPistolHolsterSwapRefNum) == 4, "sizeof(sithWeapon_playerPistolHolsterSwapRefNum) == 4");
-    static_assert(sizeof(sithWeapon_playerBackHolsterSwapRefNum) == 4, "sizeof(sithWeapon_playerBackHolsterSwapRefNum) == 4");
-    static_assert(sizeof(sithWeapon_secMountWait) == 4, "sizeof(sithWeapon_secMountWait) == 4");
-    static_assert(sizeof(sithWeapon_secPlayerWeaponDeactivationTime) == 4, "sizeof(sithWeapon_secPlayerWeaponDeactivationTime) == 4");
+    J3D_ASSERT_SIZE32(sizeof(sithWeapon_bPlayerWeaponActivated) == 4, "sizeof(sithWeapon_bPlayerWeaponActivated) == 4");
+    J3D_ASSERT_SIZE32(sizeof(sithWeapon_bLocalPlayerAiming) == 4, "sizeof(sithWeapon_bLocalPlayerAiming) == 4");
+    J3D_ASSERT_SIZE32(sizeof(sithWeapon_lastPlayerWeaponID) == 4, "sizeof(sithWeapon_lastPlayerWeaponID) == 4");
+    J3D_ASSERT_SIZE32(sizeof(sithWeapon_bufferedWaponKeyId) == 4, "sizeof(sithWeapon_bufferedWaponKeyId) == 4");
+    J3D_ASSERT_SIZE32(sizeof(sithWeapon_deactivatedPlayerWeaponID) == 4, "sizeof(sithWeapon_deactivatedPlayerWeaponID) == 4");
+    J3D_ASSERT_SIZE32(sizeof(sithWeapon_playerWhipHolsterSwapRefNum) == 4, "sizeof(sithWeapon_playerWhipHolsterSwapRefNum) == 4");
+    J3D_ASSERT_SIZE32(sizeof(sithWeapon_playerPistolHolsterSwapRefNum) == 4, "sizeof(sithWeapon_playerPistolHolsterSwapRefNum) == 4");
+    J3D_ASSERT_SIZE32(sizeof(sithWeapon_playerBackHolsterSwapRefNum) == 4, "sizeof(sithWeapon_playerBackHolsterSwapRefNum) == 4");
+    J3D_ASSERT_SIZE32(sizeof(sithWeapon_secMountWait) == 4, "sizeof(sithWeapon_secMountWait) == 4");
+    J3D_ASSERT_SIZE32(sizeof(sithWeapon_secPlayerWeaponDeactivationTime) == 4, "sizeof(sithWeapon_secPlayerWeaponDeactivationTime) == 4");
 
     return sith_g_pHS->pFileWrite(fh, &sithWeapon_bPlayerWeaponActivated, sizeof(sithWeapon_bPlayerWeaponActivated)) != sizeof(sithWeapon_bPlayerWeaponActivated)
         || sith_g_pHS->pFileWrite(fh, &sithWeapon_bLocalPlayerAiming, sizeof(sithWeapon_bLocalPlayerAiming)) != sizeof(sithWeapon_bLocalPlayerAiming)

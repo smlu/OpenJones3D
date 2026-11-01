@@ -491,8 +491,8 @@ void sithMessage_InitMessageHandlers(void)
 
 int J3DAPI sithMessage_FileWrite(const SithMessage* pMessage)
 {
-    static_assert(sizeof(pMessage->type) == 2, "sizeof(pMessage->type) == 2");
-    static_assert(sizeof(pMessage->length) == 4, "sizeof(pMessage->length) == 4");
+    J3D_ASSERT_SIZE32(sizeof(pMessage->type) == 2, "sizeof(pMessage->type) == 2");
+    J3D_ASSERT_SIZE32(sizeof(pMessage->length) == 4, "sizeof(pMessage->length) == 4");
 
     if ( stdConffile_Write(&pMessage->type, sizeof(pMessage->type)) )
     {

@@ -70,7 +70,7 @@ typedef struct sAnimPlay
     int state;              /* 0x68 */
     int playing;            /* 0x6C */
 } AnimPlay;
-static_assert(sizeof(AnimPlay) == 0x70, "sizeof(AnimPlay) == 0x70");
+J3D_ASSERT_SIZE32(sizeof(AnimPlay) == 0x70, "sizeof(AnimPlay) == 0x70");
 
 /* The `ANIMPLAY=insane` table Pcplay.c publishes (`animplay_interface`); SmushPlay subscribes to it as `ANIMPLAY.app`. */
 typedef struct sAnimPlayTable
@@ -86,7 +86,7 @@ typedef struct sAnimPlayTable
     int  (*Open)(AnimPlay* pPlay, const char* pName, int flags, int seekLen, int seekTo, int hold);
     int  (*Mode)(AnimPlay* pPlay, int op);
 } AnimPlayTable;
-static_assert(sizeof(AnimPlayTable) == 0x28, "sizeof(AnimPlayTable) == 0x28");
+J3D_ASSERT_SIZE32(sizeof(AnimPlayTable) == 0x28, "sizeof(AnimPlayTable) == 0x28");
 
 /* The callbacks the frame stream (Framestream.c) makes back into the player (`animplay_ops`, original .data 0x0054C200). */
 typedef struct sAnimPlayOps
@@ -96,7 +96,7 @@ typedef struct sAnimPlayOps
     int  (*IsDone)(AnimPlay* pPlay);
     void* pfn0C;
 } AnimPlayOps;
-static_assert(sizeof(AnimPlayOps) == 0x10, "sizeof(AnimPlayOps) == 0x10");
+J3D_ASSERT_SIZE32(sizeof(AnimPlayOps) == 0x10, "sizeof(AnimPlayOps) == 0x10");
 
 J3D_EXTERN_C_END
 

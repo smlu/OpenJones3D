@@ -62,7 +62,7 @@
         STDMEMORYBLOCK_ZONE_GETPREVOFFSET((hdr)->size)))
 
 // Memory block related constants
-static_assert(sizeof(void*) == 4, "stdMemory: Only 32-bit system supported");
+J3D_ASSERT_SIZE32(sizeof(void*) == 4, "stdMemory: Only 32-bit system supported");
 
 #define STDMEMORYBLOCK_MAXBLOCKS        8456      // Number could represent targeted 256 MB memory pool. As 8456 * 31744 = 268435456 bytes (~256 MiB)
 #define STDMEMORYBLOCK_ALLOC_THRESHOLD  4096     // Maximum allocation size to go into zone blocks (maybe to fit system page size?)

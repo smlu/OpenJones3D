@@ -1553,14 +1553,14 @@ typedef union sSithCogValue
     char* pString;
     rdVector3 vecValue;
 } SithCogValue;
-static_assert(sizeof(SithCogValue) == 12, "sizeof(SithCogValue) == 12");
+J3D_ASSERT_SIZE32(sizeof(SithCogValue) == 12, "sizeof(SithCogValue) == 12");
 
 typedef struct sSithCogSymbolValue
 {
     SithCogValueType type;
     SithCogValue val;
 } SithCogSymbolValue;
-static_assert(sizeof(SithCogSymbolValue) == 16, "sizeof(SithCogSymbolValue) == 16");
+J3D_ASSERT_SIZE32(sizeof(SithCogSymbolValue) == 16, "sizeof(SithCogSymbolValue) == 16");
 
 typedef struct sSithCogSymbol
 {
@@ -1569,7 +1569,7 @@ typedef struct sSithCogSymbol
     uint32_t label;
     char* pName;
 } SithCogSymbol;
-static_assert(sizeof(SithCogSymbol) == 28, "sizeof(SithCogSymbol) == 28");
+J3D_ASSERT_SIZE32(sizeof(SithCogSymbol) == 28, "sizeof(SithCogSymbol) == 28");
 
 typedef struct sSithCogSymbolTable
 {
@@ -1580,7 +1580,7 @@ typedef struct sSithCogSymbolTable
     size_t firstId;
     int bIsCopy;
 } SithCogSymbolTable;
-static_assert(sizeof(SithCogSymbolTable) == 24, "sizeof(SithCogSymbolTable) == 24");
+J3D_ASSERT_SIZE32(sizeof(SithCogSymbolTable) == 24, "sizeof(SithCogSymbolTable) == 24");
 
 typedef struct sSithEventTask
 {
@@ -1590,7 +1590,7 @@ typedef struct sSithEventTask
     uint32_t msecLastIntervalTime;
     int unknown10;
 } SithEventTask;
-static_assert(sizeof(SithEventTask) == 20, "sizeof(SithEventTask) == 20");
+J3D_ASSERT_SIZE32(sizeof(SithEventTask) == 20, "sizeof(SithEventTask) == 20");
 
 struct sSithEventParams
 {
@@ -1599,7 +1599,7 @@ struct sSithEventParams
     int param2;
     int param3;
 };
-static_assert(sizeof(SithEventParams) == 16, "sizeof(SithEventParams) == 16");
+J3D_ASSERT_SIZE32(sizeof(SithEventParams) == 16, "sizeof(SithEventParams) == 16");
 
 typedef struct sSithAIRegisteredInstinct
 {
@@ -1810,7 +1810,7 @@ typedef struct sSithVehicleExhaustInfo
     // Smoke template name
     char aTemplate[64];
 } SithVehicleExhaustInfo;
-static_assert(sizeof(SithVehicleExhaustInfo) == 136, "sizeof(SithVehicleExhaustInfo) == 136");
+J3D_ASSERT_SIZE32(sizeof(SithVehicleExhaustInfo) == 136, "sizeof(SithVehicleExhaustInfo) == 136");
 
 typedef struct sSithVehicleChassisInfo
 {
@@ -1819,7 +1819,7 @@ typedef struct sSithVehicleChassisInfo
     int aWheelNodeNums[4];
     float wheelRadius;
 } SithVehicleChassisInfo;
-static_assert(sizeof(SithVehicleChassisInfo) == 280, "sizeof(SithVehicleChassisInfo) == 280");
+J3D_ASSERT_SIZE32(sizeof(SithVehicleChassisInfo) == 280, "sizeof(SithVehicleChassisInfo) == 280");
 
 // Light position and state for individual lights
 // Note, new struct
@@ -1877,7 +1877,7 @@ typedef struct sSithJeepUserBlock
     SithVehicleEngineFxState fxstate;
 } SithJeepUserBlock;
 
-static_assert(sizeof(SithJeepUserBlock) == 716, "sizeof(SithJeepUserBlock) == 280");
+J3D_ASSERT_SIZE32(sizeof(SithJeepUserBlock) == 716, "sizeof(SithJeepUserBlock) == 280");
 
 struct sSithSurfaceAdjoin
 {
@@ -1900,7 +1900,7 @@ struct sSithSurface
     rdVector4* aIntensities;
     uint32_t msecLastTouched;
 };
-static_assert(sizeof(SithSurface) == 96, "sizeof(SithSurface) == 96");
+J3D_ASSERT_SIZE32(sizeof(SithSurface) == 96, "sizeof(SithSurface) == 96");
 
 typedef struct sSithSectorLight
 {
@@ -1909,7 +1909,7 @@ typedef struct sSithSectorLight
     float minRadius;
     float maxRadius;
 } SithSectorLight;
-static_assert(sizeof(SithSectorLight) == 36, "sizeof(SithSectorLight) == 36");
+J3D_ASSERT_SIZE32(sizeof(SithSectorLight) == 36, "sizeof(SithSectorLight) == 36");
 
 struct sSithSector
 {
@@ -1936,7 +1936,7 @@ struct sSithSector
     int pvsIdx;
     SithSectorLight light;
 };
-static_assert(sizeof(SithSector) == 208, "sizeof(SithSector) == 208");
+J3D_ASSERT_SIZE32(sizeof(SithSector) == 208, "sizeof(SithSector) == 208");
 
 typedef struct sSithAnimationSlot
 {
@@ -1966,7 +1966,7 @@ typedef struct sSithAnimationSlot
     rdVector4 deltaVector;
     int unknown41;
 } SithAnimationSlot;
-static_assert(sizeof(SithAnimationSlot) == 168, "sizeof(SithAnimationSlot) == 168");
+J3D_ASSERT_SIZE32(sizeof(SithAnimationSlot) == 168, "sizeof(SithAnimationSlot) == 168");
 
 typedef struct sSithMineCarState
 {
@@ -1987,7 +1987,7 @@ typedef struct sSithMineCarState
     bool bEngineRunning;
     SithVehicleLights lights;
 } SithMineCarState;
-static_assert(sizeof(SithMineCarState) == 156, "sizeof(SithMineCarState) == 156");
+J3D_ASSERT_SIZE32(sizeof(SithMineCarState) == 156, "sizeof(SithMineCarState) == 156");
 
 typedef struct sSithMineCarFxState
 {
@@ -2011,7 +2011,7 @@ typedef struct sSithFairyDustUserBlock
     SithThing* aDusts[4];
     int bCreateNormalFairyDust;
 } SithFairyDustUserBlock;
-static_assert(sizeof(SithFairyDustUserBlock) == 24, "sizeof(SithFairyDustUserBlock) == 24");
+J3D_ASSERT_SIZE32(sizeof(SithFairyDustUserBlock) == 24, "sizeof(SithFairyDustUserBlock) == 24");
 
 typedef union sSithUserBlockUnion
 {
@@ -2064,7 +2064,7 @@ typedef struct sSithWeaponInfo
     float unknown7;
     float unknown8;
 } SithWeaponInfo;
-static_assert(sizeof(SithWeaponInfo) == 48, "sizeof(SithWeaponInfo) == 48");
+J3D_ASSERT_SIZE32(sizeof(SithWeaponInfo) == 48, "sizeof(SithWeaponInfo) == 48");
 
 typedef struct sSithParticleInfo
 {
@@ -2081,7 +2081,7 @@ typedef struct sSithParticleInfo
     float curGrowthSize;
     float secElapsed;
 } SithParticleInfo;
-static_assert(sizeof(SithParticleInfo) == 48, "sizeof(SithParticleInfo) == 48");
+J3D_ASSERT_SIZE32(sizeof(SithParticleInfo) == 48, "sizeof(SithParticleInfo) == 48");
 
 typedef union sSithActorEndurance
 {
@@ -2089,7 +2089,7 @@ typedef union sSithActorEndurance
     tStdTime msecUnderwater;
     unsigned int raftLeakDamage;
 } SithActorEndurance;
-static_assert(sizeof(SithActorEndurance) == 4, "sizeof(SithActorEndurance) == 4");
+J3D_ASSERT_SIZE32(sizeof(SithActorEndurance) == 4, "sizeof(SithActorEndurance) == 4");
 
 typedef struct sVGradiantColor
 {
@@ -2136,7 +2136,7 @@ typedef struct sSithPlayer
     int respawnMask;
     unsigned int msecLastCommTime;
 } SithPlayer;
-static_assert(sizeof(SithPlayer) == 1820, "sizeof(SithPlayer) == 1820");
+J3D_ASSERT_SIZE32(sizeof(SithPlayer) == 1820, "sizeof(SithPlayer) == 1820");
 
 //
 // Actor info structs
@@ -2151,7 +2151,7 @@ typedef struct sSithActorStateChange
         SithActorSpecialMoveFlags moveFlags;  // When type == ANIMMOVE: SithActorSpecialMoveFlags combination
     } params;
 } SithActorStateChange;
-static_assert(sizeof(SithActorStateChange) == 8, "sizeof(SithActorStateChange) == 8");
+J3D_ASSERT_SIZE32(sizeof(SithActorStateChange) == 8, "sizeof(SithActorStateChange) == 8");
 
 typedef struct sSithActorWeaponInfo
 {
@@ -2167,7 +2167,7 @@ typedef struct sSithActorWeaponInfo
     int swapRefNum;
     rdVector3 vecUnknown0;
 } SithActorWeaponInfo;
-static_assert(sizeof(SithActorWeaponInfo) == 52, "sizeof(SithActorWeaponInfo) == 52");
+J3D_ASSERT_SIZE32(sizeof(SithActorWeaponInfo) == 52, "sizeof(SithActorWeaponInfo) == 52");
 
 typedef struct sSithActorInfo
 {
@@ -2201,7 +2201,7 @@ typedef struct sSithActorInfo
     SithActorVoiceInfo voiceInfo;
     SithActorStateChange stateChange;
 } SithActorInfo;
-static_assert(sizeof(SithActorInfo) == 300, "sizeof(SithActorInfo) == 292");
+J3D_ASSERT_SIZE32(sizeof(SithActorInfo) == 300, "sizeof(SithActorInfo) == 292");
 
 typedef struct sSithSpriteInfo
 {
@@ -2275,7 +2275,7 @@ typedef struct sSithItemInfo
     size_t numItems; // Note, DSS serializes only 16 bits of the value
     SithBackpackItem aBackpackItems[32];
 } SithItemInfo;
-static_assert(sizeof(SithItemInfo) == 288, "sizeof(SithItemInfo) == 288");
+J3D_ASSERT_SIZE32(sizeof(SithItemInfo) == 288, "sizeof(SithItemInfo) == 288");
 
 typedef union sSithThingInfo
 {
@@ -2312,7 +2312,7 @@ typedef struct sSithCogSymbolRef
     char* pDescription;
     char aValue[64];
 } SithCogSymbolRef;
-static_assert(sizeof(SithCogSymbolRef) == 88, "sizeof(SithCogSymbolRef) == 88");
+J3D_ASSERT_SIZE32(sizeof(SithCogSymbolRef) == 88, "sizeof(SithCogSymbolRef) == 88");
 
 typedef struct sSithCogScript
 {
@@ -2326,7 +2326,7 @@ typedef struct sSithCogScript
     SithCogSymbolRef aSymRefs[SITHCOGSCRIPT_MAXSYMREFS];
     size_t numSymbolRefs;
 } SithCogScript;
-static_assert(sizeof(SithCogScript) == 23000, "sizeof(SithCogScript) == 23000");
+J3D_ASSERT_SIZE32(sizeof(SithCogScript) == 23000, "sizeof(SithCogScript) == 23000");
 
 struct sSithCog
 {
@@ -2357,7 +2357,7 @@ struct sSithCog
     SithCogSymbolValue* aHeap;
     size_t heapSize;
 };
-static_assert(sizeof(SithCog) == 20712, "sizeof(SithCog) == 20712");
+J3D_ASSERT_SIZE32(sizeof(SithCog) == 20712, "sizeof(SithCog) == 20712");
 
 typedef union sSithAttachStructure
 {
@@ -2374,14 +2374,14 @@ typedef struct sSithAttach
     rdVector3 posOffset;   // attach position offset
     SithAttachStructure attachedToStructure;
 } SithAttach;
-static_assert(sizeof(SithAttach) == 40, "sizeof(SithAttach) == 40");
+J3D_ASSERT_SIZE32(sizeof(SithAttach) == 40, "sizeof(SithAttach) == 40");
 
 typedef struct sSithAIControlInfo
 {
     SithAIClass* pClass;
     SithAIControlBlock* pLocal;
 } SithAIControlInfo;
-static_assert(sizeof(SithAIControlInfo) == 8, "sizeof(SithAIControlInfo) == 8");
+J3D_ASSERT_SIZE32(sizeof(SithAIControlInfo) == 8, "sizeof(SithAIControlInfo) == 8");
 
 typedef union sSithControlInfo
 {
@@ -2398,14 +2398,14 @@ struct sSithSoundClassEntry
     size_t numEntries;
     SithSoundClassEntry* pNextMode;
 };
-static_assert(sizeof(SithSoundClassEntry) == 28, "sizeof(SithSoundClassEntry) == 28");
+J3D_ASSERT_SIZE32(sizeof(SithSoundClassEntry) == 28, "sizeof(SithSoundClassEntry) == 28");
 
 typedef struct sSithSoundClass
 {
     char aName[64];
     SithSoundClassEntry* aEntries[SITHSOUNDCLASS_MAXMODES];
 } SithSoundClass;
-static_assert(sizeof(SithSoundClass) == 628, "sizeof(SithSoundClass) == 628");
+J3D_ASSERT_SIZE32(sizeof(SithSoundClass) == 628, "sizeof(SithSoundClass) == 628");
 
 typedef struct sSithPuppetClassSubmode
 {
@@ -2421,7 +2421,7 @@ typedef struct sSithPuppetClass
     SithPuppetClassSubmode aModes[SITH_PUPPET_MAXMODES][SITH_PUPPET_NUMSUBMODES];
     int aJoints[10];
 } SithPuppetClass;
-static_assert(sizeof(SithPuppetClass) == 32360, "sizeof(SithPuppetClass) == 32360");
+J3D_ASSERT_SIZE32(sizeof(SithPuppetClass) == 32360, "sizeof(SithPuppetClass) == 32360");
 
 typedef struct sSithPathFrame
 {
@@ -2449,7 +2449,7 @@ typedef struct sSithPathMoveInfo
     size_t nextFrame; // serialized as uint16_t
     size_t goalFrame; // serialized as uint16_t
 } SithPathMoveInfo;
-static_assert(sizeof(SithPathMoveInfo) == 144, "sizeof(SithPathMoveInfo) == 144");
+J3D_ASSERT_SIZE32(sizeof(SithPathMoveInfo) == 144, "sizeof(SithPathMoveInfo) == 144");
 
 typedef struct sSithPhysicsInfo
 {
@@ -2471,7 +2471,7 @@ typedef struct sSithPhysicsInfo
     rdVector3 deltaVelocity;
     float physicsRolloverFrames;
 } SithPhysicsInfo;
-static_assert(sizeof(SithPhysicsInfo) == 116, "sizeof(SithPhysicsInfo) == 116");
+J3D_ASSERT_SIZE32(sizeof(SithPhysicsInfo) == 116, "sizeof(SithPhysicsInfo) == 116");
 
 typedef union sSithMoveInfo
 {
@@ -2486,7 +2486,7 @@ typedef struct sSithThingLight
     float minRadius;
     float maxRadius;
 } SithThingLight;
-static_assert(sizeof(SithThingLight) == 40, "sizeof(SithThingLight) == 40");
+J3D_ASSERT_SIZE32(sizeof(SithThingLight) == 40, "sizeof(SithThingLight) == 40");
 
 struct sSithPuppetTrack
 {
@@ -2495,7 +2495,7 @@ struct sSithPuppetTrack
     SithPuppetSubMode submode;
     SithPuppetTrack* pNextTrack;
 };
-static_assert(sizeof(SithPuppetTrack) == 16, "sizeof(SithPuppetTrack) == 16");
+J3D_ASSERT_SIZE32(sizeof(SithPuppetTrack) == 16, "sizeof(SithPuppetTrack) == 16");
 
 typedef struct sSithPuppetState
 {
@@ -2562,7 +2562,7 @@ struct sSithThing
     int perfLevel;
     SithUserBlockUnion userblock;
 };
-static_assert(sizeof(SithThing) == 928, "sizeof(SithThing) == 928");
+J3D_ASSERT_SIZE32(sizeof(SithThing) == 928, "sizeof(SithThing) == 928");
 
 struct sSithAIControlBlock
 {
@@ -2624,7 +2624,7 @@ struct sSithAIControlBlock
     rdVector3 moveStartPos;
     float maxHomeDist;
 };
-static_assert(sizeof(SithAIControlBlock) == 728, "sizeof(SithAIControlBlock) == 728");
+J3D_ASSERT_SIZE32(sizeof(SithAIControlBlock) == 728, "sizeof(SithAIControlBlock) == 728");
 
 struct sSithMessage
 {
@@ -2633,7 +2633,7 @@ struct sSithMessage
     uint16_t type;
     uint8_t data[3072];
 };
-static_assert(sizeof(SithMessage) == 3084, "sizeof(SithMessage) == 3084");
+J3D_ASSERT_SIZE32(sizeof(SithMessage) == 3084, "sizeof(SithMessage) == 3084");
 
 typedef struct sSithWorldFog
 {
@@ -2642,7 +2642,7 @@ typedef struct sSithWorldFog
     float startDepth;
     float endDepth;
 } SithWorldFog;
-static_assert(sizeof(SithWorldFog) == 28, "sizeof(SithWorldFog) == 28");
+J3D_ASSERT_SIZE32(sizeof(SithWorldFog) == 28, "sizeof(SithWorldFog) == 28");
 
 struct sSithWorld
 {
@@ -2715,7 +2715,7 @@ struct sSithWorld
     SithThing* pLocalPlayer;
     int unknown;
 };
-static_assert(sizeof(SithWorld) == 1588, "sizeof(SithWorld) == 1588");
+J3D_ASSERT_SIZE32(sizeof(SithWorld) == 1588, "sizeof(SithWorld) == 1588");
 
 typedef struct sCndMaterialInfo
 {
@@ -2726,7 +2726,7 @@ typedef struct sCndMaterialInfo
     uint32_t numMipLevels;
     ColorInfo colorInfo;
 } CndMaterialInfo;
-static_assert(sizeof(CndMaterialInfo) == 136, "sizeof(CndMaterialInfo) == 136");
+J3D_ASSERT_SIZE32(sizeof(CndMaterialInfo) == 136, "sizeof(CndMaterialInfo) == 136");
 
 typedef struct sCndAdjoin
 {
@@ -2734,7 +2734,7 @@ typedef struct sCndAdjoin
     int mirror;
     float distance;
 } CndAdjoin;
-static_assert(sizeof(CndAdjoin) == 12, "sizeof(CndAdjoin) == 12");
+J3D_ASSERT_SIZE32(sizeof(CndAdjoin) == 12, "sizeof(CndAdjoin) == 12");
 
 typedef struct sCndSurfaceInfo
 {
@@ -2748,7 +2748,7 @@ typedef struct sCndSurfaceInfo
     rdVector3 normal;
     uint32_t numVerts;
 } CndSurfaceInfo;
-static_assert(sizeof(CndSurfaceInfo) == 56, "sizeof(CndSurfaceInfo) == 56");
+J3D_ASSERT_SIZE32(sizeof(CndSurfaceInfo) == 56, "sizeof(CndSurfaceInfo) == 56");
 
 struct sSithCogSyntaxNode
 {
@@ -2760,7 +2760,7 @@ struct sSithCogSyntaxNode
     int value;
     rdVector3 vecValue;
 };
-static_assert(sizeof(SithCogSyntaxNode) == 36, "sizeof(SithCogSyntaxNode) == 36");
+J3D_ASSERT_SIZE32(sizeof(SithCogSyntaxNode) == 36, "sizeof(SithCogSyntaxNode) == 36");
 
 typedef struct sSithCogThingLink
 {
@@ -2770,7 +2770,7 @@ typedef struct sSithCogThingLink
     int linkId;
     int mask;
 } SithCogThingLink;
-static_assert(sizeof(SithCogThingLink) == 20, "sizeof(SithCogThingLink) == 20");
+J3D_ASSERT_SIZE32(sizeof(SithCogThingLink) == 20, "sizeof(SithCogThingLink) == 20");
 
 typedef struct sSithCogSectorLink
 {
@@ -2858,7 +2858,7 @@ typedef struct sSithCamera
     int bLookInterp;
     float interpSpeed;
 } SithCamera;
-static_assert(sizeof(SithCamera) == 2364, "sizeof(SithCamera) == 2364");
+J3D_ASSERT_SIZE32(sizeof(SithCamera) == 2364, "sizeof(SithCamera) == 2364");
 
 typedef struct sSithInventoryType
 {
@@ -2984,7 +2984,7 @@ typedef struct sSithVoiceSubtitleInfo
     unsigned int msecEndTime;
     unsigned int msecShowEndTime;
 } SithVoiceSubtitleInfo;
-static_assert(sizeof(SithVoiceSubtitleInfo) == 588, "sizeof(SithVoiceSubtitleInfo) == 588");
+J3D_ASSERT_SIZE32(sizeof(SithVoiceSubtitleInfo) == 588, "sizeof(SithVoiceSubtitleInfo) == 588");
 
 typedef struct sSithWorldTextSectionParseHandler
 {
@@ -3000,7 +3000,7 @@ typedef struct sSithAIAwarenessSector
     rdVector3 aEndPos[4];
     SithThing* aTransmittingThing[4];
 } SithAIAwarenessSector;
-static_assert(sizeof(SithAIAwarenessSector) == 132, "sizeof(sSithAIAwarenessSector) == 132");
+J3D_ASSERT_SIZE32(sizeof(SithAIAwarenessSector) == 132, "sizeof(sSithAIAwarenessSector) == 132");
 
 struct sSithConsoleCommand
 {
@@ -3024,7 +3024,7 @@ typedef struct sSithAIWaypoint
     SithAIWaypointLayerFlag flags;
     size_t rank;
 } SithAIWaypoint;
-static_assert(sizeof(SithAIWaypoint) == 48, "sizeof(SithAIWaypoint) == 48");
+J3D_ASSERT_SIZE32(sizeof(SithAIWaypoint) == 48, "sizeof(SithAIWaypoint) == 48");
 
 struct sSithEvent
 {
@@ -3033,7 +3033,7 @@ struct sSithEvent
     SithEventParams params;
     SithEvent* pNextEvent;
 };
-static_assert(sizeof(SithEvent) == 28, "sizeof(SithEvent) == 28");
+J3D_ASSERT_SIZE32(sizeof(SithEvent) == 28, "sizeof(SithEvent) == 28");
 
 typedef struct sCndSectorInfo
 {
@@ -3061,7 +3061,7 @@ typedef struct sSithControlBinding
     SithControlBindFlag flags;
     float sensitivity;
 } SithControlBinding;
-static_assert(sizeof(SithControlBinding) == 12, "sizeof(SithControlBinding) == 100");
+J3D_ASSERT_SIZE32(sizeof(SithControlBinding) == 12, "sizeof(SithControlBinding) == 100");
 
 typedef struct sCndSurfaceAdjoin
 {
@@ -3220,7 +3220,7 @@ typedef struct sSithLevelStatistic
     int levelStartIQPoints;
     int iqPoints;
 } SithLevelStatistic;
-static_assert(sizeof(SithLevelStatistic) == 32, "sizeof(SithLevelStatistic) == 42");
+J3D_ASSERT_SIZE32(sizeof(SithLevelStatistic) == 32, "sizeof(SithLevelStatistic) == 42");
 
 typedef struct sSithGameStatistics
 {
@@ -3245,7 +3245,7 @@ typedef struct sNdsHeader
     SithCogSymbolValue aCogGlobalValues[16];
     uint32_t localPlayerNum;
 } NdsHeader;
-static_assert(sizeof(NdsHeader) == 1188, "sizeof(NdsHeader) == 1188");
+J3D_ASSERT_SIZE32(sizeof(NdsHeader) == 1188, "sizeof(NdsHeader) == 1188");
 
 typedef struct sSithMineCarControlsState
 {
@@ -3261,7 +3261,7 @@ typedef struct sSithMineCarControlsState
     float secUnboardingElapsedTime;
     SithMinecarControlsUnboardState unboardState;
 } SithMineCarControlsState;
-static_assert(sizeof(SithMineCarControlsState) == 44, "sizeof(SithMineCarControlsState) == 44");
+J3D_ASSERT_SIZE32(sizeof(SithMineCarControlsState) == 44, "sizeof(SithMineCarControlsState) == 44");
 
 typedef struct sSithRaftControlsState
 {
@@ -3275,7 +3275,7 @@ typedef struct sSithRaftControlsState
     float secRowStartTime;
     float secUnboardTime;
 } SithRaftControlsState;
-static_assert(sizeof(SithRaftControlsState) == 52, "sizeof(SithRaftControlsState) == 52");
+J3D_ASSERT_SIZE32(sizeof(SithRaftControlsState) == 52, "sizeof(SithRaftControlsState) == 52");
 
 typedef struct sSithMode
 {
@@ -3298,7 +3298,7 @@ typedef struct sSithPowerKeybind
     int binding;
     int bActivated;
 } SithPowerKeybind;
-static_assert(sizeof(SithPowerKeybind) == 12, "sizeof(SithPowerKeybind) == 12");
+J3D_ASSERT_SIZE32(sizeof(SithPowerKeybind) == 12, "sizeof(SithPowerKeybind) == 12");
 
 J3D_EXTERN_C_END
 #endif //SITH_TYPES_H

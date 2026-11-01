@@ -22,7 +22,7 @@ typedef struct sAnimFrameTable
     void (*Load)(const int16_t* pData, int size);
     void* (*Fetch)(int n);
 } AnimFrameTable;
-static_assert(sizeof(AnimFrameTable) == 0x18, "sizeof(AnimFrameTable) == 0x18");
+J3D_ASSERT_SIZE32(sizeof(AnimFrameTable) == 0x18, "sizeof(AnimFrameTable) == 0x18");
 
 #define ANIMFRAME_MAXDECODERS 100
 
@@ -36,14 +36,14 @@ typedef struct sFlobDecoder
     int  (*Parse)(const uint8_t* pData, int size);
     uint32_t (*Decode)(void* pBitmap, int a2, int a3, int a4, void* pPalette, const uint8_t* pData, int size, int mode, int a9, int a10);
 } FlobDecoder;
-static_assert(sizeof(FlobDecoder) == 0x18, "sizeof(FlobDecoder) == 0x18");
+J3D_ASSERT_SIZE32(sizeof(FlobDecoder) == 0x18, "sizeof(FlobDecoder) == 0x18");
 
 typedef struct sAnimFrameDisplayInfo
 {
     char pad[0x20];
     int f20;
 } AnimFrameDisplayInfo;
-static_assert(sizeof(AnimFrameDisplayInfo) == 0x24, "sizeof(AnimFrameDisplayInfo) == 0x24");
+J3D_ASSERT_SIZE32(sizeof(AnimFrameDisplayInfo) == 0x24, "sizeof(AnimFrameDisplayInfo) == 0x24");
 
 /* The display service Frame.c subscribes to (slot roles inferred). */
 typedef struct sAnimFrameDisplayService
@@ -56,7 +56,7 @@ typedef struct sAnimFrameDisplayService
     void* pfn14;
     void (*SetPalette)(int a, int b, int count);
 } AnimFrameDisplayService;
-static_assert(sizeof(AnimFrameDisplayService) == 0x1C, "sizeof(AnimFrameDisplayService) == 0x1C");
+J3D_ASSERT_SIZE32(sizeof(AnimFrameDisplayService) == 0x1C, "sizeof(AnimFrameDisplayService) == 0x1C");
 
 /* The `DEBUG=animframe` interface. */
 typedef struct sAnimFrameDebug
@@ -65,7 +65,7 @@ typedef struct sAnimFrameDebug
     void (*SetFlags)(int flags);
     int  (*GetFlags)(void);
 } AnimFrameDebug;
-static_assert(sizeof(AnimFrameDebug) == 0xC, "sizeof(AnimFrameDebug) == 0xC");
+J3D_ASSERT_SIZE32(sizeof(AnimFrameDebug) == 0xC, "sizeof(AnimFrameDebug) == 0xC");
 
 int J3DAPI animframe_Register(LecShare* pShare, void* pParam);
 void animframe_Unregister(void);

@@ -24,7 +24,7 @@ typedef struct sLecShare
     int   (*Count)(const char* pName);                        /* 0x1C */
     void  (*ReportError)(const char* pFormat, ...);           /* 0x20 (printf-style) */
 } LecShare;
-static_assert(sizeof(LecShare) == 0x24, "sizeof(LecShare) == 0x24");
+J3D_ASSERT_SIZE32(sizeof(LecShare) == 0x24, "sizeof(LecShare) == 0x24");
 
 /* `VIRTHERC.debug`: INSANE's diagnostic-print service (slot roles inferred from the calls; only Print is seen in use). */
 typedef struct sLecDebug
@@ -34,7 +34,7 @@ typedef struct sLecDebug
     void* pfn08;
     void  (*Print)(const char* pMessage);                     /* 0x0C */
 } LecDebug;
-static_assert(sizeof(LecDebug) == 0x10, "sizeof(LecDebug) == 0x10");
+J3D_ASSERT_SIZE32(sizeof(LecDebug) == 0x10, "sizeof(LecDebug) == 0x10");
 
 /* A module's descriptor: the four entry points the framework calls (`{register, unregister, startup, shutdown}`). */
 typedef struct sLecModule
@@ -44,7 +44,7 @@ typedef struct sLecModule
     int  (*Startup)(void);
     void (*Shutdown)(void);
 } LecModule;
-static_assert(sizeof(LecModule) == 0x10, "sizeof(LecModule) == 0x10");
+J3D_ASSERT_SIZE32(sizeof(LecModule) == 0x10, "sizeof(LecModule) == 0x10");
 
 /*
  * The original passes its `__FILE__` (E:\smush\INSANE\SOURCE\...) to the debug allocator and to assertions.

@@ -24,7 +24,7 @@ typedef struct sLecModuleEntry
     int (*pfnRegister)(LecShare* pShare, void* pParam);
     void* pParam;
 } LecModuleEntry;
-static_assert(sizeof(LecModuleEntry) == 8, "sizeof(LecModuleEntry) == 8");
+J3D_ASSERT_SIZE32(sizeof(LecModuleEntry) == 8, "sizeof(LecModuleEntry) == 8");
 
 typedef struct sLecBatch
 {
@@ -32,7 +32,7 @@ typedef struct sLecBatch
     const char* pName;
     const char* pPreferred;
 } LecBatch;
-static_assert(sizeof(LecBatch) == 0xC, "sizeof(LecBatch) == 0xC");
+J3D_ASSERT_SIZE32(sizeof(LecBatch) == 0xC, "sizeof(LecBatch) == 0xC");
 
 typedef void (*LecErrorFn)(const char* pFormat, ...);
 
@@ -43,7 +43,7 @@ typedef struct sLecEntry
     void* pInterface;
     int refs;
 } LecEntry;
-static_assert(sizeof(LecEntry) == 0xC, "sizeof(LecEntry) == 0xC");
+J3D_ASSERT_SIZE32(sizeof(LecEntry) == 0xC, "sizeof(LecEntry) == 0xC");
 
 LecShare* J3DAPI LecShare_Init(LecErrorFn pError, LecModuleEntry* pModules, const char* pDefaults, const char* pOverrides);
 int LecShare_UnregisterAll(void);

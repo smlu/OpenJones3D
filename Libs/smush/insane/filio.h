@@ -22,7 +22,7 @@ typedef struct sFilioInterface
     int  (*Seek)(int fh, int offset, int whence);
     void (*Flush)(int fh);
 } FilioInterface;
-static_assert(sizeof(FilioInterface) == 0x1C, "sizeof(FilioInterface) == 0x1C");
+J3D_ASSERT_SIZE32(sizeof(FilioInterface) == 0x1C, "sizeof(FilioInterface) == 0x1C");
 
 J3D_EXTERN_C_END
 

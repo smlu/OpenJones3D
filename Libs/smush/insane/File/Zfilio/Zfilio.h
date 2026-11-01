@@ -35,7 +35,7 @@ typedef struct sZfileHandle
     int gzPos;
     int pos;
 } ZfileHandle;
-static_assert(sizeof(ZfileHandle) == 0x14, "sizeof(ZfileHandle) == 0x14");
+J3D_ASSERT_SIZE32(sizeof(ZfileHandle) == 0x14, "sizeof(ZfileHandle) == 0x14");
 
 typedef struct sZfilioInterface
 {
@@ -47,7 +47,7 @@ typedef struct sZfilioInterface
     int  (*Seek)(ZfileHandle* pFile, int offset, int whence);
     void (*Flush)(ZfileHandle* pFile);
 } ZfilioInterface;
-static_assert(sizeof(ZfilioInterface) == 0x1C, "sizeof(ZfilioInterface) == 0x1C");
+J3D_ASSERT_SIZE32(sizeof(ZfilioInterface) == 0x1C, "sizeof(ZfilioInterface) == 0x1C");
 
 /*
  * zfilio_pFilio lives in the executable (.bss 0x0183E220, COMMON) because the executable's gzio.c reads it. It is the only INSANE

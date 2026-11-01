@@ -113,7 +113,7 @@ typedef struct sCndWorld
     uint32_t sizePVS;
     uint32_t aPVS;
 } CndWorld;
-static_assert(sizeof(CndWorld) == 1564, "sizeof(CndWorld) == 1564");
+J3D_ASSERT_SIZE32(sizeof(CndWorld) == 1564, "sizeof(CndWorld) == 1564");
 
 static bool bWorldStartup = false; // Altered: Init to 0
 
@@ -849,8 +849,8 @@ void J3DAPI sithWorld_GetMemoryUsage(const SithWorld* pWorld, size_t(*aMemUsed)[
     SITH_ASSERTREL(aMemUsed && aCount);
     SITH_ASSERTREL(pWorld);
 
-    memset(aMemUsed, 0, sizeof(*aMemUsed)); static_assert(sizeof(*aMemUsed) == 0x44, "");
-    memset(aCount, 0, sizeof(*aCount)); static_assert(sizeof(*aCount) == 0x44, "");
+    memset(aMemUsed, 0, sizeof(*aMemUsed)); J3D_ASSERT_SIZE32(sizeof(*aMemUsed) == 0x44, "");
+    memset(aCount, 0, sizeof(*aCount)); J3D_ASSERT_SIZE32(sizeof(*aCount) == 0x44, "");
 
     (*aCount)[0] = pWorld->numMaterials;
     for ( size_t i = 0; i < pWorld->numMaterials; ++i )
@@ -876,7 +876,7 @@ void J3DAPI sithWorld_GetMemoryUsage(const SithWorld* pWorld, size_t(*aMemUsed)[
     (*aCount)[5] = pWorld->numSectors;
     for ( size_t i = 0; i < pWorld->numSectors; ++i )
     {
-        (*aMemUsed)[5] += sizeof(*pWorld->aSectors[i].aVertIdxs) * pWorld->aSectors[i].numVertices + sizeof(SithSector); static_assert(sizeof(*pWorld->aSectors[i].aVertIdxs) == 4, ""); // 4 - sizeof(int)
+        (*aMemUsed)[5] += sizeof(*pWorld->aSectors[i].aVertIdxs) * pWorld->aSectors[i].numVertices + sizeof(SithSector); J3D_ASSERT_SIZE32(sizeof(*pWorld->aSectors[i].aVertIdxs) == 4, ""); // 4 - sizeof(int)
     }
 
     (*aCount)[6] = pWorld->numSounds;
@@ -885,7 +885,7 @@ void J3DAPI sithWorld_GetMemoryUsage(const SithWorld* pWorld, size_t(*aMemUsed)[
     (*aCount)[8] = pWorld->numCogScripts;
     for ( size_t i = 0; i < pWorld->numCogScripts; ++i )
     {
-        (*aMemUsed)[8] += sizeof(*pWorld->aCogScripts[i].pCode) * pWorld->aCogScripts[i].codeSize + sizeof(SithCogScript); static_assert(sizeof(*pWorld->aCogScripts[i].pCode) == 4, ""); // 4 - sizeof(uint32_t)
+        (*aMemUsed)[8] += sizeof(*pWorld->aCogScripts[i].pCode) * pWorld->aCogScripts[i].codeSize + sizeof(SithCogScript); J3D_ASSERT_SIZE32(sizeof(*pWorld->aCogScripts[i].pCode) == 4, ""); // 4 - sizeof(uint32_t)
         (*aMemUsed)[8] += sizeof(SithCogSymbol) * pWorld->aCogScripts[i].pSymbolTable->numUsedSymbols + sizeof(SithCogSymbolTable);
     }
 
@@ -920,7 +920,7 @@ void J3DAPI sithWorld_GetMemoryUsage(const SithWorld* pWorld, size_t(*aMemUsed)[
     for ( size_t i = 0; i < pWorld->numSprites; ++i )
     {
         (*aMemUsed)[13] +=
-            (sizeof(rdVector3) + sizeof(rdVector2)) * pWorld->aSprites[i].face.numVertices; static_assert(sizeof(rdVector3) + sizeof(rdVector2) == 20, ""); //  sizeof(rdVector3) - offset ;  sizeof(rdVector2) - aTexVerts
+            (sizeof(rdVector3) + sizeof(rdVector2)) * pWorld->aSprites[i].face.numVertices; J3D_ASSERT_SIZE32(sizeof(rdVector3) + sizeof(rdVector2) == 20, ""); //  sizeof(rdVector3) - offset ;  sizeof(rdVector2) - aTexVerts
     }
 
     (*aCount)[14] = pWorld->numThingTemplates;
@@ -1081,7 +1081,7 @@ uint32_t J3DAPI sithWorld_CalcWorldChecksum(SithWorld* pWorld, uint32_t seed)
         checksum = stdUtil_CalcChecksum((const uint8_t*)pWorld->aCogScripts[i].pCode, pWorld->aCogScripts[i].codeSize, checksum); // TODO: should the code size be multiplied by sizeof(uint32_t)?
     }
 
-    checksum = stdUtil_CalcChecksum((const uint8_t*)pWorld->aVertices, sizeof(*pWorld->aVertices) * pWorld->numVertices, checksum); static_assert(sizeof(*pWorld->aVertices) == 12, "");
+    checksum = stdUtil_CalcChecksum((const uint8_t*)pWorld->aVertices, sizeof(*pWorld->aVertices) * pWorld->numVertices, checksum); J3D_ASSERT_SIZE32(sizeof(*pWorld->aVertices) == 12, "");
 
     for ( size_t i = 0; i < pWorld->numThingTemplates; ++i )
     {

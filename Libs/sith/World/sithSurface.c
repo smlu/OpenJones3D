@@ -324,7 +324,7 @@ int J3DAPI sithSurface_WriteSurfacesListBinary(tFileHandle fh, const SithWorld* 
         return 1;
     }
 
-    nWritten = sith_g_pHS->pFileWrite(fh, &totalVerts, sizeof(totalVerts)); static_assert(sizeof(totalVerts) == 4, "sizeof(totalVerts) == 4");
+    nWritten = sith_g_pHS->pFileWrite(fh, &totalVerts, sizeof(totalVerts)); J3D_ASSERT_SIZE32(sizeof(totalVerts) == 4, "sizeof(totalVerts) == 4");
     if ( nWritten != 4 )
     {
         return 1;
@@ -428,7 +428,7 @@ int J3DAPI sithSurface_ReadSurfacesListBinary(tFileHandle fh, SithWorld* pWorld)
     pWorld->apMatArray = NULL;
 
     size_t totalVerts;
-    nRead = sith_g_pHS->pFileRead(fh, &totalVerts, sizeof(int)); static_assert(sizeof(int) == 4, "sizeof(int) == 4");
+    nRead = sith_g_pHS->pFileRead(fh, &totalVerts, sizeof(int)); J3D_ASSERT_SIZE32(sizeof(int) == 4, "sizeof(int) == 4");
     if ( nRead != 4 )
     {
         return 1;

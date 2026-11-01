@@ -6,6 +6,19 @@ file(GLOB_RECURSE HEADERS *.h)
 list(FILTER SOURCES EXCLUDE REGEX ".*/Tests/.*")
 list(FILTER HEADERS EXCLUDE REGEX ".*/Tests/.*")
 
+# Added: The Null platform has no Windows or DirectX backend: exclude the Win95 backend tree
+# (DX6/DX9 device code, Windows console/comm/bmp/gob services) and every Win32-specific file.
+if(J3D_PLATFORM_NULL)
+    list(FILTER SOURCES EXCLUDE REGEX ".*/Win95/DX6/.*")
+    list(FILTER SOURCES EXCLUDE REGEX ".*/Win95/DX9/.*")
+    list(FILTER SOURCES EXCLUDE REGEX ".*/Win95/Tests/.*")
+    list(FILTER SOURCES EXCLUDE REGEX ".*Win32\\.c$")
+    list(FILTER SOURCES EXCLUDE REGEX "stdWin95\\.c$")
+    list(FILTER SOURCES EXCLUDE REGEX "stdComm\\.c$")
+    list(FILTER SOURCES EXCLUDE REGEX "stdConsole\\.c$")
+    list(FILTER SOURCES EXCLUDE REGEX "stdGob\\.c$")
+endif()
+
 # Remove DirectX 6/9 specific files based on the build option
 if(J3D_DIRECTX6)
   # Remove DX9 files.
@@ -40,11 +53,22 @@ if (J3D_DIRECTX9)
     target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/Win95/DX9)
 endif()
 
+# Added: The Null platform provides its own replacement backend types header here.
+if (J3D_PLATFORM_NULL)
+    target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/Null)
+endif()
+
 # Link libraries
-target_link_libraries(${PROJECT_NAME} PUBLIC 
+target_link_libraries(${PROJECT_NAME} PUBLIC
     j3dcore
-    winmm # timeGetTime
 )
+
+# Added: Windows-only services; the Null platform has none of them (no DirectX, no winmm).
+if (NOT J3D_PLATFORM_NULL)
+    target_link_libraries(${PROJECT_NAME} PUBLIC
+        winmm # timeGetTime
+    )
+endif()
 
 set(EXTRA_LIBS
     jansson::jansson

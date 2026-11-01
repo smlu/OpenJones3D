@@ -40,7 +40,7 @@ typedef struct sBl16Header
     uint8_t data[1];                /* 0x230 */
 } Bl16Header;
 #pragma pack(pop)
-static_assert(sizeof(Bl16Header) == 0x231, "sizeof(Bl16Header) == 0x231");
+J3D_ASSERT_SIZE32(sizeof(Bl16Header) == 0x231, "sizeof(Bl16Header) == 0x231");
 static_assert(offsetof(Bl16Header, data) == 0x230, "offsetof(Bl16Header, data) == 0x230");
 
 /* The frame object's parse header. */
@@ -51,14 +51,14 @@ typedef struct sBl16Parse
     int16_t height;
     int16_t depth;
 } Bl16Parse;
-static_assert(sizeof(Bl16Parse) == 8, "sizeof(Bl16Parse) == 8");
+J3D_ASSERT_SIZE32(sizeof(Bl16Parse) == 8, "sizeof(Bl16Parse) == 8");
 
 typedef struct sBl16Motion
 {
     int16_t x;
     int16_t y;
 } Bl16Motion;
-static_assert(sizeof(Bl16Motion) == 4, "sizeof(Bl16Motion) == 4");
+J3D_ASSERT_SIZE32(sizeof(Bl16Motion) == 4, "sizeof(Bl16Motion) == 4");
 
 /* The glyph tables (per from-edge/to-edge pair, the pixel offsets of the two halves of a 4x4 or 8x8 glyph); read by Bloc16Asm. */
 typedef struct sBl16Small
@@ -71,7 +71,7 @@ typedef struct sBl16Small
     uint8_t n2;                     /* 0x61 */
     uint8_t pad[30];
 } Bl16Small;
-static_assert(sizeof(Bl16Small) == 0x80, "sizeof(Bl16Small) == 0x80");
+J3D_ASSERT_SIZE32(sizeof(Bl16Small) == 0x80, "sizeof(Bl16Small) == 0x80");
 
 typedef struct sBl16Big
 {
@@ -83,7 +83,7 @@ typedef struct sBl16Big
     uint8_t n2;                     /* 0x181 */
     uint8_t pad[2];
 } Bl16Big;
-static_assert(sizeof(Bl16Big) == 0x184, "sizeof(Bl16Big) == 0x184");
+J3D_ASSERT_SIZE32(sizeof(Bl16Big) == 0x184, "sizeof(Bl16Big) == 0x184");
 
 typedef struct sBl16Interface
 {
@@ -96,7 +96,7 @@ typedef struct sBl16Interface
     int  (*Query1)(void);
     int  (*Query)(const Bl16Header* pData, int tag, int* pX, int* pY, int* pWidth, int* pHeight);
 } Bl16Interface;
-static_assert(sizeof(Bl16Interface) == 0x20, "sizeof(Bl16Interface) == 0x20");
+J3D_ASSERT_SIZE32(sizeof(Bl16Interface) == 0x20, "sizeof(Bl16Interface) == 0x20");
 
 typedef int (*Bl16Blit)(LecBitmapHeader* pDst, MixerRect* pClip, int x, int y, LecBitmapHeader* pSrc, void* pPalette, void* pTable);
 

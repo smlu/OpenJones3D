@@ -23,7 +23,7 @@ typedef struct sSithControlFunctionBinding
     size_t numBindings;
     SithControlBinding aBindings[STDCONTROL_MAXBINDINGS];
 } SithControlFunctionBinding;
-static_assert(sizeof(SithControlFunctionBinding) == 100, "sizeof(SithControlFunctionBinding) == 100");
+J3D_ASSERT_SIZE32(sizeof(SithControlFunctionBinding) == 100, "sizeof(SithControlFunctionBinding) == 100");
 
 static bool bControlStartup = false; // Added: Init to false
 static bool bControlOpen    = false; // Added: Init to false

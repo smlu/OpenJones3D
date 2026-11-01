@@ -228,7 +228,7 @@ int J3DAPI sithSprite_WriteStaticSpritesListBinary(tFileHandle fh, const SithWor
 {
     for ( size_t i = 0; i < pWorld->numSprites; ++i )
     {
-        static_assert(sizeof(pWorld->aSprites[i].aName) == 64, "sizeof(pWorld->aSprites[i].aName) == 64");
+        J3D_ASSERT_SIZE32(sizeof(pWorld->aSprites[i].aName) == 64, "sizeof(pWorld->aSprites[i].aName) == 64");
         if ( sith_g_pHS->pFileWrite(fh, &pWorld->aSprites[i].aName, sizeof(pWorld->aSprites[i].aName)) != sizeof(pWorld->aSprites[i].aName) )
         {
             return 1;

@@ -33,7 +33,7 @@ typedef struct sReadAutoHandle
     ReadAnimInterface* pReader;
     void* hReader;
 } ReadAutoHandle;
-static_assert(sizeof(ReadAutoHandle) == 8, "sizeof(ReadAutoHandle) == 8");
+J3D_ASSERT_SIZE32(sizeof(ReadAutoHandle) == 8, "sizeof(ReadAutoHandle) == 8");
 
 int J3DAPI readauto_Register(LecShare* pShare, void* pParam);
 void readauto_Unregister(void);

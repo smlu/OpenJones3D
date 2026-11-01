@@ -2,5 +2,5 @@
 # Maintained with: python Scripts/checkboundary.py --update, covered by --check.
 # Files with no matches need no entry. Sorted by path.
 
-Libs/j3dcore/j3d.h.in 4
+Libs/j3dcore/j3d.h.in 1
 Libs/j3dcore/j3dhook.h 4

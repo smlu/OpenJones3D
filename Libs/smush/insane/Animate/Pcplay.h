@@ -28,7 +28,7 @@ typedef struct sAnimPlayDebugService
     void* pfn18;
     int  (*Query)(int a, int b);
 } AnimPlayDebugService;
-static_assert(sizeof(AnimPlayDebugService) == 0x20, "sizeof(AnimPlayDebugService) == 0x20");
+J3D_ASSERT_SIZE32(sizeof(AnimPlayDebugService) == 0x20, "sizeof(AnimPlayDebugService) == 0x20");
 
 /* The `DEBUG=insane_animplay` interface. */
 typedef struct sAnimPlayDebug
@@ -38,7 +38,7 @@ typedef struct sAnimPlayDebug
     int  (*GetFlags)(void);
     int  speed;
 } AnimPlayDebug;
-static_assert(sizeof(AnimPlayDebug) == 0x10, "sizeof(AnimPlayDebug) == 0x10");
+J3D_ASSERT_SIZE32(sizeof(AnimPlayDebug) == 0x10, "sizeof(AnimPlayDebug) == 0x10");
 
 /* Pcplay.c's non-static state that Framestream.c reads. */
 extern LecShare* animplay_pShare;

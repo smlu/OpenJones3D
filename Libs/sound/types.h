@@ -91,7 +91,7 @@ typedef struct sSoundInfo
     uint32_t bCompressed;
     uint32_t idx;
 } SoundInfo;
-static_assert(sizeof(SoundInfo) == 48, "sizeof(SoundInfo) == 48"); // Note the size must stay 48 bytes due to bank serialization to CND file
+J3D_ASSERT_SIZE32(sizeof(SoundInfo) == 48, "sizeof(SoundInfo) == 48"); // Note the size must stay 48 bytes due to bank serialization to CND file
 
 typedef struct sSoundChannel
 {
@@ -120,7 +120,7 @@ typedef struct sSoundFade
     uint32_t msecStartTime;
     uint32_t msecEndTime;
 } SoundFade;
-static_assert(sizeof(SoundFade) == 24, "sizeof(SoundFade) == 24");
+J3D_ASSERT_SIZE32(sizeof(SoundFade) == 24, "sizeof(SoundFade) == 24");
 
 struct sSoundThingInfo
 {
@@ -134,14 +134,14 @@ typedef struct sAudioCompressorState
     int8_t aStepIndex[2];   // per-channel ADPCM step table index
     int16_t aPrevSample[2]; // per-channel previous (predicted) sample
 } tAudioCompressorState;
-static_assert(sizeof(tAudioCompressorState) == 6, "sizeof(tAudioCompressorState) == 6");
+J3D_ASSERT_SIZE32(sizeof(tAudioCompressorState) == 6, "sizeof(tAudioCompressorState) == 6");
 
 typedef struct sAudioCompressedData
 {
     uint32_t uncompressedSize; // Note, don't change int type as it must be 4 bytes due to serialization
     uint8_t compressedData[1];
 } tAudioCompressedData;
-static_assert(sizeof(tAudioCompressedData) == 8, "sizeof(tAudioCompressedData) == 8"); // 8 - due to alignment
+J3D_ASSERT_SIZE32(sizeof(tAudioCompressedData) == 8, "sizeof(tAudioCompressedData) == 8"); // 8 - due to alignment
 
 struct sSoundSpatialInfo
 {

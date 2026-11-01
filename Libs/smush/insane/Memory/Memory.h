@@ -26,7 +26,7 @@ typedef struct sMemoryInterface
     void* (*Realloc)(void* pBlock, size_t size);
     void* pReserved;
 } MemoryInterface;
-static_assert(sizeof(MemoryInterface) == 0x10, "sizeof(MemoryInterface) == 0x10");
+J3D_ASSERT_SIZE32(sizeof(MemoryInterface) == 0x10, "sizeof(MemoryInterface) == 0x10");
 
 typedef struct sMemoryDebugInterface
 {
@@ -34,7 +34,7 @@ typedef struct sMemoryDebugInterface
     void  (*Free)(void* pBlock, const char* pFile, int line);
     void* (*Realloc)(void* pBlock, int size, const char* pFile, int line);
 } MemoryDebugInterface;
-static_assert(sizeof(MemoryDebugInterface) == 0xC, "sizeof(MemoryDebugInterface) == 0xC");
+J3D_ASSERT_SIZE32(sizeof(MemoryDebugInterface) == 0xC, "sizeof(MemoryDebugInterface) == 0xC");
 
 /* The debug allocator's per-block record (allocated with malloc, listed in the allocator's LecList). */
 typedef struct sMemoryRecord
@@ -46,7 +46,7 @@ typedef struct sMemoryRecord
     const char* pFile;
     int refs;
 } MemoryRecord;
-static_assert(sizeof(MemoryRecord) == 0x1C, "sizeof(MemoryRecord) == 0x1C");
+J3D_ASSERT_SIZE32(sizeof(MemoryRecord) == 0x1C, "sizeof(MemoryRecord) == 0x1C");
 
 int J3DAPI memory_Register(LecShare* pShare, void* pParam);
 void memory_Unregister(void);

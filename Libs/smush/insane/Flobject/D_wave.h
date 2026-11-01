@@ -23,7 +23,7 @@ typedef struct sDWaveInterface
     int  (*Query1)(void);
     int  (*Query)(const uint8_t* pData, int tag, int* pX, int* pY, int* pWidth, int* pHeight);
 } DWaveInterface;
-static_assert(sizeof(DWaveInterface) == 0x20, "sizeof(DWaveInterface) == 0x20");
+J3D_ASSERT_SIZE32(sizeof(DWaveInterface) == 0x20, "sizeof(DWaveInterface) == 0x20");
 
 int J3DAPI dwave_Register(LecShare* pShare, void* pParam);
 void dwave_Unregister(void);

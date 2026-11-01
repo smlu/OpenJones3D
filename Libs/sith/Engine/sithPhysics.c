@@ -280,7 +280,7 @@ typedef struct sSithTrackFaceData
     float distToFront;           // Distance of the position to the front edge along dir
     float distFromBack;          // Distance of the position from the back edge along dir
 } SithTrackFaceData;
-static_assert(sizeof(SithTrackFaceData) == 0x134, "sizeof(SithTrackFaceData) == 0x134");
+J3D_ASSERT_SIZE32(sizeof(SithTrackFaceData) == 0x134, "sizeof(SithTrackFaceData) == 0x134");
 
 // MineCar track physics helpers
 void J3DAPI sithPhysics_ProcessMineCarTrackMove(SithThing* pThing, float secDeltaTime, float speed, rdVector3* pDeltaPos);

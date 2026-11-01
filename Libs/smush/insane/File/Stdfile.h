@@ -28,7 +28,7 @@ typedef struct sStdFileInterface
     int   (*Getc)(int fh);
     int   (*Putc)(int fh, int c);
 } StdFileInterface;
-static_assert(sizeof(StdFileInterface) == 0x34, "sizeof(StdFileInterface) == 0x34");
+J3D_ASSERT_SIZE32(sizeof(StdFileInterface) == 0x34, "sizeof(StdFileInterface) == 0x34");
 
 int J3DAPI stdfile_Register(LecShare* pShare, void* pParam);
 void stdfile_Unregister(void);

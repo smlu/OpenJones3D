@@ -27,6 +27,14 @@
     #define J3D_32BIT 1
 #endif
 
+// Added: Checks a struct's size on 32-bit builds, where it matches the original. On 64-bit, pointers change runtime
+// structs. Data read from files or sent over the network needs a layout that holds everywhere, and is checked separately.
+#ifdef J3D_32BIT
+#   define J3D_ASSERT_SIZE32(expr, msg) static_assert(expr, msg)
+#else
+#   define J3D_ASSERT_SIZE32(expr, msg)
+#endif
+
 #cmakedefine J3D_QOL_IMPROVEMENTS
 #ifdef J3D_QOL_IMPROVEMENTS
   #define J3D_QOL_VALUE(valueQOL, valueNoQOL) (valueQOL)
@@ -39,6 +47,7 @@
 
 #cmakedefine J3D_DIRECTX6
 #cmakedefine J3D_DIRECTX9
+#cmakedefine J3D_PLATFORM_NULL
 
 #cmakedefine J3D_COLORKEYSUPPORTED
 
@@ -58,10 +67,17 @@
 #   define wstrcmpi _wcsicmp
 #   define wstrncmpi _wcsnicmp
 #else
-    // TODO: define J3D_DEBUG
-    typedef int      BOOL;
-    typedef uint8_t  BYTE;
-    typedef uint16_t WORD;
+    // Added: Non-Windows configure. Reuses the POSIX equivalents of the case-insensitive
+    // Windows CRT functions; engine code keeps calling the original names.
+#   ifndef NDEBUG
+#       define J3D_DEBUG 1
+#   endif
+#   include <strings.h>
+#   include <wchar.h>
+#   define strcmpi strcasecmp
+#   define strncmpi strncasecmp
+#   define wstrcmpi wcscasecmp
+#   define wstrncmpi wcsncasecmp
 #endif
 
 #ifdef _MSC_VER 
@@ -87,7 +103,11 @@
 
 #define J3D_UNUSED(x) (x)
 #define J3DNORETURN _Noreturn
-#define J3DAPI __cdecl
+#ifdef _WIN32
+#   define J3DAPI __cdecl
+#else
+#   define J3DAPI
+#endif
 
 // TODO: Detect if C23 and N3030 - Enhanced Enumerations is supported
 //       In this case define macro as: #define J3D_ENUM_TYPE(x) : x

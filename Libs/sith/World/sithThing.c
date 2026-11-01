@@ -90,17 +90,17 @@ enum
 };
 
 static_assert(SITHTHING_BIN_NUMCOUNTS == 11, "SITHTHING_BIN_NUMCOUNTS == 11");
-static_assert(sizeof(CndThingInfo) == 568, "sizeof(CndThingInfo) == 568");
-static_assert(sizeof(CndPhysicsInfo) == 64, "sizeof(CndPhysicsInfo) == 64");
-static_assert(sizeof(SithPathFrame) == 24, "sizeof(SithPathFrame) == 24");
-static_assert(sizeof(CndActorInfo) == 284, "sizeof(CndActorInfo) == 284");
-static_assert(sizeof(CndWeaponInfo) == 92, "sizeof(CndWeaponInfo) == 92");
-static_assert(sizeof(CndExplosionInfo) == 1152, "sizeof(CndExplosionInfo) == 1152");
-static_assert(sizeof(CndItemInfo) == 8, "sizeof(CndItemInfo) == 8");
-static_assert(sizeof(CndParticleInfo) == 100, "sizeof(CndParticleInfo) == 100");
-static_assert(sizeof(CndAIControlInfo) == 68, "sizeof(CndAIControlInfo) == 68");
-static_assert(sizeof(float) == 4, "sizeof(float) == 4");
-static_assert(sizeof(rdVector3) == 12, "sizeof(rdVector3) == 12");
+J3D_ASSERT_SIZE32(sizeof(CndThingInfo) == 568, "sizeof(CndThingInfo) == 568");
+J3D_ASSERT_SIZE32(sizeof(CndPhysicsInfo) == 64, "sizeof(CndPhysicsInfo) == 64");
+J3D_ASSERT_SIZE32(sizeof(SithPathFrame) == 24, "sizeof(SithPathFrame) == 24");
+J3D_ASSERT_SIZE32(sizeof(CndActorInfo) == 284, "sizeof(CndActorInfo) == 284");
+J3D_ASSERT_SIZE32(sizeof(CndWeaponInfo) == 92, "sizeof(CndWeaponInfo) == 92");
+J3D_ASSERT_SIZE32(sizeof(CndExplosionInfo) == 1152, "sizeof(CndExplosionInfo) == 1152");
+J3D_ASSERT_SIZE32(sizeof(CndItemInfo) == 8, "sizeof(CndItemInfo) == 8");
+J3D_ASSERT_SIZE32(sizeof(CndParticleInfo) == 100, "sizeof(CndParticleInfo) == 100");
+J3D_ASSERT_SIZE32(sizeof(CndAIControlInfo) == 68, "sizeof(CndAIControlInfo) == 68");
+J3D_ASSERT_SIZE32(sizeof(float) == 4, "sizeof(float) == 4");
+J3D_ASSERT_SIZE32(sizeof(rdVector3) == 12, "sizeof(rdVector3) == 12");
 
 static SithQuetzAttachInfo* sithThing_prevQuetzAttachInfo = NULL;
 static SithQuetzAttachInfo* sithThing_curQuetzAttachInfo  = NULL;

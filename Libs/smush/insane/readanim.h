@@ -22,7 +22,7 @@ typedef struct sReadAnimInterface
     int  (*Read)(int a, int b, void* pFile);
     int  (*Recognize)(const char* pFile, int pass);
 } ReadAnimInterface;
-static_assert(sizeof(ReadAnimInterface) == 0x1C, "sizeof(ReadAnimInterface) == 0x1C");
+J3D_ASSERT_SIZE32(sizeof(ReadAnimInterface) == 0x1C, "sizeof(ReadAnimInterface) == 0x1C");
 
 J3D_EXTERN_C_END
 

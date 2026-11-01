@@ -22,7 +22,7 @@ typedef struct sMixerRect
     int width;
     int height;
 } MixerRect;
-static_assert(sizeof(MixerRect) == 0x10, "sizeof(MixerRect) == 0x10");
+J3D_ASSERT_SIZE32(sizeof(MixerRect) == 0x10, "sizeof(MixerRect) == 0x10");
 
 int J3DAPI mixer_Init(MemoryDebugInterface* pMemory, int headroom, int size, int a4, int a5, int a6);
 void J3DAPI mixer_Done(MemoryDebugInterface* pMemory);

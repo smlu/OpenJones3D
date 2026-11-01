@@ -921,7 +921,7 @@ int J3DAPI sithCog_WriteCogsListBinary(tFileHandle fh, const SithWorld* pWorld)
 
     if ( sith_g_pHS->pFileWrite(fh, aSizes, sizeof(aSizes)) != sizeof(aSizes) )
     {
-        static_assert(sizeof(aSizes) == 8, "sizeof((aSizes) == 8");
+        J3D_ASSERT_SIZE32(sizeof(aSizes) == 8, "sizeof((aSizes) == 8");
         return 1;
     }
 
@@ -999,7 +999,7 @@ int J3DAPI sithCog_ReadCogsListBinary(tFileHandle fh, SithWorld* pWorld)
     uint32_t aSizes[2];
     if ( sith_g_pHS->pFileRead(fh, aSizes, sizeof(aSizes)) != sizeof(aSizes) || sithCog_AllocWorldCogs(pWorld, pWorld->sizeCogs) ) // Altered: Use pWorld->sizeCogs value instead of pWorld->numCogs for cogs allocation
     {
-        static_assert(sizeof(aSizes) == 8, "sizeof((aSizes) == 8");
+        J3D_ASSERT_SIZE32(sizeof(aSizes) == 8, "sizeof((aSizes) == 8");
         goto error;
     }
 

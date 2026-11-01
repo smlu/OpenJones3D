@@ -49,7 +49,7 @@ typedef struct sBitmapFormat
     int alphaPosShift;
     int alphaPosShiftRight;
 } BitmapFormat;
-static_assert(sizeof(BitmapFormat) == 0x30, "sizeof(BitmapFormat) == 0x30");
+J3D_ASSERT_SIZE32(sizeof(BitmapFormat) == 0x30, "sizeof(BitmapFormat) == 0x30");
 
 typedef struct sLecBitmapHeader
 {
@@ -72,7 +72,7 @@ typedef struct sLecBitmapHeader
         } indexed;
     };
 } LecBitmapHeader;
-static_assert(sizeof(LecBitmapHeader) == 0x54, "sizeof(LecBitmapHeader) == 0x54");
+J3D_ASSERT_SIZE32(sizeof(LecBitmapHeader) == 0x54, "sizeof(LecBitmapHeader) == 0x54");
 
 typedef struct sBitmapInterface
 {
@@ -80,7 +80,7 @@ typedef struct sBitmapInterface
     int  (*CreateEx)(LecBitmapHeader** ppBitmap, int width, int height, int colorMode, int a5, int a6, const void* pFormat);
     void (*Destroy)(LecBitmapHeader** ppBitmap);
 } BitmapInterface;
-static_assert(sizeof(BitmapInterface) == 0xC, "sizeof(BitmapInterface) == 0xC");
+J3D_ASSERT_SIZE32(sizeof(BitmapInterface) == 0xC, "sizeof(BitmapInterface) == 0xC");
 
 /* The display-mode service bitmap_Startup subscribes to (slot roles inferred). */
 typedef struct sBitmapModeService
@@ -88,7 +88,7 @@ typedef struct sBitmapModeService
     void* pfn00;
     LecBitmapHeader* (*GetFormat)(void);
 } BitmapModeService;
-static_assert(sizeof(BitmapModeService) == 8, "sizeof(BitmapModeService) == 8");
+J3D_ASSERT_SIZE32(sizeof(BitmapModeService) == 8, "sizeof(BitmapModeService) == 8");
 
 int J3DAPI bitmap_Register(LecShare* pShare, void* pParam);
 void bitmap_Unregister(void);

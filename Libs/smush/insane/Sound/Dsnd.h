@@ -52,7 +52,7 @@ typedef struct sSndDriver
     int  (*SetRate)(int rate);  /* Dsnd's table holds sound_Null, an empty `return 0` */
     int  (*GetRate)(void);
 } SndDriver;
-static_assert(sizeof(SndDriver) == 0x18, "sizeof(SndDriver) == 0x18");
+J3D_ASSERT_SIZE32(sizeof(SndDriver) == 0x18, "sizeof(SndDriver) == 0x18");
 
 int J3DAPI dsnd_Register(LecShare* pShare, void* pParam);
 int J3DAPI dsnd_Configure(int tag, ...);

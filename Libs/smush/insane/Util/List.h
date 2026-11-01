@@ -17,14 +17,14 @@ struct sLecNode
     LecNode* pPrev;
     LecNode* pNext;
 };
-static_assert(sizeof(LecNode) == 8, "sizeof(LecNode) == 8");
+J3D_ASSERT_SIZE32(sizeof(LecNode) == 8, "sizeof(LecNode) == 8");
 
 typedef struct sLecList
 {
     LecNode head;
     LecNode tail;
 } LecList;
-static_assert(sizeof(LecList) == 0x10, "sizeof(LecList) == 0x10");
+J3D_ASSERT_SIZE32(sizeof(LecList) == 0x10, "sizeof(LecList) == 0x10");
 
 void J3DAPI LecList_Init(LecList* pList);
 void J3DAPI LecList_Insert(LecNode* pNode, LecNode* pRef, int before);

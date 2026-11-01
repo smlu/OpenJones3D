@@ -31,7 +31,7 @@ typedef struct sSmushColorFormat
     int alphaPosShift;
     int alphaPosShiftRight;
 } SmushColorFormat;
-static_assert(sizeof(SmushColorFormat) == 0x30, "sizeof(SmushColorFormat) == 0x30");
+J3D_ASSERT_SIZE32(sizeof(SmushColorFormat) == 0x30, "sizeof(SmushColorFormat) == 0x30");
 
 /* The original's bitmap header (INSANE's LecBitmapHeader, Bitmap.h): SmushPlay_PlayMovie hands its blit callback a pointer to one. */
 typedef struct sSmushBitmap
@@ -47,7 +47,7 @@ typedef struct sSmushBitmap
     tColorMode colorMode;
     SmushColorFormat format;
 } SmushBitmap;
-static_assert(sizeof(SmushBitmap) == 0x54, "sizeof(SmushBitmap) == 0x54");
+J3D_ASSERT_SIZE32(sizeof(SmushBitmap) == 0x54, "sizeof(SmushBitmap) == 0x54");
 
 int J3DAPI SmushPlay_SysStartup(tSysWindow hwnd, tDirectSound* pDSound);
 void SmushPlay_SysShutdown(void);
