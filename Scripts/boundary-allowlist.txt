@@ -2,28 +2,20 @@
 # Maintained with: python Scripts/checkboundary.py --update, covered by --check.
 # Files with no matches need no entry. Sorted by path.
 
-Jones3D/Display/JonesHud.c 12
+Jones3D/Display/JonesHud.c 9
 Jones3D/Main/JonesMain.c 6
 Libs/j3dcore/j3d.h.in 4
 Libs/j3dcore/j3dhook.h 4
-Libs/rdroid/Engine/rdClip.c 4
-Libs/rdroid/Primitives/rdFont.c 1
-Libs/rdroid/Primitives/rdPrimit2.c 1
-Libs/rdroid/Primitives/rdWallpaper.c 2
-Libs/rdroid/Raster/rdCache.c 12
-Libs/rdroid/types.h 1
+Libs/rdroid/Raster/rdCache.c 1
 Libs/sith/Dss/sithGamesave.c 9
 Libs/sith/Dss/sithGamesave.h 2
 Libs/sith/Engine/sithCollision.c 1
-Libs/sith/Engine/sithRenderSky.c 2
-Libs/sith/Gameplay/sithOverlayMap.c 4
-Libs/sith/types.h 8
 Libs/std/General/stdBmp.c 7
 Libs/std/General/stdBmp.h 1
-Libs/std/Win95/std3D.h 6
+Libs/std/Win95/std3D.h 3
 Libs/std/Win95/stdComm.h 2
 Libs/std/Win95/stdConsole.h 2
 Libs/std/Win95/stdDisplay.h 12
 Libs/std/Win95/stdShader.h 1
 Libs/std/Win95/stdWin95.h 2
-Libs/std/types.h 65
+Libs/std/types.h 48

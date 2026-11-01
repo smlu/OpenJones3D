@@ -2039,7 +2039,7 @@ void J3DAPI JonesHud_DrawIndicatorBar(const rdVector4* pPos, float scale, const 
         pPoly->matCelNum    = 0;
         pPoly->numVertices  = 0;
 
-        D3DTLVERTEX vert;
+        StdVertexTL vert;
         vert.sx  = pPos->x;
         vert.sy  = pPos->y;
         vert.sz  = pPos->z;
@@ -2049,7 +2049,7 @@ void J3DAPI JonesHud_DrawIndicatorBar(const rdVector4* pPos, float scale, const 
 
         size_t vertNum = 0;
 
-        LPD3DTLVERTEX pOutVert = pPoly->aVertices;
+        StdVertexTL* pOutVert = pPoly->aVertices;
         *pOutVert = vert;
 
         ++pPoly->numVertices;
@@ -2191,7 +2191,7 @@ void J3DAPI JonesHud_Draw(const rdMaterial* pMaterial, const JonesHudRect* rect,
         pPoly->aVertIntensities[0].blue  = pColor->z;
         pPoly->aVertIntensities[0].alpha = pColor->alpha;
 
-        LPD3DTLVERTEX pCurOutVert = pPoly->aVertices;
+        StdVertexTL* pCurOutVert = pPoly->aVertices;
         pCurOutVert->sx = rect->x;
         pCurOutVert->sy = rect->y;
         pCurOutVert->sz = z;

@@ -12,7 +12,7 @@
 
 #include <stdlib.h>
 
-D3DTLVERTEX rdPrimit2_aD3DVertices[2];
+StdVertexTL rdPrimit2_aD3DVertices[2];
 
 void rdPrimit2_InstallHooks(void)
 {

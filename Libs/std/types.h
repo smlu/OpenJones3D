@@ -29,6 +29,22 @@ typedef struct sSysDrawContext* tSysDrawContext;
 typedef struct sSysBitmap* tSysBitmap;
 typedef struct sSysFont* tSysFont;
 
+// Added: A transformed and lit vertex. The layout is a contract: backends can pass it to APIs that use this layout.
+typedef struct sStdVertexTL
+{
+    float sx, sy, sz; // Screen coordinates
+    float rhw;        // Reciprocal of homogeneous w
+    uint32_t color;    // 0xAARRGGBB
+    uint32_t specular; // 0xAARRGGBB
+    float tu, tv;      // Texture coordinates
+} StdVertexTL;
+static_assert(sizeof(StdVertexTL) == 32, "sizeof(StdVertexTL) == 32");
+
+// Added: Makes a 0xAARRGGBB color from float channels in the range 0 to 1, or from byte channels.
+#define STD_COLOR_ARGB(a, r, g, b)  ((uint32_t)((((a) & 0xffu) << 24) | (((r) & 0xffu) << 16) | (((g) & 0xffu) << 8) | ((b) & 0xffu)))
+#define STD_COLOR_FROM_FLOATS(r, g, b, a) STD_COLOR_ARGB((uint32_t)((a) * 255.f), (uint32_t)((r) * 255.f), (uint32_t)((g) * 255.f), (uint32_t)((b) * 255.f))
+#define STD_COLOR_FROM_FLOATS_RGB(r, g, b) STD_COLOR_ARGB(0xff, (uint32_t)((r) * 255.f), (uint32_t)((g) * 255.f), (uint32_t)((b) * 255.f))
+
 #if defined(J3D_DIRECTX6)
 // Direct3D & DirectDraw
 typedef DDCAPS_DX6 tSysDisplayDeviceCaps;
@@ -50,11 +66,6 @@ typedef IDirect3DTexture2 tSysTexture;
 typedef uint32_t DPID;
 
 // Direct3D stuff
-#define D3DRGBA D3DCOLOR_COLORVALUE
-#define RGBA_MAKE D3DCOLOR_ARGB 
-#define D3DRGB(r, g , b) \
-     D3DCOLOR_XRGB((DWORD)((r)*255.f),(DWORD)((g)*255.f),(DWORD)((b)*255.f))
-
 typedef D3DCAPS9 tSysDisplayDeviceCaps;
 typedef IDirect3DDevice9 tSysDisplayDevice;
 
@@ -71,31 +82,6 @@ typedef struct sDDColorKey
     uint32_t dwColorSpaceLowValue;
     uint32_t dwColorSpaceHighValue;
 } DDCOLORKEY, *LPDDCOLORKEY;
-
-typedef struct sD3DTLVERTEX
-{
-    /* Screen coordinates */
-    float sx;
-    float sy;
-    float sz;
-
-    /* Reciprocal of homogeneous w */
-    float rhw;
-
-    /* Vertex color */
-    D3DCOLOR color;
-
-    /* Specular component of vertex */
-    D3DCOLOR specular;
-
-    /* Texture coordinates */
-    float tu;
-    float tv;
-
-} D3DTLVERTEX, * LPD3DTLVERTEX;
-
-// The FVF format for D3DTLVERTEX
-#define D3DTLVERTEX_FVF (D3DFVF_XYZRHW | D3DFVF_DIFFUSE | D3DFVF_SPECULAR | D3DFVF_TEX1)
 
 #endif // J3D_DIRECTX6
 

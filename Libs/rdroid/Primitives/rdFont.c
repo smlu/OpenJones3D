@@ -581,7 +581,7 @@ void J3DAPI rdFont_DrawCharScaled(size_t chr, float x, float y, float z, const r
     pPoly->pMaterial    = pFont->pMaterial;
     pPoly->matCelNum    = 0;
 
-    LPD3DTLVERTEX pCurVert = pPoly->aVertices;
+    StdVertexTL* pCurVert = pPoly->aVertices;
     pCurVert->sx  = x;
     pCurVert->sy  = y;
     pCurVert->sz  = z;

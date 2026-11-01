@@ -2,6 +2,7 @@
 #include <std/Win95/stdDisplay.h>
 #include <std/Win95/stdShader.h>
 #include <std/Win95/DX9/stdShaderDX9.h>
+#include <std/Win95/DX9/stdVertexDX9.h>
 
 #include <j3dcore/j3dhook.h>
 #include <std/General/std.h>

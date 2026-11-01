@@ -7,6 +7,7 @@
 
 #include <std/General/stdUtil.h>
 #include <std/Win95/DX9/stdShaderDX9.h>
+#include <std/Win95/DX9/stdVertexDX9.h>
 #include <std/Win95/stdControl.h>
 
 #ifndef DIRECTINPUT_VERSION

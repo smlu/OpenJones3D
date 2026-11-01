@@ -18,7 +18,7 @@ static size_t rdCache_numProcFaces              = 0;
 static rdCacheProcEntry rdCache_aProcFaces[128] = { 0 };
 
 static size_t rdCache_numUsedVertices = 0;
-static D3DTLVERTEX rdCache_aVertices[RDCACHE_VERTBUFFERSIZE]      = { 0 };
+static StdVertexTL rdCache_aVertices[RDCACHE_VERTBUFFERSIZE]      = { 0 };
 static rdVector4 rdCache_aVertIntensities[RDCACHE_VERTBUFFERSIZE] = { 0 }; // Fixed: Changed to match size of rdCache_aVertices, was 8192
 
 
@@ -26,14 +26,14 @@ static size_t rdCache_numAlphaProcFaces               = 0;
 static rdCacheProcEntry rdCache_aAlphaProcFaces[4096] = { 0 };
 
 static size_t rdCache_numUsedAlphaVertices = 0;
-static D3DTLVERTEX rdCache_aAlphaVertices[RDCACHE_VERTBUFFERSIZE]      = { 0 };
+static StdVertexTL rdCache_aAlphaVertices[RDCACHE_VERTBUFFERSIZE]      = { 0 };
 static rdVector4 rdCache_aAlphaVertIntensities[RDCACHE_VERTBUFFERSIZE] = { 0 };
 
 static size_t rdCache_totalVerts             = 0;
-static LPD3DTLVERTEX rdCache_pCurInVert      = NULL;
-static LPD3DTLVERTEX rdCache_pCurCacheVertex = NULL;
+static StdVertexTL* rdCache_pCurInVert      = NULL;
+static StdVertexTL* rdCache_pCurCacheVertex = NULL;
 
-static D3DTLVERTEX rdCache_aHWVertices[RDCACHE_VERTBUFFERSIZE]     = { 0 };
+static StdVertexTL rdCache_aHWVertices[RDCACHE_VERTBUFFERSIZE]     = { 0 };
 static uint16_t rdCache_aVertIndices[RDCACHE_VERTBUFFERSIZE * 3]   = { 0 };
 
 static size_t rdCache_drawnFaces = 0;
@@ -330,7 +330,7 @@ LABEL_4:
             rdCache_pCurCacheVertex = &rdCache_aHWVertices[rdCache_totalVerts];
             for ( size_t i = 0; i < pCurPoly->numVertices; ++i )
             {
-                memcpy(rdCache_pCurCacheVertex, rdCache_pCurInVert++, sizeof(D3DTLVERTEX));
+                memcpy(rdCache_pCurCacheVertex, rdCache_pCurInVert++, sizeof(StdVertexTL));
 
                 float blue  = 1.0f;
                 float green = 1.0f;
@@ -373,11 +373,11 @@ LABEL_4:
 
                 if ( (fflags & RD_FF_TEX_TRANSLUCENT) != 0 )
                 {
-                    rdCache_pCurCacheVertex->color = D3DRGBA(red, green, blue, alpha); // (int32_t)(blue * 255.0f) | ((unsigned int)(int32_t)(green * 255.0f) << 8) | ((unsigned int)(int32_t)(red * 255.0f) << 16) | ((unsigned int)(int32_t)(alpha * 255.0f) << 24);
+                    rdCache_pCurCacheVertex->color = STD_COLOR_FROM_FLOATS(red, green, blue, alpha); // (int32_t)(blue * 255.0f) | ((unsigned int)(int32_t)(green * 255.0f) << 8) | ((unsigned int)(int32_t)(red * 255.0f) << 16) | ((unsigned int)(int32_t)(alpha * 255.0f) << 24);
                 }
                 else
                 {
-                    rdCache_pCurCacheVertex->color = D3DRGB(red, green, blue); //(int32_t)(blue * 255.0f) | ((unsigned int)(int32_t)(green * 255.0f) << 8) | ((unsigned int)(int32_t)(red * 255.0f) << 16) | 0xFF000000;
+                    rdCache_pCurCacheVertex->color = STD_COLOR_FROM_FLOATS_RGB(red, green, blue); //(int32_t)(blue * 255.0f) | ((unsigned int)(int32_t)(green * 255.0f) << 8) | ((unsigned int)(int32_t)(red * 255.0f) << 16) | 0xFF000000;
                 }
 
                 ++rdCache_pCurCacheVertex;
@@ -441,7 +441,7 @@ void J3DAPI rdCache_SendWireframeFaceListToHardware(size_t numPolys, rdCacheProc
     {
         for ( size_t j = 0; j < pCurPoly->numVertices; ++j )
         {
-            pCurPoly->aVertices[j].color = RGBA_MAKE(255, 255, 255, 255);// aka white color
+            pCurPoly->aVertices[j].color = STD_COLOR_ARGB(255, 255, 255, 255);// aka white color
         }
 
         if ( rdroid_g_curGeometryMode == RD_GEOMETRY_VERTEX )
@@ -452,9 +452,9 @@ void J3DAPI rdCache_SendWireframeFaceListToHardware(size_t numPolys, rdCacheProc
         {
             std3D_DrawLineStrip(pCurPoly->aVertices, pCurPoly->numVertices);
 
-            D3DTLVERTEX aVerts[2]; // Draw end vert twice to complete the line
-            memcpy(aVerts, &pCurPoly->aVertices[pCurPoly->numVertices - 1], sizeof(D3DTLVERTEX));
-            memcpy(&aVerts[1], pCurPoly->aVertices, sizeof(D3DTLVERTEX));
+            StdVertexTL aVerts[2]; // Draw end vert twice to complete the line
+            memcpy(aVerts, &pCurPoly->aVertices[pCurPoly->numVertices - 1], sizeof(StdVertexTL));
+            memcpy(&aVerts[1], pCurPoly->aVertices, sizeof(StdVertexTL));
             std3D_DrawLineStrip(aVerts, 2u);
         }
 

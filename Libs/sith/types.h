@@ -3178,14 +3178,14 @@ typedef struct sSithOverlayMapConfig
 {
     size_t numZLevels;
     float* aZLevelBounds;
-    D3DCOLOR* aZLevelColors;
-    D3DCOLOR playerBoundsColor;
-    D3DCOLOR playerDirectionColor;
-    D3DCOLOR actorBoundsColor;
-    D3DCOLOR actorDirectionColor;
-    D3DCOLOR itemBoundsColor;
-    D3DCOLOR weaponBoundsColor;
-    D3DCOLOR defaultBoundsColor;
+    uint32_t* aZLevelColors;
+    uint32_t playerBoundsColor;
+    uint32_t playerDirectionColor;
+    uint32_t actorBoundsColor;
+    uint32_t actorDirectionColor;
+    uint32_t itemBoundsColor;
+    uint32_t weaponBoundsColor;
+    uint32_t defaultBoundsColor;
     int bMapRotation;
 } SithOverlayMapConfig;
 

@@ -614,7 +614,7 @@ struct srdCacheProcEntry
     rdFaceFlags flags;
     rdLightMode lightingMode;
     size_t numVertices;
-    LPD3DTLVERTEX aVertices;
+    StdVertexTL* aVertices;
     rdVector4* aVertIntensities;
     rdMaterial* pMaterial;
     int32_t matCelNum;
