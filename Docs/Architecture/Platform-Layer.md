@@ -82,7 +82,7 @@ JonesMain.c     JonesMain_OnActivate(bActive)                    no HWND, no WM_
 rdCache.c       tSysTexture* pCachedTexture = pTex->pCachedTexture     can store and pass it
                 std3D_DrawRenderList(pCachedTexture, flags, aVerts, ...)  can't look inside it
 ---------------------------------------------------------------------------------
-std3DX9.c       casts to IDirect3DTexture9* and draws
+std3DX9.c       sees the real IDirect3DTexture9* and draws
 ```
 
 ## Patterns
@@ -124,11 +124,11 @@ The shared header declares a struct and never defines it. The engine can hold th
 // Shared header
 typedef struct sSysTexture tSysTexture;
 
-// std3DX9.c
-IDirect3DTexture9* pD3DTex = (IDirect3DTexture9*)pTex;
+// Libs/std/Win95/DX9/stdSysTypesDX9.h, first include in DX9 code
+#define sSysTexture IDirect3DTexture9
 ```
 
-A pointer has the same size as before, so struct layouts don't move. This covers `tSysSurface`, `tSysTexture`, `tSysDevice3D`, `tSysDisplayDevice`, `tSysSoundBuffer`, `tSysWindow` and `tSysHandle`.
+In DX9 code the tag names the real type, so that code needs no casts and doesn't change. A pointer has the same size as before, so struct layouts don't move. This covers `tSysSurface`, `tSysTexture`, `tSysDevice3D`, `tSysDisplayDevice`, `tSysSoundBuffer`, `tSysWindow` and `tSysHandle`.
 
 ### 4. Backend-sized storage
 
@@ -143,28 +143,27 @@ An undefined struct can't be embedded by value, and four are embedded today:
 
 `tSystemTexture` also has different fields per backend, behind an `#ifdef` at `Libs/std/types.h:398`. The engine has to know its size, because `rdMaterial.c:153` and `sithMaterial.c:536` allocate arrays of it, and `rdCache.c:315` reads its `pCachedTexture` field.
 
-The fix is a byte array of the right size, where the size comes from a header in the selected backend's directory. That header defines numbers only and includes nothing from the platform.
+The fix is a byte array of the right size above the line, and the real type below it. The size comes from a header in the selected backend's directory, which defines numbers only.
 
 ```c
 // Libs/std/Win95/DX9/stdBackendTypes.h, found through the backend's include path
-#define STD_SYS_SURFACEDESC_SIZE  32  // Illustrative: M3.0 records the real values
-#define STD_SYS_ALIGN             4
+#define STD_SYS_SURFACEDESC_SIZE 32
+#define STD_SYS_ALIGN            4
 
-// Shared header
-typedef struct sSysSurfaceDesc
-{
-    _Alignas(STD_SYS_ALIGN) uint8_t aData[STD_SYS_SURFACEDESC_SIZE];
-} tSysSurfaceDesc;
+// Libs/std/types.h
+#if !defined(STD_SYS_BACKEND_TYPES)
+typedef struct sSysSurfaceDesc { _Alignas(STD_SYS_ALIGN) uint8_t aData[STD_SYS_SURFACEDESC_SIZE]; } tSysSurfaceDesc;
+#endif
 
-// stdDisplayDX9.c
-static_assert(sizeof(D3DSURFACE_DESC) == sizeof(tSysSurfaceDesc), "backend size must match");
+// Libs/std/Win95/DX9/stdSysTypesDX9.h, first include in DX9 code
+#define STD_SYS_BACKEND_TYPES
+typedef D3DSURFACE_DESC tSysSurfaceDesc;
+static_assert(sizeof(D3DSURFACE_DESC) == STD_SYS_SURFACEDESC_SIZE, "backend size must match");
 ```
 
-For `tSystemTexture`, the backend-specific fields become one such array as the first member, and the shared fields after it keep their order. Each backend defines its private struct and casts to it.
-
-- **Why not a pointer to separately allocated state:** that changes the layout on the existing backends and adds an allocation per texture. This way each backend's layout stays byte-identical.
-- **Cost:** each DX6 and DX9 use of these fields needs a cast or small accessor in the backend, about 200 lines of matches. Backend code changes, but engine code doesn't.
-- **Size checks:** the `static_assert`s on these structs are commented out today because sizes differ per backend. The new per-backend asserts replace them.
+- **Why not a pointer to separately allocated state:** that changes the layout and adds an allocation per texture. This way the layout stays byte-identical.
+- **Backend code doesn't change.** It keeps reading fields like `pBuf->surface.desc.Width`.
+- **Size checks:** the `static_assert`s in the backend header replace the commented-out size checks in `std/types.h`.
 
 ### 5. Neutral types, translated at the edge
 
@@ -172,7 +171,7 @@ When the engine really uses the contents, it gets its own definition, and the ba
 
 | Data | Engine definition | How the backend adapts |
 |---|---|---|
-| Vertices | `StdVertexTL`, same 32 bytes | DX casts, a size check proves it. Other backends copy |
+| Vertices | `StdVertexTL`, same 32 bytes | DX uses the same layout, and a size check proves it. Other backends copy |
 | Key codes | `STDKEY_*`, same numbers as DirectInput | DX uses them directly, with `static_assert(STDKEY_X == DIK_X)`. Other backends translate |
 | Colors | `uint32_t`, `0xAARRGGBB` | DX passes through. Other backends swizzle |
 | Thumbnails | Pixel buffer | The backend converts from `HBITMAP` |
@@ -259,7 +258,7 @@ All replacements keep size and layout on 32-bit, checked by the existing `static
 
 | Today | Replacement | Note |
 |---|---|---|
-| `HWND`, `HANDLE`, `HDC`, `HBITMAP`, `HFONT` | `tSysWindow`, `tSysHandle` and so on: pointers to declared but undefined structs | Backends cast. Follows the `tSys*` pattern |
+| `HWND`, `HANDLE`, `HDC`, `HBITMAP`, `HFONT` | `tSysWindow`, `tSysHandle` and so on: pointers to declared but undefined structs | Backends map the tag to the real type. Follows the `tSys*` pattern |
 | `IDirect3DTexture9` and other `tSys*` interface pointers | The same `tSys*` names, as opaque structs | The shared header no longer picks a type by backend |
 | `tSysSurfaceDesc`, `tSysDisplayDeviceCaps`, `tSysDevice3DDesc`, `tSysPixelFormat`, embedded by value | The same names, as backend-sized byte arrays | See pattern 4 |
 | `tDirectSound` in `sound/Driver.h` | Moves to a private DX header, or becomes an opaque handle where `Sound.c` and `SmushPlay` still pass it | M3.3 decides. |
@@ -285,10 +284,10 @@ All replacements keep size and layout on 32-bit, checked by the existing `static
 | Registry and config | `wuRegistry_*` | `stdConfig.c` falls back to the registry. It gets a callback set by `Jones3D`, which removes the `std -> w32util` break and keeps the read order |
 | Input | `stdControl_*`, with `STDKEY_*` | See below |
 | Sound | `SoundDriver_*`, already a boundary | `tSysSoundBuffer` becomes opaque. `Sound.c`'s one test goes |
-| Cutscene sound | `Dsnd.c` uses DirectSound directly, 28 places, with no `SoundDriver_` calls | Move the DirectSound part below a small interface, or onto `SoundDriver_`. M3.3 decides after reading it, and timing must not change |
+| Cutscene sound | `SNDDRIVER`, which `Engine.c` already uses | `Dsnd.c` is a backend as a whole, and another platform replaces the file |
 | Window and lifecycle | `wkernel_*` | See below |
 | Dialogs | `jonesConfig_*`, `JonesDialog_*` | See below |
-| Thumbnails | `stdBmp_Load`, `sithGamesave_*Thumbnail` | `HBITMAP` and `HDC` become a pixel buffer. Saved bytes must not change, so M3.6 needs a byte-exact test first |
+| Thumbnails | `stdBmp_Load`, `sithGamesave_*Thumbnail` | The code moves to Win32 files and `HBITMAP` becomes `tSysBitmap`. A pixel buffer waits for the in-game UI that needs it |
 | Renderer | `std3D_*`, `stdDisplay_*` | See below |
 | Networking | `stdComm_*` | Types only. A null backend in M4 reports no game |
 
@@ -296,7 +295,7 @@ All replacements keep size and layout on 32-bit, checked by the existing `static
 
 **Window.** `JonesMain.c` handles about a dozen `WM_` messages in its window procedure. The Win32 part moves to `Jones3D/Platform/Win32/` and calls platform-neutral `JonesMain_On*` functions for activate, close and similar events, in the same order. `wkernel_Run`'s `WinMain` parameters move to the Win32 entry point.
 
-**Dialogs.** Outside its own file, the code uses only these from `jonesConfig`: `Startup`, `Shutdown`, `UpdateCurrentLevelNum`, `GetLoadGameFilePath`, `GetSaveGameFilePath`, and `ShowControlOptions`, `ShowDialogInsertCD`, `ShowDisplaySettingsDialog`, `ShowExitGameDialog`, `ShowGameOverDialog`, `ShowGamePlayOptions`, `ShowLevelCompletedDialog`, `ShowMessageDialog`, `ShowSoundSettingsDialog`, `ShowStatisticsDialog`; plus the global `g_fogDensity_tmp`, read by `sithRender.c`. From `JonesDialog`, 3 names are used. So `jonesConfig.c` and `JonesDialog.c` move as they are to `Jones3D/Platform/Win32/`. The header keeps these functions with engine types. Null versions return each dialog's documented default. Logic that an in-game UI needs later gets extracted at M7.
+**Dialogs.** Outside its own file, the code uses only these from `jonesConfig`: `Startup`, `Shutdown`, `UpdateCurrentLevelNum`, `GetLoadGameFilePath`, `GetSaveGameFilePath`, and `ShowControlOptions`, `ShowDialogInsertCD`, `ShowDisplaySettingsDialog`, `ShowExitGameDialog`, `ShowGameOverDialog`, `ShowGamePlayOptions`, `ShowLevelCompletedDialog`, `ShowMessageDialog`, `ShowSoundSettingsDialog`, `ShowStatisticsDialog`. From `JonesDialog`, 3 names are used. So `jonesConfig.c` and `JonesDialog.c` move as they are to `Jones3D/Platform/Win32/`. The header keeps these functions with engine types. Null versions return each dialog's documented default. Logic that an in-game UI needs later gets extracted at M7.
 
 **Renderer.** See the example below. Debug and device accessors such as `std3D_GetD3DDevice`, `stdDisplay_GetDirect3D`, `stdDisplay_GetSystemDevice` and `std3D_D3DGetStatus` move to a private DX header. `std3D_SetProjection` and `stdDisplay_RemoveBufferClipper` return a plain `int`, with 0 for success. Their only known caller ignores the projection result.
 
@@ -352,7 +351,7 @@ typedef struct sSysTexture tSysTexture; // Owned by the backend
 void J3DAPI std3D_DrawRenderList(tSysTexture* pTex, Std3DRenderState rdflags, StdVertexTL* aVerts, size_t numVerts, uint16_t* aIndices, size_t numIndices);
 ```
 
-The parameters match `Libs/std/Win95/std3D.h:48`, with only the platform types replaced. DX9 and DX6 cast and draw now. Null discards. A deferred backend copies. No caller needs an `#ifdef`. **Must not change:** draw order and render states on DX9.
+The parameters match `Libs/std/Win95/std3D.h:48`, with only the platform types replaced. DX9 sees the real types and draws now. Null discards. A deferred backend copies. No caller needs an `#ifdef`. **Must not change:** draw order and render states on DX9.
 
 ## Beyond Windows: seen early, solved in M4
 
