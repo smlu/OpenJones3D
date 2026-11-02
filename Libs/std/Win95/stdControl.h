@@ -292,6 +292,11 @@ int J3DAPI stdControl_ReadAxisAsKeyEx(size_t axis, int* pbPressed, float lowValu
  */
 int J3DAPI stdControl_ReadKey(size_t keyNum, int* pbPressed);
 
+// Added: declared for the headless input script
+// Updates one key's pressed state as of tickTime (msec, the same clock the control reads use).
+// Out-of-range key ids are ignored.
+void J3DAPI stdControl_UpdateKeyState(int keyId, int bPressed, unsigned int tickTime);
+
 int stdControl_ControlsActive(void);
 int J3DAPI stdControl_SetActivation(int bActive); // returns 0 if mouse control was successfully processed
 
