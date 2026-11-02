@@ -200,6 +200,12 @@ TEST(stdMemory, TestBlockAllocatorSmallLargeReallocAndZeroSize)
     TEST_ASSERT_NULL(stdMemory_BlockRealloc(pSmall, 0u));
 }
 
+#if defined(J3D_32BIT)
+// Added: these cases check the 32-bit block zones: the zone header at pData - sizeof(tMemoryBlockHeader),
+// the fragment reuse, coalescing and zone bookkeeping, and freeing a block twice. stdMemory.c routes
+// BlockMalloc, BlockFree and BlockRealloc to the C allocator and BlockAlloc to an unreachable assert on
+// 64-bit builds ("Altered: The block zones assume a 32-bit header"), so the zones are not compiled in
+// there and a native 64-bit run would compare against allocator behaviour that does not exist.
 TEST(stdMemory, TestDirectBlockAllocAndReallocFailurePreservesOriginalBlock)
 {
     uint8_t* pData = (uint8_t*)stdMemory_BlockAlloc(5000u);
@@ -410,6 +416,7 @@ TEST(stdMemory, TestBlockReallocPreservesDataAcrossZoneAndHeapBoundaries)
 
     stdMemory_BlockFree(pData);
 }
+#endif // J3D_32BIT
 
 TEST(stdMemory, TestBlockAllocatorHandlesDeterministicFragmentationStress)
 {
@@ -528,6 +535,7 @@ TEST_GROUP_RUNNER(stdMemory)
     RUN_TEST_CASE(stdMemory, TestFreeNullRuntimeGuard);
 #endif
     RUN_TEST_CASE(stdMemory, TestBlockAllocatorSmallLargeReallocAndZeroSize);
+#ifdef J3D_32BIT
     RUN_TEST_CASE(stdMemory, TestDirectBlockAllocAndReallocFailurePreservesOriginalBlock);
     RUN_TEST_CASE(stdMemory, TestBlockAllocatorReusesFreedFragmentsAndWarnsOnDoubleFree);
     RUN_TEST_CASE(stdMemory, TestBlockAllocatorAlignsOddSizesAndUsesThresholdBoundary);
@@ -535,6 +543,7 @@ TEST_GROUP_RUNNER(stdMemory)
     RUN_TEST_CASE(stdMemory, TestBlockAllocatorCoalescesNextPreviousAndBothNeighbors);
     RUN_TEST_CASE(stdMemory, TestBlockAllocatorCreatesAndReleasesMultipleZones);
     RUN_TEST_CASE(stdMemory, TestBlockReallocPreservesDataAcrossZoneAndHeapBoundaries);
+#endif
     RUN_TEST_CASE(stdMemory, TestBlockAllocatorHandlesDeterministicFragmentationStress);
 #ifdef J3D_RUNTIME_GUARDS
     RUN_TEST_CASE(stdMemory, TestBlockFreeNullAssertsAndReturnsUnderRuntimeGuard);

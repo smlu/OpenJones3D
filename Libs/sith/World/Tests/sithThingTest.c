@@ -98,22 +98,28 @@ static tHostServices sithThingTest_hostServices;
 static size_t sithThingTest_previousDebugFillThreshold;
 #endif
 
+// Added: A standalone build links the real definitions of these globals from the sith, std and
+// rdroid libraries; only the injected test build needs fakes for them.
+#if !defined(J3D_STANDALONE)
 tHostServices* sith_g_pHS;
 tHostServices* std_g_pHS;
+#endif
 
-#if defined(J3D_LOCAL_SITH_RTI)
+#if defined(J3D_LOCAL_SITH_RTI) && !defined(J3D_STANDALONE)
 SithWorld* sithWorld_g_pCurrentWorld;
 SithWorld* sithWorld_g_pStaticWorld;
 SithWorld* sithWorld_g_pLastLoadedWorld;
 int sithWorld_g_bLoading;
 #endif
 
+#if !defined(J3D_STANDALONE)
 const rdMatrix34 rdroid_g_identMatrix34 = {
     { { 1.0f },{ 0.0f },{ 0.0f } },
     { { 0.0f },{ 1.0f },{ 0.0f } },
     { { 0.0f },{ 0.0f },{ 1.0f } },
     { { 0.0f },{ 0.0f },{ 0.0f } }
 };
+#endif
 
 static SithWorld sithThingTest_world;
 static SithSector sithThingTest_aSectors[2];

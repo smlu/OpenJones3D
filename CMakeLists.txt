@@ -58,7 +58,8 @@ if(NOT WIN32)
     # platform without the Windows backends and without the retail-executable hooks.
     set(J3D_PLATFORM_NULL ON)
     set(JONES3D_STANDALONE ON CACHE BOOL "" FORCE)
-    set(JONES3D_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+    # Altered: tests stay ON on the Null platform; the portable unit suites run natively
+    # (the Windows-only suites are excluded per module below).
     set(JONES3D_BUILD_PROGRAMS OFF CACHE BOOL "" FORCE)
 endif()
 
@@ -82,7 +83,11 @@ endif()
 
 if (JONES3D_STANDALONE)
     # Added: test targets provide their own fake retail globals, which standalone definitions would collide with.
-    set(JONES3D_BUILD_TESTS OFF)
+    # Altered: the Null platform keeps its tests: the standalone/Null collision is resolved per test target
+    # (Libs/sith/Tests), so the portable suites can run natively. Windows standalone behavior is unchanged.
+    if (NOT J3D_PLATFORM_NULL)
+        set(JONES3D_BUILD_TESTS OFF)
+    endif()
     add_compile_definitions(J3D_STANDALONE J3D_LOCAL_RTI J3D_LOCAL_SITH_RTI J3D_LOCAL_RDROID_RTI)
 endif()
 
@@ -95,6 +100,13 @@ else()
     if (J3D_PLATFORM_NULL)
         enable_testing()
     endif()
+endif()
+
+# Added: the Null platform has no device backends and no Windows console: system and disruptive
+# system tests stay Windows-only there. Windows behavior is unchanged.
+if (J3D_PLATFORM_NULL)
+    set(JONES3D_BUILD_SYSTEM_TESTS OFF)
+    set(JONES3D_BUILD_DISRUPTIVE_SYSTEM_TESTS OFF)
 endif()
 
 if (NOT JONES3D_BUILD_SYSTEM_TESTS)
@@ -205,6 +217,9 @@ elseif(NOT WIN32 AND (CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU"))
     # Added: glibc's backtrace_symbols in stdPlatformNull needs the engine symbols exported to the
     # dynamic symbol table to name the frames of the headless runner.
     add_link_options(-rdynamic)
+    # Added: glibc keeps the math functions (sinf, atan2f, sqrtf) in libm; the Windows CRT has them
+    # in the default libraries. Native test executables call engine code that uses them directly.
+    link_libraries(m)
     if (CMAKE_C_COMPILER_ID MATCHES "Clang")
         # Added: fail the native build on any cast that truncates a pointer (or widens an int
         # into one) so 64-bit builds stay pointer-safe. Clang only: these warning groups have

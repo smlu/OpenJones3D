@@ -1,5 +1,7 @@
 #include <unity_fixture.h>
 
+#include <j3dcore/j3d.h>
+
 #include <string.h>
 
 void TEST_std_GROUP_RUNNER(void);
@@ -16,12 +18,17 @@ void TEST_stdConffile_GROUP_RUNNER(void);
 void TEST_stdConfig_GROUP_RUNNER(void);
 void TEST_stdFileUtil_GROUP_RUNNER(void);
 void TEST_stdJSON_GROUP_RUNNER(void);
+void TEST_stdStrTable_GROUP_RUNNER(void);
+#if !defined(J3D_PLATFORM_NULL)
+// Added: these suites are not built on the Null platform: stdBmpTest.c checks GDI HBITMAPs from the
+// Win32 stdBmp backend, stdPlatformTest.c uses Windows stack frames, minidumps and a CreateProcessA
+// death child, and the whole Win95 backend suite needs windows.h.
 void TEST_stdBmp_GROUP_RUNNER(void);
 void TEST_stdPlatform_GROUP_RUNNER(void);
-void TEST_stdStrTable_GROUP_RUNNER(void);
 void StdWin95Test_RunAllTests(void);
 int StdPlatformTest_RunDeathChild(void);
 int StdConsoleTest_RunConsoleChild(void);
+#endif
 
 static void runAllTests(void)
 {
@@ -39,14 +46,19 @@ static void runAllTests(void)
     TEST_stdConfig_GROUP_RUNNER();
     TEST_stdFileUtil_GROUP_RUNNER();
     TEST_stdJSON_GROUP_RUNNER();
+#if !defined(J3D_PLATFORM_NULL)
     TEST_stdBmp_GROUP_RUNNER();
     TEST_stdPlatform_GROUP_RUNNER();
+#endif
     TEST_stdStrTable_GROUP_RUNNER();
+#if !defined(J3D_PLATFORM_NULL)
     StdWin95Test_RunAllTests();
+#endif
 }
 
 int main(int argc, const char* argv[])
 {
+#if !defined(J3D_PLATFORM_NULL)
     if ( argc == 2 && strcmp(argv[1], "--std-platform-death-child") == 0 )
     {
         return StdPlatformTest_RunDeathChild();
@@ -56,6 +68,7 @@ int main(int argc, const char* argv[])
     {
         return StdConsoleTest_RunConsoleChild();
     }
+#endif
 
     return UnityMain(argc, argv, runAllTests);
 }

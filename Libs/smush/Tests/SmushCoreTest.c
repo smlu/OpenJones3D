@@ -4,7 +4,43 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#if defined(_WIN32)
 #include <windows.h>
+#else
+// Added: The Null platform builds this suite natively; the timer tests wait on the tick thread with
+// Sleep/GetTickCount and count callback entries with InterlockedIncrement. These are the POSIX
+// equivalents of exactly those three calls, so the tests keep their original form. The smush Null
+// timer (insane/Timer/TimerNull.c) runs the same tick thread on a pthread.
+#include <time.h>
+
+typedef int BOOL;
+typedef unsigned int DWORD;
+typedef long LONG;
+
+#define FALSE 0
+#define TRUE 1
+
+static void SmushCoreTest_Sleep(DWORD msec)
+{
+    struct timespec req = { (time_t)(msec / 1000u), (long)(msec % 1000u) * 1000000L };
+    nanosleep(&req, NULL);
+}
+#define Sleep SmushCoreTest_Sleep
+
+static DWORD SmushCoreTest_GetTickCount(void)
+{
+    struct timespec now;
+    clock_gettime(CLOCK_MONOTONIC, &now);
+    return (DWORD)((uint64_t)now.tv_sec * 1000u + (uint64_t)now.tv_nsec / 1000000L);
+}
+#define GetTickCount SmushCoreTest_GetTickCount
+
+static LONG SmushCoreTest_InterlockedIncrement(volatile LONG* pValue)
+{
+    return __atomic_add_fetch(pValue, 1, __ATOMIC_SEQ_CST);
+}
+#define InterlockedIncrement SmushCoreTest_InterlockedIncrement
+#endif
 
 #include <smush/insane/Bitmap/Bitmap.h>
 #include <smush/insane/Lec/LecShare.h>
@@ -808,6 +844,13 @@ TEST(SmushCore, Bitmap_Startup_NoMemory)
 
 TEST(SmushCore, Bitmap_Create_Rgb565)
 {
+    // Added: the recorded block sizes are the 32-bit image's (LecBitmapHeader holds pointers: 0x5C there,
+    // 0x60 here); the reconstructed code allocates sizeof(LecBitmapHeader) correctly for the build.
+    if ( sizeof(void*) != 4 )
+    {
+        TEST_IGNORE_MESSAGE("32-bit state images; needs a 32-bit build");
+    }
+
     BitmapInterface* pBitmaps = SmushCoreTest_InitBitmap();
     TEST_ASSERT_NOT_NULL(pBitmaps);
     TEST_ASSERT_TRUE(pBitmaps->Create == bitmap_Create);
@@ -858,6 +901,13 @@ typedef struct sSmushCoreTestBitmapType
 
 TEST(SmushCore, Bitmap_Create_Types)
 {
+    // Added: the recorded block sizes are the 32-bit image's (LecBitmapHeader holds pointers: 0x5C there,
+    // 0x60 here); the reconstructed code allocates sizeof(LecBitmapHeader) correctly for the build.
+    if ( sizeof(void*) != 4 )
+    {
+        TEST_IGNORE_MESSAGE("32-bit state images; needs a 32-bit build");
+    }
+
     static const SmushCoreTestBitmapType aTypes[] = {
         // type, pixelSize, bpp, colorMode, {R,G,B,A bpp}, {R,G,B,A shift}, {R,G,B,A shift right}
         { 5,  2, 16, 2, { 5, 5, 5, 1 }, { 10, 5, 0, 15 }, { 3, 3, 3, 7 } },
@@ -906,6 +956,13 @@ TEST(SmushCore, Bitmap_Create_Types)
 
 TEST(SmushCore, Bitmap_Create_Indexed)
 {
+    // Added: the recorded block sizes are the 32-bit image's (LecBitmapHeader holds pointers: 0x5C there,
+    // 0x60 here); the reconstructed code allocates sizeof(LecBitmapHeader) correctly for the build.
+    if ( sizeof(void*) != 4 )
+    {
+        TEST_IGNORE_MESSAGE("32-bit state images; needs a 32-bit build");
+    }
+
     BitmapInterface* pBitmaps = SmushCoreTest_InitBitmap();
     TEST_ASSERT_NOT_NULL(pBitmaps);
 
@@ -952,6 +1009,13 @@ TEST(SmushCore, Bitmap_Create_AllocFailure)
 
 TEST(SmushCore, Bitmap_CreateEx)
 {
+    // Added: the recorded block sizes are the 32-bit image's (LecBitmapHeader holds pointers: 0x5C there,
+    // 0x60 here); the reconstructed code allocates sizeof(LecBitmapHeader) correctly for the build.
+    if ( sizeof(void*) != 4 )
+    {
+        TEST_IGNORE_MESSAGE("32-bit state images; needs a 32-bit build");
+    }
+
     BitmapInterface* pBitmaps = SmushCoreTest_InitBitmap();
     TEST_ASSERT_NOT_NULL(pBitmaps);
 
@@ -1004,9 +1068,9 @@ TEST(SmushCore, Bitmap_CreateEx)
 /* ---- Timer ---- */
 
 static volatile LONG g_timerCalls[TIMER_COUNT + 2];
-static volatile LONG g_timerParam;
+static volatile intptr_t g_timerParam; // Fixed: intptr_t: the timer context widened (see Timer.h)
 
-static void SmushCoreTest_TimerCallback(int index, int param)
+static void SmushCoreTest_TimerCallback(int index, intptr_t param) // Fixed: intptr_t timer context, see Timer.h
 {
     InterlockedIncrement(&g_timerCalls[index]);
     g_timerParam = param;

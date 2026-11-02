@@ -35,7 +35,9 @@ add_executable(sithDSSTests
 
 # Same force-include as the MSVC /FI above; the target contains only the two source lists, so the
 # option scope is identical. (Per-source set_property does not expand the SHELL: prefix.)
-if (MINGW)
+# Altered: MinGW only before; the native Clang/GCC (Null) build needs the same -include, and it is a
+# GNU-compiler option, so the condition is now every non-MSVC compiler. Windows behavior is unchanged.
+if (NOT MSVC)
     target_compile_options(sithDSSTests PRIVATE
         "SHELL:-include ${CMAKE_CURRENT_SOURCE_DIR}/sithDSSTestAddrs.h")
 endif()
@@ -59,6 +61,10 @@ if (MSVC)
     target_link_options(sithDSSTests PRIVATE /BASE:0x20000000 /DYNAMICBASE:NO)
 elseif(MINGW)
     target_link_options(sithDSSTests PRIVATE -Wl,--image-base=0x20000000 -Wl,--disable-dynamicbase)
+elseif(J3D_PLATFORM_NULL)
+    # Added: The Null platform needs the same fixed, high load address for the same reason (see
+    # sithVecTest_AssertArenaPlacement): a non-PIE image with its text segment at 0x20000000.
+    target_link_options(sithDSSTests PRIVATE -no-pie -Wl,-Ttext-segment=0x20000000)
 endif()
 
 set_target_properties(sithDSSTests PROPERTIES
@@ -114,7 +120,9 @@ add_executable(sithMultiTests
 
 # Same force-include as the MSVC /FI above; the target contains only the two source lists, so the
 # option scope is identical. (Per-source set_property does not expand the SHELL: prefix.)
-if (MINGW)
+# Altered: MinGW only before; the native Clang/GCC (Null) build needs the same -include, and it is a
+# GNU-compiler option, so the condition is now every non-MSVC compiler. Windows behavior is unchanged.
+if (NOT MSVC)
     target_compile_options(sithMultiTests PRIVATE
         "SHELL:-include ${CMAKE_CURRENT_SOURCE_DIR}/sithMultiTestAddrs.h")
 endif()
@@ -136,6 +144,10 @@ if (MSVC)
     target_link_options(sithMultiTests PRIVATE /BASE:0x20000000 /DYNAMICBASE:NO)
 elseif(MINGW)
     target_link_options(sithMultiTests PRIVATE -Wl,--image-base=0x20000000 -Wl,--disable-dynamicbase)
+elseif(J3D_PLATFORM_NULL)
+    # Added: The Null platform needs the same fixed, high load address for the same reason (see
+    # sithVecTest_AssertArenaPlacement): a non-PIE image with its text segment at 0x20000000.
+    target_link_options(sithMultiTests PRIVATE -no-pie -Wl,-Ttext-segment=0x20000000)
 endif()
 
 set_target_properties(sithMultiTests PROPERTIES

@@ -32,10 +32,17 @@ if (JONES3D_BUILD_TESTS)
         ${CMAKE_CURRENT_SOURCE_DIR}
     )
 
-    # Added: The test support includes std/types.h, which pulls the DirectX 9 backend types numbers.
+    # Added: The test support includes std/types.h, which pulls the backend types header.
     if (J3D_DIRECTX9)
         target_include_directories(j3dTestSupport PUBLIC
             ${CMAKE_CURRENT_SOURCE_DIR}/std/Win95/DX9
+        )
+    endif()
+
+    # Added: The Null platform's std/types.h pulls the Null backend's stdBackendTypes.h from here.
+    if (J3D_PLATFORM_NULL)
+        target_include_directories(j3dTestSupport PUBLIC
+            ${CMAKE_CURRENT_SOURCE_DIR}/std/Null
         )
     endif()
 

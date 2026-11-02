@@ -419,7 +419,12 @@ TEST(stdUtil, TestConversionCapacityAndHighBytes)
 
     // Widen high bytes without sign extension; test zero, exact, and terminated capacities.
     TEST_ASSERT_EQUAL_INT(0, stdUtil_ToWStringEx(awText, aBytes, 0u));
+#if defined(_WIN32)
+    // Guarded: this reads the wchar_t buffer as uint16 elements, which only spells the padding
+    // check when wchar_t is 2 bytes (Windows). On the native build wchar_t is 4 bytes, so the
+    // uint16 view would inspect the high half of every L'x' instead of the untouched elements.
     TEST_ASSERT_EACH_EQUAL_UINT16(L'x', awText, STD_ARRAYLEN(awText));
+#endif
     TEST_ASSERT_EQUAL_INT(3, stdUtil_ToWStringEx(awText, aBytes, 3u));
     TEST_ASSERT_EQUAL_MEMORY(awExpected, awText, 3u * sizeof(wchar_t));
     TEST_ASSERT_EQUAL_INT(L'x', awText[3]);

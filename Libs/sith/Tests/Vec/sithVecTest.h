@@ -16,11 +16,15 @@
 #include "sithVecWorld.h"
 
 // Globals the reconstructed code reaches through J3D_LOCAL_SITH_RTI
+// Added: A standalone build (the native Null platform) already defines these in the sith library
+// (Libs/sith/Main/sithMain.c, Libs/sith/World/sithWorld.c); only the injected test build needs fakes.
+#if !defined(J3D_STANDALONE)
 tHostServices* sith_g_pHS;
 SithWorld* sithWorld_g_pCurrentWorld;
 SithWorld* sithWorld_g_pStaticWorld;
 SithWorld* sithWorld_g_pLastLoadedWorld;
 int sithWorld_g_bLoading;
+#endif
 
 typedef struct
 {
@@ -205,6 +209,14 @@ static void sithVecTest_PrintRecord(const char* pTitle, const uint8_t* pRec, siz
 // compares their records with the fixture. Returns the number of failed cases; their names and first differences are appended to pFailText.
 static unsigned int sithVecTest_RunCases(const SithVecSuite* pSuite, const SithVecTestFixture* pFix, const char* pPrefix, char* pFailText, size_t failTextSize)
 {
+    // Added: the images are recorded from the 32-bit retail build; pointers and size_t are 8 bytes on a 64-bit
+    // build, so no reconstructed record can ever match. Every TestOriginal... case starts here, so they all
+    // ignore themselves here instead of failing. Windows 32-bit behavior is unchanged.
+    if ( sizeof(void*) != 4 )
+    {
+        TEST_IGNORE_MESSAGE("32-bit state images; needs a 32-bit build");
+    }
+
     unsigned int numFailed = 0;
     unsigned int numFound  = 0;
     pFailText[0]           = 0;
@@ -249,7 +261,13 @@ static unsigned int sithVecTest_RunCases(const SithVecSuite* pSuite, const SithV
 
             size_t len = strlen(pFailText);
             snprintf(pFailText + len, failTextSize - len, "\n  %s: %s", pFixCase->aName, aDesc);
+#ifdef _WIN32
             if ( GetEnvironmentVariableA("SITHVEC_VERBOSE", NULL, 0) != 0 )
+#else
+            // Altered: GetEnvironmentVariableA is the Windows-only way this harness asks whether
+            // SITHVEC_VERBOSE is set; the native build reads the same variable with getenv().
+            if ( getenv("SITHVEC_VERBOSE") != NULL )
+#endif
             {
                 printf("  %s\n", pFixCase->aName);
                 sithVecTest_PrintRecord("expected", pFixCase->pRec, pFixCase->recSize);

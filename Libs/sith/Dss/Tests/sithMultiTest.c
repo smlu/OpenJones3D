@@ -17,11 +17,15 @@
 // same state, run the reconstructed functions and compare. See tv/sithMulti/README.md.
 
 // Globals the reconstructed code reaches through J3D_LOCAL_SITH_RTI
+// Added: A standalone build (the native Null platform) already defines these in the sith library
+// (Libs/sith/Main/sithMain.c, Libs/sith/World/sithWorld.c); only the injected test build needs fakes.
+#if !defined(J3D_STANDALONE)
 tHostServices* sith_g_pHS;
 SithWorld* sithWorld_g_pCurrentWorld;
 SithWorld* sithWorld_g_pStaticWorld;
 SithWorld* sithWorld_g_pLastLoadedWorld;
 int sithWorld_g_bLoading;
+#endif
 
 // Engine globals of the original executable, see sithDSSTestAddrs.h and sithMultiTestAddrs.h
 SithDSSTestGlobals sithDSSTest_g;
@@ -161,6 +165,14 @@ static void sithMultiTest_PrintDeltas(const char* pTitle, const uint8_t* pRec, s
 // Runs the cases of the fixture whose name starts with pPrefix (both probe fills) and returns the number that differ
 static unsigned sithMultiTest_RunCases(const char* pPrefix)
 {
+    // Added: the images are recorded from the 32-bit retail build; pointers and size_t are 8 bytes on a 64-bit
+    // build, so no reconstructed record can ever match. Every TestOriginal... case starts here, so they all
+    // ignore themselves here instead of failing. Windows 32-bit behavior is unchanged.
+    if ( sizeof(void*) != 4 )
+    {
+        TEST_IGNORE_MESSAGE("32-bit state images; needs a 32-bit build");
+    }
+
     unsigned numFailed = 0;
     unsigned numCasesFound = 0;
     sithMultiTest_aFailText[0] = 0;
@@ -197,7 +209,13 @@ static unsigned sithMultiTest_RunCases(const char* pPrefix)
                 sithMultiTest_Describe(aDesc, sizeof(aDesc), fc->pRec, fc->recSize, rec.p, rec.size);
                 size_t len = strlen(sithMultiTest_aFailText);
                 snprintf(sithMultiTest_aFailText + len, sizeof(sithMultiTest_aFailText) - len, "\n  %s (fill %02x): %s", fc->aName, fill, aDesc);
+#ifdef _WIN32
                 if ( GetEnvironmentVariableA("SITHMULTI_VERBOSE", NULL, 0) != 0 )
+#else
+                // Altered: GetEnvironmentVariableA is the Windows-only way this harness asks whether
+                // SITHMULTI_VERBOSE is set; the native build reads the same variable with getenv().
+                if ( getenv("SITHMULTI_VERBOSE") != NULL )
+#endif
                 {
                     printf("  %s\n", fc->aName);
                     sithMultiTest_PrintDeltas("expected", fc->pRec, fc->recSize);

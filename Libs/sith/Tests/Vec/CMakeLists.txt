@@ -41,7 +41,10 @@ function(sith_add_vec_test TARGET)
 
     # Same force-include as the MSVC /FI above; per-source set_property does not expand the SHELL:
     # prefix, so the option is target-wide (it also reaches the shared runner).
-    if (MINGW)
+    # Altered: MinGW only before; the native Clang/GCC (Null) build needs the same -include, and the
+    # option is a GNU-compiler option, so the condition is now every non-MSVC compiler. Windows
+    # behavior is unchanged.
+    if (NOT MSVC)
         target_compile_options(${TARGET} PRIVATE
             "SHELL:-include ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/sithVecTestAddrs.h"
             "SHELL:-include ${SV_ADDRS}")
@@ -68,6 +71,11 @@ function(sith_add_vec_test TARGET)
         target_link_options(${TARGET} PRIVATE /BASE:0x20000000 /DYNAMICBASE:NO)
     elseif(MINGW)
         target_link_options(${TARGET} PRIVATE -Wl,--image-base=0x20000000 -Wl,--disable-dynamicbase)
+    elseif(J3D_PLATFORM_NULL)
+        # Added: The Null platform needs the same fixed, high load address for the same reason:
+        # a non-PIE image with its text segment at 0x20000000 (sithVecTest_AssertArenaPlacement
+        # requires the arena between 0x10000000 and 0x3C000000).
+        target_link_options(${TARGET} PRIVATE -no-pie -Wl,-Ttext-segment=0x20000000)
     endif()
 
     set_target_properties(${TARGET} PROPERTIES

@@ -18,11 +18,15 @@
 // See tv/sithDSS/README.md.
 
 // Globals the reconstructed code reaches through J3D_LOCAL_SITH_RTI
+// Added: A standalone build (the native Null platform) already defines these in the sith library
+// (Libs/sith/Main/sithMain.c, Libs/sith/World/sithWorld.c); only the injected test build needs fakes.
+#if !defined(J3D_STANDALONE)
 tHostServices* sith_g_pHS;
 SithWorld* sithWorld_g_pCurrentWorld;
 SithWorld* sithWorld_g_pStaticWorld;
 SithWorld* sithWorld_g_pLastLoadedWorld;
 int sithWorld_g_bLoading;
+#endif
 
 typedef struct
 {
@@ -210,6 +214,14 @@ static void sithDSSTest_PrintDeltas(const char* pTitle, const uint8_t* pRec, siz
 static unsigned sithDSSTest_RunCases(const DssvCase* aCases, unsigned numCases, const SithDSSTestFixture* pFix,
     const char* pPrefixA, const char* pPrefixB, char* pFailText, size_t failTextSize)
 {
+    // Added: the images are recorded from the 32-bit retail build; pointers and size_t are 8 bytes on a 64-bit
+    // build, so no reconstructed record can ever match. Every TestOriginal... case starts here, so they all
+    // ignore themselves here instead of failing. Windows 32-bit behavior is unchanged.
+    if ( sizeof(void*) != 4 )
+    {
+        TEST_IGNORE_MESSAGE("32-bit state images; needs a 32-bit build");
+    }
+
     unsigned numFailed = 0;
     unsigned numCasesFound = 0;
     pFailText[0] = 0;
@@ -248,7 +260,13 @@ static unsigned sithDSSTest_RunCases(const DssvCase* aCases, unsigned numCases, 
                 sithDSSTest_Describe(aDesc, sizeof(aDesc), fc->pRec, fc->recSize, rec.p, rec.size);
                 size_t len = strlen(pFailText);
                 snprintf(pFailText + len, failTextSize - len, "\n  %s (fill %02x): %s", fc->aName, fill, aDesc);
+#ifdef _WIN32
                 if ( GetEnvironmentVariableA("SITHDSS_VERBOSE", NULL, 0) != 0 )
+#else
+                // Altered: GetEnvironmentVariableA is the Windows-only way this harness asks whether
+                // SITHDSS_VERBOSE is set; the native build reads the same variable with getenv().
+                if ( getenv("SITHDSS_VERBOSE") != NULL )
+#endif
                 {
                     printf("  %s\n", fc->aName);
                     sithDSSTest_PrintDeltas("expected", fc->pRec, fc->recSize);

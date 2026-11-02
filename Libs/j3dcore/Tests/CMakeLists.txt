@@ -5,10 +5,19 @@ if (J3D_PLATFORM_NULL)
 endif()
 
 if (JONES3D_BUILD_TESTS)
-    add_executable(j3dcoreTests
+    set(J3DCORE_TEST_SOURCES
         j3dMacroTest.c
+    )
+
+    # Added: The Null platform builds j3dCrtTest.c as its own executable below (it provides its
+    # own main there), so it must not also be linked into j3dcoreTests. Windows keeps both sources.
+    if (NOT J3D_PLATFORM_NULL)
         # Added: Tests the Microsoft secure-CRT behavior against the real Windows CRT.
-        j3dCrtTest.c
+        list(APPEND J3DCORE_TEST_SOURCES j3dCrtTest.c)
+    endif()
+
+    add_executable(j3dcoreTests
+        ${J3DCORE_TEST_SOURCES}
     )
 
     target_link_libraries(j3dcoreTests PRIVATE

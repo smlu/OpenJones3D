@@ -7,7 +7,12 @@ set(SMUSH_TEST_SOURCES
 
 set(SMUSH_TESTED_SOURCES "")
 
-include(smush_sound.cmake)   # Sound: Engine, Mixer, Dsnd, MixerAsm
+# Altered: part 1 excluded the smush Sound area (it mocks IDirectSound and drives Dsnd.c) from every
+# build, but smushTestRunner.c references TEST_SmushSound_GROUP_RUNNER on every non-Null platform, which
+# broke the MinGW link. Exclude it exactly like the runner does: on the Null platform only.
+if (NOT J3D_PLATFORM_NULL)
+    include(smush_sound.cmake)   # Sound: Engine, Mixer, Dsnd, MixerAsm
+endif()
 include(smush_codec.cmake)   # Codec: D_bloc16, D_wave, Bloc16Asm, Decode, DecodeAsm
 include(smush_stream.cmake)  # Stream/File/Anim: Cdstream, Framestream, Stdfile, Stdio, Zfilio, Readauto, Frame, Pcplay
 include(smush_core.cmake)    # Core/Bitmap: SmushPlay, LecShare, Timer, Memory, List, Bitmap, Blit, BlitAsm, MemCopy, MemFill

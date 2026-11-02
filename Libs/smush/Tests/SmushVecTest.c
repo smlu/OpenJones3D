@@ -454,6 +454,13 @@ TEST(SmushVec, TestOriginalLecShare)
 
 TEST(SmushVec, TestOriginalFramestream)
 {
+    // Added: the section records embed the handle/pointer values of the state image captured from the 32-bit
+    // retail build; a 64-bit host cannot reproduce them byte for byte. Same reason as the sith vector suites.
+    if ( sizeof(void*) != 4 )
+    {
+        TEST_IGNORE_MESSAGE("32-bit state images; needs a 32-bit build");
+    }
+
     SmushVecTest_Run("File/FramestreamVec.tv", SmushVec_RunFramestream, NULL, 0);
 }
 
@@ -476,6 +483,13 @@ TEST(SmushVec, TestOriginalStdfile)
 
 TEST(SmushVec, TestOriginalZfilio)
 {
+    // Added: the section records embed the handle/pointer values of the state image captured from the 32-bit
+    // retail build; a 64-bit host cannot reproduce them byte for byte. Same reason as the sith vector suites.
+    if ( sizeof(void*) != 4 )
+    {
+        TEST_IGNORE_MESSAGE("32-bit state images; needs a 32-bit build");
+    }
+
     SmushVecTest_Run("File/ZfilioVec.tv", SmushVec_RunZfilio, NULL, 0);
 }
 
