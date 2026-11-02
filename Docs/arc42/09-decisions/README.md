@@ -19,3 +19,4 @@ context, decision, consequences. Decisions aren't edited after the fact; a new A
 | [ADR-0012](ADR-0012-desktop-first-portable-interfaces.md) | Desktop platforms first, portable interfaces | Accepted |
 | [ADR-0013](ADR-0013-cvars-in-foundation.md) | Cvars are part of the Babylon foundation | Accepted |
 | [ADR-0014](ADR-0014-arc42-documentation.md) | Architecture documentation in arc42 | Accepted |
+| [ADR-0015](ADR-0015-babylon-modules-as-cmake-targets.md) | Babylon modules as CMake targets | Accepted |

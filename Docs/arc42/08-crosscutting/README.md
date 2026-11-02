@@ -29,9 +29,10 @@ one compile-time profile, which becomes individual runtime options.
 ## 8.2 Original names and divergence markers
 
 Game code keeps its recovered names, so it can be compared with the decompilation
-([ADR-0005](../09-decisions/ADR-0005-game-logic-stays-c11.md)). Where code deliberately differs from the
-original, a short comment at the changed site says why: `// Fixed:`, `// Added:` or `// Altered:`.
-Babylon has its own naming and isn't bound by this.
+([ADR-0005](../09-decisions/ADR-0005-game-logic-stays-c11.md)). Where game logic (`Jones3D/`, `Libs/sith/`,
+`Libs/rdroid/`, `Libs/smush/`) deliberately differs from the original, a short comment at the changed site says why:
+`// Fixed:`, `// Added:` or `// Altered:`. The adapter and Babylon don't use these markers, and Babylon has its
+own naming.
 
 ## 8.3 Untrusted input
 

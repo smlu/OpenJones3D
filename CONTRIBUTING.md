@@ -66,7 +66,7 @@ Before submitting AI-assisted changes:
 - Follow the [fidelity rules](#compatibility-and-behavior-changes): simulation
   changes need an option, presentation is free to improve.
 - Add the normal `// Added:`, `// Fixed:`, or `// Altered:` marker comments at
-  changed original-code sites when the diff intentionally diverges from the
+  changed sites in the game logic when the diff intentionally diverges from the
   original implementation.
 - Keep prompts, scratch notes, and temporary generated files out of commits
   unless they are useful project documentation or checked-in test vectors.
@@ -188,7 +188,7 @@ Resource limits are owned by the relevant submodule, not by one global project f
 - Update [Docs/Jones.cfg.md](Docs/Jones.cfg.md) when a new config key is added.
 - Treat limit increases cautiously because scripts, savegames, rendering, multiplayer sync, and authored level data may rely on original limits.
 
-When altering code that corresponds to original engine behavior, add a short marker comment at the changed site:
+When altering original code in the game logic (`Jones3D/`, `Libs/sith/`, `Libs/rdroid/`, `Libs/smush/`), add a short marker comment at the changed site:
 
 - `// Fixed:` for bug fixes.
 - `// Added:` for new safety checks, helpers, or supported behavior.
@@ -211,7 +211,7 @@ if ( submode >= STD_ARRAYLEN(aModes) )
 float timestep = J3D_QOL_VALUE(configuredStep, legacyStep);
 ```
 
-Do not add these marker comments to completely new modules where there is no original implementation being altered, unless the comment helps explain compatibility.
+The markers are only for the game logic. Do not use them in the adapter (`Libs/std/`, `Libs/sound/`, `Libs/wkernel/`, `Libs/w32util/`), in Babylon, or in completely new game modules where there is no original implementation being altered.
 
 Use TODO comments only when they identify actionable future work:
 
@@ -265,6 +265,21 @@ are set at the start of milestone M5 and documented in `Babylon/`. Until then:
 - No platform types (Windows, DirectX, SDL) in Babylon's public headers.
 - Babylon's tests live in `Babylon/` and run against every backend, including Null.
 - Adapter files in `Libs/` may be C++ and export the recovered functions as `extern "C"`.
+
+Babylon is split into modules, one per role (platform, input, time, files, render, audio, cvars, threads,
+log, core), about 8 to 10 in total. See
+[ADR-0015](Docs/arc42/09-decisions/ADR-0015-babylon-modules-as-cmake-targets.md).
+
+- Each module is its own CMake target, declared with `babylon_add_module(<name> DEPS <modules>)`.
+- Public headers live in `<module>/include/babylon/<module>/`, everything else in `<module>/src/` and
+  `<module>/backends/<backend>/`. Only public headers are visible to other modules, and only to modules
+  that declare the dependency.
+- Declare a dependency `PUBLIC` only when it appears in the module's public headers, otherwise `PRIVATE`.
+- No cyclic dependencies between modules.
+- No static self-registration: backends are registered explicitly at startup, because the linker drops
+  unreferenced objects from static libraries.
+- CI compares the real target graph with the allowed dependency list. Changing that list is an
+  architecture change and needs an ADR or an update of ADR-0015.
 
 ## Memory And Ownership
 

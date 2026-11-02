@@ -59,6 +59,9 @@ Planned for M5 and M6. The exact interfaces are decided in the M5 plan; this is 
 | Threads | Threads, jobs, synchronization | SDL3 | Later (M9) |
 | Log | Leveled logging with sinks | | `STDLOG_*` |
 
+Each module is its own CMake target with a public `include/` and a private `src/`, and may only use the
+modules it declares ([ADR-0015](../09-decisions/ADR-0015-babylon-modules-as-cmake-targets.md)).
+
 Every module has a Null backend that honors the interface's contract without a device. Null backends let
 the whole game run headless, which is how traces are recorded ([chapter 8](../08-crosscutting/README.md)).
 

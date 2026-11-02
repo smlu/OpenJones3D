@@ -88,7 +88,8 @@ Game and adapter code (C11):
 - Use `STDMALLOC`, `STDREALLOC` and `STDFREE`; never mix allocators.
 - In-memory struct layouts may change. On-disk formats may not: read and write them through explicit
   serialization, never by reading bytes into a struct.
-- Mark divergence from the original at the changed site with `// Fixed:`, `// Added:` or `// Altered:`.
+- In game logic only (`Jones3D/`, `Libs/sith/`, `Libs/rdroid/`, `Libs/smush/`), mark divergence from the original at the
+  changed site with `// Fixed:`, `// Added:` or `// Altered:`. Not in the adapter or Babylon.
 - TODOs name an actionable problem: `// TODO:`, `// TODO: [BUG]`, `// TODO: [RE]`, `// TODO: [COMPAT]`.
 
 Babylon code (C++):
@@ -97,6 +98,10 @@ Babylon code (C++):
   their role, not for one game's calls.
 - Every interface has a Null backend that honors its contract without a device.
 - Adapter files may be C++ and export the recovered functions as `extern "C"`.
+- Babylon modules are CMake targets (`babylon_add_module(<name> DEPS ...)`) with a public
+  `include/babylon/<module>/` and a private `src/`. Use only modules you declare; `PUBLIC` only for
+  dependencies in public headers; no cycles; no static self-registration. CI checks the target graph
+  against an allowed list (ADR-0015).
 
 Everywhere:
 
