@@ -85,7 +85,7 @@ typedef struct SstTimer
     TimerCallback pfnAlloc;
     int allocInterval;
     uint32_t allocFlags;
-    int allocParam;
+    intptr_t allocParam; // Fixed: intptr_t: the timer context widened (see Timer.h)
     int numFrees;
     int lastFreed;
     int numSync;
@@ -98,7 +98,7 @@ typedef struct SstTimer
 
 static SstTimer SstTim;
 
-static int SstTimerAlloc(TimerCallback pfn, int interval, uint32_t flags, int param)
+static int SstTimerAlloc(TimerCallback pfn, int interval, uint32_t flags, intptr_t param) // Fixed: intptr_t timer context, see Timer.h
 {
     SstTim.numAllocs++;
     SstTim.pfnAlloc = pfn;

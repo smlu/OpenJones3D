@@ -487,7 +487,7 @@ LecEntry* J3DAPI LecShare_Find(const char* pName)
     return NULL;
 }
 
-int J3DAPI LecShare_Match(const char* pName, const char* pList)
+intptr_t J3DAPI LecShare_Match(const char* pName, const char* pList) // Fixed: returns a position pointer inside pList as intptr_t; an int truncated it on 64-bit (same class as streamer_Advance and the timer context)
 {
     const char* pResult = NULL;
     int found = 0;
@@ -524,7 +524,7 @@ int J3DAPI LecShare_Match(const char* pName, const char* pList)
 
         if ( *p == 0 )
         {
-            return (int)(intptr_t)pResult;
+            return (intptr_t)pResult;
         }
 
         p++;
@@ -552,13 +552,13 @@ int J3DAPI LecShare_Match(const char* pName, const char* pList)
         {
             if ( *p == 0 )
             {
-                return (int)(intptr_t)pResult;
+                return (intptr_t)pResult;
             }
 
             *p++ = 0;
             if ( !found )
             {
-                return (int)(intptr_t)pResult;
+                return (intptr_t)pResult;
             }
 
             found = 0;
@@ -570,7 +570,7 @@ int J3DAPI LecShare_Match(const char* pName, const char* pList)
         }
     }
 
-    return (int)(intptr_t)pResult;
+    return (intptr_t)pResult;
 }
 
 int J3DAPI LecShare_NameLen(const char* pName)

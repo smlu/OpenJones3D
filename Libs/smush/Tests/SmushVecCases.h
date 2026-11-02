@@ -101,7 +101,7 @@ typedef struct sSmushVecApi
     void* (J3DAPI* LecShare_Enumerate)(const char* pName, int index);
     int (J3DAPI* LecShare_Count)(const char* pName);
     LecEntry* (J3DAPI* LecShare_Find)(const char* pName);
-    int (J3DAPI* LecShare_Match)(const char* pName, const char* pList);
+    intptr_t (J3DAPI* LecShare_Match)(const char* pName, const char* pList); // Fixed: intptr_t position pointer, see LecShare.c
     int (J3DAPI* LecShare_NameLen)(const char* pName);
     void (J3DAPI* LecShare_Strip)(char* pName);
     int (J3DAPI* LecShare_NameCmp)(const char* pA, const char* pB);

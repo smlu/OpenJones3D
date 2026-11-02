@@ -60,8 +60,8 @@ void J3DAPI animplay_SetRate(AnimPlay* pPlay, int rate);
 void J3DAPI animplay_Rewind(AnimPlay* pPlay);
 int J3DAPI animplay_IsDone(AnimPlay* pPlay);
 int J3DAPI animplay_Step(AnimPlay* pPlay, void* a2, intptr_t a3, int a4, int a5, void* a6, int* a7, int* a8, int a9, int a10); // Altered: a3 carries a clip MixerRect* to the decoder
-void J3DAPI animplay_TickCallback(int index, int param);
-void J3DAPI animplay_PaceCallback(int index, int param);
+void J3DAPI animplay_TickCallback(int index, intptr_t param); // Fixed: intptr_t timer context, see Timer.h
+void J3DAPI animplay_PaceCallback(int index, intptr_t param); // Fixed: intptr_t timer context, see Timer.h
 const char* J3DAPI animplay_DebugName(int index);
 void J3DAPI animplay_SetDebug(int flags);
 int animplay_GetDebug(void);

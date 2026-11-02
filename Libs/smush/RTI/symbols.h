@@ -40,8 +40,8 @@
 #define animplay_Rewind_TYPE void (J3DAPI*)(AnimPlay*)
 #define animplay_IsDone_TYPE int (J3DAPI*)(AnimPlay*)
 #define animplay_Step_TYPE int (J3DAPI*)(AnimPlay*, void*, intptr_t, int, int, void*, int*, int*, int, int) // Altered: a3 carries a clip MixerRect*
-#define animplay_TickCallback_TYPE void (J3DAPI*)(int, int)
-#define animplay_PaceCallback_TYPE void (J3DAPI*)(int, int)
+#define animplay_TickCallback_TYPE void (J3DAPI*)(int, intptr_t) // Fixed: intptr_t timer context, see Timer.h
+#define animplay_PaceCallback_TYPE void (J3DAPI*)(int, intptr_t) // Fixed: intptr_t timer context, see Timer.h
 #define animplay_DebugName_TYPE const char* (J3DAPI*)(int)
 #define animplay_SetDebug_TYPE void (J3DAPI*)(int)
 #define animplay_GetDebug_TYPE int (*)(void)
@@ -123,7 +123,7 @@
 #define dsnd_SetVolume_TYPE void (J3DAPI*)(int)
 #define dsnd_GetVolume_TYPE int (*)(void)
 #define dsnd_GetRate_TYPE int (*)(void)
-#define dsnd_Callback_TYPE void (J3DAPI*)(int, int)
+#define dsnd_Callback_TYPE void (J3DAPI*)(int, intptr_t) // Fixed: intptr_t timer context, see Timer.h
 #define dsnd_Init_TYPE int (*)(void)
 #define dsnd_OpenSecondary_TYPE void (J3DAPI*)(int)
 #define dsnd_Release_TYPE void (*)(void)
@@ -223,7 +223,7 @@
 #define timer_Stop_TYPE void (*)(void)
 #define timer_Pause_TYPE void (*)(void)
 #define timer_Resume_TYPE void (*)(void)
-#define timer_Alloc_TYPE int (J3DAPI*)(TimerCallback, int, uint32_t, int)
+#define timer_Alloc_TYPE int (J3DAPI*)(TimerCallback, int, uint32_t, intptr_t) // Fixed: intptr_t timer context, see Timer.h
 #define timer_Free_TYPE void (J3DAPI*)(int)
 #define timer_SetInterval_TYPE void (J3DAPI*)(int, int)
 #define timer_Wait_TYPE void (J3DAPI*)(int)
@@ -258,7 +258,7 @@
 #define LecShare_Enumerate_TYPE void* (J3DAPI*)(const char*, int)
 #define LecShare_Count_TYPE int (J3DAPI*)(const char*)
 #define LecShare_Find_TYPE LecEntry* (J3DAPI*)(const char*)
-#define LecShare_Match_TYPE int (J3DAPI*)(const char*, const char*)
+#define LecShare_Match_TYPE intptr_t (J3DAPI*)(const char*, const char*) // Fixed: intptr_t position pointer, see LecShare.c
 #define LecShare_NameLen_TYPE int (J3DAPI*)(const char*)
 #define LecShare_Strip_TYPE void (J3DAPI*)(char*)
 #define LecShare_NameCmp_TYPE int (J3DAPI*)(const char*, const char*)

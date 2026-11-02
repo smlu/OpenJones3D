@@ -26,11 +26,15 @@ J3D_EXTERN_C_START
 #define TIMER_FLAG_DEFERRED  4 /* call back from timer_Poll (timer_RunDeferred) */
 #define TIMER_FLAG_RESYNC    8 /* timer_Sync adjusts the elapsed time */
 
-typedef void (*TimerCallback)(int index, int param);
+// Fixed: the callback context carries the AnimPlay* the pcplay timers register (see Pcplay.c) and the
+// streamer/decode chains hand objects through it too; an int can only carry a pointer where pointers are 4 bytes.
+// intptr_t keeps the same size and calling convention on 32-bit (the original layout, unchanged) and carries a
+// full address on 64-bit. Same widening as streamer_Advance (Cdstream.h).
+typedef void (*TimerCallback)(int index, intptr_t param); // Fixed: intptr_t context, see above
 
 typedef struct sTimerInterface
 {
-    int  (*Alloc)(TimerCallback pfn, int interval, uint32_t flags, int param);
+    int  (*Alloc)(TimerCallback pfn, int interval, uint32_t flags, intptr_t param);
     void (*Free)(int index);
     void (*Pause)(void);
     void (*Resume)(void);
@@ -47,7 +51,7 @@ typedef struct sTimerEntry
     TimerCallback pfn;  /* 0x00 (NULL: the slot is free) */
     int interval;       /* 0x04 (ticks) */
     uint32_t flags;     /* 0x08 (TIMER_FLAG_*) */
-    int param;          /* 0x0C */
+    intptr_t param;     /* 0x0C: Fixed to intptr_t (see TimerCallback): the pcplay timers store an AnimPlay* here; 4 bytes and unchanged on 32-bit */
     volatile int busy;  /* 0x10 (reentrancy flag shared by the timer thread and the main thread) */
     int elapsed;        /* 0x14 */
     int running;        /* 0x18 */
@@ -63,7 +67,7 @@ int J3DAPI timer_Start(int divisor, int limit);
 void timer_Stop(void);
 void timer_Pause(void);
 void timer_Resume(void);
-int J3DAPI timer_Alloc(TimerCallback pfn, int interval, uint32_t flags, int param);
+int J3DAPI timer_Alloc(TimerCallback pfn, int interval, uint32_t flags, intptr_t param);
 void J3DAPI timer_Free(int index);
 void J3DAPI timer_SetInterval(int index, int interval);
 void J3DAPI timer_Wait(int ticks);

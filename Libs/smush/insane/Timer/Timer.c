@@ -117,7 +117,7 @@ void timer_Resume(void)
     timer_paused--;
 }
 
-int J3DAPI timer_Alloc(TimerCallback pfn, int interval, uint32_t flags, int param)
+int J3DAPI timer_Alloc(TimerCallback pfn, int interval, uint32_t flags, intptr_t param) // Fixed: intptr_t context, see Timer.h
 {
     for ( int i = 1; i < TIMER_COUNT + 1; i++ )
     {

@@ -260,10 +260,10 @@ int J3DAPI animplay_Create(AnimPlay** ppPlay, const char* pName, int rate, int r
             {
                 if ( framestream_Open(*ppPlay, pName, flags, -1, -1, 0) == 0 )
                 {
-                    pPlay->hTick = animplay_pTimer->Alloc(animplay_TickCallback, 1, 2, (int)(intptr_t)pPlay);
+                    pPlay->hTick = animplay_pTimer->Alloc(animplay_TickCallback, 1, 2, (intptr_t)pPlay); // Fixed: intptr_t timer context, see Timer.h
                     if ( pPlay->hTick )
                     {
-                        pPlay->hPace = animplay_pTimer->Alloc(animplay_PaceCallback, pPlay->interval, 8, (int)(intptr_t)pPlay);
+                        pPlay->hPace = animplay_pTimer->Alloc(animplay_PaceCallback, pPlay->interval, 8, (intptr_t)pPlay); // Fixed: intptr_t timer context, see Timer.h
                         if ( pPlay->hPace )
                         {
                             pPlay->done = 0;
@@ -438,16 +438,16 @@ int J3DAPI animplay_Step(AnimPlay* pPlay, void* a2, intptr_t a3, int a4, int a5,
     return ANIMPLAY_STATE_IDLE;
 }
 
-void J3DAPI animplay_TickCallback(int index, int param)
+void J3DAPI animplay_TickCallback(int index, intptr_t param) // Fixed: intptr_t timer context, see Timer.h
 {
     J3D_UNUSED(index);
-    ((AnimPlay*)(intptr_t)param)->ticks++;
+    ((AnimPlay*)param)->ticks++;
 }
 
-void J3DAPI animplay_PaceCallback(int index, int param)
+void J3DAPI animplay_PaceCallback(int index, intptr_t param) // Fixed: intptr_t timer context, see Timer.h
 {
     J3D_UNUSED(index);
-    AnimPlay* pPlay = (AnimPlay*)(intptr_t)param;
+    AnimPlay* pPlay = (AnimPlay*)param;
     if ( pPlay->playing )
     {
         if ( (pPlay->flags & ANIMPLAY_FLAG_SYNC) && !animplay_bVoicePaused )

@@ -64,7 +64,7 @@ void dsnd_Stop(void);
 void J3DAPI dsnd_SetVolume(int volume);
 int dsnd_GetVolume(void);
 int dsnd_GetRate(void);
-void J3DAPI dsnd_Callback(int index, int param);
+void J3DAPI dsnd_Callback(int index, intptr_t param); // Fixed: intptr_t timer context, see Timer.h
 int dsnd_Init(void);
 void J3DAPI dsnd_Print(const char* pFormat, ...); // Folded onto 0x0046D9E0; no address of its own, never hook
 void J3DAPI dsnd_OpenSecondary(int blocks);

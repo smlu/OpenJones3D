@@ -230,7 +230,7 @@ int dsnd_GetRate(void)
     return DSND_DEFAULT_RATE;
 }
 
-void J3DAPI dsnd_Callback(int index, int param)
+void J3DAPI dsnd_Callback(int index, intptr_t param) // Fixed: intptr_t timer context, see Timer.h; the body ignores param
 {
     J3D_UNUSED(index);
     J3D_UNUSED(param);

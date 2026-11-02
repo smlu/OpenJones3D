@@ -1363,7 +1363,7 @@ static int Test_lastInterval;
 static int Test_streamerCreateResult;
 static int Test_streamerDestroys;
 
-static int Test_TimerAlloc(TimerCallback pfn, int interval, uint32_t flags, int param)
+static int Test_TimerAlloc(TimerCallback pfn, int interval, uint32_t flags, intptr_t param) // Fixed: intptr_t timer context, see Timer.h
 {
     (void)pfn; (void)interval; (void)flags; (void)param;
     ++Test_timerAllocs;
@@ -1516,7 +1516,7 @@ TEST(SmushStream, animplay_TimeRateAndCallbacks)
     TEST_ASSERT_EQUAL_INT(3, Test_lastIntervalIndex);
 
     TEST_ASSERT_FALSE(animplay_IsDone(&play));
-    animplay_TickCallback(0, (int)(intptr_t)&play);
+    animplay_TickCallback(0, (intptr_t)&play);
     TEST_ASSERT_EQUAL_INT(1, play.ticks);
     TEST_ASSERT_TRUE(animplay_IsDone(&play));
     play.ticks = 0;
@@ -1531,23 +1531,23 @@ TEST(SmushStream, animplay_PaceCallbackLeadsAndPausesVoice)
     memset(&play, 0, sizeof(play));
 
     // Not playing yet: nothing happens
-    animplay_PaceCallback(0, (int)(intptr_t)&play);
+    animplay_PaceCallback(0, (intptr_t)&play);
     TEST_ASSERT_EQUAL_INT(0, play.lead);
 
     play.playing = 1;
-    animplay_PaceCallback(0, (int)(intptr_t)&play);
+    animplay_PaceCallback(0, (intptr_t)&play);
     TEST_ASSERT_EQUAL_INT(1, play.lead);
 
     // Flag 1 pauses the voice once the video is 7 frames ahead, and the lead stops growing
     play.flags = 1;
     play.lead  = 7;
-    animplay_PaceCallback(0, (int)(intptr_t)&play);
+    animplay_PaceCallback(0, (intptr_t)&play);
     TEST_ASSERT_EQUAL_INT(1, Test_voicePauses);
     TEST_ASSERT_EQUAL_INT(7, play.lead);
 
     // Resumed once the lead is negative
     play.lead = -1;
-    animplay_PaceCallback(0, (int)(intptr_t)&play);
+    animplay_PaceCallback(0, (intptr_t)&play);
     TEST_ASSERT_EQUAL_INT(1, Test_voiceResumes);
     TEST_ASSERT_EQUAL_INT(0, play.lead);
 }
