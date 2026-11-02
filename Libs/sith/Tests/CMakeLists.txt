@@ -1,15 +1,26 @@
 set(SITH_TEST_SOURCES
     sithTestRunner.c
+    ../Cog/Tests/sithCogTest.c
     ../World/Tests/sithTemplateTest.c
     ../World/Tests/sithThingTest.c
     ../World/Tests/sithVoiceTest.c
 )
 
 set(SITH_TESTED_SOURCES
+    "${CMAKE_CURRENT_SOURCE_DIR}/../Cog/sithCog.c"
     "${CMAKE_CURRENT_SOURCE_DIR}/../World/sithTemplate.c"
     "${CMAKE_CURRENT_SOURCE_DIR}/../World/sithThing.c"
     "${CMAKE_CURRENT_SOURCE_DIR}/../World/sithVoice.c"
     "${CMAKE_CURRENT_SOURCE_DIR}/../../std/General/stdConffile.c"
+)
+
+set_property(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/../Cog/sithCog.c" PROPERTY COMPILE_DEFINITIONS
+    J3D_LOCAL_RTI
+    sithConsole_PrintString=sithCogTest_PrintString
+)
+
+set_property(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/../Cog/Tests/sithCogTest.c" PROPERTY COMPILE_DEFINITIONS
+    J3D_LOCAL_RTI
 )
 
 set_property(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/../World/sithTemplate.c" PROPERTY COMPILE_DEFINITIONS

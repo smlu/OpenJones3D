@@ -232,7 +232,7 @@ startup and a stable module-level CTest entry.
 | `stdDisruptiveSystemTests` | `std.DisruptiveSystem` | Opt-in fullscreen/device changes | Available |
 | `soundTests` | `sound` | Deterministic lip-sync generation and lookup, AudioLib codec and header vectors | Available |
 | `smushTests` | `smush` | INSANE movie player: core, bitmap, codec, sound, stream areas and original-engine assembly vectors | Available |
-| `sithTests` | `sith` | World thing/template I/O and voice lip-sync | Available |
+| `sithTests` | `sith` | World thing/template I/O, voice lip-sync and the cogstatus console command bounds | Available |
 | `sithThingQuetzVecTests` | `sith.ThingQuetz` | Original-engine vectors of the Quetz tail functions (world-state harness, `Libs/sith/Tests/Vec`) | Available |
 | `sithAIInstinctVecTests` | `sith.AIInstinct` | Original-engine vectors of the instinct registration (world-state harness) | Available |
 | `sithAIInstinctFnVecTests` | `sith.AIInstinctFn` | Original-engine vectors of the instinct functions (world-state harness) | Available |
