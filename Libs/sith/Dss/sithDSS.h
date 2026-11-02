@@ -12,6 +12,7 @@
 
 #include <std/types.h>
 
+#include <string.h>
 #include <wchar.h>
 
 J3D_EXTERN_C_START
@@ -196,33 +197,36 @@ void sithDSS_WriteUint8(uint8_t** stream, uint8_t val)
     *stream += sizeof(uint8_t);
 }
 
+// Fixed: stream offsets are unaligned; casting to a wider type and dereferencing is
+// undefined behavior, so copy through memcpy, which is the defined way and compiles
+// to the same load/store on x86.
 void sithDSS_WriteInt16(uint8_t** stream, int16_t val)
 {
-    *(int16_t*)*stream = val;
+    memcpy(*stream, &val, sizeof(val));
     *stream += sizeof(int16_t);
 }
 
 void sithDSS_WriteUint16(uint8_t** stream, uint16_t val)
 {
-    *(uint16_t*)*stream = val;
+    memcpy(*stream, &val, sizeof(val));
     *stream += sizeof(uint16_t);
 }
 
 void sithDSS_WriteInt32(uint8_t** stream, int32_t val)
 {
-    *(int32_t*)*stream = val;
+    memcpy(*stream, &val, sizeof(val));
     *stream += sizeof(int32_t);
 }
 
 void sithDSS_WriteUint32(uint8_t** stream, uint32_t val)
 {
-    *(uint32_t*)*stream = val;
+    memcpy(*stream, &val, sizeof(val));
     *stream += sizeof(uint32_t);
 }
 
 void sithDSS_WriteFloat(uint8_t** stream, float val)
 {
-    *(float*)*stream = val;
+    memcpy(*stream, &val, sizeof(val));
     *stream += sizeof(float);
 }
 
@@ -280,35 +284,40 @@ uint8_t sithDSS_ReadUint8(uint8_t** stream)
 
 int16_t sithDSS_ReadInt16(uint8_t** stream)
 {
-    int16_t data = *(int16_t*)*stream;
+    int16_t data;
+    memcpy(&data, *stream, sizeof(data));
     *stream += sizeof(int16_t);
     return data;
 }
 
 uint16_t sithDSS_ReadUint16(uint8_t** stream)
 {
-    uint16_t data = *(uint16_t*)*stream;
+    uint16_t data;
+    memcpy(&data, *stream, sizeof(data));
     *stream += sizeof(uint16_t);
     return data;
 }
 
 int32_t sithDSS_ReadInt32(uint8_t** stream)
 {
-    int32_t data = *(int32_t*)*stream;
+    int32_t data;
+    memcpy(&data, *stream, sizeof(data));
     *stream += sizeof(int32_t);
     return data;
 }
 
 uint32_t sithDSS_ReadUint32(uint8_t** stream)
 {
-    uint32_t data = *(uint32_t*)*stream;
+    uint32_t data;
+    memcpy(&data, *stream, sizeof(data));
     *stream += sizeof(uint32_t);
     return data;
 }
 
 float sithDSS_ReadFloat(uint8_t** stream)
 {
-    float data = *(float*)*stream;
+    float data;
+    memcpy(&data, *stream, sizeof(data));
     *stream += sizeof(float);
     return data;
 }
