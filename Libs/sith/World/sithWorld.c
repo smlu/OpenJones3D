@@ -1,5 +1,6 @@
 #include "sithWorld.h"
 #include <j3dcore/j3dhook.h>
+#include <stddef.h>
 
 #include <rdroid/Engine/rdMaterial.h>
 #include <rdroid/Math/rdMath.h>
@@ -1486,12 +1487,69 @@ int J3DAPI sithWorld_LoadEntryBinary(SithWorld* pWorld, const char* pFilePath)
     sithWorld_UpdateLoadProgress(progress);
 
     // Read world header
-    // TODO: CndWorld object shouldn't be read directly to pWorld due to SithWorld struct having pointer types.
-    //       Read CndWorld object to temp CndWorld and copy filed by field to pWorld
-    if ( sith_g_pHS->pFileRead(fh, pWorld, sizeof(CndWorld)) != sizeof(CndWorld) )
+    // Fixed: read into CndWorld and copy field by field. The original read the file record straight into
+    //        SithWorld, whose counts and pointers are wider on 64-bit. Pointer fields still get the file's value,
+    //        as the raw read did.
+    CndWorld cndWorld;
+    if ( sith_g_pHS->pFileRead(fh, &cndWorld, sizeof(CndWorld)) != sizeof(CndWorld) )
     {
         goto error;
     }
+
+    static_assert(offsetof(CndWorld, numSounds) == offsetof(SithWorld, numSounds), "CndWorld and SithWorld share the layout up to numSounds");
+    memcpy(pWorld, &cndWorld, offsetof(CndWorld, numSounds));
+    pWorld->numSounds                     = cndWorld.numSounds;
+    pWorld->numMaterials                  = cndWorld.numMaterials;
+    pWorld->sizeMaterials                 = cndWorld.sizeMaterials;
+    pWorld->numVertices                   = cndWorld.numVertices;
+    pWorld->numTexVertices                = cndWorld.numTexVertices;
+    pWorld->numAdjoins                    = cndWorld.numAdjoins;
+    pWorld->numSurfaces                   = cndWorld.numSurfaces;
+    pWorld->numSectors                    = cndWorld.numSectors;
+    pWorld->numAIClasses                  = cndWorld.numAIClasses;
+    pWorld->sizeAIClasses                 = cndWorld.sizeAIClasses;
+    pWorld->numModels                     = cndWorld.numModels;
+    pWorld->sizeModels                    = cndWorld.sizeModels;
+    pWorld->numSprites                    = cndWorld.numSprites;
+    pWorld->sizeSprites                   = cndWorld.sizeSprites;
+    pWorld->numKeyframes                  = cndWorld.numKeyframes;
+    pWorld->sizeKeyframes                 = cndWorld.sizeKeyframes;
+    pWorld->numPuppetClasses              = cndWorld.numPuppetClasses;
+    pWorld->sizePuppetClasses             = cndWorld.sizePuppetClasses;
+    pWorld->numSoundClasses               = cndWorld.numSoundClasses;
+    pWorld->sizeSoundClasses              = cndWorld.sizeSoundClasses;
+    pWorld->numCogScripts                 = cndWorld.numCogScripts;
+    pWorld->sizeCogScripts                = cndWorld.sizeCogScripts;
+    pWorld->numCogs                       = cndWorld.numCogs;
+    pWorld->sizeCogs                      = cndWorld.sizeCogs;
+    pWorld->numThingTemplates             = cndWorld.numThingTemplates;
+    pWorld->sizeThingTemplates            = cndWorld.sizeThingTemplates;
+    pWorld->numThings                     = cndWorld.numThings;
+    pWorld->lastThingIdx                  = cndWorld.lastThingIdx;
+    pWorld->sizePVS                       = cndWorld.sizePVS;
+
+    pWorld->aMaterials                    = (rdMaterial*)(uintptr_t)cndWorld.aMaterials;
+    pWorld->apMatArray                    = (rdMaterial**)(uintptr_t)cndWorld.apMatArray;
+    pWorld->aVertices                     = (rdVector3*)(uintptr_t)cndWorld.aVertices;
+    pWorld->aTransformedVertices          = (rdVector3*)(uintptr_t)cndWorld.aTransformedVertices;
+    pWorld->aVertexRenderTickIds          = (uint32_t*)(uintptr_t)cndWorld.aVertexRenderTickIds;
+    pWorld->aTexVerticies                 = (rdVector2*)(uintptr_t)cndWorld.aTexVerticies;
+    pWorld->aVertDynamicLights            = (rdVector4*)(uintptr_t)cndWorld.aVertDynamicLights;
+    pWorld->aVertDynamicLightsRenderTicks = (uint32_t*)(uintptr_t)cndWorld.aVertDynamicLightsRenderTicks;
+    pWorld->aAdjoins                      = (SithSurfaceAdjoin*)(uintptr_t)cndWorld.aAdjoins;
+    pWorld->aSurfaces                     = (SithSurface*)(uintptr_t)cndWorld.aSurfaces;
+    pWorld->aSectors                      = (SithSector*)(uintptr_t)cndWorld.aSectors;
+    pWorld->aAIClasses                    = (SithAIClass*)(uintptr_t)cndWorld.aAIClasses;
+    pWorld->aModels                       = (rdModel3*)(uintptr_t)cndWorld.aModels;
+    pWorld->aSprites                      = (rdSprite3*)(uintptr_t)cndWorld.aSprites;
+    pWorld->aKeyframes                    = (rdKeyframe*)(uintptr_t)cndWorld.aKeyframes;
+    pWorld->aPuppetClasses                = (SithPuppetClass*)(uintptr_t)cndWorld.aPuppetClasses;
+    pWorld->aSoundClasses                 = (SithSoundClass*)(uintptr_t)cndWorld.aSoundClasses;
+    pWorld->aCogScripts                   = (SithCogScript*)(uintptr_t)cndWorld.aCogScripts;
+    pWorld->aCogs                         = (SithCog*)(uintptr_t)cndWorld.aCogs;
+    pWorld->aThingTemplates               = (SithThing*)(uintptr_t)cndWorld.aThingTemplates;
+    pWorld->aThings                       = (SithThing*)(uintptr_t)cndWorld.aThings;
+    pWorld->aPVS                          = (uint8_t*)(uintptr_t)cndWorld.aPVS;
 
     curPos = sith_g_pHS->pFileTell(fh);
     progress = (float)curPos / endPos;
