@@ -23,7 +23,7 @@ Jones3D EX does the same with two parts:
 Jones3D EX is a hard fork of [OpenJones3D](https://github.com/smlu/OpenJones3D), which reconstructed the
 engine function by function from the retail executable. To check each function, OpenJones3D hooked it
 into the running original and kept every name, struct layout and global address identical. That work is
-finished: all 3180 functions are reconstructed. A byte-exact decompilation of the game also exists.
+finished: every function of the retail executable is reconstructed. A byte-exact decompilation of the game also exists.
 
 So the reconstruction no longer needs protecting, and the rules that protected it now only stand in the way
 of a port. Jones3D EX drops them, and keeps what they produced: the original behavior. The last state

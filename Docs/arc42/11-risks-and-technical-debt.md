@@ -24,4 +24,5 @@
 | Lip-sync pointer restored from sound banks | `Sound.c` | Force to NULL on load; a wild pointer on 64-bit |
 | Cutscene blitter relies on 32-bit pointer wrap | `Libs/smush/insane/Bitmap/BlitAsm.c` | Check with a native cutscene run, then fix |
 | Sound bank scalars read as 4 bytes into `size_t` | `Sound.c` | Read through `uint32_t` |
+| GCC native builds need manual flags | `-D__cdecl= -D__stdcall= -D__fastcall=` and `-Wno-error=incompatible-pointer-types` | Move into `j3d.h.in` and CMake |
 | Multiplayer sends `wchar_t` arrays | `sithMulti.c` | Out of scope while multiplayer has no backend |

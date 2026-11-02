@@ -1,409 +1,118 @@
 <div align="center">
 
-# 🎮 OpenJones3D
-### An open-source dig site for LucasArts' *Jones3D* game engine
+# Jones3D EX
+### An enhanced source port of the Jones3D engine
 
 ![Indy3D Screenshot](Resources/images/rmbanr.png)
-**[📥 Latest Releases](https://github.com/smlu/OpenJones3D/releases)** • **[🕹️ Running](#running)** • **[⚙️ Building](#building)** • **[📜 Changelog](CHANGELOG.md)**
+
+**[Roadmap](Docs/Roadmap.md)** • **[Architecture](Docs/arc42/README.md)** • **[Building](#building)** • **[Changelog](CHANGELOG.md)**
 
 [![License: AGPL v3](https://img.shields.io/badge/license-AGPL%20v3-0f766e?style=flat-square)](LICENSE)
-[![DX9 Build](https://img.shields.io/github/check-runs/smlu/OpenJones3D/develop?nameFilter=DX9%20Build&style=flat-square&label=DX9%20Build)](https://github.com/smlu/OpenJones3D/actions/workflows/build-dx9.yml)
-[![DX9 Tests](https://img.shields.io/github/check-runs/smlu/OpenJones3D/develop?nameFilter=DX9%20Tests&style=flat-square&label=DX9%20Tests)](https://github.com/smlu/OpenJones3D/actions/workflows/build-dx9.yml)
-[![DX6 Build](https://img.shields.io/github/check-runs/smlu/OpenJones3D/develop?nameFilter=DX6%20Build&style=flat-square&label=DX6%20Build)](https://github.com/smlu/OpenJones3D/actions/workflows/build-dx6.yml)
-[![DX6 Tests](https://img.shields.io/github/check-runs/smlu/OpenJones3D/develop?nameFilter=DX6%20Tests&style=flat-square&label=DX6%20Tests)](https://github.com/smlu/OpenJones3D/actions/workflows/build-dx6.yml)
+[![Babylon Engine: MPL 2.0](https://img.shields.io/badge/Babylon%20Engine-MPL%202.0-1d4ed8?style=flat-square)](Docs/arc42/09-decisions/ADR-0008-babylon-license.md)
 
 </div>
 
-<a id="overview"></a>
-## 🧭 Overview
+## Overview
 
-**OpenJones3D** is an open-source reimplementation of the **Jones3D** game engine that powers the game ***Indiana Jones and the Infernal Machine*** (***Indiana Jones und der Turm von Babel***). The project aims to rebuild the original engine function by function in C11 based on analysis of the original engine executable binary, together with debug symbols and strings found in the engine, and insights gained from related game engines such as the Sith engine and its derivatives (e.g., GrimE), as well as similar projects like [OpenJKDF2](https://github.com/shinyquagsire23/OpenJKDF2).
+**Jones3D EX** is an enhanced source port of **Jones3D**, the engine of ***Indiana Jones and the Infernal
+Machine*** (1999). Its goal is the original game on Windows, Linux and macOS, with a modern renderer and audio,
+using the player's own game data and savegames.
 
-This repository does **NOT** include any original game assets. To run or test the project, you need a legal copy of the game from [Steam](https://store.steampowered.com/app/904540?snr=2_9_100000_) or [GOG](https://www.gog.com/en/game/indiana_jones_and_the_infernal_machine), along with the original CD `Indy3D.exe` version 1.0.
+It follows the model of the Kex engine behind Nightdive Studios' remasters: the restored original game logic
+runs on a separate, game-agnostic platform framework. Here that framework is the **Babylon Engine**:
 
-<a id="highlights"></a>
-## ✨ Highlights
+| Part | What it does | Language | License |
+|---|---|---|---|
+| Game | The restored Jones3D and Sith game logic: worlds, physics, AI, COG scripts, savegames | C11 | AGPL-3.0 |
+| Babylon Engine | Window, input, timing, files, rendering, audio, settings, behind portable interfaces | C++ | MPL-2.0 |
 
-**Renderer and display**
-- **DirectX 9** renderer port from the original DirectX 6.1c backend.
-- **HLSL shader** support with VBO and IBO rendering paths.
-- Better modern Windows compatibility, including GDI-related fixes.
-- **Widescreen support** and resolutions above 2048.
+Gameplay is measured against the original release: headless runs replay savegames with scripted input and
+compare the simulation frame by frame. The quality-of-life changes inherited from OpenJones3D are on by
+default, and each can be switched back to retail behavior. Presentation is free to improve.
 
-**Graphics and UI**
+This repository does **not** include any game assets. You need a legal copy of the game, for example from
+[Steam](https://store.steampowered.com/app/904540) or [GOG](https://www.gog.com/en/game/indiana_jones_and_the_infernal_machine).
 
-- MSAA, anisotropic filtering, trilinear filtering, and automatic mipmap generation.
-- True-color 24/32-bit texture support.
-- Original high-poly models enabled by default.
-- Sharper text and HUD rendering, plus a refreshed HUD and inventory menu.
+## Status
 
-**Engine, audio, and stability**
+Jones3D EX is at the start of its own road. See the [roadmap](Docs/Roadmap.md).
 
-- Settings moved from the Windows Registry into modular `Jones.cfg`.
-- Higher-precision frame timing for more reliable behavior on high-refresh-rate systems above 100 FPS.
-- Reworked thing and light collection to reduce culling issues and light flicker.
-- `linear`, `exponential`, and `logarithmic` software-mixer sound falloff modes.
-- Simultaneous sound buffer increased from 32 to 512.
-- Numerous bug, crash, and lockup fixes, including inventory-menu issues.
+- **Playable today:** on Windows, through the legacy Win32 and DirectX 9 build inherited from OpenJones3D.
+- **Runs headless today:** on Linux and other systems, 32-bit and 64-bit, without a window or sound. This is
+  what the behavior checks use.
+- **Next:** the Babylon Engine foundation (M5), then its renderer (M6), then playable on all three platforms (M7).
 
-**Gameplay and effects**
+## Where it comes from
 
-- Added customizable auto-aim reticle, which was not present in the original game.
-- Blood splatter and richer projectile impact effects.
-- Raft wake and water-surface improvements.
-- More flexible climbing and swimming movement.
-- Restored developer console commands and COG functions.
-- AI pathing fixes.
+Jones3D EX is a hard fork of [OpenJones3D](https://github.com/smlu/OpenJones3D), which rebuilt the engine
+function by function from the retail executable, using IDA, Ghidra, debug symbols and related projects such as
+[OpenJKDF2](https://github.com/shinyquagsire23/OpenJKDF2). OpenJones3D completed that reconstruction. Its
+compatibility rules (hooks into the original executable, retail addresses, frozen memory layouts) existed to
+check it, and are dropped here so the engine can move onto a new platform layer. The last state compatible
+with OpenJones3D is tagged `upstream-compatible-final`. The reasons are in
+[ADR-0001](Docs/arc42/09-decisions/ADR-0001-hard-fork.md) and
+[ADR-0004](Docs/arc42/09-decisions/ADR-0004-drop-binary-compatibility.md).
 
-For the complete list of changes and fixes, see [CHANGELOG.md](CHANGELOG.md).
-
-<a id="running"></a>
-## 🕹️ Running the Game
-
-### 📋 Requirements
-
-- Original game assets
-- `Indy3D.exe` version 1.0
-- `sha256: 3fbaf8cd401b4af80967cbe42e3420fb803288b336ebbe72a9a01b6dfd661a53`
-
-### 🪜 Steps
-
-1. Download a release package from the [releases page](https://github.com/smlu/OpenJones3D/releases).
-2. Extract it into the game's `<game-install-folder>\Resource` directory, alongside `Indy3D.exe`.
-3. Launch `Jones3D.exe`.
-
-> If the game is installed in a system-protected location such as `Program Files`, you may need to run `Jones3D.exe` with administrator rights.
->
-> If `Jones.cfg` does not exist on first run, OpenJones3D creates it automatically in the game directory and migrates compatible legacy settings from the Windows Registry into it.
->
-> For the available engine configuration options and advanced settings, see [Docs/Jones.cfg.md](Docs/Jones.cfg.md).
+Inherited from OpenJones3D, among others: a DirectX 9 renderer with widescreen and high resolutions,
+`Jones.cfg` instead of the Windows Registry, high-precision frame timing, more sound channels, restored console
+commands and COG functions, and many bug and crash fixes. See [CHANGELOG.md](CHANGELOG.md).
 
 <a id="building"></a>
-## ⚙️ Building
+## Building
 
-### 📋 Requirements
+CMake 3.15 or newer is required.
 
-- Visual Studio 2022 or newer with C++ desktop development tools
-- CMake 3.21 or newer for the Visual Studio 2022 generator (project minimum: 3.15)
-- Windows SDK
-- DirectX 6.1 SDK only if you want the legacy DirectX 6.1c build
+### Windows (legacy Win32 and DirectX 9 build)
 
-### 🛠 Configure and build
-
-#### Build the default DirectX 9 backend
-
-The default build configuration uses **DirectX 9**.
-The example below uses the Visual Studio 2022 generator. If you are using a newer Visual Studio release, select the corresponding Visual Studio generator provided by your CMake installation.
-
-```bash
-cmake -S . -B build -G "Visual Studio 17 2022" -A Win32
-cmake --build build --config Release
-```
-
-#### Build the DirectX 6.1c backend
-
-1. Copy the DirectX 6.1 SDK headers and libraries into `Libs\external\DirectX61c\include` and `Libs\external\DirectX61c\lib`.
-2. Configure CMake with `JONES3D_USE_DIRECTX9=OFF`:
-
-```bash
-cmake -S . -B build -G "Visual Studio 17 2022" -A Win32 -DJONES3D_USE_DIRECTX9=OFF
-cmake --build build --config Release
-```
-
-If you want CMake to copy the built binaries directly into your game `Resource` folder after each build:
-
-```bash
-cmake -S . -B build -G "Visual Studio 17 2022" -A Win32 -DJONES3D_ENABLE_POST_BUILD_COPY=ON -DJONES3D_POST_BUILD_COPY_DIR="<game-install-folder>/Resource"
-cmake --build build --config Release
-```
-
-### 🧩 CMake options
-
-| Option | Default | Description |
-| --- | --- | --- |
-| `JONES3D_USE_DIRECTX9` | `ON` | Builds with the DirectX 9 backend. Set to `OFF` to build the legacy DirectX 6.1c backend. |
-| `JONES3D_QOL_IMPROVEMENTS` | `ON` | Enables modern quality-of-life fixes and enhancements. Setting it to `OFF` switches the build into the legacy behavior profile. |
-| `JONES3D_SPEEDRUN_BUILD` | `OFF` | Enables vanilla quirks and glitches commonly used in speedruns. This is also enabled automatically when QOL improvements are disabled. |
-| `JONES3D_RUNTIME_GUARDS` | `OFF` | Enables opt-in release safety guards. Assertions remain available independently; enable guards for a hardened profile. |
-| `JONES3D_BUILD_PROGRAMS` | `ON` | Builds the helper tools under `Programs`. |
-| `JONES3D_BUILD_TESTS` | `ON` | Builds the Unity/CTest test executables. |
-| `JONES3D_BUILD_SYSTEM_TESTS` | `ON` | Builds local system/device tests requiring graphics/input services. |
-| `JONES3D_BUILD_DISRUPTIVE_SYSTEM_TESTS` | `OFF` | Builds opt-in system tests that may switch fullscreen modes or disturb desktop input focus. |
-| `JONES3D_ENABLE_POST_BUILD_COPY` | `OFF` | Copies `Jones3D.exe`, `Jones3D.dll`, and `Jones3D.pdb` to a target directory after a successful build. |
-| `JONES3D_POST_BUILD_COPY_DIR` | empty | Destination directory used by `JONES3D_ENABLE_POST_BUILD_COPY`. |
-
-### 🧪 Tests
-
-Tests use Unity Fixture with CTest. The deterministic `j3dcore.Macros` and `std`
-suites use the `unit` label. Run them after building with:
+With Visual Studio (the standalone build hasn't been checked with MSVC yet):
 
 ```bat
-ctest --test-dir <build-dir> -C <configuration> --output-on-failure -L unit
+cmake -S . -B build -G "Visual Studio 17 2022" -A Win32 -DJONES3D_STANDALONE=ON
+cmake --build build --config Release
 ```
 
-Local system tests can open a visible render window while comparing deterministic
-BMP masks for Direct3D display and `std3D` coverage. See
-[Docs/Testing.md](Docs/Testing.md) for commands, system-test switches, and visual
-test-vector notes.
+With MinGW (i686), from any host:
 
-## 📚 Documentation
-
-- [Docs/Jones.cfg.md](Docs/Jones.cfg.md) for engine configuration options and settings
-- [Docs/COG/README.md](Docs/COG/README.md) for COG scripting language notes and host-function reference pages
-- [Docs/Formats/README.md](Docs/Formats/README.md) for engine resource format notes
-- [Docs/Architecture/README.md](Docs/arc42/05-building-blocks/README.md) for detailed engine architecture notes
-- [Docs/Testing.md](Docs/Testing.md) for test requirements, execution, and fixture conventions
-
-<a id="engine-architecture"></a>
-## 🏗 High-Level Overview of Engine Architecture
-The Jones3D engine is an evolved version of the *Sith* engine, which was also used in games such as *Star Wars Jedi Knight: Dark Forces II* and *Star Wars Jedi Knight: Mysteries of the Sith*. In OpenJones3D, the engine is organized into eight original modules plus one implementation-specific module, [`j3dcore`](Libs/j3dcore).
-
-For a deeper technical breakdown of subsystem ownership, frame execution, rendering, scripting, AI, audio, and `QOL` architecture changes, see [Docs/Architecture/README.md](Docs/arc42/05-building-blocks/README.md).
-
-```
-              ┌──────────────────────┐
-              │       Jones3D        │
-              └──────────────────────┘
-                         ▲ 
-                         |
-              ┌──────────────────────┐
-              │         sith         │
-              └──────────────────────┘
-                         ▲ 
-                         |
-              ┌──────────────────────┐
-              │        rdroid        │
-              └──────────────────────┘
-                         ▲ 
-                         |
- ┌───────────┬───────────┬───────────┬───────────┐
- │   sound   │    std    │  wkernel  │  w32util  │
- └───────────┴───────────┴───────────┴───────────┘
+```bash
+cmake -S . -B build/mingw -G Ninja -DCMAKE_TOOLCHAIN_FILE=cmake/mingw-i686.cmake -DCMAKE_BUILD_TYPE=Release -DJONES3D_STANDALONE=ON
+cmake --build build/mingw
 ```
 
+Copy `Jones3D.exe` into the game's `Resource` directory and start it there. This build is removed once the
+Babylon renderer reaches parity (M6).
 
-#### 🔻 Lower Layer Modules
- - [`w32util`](Libs/w32util) - Windows registry module for interacting with the Windows registry
- - [`wkernel`](Libs/wkernel) - Core module that sets up the game window and processes window-specific events
- - [`std`](Libs/std) - LEC's standard library module
-   - One part contains general-purpose utility functions such as string copying, file path construction, math, and platform-specific helpers
-   - The other part contains lower-level HAL functions for GPU interaction, keyboard and mouse input, network communication, and related systems
- - [`sound`](Libs/sound) - Module that implements the sound HAL interface for audio playback on the system sound device
+### Linux and other systems (headless)
 
-#### 🔷 Intermediate Layer Modules
- - [`rdroid`](Libs/rdroid) - The RenderDroid module forms the lower layer of the rendering and rasterization system
-   - Builds on [`std`](Libs/std) and the other lower-level modules
-   - Loads 2D/3D primitives, animations, and textures from files such as [`3DO`](Docs/Formats/3DO.md), [`SPR`](Docs/Formats/SPR.md), [`KEY`](Docs/Formats/KEY.md), and [`MAT`](Docs/Formats/MAT.md)
-   - Constructs and updates primitives and animations
-   - Manages the rendering pipeline and draws primitives to the screen
-   - Contains vector and matrix math functions
- - [`sith`](Libs/sith) - The main gameplay module and the core of the game system
-   - Sits on top of the lower and mid-level modules
-   - Defines game logic
-   - Defines the top-layer rendering pipeline
-   - Implements and executes the COG script VM
-   - Manages game objects (*things*)
-   - Handles data serialization and savegame logic
-   - Defines the physics engine
-   - Defines the collision system
-   - Defines the camera system
-   - Defines the AI system
-
-#### 🎯 Top Layer Module
- - [`Jones3D`](Jones3D) - Responsible for initiating the game, game flow management, HUD interface, inventory menu, etc.
-
-<a id="methodology"></a>
-## 🔬 Methodology
-
-Most of the research is carried out with reverse-engineering tools such as IDA and Ghidra. Some code and behavior are also cross-referenced with projects such as [OpenJKDF2](https://github.com/shinyquagsire23/OpenJKDF2) and with engines from other games that use, or derive from, the Sith engine, such as *Grim Fandango*.
-
-Function names and most reconstructed data structures follow naming conventions recovered from debug symbols, logging strings, assert messages, related engines, and similar projects. Each function is prefixed with the source file name it was identified with, followed by an underscore and the function name in PascalCase, for example `stdFileUtil_NewFind`, `stdConffile_Open`, and `sithThing_AddSwapEntry`. Similar naming conventions are used for reconstructed data structures. Canonical source file names also retain their original module prefixes, such as `rd` for RenderDroid and `std` for LEC's standard library.
-
-Source and header files are organized into the module directories they belong to and placed in the canonical file paths used by the original engine. Runtime information, such as object addresses in the original binary and function type symbols for each module, is stored in that module's `RTI` directory.
-
-The implementation work is carried out in four phases:
-
-1. First, a shell implementation is created with thunk functions and references to global variables in the original binary (`Indy3D.exe`). This allows functions and variables to be invoked even before their bodies have been reimplemented.
-2. Once enough code for specific functions has been reconstructed, the thunk implementations are replaced with real implementations. Function hooks are then added so the engine starts calling the new code.
-3. After all functions in a specific file have been implemented, file-local static variables are defined in place of the earlier references to global variables in the original executable.
-4. Finally, once all references to public global variables in the engine have been reimplemented, those references are replaced with fully defined `extern` variables.
-
-Overall progress is tracked with the `analyze.py` script, which examines the codebase and counts the number of implemented ("hooked") functions.
-
-<a id="current-state"></a>
-## 📈 Current State
-
-The following report is generated by `analyze.py` and shows the implementation progress for the original engine functions present in the final retail v1.0 binary. It excludes any additional functions that exist only in debug builds.
+```bash
+cmake -S . -B build/native -G Ninja -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Debug
+cmake --build build/native
+ctest --test-dir build/native --output-on-failure -L unit
 ```
-Module Progress:
-----------------------------------------
-rdroid: 100.00% (219/219)
-    rdCamera:       100.00% (26/26)
-    rdCanvas:       100.00% (3/3)
-    rdClip:         100.00% (20/20)
-    rdKeyframe:     100.00% (4/4)
-    rdLight:        100.00% (4/4)
-    rdMaterial:     100.00% (7/7)
-    rdPuppet:       100.00% (15/15)
-    rdQClip:        100.00% (2/2)
-    rdThing:        100.00% (10/10)
-    rdroid:         100.00% (10/10)
-    rdMath:         100.00% (2/2)
-    rdMatrix:       100.00% (25/25)
-    rdVector:       100.00% (13/13)
-    rdFont:         100.00% (14/14)
-    rdModel3:       100.00% (19/19)
-    rdParticle:     100.00% (7/7)
-    rdPolyline:     100.00% (6/6)
-    rdPrimit2:      100.00% (5/5)
-    rdPrimit3:      100.00% (2/2)
-    rdSprite:       100.00% (3/3)
-    rdWallpaper:    100.00% (6/6)
-    rdCache:        100.00% (14/14)
-    rdFace:         100.00% (2/2)
 
-sith: 100.00% (1874/1874)
-    sithAI:                 100.00% (27/27)
-    sithAIAwareness:        100.00% (8/8)
-    sithAIClass:            100.00% (12/12)
-    sithAIInstinct:         100.00% (29/29)
-    sithAIMove:             100.00% (45/45)
-    sithAIUtil:             100.00% (53/53)
-    sithCog:                100.00% (48/48)
-    sithCogExec:            100.00% (42/42)
-    sithCogFunction:        100.00% (133/133)
-    sithCogFunctionAI:      100.00% (60/60)
-    sithCogFunctionPlayer:  100.00% (37/37)
-    sithCogFunctionSector:  100.00% (25/25)
-    sithCogFunctionSound:   100.00% (17/17)
-    sithCogFunctionSurface: 100.00% (38/38)
-    sithCogFunctionThing:   100.00% (215/215)
-    sithCogParse:           100.00% (29/29)
-    sithComm:               100.00% (15/15)
-    sithConsole:            100.00% (12/12)
-    sithControl:            100.00% (24/24)
-    sithSound:              100.00% (9/9)
-    sithSoundMixer:         100.00% (28/28)
-    sithDSS:                100.00% (26/26)
-    sithDSSCog:             100.00% (4/4)
-    sithDSSThing:           100.00% (39/39)
-    sithGamesave:           100.00% (27/27)
-    sithMulti:              100.00% (29/29)
-    sithAnimate:            100.00% (50/50)
-    sithCamera:             100.00% (26/26)
-    sithCollision:          100.00% (27/27)
-    sithIntersect:          100.00% (11/11)
-    sithParticle:           100.00% (13/13)
-    sithPathMove:           100.00% (14/14)
-    sithPhysics:            100.00% (47/47)
-    sithPuppet:             100.00% (56/56)
-    sithRender:             100.00% (22/22)
-    sithRenderSky:          100.00% (4/4)
-    sithShadow:             100.00% (5/5)
-    sithEvent:              100.00% (12/12)
-    sithFX:                 100.00% (23/23)
-    sithInventory:          100.00% (32/32)
-    sithOverlayMap:         100.00% (21/21)
-    sithPlayer:             100.00% (17/17)
-    sithPlayerActions:      100.00% (42/42)
-    sithPlayerControls:     100.00% (28/28)
-    sithTime:               100.00% (6/6)
-    sithVehicleControls:    100.00% (17/17)
-    sithWhip:               100.00% (20/20)
-    sithCommand:            100.00% (10/10)
-    sithMain:               100.00% (30/30)
-    sithString:             100.00% (3/3)
-    sithActor:              100.00% (12/12)
-    sithExplosion:          100.00% (7/7)
-    sithItem:               100.00% (5/5)
-    sithMaterial:           100.00% (12/12)
-    sithModel:              100.00% (17/17)
-    sithPVS:                100.00% (4/4)
-    sithSector:             100.00% (19/19)
-    sithSoundClass:         100.00% (25/25)
-    sithSprite:             100.00% (15/15)
-    sithSurface:            100.00% (20/20)
-    sithTemplate:           100.00% (15/15)
-    sithThing:              100.00% (65/65)
-    sithVoice:              100.00% (20/20)
-    sithWeapon:             100.00% (48/48)
-    sithWorld:              100.00% (23/23)
+This builds the unit tests and `Jones3D-headless`, which runs the game without window or sound:
 
-smush: 100.00% (294/294)
-    SmushPlay:      100.00% (6/6)
-    Cdstream:       100.00% (15/15)
-    Stdio:          100.00% (5/5)
-    Stdfile:        100.00% (17/17)
-    Framestream:    100.00% (13/13)
-    Zfilio:         100.00% (12/12)
-    Memory:         100.00% (7/7)
-    LecShare:       100.00% (20/20)
-    Decode:         100.00% (8/8)
-    DecodeAsm:      100.00% (8/8)
-    Timer:          100.00% (19/19)
-    Bloc16Asm:      100.00% (2/2)
-    D_wave:         100.00% (11/11)
-    D_bloc16:       100.00% (20/20)
-    Engine:         100.00% (32/32)
-    MixerAsm:       100.00% (8/8)
-    Mixer:          100.00% (19/19)
-    Dsnd:           100.00% (15/15)
-    Pcplay:         100.00% (19/19)
-    Frame:          100.00% (13/13)
-    List:           100.00% (3/3)
-    MemFill:        100.00% (1/1)
-    Blit:           100.00% (2/2)
-    BlitAsm:        100.00% (1/1)
-    MemCopy:        100.00% (1/1)
-    Bitmap:         100.00% (7/7)
-    Readauto:       100.00% (10/10)
+```bash
+cd <game>/Resource
+<repo>/build/native/Jones3D/Jones3D-headless --load ../SaveGames/<save>.nds --frames 1000 --state state.txt
+```
 
-sound: 100.00% (116/116)
-    AudioLib:       100.00% (10/10)
-    Driver:         100.00% (37/37)
-    Sound:          100.00% (69/69)
+Clang is the tested compiler. GCC works but needs extra flags for now, see
+[chapter 11](Docs/arc42/11-risks-and-technical-debt.md). More build profiles and the test workflow are in [Docs/Testing.md](Docs/Testing.md).
 
-std: 100.00% (301/301)
-    std:            100.00% (17/17)
-    stdBmp:         100.00% (2/2)
-    stdCircBuf:     100.00% (4/4)
-    stdColor:       100.00% (1/1)
-    stdConffile:    100.00% (15/15)
-    stdEffect:      100.00% (4/4)
-    stdFileUtil:    100.00% (5/5)
-    stdFnames:      100.00% (6/6)
-    stdHashtbl:     100.00% (12/12)
-    stdLinkList:    100.00% (2/2)
-    stdMath:        100.00% (10/10)
-    stdMemory:      100.00% (11/11)
-    stdPlatform:    100.00% (10/10)
-    stdStrTable:    100.00% (6/6)
-    stdUtil:        100.00% (9/9)
-    stdComm:        100.00% (17/17)
-    stdConsole:     100.00% (6/6)
-    stdGob:         100.00% (13/13)
-    stdWin95:       100.00% (5/5)
-    std3D:          100.00% (42/42)
-    stdControl:     100.00% (37/37)
-    stdDisplay:     100.00% (53/53)
+## Documentation
 
-w32util: 100.00% (10/10)
-    wuRegistry:     100.00% (10/10)
+- [Architecture (arc42)](Docs/arc42/README.md): goals, constraints, building blocks, runtime, decisions
+- [Roadmap](Docs/Roadmap.md): milestones and status
+- [File formats](Docs/Formats/README.md), [COG scripting](Docs/COG/README.md), [Jones.cfg](Docs/Jones.cfg.md)
+- [CONTRIBUTING.md](CONTRIBUTING.md): workflow, code style, commits
+- [Testing.md](Docs/Testing.md): tests and how to run them
 
-wkernel: 100.00% (8/8)
-    wkernel:        100.00% (8/8)
+## License
 
-Jones3D: 100.00% (378/378)
-    jonesConfig:    100.00% (144/144)
-    JonesConsole:   100.00% (18/18)
-    JonesDisplay:   100.00% (11/11)
-    JonesHud:       100.00% (62/62)
-    JonesDialog:    100.00% (21/21)
-    JonesFile:      100.00% (22/22)
-    JonesMain:      100.00% (63/63)
-    jonesString:    100.00% (3/3)
-    jonesCog:       100.00% (15/15)
-    JonesControl:   100.00% (4/4)
-    jonesInventory: 100.00% (15/15)
+The game code is licensed under the [GNU Affero General Public License v3.0](LICENSE), copyright OpenJones3D
+contributors. The Babylon Engine in `Babylon/` is licensed separately under the Mozilla Public License 2.0, see
+[ADR-0008](Docs/arc42/09-decisions/ADR-0008-babylon-license.md).
 
-Overall Progress: 100.00% | Implemented 3200 out of 3200 functions
+*Indiana Jones and the Infernal Machine* is © Lucasfilm Ltd. LucasArts, Indiana Jones and related properties are
+trademarks of Lucasfilm Ltd. Jones3D EX is not affiliated with or endorsed by Lucasfilm, LucasArts, Disney or
+Nightdive Studios.

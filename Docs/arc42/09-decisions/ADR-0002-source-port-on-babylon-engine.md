@@ -5,7 +5,7 @@
 
 ## Context
 
-The reconstruction is complete (3180 of 3180 functions), and a byte-exact decompilation of the game exists
+The reconstruction is complete (every function of the retail executable), and a byte-exact decompilation of the game exists
 elsewhere, so this project doesn't need to be the faithful reconstruction. Nightdive's Kex engine shows a
 model for remasters: a game-agnostic platform framework with the original game logic on top, mostly unchanged.
 The Quake II rerelease, whose game module is public, is a concrete example.
