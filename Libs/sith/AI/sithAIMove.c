@@ -1014,18 +1014,18 @@ float J3DAPI sithAIMove_UpdateAIMove(SithAIControlBlock* pLocal)
             SithThingMoveAxis moveAxis;
             if ( fabsf(velocity.z) > fabsf(velocity.y) && fabsf(velocity.z) > fabsf(velocity.x) )
             {
-                moveSpeed     = velocity.z;
-                moveAxis = SITHTHING_MOVEAXIS_Z;
+                moveSpeed = velocity.z;
+                moveAxis  = SITHTHING_MOVEAXIS_Z;
             }
             else if ( fabsf(velocity.y) > fabsf(velocity.x) )
             {
-                moveSpeed     = velocity.y;
-                moveAxis = SITHTHING_MOVEAXIS_Y;
+                moveSpeed = velocity.y;
+                moveAxis  = SITHTHING_MOVEAXIS_Y;
             }
             else
             {
-                moveSpeed     = velocity.x;
-                moveAxis = SITHTHING_MOVEAXIS_X;
+                moveSpeed = velocity.x;
+                moveAxis  = SITHTHING_MOVEAXIS_X;
             }
 
             sithAIMove_GetAIMoveModes(pThing, moveSpeed, moveAxis, &newMoveStatus, &newSubmode);
@@ -1554,7 +1554,11 @@ void J3DAPI sithAIMove_AISetLookPosEyeLevel(SithAIControlBlock* pLocal, const rd
     SithThing* pOwner = pLocal->pOwner;
     rdVector3 lookPos = *targetPos;
 
-    rdVector3 eyePos = { .x = 0.0f, .y = 0.0f, .z = pOwner->thingInfo.actorInfo.eyeOffset.z };
+    rdVector3 eyePos = {
+        .x = 0.0f,
+        .y = 0.0f,
+        .z = pOwner->thingInfo.actorInfo.eyeOffset.z
+    };
     rdMatrix_TransformVector34Acc(&eyePos, &pOwner->orient);
     rdVector_Add3Acc(&eyePos, &pOwner->pos);
 
@@ -2064,6 +2068,7 @@ void J3DAPI sithAIMove_AIJump(SithAIControlBlock* pLocal, rdVector3* movePos, fl
 {
     pLocal->movePos   = *movePos;
     pLocal->moveSpeed = 2.0f;
+
     if ( sithPuppet_PlayMode(pLocal->pOwner, SITHPUPPETSUBMODE_JUMPUP, NULL) < 0 )
     {
         sithPlayerActions_Jump(pLocal->pOwner, jumpDirection, 0);
