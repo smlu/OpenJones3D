@@ -427,8 +427,8 @@ int J3DAPI sithSurface_ReadSurfacesListBinary(tFileHandle fh, SithWorld* pWorld)
     }
     pWorld->apMatArray = NULL;
 
-    size_t totalVerts;
-    nRead = sith_g_pHS->pFileRead(fh, &totalVerts, sizeof(int)); J3D_ASSERT_SIZE32(sizeof(int) == 4, "sizeof(int) == 4");
+    uint32_t totalVerts; // Fixed: was size_t, which a 4-byte read only half fills on 64-bit
+    nRead = sith_g_pHS->pFileRead(fh, &totalVerts, sizeof(uint32_t));
     if ( nRead != 4 )
     {
         return 1;
