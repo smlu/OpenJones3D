@@ -595,7 +595,7 @@ typedef struct sStdCommPlayerInfo
     wchar_t aName[20];
     DPID id;
 } StdCommPlayerInfo;
-J3D_ASSERT_SIZE32(sizeof(StdCommPlayerInfo) == 44, "sizeof(StdCommPlayerInfo) == 44");
+J3D_ASSERT_SIZE32_WCHAR(sizeof(StdCommPlayerInfo) == 44, "sizeof(StdCommPlayerInfo) == 44");
 
 typedef struct sStdCommSessionSettings
 {
@@ -609,7 +609,7 @@ typedef struct sStdCommSessionSettings
     int opt2;
     int opt3;
 } StdCommGame;
-J3D_ASSERT_SIZE32(sizeof(StdCommGame) == 356, "sizeof(StdCommGame) == 356");
+J3D_ASSERT_SIZE32_WCHAR(sizeof(StdCommGame) == 356, "sizeof(StdCommGame) == 356");
 
 J3D_EXTERN_C_END
 #endif //STD_TYPES_H

@@ -342,7 +342,7 @@ typedef struct sJonesState
     JonesSoundSettings soundSettings;
     JonesDisplaySettings displaySettings;
 } JonesState;
-J3D_ASSERT_SIZE32(sizeof(JonesState) == 512, "sizeof(JonesState) == 512");
+J3D_ASSERT_SIZE32_WCHAR(sizeof(JonesState) == 512, "sizeof(JonesState) == 512");
 
 typedef struct sJonesResourcesOld
 {

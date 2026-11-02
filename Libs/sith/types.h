@@ -2156,7 +2156,7 @@ typedef struct sSithPlayer
     int respawnMask;
     unsigned int msecLastCommTime;
 } SithPlayer;
-J3D_ASSERT_SIZE32(sizeof(SithPlayer) == 1820, "sizeof(SithPlayer) == 1820");
+J3D_ASSERT_SIZE32_WCHAR(sizeof(SithPlayer) == 1820, "sizeof(SithPlayer) == 1820");
 
 //
 // Actor info structs

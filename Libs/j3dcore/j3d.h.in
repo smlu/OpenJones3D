@@ -35,6 +35,14 @@
 #   define J3D_ASSERT_SIZE32(expr, msg)
 #endif
 
+// Added: like J3D_ASSERT_SIZE32, for structs holding wchar_t. wchar_t is 2 bytes on Windows, as in the original,
+// and 4 bytes on Linux and macOS, so these sizes only hold on 32-bit Windows.
+#if defined(J3D_32BIT) && defined(_WIN32)
+#   define J3D_ASSERT_SIZE32_WCHAR(expr, msg) static_assert(expr, msg)
+#else
+#   define J3D_ASSERT_SIZE32_WCHAR(expr, msg)
+#endif
+
 // Added: scanf conversion for a size_t argument. The original reads counts into size_t with %d, which only fills
 // all of it on 32-bit. 32-bit builds keep %d, so they parse exactly as before.
 #ifdef J3D_32BIT
