@@ -28,13 +28,14 @@
     * `sithPlayerActions` (67f2eab)
     * `sithVehicleControls` (63685d3)
     * `sithPlayerControls` (d31ee9b)
-    * `sithAIMove` (05c806d,929c0a1,4cf0ba9)
-    * `sithAIUtil` (8c6239f,45c1a2b)
-    * `sithAIInstinct_InitInstincts` of `sithAIInstinct` (975b4b7,f7e90fa)
-    * `sithMulti` (2fa7748,9b74e4e)
-    * `sithDSS` (060bbe5,967a114)
-    * `sithDSSThing` (05aff55,e5a453d)
-    * `smush` (6bf096d)
+    * `sithAIMove` (05c806d,2a0eb0f)
+    * `sithAIUtil` (2a0eb0f)
+    * `sithAIInstinct` (2a0eb0f)
+    * `sithMulti` (2a0eb0f)
+    * `sithDSS` (2a0eb0f)
+    * `sithDSSThing` (2a0eb0f)
+    * `smush` (2a0eb0f)
+  - Reached 3,200/3,200 implemented functions in the tracked engine reconstruction, including SMUSH/INSANE movie playback. (2a0eb0f)
   - Moved high poly option to advance display settings (7b58bff)
   - Fixed selecting stored MipMap filter mode in developer dialog (ad1633c)
   - Added new graphic options for MSAA, anisotropic texture filtering and mipmap auto gen to display settings (77df36d)
@@ -110,6 +111,8 @@
     on failure.
   - Fixed `stdMath` edge cases for power, angle normalization, trigonometry, and arcsine helpers. (4ebf236)  
     This fixes zero and negative exponent handling in `stdMath_FlexPower`, rejects NaN/infinity before lookup-table indexing in angle/trig functions, preserves explicit NaN handling, and clamps arcsine inputs to avoid domain errors from small floating-point overshoots.
+  - Restored recovered arithmetic order and intermediate precision in `rdVector` and `rdMatrix`, including normalization, axis-angle matrix construction, and Euler-angle extraction. (cceda7c)
+  - Corrected `stdMath` inverse-trigonometric precision and third-quadrant tangent lookup, fixed angle-normalization boundaries and negative-power edge cases, and prevented overflow when damping between extreme finite values. (fda1288)
   - Fixed `stdPrintf` to preserve safely truncated messages and pass formatted output as data, preventing percent characters in file paths or messages from being reinterpreted as format directives. (f5d6320)
   - Fixed `stdFnames_ChangeExtEx` to validate path termination before scanning for an extension, preventing reads beyond unterminated fixed-size buffers. (f5d6320)
   - Fixed `stdFileUtil_FindNext` to count only successful search results, allowing a failed initial search to be retried safely. (f5d6320)
@@ -119,10 +122,10 @@
   - Fixed string-table validation, EOF handling, and partial-load cleanup in `stdStrTable`. (1b7cb2d)
     The loader validates message counts, decimal fields, quoted values, duplicate keys, and the trailing `END` marker, and releases partially loaded data after parsing or allocation failures.
   - Added implementations of `AudioLib_GenerateLipSyncBlock` and `AudioLib_GetMouthPosition`, preserving the original lip-sync timeline and cross-sample decoding behavior. (0facac9)
-  - Added implementations of `AudioLib_ParseWaveFileHeader`, `AudioLib_Compress`, `AudioLib_Uncompress`, `AudioLib_ResetCompressor`, `AudioLib_CompressBlock`, `AudioLib_UncompressBlock`, and `AudioLib_WVSMUncompressBlock`, completing `AudioLib`; the codec tables are now owned by the DLL, and the unit tests compare against vectors captured from the original executable.
-  - Fixed `AudioLib_WVSMCompressBlock` writing past the end of its sample bit length histograms for the sample -32768 and, with the earlier bounds fix, counting the bit lengths from 0 instead of 1, which selected different shifts than the original and produced different (larger) compressed WVSM data; it now matches the original output.
-  - Added implementations of the remaining `sithAIMove` functions (turning, movement, cliff/water checks, head tracking and the Quetz and Marduk tail animations), completing `sithAIMove`.
-  - Added implementation of `sithThing_UpdateQuetzUserBlock`, preserving the original Quetz tail follow behavior.
+  - Added implementations of `AudioLib_ParseWaveFileHeader`, `AudioLib_Compress`, `AudioLib_Uncompress`, `AudioLib_ResetCompressor`, `AudioLib_CompressBlock`, `AudioLib_UncompressBlock`, and `AudioLib_WVSMUncompressBlock`, completing `AudioLib`; the codec tables are now owned by the DLL, and the unit tests compare against vectors captured from the original executable. (2a0eb0f)
+  - Fixed `AudioLib_WVSMCompressBlock` writing past the end of its sample bit length histograms for the sample -32768 and, with the earlier bounds fix, counting the bit lengths from 0 instead of 1, which selected different shifts than the original and produced different (larger) compressed WVSM data; it now matches the original output. (2a0eb0f)
+  - Added implementations of the remaining `sithAIMove` functions (turning, movement, cliff/water checks, head tracking and the Quetz and Marduk tail animations), completing `sithAIMove`. (2a0eb0f)
+  - Added implementation of `sithThing_UpdateQuetzUserBlock`, preserving the original Quetz tail follow behavior. (2a0eb0f)
   - Added capacity-aware lip-sync generation helpers to calculate worst-case output sizes and validate input/output buffer capacities. (0facac9)
   - Added implementations of `sithThing_WriteThingsListBinary` and `sithThing_ReadThingsListBinary` for world things and templates, preserving the original binary record layout and block ordering. (92660f2)
   - Fixed MSVC incremental-link PDB collisions by giving the executable a separate debug-symbol database from the DLL. (db582ba)
@@ -132,11 +135,22 @@
   - Fixed constant wide-string array detection and DX6 DirectPlay session-descriptor allocation failure handling and cleanup. (db582ba)
   - Changed the JONES3D_RUNTIME_GUARDS CMake option to be disabled by default. (db582ba)
   - Added AudioLib and Sound lip-sync unit tests covering generation, lookup, caching, playback offsets, and allocation failures. (19d570c)
-  - Added `AudioLib` unit tests with vectors captured from the original executable, covering the wave file header parser and the ADPCM and WVSM codecs. (f114397)
-  - Added `sithDSS` and `sithDSSThing` unit tests with vectors captured from the original executable. (eea7b3e,c6e8168)
-  - Added `smush` unit tests for the core, bitmap, stream, codec and sound areas, with vectors captured from the original executable for the assembly routines and the C modules. (6ae2c86,9d82c33,3cb6658,7527a47,0f92b02,100743f)
+  - Added `AudioLib` unit tests with vectors captured from the original executable, covering the wave file header parser and the ADPCM and WVSM codecs. (2a0eb0f)
+  - Added `sithAIInstinct`, `sithAIMove`, and `sithAIUtil` unit tests with vectors captured from the original executable, covering instinct registration and behavior, movement, and AI utilities. (2a0eb0f)
+  - Added `sithMulti` unit tests with vectors captured from the original executable. (2a0eb0f)
+  - Added unit tests for the `sithThing` Quetz user-block creation and update functions, with vectors captured from the original executable. (2a0eb0f)
+  - Added `sithDSS` and `sithDSSThing` unit tests with vectors captured from the original executable. (2a0eb0f)
+  - Added `smush` unit tests for the core, bitmap, stream, codec and sound areas, with vectors captured from the original executable for the assembly routines and the C modules. (2a0eb0f)
   - Added sithThing, sithTemplate, and sithVoice unit tests, including retail-generated binary vectors and allocation/I/O failure coverage. (aa4e510)
-  - Added GitHub Actions unit-test workflows for DirectX 6/9 and updated the existing CI builds to use Visual Studio 2026 with four build profiles per backend. (2995463)
+  - Added the `rdroid.Math` unit suite for vector and matrix numerical behavior, rounding, non-finite inputs, aliasing, and assertions. (cceda7c)
+  - Expanded `stdMath` regression coverage with complete sine/tangent table fixtures and numerical boundary cases. (fda1288)
+  - Updated `sithThing` binary serialization tests to allow a 0.00001-degree tolerance for recalculated Euler angles while retaining byte-exact checks for other fields and preserving existing golden vectors. (f4ed097)
+  - Added GitHub Actions unit-test workflows for DirectX 6/9 and updated the existing CI builds to use Visual Studio 2026 with four build profiles per backend. (2868c76)
+  - Fixed GitHub Actions test triggering on develop and pull requests, with separate build and test status badges for DirectX 6/9. (1026ad0)
+  - Applied official 1.2 update fix to `jonesConfig_ControlToString`: key names in the control configuration dialog are now queried from the system keyboard layout with `GetKeyNameTextA` instead of a hardcoded English table. (ead3679)
+  - Applied official 1.2 update fix to `jonesConfig_StoreDialog_HandleWM_COMMAND`: closing the store dialog with a balance of exactly 0 now shows the purchase confirmation instead of leaving silently. (ead3679)
+  - Applied official 1.2 update fix to `jonesConfig_ShowDialogInsertCD` and `jonesConfig_InsertCD_HandleWM_COMMAND`: the cursor is hidden when the insert-CD dialog is closed from its OK/Quit handler instead of after the dialog returns. (ead3679)
+  - Applied official 1.2 update change to the end credits (`JonesHud_DrawCredits`): added "Director of Sales Operations: JASON HORSTMAN" (the credits table now has 327 records) and swapped the order of `JOSH MOORE` and `HEATHER TWIST`. (ead3679)
 
 ### Engine:
   - Added check for zero size in lip sync data generation to prevent allocation errors (f79736b)
@@ -263,6 +277,11 @@
   - [QOL] Increased the maximum thing capacity from 2,304 to 16,384 while retaining the original 2,304 limit when QOL improvements are disabled. (92660f2)
   - Removed registration of the additional COG functions `DebugPrint`, `DebugFlex`, `DebugInt`, `DebugVector`, `DebugLocalSymbols`, `DebugWaitForKey`, `EnablePrint`, and `IsPrintEnabled`, introduced in v0.3, to preserve retail savegame compatibility. (3f2fdc7)
     This preserves the script-local symbol counts and ordering used by positional COG state restoration.
+  - Fixed overlapping COG stack shifts on overflow by using `memmove` in `sithCogExec_PushStack`. [PR #55](https://github.com/smlu/OpenJones3D/pull/55)
+  - Added an optional runtime guard in `sithCamera_Update` to skip cinematic camera updates while either focus thing is missing. [PR #54](https://github.com/smlu/OpenJones3D/pull/54)
+  - Fixed an out-of-bounds write in `sithEvent_ResetFreeBufferTable` that could cause startup hangs in optimized Clang builds. [PR #45](https://github.com/smlu/OpenJones3D/pull/45)
+  - Implemented the remaining mine car track and jeep physics functions in `sithPhysics`. [PR #51](https://github.com/smlu/OpenJones3D/pull/51)
+  - Applied official 1.2 update fix to `sithCamera_SetCameraCanvas`: changing the canvas resets the focus interpolation of the external camera so the camera focus is re-initialized. (ead3679)
 
 ### Graphics:
   - Fixed an issue where active textures used in the current render frame were being removed from the cache prematurely in low VRAM situations (f37ecb7)
@@ -350,6 +369,7 @@
   - [QOL] Improved DX6 RGB565 component expansion using bit replication while preserving the original conversion when QOL is disabled. (4faef7c)
   - [QOL] Updated DX6 anisotropic filtering detection and reporting to require matching filter capabilities and a usable anisotropy level. (4faef7c)
   - Fixed DX9 fullscreen mode setup overwriting advertised video modes when the runtime promotes the created surface format, preserving the available modes for later selections. (ec573c8)
+  - Fixed an out-of-bounds read after the last polygon in `rdCache_SendFaceListToHardware`. [PR #52](https://github.com/smlu/OpenJones3D/pull/52)
 
 ### Game play:
   - Fixed bug in `sithPlayer_Update` where force move animation could be stopped when required distance to move was almost zero (127aa92)
@@ -394,6 +414,10 @@
   - Prevented playing climb-pullup animation when movement could be blocked (144d684)
   - Fixed not to play climb left/right animation when found climb surface is currently attached surface (c0b8367)
   - [QOL] Enabled mounting climb surface while walking/running (8e1f3e3)
+  - Applied official 1.2 update fix to `sithPlayerControls_ProcessPushPullMove` (part of `sithPlayerControls_ProcessGeneralMove` in the original): the collision check that decides whether the Marduk statue (`2marpushstatue`) can be pushed or pulled starts 0.05 lower. (ead3679)
+  - Applied official 1.2 update fix to `sithWeapon_ProcessWeaponControls`: activating the whip also clears the deactivated player weapon id. (ead3679)
+  - Applied official 1.2 update fix to `sithActor_DamageActor`: the player no longer plays a damage sound when damaged by itself with damage types `0x1000`, `0x2000` or `0x4000`. (ead3679)
+  - Applied official 1.2 update fix to `sithWhip_CreatePlayerWhip`: the whip thing pointer is cleared when the whip template or the player hand mesh is missing, instead of keeping its previous value. (ead3679)
 
 ## v0.3.1
 ### General:

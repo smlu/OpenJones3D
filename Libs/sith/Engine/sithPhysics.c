@@ -2882,8 +2882,8 @@ void J3DAPI sithPhysics_UpdateRaftPhysics(SithThing* pThing, float secDeltaTime)
     rdVector3 cornerOffsets[4] =
     {
         { 0.059999999f,  0.090000004f, 0.0f },  // Front right
-        {-0.059999999f,  0.090000004f, 0.0f },  // Front left
-        {-0.059999999f, -0.090000004f, 0.0f },  // Back left
+        { -0.059999999f,  0.090000004f, 0.0f },  // Front left
+        { -0.059999999f, -0.090000004f, 0.0f },  // Back left
         { 0.059999999f, -0.090000004f, 0.0f }   // Back right
     };
 
@@ -3645,7 +3645,6 @@ stop_move:
 
 int J3DAPI sithPhysics_ProcessTrackFace(SithThing* pThing, rdFace* pFace, rdVector3* pMoveDir, rdVector3* pRightDir, rdVector3* pPos, SithTrackFaceData* pData)
 {
-
     rdVector3 fwdDir   = *pMoveDir;
     rdVector3 rightDir = *pRightDir;
 
@@ -3693,7 +3692,7 @@ int J3DAPI sithPhysics_ProcessTrackFace(SithThing* pThing, rdFace* pFace, rdVect
         }
     }
 
-    SITH_ASSERTREL(( pData->nVertices == 3 ) || ( pData->nVertices == 4 ));
+    SITH_ASSERTREL((pData->nVertices == 3) || (pData->nVertices == 4));
     rdVector_Scale3Acc(&pData->centroid, 1.0f / (float)pData->nVertices);
 
     if ( pData->nVertices == 4 )

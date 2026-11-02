@@ -77,19 +77,34 @@ jobs:
       shell: pwsh
       run: |
         $buildDir = "$env:GITHUB_WORKSPACE/build"
-        $testRegex = '^(j3dcore\.Macros|rdroid\.Math|std|sound|sith)$'
+        # Discover and run every registered suite, including future additions.
         $listing = ctest --test-dir $buildDir -C ${{ matrix.build_type }} `
-          -R $testRegex --show-only=json-v1
+          --show-only=json-v1
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
         $actual = @(($listing | ConvertFrom-Json).tests | ForEach-Object { $_.name })
-        foreach ($expected in @('j3dcore.Macros', 'rdroid.Math', 'std', 'sound', 'sith')) {
+        $requiredSuites = @(
+          'j3dcore.Macros',
+          'rdroid.Math',
+          'std',
+          'sound',
+          'sith',
+          'sith.DSS',
+          'sith.Multi',
+          'sith.ThingQuetz',
+          'sith.AIInstinct',
+          'sith.AIInstinctFn',
+          'sith.AIMove',
+          'sith.AIUtil',
+          'smush'
+        )
+        foreach ($expected in $requiredSuites) {
           if ($actual -notcontains $expected) {
             throw "Required CTest suite '$expected' was not discovered."
           }
         }
         ctest --test-dir $buildDir -C ${{ matrix.build_type }} `
           --output-on-failure --no-tests=error --timeout 180 `
-          --output-junit "$buildDir/test-results.xml" -R $testRegex
+          --output-junit "$buildDir/test-results.xml"
         exit $LASTEXITCODE
 
     - name: Upload test results

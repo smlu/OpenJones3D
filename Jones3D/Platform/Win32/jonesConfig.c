@@ -1424,53 +1424,64 @@ void J3DAPI jonesConfig_ControlToString(size_t controlId, char* pDest)
 
     memset(pDest, 0, JONESCONFIG_CONTROLSTRING_MAXLEN);
 
+    char aKeyName[256]; // Fixed: [v1.2] Buffer for key name
+
     char* pJonesString = NULL;
     if ( controlId < JONESCONFIG_JOYAXISKID_UP )
     {
         switch ( controlId )
         {
+            // Fixed: [v1.2] Key name is now queried from the system keyboard layout instead of being hardcoded
+            case STDKEY_1:
+            case STDKEY_2:
+            case STDKEY_3:
+            case STDKEY_4:
+            case STDKEY_5:
+            case STDKEY_6:
+            case STDKEY_7:
+            case STDKEY_8:
+            case STDKEY_9:
+            case STDKEY_0:
+            case STDKEY_Q:
+            case STDKEY_W:
+            case STDKEY_E:
+            case STDKEY_R:
+            case STDKEY_T:
+            case STDKEY_Y:
+            case STDKEY_U:
+            case STDKEY_I:
+            case STDKEY_O:
+            case STDKEY_P:
+            case STDKEY_A:
+            case STDKEY_S:
+            case STDKEY_D:
+            case STDKEY_F:
+            case STDKEY_G:
+            case STDKEY_H:
+            case STDKEY_J:
+            case STDKEY_K:
+            case STDKEY_L:
+            case STDKEY_SEMICOLON:
+            case STDKEY_APOSTROPHE:
+            case STDKEY_GRAVE:
+            case STDKEY_BACKSLASH:
+            case STDKEY_Z:
+            case STDKEY_X:
+            case STDKEY_C:
+            case STDKEY_V:
+            case STDKEY_B:
+            case STDKEY_N:
+            case STDKEY_M:
+            case STDKEY_PERIOD:
+            case STDKEY_SLASH:
+                // TODO: [BUG] Result is not checked, on failure aKeyName is uninitialized (as in the original)
+                GetKeyNameTextA(((controlId & 0x7F) | ((controlId & 0x80) << 1)) << 16, aKeyName, sizeof(aKeyName) - 1);
+                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, aKeyName);
+                stdUtil_ToUpper(pDest); // Note, original calls _strupr
+                return;
+
             case STDKEY_ESCAPE:
                 pJonesString = "JONES_STR_ESCAPE";
-                break;
-
-            case STDKEY_1:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "1");
-                break;
-
-            case STDKEY_2:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "2");
-                break;
-
-            case STDKEY_3:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "3");
-                break;
-
-            case STDKEY_4:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "4");
-                break;
-
-            case STDKEY_5:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "5");
-                break;
-
-            case STDKEY_6:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "6");
-                break;
-
-            case STDKEY_7:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "7");
-                break;
-
-            case STDKEY_8:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "8");
-                break;
-
-            case STDKEY_9:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "9");
-                break;
-
-            case STDKEY_0:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "0");
                 break;
 
             case STDKEY_MINUS:
@@ -1489,46 +1500,6 @@ void J3DAPI jonesConfig_ControlToString(size_t controlId, char* pDest)
                 pJonesString = "JONES_STR_TAB";
                 break;
 
-            case STDKEY_Q:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "Q");
-                break;
-
-            case STDKEY_W:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "W");
-                break;
-
-            case STDKEY_E:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "E");
-                break;
-
-            case STDKEY_R:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "R");
-                break;
-
-            case STDKEY_T:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "T");
-                break;
-
-            case STDKEY_Y:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "Y");
-                break;
-
-            case STDKEY_U:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "U");
-                break;
-
-            case STDKEY_I:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "I");
-                break;
-
-            case STDKEY_O:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "O");
-                break;
-
-            case STDKEY_P:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "P");
-                break;
-
             case STDKEY_LBRACKET:
                 pJonesString = "JONES_STR_LEFT_BRCKT";
                 break;
@@ -1545,100 +1516,12 @@ void J3DAPI jonesConfig_ControlToString(size_t controlId, char* pDest)
                 pJonesString = "JONES_STR_LEFT_CTRL";
                 break;
 
-            case STDKEY_A:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "A");
-                break;
-
-            case STDKEY_S:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "S");
-                break;
-
-            case STDKEY_D:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "D");
-                break;
-
-            case STDKEY_F:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "F");
-                break;
-
-            case STDKEY_G:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "G");
-                break;
-
-            case STDKEY_H:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "H");
-                break;
-
-            case STDKEY_J:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "J");
-                break;
-
-            case STDKEY_K:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "K");
-                break;
-
-            case STDKEY_L:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "L");
-                break;
-
-            case STDKEY_SEMICOLON:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, ";");
-                break;
-
-            case STDKEY_APOSTROPHE:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "'");
-                break;
-
-            case STDKEY_GRAVE:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "`");
-                break;
-
             case STDKEY_LSHIFT:
                 pJonesString = "JONES_STR_LEFT_SHIFT";
                 break;
 
-            case STDKEY_BACKSLASH:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "\\");
-                break;
-
-            case STDKEY_Z:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "Z");
-                break;
-
-            case STDKEY_X:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "X");
-                break;
-
-            case STDKEY_C:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "C");
-                break;
-
-            case STDKEY_V:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "V");
-                break;
-
-            case STDKEY_B:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "B");
-                break;
-
-            case STDKEY_N:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "N");
-                break;
-
-            case STDKEY_M:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "M");
-                break;
-
             case STDKEY_COMMA:
                 pJonesString = "JONES_STR_COMMA";
-                break;
-
-            case STDKEY_PERIOD:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, ".");
-                break;
-
-            case STDKEY_SLASH:
-                stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, "/");
                 break;
 
             case STDKEY_RSHIFT:
@@ -9610,7 +9493,7 @@ void J3DAPI jonesConfig_AddStoreCartItem(HWND hDlg, tStoreCartState* pCart)
             ListView_GetItem(hItemsList, &lvitem);
 
             int storeItemIdx = HIWORD(lvitem.lParam);//  HIWORD
-            if ( storeItemIdx > -1 ) // Fixed: Added check for bonusMapItemIdx > -1
+            if ( storeItemIdx > -1 ) // Fixed: [v1.2] Added check for bonusMapItemIdx > -1
             {
                 if ( JonesHud_aStoreItems[storeItemIdx].menuID == JONESHUD_MENU_INVITEM_BONUSMAP )
                 {
@@ -9623,7 +9506,7 @@ void J3DAPI jonesConfig_AddStoreCartItem(HWND hDlg, tStoreCartState* pCart)
 
         if ( pCart->balance >= total )
         {
-            if ( bonusMapItemIdx > -1 && JonesHud_aStoreItems[bonusMapItemIdx].menuID == JONESHUD_MENU_INVITEM_BONUSMAP ) // Fixed: Added check for bonusMapItemIdx > -1
+            if ( bonusMapItemIdx > -1 && JonesHud_aStoreItems[bonusMapItemIdx].menuID == JONESHUD_MENU_INVITEM_BONUSMAP ) // Fixed: [v1.2] Added check for bonusMapItemIdx > -1
             {
                 const char* pDlgText = jonesString_GetString("JONES_STR_PERU");
                 if ( pDlgText )
@@ -9682,7 +9565,7 @@ void J3DAPI jonesConfig_AddStoreCartItem(HWND hDlg, tStoreCartState* pCart)
         {
             const char* pDlgText = NULL;
             if ( bonusMapItemIdx > -1 && JonesHud_aStoreItems[bonusMapItemIdx].menuID == JONESHUD_MENU_INVITEM_BONUSMAP )
-            { // Fixed: Added check for bonusMapItemIdx > -1
+            { // Fixed: [v1.2] Added check for bonusMapItemIdx > -1
                 pDlgText = jonesString_GetString("JONES_STR_NOPERU");
             }
             else if ( selectedCount == 1 )
@@ -9749,7 +9632,7 @@ void J3DAPI jonesConfig_StoreDialog_HandleWM_COMMAND(HWND hWnd, WPARAM wParam)
         case 1:
         case 2:
         {
-            if ( pCart->balance <= 0 )
+            if ( pCart->balance < 0 ) // Fixed: [v1.2] Changed from `balance <= 0` so the purchase confirmation is also shown when the balance is exactly 0
             {
                 EndDialog(hWnd, wParam);
             }
@@ -9878,7 +9761,7 @@ int J3DAPI jonesConfig_ShowDialogInsertCD(HWND hWnd, intptr_t dwInitParam)
     ShowCursor(1);
     GetWindowLongPtr(hWnd, GWL_HINSTANCE); // TODO: ??
     int btnNum = JonesDialog_ShowDialog(MAKEINTRESOURCE(167), hWnd, jonesConfig_DialogInsertCDProc, dwInitParam);
-    ShowCursor(0);
+    // Fixed: [v1.2] Removed ShowCursor(0), the cursor is now hidden when the dialog is closed in jonesConfig_InsertCD_HandleWM_COMMAND
     return btnNum; // 1 - ok or 2 - quit
 }
 
@@ -9941,12 +9824,16 @@ int J3DAPI jonesConfig_InsertCD_HandleWM_COMMAND(HWND hWnd, int nResult)
             return cdNum;
         }
 
-        return EndDialog(hWnd, nResult);
+        int bEnded = EndDialog(hWnd, nResult);
+        ShowCursor(0); // Fixed: [v1.2] Added ShowCursor(0)
+        return bEnded;
     }
 
     if ( nResult == 2 ) // quit
     {
-        return EndDialog(hWnd, nResult);
+        int bEnded = EndDialog(hWnd, nResult);
+        ShowCursor(0); // Fixed: [v1.2] Added ShowCursor(0)
+        return bEnded;
     }
 
     return cdNum;
