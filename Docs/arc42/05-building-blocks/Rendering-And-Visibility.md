@@ -4,15 +4,15 @@ This page documents the render-facing architecture: cameras, visible-sector cons
 
 Primary source files:
 
-- [`Libs/sith/Engine/sithCamera.c`](../../Libs/sith/Engine/sithCamera.c)
-- [`Libs/sith/Engine/sithRender.c`](../../Libs/sith/Engine/sithRender.c)
-- [`Libs/sith/Engine/sithRender.h`](../../Libs/sith/Engine/sithRender.h)
-- [`Libs/rdroid/Main/rdroid.c`](../../Libs/rdroid/Main/rdroid.c)
-- [`Libs/rdroid/Raster/rdCache.c`](../../Libs/rdroid/Raster/rdCache.c)
-- [`Libs/std/Win95/std3D.h`](../../Libs/std/Win95/std3D.h)
-- [`Libs/std/Win95/DX6/std3DX6.c`](../../Libs/std/Win95/DX6/std3DX6.c)
-- [`Libs/std/Win95/DX9/std3DX9.c`](../../Libs/std/Win95/DX9/std3DX9.c)
-- [`Libs/std/Win95/DX9/stdShaderDX9.c`](../../Libs/std/Win95/DX9/stdShaderDX9.c)
+- [`Libs/sith/Engine/sithCamera.c`](../../../Libs/sith/Engine/sithCamera.c)
+- [`Libs/sith/Engine/sithRender.c`](../../../Libs/sith/Engine/sithRender.c)
+- [`Libs/sith/Engine/sithRender.h`](../../../Libs/sith/Engine/sithRender.h)
+- [`Libs/rdroid/Main/rdroid.c`](../../../Libs/rdroid/Main/rdroid.c)
+- [`Libs/rdroid/Raster/rdCache.c`](../../../Libs/rdroid/Raster/rdCache.c)
+- [`Libs/std/Win95/std3D.h`](../../../Libs/std/Win95/std3D.h)
+- [`Libs/std/Win95/DX6/std3DX6.c`](../../../Libs/std/Win95/DX6/std3DX6.c)
+- [`Libs/std/Win95/DX9/std3DX9.c`](../../../Libs/std/Win95/DX9/std3DX9.c)
+- [`Libs/std/Win95/DX9/stdShaderDX9.c`](../../../Libs/std/Win95/DX9/stdShaderDX9.c)
 
 ## Layer Split
 
@@ -34,7 +34,7 @@ The renderer is therefore not a single module. `sith` decides what should be dra
 
 ## Camera System
 
-[`sithCamera.c`](../../Libs/sith/Engine/sithCamera.c) owns the built-in camera objects and the high-level camera behaviors.
+[`sithCamera.c`](../../../Libs/sith/Engine/sithCamera.c) owns the built-in camera objects and the high-level camera behaviors.
 
 Startup creates a fixed set of system cameras, including:
 
@@ -62,28 +62,28 @@ For the detailed camera architecture, including built-in camera numbers, interpo
 
 ## Per-Frame Camera Use
 
-During [`sithDrawScene()`](../../Libs/sith/Main/sithMain.c#L596):
+During [`sithDrawScene()`](../../../Libs/sith/Main/sithMain.c#L596):
 
-1. [`sithCamera_Update(curCamera)`](../../Libs/sith/Engine/sithCamera.c#L471) updates camera pose, interpolation, offsets, and focus logic.
-2. [`sithCamera_RenderScene()`](../../Libs/sith/Engine/sithCamera.c#L1421) makes the `rdCamera` current and calls [`sithRender_RenderScene()`](../../Libs/sith/Engine/sithRender.c#L299).
+1. [`sithCamera_Update(curCamera)`](../../../Libs/sith/Engine/sithCamera.c#L471) updates camera pose, interpolation, offsets, and focus logic.
+2. [`sithCamera_RenderScene()`](../../../Libs/sith/Engine/sithCamera.c#L1421) makes the `rdCamera` current and calls [`sithRender_RenderScene()`](../../../Libs/sith/Engine/sithRender.c#L299).
 
 That means camera update is part of the draw half of the frame, not the simulation half. The camera reads already-updated gameplay state and converts it into a render view for the current frame.
 
 ## Scene Render Entry
 
-[`sithRender_RenderScene()`](../../Libs/sith/Engine/sithRender.c#L299) performs the render-facing setup:
+[`sithRender_RenderScene()`](../../../Libs/sith/Engine/sithRender.c#L299) performs the render-facing setup:
 
 - update sky state
 - push fog updates to `std3D` if needed
 - adjust fade when paused
-- call [`sithRender_Draw()`](../../Libs/sith/Engine/sithRender.c#L332)
+- call [`sithRender_Draw()`](../../../Libs/sith/Engine/sithRender.c#L332)
 - flush voice subtitles and console text
 
-The heavy work happens in [`sithRender_Draw()`](../../Libs/sith/Engine/sithRender.c#L332).
+The heavy work happens in [`sithRender_Draw()`](../../../Libs/sith/Engine/sithRender.c#L332).
 
 ## Main Render Pass Setup
 
-[`sithRender_Draw()`](../../Libs/sith/Engine/sithRender.c#L332) is the top-level render pipeline driver. At the start of that function the engine:
+[`sithRender_Draw()`](../../../Libs/sith/Engine/sithRender.c#L332) is the top-level render pipeline driver. At the start of that function the engine:
 
 - sets the active lighting mode
 - enables ambient camera light in the render options
@@ -250,10 +250,10 @@ That is why the two paths feel architecturally similar in code. PVS is not a sec
 
 ### Pass entry and mode selection
 
-The first decision inside [`sithRender_Draw()`](../../Libs/sith/Engine/sithRender.c#L332) is whether to use:
+The first decision inside [`sithRender_Draw()`](../../../Libs/sith/Engine/sithRender.c#L332) is whether to use:
 
-- [`sithRender_BuildVisibleSectorListPVS()`](../../Libs/sith/Engine/sithRender.c#L544) when PVS culling is enabled and the world has PVS data
-- [`sithRender_BuildVisibleSectorList()`](../../Libs/sith/Engine/sithRender.c#L421) otherwise
+- [`sithRender_BuildVisibleSectorListPVS()`](../../../Libs/sith/Engine/sithRender.c#L544) when PVS culling is enabled and the world has PVS data
+- [`sithRender_BuildVisibleSectorList()`](../../../Libs/sith/Engine/sithRender.c#L421) otherwise
 
 Both paths ultimately populate the same per-frame state:
 
@@ -266,23 +266,23 @@ So the difference is not in the final data model. The difference is in how candi
 
 ### Portal-frustum traversal path
 
-[`sithRender_BuildVisibleSectorList()`](../../Libs/sith/Engine/sithRender.c#L421) is the classic portal/sector path.
+[`sithRender_BuildVisibleSectorList()`](../../../Libs/sith/Engine/sithRender.c#L421) is the classic portal/sector path.
 
 For each sector it:
 
 1. ensures the sector itself is registered as visible
 2. iterates visible adjoins
 3. rejects portals whose surface is backfacing relative to the camera
-4. makes sure the portal surface vertices have been transformed for this render tick through [`sithRender_BuildVisibleSurface()`](../../Libs/sith/Engine/sithRender.c#L482)
+4. makes sure the portal surface vertices have been transformed for this render tick through [`sithRender_BuildVisibleSurface()`](../../../Libs/sith/Engine/sithRender.c#L482)
 5. clips the portal polygon against the current frustum
-6. either reuses the parent frustum or builds a tighter child frustum with [`sithRender_BuildClipFrustrum()`](../../Libs/sith/Engine/sithRender.c#L505)
+6. either reuses the parent frustum or builds a tighter child frustum with [`sithRender_BuildClipFrustrum()`](../../../Libs/sith/Engine/sithRender.c#L505)
 7. recurses into the adjoining sector
 
 This is why the renderer is strongly topology-driven. The engine does not start from "all sectors in the world." It starts from the camera sector and walks the sector graph through visible portals.
 
 ### PVS-assisted portal path
 
-[`sithRender_BuildVisibleSectorListPVS()`](../../Libs/sith/Engine/sithRender.c#L544) keeps the same portal-clipping idea, but inserts a PVS filter in front of it.
+[`sithRender_BuildVisibleSectorListPVS()`](../../../Libs/sith/Engine/sithRender.c#L544) keeps the same portal-clipping idea, but inserts a PVS filter in front of it.
 
 The PVS path:
 
@@ -290,7 +290,7 @@ The PVS path:
 2. builds per-priority visible-adjoin work lists
 3. starts from a full-screen frustum
 4. clips only those portals that survive the PVS lookup
-5. grows each newly accepted sector through [`sithRender_BuildVisibleSectorPVS()`](../../Libs/sith/Engine/sithRender.c#L660)
+5. grows each newly accepted sector through [`sithRender_BuildVisibleSectorPVS()`](../../../Libs/sith/Engine/sithRender.c#L660)
 
 That means PVS is a coarse reachability accelerator, not a replacement for the portal-frustum tests. The engine still clips portal polygons and still propagates frusta sector by sector.
 
@@ -298,20 +298,20 @@ That means PVS is a coarse reachability accelerator, not a replacement for the p
 
 In this engine, PVS is "Potentially Visible Set" data stored per world and keyed per source sector.
 
-At render time, the current camera sector's `pvsIdx` is used to decode a packed visibility record from the world's `aPVS` blob through [`sithPVS_SetTable()`](../../Libs/sith/World/sithPVS.c#L176).
+At render time, the current camera sector's `pvsIdx` is used to decode a packed visibility record from the world's `aPVS` blob through [`sithPVS_SetTable()`](../../../Libs/sith/World/sithPVS.c#L176).
 
 The important architectural detail is that the decoded data is an adjoin table, not a ready-made list of visible sectors. PVS therefore accelerates the existing portal traversal rather than replacing it.
 
 #### Packed-table decode
 
-The first step in [`sithRender_BuildVisibleSectorListPVS()`](../../Libs/sith/Engine/sithRender.c#L544) is:
+The first step in [`sithRender_BuildVisibleSectorListPVS()`](../../../Libs/sith/Engine/sithRender.c#L544) is:
 
 1. decode the packed PVS record for the current camera sector into `sithRender_aAdjoinTable`
 2. clear the temporary visible-adjoin work buckets in `sithRender_aVisibleAdjoins`
 3. initialize a full-screen orthographic clip rectangle for the root camera sector
-4. seed traversal by calling [`sithRender_BuildVisibleSectorPVS()`](../../Libs/sith/Engine/sithRender.c#L660) on the starting sector
+4. seed traversal by calling [`sithRender_BuildVisibleSectorPVS()`](../../../Libs/sith/Engine/sithRender.c#L660) on the starting sector
 
-The decode step is handled by [`sithPVS_SetTable()`](../../Libs/sith/World/sithPVS.c#L176), which expands the packed byte stream into one byte per world adjoin using a run-length encoding:
+The decode step is handled by [`sithPVS_SetTable()`](../../../Libs/sith/World/sithPVS.c#L176), which expands the packed byte stream into one byte per world adjoin using a run-length encoding:
 
 - high bit set: copy the following literal bytes into the adjoin table
 - high bit clear: write a run of zeros
@@ -332,7 +332,7 @@ The non-zero byte then splits into:
 - low `7` bits: a bucket/order value
 - high bit `0x80`: a flag that changes how the working clip frustum is chosen for that adjoin
 
-[`sithRender_BuildVisibleSectorPVS()`](../../Libs/sith/Engine/sithRender.c#L660) walks the current sector's adjoins and, for each adjoin that is both render-visible and non-zero in the decoded PVS table, inserts it into a linked work list bucket indexed by the low `7` bits.
+[`sithRender_BuildVisibleSectorPVS()`](../../../Libs/sith/Engine/sithRender.c#L660) walks the current sector's adjoins and, for each adjoin that is both render-visible and non-zero in the decoded PVS table, inserts it into a linked work list bucket indexed by the low `7` bits.
 
 That is why the PVS traversal uses `sithRender_curPVSIndex` and `sithRender_lastPVSIndex` rather than plain recursion. The renderer is effectively processing adjoins in a bucketed wave order supplied by the PVS data.
 
@@ -350,7 +350,7 @@ This means PVS is still expanding the same sector/adjoin graph as the classic po
 
 #### Why some adjoins restart from the full-screen frustum
 
-When the decoded adjoin-table byte has bit `0x80` set, [`sithRender_BuildVisibleSectorListPVS()`](../../Libs/sith/Engine/sithRender.c#L544) does not inherit the source sector's clip frustum for that portal. Instead it restarts clipping from the full-screen frustum.
+When the decoded adjoin-table byte has bit `0x80` set, [`sithRender_BuildVisibleSectorListPVS()`](../../../Libs/sith/Engine/sithRender.c#L544) does not inherit the source sector's clip frustum for that portal. Instead it restarts clipping from the full-screen frustum.
 
 In other words, the current implementation treats bit `0x80` as "do not constrain this portal by the parent sector's tighter screen window."
 
@@ -363,9 +363,9 @@ The exact offline rule that generated those flags is not documented in the runti
 
 #### PVS-specific portal clipping
 
-The PVS path uses [`rdClip_ClipFacePVS()`](../../Libs/rdroid/Engine/rdClip.c#L395) instead of the more general clip path.
+The PVS path uses [`rdClip_ClipFacePVS()`](../../../Libs/rdroid/Engine/rdClip.c#L395) instead of the more general clip path.
 
-The important difference is in [`rdClip_Face3WPVS()`](../../Libs/rdroid/Engine/rdClip.c#L403): it intentionally does not clip against the frustum far plane.
+The important difference is in [`rdClip_Face3WPVS()`](../../../Libs/rdroid/Engine/rdClip.c#L403): it intentionally does not clip against the frustum far plane.
 
 That makes sense here because the PVS stage is mainly about portal acceptance and screen-space window tightening. It still needs left/right/top/bottom clipping to refine the portal window, but it does not need to use far-plane rejection as the main coarse filter.
 
@@ -392,7 +392,7 @@ Without that second stage, PVS would over-admit sectors that are only potentiall
 
 ### Sector finalization
 
-Once a sector is accepted by either path, [`sithRender_BuildVisibleSector()`](../../Libs/sith/Engine/sithRender.c#L687) performs the common bookkeeping.
+Once a sector is accepted by either path, [`sithRender_BuildVisibleSector()`](../../../Libs/sith/Engine/sithRender.c#L687) performs the common bookkeeping.
 
 That function:
 
@@ -417,14 +417,14 @@ A sector can fall outside the immediate camera-frustum-visible set and still mat
 - an emitted light may influence geometry that is on screen
 - an actor or player headlight may need to reach geometry through nearby adjoining sectors
 
-So after visible sectors are known, [`sithRender_BuildVisibleThingSectorList()`](../../Libs/sith/Engine/sithRender.c#L901) runs a second pass that is specifically about nearby influence, not about direct portal visibility.
+So after visible sectors are known, [`sithRender_BuildVisibleThingSectorList()`](../../../Libs/sith/Engine/sithRender.c#L901) runs a second pass that is specifically about nearby influence, not about direct portal visibility.
 
 ### Traversal mode dispatch
 
-[`sithRender_BuildVisibleThingSectorList()`](../../Libs/sith/Engine/sithRender.c#L901) is just a dispatcher. It selects:
+[`sithRender_BuildVisibleThingSectorList()`](../../../Libs/sith/Engine/sithRender.c#L901) is just a dispatcher. It selects:
 
-- [`sithRender_BuildVisibleThingSectorListDFS()`](../../Libs/sith/Engine/sithRender.c#L917) for the legacy traversal
-- [`sithRender_BuildVisibleThingSectorListBFS()`](../../Libs/sith/Engine/sithRender.c#L991) for the OpenJones3D breadth-first path
+- [`sithRender_BuildVisibleThingSectorListDFS()`](../../../Libs/sith/Engine/sithRender.c#L917) for the legacy traversal
+- [`sithRender_BuildVisibleThingSectorListBFS()`](../../../Libs/sith/Engine/sithRender.c#L991) for the OpenJones3D breadth-first path
 
 Both modes write into the same structures:
 
@@ -434,7 +434,7 @@ Both modes write into the same structures:
 
 ### Legacy DFS-like traversal
 
-[`sithRender_BuildVisibleThingSectorListDFS()`](../../Libs/sith/Engine/sithRender.c#L917) starts from the already visible sectors, walks their visible adjoins, and recursively expands through [`sithRender_CollectVisibleThingSector()`](../../Libs/sith/Engine/sithRender.c#L949).
+[`sithRender_BuildVisibleThingSectorListDFS()`](../../../Libs/sith/Engine/sithRender.c#L917) starts from the already visible sectors, walks their visible adjoins, and recursively expands through [`sithRender_CollectVisibleThingSector()`](../../../Libs/sith/Engine/sithRender.c#L949).
 
 The legacy recursion does the following:
 
@@ -447,7 +447,7 @@ The reason this can miss useful sectors is that marking happens on first encount
 
 ### OpenJones3D breadth-first traversal
 
-[`sithRender_BuildVisibleThingSectorListBFS()`](../../Libs/sith/Engine/sithRender.c#L991) keeps the same goal but changes the traversal discipline.
+[`sithRender_BuildVisibleThingSectorListBFS()`](../../../Libs/sith/Engine/sithRender.c#L991) keeps the same goal but changes the traversal discipline.
 
 The BFS path:
 
@@ -480,7 +480,7 @@ The broader `QOL` default exists because the BFS path is meant to gather a more 
 
 ### Thing-light collection helper
 
-Both traversal modes eventually rely on [`sithRender_CollectThingLights()`](../../Libs/sith/Engine/sithRender.c#L1085) to extend the camera light list.
+Both traversal modes eventually rely on [`sithRender_CollectThingLights()`](../../../Libs/sith/Engine/sithRender.c#L1085) to extend the camera light list.
 
 That helper collects two kinds of lights:
 
@@ -491,7 +491,7 @@ The helper only collects active, non-disabled, non-invisible, non-destroyed emit
 
 ## Dynamic Light Build
 
-After the visible-sector and off-screen collection passes finish, [`sithRender_BuildDynamicLights()`](../../Libs/sith/Engine/sithRender.c#L1127) computes per-vertex dynamic lighting for the currently visible sectors.
+After the visible-sector and off-screen collection passes finish, [`sithRender_BuildDynamicLights()`](../../../Libs/sith/Engine/sithRender.c#L1127) computes per-vertex dynamic lighting for the currently visible sectors.
 
 Its work is:
 
@@ -509,7 +509,7 @@ The render passes that follow then consume those per-vertex light values instead
 
 ## Sector Rendering
 
-[`sithRender_RenderSectors()`](../../Libs/sith/Engine/sithRender.c#L752) is the first real submission pass after traversal and light build.
+[`sithRender_RenderSectors()`](../../../Libs/sith/Engine/sithRender.c#L752) is the first real submission pass after traversal and light build.
 
 ### Opaque pass entry
 
@@ -536,10 +536,10 @@ That means the main sector pass is structurally an opaque-and-sky pass. Transpar
 
 If a surface is marked as ceiling sky or horizon sky, the sector pass:
 
-1. clips the face through [`rdClip_QClipFaceW()`](../../Libs/rdroid/Engine/rdClip.c#L3970)
+1. clips the face through [`rdClip_QClipFaceW()`](../../../Libs/rdroid/Engine/rdClip.c#L3970)
 2. projects the clipped vertices
 3. converts the clipped polygon into a sky plane through the sky helpers
-4. queues it into the raster cache with [`rdCache_AddProcFace()`](../../Libs/rdroid/Raster/rdCache.c#L191)
+4. queues it into the raster cache with [`rdCache_AddProcFace()`](../../../Libs/rdroid/Raster/rdCache.c#L191)
 
 This is not normal world-face rendering. Sky faces are treated as inputs to sky-plane generation rather than as literal geometry submission.
 
@@ -549,17 +549,17 @@ For non-sky surfaces, the pass:
 
 1. ensures vertices have been transformed for this render tick
 2. allocates a raster-cache entry
-3. clips the face through [`rdClip_FaceToPlane()`](../../Libs/rdroid/Engine/rdClip.c#L3985)
+3. clips the face through [`rdClip_FaceToPlane()`](../../../Libs/rdroid/Engine/rdClip.c#L3985)
 4. clamps the face lighting mode against the global lighting mode
 5. combines surface extra light with sector extra light
 6. sets material, cel, and fog-related flags
-7. queues the face into the raster cache with [`rdCache_AddProcFace()`](../../Libs/rdroid/Raster/rdCache.c#L191)
+7. queues the face into the raster cache with [`rdCache_AddProcFace()`](../../../Libs/rdroid/Raster/rdCache.c#L191)
 
-After all visible sectors have been processed, the pass flushes the opaque cache through [`rdCache_Flush()`](../../Libs/rdroid/Raster/rdCache.c#L141).
+After all visible sectors have been processed, the pass flushes the opaque cache through [`rdCache_Flush()`](../../../Libs/rdroid/Raster/rdCache.c#L141).
 
 ## Thing Rendering
 
-After world surfaces are submitted, [`sithRender_RenderThings()`](../../Libs/sith/Engine/sithRender.c#L1189) walks `sithRender_aVisibleThingSectors`.
+After world surfaces are submitted, [`sithRender_RenderThings()`](../../../Libs/sith/Engine/sithRender.c#L1189) walks `sithRender_aVisibleThingSectors`.
 
 ### Sector-local thing pass
 
@@ -596,7 +596,7 @@ That is different from the earlier dynamic light collection path. Dynamic lights
 
 ### Rendering the thing wrapper
 
-Once a thing passes culling, [`sithRender_RenderThing()`](../../Libs/sith/Engine/sithRender.c#L1319) handles render-side state around the actual draw call.
+Once a thing passes culling, [`sithRender_RenderThing()`](../../../Libs/sith/Engine/sithRender.c#L1319) handles render-side state around the actual draw call.
 
 It:
 
@@ -604,8 +604,8 @@ It:
 - wakes sleeping AI by clearing the sleeping mode bit
 - stamps the thing with the current render frame
 - temporarily copies the thing world position into `orient.dvec`
-- delegates the actual draw to [`sithThing_Draw()`](../../Libs/sith/World/sithThing.c#L393)
-- optionally renders a shadow through [`sithShadow_RenderThingShadow()`](../../Libs/sith/Engine/sithShadow.c#L37)
+- delegates the actual draw to [`sithThing_Draw()`](../../../Libs/sith/World/sithThing.c#L393)
+- optionally renders a shadow through [`sithShadow_RenderThingShadow()`](../../../Libs/sith/Engine/sithShadow.c#L37)
 - accumulates opaque and alpha thing-poly counters
 - restores the orientation translation field afterward
 
@@ -613,7 +613,7 @@ So `sithRender_RenderThing()` is a bridge wrapper. It is not the full draw imple
 
 ### Final thing draw dispatch
 
-[`sithThing_Draw()`](../../Libs/sith/World/sithThing.c#L393) is where the engine switches from general gameplay thing state to the lower render object.
+[`sithThing_Draw()`](../../../Libs/sith/World/sithThing.c#L393) is where the engine switches from general gameplay thing state to the lower render object.
 
 That function performs thing-type-specific preparation such as:
 
@@ -624,19 +624,19 @@ That function performs thing-type-specific preparation such as:
 It then dispatches by thing type:
 
 - cameras, ghosts, and hints do not draw
-- sprites go through [`sithSprite_Draw()`](../../Libs/sith/World/sithSprite.c#L106)
+- sprites go through [`sithSprite_Draw()`](../../../Libs/sith/World/sithSprite.c#L106)
 - polylines update their dynamic state and then draw
-- most remaining renderable types go through [`rdThing_Draw()`](../../Libs/rdroid/Engine/rdThing.c#L198)
+- most remaining renderable types go through [`rdThing_Draw()`](../../../Libs/rdroid/Engine/rdThing.c#L198)
 
-At the end of the pass, [`sithRender_RenderThings()`](../../Libs/sith/Engine/sithRender.c#L1189) flushes the thing geometry through [`rdCache_Flush()`](../../Libs/rdroid/Raster/rdCache.c#L141).
+At the end of the pass, [`sithRender_RenderThings()`](../../../Libs/sith/Engine/sithRender.c#L1189) flushes the thing geometry through [`rdCache_Flush()`](../../../Libs/rdroid/Raster/rdCache.c#L141).
 
 ## Alpha-Adjoin Rendering
 
-Alpha adjoins are rendered last through [`sithRender_RenderAlphaAdjoins()`](../../Libs/sith/Engine/sithRender.c#L1374).
+Alpha adjoins are rendered last through [`sithRender_RenderAlphaAdjoins()`](../../../Libs/sith/Engine/sithRender.c#L1374).
 
 ### Deferred translucent surface queue
 
-This pass consumes the queue that [`sithRender_RenderSectors()`](../../Libs/sith/Engine/sithRender.c#L752) built earlier in `sithRender_aAlphaAdjoins`.
+This pass consumes the queue that [`sithRender_RenderSectors()`](../../../Libs/sith/Engine/sithRender.c#L752) built earlier in `sithRender_aAlphaAdjoins`.
 
 So alpha adjoins are not discovered independently. They are discovered during opaque sector rendering and then replayed in a separate translucent pass.
 
@@ -647,11 +647,11 @@ For each queued surface, the alpha pass:
 1. rebuilds sector ambient light from sector ambient plus sector extra light
 2. ensures the surface vertices are transformed for the current render tick
 3. allocates an alpha raster-cache entry
-4. clips the face through [`rdClip_FaceToPlane()`](../../Libs/rdroid/Engine/rdClip.c#L3985)
+4. clips the face through [`rdClip_FaceToPlane()`](../../../Libs/rdroid/Engine/rdClip.c#L3985)
 5. fills lighting, extra light, material, cel, and fog-related flags
-6. submits the face through [`rdCache_AddAlphaProcFace()`](../../Libs/rdroid/Raster/rdCache.c#L198)
+6. submits the face through [`rdCache_AddAlphaProcFace()`](../../../Libs/rdroid/Raster/rdCache.c#L198)
 
-After all queued alpha adjoins are prepared, the pass flushes the alpha cache through [`rdCache_FlushAlpha()`](../../Libs/rdroid/Raster/rdCache.c#L166).
+After all queued alpha adjoins are prepared, the pass flushes the alpha cache through [`rdCache_FlushAlpha()`](../../../Libs/rdroid/Raster/rdCache.c#L166).
 
 Architecturally this is a deferred translucent surface pass, not a separate visibility system. The alpha-adjoin renderer depends completely on the earlier sector pass to discover and queue the surfaces it needs to draw.
 
@@ -693,7 +693,7 @@ From the rest of the engine's perspective, `std3D` is the hardware abstraction l
 
 ## DirectX 6.1c Backend
 
-The legacy backend lives under [`Libs/std/Win95/DX6/`](../../Libs/std/Win95/DX6).
+The legacy backend lives under [`Libs/std/Win95/DX6/`](../../../Libs/std/Win95/DX6).
 
 Architectural characteristics:
 
@@ -706,13 +706,13 @@ This path represents the original renderer architecture most closely.
 
 ## DirectX 9 Backend
 
-The modern backend lives under [`Libs/std/Win95/DX9/`](../../Libs/std/Win95/DX9).
+The modern backend lives under [`Libs/std/Win95/DX9/`](../../../Libs/std/Win95/DX9).
 
 Architectural extensions introduced there include:
 
 - Direct3D 9 device/runtime management
 - optional vertex and index buffer paths
-- shader system support through [`stdShaderDX9.c`](../../Libs/std/Win95/DX9/stdShaderDX9.c)
+- shader system support through [`stdShaderDX9.c`](../../../Libs/std/Win95/DX9/stdShaderDX9.c)
 - wider texture-format and device-capability handling
 - modern fog/shader constant handling
 

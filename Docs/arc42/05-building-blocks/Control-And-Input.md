@@ -10,12 +10,12 @@ The input architecture is intentionally layered:
 
 Primary source files:
 
-- [`Libs/sith/Devices/sithControl.c`](../../Libs/sith/Devices/sithControl.c)
-- [`Libs/std/Win95/stdControl.h`](../../Libs/std/Win95/stdControl.h)
-- [`Libs/std/Win95/DX9/stdControlDX9.c`](../../Libs/std/Win95/DX9/stdControlDX9.c)
-- [`Libs/std/Win95/DX6/stdControlDX6.c`](../../Libs/std/Win95/DX6/stdControlDX6.c)
-- [`Libs/sith/Gameplay/sithPlayerControls.c`](../../Libs/sith/Gameplay/sithPlayerControls.c)
-- [`Libs/sith/Engine/sithCamera.c`](../../Libs/sith/Engine/sithCamera.c)
+- [`Libs/sith/Devices/sithControl.c`](../../../Libs/sith/Devices/sithControl.c)
+- [`Libs/std/Win95/stdControl.h`](../../../Libs/std/Win95/stdControl.h)
+- [`Libs/std/Win95/DX9/stdControlDX9.c`](../../../Libs/std/Win95/DX9/stdControlDX9.c)
+- [`Libs/std/Win95/DX6/stdControlDX6.c`](../../../Libs/std/Win95/DX6/stdControlDX6.c)
+- [`Libs/sith/Gameplay/sithPlayerControls.c`](../../../Libs/sith/Gameplay/sithPlayerControls.c)
+- [`Libs/sith/Engine/sithCamera.c`](../../../Libs/sith/Engine/sithCamera.c)
 
 ## Architectural Split
 
@@ -30,7 +30,7 @@ That split is important because it lets the gameplay layer speak in terms of "ac
 
 ## Gameplay Binding Layer
 
-The binding layer is centered in [`sithControl.c`](../../Libs/sith/Devices/sithControl.c#L1).
+The binding layer is centered in [`sithControl.c`](../../../Libs/sith/Devices/sithControl.c#L1).
 
 Its core state includes:
 
@@ -41,15 +41,15 @@ Its core state includes:
 
 The important entry points are:
 
-- [`sithControl_Startup()`](../../Libs/sith/Devices/sithControl.c#L132)
-- [`sithControl_Open()`](../../Libs/sith/Devices/sithControl.c#L158)
-- [`sithControl_Reset()`](../../Libs/sith/Devices/sithControl.c#L679)
-- [`sithControl_RegisterControlFunctions()`](../../Libs/sith/Devices/sithControl.c#L685)
-- [`sithControl_DefaultInit()`](../../Libs/sith/Devices/sithControl.c#L587)
+- [`sithControl_Startup()`](../../../Libs/sith/Devices/sithControl.c#L132)
+- [`sithControl_Open()`](../../../Libs/sith/Devices/sithControl.c#L158)
+- [`sithControl_Reset()`](../../../Libs/sith/Devices/sithControl.c#L679)
+- [`sithControl_RegisterControlFunctions()`](../../../Libs/sith/Devices/sithControl.c#L685)
+- [`sithControl_DefaultInit()`](../../../Libs/sith/Devices/sithControl.c#L587)
 
 ### Registered Gameplay Functions
 
-[`sithControl_RegisterControlFunctions()`](../../Libs/sith/Devices/sithControl.c#L685) builds the engine's logical action namespace.
+[`sithControl_RegisterControlFunctions()`](../../../Libs/sith/Devices/sithControl.c#L685) builds the engine's logical action namespace.
 
 Examples include:
 
@@ -63,17 +63,17 @@ This is the stable contract the rest of the gameplay code consumes.
 
 ### Default Bindings
 
-[`sithControl_DefaultInit()`](../../Libs/sith/Devices/sithControl.c#L587) resets the binding tables and then installs hardcoded defaults through:
+[`sithControl_DefaultInit()`](../../../Libs/sith/Devices/sithControl.c#L587) resets the binding tables and then installs hardcoded defaults through:
 
-- [`sithControl_RegisterKeyboardBindings()`](../../Libs/sith/Devices/sithControl.c#L751)
-- [`sithControl_RegisterJoystickBindings()`](../../Libs/sith/Devices/sithControl.c#L815)
-- [`sithControl_RegisterMouseBindings()`](../../Libs/sith/Devices/sithControl.c#L842)
+- [`sithControl_RegisterKeyboardBindings()`](../../../Libs/sith/Devices/sithControl.c#L751)
+- [`sithControl_RegisterJoystickBindings()`](../../../Libs/sith/Devices/sithControl.c#L815)
+- [`sithControl_RegisterMouseBindings()`](../../../Libs/sith/Devices/sithControl.c#L842)
 
 Architecturally, the defaults are still data baked into code rather than an external action-map asset. The runtime config system changes where those bindings are stored and reloaded, but the underlying action model is still the original one.
 
 ## Platform Device Layer
 
-The platform/input backend lives in `stdControl`. In current builds the default path is the DX9 Win32 implementation in [`stdControlDX9.c`](../../Libs/std/Win95/DX9/stdControlDX9.c#L209), while the legacy DX6 build uses the parallel implementation in [`stdControlDX6.c`](../../Libs/std/Win95/DX6/stdControlDX6.c#L163).
+The platform/input backend lives in `stdControl`. In current builds the default path is the DX9 Win32 implementation in [`stdControlDX9.c`](../../../Libs/std/Win95/DX9/stdControlDX9.c#L209), while the legacy DX6 build uses the parallel implementation in [`stdControlDX6.c`](../../../Libs/std/Win95/DX6/stdControlDX6.c#L163).
 
 The two backends follow the same architecture:
 
@@ -84,21 +84,21 @@ The two backends follow the same architecture:
 
 Important entry points in the DX9 path are:
 
-- [`stdControl_Startup()`](../../Libs/std/Win95/DX9/stdControlDX9.c#L209)
-- [`stdControl_Open()`](../../Libs/std/Win95/DX9/stdControlDX9.c#L309)
-- [`stdControl_ReadControls()`](../../Libs/std/Win95/DX9/stdControlDX9.c#L371)
-- [`stdControl_EnableAxis()`](../../Libs/std/Win95/DX9/stdControlDX9.c#L351)
-- [`stdControl_SetActivation()`](../../Libs/std/Win95/DX9/stdControlDX9.c#L659)
+- [`stdControl_Startup()`](../../../Libs/std/Win95/DX9/stdControlDX9.c#L209)
+- [`stdControl_Open()`](../../../Libs/std/Win95/DX9/stdControlDX9.c#L309)
+- [`stdControl_ReadControls()`](../../../Libs/std/Win95/DX9/stdControlDX9.c#L371)
+- [`stdControl_EnableAxis()`](../../../Libs/std/Win95/DX9/stdControlDX9.c#L351)
+- [`stdControl_SetActivation()`](../../../Libs/std/Win95/DX9/stdControlDX9.c#L659)
 
 The backend also has dedicated device readers:
 
-- [`stdControl_ReadKeyboard()`](../../Libs/std/Win95/DX9/stdControlDX9.c#L1058)
-- [`stdControl_ReadJoysticks()`](../../Libs/std/Win95/DX9/stdControlDX9.c#L1082)
-- [`stdControl_ReadMouse()`](../../Libs/std/Win95/DX9/stdControlDX9.c#L1161)
+- [`stdControl_ReadKeyboard()`](../../../Libs/std/Win95/DX9/stdControlDX9.c#L1058)
+- [`stdControl_ReadJoysticks()`](../../../Libs/std/Win95/DX9/stdControlDX9.c#L1082)
+- [`stdControl_ReadMouse()`](../../../Libs/std/Win95/DX9/stdControlDX9.c#L1161)
 
 ## Per-Frame Read Pass
 
-[`stdControl_ReadControls()`](../../Libs/std/Win95/DX9/stdControlDX9.c#L371) is the raw device sampling step.
+[`stdControl_ReadControls()`](../../../Libs/std/Win95/DX9/stdControlDX9.c#L371) is the raw device sampling step.
 
 Each frame it:
 
@@ -115,11 +115,11 @@ This means the gameplay layer sees one coherent input snapshot per frame rather 
 
 The platform layer exposes several different views of the same raw data:
 
-- [`stdControl_ReadAxis()`](../../Libs/std/Win95/DX9/stdControlDX9.c#L413) returns a normalized analog-style value with deadzone handling
-- [`stdControl_ReadAxisRaw()`](../../Libs/std/Win95/DX9/stdControlDX9.c#L462) returns the raw centered delta
-- [`stdControl_ReadKeyAsAxis()`](../../Libs/std/Win95/DX9/stdControlDX9.c#L494) turns a digital key hold into an axis-like value proportional to read time
-- [`stdControl_ReadKey()`](../../Libs/std/Win95/DX9/stdControlDX9.c#L586) returns direct key/button state
-- [`stdControl_ControlsIdle()`](../../Libs/std/Win95/DX9/stdControlDX9.c#L765) exposes whether the current frame's reads were effectively idle
+- [`stdControl_ReadAxis()`](../../../Libs/std/Win95/DX9/stdControlDX9.c#L413) returns a normalized analog-style value with deadzone handling
+- [`stdControl_ReadAxisRaw()`](../../../Libs/std/Win95/DX9/stdControlDX9.c#L462) returns the raw centered delta
+- [`stdControl_ReadKeyAsAxis()`](../../../Libs/std/Win95/DX9/stdControlDX9.c#L494) turns a digital key hold into an axis-like value proportional to read time
+- [`stdControl_ReadKey()`](../../../Libs/std/Win95/DX9/stdControlDX9.c#L586) returns direct key/button state
+- [`stdControl_ControlsIdle()`](../../../Libs/std/Win95/DX9/stdControlDX9.c#L765) exposes whether the current frame's reads were effectively idle
 
 This is why the higher layer can represent both styles cleanly:
 
@@ -130,10 +130,10 @@ This is why the higher layer can represent both styles cleanly:
 
 Once raw input is available, the gameplay layer resolves it through binding lists:
 
-- [`sithControl_GetKey()`](../../Libs/sith/Devices/sithControl.c#L545)
-- [`sithControl_GetAxis()`](../../Libs/sith/Devices/sithControl.c#L512)
-- [`sithControl_GetKeyAsAxis()`](../../Libs/sith/Devices/sithControl.c#L476)
-- [`sithControl_GetKeyAsAxisNormalized()`](../../Libs/sith/Devices/sithControl.c#L421)
+- [`sithControl_GetKey()`](../../../Libs/sith/Devices/sithControl.c#L545)
+- [`sithControl_GetAxis()`](../../../Libs/sith/Devices/sithControl.c#L512)
+- [`sithControl_GetKeyAsAxis()`](../../../Libs/sith/Devices/sithControl.c#L476)
+- [`sithControl_GetKeyAsAxisNormalized()`](../../../Libs/sith/Devices/sithControl.c#L421)
 
 The binding layer can:
 
@@ -147,13 +147,13 @@ This lets the engine map many hardware forms onto the same movement and camera m
 
 ## Callback Dispatch And Camera Side Effects
 
-[`sithControl_Update()`](../../Libs/sith/Devices/sithControl.c#L334) is the high-level runtime entry point called from the frame loop.
+[`sithControl_Update()`](../../../Libs/sith/Devices/sithControl.c#L334) is the high-level runtime entry point called from the frame loop.
 
 It performs two jobs.
 
 ### 1. Idle-Camera Management
 
-Before dispatching gameplay controls, [`sithControl_Update()`](../../Libs/sith/Devices/sithControl.c#L334) checks:
+Before dispatching gameplay controls, [`sithControl_Update()`](../../../Libs/sith/Devices/sithControl.c#L334) checks:
 
 - whether a local player exists
 - whether the player is stationary
@@ -163,14 +163,14 @@ Before dispatching gameplay controls, [`sithControl_Update()`](../../Libs/sith/D
 
 If so, it switches the camera through:
 
-- [`sithCamera_SetCameraFocus()`](../../Libs/sith/Engine/sithCamera.c#L356)
-- [`sithCamera_SetCurrentCamera()`](../../Libs/sith/Engine/sithCamera.c#L288)
+- [`sithCamera_SetCameraFocus()`](../../../Libs/sith/Engine/sithCamera.c#L356)
+- [`sithCamera_SetCurrentCamera()`](../../../Libs/sith/Engine/sithCamera.c#L288)
 
 So the control layer is not just about reading input. It also owns one of the engine's user-experience policies: the automatic idle camera.
 
 ### 2. Gameplay Control Callback Dispatch
 
-After camera management, [`sithControl_Update()`](../../Libs/sith/Devices/sithControl.c#L334) reads controls once through [`sithControl_ReadControls()`](../../Libs/sith/Devices/sithControl.c#L576), dispatches the registered callback chain, and finalizes the pass through [`sithControl_FinishRead()`](../../Libs/sith/Devices/sithControl.c#L582).
+After camera management, [`sithControl_Update()`](../../../Libs/sith/Devices/sithControl.c#L334) reads controls once through [`sithControl_ReadControls()`](../../../Libs/sith/Devices/sithControl.c#L576), dispatches the registered callback chain, and finalizes the pass through [`sithControl_FinishRead()`](../../../Libs/sith/Devices/sithControl.c#L582).
 
 The callback model means:
 
@@ -180,14 +180,14 @@ The callback model means:
 
 ## Main Gameplay Consumer: Player Controls
 
-The main gameplay consumer logic lives in [`sithPlayerControls_Process()`](../../Libs/sith/Gameplay/sithPlayerControls.c#L471).
+The main gameplay consumer logic lives in [`sithPlayerControls_Process()`](../../../Libs/sith/Gameplay/sithPlayerControls.c#L471).
 
 That function fans control input into several sub-pipelines:
 
-- [`sithPlayerControls_ProcessLookControls()`](../../Libs/sith/Gameplay/sithPlayerControls.c#L833)
-- [`sithPlayerControls_ProcessGeneralMove()`](../../Libs/sith/Gameplay/sithPlayerControls.c#L900)
-- [`sithPlayerControls_ProcessHUDControls()`](../../Libs/sith/Gameplay/sithPlayerControls.c#L1565)
-- [`sithPlayerControls_ProcessWeaponAim()`](../../Libs/sith/Gameplay/sithPlayerControls.c#L2410)
+- [`sithPlayerControls_ProcessLookControls()`](../../../Libs/sith/Gameplay/sithPlayerControls.c#L833)
+- [`sithPlayerControls_ProcessGeneralMove()`](../../../Libs/sith/Gameplay/sithPlayerControls.c#L900)
+- [`sithPlayerControls_ProcessHUDControls()`](../../../Libs/sith/Gameplay/sithPlayerControls.c#L1565)
+- [`sithPlayerControls_ProcessWeaponAim()`](../../../Libs/sith/Gameplay/sithPlayerControls.c#L2410)
 
 This is where logical actions such as forward, jump, activate, turn, and mouse turn finally become:
 
@@ -197,7 +197,7 @@ This is where logical actions such as forward, jump, activate, turn, and mouse t
 - HUD toggles
 - aim-mode changes and weapon messaging
 
-For example, aim-mode transitions eventually emit script-visible aim messages through [`sithWeapon_SendMessageAim()`](../../Libs/sith/World/sithWeapon.c#L1984).
+For example, aim-mode transitions eventually emit script-visible aim messages through [`sithWeapon_SendMessageAim()`](../../../Libs/sith/World/sithWeapon.c#L1984).
 
 ## Why The Layering Matters
 

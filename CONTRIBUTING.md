@@ -20,7 +20,7 @@ The main rule is simple: make reconstructed code readable and maintainable while
 
 ## Contribution Workflow
 
-1. Read the owning module, its tests, and the relevant [architecture](Docs/Architecture/README.md),
+1. Read the owning module, its tests, and the relevant [architecture](Docs/arc42/05-building-blocks/README.md),
    [format](Docs/Formats/README.md), or [COG](Docs/COG/README.md) documentation.
    Establish the original contract and any intended behavior difference.
 2. Make a focused change, add applicable regression coverage, and update the

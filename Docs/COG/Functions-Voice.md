@@ -104,7 +104,7 @@ Notes:
 - The table is shared by all speakers. A call replaces one global row; it does not configure only the actor whose COG made the call.
 - The shipped scripts initialize rows `0` through `3` to `{0,0,0,0}`, `{1,1,1,1}`, `{2,2,2,2}`, and `{3,3,3,3}`. This makes mouth Y directly select the M-sound, A-sound, AM-sound, or O-sound slot and deliberately neutralizes mouth X.
 - A nonuniform row such as `SetVoiceHeadHeight(1, 0, 1, 2, 3)` would let mouth X choose among all four head slots while mouth Y is at level `1`. The zero-crossing-derived X signal can be noisy, so this is supported behavior rather than the shipped configuration.
-- After the table lookup, the runtime occasionally substitutes a repeated nonzero head to avoid a static pose. See [Playback And Voice-Head Mapping](../Architecture/Sound-System.md#playback-and-voice-head-mapping).
+- After the table lookup, the runtime occasionally substitutes a repeated nonzero head to avoid a static pose. See [Playback And Voice-Head Mapping](../arc42/05-building-blocks/Sound-System.md#playback-and-voice-head-mapping).
 
 #### SetThingVoiceColor
 

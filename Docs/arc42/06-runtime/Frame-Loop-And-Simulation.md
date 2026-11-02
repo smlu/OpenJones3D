@@ -4,21 +4,21 @@ This page documents the per-frame execution order once a world is open, with spe
 
 Primary source files:
 
-- [`Jones3D/Main/JonesMain.c`](../../Jones3D/Main/JonesMain.c)
-- [`Libs/sith/Main/sithMain.c`](../../Libs/sith/Main/sithMain.c)
-- [`Libs/sith/Gameplay/sithTime.c`](../../Libs/sith/Gameplay/sithTime.c)
-- [`Libs/sith/Gameplay/sithEvent.c`](../../Libs/sith/Gameplay/sithEvent.c)
-- [`Libs/sith/World/sithThing.c`](../../Libs/sith/World/sithThing.c)
-- [`Libs/sith/Engine/sithPhysics.c`](../../Libs/sith/Engine/sithPhysics.c)
-- [`Libs/sith/Engine/sithCollision.c`](../../Libs/sith/Engine/sithCollision.c)
+- [`Jones3D/Main/JonesMain.c`](../../../Jones3D/Main/JonesMain.c)
+- [`Libs/sith/Main/sithMain.c`](../../../Libs/sith/Main/sithMain.c)
+- [`Libs/sith/Gameplay/sithTime.c`](../../../Libs/sith/Gameplay/sithTime.c)
+- [`Libs/sith/Gameplay/sithEvent.c`](../../../Libs/sith/Gameplay/sithEvent.c)
+- [`Libs/sith/World/sithThing.c`](../../../Libs/sith/World/sithThing.c)
+- [`Libs/sith/Engine/sithPhysics.c`](../../../Libs/sith/Engine/sithPhysics.c)
+- [`Libs/sith/Engine/sithCollision.c`](../../../Libs/sith/Engine/sithCollision.c)
 
 ## High-Level Frame Shape
 
-The outer gameplay callback is [`JonesMain_ProcessGame()`](../../Jones3D/Main/JonesMain.c#L1214). At a high level it performs:
+The outer gameplay callback is [`JonesMain_ProcessGame()`](../../../Jones3D/Main/JonesMain.c#L1214). At a high level it performs:
 
 1. menu/input toggles at the application layer
-2. gameplay update through [`sithUpdate()`](../../Libs/sith/Main/sithMain.c#L543)
-3. render-scene setup and world draw through [`sithDrawScene()`](../../Libs/sith/Main/sithMain.c#L596)
+2. gameplay update through [`sithUpdate()`](../../../Libs/sith/Main/sithMain.c#L543)
+3. render-scene setup and world draw through [`sithDrawScene()`](../../../Libs/sith/Main/sithMain.c#L596)
 4. HUD/overlay submission
 5. scene end and presentation
 
@@ -31,22 +31,22 @@ The `sith` runtime owns both halves, but `JonesMain` still wraps them because it
 
 ## Core Update Order
 
-The normal non-sync update path in [`sithUpdate()`](../../Libs/sith/Main/sithMain.c#L543) runs in this order:
+The normal non-sync update path in [`sithUpdate()`](../../../Libs/sith/Main/sithMain.c#L543) runs in this order:
 
-1. [`sithSoundMixer_Update()`](../../Libs/sith/Devices/sithSoundMixer.c#L259)
+1. [`sithSoundMixer_Update()`](../../../Libs/sith/Devices/sithSoundMixer.c#L259)
 2. if paused: limited control update only
 3. otherwise:
    - increment frame number
    - advance render tick
-   - [`sithTime_Advance()`](../../Libs/sith/Gameplay/sithTime.c#L34)
-   - [`sithEvent_Process()`](../../Libs/sith/Gameplay/sithEvent.c#L135)
+   - [`sithTime_Advance()`](../../../Libs/sith/Gameplay/sithTime.c#L34)
+   - [`sithEvent_Process()`](../../../Libs/sith/Gameplay/sithEvent.c#L135)
    - process pending input/network messages
-   - [`sithAI_Process()`](../../Libs/sith/AI/sithAI.c#L203)
-   - [`sithAnimate_Update()`](../../Libs/sith/Engine/sithAnimate.c#L934)
-   - [`sithControl_Update()`](../../Libs/sith/Devices/sithControl.c#L334)
-   - [`sithThing_Update()`](../../Libs/sith/World/sithThing.c#L579)
-   - [`sithCog_ProcessCogs()`](../../Libs/sith/Cog/sithCog.c#L2024)
-   - [`sithMulti_Update()`](../../Libs/sith/Dss/sithMulti.c#L174)
+   - [`sithAI_Process()`](../../../Libs/sith/AI/sithAI.c#L203)
+   - [`sithAnimate_Update()`](../../../Libs/sith/Engine/sithAnimate.c#L934)
+   - [`sithControl_Update()`](../../../Libs/sith/Devices/sithControl.c#L334)
+   - [`sithThing_Update()`](../../../Libs/sith/World/sithThing.c#L579)
+   - [`sithCog_ProcessCogs()`](../../../Libs/sith/Cog/sithCog.c#L2024)
+   - [`sithMulti_Update()`](../../../Libs/sith/Dss/sithMulti.c#L174)
 
 That order is important:
 
@@ -55,11 +55,11 @@ That order is important:
 - thing simulation runs before queued COG resumes are processed
 - rendering does not happen until the entire update pass is complete
 
-For the detailed path from raw device reads to gameplay actions, axis values, idle detection, and player/controller consumption, see [Control-And-Input.md](Control-And-Input.md).
+For the detailed path from raw device reads to gameplay actions, axis values, idle detection, and player/controller consumption, see [Control-And-Input.md](../05-building-blocks/Control-And-Input.md).
 
 ## Timing
 
-[`sithTime_Advance()`](../../Libs/sith/Gameplay/sithTime.c#L34) computes:
+[`sithTime_Advance()`](../../../Libs/sith/Gameplay/sithTime.c#L34) computes:
 
 - frame time in milliseconds
 - frame time in seconds (`frameTimeFlex`)
@@ -68,11 +68,11 @@ For the detailed path from raw device reads to gameplay actions, axis values, id
 
 The frame time is clamped to `1..200` ms in the normal advance path. That prevents excessively large frame deltas from causing catastrophic one-frame simulation jumps after stalls.
 
-OpenJones3D preserves the original timing interface, but under `J3D_QOL_IMPROVEMENTS` the underlying timer comes from `QueryPerformanceCounter()` through [`stdPlatform_GetTimeMsec()`](../../Libs/std/General/stdPlatform.c#L95) rather than `timeGetTime()`. Architecturally the higher layers do not care which timer provides the value; they continue to use the host service and the `sithTime` globals.
+OpenJones3D preserves the original timing interface, but under `J3D_QOL_IMPROVEMENTS` the underlying timer comes from `QueryPerformanceCounter()` through [`stdPlatform_GetTimeMsec()`](../../../Libs/std/General/stdPlatform.c#L95) rather than `timeGetTime()`. Architecturally the higher layers do not care which timer provides the value; they continue to use the host service and the `sithTime` globals.
 
 ## Event Scheduler
 
-[`sithEvent.c`](../../Libs/sith/Gameplay/sithEvent.c) provides a small event/task scheduler used by multiple gameplay systems.
+[`sithEvent.c`](../../../Libs/sith/Gameplay/sithEvent.c) provides a small event/task scheduler used by multiple gameplay systems.
 
 It has two execution styles:
 
@@ -86,7 +86,7 @@ The scheduler stores:
 - a small task table
 - a sorted linked list of queued events
 
-During [`sithEvent_Process()`](../../Libs/sith/Gameplay/sithEvent.c#L135):
+During [`sithEvent_Process()`](../../../Libs/sith/Gameplay/sithEvent.c#L135):
 
 1. interval tasks whose frequency has elapsed are executed
 2. queued events whose fire time is earlier than the current game time are popped and dispatched
@@ -99,7 +99,7 @@ For the deeper scheduler and dispatch architecture, including COG timer wakeups,
 
 ## Thing Update Is The Main Gameplay Sweep
 
-[`sithThing_Update()`](../../Libs/sith/World/sithThing.c#L579) is the central per-frame object update loop. It iterates over the active thing array in the current world up to `lastThingIdx`.
+[`sithThing_Update()`](../../../Libs/sith/World/sithThing.c#L579) is the central per-frame object update loop. It iterates over the active thing array in the current world up to `lastThingIdx`.
 
 For each thing it performs, in order:
 
@@ -112,7 +112,7 @@ For each thing it performs, in order:
 7. update type-specific behavior
 8. run optional special callback hook
 9. update movement mode
-10. apply actual movement through [`sithThing_UpdateMove()`](../../Libs/sith/World/sithThing.c#L717)
+10. apply actual movement through [`sithThing_UpdateMove()`](../../../Libs/sith/World/sithThing.c#L717)
 11. update puppet/animation state
 
 That means "thing update" is not one narrow system. It is the point where gameplay behavior, movement, animation, AI/path control, sprite logic, weapon logic, and player logic all converge.
@@ -149,7 +149,7 @@ After control/type updates, the thing system moves the object according to its c
 The update path is:
 
 1. movement subsystem computes velocity or path delta
-2. [`sithThing_UpdateMove()`](../../Libs/sith/World/sithThing.c#L717) converts that into spatial motion
+2. [`sithThing_UpdateMove()`](../../../Libs/sith/World/sithThing.c#L717) converts that into spatial motion
 3. collision and sector transitions are handled during that movement
 4. special attachment/floor-finding updates are applied as needed
 
@@ -160,7 +160,7 @@ The actual move step is therefore split across:
 
 ## Physics Branches
 
-[`sithPhysics_UpdateThing()`](../../Libs/sith/Engine/sithPhysics.c#L568) first decides which specialized physics path to run:
+[`sithPhysics_UpdateThing()`](../../../Libs/sith/Engine/sithPhysics.c#L568) first decides which specialized physics path to run:
 
 - climbing
 - jeep
@@ -177,7 +177,7 @@ That is why vehicle behavior, underwater movement, and climbing all live inside 
 
 ## Detached Physics
 
-For non-player detached objects, [`sithPhysics_UpdateDetachedThingPhysics()`](../../Libs/sith/Engine/sithPhysics.c#L878) applies:
+For non-player detached objects, [`sithPhysics_UpdateDetachedThingPhysics()`](../../../Libs/sith/Engine/sithPhysics.c#L878) applies:
 
 - angular drag and angular thrust
 - optional rotation application
@@ -197,7 +197,7 @@ This is a good example of the engine's separation of concerns:
 
 ## Fixed-Step Player Physics
 
-The player detached-physics path, [`sithPhysics_UpdateDetachedPlayerPhysics()`](../../Libs/sith/Engine/sithPhysics.c#L1005), is special.
+The player detached-physics path, [`sithPhysics_UpdateDetachedPlayerPhysics()`](../../../Libs/sith/Engine/sithPhysics.c#L1005), is special.
 
 Instead of integrating once at the frame delta, it:
 
@@ -212,7 +212,7 @@ The architectural reason for keeping a fixed-step path is stability and gameplay
 
 ## Floor Finding And Attachment
 
-[`sithPhysics_FindFloor()`](../../Libs/sith/Engine/sithPhysics.c#L291) is one of the most important bridge functions between physics, collision, and world topology.
+[`sithPhysics_FindFloor()`](../../../Libs/sith/Engine/sithPhysics.c#L291) is one of the most important bridge functions between physics, collision, and world topology.
 
 Its job is to determine whether a physics thing should attach to:
 
@@ -221,7 +221,7 @@ Its job is to determine whether a physics thing should attach to:
 - a stand-on thing face
 - nothing, in which case it detaches and falls
 
-The search uses [`sithCollision_SearchForCollisions()`](../../Libs/sith/Engine/sithCollision.c#L1073) with different flags depending on:
+The search uses [`sithCollision_SearchForCollisions()`](../../../Libs/sith/Engine/sithCollision.c#L1073) with different flags depending on:
 
 - player or non-player
 - raft or non-raft
@@ -232,7 +232,7 @@ This is a strong example of the Jones3D architecture being gameplay-driven rathe
 
 ## Collision System
 
-[`sithCollision.c`](../../Libs/sith/Engine/sithCollision.c) is a graph-search and dispatch system, not just a math helper library.
+[`sithCollision.c`](../../../Libs/sith/Engine/sithCollision.c) is a graph-search and dispatch system, not just a math helper library.
 
 It contains:
 
@@ -259,7 +259,7 @@ This means collision is architected as:
 
 So collision response is data-driven at the handler-table level, even though the search itself is hardcoded.
 
-For the full movement-trace, query, and response pipeline, including adjoin crossing, hit sorting, line-of-sight tests, and handler dispatch, see [Collision-System.md](Collision-System.md).
+For the full movement-trace, query, and response pipeline, including adjoin crossing, hit sorting, line-of-sight tests, and handler dispatch, see [Collision-System.md](../05-building-blocks/Collision-System.md).
 
 ## Messages, Scripts, And Simulation
 
@@ -270,13 +270,13 @@ The simulation pass does not execute every gameplay consequence immediately inli
 - AI events
 - sound/awareness events
 
-That is why [`sithThing_Update()`](../../Libs/sith/World/sithThing.c#L579) is followed by [`sithCog_ProcessCogs()`](../../Libs/sith/Cog/sithCog.c#L2024) later in the frame. Scripts frequently react to simulation outcomes, but the engine still wants a stable main update order.
+That is why [`sithThing_Update()`](../../../Libs/sith/World/sithThing.c#L579) is followed by [`sithCog_ProcessCogs()`](../../../Libs/sith/Cog/sithCog.c#L2024) later in the frame. Scripts frequently react to simulation outcomes, but the engine still wants a stable main update order.
 
 The dedicated messaging and deferred-work mechanisms behind that handoff are documented in [Event-And-Message-Systems.md](Event-And-Message-Systems.md).
 
 ## Rendering Begins After Simulation Completes
 
-Only after [`sithUpdate()`](../../Libs/sith/Main/sithMain.c#L543) finishes does [`sithDrawScene()`](../../Libs/sith/Main/sithMain.c#L596) run. That function:
+Only after [`sithUpdate()`](../../../Libs/sith/Main/sithMain.c#L543) finishes does [`sithDrawScene()`](../../../Libs/sith/Main/sithMain.c#L596) run. That function:
 
 1. advances render tick
 2. updates the current camera

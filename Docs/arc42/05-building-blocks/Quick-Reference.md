@@ -28,7 +28,7 @@ Things drive gameplay behavior. Sectors and adjoins drive world traversal.
 
 ## The World Model
 
-A loaded level is represented by a [`SithWorld`](../../Libs/sith/World/sithWorld.c#L351) and contains:
+A loaded level is represented by a [`SithWorld`](../../../Libs/sith/World/sithWorld.c#L351) and contains:
 
 - sectors
 - surfaces
@@ -173,9 +173,9 @@ The renderer reads finished simulation state. It does not interleave gameplay up
 
 If you want the architecture in the best order:
 
-- [Boot-And-Lifecycle.md](Boot-And-Lifecycle.md)
+- [Boot-And-Lifecycle.md](../06-runtime/Boot-And-Lifecycle.md)
 - [World-And-Resources.md](World-And-Resources.md)
-- [Frame-Loop-And-Simulation.md](Frame-Loop-And-Simulation.md)
+- [Frame-Loop-And-Simulation.md](../06-runtime/Frame-Loop-And-Simulation.md)
 - [Rendering-And-Visibility.md](Rendering-And-Visibility.md)
 - [Collision-System.md](Collision-System.md)
 

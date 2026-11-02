@@ -4,17 +4,17 @@ This page documents three subsystems that interact heavily with the simulation b
 
 Primary source files:
 
-- [`Libs/sith/Cog/sithCog.c`](../../Libs/sith/Cog/sithCog.c)
-- [`Libs/sith/Cog/sithCogParse.c`](../../Libs/sith/Cog/sithCogParse.c)
-- [`Libs/sith/Cog/sithCogExec.c`](../../Libs/sith/Cog/sithCogExec.c)
-- [`Libs/sith/Dss/sithDSSCog.c`](../../Libs/sith/Dss/sithDSSCog.c)
-- [`Libs/sith/AI/sithAI.c`](../../Libs/sith/AI/sithAI.c)
-- [`Libs/sith/AI/sithAIAwareness.c`](../../Libs/sith/AI/sithAIAwareness.c)
-- [`Libs/sith/AI/sithAIClass.c`](../../Libs/sith/AI/sithAIClass.c)
-- [`Libs/sith/Devices/sithSound.c`](../../Libs/sith/Devices/sithSound.c)
-- [`Libs/sith/Devices/sithSoundMixer.c`](../../Libs/sith/Devices/sithSoundMixer.c)
-- [`Libs/sound/Sound.c`](../../Libs/sound/Sound.c)
-- [`Libs/sith/World/sithVoice.c`](../../Libs/sith/World/sithVoice.c)
+- [`Libs/sith/Cog/sithCog.c`](../../../Libs/sith/Cog/sithCog.c)
+- [`Libs/sith/Cog/sithCogParse.c`](../../../Libs/sith/Cog/sithCogParse.c)
+- [`Libs/sith/Cog/sithCogExec.c`](../../../Libs/sith/Cog/sithCogExec.c)
+- [`Libs/sith/Dss/sithDSSCog.c`](../../../Libs/sith/Dss/sithDSSCog.c)
+- [`Libs/sith/AI/sithAI.c`](../../../Libs/sith/AI/sithAI.c)
+- [`Libs/sith/AI/sithAIAwareness.c`](../../../Libs/sith/AI/sithAIAwareness.c)
+- [`Libs/sith/AI/sithAIClass.c`](../../../Libs/sith/AI/sithAIClass.c)
+- [`Libs/sith/Devices/sithSound.c`](../../../Libs/sith/Devices/sithSound.c)
+- [`Libs/sith/Devices/sithSoundMixer.c`](../../../Libs/sith/Devices/sithSoundMixer.c)
+- [`Libs/sound/Sound.c`](../../../Libs/sound/Sound.c)
+- [`Libs/sith/World/sithVoice.c`](../../../Libs/sith/World/sithVoice.c)
 
 ## COG Architecture
 
@@ -29,17 +29,17 @@ The runtime is split into several layers:
 - bytecode execution
 - host-function bridge
 
-The detailed language and host-function reference lives in [../COG/README.md](../COG/README.md), but the architectural role of COG is explained here.
+The detailed language and host-function reference lives in [../COG/README.md](../../COG/README.md), but the architectural role of COG is explained here.
 
 ## COG Startup And Open
 
-[`sithCog_Startup()`](../../Libs/sith/Cog/sithCog.c#L132) initializes the global COG runtime:
+[`sithCog_Startup()`](../../../Libs/sith/Cog/sithCog.c#L132) initializes the global COG runtime:
 
 - global symbol table
 - script hash table
 - timer task integration
 
-When a world opens, [`sithCog_Open()`](../../Libs/sith/Cog/sithCog.c#L179) performs per-world setup:
+When a world opens, [`sithCog_Open()`](../../../Libs/sith/Cog/sithCog.c#L179) performs per-world setup:
 
 - resolve symbol references
 - bind local and global symbols
@@ -82,7 +82,7 @@ When a message is delivered, the engine looks up the corresponding handler offse
 
 ## Bytecode VM
 
-[`sithCogExec_Execute()`](../../Libs/sith/Cog/sithCogExec.c#L70) is a bytecode interpreter, not a source interpreter.
+[`sithCogExec_Execute()`](../../../Libs/sith/Cog/sithCogExec.c#L70) is a bytecode interpreter, not a source interpreter.
 
 The VM supports:
 
@@ -128,7 +128,7 @@ This is important because "AI" is not one monolithic function. The engine separa
 
 ## AI Control Blocks
 
-Each AI-driven thing gets a `SithAIControlBlock` attached through [`sithAI_Create()`](../../Libs/sith/AI/sithAI.c#L138).
+Each AI-driven thing gets a `SithAIControlBlock` attached through [`sithAI_Create()`](../../../Libs/sith/AI/sithAI.c#L138).
 
 The control block stores:
 
@@ -146,7 +146,7 @@ That is a recurring Jones3D pattern: AI, movement, and animation are separate sy
 
 ## AI Update Loop
 
-[`sithAI_Process()`](../../Libs/sith/AI/sithAI.c#L203) sweeps all active AI control blocks each frame.
+[`sithAI_Process()`](../../../Libs/sith/AI/sithAI.c#L203) sweeps all active AI control blocks each frame.
 
 For each valid AI it:
 
@@ -167,13 +167,13 @@ Instincts are registered in a global registry and then attached to AI classes. E
 - next-update time
 - implementation callback
 
-[`sithAI_InstinctUpdate()`](../../Libs/sith/AI/sithAI.c#L257) loops over active instincts whose update time has elapsed and calls their callbacks. If an instinct changes the AI mode, the scheduler can restart the scan so the new mode takes effect immediately.
+[`sithAI_InstinctUpdate()`](../../../Libs/sith/AI/sithAI.c#L257) loops over active instincts whose update time has elapsed and calls their callbacks. If an instinct changes the AI mode, the scheduler can restart the scan so the new mode takes effect immediately.
 
 Architecturally, this is a rule-driven AI model rather than a behavior tree or GOAP system. AI class data selects and parameterizes instincts; the runtime scheduler repeatedly evaluates them.
 
 ## AI Awareness Propagation
 
-[`sithAIAwareness.c`](../../Libs/sith/AI/sithAIAwareness.c) is especially interesting because it is built on the same sector/adjoin graph used by rendering and collision, but for a completely different purpose.
+[`sithAIAwareness.c`](../../../Libs/sith/AI/sithAIAwareness.c) is especially interesting because it is built on the same sector/adjoin graph used by rendering and collision, but for a completely different purpose.
 
 The subsystem:
 
@@ -206,7 +206,7 @@ This is a strong architectural split. The lowest layer does not know about secto
 
 ## Low-Level Sound Layer
 
-[`Sound.c`](../../Libs/sound/Sound.c) maintains:
+[`Sound.c`](../../../Libs/sound/Sound.c) maintains:
 
 - global sound state machine
 - static and normal banks
@@ -217,14 +217,14 @@ This is a strong architectural split. The lowest layer does not know about secto
 
 The backend underneath that layer depends on the build:
 
-- [`DriverDX6.c`](../../Libs/sound/DriverDX6.c)
-- [`DriverDX9.c`](../../Libs/sound/DriverDX9.c)
+- [`DriverDX6.c`](../../../Libs/sound/DriverDX6.c)
+- [`DriverDX9.c`](../../../Libs/sound/DriverDX9.c)
 
 The sound layer therefore mirrors the renderer's design: upper engine code talks to a stable interface while the backend changes underneath.
 
 ## Gameplay-Aware Sound Mixer
 
-[`sithSoundMixer.c`](../../Libs/sith/Devices/sithSoundMixer.c) is the bridge from gameplay world state to the low-level sound engine.
+[`sithSoundMixer.c`](../../../Libs/sith/Devices/sithSoundMixer.c) is the bridge from gameplay world state to the low-level sound engine.
 
 Its responsibilities include:
 
@@ -244,7 +244,7 @@ That reduces coupling between gameplay logic and exact sound asset selection.
 
 ## Voice Layer
 
-[`sithVoice.c`](../../Libs/sith/World/sithVoice.c) adds voice-specific behavior on top of the general sound system:
+[`sithVoice.c`](../../../Libs/sith/World/sithVoice.c) adds voice-specific behavior on top of the general sound system:
 
 - voice playback state
 - subtitle/voice draw integration
@@ -254,7 +254,7 @@ That reduces coupling between gameplay logic and exact sound asset selection.
 
 Voice is therefore not a separate audio engine. It is a specialized gameplay subsystem layered on the same lower sound foundations.
 
-See [Voice Host Functions](../COG/Functions-Voice.md) for the COG parameter contracts and [Sound System](Sound-System.md#voice-lip-sync-and-subtitles) for the waveform analysis, compact timeline, and playback mapping.
+See [Voice Host Functions](../../COG/Functions-Voice.md) for the COG parameter contracts and [Sound System](Sound-System.md#voice-lip-sync-and-subtitles) for the waveform analysis, compact timeline, and playback mapping.
 
 ## Important QOL Audio Changes
 
@@ -264,6 +264,6 @@ The architecture stays the same, but OpenJones3D extends several defaults:
 - maximum simultaneous sound channels increase from the legacy budget to a much larger one
 - modern backend fixes exist in both DX6 and DX9 paths
 
-These changes are documented in more detail in [QOL-And-Compatibility.md](QOL-And-Compatibility.md), but they do not replace the original layered audio design.
+These changes are documented in more detail in [QOL-And-Compatibility.md](../08-crosscutting/QOL-And-Compatibility.md), but they do not replace the original layered audio design.
 
 For the dedicated audio deep dive, including banks, channels, distant-loop restart, ambient-sector crossfading, sound classes, lip sync, and subtitles, see [Sound-System.md](Sound-System.md).

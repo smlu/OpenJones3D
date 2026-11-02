@@ -1,5 +1,10 @@
 # Platform Layer
 
+> **Superseded in part.** This page describes the platform layer built in milestones M3 and M4, where the recovered
+> function names were the interface. From M5 on, Babylon defines its own interfaces and these functions become
+> adapters ([ADR-0007](../09-decisions/ADR-0007-adapter-between-game-and-babylon.md)). Struct layouts no longer
+> need to stay fixed ([ADR-0004](../09-decisions/ADR-0004-drop-binary-compatibility.md)).
+
 How OpenJones3D separates engine code from Windows and DirectX, so the engine can run on other platforms. Milestone names such as M3.6 refer to stages of the native port.
 
 ## Summary

@@ -151,14 +151,14 @@ test-vector notes.
 - [Docs/Jones.cfg.md](Docs/Jones.cfg.md) for engine configuration options and settings
 - [Docs/COG/README.md](Docs/COG/README.md) for COG scripting language notes and host-function reference pages
 - [Docs/Formats/README.md](Docs/Formats/README.md) for engine resource format notes
-- [Docs/Architecture/README.md](Docs/Architecture/README.md) for detailed engine architecture notes
+- [Docs/Architecture/README.md](Docs/arc42/05-building-blocks/README.md) for detailed engine architecture notes
 - [Docs/Testing.md](Docs/Testing.md) for test requirements, execution, and fixture conventions
 
 <a id="engine-architecture"></a>
 ## 🏗 High-Level Overview of Engine Architecture
 The Jones3D engine is an evolved version of the *Sith* engine, which was also used in games such as *Star Wars Jedi Knight: Dark Forces II* and *Star Wars Jedi Knight: Mysteries of the Sith*. In OpenJones3D, the engine is organized into eight original modules plus one implementation-specific module, [`j3dcore`](Libs/j3dcore).
 
-For a deeper technical breakdown of subsystem ownership, frame execution, rendering, scripting, AI, audio, and `QOL` architecture changes, see [Docs/Architecture/README.md](Docs/Architecture/README.md).
+For a deeper technical breakdown of subsystem ownership, frame execution, rendering, scripting, AI, audio, and `QOL` architecture changes, see [Docs/Architecture/README.md](Docs/arc42/05-building-blocks/README.md).
 
 ```
               ┌──────────────────────┐

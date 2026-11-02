@@ -4,14 +4,14 @@ This page documents the world container, how level/resource files are loaded, an
 
 Primary source files:
 
-- [`Libs/sith/World/sithWorld.c`](../../Libs/sith/World/sithWorld.c)
-- [`Libs/sith/World/sithThing.c`](../../Libs/sith/World/sithThing.c)
-- [`Libs/sith/World/sithSector.c`](../../Libs/sith/World/sithSector.c)
-- [`Libs/sith/World/sithSurface.c`](../../Libs/sith/World/sithSurface.c)
-- [`Libs/sith/World/sithMaterial.c`](../../Libs/sith/World/sithMaterial.c)
-- [`Libs/sith/World/sithModel.c`](../../Libs/sith/World/sithModel.c)
-- [`Libs/sith/Engine/sithPuppet.c`](../../Libs/sith/Engine/sithPuppet.c)
-- [`Libs/sith/Devices/sithSound.c`](../../Libs/sith/Devices/sithSound.c)
+- [`Libs/sith/World/sithWorld.c`](../../../Libs/sith/World/sithWorld.c)
+- [`Libs/sith/World/sithThing.c`](../../../Libs/sith/World/sithThing.c)
+- [`Libs/sith/World/sithSector.c`](../../../Libs/sith/World/sithSector.c)
+- [`Libs/sith/World/sithSurface.c`](../../../Libs/sith/World/sithSurface.c)
+- [`Libs/sith/World/sithMaterial.c`](../../../Libs/sith/World/sithMaterial.c)
+- [`Libs/sith/World/sithModel.c`](../../../Libs/sith/World/sithModel.c)
+- [`Libs/sith/Engine/sithPuppet.c`](../../../Libs/sith/Engine/sithPuppet.c)
+- [`Libs/sith/Devices/sithSound.c`](../../../Libs/sith/Devices/sithSound.c)
 
 ## The World Object Is The Main Runtime Container
 
@@ -57,14 +57,14 @@ The current world is the active gameplay level. It contains the current sectors,
 
 This split is important architecturally because many APIs must be explicit about which resource namespace they are addressing. Static-world indices are commonly masked or tagged differently from current-world indices so the engine can tell them apart.
 
-The static-resource tag is the high bit used by helpers such as `SITHWORLD_STATICINDEX()`. For COG lookups, [`sithCog_GetCogByIndex()`](../../Libs/sith/Cog/sithCog.c#L1285) tests that bit to choose the static world and then clears it before indexing the world's cog array. Script-facing [`GetCogByIndex()`](../COG/Functions-System.md#getcogbyindex) always applies that static tag before lookup, so it targets static cogs rather than current-level cogs.
+The static-resource tag is the high bit used by helpers such as `SITHWORLD_STATICINDEX()`. For COG lookups, [`sithCog_GetCogByIndex()`](../../../Libs/sith/Cog/sithCog.c#L1285) tests that bit to choose the static world and then clears it before indexing the world's cog array. Script-facing [`GetCogByIndex()`](../../COG/Functions-System.md#getcogbyindex) always applies that static tag before lookup, so it targets static cogs rather than current-level cogs.
 
 ## Text NDY Loading Versus Binary CND Loading
 
-[`sithWorld_Load()`](../../Libs/sith/World/sithWorld.c#L351) accepts either text or binary worlds:
+[`sithWorld_Load()`](../../../Libs/sith/World/sithWorld.c#L351) accepts either text or binary worlds:
 
-- `.ndy` uses [`sithWorld_LoadEntryText()`](../../Libs/sith/World/sithWorld.c#L515)
-- `.cnd` uses [`sithWorld_LoadEntryBinary()`](../../Libs/sith/World/sithWorld.c#L1456)
+- `.ndy` uses [`sithWorld_LoadEntryText()`](../../../Libs/sith/World/sithWorld.c#L515)
+- `.cnd` uses [`sithWorld_LoadEntryBinary()`](../../../Libs/sith/World/sithWorld.c#L1456)
 
 The text path reads a configuration-style file using `stdConffile`, scans `SECTION:` blocks, and dispatches each section to a registered parser.
 
@@ -74,7 +74,7 @@ In both cases, the world-loader architecture is deliberately section-oriented ra
 
 ## Section Parser Registration
 
-During [`sithWorld_Startup()`](../../Libs/sith/World/sithWorld.c#L287), the engine registers handlers for the world sections, including:
+During [`sithWorld_Startup()`](../../../Libs/sith/World/sithWorld.c#L287), the engine registers handlers for the world sections, including:
 
 - `copyright`
 - `header`
@@ -115,7 +115,7 @@ These values are not render-only. Gravity feeds physics, fog feeds the render pi
 
 ## Post-Load Processing
 
-After the raw data is loaded, [`sithWorld_LoadPostProcess()`](../../Libs/sith/World/sithWorld.c#L400) turns it into an active runtime world.
+After the raw data is loaded, [`sithWorld_LoadPostProcess()`](../../../Libs/sith/World/sithWorld.c#L400) turns it into an active runtime world.
 
 Important work performed there:
 
@@ -203,7 +203,7 @@ Because so much code uses stable thing indices and direct slot pointers, the fix
 
 ## Thing Initialization And Post-Initialization
 
-[`sithThing_Initialize()`](../../Libs/sith/World/sithThing.c#L1419) performs type- and subsystem-specific initialization. Examples include:
+[`sithThing_Initialize()`](../../../Libs/sith/World/sithThing.c#L1419) performs type- and subsystem-specific initialization. Examples include:
 
 - actor/player state-change reset
 - actor difficulty application
@@ -224,15 +224,15 @@ The architecture here is distributed:
 
 Even though the world owns the tables, each subsystem still owns the interpretation and loader/writer logic for its resource type:
 
-- sounds: [`sithSound.c`](../../Libs/sith/Devices/sithSound.c)
-- materials: [`sithMaterial.c`](../../Libs/sith/World/sithMaterial.c)
-- models: [`sithModel.c`](../../Libs/sith/World/sithModel.c)
-- sprites: [`sithSprite.c`](../../Libs/sith/World/sithSprite.c)
-- keyframes/puppets: [`sithPuppet.c`](../../Libs/sith/Engine/sithPuppet.c)
-- AI classes: [`sithAIClass.c`](../../Libs/sith/AI/sithAIClass.c)
-- sound classes: [`sithSoundClass.c`](../../Libs/sith/World/sithSoundClass.c)
-- cog scripts and cog instances: [`sithCog.c`](../../Libs/sith/Cog/sithCog.c)
-- thing templates: [`sithTemplate.c`](../../Libs/sith/World/sithTemplate.c)
+- sounds: [`sithSound.c`](../../../Libs/sith/Devices/sithSound.c)
+- materials: [`sithMaterial.c`](../../../Libs/sith/World/sithMaterial.c)
+- models: [`sithModel.c`](../../../Libs/sith/World/sithModel.c)
+- sprites: [`sithSprite.c`](../../../Libs/sith/World/sithSprite.c)
+- keyframes/puppets: [`sithPuppet.c`](../../../Libs/sith/Engine/sithPuppet.c)
+- AI classes: [`sithAIClass.c`](../../../Libs/sith/AI/sithAIClass.c)
+- sound classes: [`sithSoundClass.c`](../../../Libs/sith/World/sithSoundClass.c)
+- cog scripts and cog instances: [`sithCog.c`](../../../Libs/sith/Cog/sithCog.c)
+- thing templates: [`sithTemplate.c`](../../../Libs/sith/World/sithTemplate.c)
 
 That is why the world loader is mostly an orchestration layer. The actual semantics of "what a model is" or "what a keyframe class means" are intentionally left inside the owning subsystem.
 
@@ -257,13 +257,13 @@ That is why PVS belongs to the world object. The data is authored and stored per
 
 The text and binary load paths both preserve that ownership model.
 
-Text `.ndy` loading through [`sithPVS_ReadPVSText()`](../../Libs/sith/World/sithPVS.c#L72) reads:
+Text `.ndy` loading through [`sithPVS_ReadPVSText()`](../../../Libs/sith/World/sithPVS.c#L72) reads:
 
 1. `PVS Size`
 2. the packed PVS blob as hexadecimal `uint32_t` words
 3. one hexadecimal `pvsIdx` value per sector
 
-Binary `.cnd` loading through [`sithPVS_ReadPVSBinary()`](../../Libs/sith/World/sithPVS.c#L155) reads only the packed blob itself. The sector-side `pvsIdx` values are already carried in each sector record and restored when the sector data is loaded.
+Binary `.cnd` loading through [`sithPVS_ReadPVSBinary()`](../../../Libs/sith/World/sithPVS.c#L155) reads only the packed blob itself. The sector-side `pvsIdx` values are already carried in each sector record and restored when the sector data is loaded.
 
 So the serialized model is:
 
@@ -274,7 +274,7 @@ So the serialized model is:
 
 The packed data does not decode directly into "visible sectors." It decodes into an adjoin table.
 
-That decoding is performed by [`sithPVS_SetTable()`](../../Libs/sith/World/sithPVS.c#L176), which expands the packed byte stream into one byte per world adjoin.
+That decoding is performed by [`sithPVS_SetTable()`](../../../Libs/sith/World/sithPVS.c#L176), which expands the packed byte stream into one byte per world adjoin.
 
 The decompression scheme is a simple run-length encoding:
 
@@ -357,7 +357,7 @@ A practical offline generator would usually:
 4. mark adjoins that survive this offline portal test as potentially visible from the source sector
 5. assign bucket/order values that approximate the preferred traversal order for runtime use
 6. optionally mark special adjoins with the `0x80` behavior when the generated data wants runtime clipping to restart from the full-screen root frustum
-7. compress the finished per-adjoin byte table with the packed run-length scheme used by [`sithPVS_SetTable()`](../../Libs/sith/World/sithPVS.c#L176)
+7. compress the finished per-adjoin byte table with the packed run-length scheme used by [`sithPVS_SetTable()`](../../../Libs/sith/World/sithPVS.c#L176)
 
 Pseudo code:
 
@@ -610,7 +610,7 @@ For OpenJones3D as it currently exists, "generate PVS" means one of these:
 
 - use an external/editor-side tool that computes the packed PVS blob and sector `pvsIdx` values
 - import world data that already contains valid PVS
-- inspect or rewrite existing PVS through the loader/writer paths in [`sithPVS.c`](../../Libs/sith/World/sithPVS.c)
+- inspect or rewrite existing PVS through the loader/writer paths in [`sithPVS.c`](../../../Libs/sith/World/sithPVS.c)
 
 What the runtime itself can do in-tree today is:
 
@@ -623,13 +623,13 @@ It does not currently expose a built-in authoring command that derives fresh PVS
 
 ## World Validation
 
-The load path ends with [`sithWorld_ValidateWorld()`](../../Libs/sith/World/sithWorld.c#L1034), which verifies that the world contains the minimum set of sections and resources the runtime expects.
+The load path ends with [`sithWorld_ValidateWorld()`](../../../Libs/sith/World/sithWorld.c#L1034), which verifies that the world contains the minimum set of sections and resources the runtime expects.
 
 This validation step matters because many runtime systems assume their tables exist. By validating once during load, the engine avoids scattering missing-resource checks across every frame path.
 
 ## World Teardown
 
-[`sithWorld_Free()`](../../Libs/sith/World/sithWorld.c#L589) tears the world down in ownership order. It frees:
+[`sithWorld_Free()`](../../../Libs/sith/World/sithWorld.c#L589) tears the world down in ownership order. It frees:
 
 - PVS
 - things
@@ -652,6 +652,6 @@ This is another strong sign that `SithWorld` is the root runtime container. If a
 
 ## Related Docs
 
-- Resource-format syntax is documented in [../Formats/README.md](../Formats/README.md).
-- Runtime update order for things, physics, and collision is documented in [Frame-Loop-And-Simulation.md](Frame-Loop-And-Simulation.md).
+- Resource-format syntax is documented in [../Formats/README.md](../../Formats/README.md).
+- Runtime update order for things, physics, and collision is documented in [Frame-Loop-And-Simulation.md](../06-runtime/Frame-Loop-And-Simulation.md).
 - Render-facing visibility and PVS use are documented in [Rendering-And-Visibility.md](Rendering-And-Visibility.md).

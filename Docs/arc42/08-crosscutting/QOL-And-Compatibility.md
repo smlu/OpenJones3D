@@ -1,21 +1,25 @@
 # QOL And Compatibility
 
+> **Being replaced.** The `j3dcore` hook layer described here is removed
+> ([ADR-0004](../09-decisions/ADR-0004-drop-binary-compatibility.md)), and the compile-time QOL profile becomes
+> individual runtime options, on by default ([ADR-0003](../09-decisions/ADR-0003-fidelity-split.md)).
+
 This page documents how OpenJones3D preserves the original architecture while still adding modern behavior, fixes, and optional replacements under compile-time or runtime control.
 
 Primary source files:
 
-- [`Libs/j3dcore/j3d.h`](../../Libs/j3dcore/j3d.h)
-- [`Libs/j3dcore/j3dhook.h`](../../Libs/j3dcore/j3dhook.h)
-- [`CMakeLists.txt`](../../CMakeLists.txt)
-- [`Libs/sith/Engine/sithRender.h`](../../Libs/sith/Engine/sithRender.h)
-- [`Libs/sith/Engine/sithRender.c`](../../Libs/sith/Engine/sithRender.c)
-- [`Libs/std/General/stdConfig.c`](../../Libs/std/General/stdConfig.c)
-- [`Libs/std/General/stdPlatform.c`](../../Libs/std/General/stdPlatform.c)
-- [`Libs/sith/Engine/sithPhysics.c`](../../Libs/sith/Engine/sithPhysics.c)
-- [`Libs/sith/Devices/sithSound.h`](../../Libs/sith/Devices/sithSound.h)
-- [`Libs/sith/Devices/sithSoundMixer.c`](../../Libs/sith/Devices/sithSoundMixer.c)
-- [`Libs/sith/World/sithMaterial.c`](../../Libs/sith/World/sithMaterial.c)
-- [`Libs/sith/Engine/sithPuppet.c`](../../Libs/sith/Engine/sithPuppet.c)
+- [`Libs/j3dcore/j3d.h`](../../../Libs/j3dcore/j3d.h)
+- [`Libs/j3dcore/j3dhook.h`](../../../Libs/j3dcore/j3dhook.h)
+- [`CMakeLists.txt`](../../../CMakeLists.txt)
+- [`Libs/sith/Engine/sithRender.h`](../../../Libs/sith/Engine/sithRender.h)
+- [`Libs/sith/Engine/sithRender.c`](../../../Libs/sith/Engine/sithRender.c)
+- [`Libs/std/General/stdConfig.c`](../../../Libs/std/General/stdConfig.c)
+- [`Libs/std/General/stdPlatform.c`](../../../Libs/std/General/stdPlatform.c)
+- [`Libs/sith/Engine/sithPhysics.c`](../../../Libs/sith/Engine/sithPhysics.c)
+- [`Libs/sith/Devices/sithSound.h`](../../../Libs/sith/Devices/sithSound.h)
+- [`Libs/sith/Devices/sithSoundMixer.c`](../../../Libs/sith/Devices/sithSoundMixer.c)
+- [`Libs/sith/World/sithMaterial.c`](../../../Libs/sith/World/sithMaterial.c)
+- [`Libs/sith/Engine/sithPuppet.c`](../../../Libs/sith/Engine/sithPuppet.c)
 
 ## Reconstruction First, Modernization Second
 
@@ -29,7 +33,7 @@ That is why the engine still looks like Jones3D/Sith internally instead of becom
 
 ## j3dcore: The Compatibility Layer
 
-The main OpenJones3D-specific architectural addition is [`j3dcore`](../../Libs/j3dcore).
+The main OpenJones3D-specific architectural addition is [`j3dcore`](../../../Libs/j3dcore).
 
 It provides:
 
@@ -37,7 +41,7 @@ It provides:
 - trampolines to original functions
 - hook installation for reimplemented functions
 
-[`J3D_HOOKFUNC()`](../../Libs/j3dcore/j3dhook.h#L44) patches the original entry point so execution jumps into the new C implementation. [`J3D_TRAMPOLINE_CALL()`](../../Libs/j3dcore/j3dhook.h#L28) can still invoke the original code when a function is only partially replaced or when original behavior is still needed.
+[`J3D_HOOKFUNC()`](../../../Libs/j3dcore/j3dhook.h#L44) patches the original entry point so execution jumps into the new C implementation. [`J3D_TRAMPOLINE_CALL()`](../../../Libs/j3dcore/j3dhook.h#L28) can still invoke the original code when a function is only partially replaced or when original behavior is still needed.
 
 This is not just a development convenience. It is a central architectural strategy:
 
@@ -126,7 +130,7 @@ It also preserves backward compatibility with existing installs that only have t
 
 ## Timing Precision
 
-Under `QOL`, [`stdPlatform_GetTimeMsec()`](../../Libs/std/General/stdPlatform.c#L95) uses `QueryPerformanceCounter()` instead of `timeGetTime()`.
+Under `QOL`, [`stdPlatform_GetTimeMsec()`](../../../Libs/std/General/stdPlatform.c#L95) uses `QueryPerformanceCounter()` instead of `timeGetTime()`.
 
 Why this matters architecturally:
 
