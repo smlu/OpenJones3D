@@ -1,18 +1,23 @@
 # Contributing
 
-OpenJones3D is a function-by-function decompilation and reconstruction of the Jones3D engine. Changes should preserve the original subsystem boundaries and naming wherever possible, and modernize behavior only when the change is intentional and documented.
+Jones3D EX is an enhanced source port of the Jones3D engine: the restored C game logic, inherited from the
+OpenJones3D reconstruction, running on the Babylon Engine, a game-agnostic C++ platform framework. The
+architecture and the reasons behind it are in [Docs/arc42](Docs/arc42/README.md).
 
-The main rule is simple: make reconstructed code readable and maintainable while keeping original engine behavior, ownership, and binary-reconstruction assumptions clear.
+The main rules are simple: keep the simulation measurable against the original game, keep Babylon free of
+game code, and keep every change small, tested and explained.
 
 ## Contents
 
 - [Contribution Workflow](#contribution-workflow)
 - [General Rules](#general-rules)
 - [AI-Assisted Changes](#ai-assisted-changes)
+- [Licensing And The Babylon Boundary](#licensing-and-the-babylon-boundary)
 - [Naming Conventions](#naming-conventions)
 - [Module Layers And Helper Reuse](#module-layers-and-helper-reuse)
 - [Compatibility And Behavior Changes](#compatibility-and-behavior-changes)
 - [C Style](#c-style)
+- [Babylon Code](#babylon-code)
 - [Memory And Ownership](#memory-and-ownership)
 - [Decompilation Cleanup](#decompilation-cleanup)
 - [Tests](#tests)
@@ -39,7 +44,7 @@ The main rule is simple: make reconstructed code readable and maintainable while
 - Do not mix unrelated cleanup with a behavioral fix unless the cleanup is needed to make the fix safe.
 - Preserve original file placement and module ownership. For example, `std` helpers should not move into `sith`, and gameplay logic should not drift into renderer modules.
 - Prefer existing project helpers and conventions over new abstractions.
-- When changing behavior, configuration, supported file formats, or reconstruction assumptions, update the relevant page under [Docs](Docs).
+- When changing behavior, configuration, supported file formats, or architecture, update the relevant page under [Docs](Docs). Lasting decisions get an ADR in [Docs/arc42/09-decisions](Docs/arc42/09-decisions/README.md).
 - Keep CHANGELOG entries focused on user-visible fixes and noteworthy engine behavior changes.
 - Add or update tests for engine behavior changes and follow the
   [testing workflow](Docs/Testing.md#testing-workflow).
@@ -53,20 +58,42 @@ reproducible toolchain.
 
 Before submitting AI-assisted changes:
 
-- Review the generated diff manually against the surrounding code and original
-  reconstruction intent.
+- Review the generated diff manually against the surrounding code and the
+  original behavior.
 - Follow the [testing workflow](Docs/Testing.md#testing-workflow), including
-  the required coverage and MSVC validation. Report failed, ignored, and
+  the required coverage and build validation. Report failed, ignored, and
   unexecuted checks explicitly.
-- Preserve original engine behavior unless the change is clearly a fix,
-  hardening change, QOL improvement, or documented compatibility option.
+- Follow the [fidelity rules](#compatibility-and-behavior-changes): simulation
+  changes need an option, presentation is free to improve.
 - Add the normal `// Added:`, `// Fixed:`, or `// Altered:` marker comments at
   changed original-code sites when the diff intentionally diverges from the
   original implementation.
 - Keep prompts, scratch notes, and temporary generated files out of commits
   unless they are useful project documentation or checked-in test vectors.
 
+## Licensing And The Babylon Boundary
+
+The repository has two licenses:
+
+- Everything outside `Babylon/` is AGPL-3.0, copyright OpenJones3D contributors.
+- `Babylon/` is MPL-2.0, copyright seelenkuchen. Contributions to `Babylon/` need a signed Contributor
+  License Agreement, which keeps dual licensing possible. Contributions outside `Babylon/` don't.
+
+Babylon must stay separable and its license valid:
+
+- Nothing in `Babylon/` includes from outside `Babylon/` or names a Jones3D or Sith concept.
+- No code enters `Babylon/` from AGPL or GPL sources: `Libs/`, `Jones3D/`, earlier backends, OpenJones3D
+  branches, Jones3D-Portable or PowerslaveEX. Read them for ideas, then write Babylon code fresh.
+- Babylon dependencies are permissive only: zlib, MIT, BSD, Apache-2.0, public domain. No LGPL.
+- CI builds Babylon on its own and checks includes and dependency licenses.
+
+See [ADR-0006](Docs/arc42/09-decisions/ADR-0006-babylon-engine-in-repo.md),
+[ADR-0007](Docs/arc42/09-decisions/ADR-0007-adapter-between-game-and-babylon.md) and
+[ADR-0008](Docs/arc42/09-decisions/ADR-0008-babylon-license.md).
+
 ## Naming Conventions
+
+These conventions apply to game and adapter code. Babylon has its own, see [Babylon Code](#babylon-code).
 
 Original names win when they are known from symbols, logging strings, asserts, related engines, retail data, or nearby code. Prefer a recovered original name over a custom name even when the custom name looks cleaner.
 
@@ -76,7 +103,7 @@ Original names win when they are known from symbols, logging strings, asserts, r
 - Follow local type naming in the file or module. Some original-style types use prefixes such as `t`, while rdroid and Sith data types often use subsystem names directly.
 - Use meaningful names once behavior is understood. Temporary decompiler-style names are acceptable only while the meaning is still genuinely unknown.
 - If a name is uncertain, prefer a conservative descriptive name over a guessed original name.
-- Do not rename public functions, types, fields, or RTI symbols for style alone. Stable reconstructed names are part of the project API and make comparison against original binary analysis easier.
+- Do not rename public functions, types or fields for style alone. Recovered names make comparison with the decompilation easier.
 
 For new or cleaned-up type names, prefer the local module convention:
 
@@ -114,35 +141,44 @@ Respect the engine dependency direction. Includes and link dependencies flow fro
 Jones3D -> sith -> sound -> rdroid -> std -> j3dcore
 wkernel -> std -> j3dcore
 w32util -> std -> j3dcore
+std, sound, wkernel (adapter) -> Babylon -> SDL3, SDL3 GPU, miniaudio
 ```
 
 Layer rules:
 
-- `j3dcore` is the lowest OpenJones3D support layer and may be used by every module. It must not include or depend on `std`, `sound`, `rdroid`, `sith`, or `Jones3D`.
+- `j3dcore` is the lowest support layer and may be used by every module. It must not include or depend on `std`, `sound`, `rdroid`, `sith`, or `Jones3D`.
 - `std` is a lower engine service layer. It may use `j3dcore`, but must not include or depend on upper gameplay or renderer layers such as `rdroid`, `sith`, or `Jones3D`.
 - `sound` may use `j3dcore`, `std`, and `rdroid`; its existing spatial-audio paths depend on renderer math/data types. It must not depend on `sith` or `Jones3D`.
 - `wkernel` and `w32util` may use `j3dcore` and `std`. Keep them independent of renderer, gameplay, and application layers.
 - `rdroid` may use lower layers such as `j3dcore` and `std`, but must not depend on `sith` or `Jones3D`.
 - `sith` may use lower engine layers such as `j3dcore`, `std`, `sound`, and `rdroid`, but must not depend on `Jones3D`.
 - `Jones3D` is the application/game layer and may include lower modules.
+- `Babylon` includes nothing from the game. Only the adapter (`std`, `sound`, `wkernel`) calls Babylon; game
+  modules above it keep calling the recovered adapter functions.
 
 If a desired helper would require a lower layer to include an upper layer, the helper belongs somewhere else or the dependency should be inverted through a callback, data-only type, or existing host-service path.
 
 ## Compatibility And Behavior Changes
 
-OpenJones3D has both reconstruction goals and quality-of-life goals. Keep those categories visible in code.
+Jones3D EX separates the **simulation** (physics, collision, AI, COG, game time, savegames) from the
+**presentation** (rendering, resolution, audio output, UI). See
+[ADR-0003](Docs/arc42/09-decisions/ADR-0003-fidelity-split.md) and
+[chapter 8](Docs/arc42/08-crosscutting/README.md).
 
-- Preserve original behavior by default unless the change is explicitly a fix, hardening change, QOL improvement, or documented compatibility option.
-- Put optional user-facing behavior changes behind an existing configuration path or compile-time option when appropriate.
-- Bug fixes may apply to the legacy profile when they do not break original gameplay, save compatibility, scripts, or speedrun-relevant behavior.
-- New functionality, feature additions, and improvements that replace buggy-but-authored behavior should normally be scoped behind `J3D_QOL_IMPROVEMENTS`, a config option, or both.
-- Use `J3D_QOL_IMPROVEMENTS` or `J3D_QOL_VALUE(qolValue, legacyValue)` for behavior that intentionally diverges from the legacy profile.
-- Use `J3D_SPEEDRUN_BUILD` for vanilla quirks and glitches that are intentionally preserved for speedrun compatibility.
-- `JONES3D_QOL_IMPROVEMENTS=OFF` disables QOL behavior and enables speedrun behavior through CMake. Keep `JONES3D_RUNTIME_GUARDS=OFF` as well for original unchecked call contracts; enabling guards selects a hardened legacy profile.
-- Keep legacy/original behavior readable when adding QOL branches. Avoid burying original logic under large unrelated refactors.
-- Use `J3D_RUNTIME_GUARDS` / `STD_GUARD` style helpers for opt-in hardened release-safety argument checks. Guard-disabled profiles preserve the original unchecked call contracts.
-- Avoid changing original struct layout unless the owning module is fully understood and the impact on hooks, RTI globals, savegames, and binary compatibility is clear.
-- Additions to original-layout structs require extra care. Prefer external side tables, config state, or QOL-scoped fields when a change would affect binary comparison, save/load, RTI assumptions, or reverse-engineering tools.
+- Presentation may improve freely. Offer a classic toggle where players would want one.
+- The simulation is measured against retail behavior by headless traces. The QOL changes inherited from
+  OpenJones3D are on by default, each switchable back to retail.
+- A new simulation change needs an option, off by default. With the option off, the retail trace must stay
+  identical.
+- Pure bug and crash fixes are always on. If a fix changes the retail trace, ask first: speedruns, savegames
+  and scripts may depend on the bug.
+- Use `J3D_QOL_IMPROVEMENTS` or `J3D_QOL_VALUE(qolValue, legacyValue)` for existing QOL branches until they
+  become runtime options. Use `J3D_SPEEDRUN_BUILD` for preserved vanilla quirks.
+- Use `J3D_RUNTIME_GUARDS` / `STD_GUARD` style helpers for opt-in hardened release-safety argument checks.
+- Keep the simulation deterministic: no wall-clock time, thread timing, uninitialized memory or pointer values
+  in anything that reaches game state.
+- In-memory struct layouts may change. On-disk formats (savegames, game data) may not: read and write them
+  through explicit serialization, never by reading bytes into a struct.
 
 Resource limits are owned by the relevant submodule, not by one global project file. When increasing or exposing a limit:
 
@@ -215,6 +251,21 @@ float sinLookup = 0.0f;
 
 Do not align unrelated expressions, function calls, or declarations separated by a blank line.
 
+## Babylon Code
+
+Babylon is C++ and is not bound by the recovered-name conventions above. Its naming, style and C++ standard
+are set at the start of milestone M5 and documented in `Babylon/`. Until then:
+
+- Interfaces are designed for their role (window, input, render, audio, files, time, cvars), not for one
+  game's calls. Each header states what every function promises: ownership, lifetime, units, errors, and
+  when it may be called.
+- Every interface has a Null backend that honors its contract without a device.
+- Ownership is expressed in C++ types (RAII, owning smart pointers) inside Babylon. Whatever crosses an
+  interface states who owns it.
+- No platform types (Windows, DirectX, SDL) in Babylon's public headers.
+- Babylon's tests live in `Babylon/` and run against every backend, including Null.
+- Adapter files in `Libs/` may be C++ and export the recovered functions as `extern "C"`.
+
 ## Memory And Ownership
 
 Use the engine memory layer unless a subsystem has a specific reason to use a platform or backend allocator.
@@ -230,7 +281,7 @@ Use the engine memory layer unless a subsystem has a specific reason to use a pl
 - Do not mix allocators. Memory allocated with `STDMALLOC` or `STDREALLOC` must be freed with `STDFREE` or `stdMemory_Free`.
 - Direct `malloc`, `realloc`, and `free` are only appropriate for isolated third-party/backend code paths or tests that intentionally stub host allocation.
 - Set pointer fields to `NULL` after freeing when the object can remain reachable or cleanup may be called more than once.
-- Preserve original lifetime semantics for world resources, sound handles, COG state, savegame state, and RTI globals unless the change is an explicit fix.
+- Preserve original lifetime semantics for world resources, sound handles, COG state and savegame state unless the change is an explicit fix.
 
 When hardening an original allocation or buffer path, document the behavior change
 and follow [Compatibility And Behavior Changes](#compatibility-and-behavior-changes).
@@ -291,32 +342,23 @@ and contain no test controls or original-executable calls.
 
 ### Original-Engine Fixtures
 
-For reconstructed I/O, generate compatibility fixtures by executing the original
-engine function as described in the
-[original-engine vector guide](Docs/Testing.md#original-engine-io-test-vectors).
-The debug build and v1.0 are the primary references. Use v1.2 only for a specific
-fix absent from both primary versions that OpenJones3D implements. Verify the
-[documented executable hashes](Docs/Testing.md#reference-binaries-and-version-policy)
-and record provenance. Permanent tests must use saved fixtures without invoking
-`Indy3D.exe` or depending on game assets. Consider attributed external corpora
-where they provide independent format coverage.
+Expected results for original behavior come from the original game, never from the reconstructed code
+itself. The existing fixtures were captured by executing original engine functions, as described in the
+[original-engine vector guide](Docs/Testing.md#original-engine-io-test-vectors); keep their provenance. New
+vectors come from the original game or the byte-exact decompilation, with recorded provenance. Permanent
+tests must use saved fixtures without invoking `Indy3D.exe` or depending on game assets.
 
 ### Build And Validation Requirements
 
-Use MSVC Win32 in Debug and Release when changing engine code or tests. Build
-and test both DX6 and DX9 when the changed production paths or related tests
-use DirectX directly or indirectly, including shared `std` services and upper
-modules in the graphics/input pipeline. This requirement applies even when no
-test file is changed.
+Build and run the unit tests natively (Clang) for every engine change; see
+[Docs/Testing.md](Docs/Testing.md#running-tests) for the commands. Code that the legacy Win32 and DirectX 9
+build compiles (until milestone M6) also needs a Windows build, with MinGW or MSVC. Changes to the simulation
+also need a headless trace comparison against the retail profile. Changes to Babylon need its tests against
+every backend.
 
-Backend-independent changes, such as an isolated `sith` physics calculation,
-can use focused production builds and tests on one representative backend.
-Follow [Backend Validation Scope](Docs/Testing.md#backend-validation-scope),
-trace affected dependencies, and explain the selection in the validation report.
-Exercise changed guard/QOL branches with the corresponding additional profiles.
-Run relevant system tests on a suitable host and disruptive tests separately
-when needed. Verify that the intended CTest entries were discovered and report
-unavailable prerequisites, ignored cases, and unresolved failures explicitly.
+Exercise changed guard/QOL branches with the corresponding additional profiles. Verify that the intended
+CTest entries were discovered and report unavailable prerequisites, ignored cases, and unresolved failures
+explicitly.
 
 Include the [validation report](Docs/Testing.md#validation-report) in the change
 description or review reply. Documentation-only changes require link, command,
@@ -341,8 +383,8 @@ Before submitting an engine change, check the following against
 - [Coverage reports](Docs/Testing.md#coverage-reports), when collected, have been
   reviewed for gaps in changed code and applicable configuration branches.
 
-AddressSanitizer integration is
-[deferred until full reimplementation](Docs/Testing.md#deferred-addresssanitizer-integration).
+Native builds can run under AddressSanitizer and UndefinedBehaviorSanitizer with
+`-DJONES3D_SANITIZE=ON` (GCC; Clang needs its sanitizer runtime installed).
 
 ## Commits
 
@@ -357,7 +399,7 @@ Commit subjects should use a bracketed prefix for module or documentation change
 - Cross-module format: `[<module>,<module>] Subject`
 - Do not add spaces inside the brackets.
 - Use one space after the closing bracket.
-- Use source-tree module names such as `std`, `rdroid`, `sith`, `sound`, `j3dcore`, `Jones3D`, or area names such as `Docs`.
+- Use source-tree module names such as `std`, `rdroid`, `sith`, `sound`, `j3dcore`, `Jones3D`, `Babylon`, or area names such as `Docs`.
 - General project updates, such as CMake project maintenance, do not need a prefix.
 
 Examples:
@@ -368,6 +410,7 @@ Examples:
 - `[j3dcore] Add macro tests`
 - `[Docs] Document test conventions`
 - `[std,sith] Preserve restored sound handles`
+- `[Babylon] Add the Null input backend`
 - `Update CMake project configuration`
 
 When a change spans multiple layers, explain why the cross-module change is needed in the commit description.

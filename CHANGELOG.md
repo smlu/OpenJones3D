@@ -1,3 +1,11 @@
+## Jones3D EX (unreleased)
+### Hard fork of OpenJones3D
+  - The project continues as **Jones3D EX**, an enhanced source port on the new Babylon Engine. See the
+    [roadmap](Docs/Roadmap.md) and the [architecture docs](Docs/arc42/README.md).
+  - The last state compatible with OpenJones3D is tagged `upstream-compatible-final`. Entries below are
+    OpenJones3D's own history.
+  - The game builds natively on Linux and other systems and runs headless there, on 32-bit and 64-bit.
+
 ## v0.4.0
 ### DirectX 9 Port, Redesigned HUD, Auto Aim Reticle, Enhanced Graphics & Gameplay QOL Improvements
 ### General:

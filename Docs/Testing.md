@@ -2,9 +2,15 @@
 
 # 🧪 Testing
 
-OpenJones3D uses Unity with Unity Fixture for C tests and CTest as the test runner.
-Tests are enabled by default through `JONES3D_BUILD_TESTS`. Contributors and
+Jones3D EX uses Unity with Unity Fixture for C tests and CTest as the test runner.
+Tests are enabled by default through `JONES3D_BUILD_TESTS`. Babylon's C++ tests
+live in `Babylon/`; their framework is chosen in milestone M5. Behavior of the
+whole game is checked with [headless traces](#trace-tests). Contributors and
 LLM agents should follow the same workflow and coverage requirements below.
+
+Much of this guide comes from OpenJones3D and still describes the legacy Win32
+and DirectX build, which exists until milestone M6. Native builds are the
+default from now on; see [Running Tests](#running-tests).
 
 <a name="contents"></a>
 
@@ -19,6 +25,7 @@ LLM agents should follow the same workflow and coverage requirements below.
 - [✍️ Test Style](#test-style)
     - [🧹 Test Isolation And Cleanup](#test-isolation-and-cleanup)
 - [🧭 Test Scope](#test-scope)
+    - [🎞️ Trace Tests](#trace-tests)
 - [📦 Original-Engine I/O Test Vectors](#original-engine-io-test-vectors)
 - [▶️ Running Tests](#running-tests)
     - [🤖 CI Profiles](#ci-profiles)
@@ -27,7 +34,7 @@ LLM agents should follow the same workflow and coverage requirements below.
 - [🖼️ Visual System Tests](#visual-system-tests)
 - [📋 Validation Report](#validation-report)
 - [🚧 Planned Test Integrations](#planned-test-integrations)
-    - [🛡️ Deferred AddressSanitizer Integration](#deferred-addresssanitizer-integration)
+    - [🛡️ AddressSanitizer In CI](#deferred-addresssanitizer-integration)
 
 <a name="testing-workflow"></a>
 
@@ -52,12 +59,12 @@ them, then report the results and remaining gaps.
    why they matter; see [Test Case Comments](#test-case-comments). Follow
    [Test Isolation And Cleanup](#test-isolation-and-cleanup). Keep permanent
    tests independent of the original executable and game assets.
-4. **Build and run.** Use MSVC Win32 in Debug and Release. Test both DX9 and DX6
-   when production code or related tests affect a DirectX path, including shared
-   services and upper modules that use it indirectly. Select the builds using
-   [Backend Validation Scope](#backend-validation-scope); build production code
-   as well as tests. [Discover and run the unit suites](#msvc-unit-builds), then
-   exercise changed runtime-guard or QOL branches in their configuration.
+4. **Build and run.** Build natively and [discover and run the unit suites](#native-unit-builds).
+   Add the builds required by [Validation Scope](#backend-validation-scope):
+   the Windows legacy build for code it compiles, a [trace comparison](#trace-tests)
+   for simulation changes, and every backend for Babylon changes. Build
+   production code as well as tests, then exercise changed runtime-guard or QOL
+   branches in their configuration.
 5. **Check host-dependent behavior.** Run relevant [system tests](#system-test-runs)
    on a suitable desktop. Run [disruptive tests](#disruptive-test-runs) separately
    when that coverage is needed. Record unavailable prerequisites and ignored
@@ -296,23 +303,54 @@ For header and macro tests, prefer stable behavior checks over release-specific 
 
 <a name="backend-validation-scope"></a>
 
-### 🖥️ Backend Validation Scope
+### 🖥️ Validation Scope
 
 Choose validation from the changed production paths and test dependencies, not
-only the module name or whether a test file was edited. Validation with both
-backends applies to production changes even when existing tests cover the code.
+only the module name or whether a test file was edited.
 
-| Changed code or tests | Required MSVC Win32 validation |
+| Changed code or tests | Required validation |
 | --- | --- |
-| DirectX backend code, backend tests, or shared `std` services used in a DirectX path | Build and test DX6 and DX9 in Debug and Release |
-| Renderer, input, or upper-module behavior that uses DirectX directly or through lower modules | Build and test DX6 and DX9 in Debug and Release |
-| Backend-independent behavior with no changed DirectX path or shared backend contract | Build affected production code and run its tests in Debug and Release on a representative backend |
+| Any engine code | Native build (Clang), unit suites in Debug |
+| Code the legacy Win32/DirectX 9 build compiles (until M6) | Also a Windows build (MinGW or MSVC) with its unit suites. DX6 is paused and not required |
+| Simulation behavior (physics, collision, AI, COG, game time, savegames) | Also a [trace comparison](#trace-tests) against the retail profile, and against the default profile when a QOL branch changed |
+| Memory handling, file or savegame parsing, 64-bit portability | Also a sanitizer build (`-DJONES3D_SANITIZE=ON`) |
+| Babylon interfaces or backends | Babylon's own tests against every backend, including Null, and its standalone build |
 
-For example, a change to an isolated `sith` physics calculation does not by itself
-require repeating the same tests with both graphics backends. A change that also
-alters rendering/input integration, shared structures, buffer ownership, or data
-contracts used by a DirectX path requires both. Trace the affected dependencies
-and explain the selected validation scope in the report.
+Trace the affected dependencies and explain the selected validation scope in the report.
+
+<a name="trace-tests"></a>
+
+### 🎞️ Trace Tests
+
+A trace test runs the whole game headless: it loads a savegame, feeds scripted
+input for a fixed number of frames with fixed game time, and writes the
+simulation state. Comparing state files shows whether a change altered the
+simulation. See [ADR-0003](arc42/09-decisions/ADR-0003-fidelity-split.md) and
+[chapter 8](arc42/08-crosscutting/README.md).
+
+```bash
+cd <game>/Resource
+<build>/Jones3D/Jones3D-headless --load ../SaveGames/<save>.nds --frames 1000 --state state.txt
+```
+
+Rules:
+
+- The reference for the retail profile is a build of the tagged baseline with
+  all simulation options set to retail. The default profile is compared against
+  the same baseline with its QOL options on.
+- Identical state files are the expected result. Any difference is investigated
+  before anything else changes; reference traces are never edited to make a
+  change pass.
+- The same run must give identical state files on 32-bit, 64-bit and sanitizer
+  builds.
+- Traces need game data, so they are not permanent unit tests. Record the
+  savegame, input script, frame count and build in the validation report.
+
+**Status:** the headless runner, scripted input and state files exist and are
+deterministic across 32-bit, 64-bit and sanitizer builds. Selecting the retail
+or default profile at run time waits for the QOL options to become runtime
+options; until then, the profile is the build's `JONES3D_QOL_IMPROVEMENTS`
+setting.
 
 <a name="deterministic-unit-and-regression-tests"></a>
 
@@ -358,6 +396,14 @@ DirectPlay-backed communication tests should stay deterministic until the recons
 <a name="original-engine-io-test-vectors"></a>
 
 ## 📦 Original-Engine I/O Test Vectors
+
+> **Historical procedure.** The capture harness below runs inside the original
+> `Indy3D.exe` and relies on the hook and RTI machinery that Jones3D EX removes
+> ([ADR-0004](arc42/09-decisions/ADR-0004-drop-binary-compatibility.md)). Existing
+> vectors keep their recorded provenance and stay valid. New vectors come from
+> the original game (for example savegames and traces) or the byte-exact
+> decompilation, with recorded provenance. The rules on provenance, failure
+> inputs and review below still apply.
 
 For reconstructed readers, writers, codecs, and other behavior-sensitive I/O,
 expected compatibility vectors must come from the selected original `Indy3D.exe`
@@ -511,9 +557,43 @@ Disabling normal tests also disables system tests. Disabling system tests forces
 disruptive tests off. Use separate build trees for backend and guard/QOL settings
 so an existing CMake cache does not silently select a different profile.
 
+<a name="native-unit-builds"></a>
+
+### 🐧 Native Unit Builds
+
+The default build on Linux and macOS. Clang is the tested compiler; GCC needs
+extra flags for now (`-D__cdecl= -D__stdcall= -D__fastcall=` and, for GCC 14+,
+`-Wno-error=incompatible-pointer-types`). On non-Windows hosts CMake selects the
+Null platform and the standalone build automatically.
+
+```bash
+cmake -S . -B build/native -G Ninja -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Debug
+cmake --build build/native
+ctest --test-dir build/native -N -L unit
+ctest --test-dir build/native --output-on-failure -L unit
+```
+
+Sanitizer build (GCC; Clang needs its sanitizer runtime installed):
+
+```bash
+cmake -S . -B build/asan -G Ninja -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DCMAKE_BUILD_TYPE=Debug -DJONES3D_SANITIZE=ON
+cmake --build build/asan
+ctest --test-dir build/asan --output-on-failure -L unit
+```
+
+Windows build with MinGW (i686), from any host:
+
+```bash
+cmake -S . -B build/mingw -G Ninja -DCMAKE_TOOLCHAIN_FILE=cmake/mingw-i686.cmake -DCMAKE_BUILD_TYPE=Debug -DJONES3D_BUILD_PROGRAMS=OFF
+cmake --build build/mingw
+```
+
+Under MinGW, `stdConffile` has 2 known failing cases (`stdConffileTest.c:447`,
+`:662`) that pass natively.
+
 <a name="msvc-unit-builds"></a>
 
-### 🛠️ MSVC Unit Builds
+### 🛠️ MSVC Unit Builds (legacy, until M6)
 
 Run these examples from the repository root in `cmd.exe` or a Visual Studio 2026
 Developer Command Prompt. They use MSVC Win32 and the Visual Studio 2026 generator,
@@ -521,7 +601,7 @@ which requires CMake 4.2 or newer. Use subdirectories under `build/codex` for
 local alternate configurations.
 
 Use both sets of commands when required by
-[Backend Validation Scope](#backend-validation-scope). For independent changes,
+[Validation Scope](#backend-validation-scope). For independent changes,
 choose the representative backend and run the affected unit suites in both
 Debug and Release.
 
@@ -633,6 +713,10 @@ the report; a unit-suite pass does not resolve them.
 <a name="ci-profiles"></a>
 
 ### 🤖 CI Profiles
+
+> The workflows below are inherited from OpenJones3D and cover the legacy MSVC
+> Win32 build. From milestone M5, CI builds and tests on Windows, Linux and
+> macOS, builds Babylon on its own, and checks includes and dependency licenses.
 
 Both backends use MSVC Win32 on the `windows-2025-vs2026` runner with
 the `Visual Studio 18 2026` CMake generator. The runner includes Visual Studio
@@ -825,12 +909,15 @@ Include the following in the change description or review reply:
 - Functions or macros covered, important cases, and any known coverage gaps.
 - Regression proof for fixes, or the reason it was unavailable, plus numerical
   tolerance rationale and coverage findings when collected.
-- MSVC/Win32 build trees, selected backends and scope rationale, Debug/Release
-  configuration, and guard/QOL settings, with the commands actually run.
+- Build trees (native, sanitizer, Windows), compiler, Debug/Release
+  configuration, guard/QOL settings and scope rationale, with the commands
+  actually run.
+- For simulation changes: the trace runs (savegame, input script, frame count,
+  profile, reference build) and whether the state files were identical.
 - Build results and discovered CTest suites. Report CTest executable totals and
   Unity case totals where available; distinguish passes, failures, ignores, and
   tests not run.
-- Original-binary identity and fixture provenance for compatibility vectors,
+- Fixture provenance for compatibility vectors,
   plus reproducibility results and documented intentional differences.
 - Host limitations and unresolved device/disruptive failures. Include initial
   intermittent failures, diagnostic reruns, timeouts, and remaining follow-up.
@@ -845,13 +932,10 @@ and workflow files before using these commands or claiming CI coverage.
 
 <a name="deferred-addresssanitizer-integration"></a>
 
-### 🛡️ Deferred AddressSanitizer Integration
+### 🛡️ AddressSanitizer In CI
 
-AddressSanitizer integration is deferred until the full engine reimplementation
-is complete. At that point, evaluate a separate MSVC Win32 sanitizer profile and
-validate its compiler/linker compatibility and test results before making it a
-required check. The current validation workflow does not require a sanitizer
-build. See [Microsoft's AddressSanitizer guidance](https://learn.microsoft.com/en-us/cpp/sanitizers/asan).
+Native sanitizer builds work locally (see [Native Unit Builds](#native-unit-builds)).
+Making them a required CI check is planned with the three-platform CI in M5.
 
 <a name="additional-module-commands"></a>
 
@@ -874,7 +958,7 @@ ctest --test-dir build\codex\dx9-win32 -C Debug --output-on-failure -R "^sith\.D
 ```
 
 These focused commands supplement the validation selected under
-[Backend Validation Scope](#backend-validation-scope).
+[Validation Scope](#backend-validation-scope).
 
 The `rdroid.Math` suite compares vector normalization, reciprocal scaling,
 axis-angle construction, and angle extraction against source-level arithmetic
