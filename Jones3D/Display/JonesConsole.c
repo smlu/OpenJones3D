@@ -451,7 +451,7 @@ int J3DAPI JonesConsole_JumpLevel(const SithConsoleCommand* pFunc, const char* p
     }
 
     size_t levelNum;
-    if ( !sscanf_s(pArg, "%d", &levelNum) )
+    if ( !sscanf_s(pArg, "%" J3D_SCN_SIZE, &levelNum) )
     {
         return 0;
     }

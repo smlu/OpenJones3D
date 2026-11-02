@@ -2057,7 +2057,7 @@ int J3DAPI sithCog_CogStatus(const SithConsoleCommand* pFunc, const char* pArg)
     SithCog* pCog;
     if ( !pWorld
         || !pArg
-        || sscanf_s(pArg, "%d", &index) != 1
+        || sscanf_s(pArg, "%" J3D_SCN_SIZE, &index) != 1
         || index > pWorld->numCogs
         || (pCog = &pWorld->aCogs[index], !pCog->pScript)
         || !pCog->pSymbolTable )

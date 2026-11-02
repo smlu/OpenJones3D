@@ -169,7 +169,7 @@ int J3DAPI sithMaterial_ReadMaterialsListText(SithWorld* pWorld, int bSkip)
 
     int nRead = 0;
     size_t  numMaterials;
-    if ( nRead = stdConffile_ScanLine(" world materials %d", &numMaterials), nRead != 1 )
+    if ( nRead = stdConffile_ScanLine(" world materials %" J3D_SCN_SIZE, &numMaterials), nRead != 1 )
     {
         if ( nRead < 0 )
         {

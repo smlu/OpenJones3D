@@ -240,7 +240,7 @@ int J3DAPI rdParticle_LoadEntry(const char* pFilename, rdParticle* pParticle)
     }
 
     int nRead = 0;
-    if ( nRead = stdConffile_ScanLine(" vertices %d", &pParticle->numVertices), nRead != 1 )
+    if ( nRead = stdConffile_ScanLine(" vertices %" J3D_SCN_SIZE, &pParticle->numVertices), nRead != 1 )
     {
         if ( nRead < 0 )
         {

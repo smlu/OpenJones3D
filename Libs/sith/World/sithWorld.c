@@ -1208,7 +1208,7 @@ int J3DAPI sithWorld_ReadGeoresourceText(SithWorld* pWorld, int bSkip)
     sithWorld_UpdateLoadProgress(50.0f);
 
     size_t numVerts;
-    int nRead =  stdConffile_ScanLine(" world vertices %d", &numVerts);
+    int nRead =  stdConffile_ScanLine(" world vertices %" J3D_SCN_SIZE, &numVerts);
     if ( nRead != 1 )
     {
         if ( nRead < 0 )
@@ -1241,7 +1241,7 @@ int J3DAPI sithWorld_ReadGeoresourceText(SithWorld* pWorld, int bSkip)
     pWorld->numVertices = numVerts;
 
     size_t numTexVerts;
-    if ( nRead = stdConffile_ScanLine(" world texture vertices %d", &numTexVerts), nRead != 1 )
+    if ( nRead = stdConffile_ScanLine(" world texture vertices %" J3D_SCN_SIZE, &numTexVerts), nRead != 1 )
     {
         if ( nRead < 0 )
         {

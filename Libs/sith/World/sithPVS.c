@@ -78,7 +78,7 @@ int J3DAPI sithPVS_ReadPVSText(SithWorld* pWorld, int bSkip)
         return 1;
     }
 
-    int rlen = stdConffile_ScanLine("pvs size: %d", &pWorld->sizePVS);
+    int rlen = stdConffile_ScanLine("pvs size: %" J3D_SCN_SIZE, &pWorld->sizePVS);
     if ( rlen != 1 ) {
         if ( rlen < 0 ) {
             goto eof_error;

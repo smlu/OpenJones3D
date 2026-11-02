@@ -35,6 +35,14 @@
 #   define J3D_ASSERT_SIZE32(expr, msg)
 #endif
 
+// Added: scanf conversion for a size_t argument. The original reads counts into size_t with %d, which only fills
+// all of it on 32-bit. 32-bit builds keep %d, so they parse exactly as before.
+#ifdef J3D_32BIT
+#   define J3D_SCN_SIZE "d"
+#else
+#   define J3D_SCN_SIZE "zu"
+#endif
+
 #cmakedefine J3D_QOL_IMPROVEMENTS
 #ifdef J3D_QOL_IMPROVEMENTS
   #define J3D_QOL_VALUE(valueQOL, valueNoQOL) (valueQOL)
