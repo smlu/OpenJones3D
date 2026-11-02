@@ -6,10 +6,12 @@
 // behind: the retail mutex, the Win32 signal handler, window creation and the
 // stdWin95 window/instance/Guid registration.
 //
-// Usage: Jones3D-headless [--load <save.nds>] [--frames <n>] [--state <file>]
+// Usage: Jones3D-headless [--load <save.nds>] [--frames <n>] [--step <msec>] [--state <file>]
 //   --load   answers the load-game dialog once with the given path; needs the
 //            "startMode = 1" (load game) entry in Jones.cfg, like on Windows.
 //   --frames frame limit of the engine's own game-state frame counter (default 1000).
+//   --step   milliseconds of virtual time each JonesMain_Process call advances the clock by
+//            (default 33). 0 keeps the real clock and makes the run nondeterministic again.
 //   --state  writes the final state block, plus one line per active thing, to a file.
 #include <stdio.h>
 #include <stdlib.h>
@@ -24,13 +26,17 @@
 #include <sith/World/sithSector.h>
 #include <sith/World/sithWorld.h>
 
+#include <std/Null/stdPlatformNull.h>
+
 #define HEADLESS_DEFAULT_FRAMES    1000
+#define HEADLESS_DEFAULT_STEP      33
+#define HEADLESS_MAX_STEP          1000
 #define HEADLESS_PRINT_INTERVAL    100
 
 static void Headless_PrintUsage(const char* pProgramName)
 {
-    fprintf(stderr, "usage: %s [--load <save.nds>] [--frames <n, default %d>] [--state <file>]\n",
-        pProgramName ? pProgramName : "Jones3D-headless", HEADLESS_DEFAULT_FRAMES);
+    fprintf(stderr, "usage: %s [--load <save.nds>] [--frames <n, default %d>] [--step <msec, default %d>] [--state <file>]\n",
+        pProgramName ? pProgramName : "Jones3D-headless", HEADLESS_DEFAULT_FRAMES, HEADLESS_DEFAULT_STEP);
 }
 
 static size_t Headless_CountActiveThings(const SithWorld* pWorld)
@@ -150,10 +156,11 @@ int main(int argc, char** argv)
     const char* pLoadPath    = NULL;
     const char* pStatePath   = NULL;
     size_t frameLimit        = HEADLESS_DEFAULT_FRAMES;
+    unsigned long step       = HEADLESS_DEFAULT_STEP;
 
     for ( int i = 1; i < argc; ++i )
     {
-        if ( !strcmp(argv[i], "--load") || !strcmp(argv[i], "--frames") || !strcmp(argv[i], "--state") )
+        if ( !strcmp(argv[i], "--load") || !strcmp(argv[i], "--frames") || !strcmp(argv[i], "--step") || !strcmp(argv[i], "--state") )
         {
             if ( i + 1 >= argc )
             {
@@ -179,6 +186,19 @@ int main(int argc, char** argv)
 
                 frameLimit = (size_t)value;
             }
+            else if ( !strcmp(argv[i], "--step") )
+            {
+                char* pEnd = NULL;
+                unsigned long value = strtoul(argv[++i], &pEnd, 10);
+                if ( !pEnd || *pEnd || value > HEADLESS_MAX_STEP )
+                {
+                    fprintf(stderr, "ERROR: Jones3D-headless: --step needs a millisecond count from 0 to %d!\n", HEADLESS_MAX_STEP);
+                    Headless_PrintUsage(argv[0]);
+                    return 1;
+                }
+
+                step = value;
+            }
             else
             {
                 pStatePath = argv[++i];
@@ -190,6 +210,14 @@ int main(int argc, char** argv)
             Headless_PrintUsage(argv[0]);
             return 1;
         }
+    }
+
+    printf("clock: %s, step %lu ms\n", step ? "virtual" : "real", step);
+
+    // Added: The virtual clock must be latched on before any code reads the time, startup included.
+    if ( step )
+    {
+        stdPlatformNull_UseVirtualClock(0x00100000);
     }
 
     // WinMain/DllMain: the global reset before anything else runs.
@@ -220,6 +248,14 @@ int main(int argc, char** argv)
     while ( 1 )
     {
         int result = JonesMain_Process();
+
+        // Added: fixed time step: the engine clock moves exactly one frame's worth of time per
+        // processed frame, so a run does not depend on the wall clock anymore.
+        if ( step )
+        {
+            stdPlatformNull_AdvanceClock((uint32_t)step);
+        }
+
         if ( result == -1 )
         {
             exitCode    = 1;

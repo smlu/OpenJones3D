@@ -13,6 +13,7 @@
 #include <std/General/stdColor.h>
 #include <std/General/stdMemory.h>
 #include <std/General/stdUtil.h>
+#include <std/Null/stdPlatformNull.h>
 
 #define STDDISPLAY_DEFAULT_WIDTH     640u
 #define STDDISPLAY_DEFAULT_HEIGHT    480u
@@ -840,6 +841,9 @@ uint32_t J3DAPI stdDisplay_EncodeFromRGB565(uint16_t pixel)
 
 int stdDisplay_Update(void)
 {
+    // Added: a present takes 1 ms of virtual time, like waiting for vsync, so loops that wait on the clock around it finish. No-op on the real clock.
+    stdPlatformNull_AdvanceClock(1);
+
     // Added: No presentation surface: the swap is a no-op and 0 stays the success answer.
     if ( !stdDisplay_bModeSet )
     {

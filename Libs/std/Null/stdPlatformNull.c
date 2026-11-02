@@ -16,11 +16,38 @@
 #include <std/General/stdPlatform.h>
 #include <std/General/stdPlatformSys.h>
 #include <std/General/stdUtil.h>
+#include <std/Null/stdPlatformNull.h>
+
+// Added: Virtual clock state for the headless runner. Once stdPlatformNull_UseVirtualClock latches
+// the clock on, stdPlatform_GetTimeMsec never reads the monotonic clock again, so nothing can slip
+// between the times the engine samples; only the two entry points below move the clock.
+static bool     stdPlatformNull_bVirtualClock = false;
+static tStdTime stdPlatformNull_virtualTime   = 0;
+
+void stdPlatformNull_UseVirtualClock(tStdTime startMsec)
+{
+    stdPlatformNull_virtualTime   = startMsec;
+    stdPlatformNull_bVirtualClock = true;
+}
+
+void stdPlatformNull_AdvanceClock(uint32_t msec)
+{
+    if ( stdPlatformNull_bVirtualClock )
+    {
+        // Added: tStdTime is unsigned int, so the addition already wraps at 2^32 like timeGetTime.
+        stdPlatformNull_virtualTime = (tStdTime)(stdPlatformNull_virtualTime + msec);
+    }
+}
 
 // Added: POSIX clock is used to honor the tStdTime wrap contract. The Windows timeGetTime
 // wraps at 2^32 (~49.7 days), so mask the nanosecond-converted milliseconds the same way.
 tStdTime stdPlatform_GetTimeMsec(void)
 {
+    if ( stdPlatformNull_bVirtualClock )
+    {
+        return stdPlatformNull_virtualTime;
+    }
+
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
 
@@ -30,6 +57,14 @@ tStdTime stdPlatform_GetTimeMsec(void)
 
 void J3DAPI stdPlatform_Sleep(uint32_t msec)
 {
+    // Added: On the virtual clock, sleeping means advancing it by the requested time: the caller
+    // sees the same time delta as a real sleep without ever blocking the (single) thread.
+    if ( stdPlatformNull_bVirtualClock )
+    {
+        stdPlatformNull_AdvanceClock(msec);
+        return;
+    }
+
     struct timespec req;
     uint64_t remaining = msec;
 
