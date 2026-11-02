@@ -61,16 +61,32 @@ J3D_EXTERN_C_START
 #define RD_ASSERTREL(condition) \
     J3D_ASSERTREL(condition, rdroid_g_pHS )
 
+#if defined(J3D_STANDALONE)
+extern rdLightMode rdroid_g_curLightingMode;
+#else
 #define rdroid_g_curLightingMode J3D_DECL_FAR_VAR(rdroid_g_curLightingMode, rdLightMode)
+#endif
 // extern rdLightMode rdroid_g_curLightingMode;
 
+#if defined(J3D_STANDALONE)
+extern tHostServices* rdroid_g_pHS;
+#else
 #define rdroid_g_pHS J3D_DECL_FAR_VAR(rdroid_g_pHS, tHostServices*)
+#endif
 // extern tHostServices *rdroid_g_pHS;
 
+#if defined(J3D_STANDALONE)
+extern rdGeometryMode rdroid_g_curGeometryMode;
+#else
 #define rdroid_g_curGeometryMode J3D_DECL_FAR_VAR(rdroid_g_curGeometryMode, rdGeometryMode)
+#endif
 // extern rdGeometryMode rdroid_g_curGeometryMode;
 
+#if defined(J3D_STANDALONE)
+extern rdRoidFlags rdroid_g_curRenderOptions;
+#else
 #define rdroid_g_curRenderOptions J3D_DECL_FAR_VAR(rdroid_g_curRenderOptions, rdRoidFlags)
+#endif
 // extern rdRoidFlags rdroid_g_curRenderOptions;
 
 void J3DAPI rdStartup();

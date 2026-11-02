@@ -11,6 +11,11 @@
 #include <std/General/stdUtil.h>
 #include <std/Win95/stdControl.h>
 
+#ifdef J3D_STANDALONE
+// Added: Standalone builds have no retail executable to hold these. *_ResetGlobals sets the starting values.
+int sithControl_g_controlOptions;
+#endif
+
 #define STDCONTROL_MAXBINDINGS 8
 
 typedef struct sSithControlFunctionBinding
@@ -18,7 +23,7 @@ typedef struct sSithControlFunctionBinding
     size_t numBindings;
     SithControlBinding aBindings[STDCONTROL_MAXBINDINGS];
 } SithControlFunctionBinding;
-static_assert(sizeof(SithControlFunctionBinding) == 100, "sizeof(SithControlFunctionBinding) == 100");
+J3D_ASSERT_SIZE32(sizeof(SithControlFunctionBinding) == 100, "sizeof(SithControlFunctionBinding) == 100");
 
 static bool bControlStartup = false; // Added: Init to false
 static bool bControlOpen    = false; // Added: Init to false
@@ -752,57 +757,57 @@ void sithControl_RegisterKeyboardBindings(void)
 {
     if ( bControlStartup )
     {
-        sithControl_BindControl(SITHCONTROL_FORWARD, DIK_UP, (SithControlBindFlag)0);
-        sithControl_BindControl(SITHCONTROL_BACK, DIK_DOWN, (SithControlBindFlag)0);
-        sithControl_BindControl(SITHCONTROL_LEFT, DIK_LEFT, (SithControlBindFlag)0);
-        sithControl_BindControl(SITHCONTROL_RIGHT, DIK_RIGHT, (SithControlBindFlag)0);
-        sithControl_BindControl(SITHCONTROL_TURNLEFT, DIK_LEFT, (SithControlBindFlag)0);
-        sithControl_BindControl(SITHCONTROL_TURNRIGHT, DIK_RIGHT, (SithControlBindFlag)0);
-        sithControl_BindControl(SITHCONTROL_LOOK, DIK_NUMPAD0, (SithControlBindFlag)0);
-        sithControl_BindControl(SITHCONTROL_LOOK, DIK_INSERT, (SithControlBindFlag)0);
-        sithControl_BindControl(SITHCONTROL_STPLEFT, DIK_A, (SithControlBindFlag)0);
-        sithControl_BindControl(SITHCONTROL_STPRIGHT, DIK_S, (SithControlBindFlag)0);
-        sithControl_BindControl(SITHCONTROL_CRAWLTOGGLE, DIK_C, (SithControlBindFlag)0);
-        sithControl_BindControl(SITHCONTROL_WEAPONTOGGLE, DIK_SPACE, (SithControlBindFlag)0);
-        sithControl_BindControl(SITHCONTROL_LIGHTERTOGGLE, DIK_L, (SithControlBindFlag)0);
-        sithControl_BindControl(SITHCONTROL_JUMP, DIK_X, (SithControlBindFlag)0);
-        sithControl_BindControl(SITHCONTROL_JUMP, DIK_LMENU, (SithControlBindFlag)0);
-        sithControl_BindControl(SITHCONTROL_JUMP, DIK_RMENU, (SithControlBindFlag)0);
-        sithControl_BindControl(SITHCONTROL_ACT1, DIK_LSHIFT, (SithControlBindFlag)0);
-        sithControl_BindControl(SITHCONTROL_ACT1, DIK_RSHIFT, (SithControlBindFlag)0);
-        sithControl_BindControl(SITHCONTROL_FIRE1, DIK_RCONTROL, (SithControlBindFlag)0);
-        sithControl_BindControl(SITHCONTROL_FIRE1, DIK_LCONTROL, (SithControlBindFlag)0);
-        sithControl_BindControl(SITHCONTROL_ACT3, DIK_Z, (SithControlBindFlag)0);
-        sithControl_BindControl(SITHCONTROL_ACTIVATE, DIK_GRAVE, (SithControlBindFlag)0);
-        sithControl_BindControl(SITHCONTROL_ACT2, DIK_LCONTROL, (SithControlBindFlag)0);
-        sithControl_BindControl(SITHCONTROL_ACT2, DIK_RCONTROL, (SithControlBindFlag)0);
-        sithControl_BindControl(SITHCONTROL_WSELECT0, DIK_0, (SithControlBindFlag)0);
-        sithControl_BindControl(SITHCONTROL_WSELECT1, DIK_1, (SithControlBindFlag)0);
-        sithControl_BindControl(SITHCONTROL_WSELECT2, DIK_2, (SithControlBindFlag)0);
-        sithControl_BindControl(SITHCONTROL_WSELECT3, DIK_3, (SithControlBindFlag)0);
-        sithControl_BindControl(SITHCONTROL_WSELECT4, DIK_4, (SithControlBindFlag)0);
-        sithControl_BindControl(SITHCONTROL_WSELECT5, DIK_5, (SithControlBindFlag)0);
-        sithControl_BindControl(SITHCONTROL_WSELECT6, DIK_6, (SithControlBindFlag)0);
-        sithControl_BindControl(SITHCONTROL_WSELECT7, DIK_7, (SithControlBindFlag)0);
-        sithControl_BindControl(SITHCONTROL_WSELECT8, DIK_8, (SithControlBindFlag)0);
-        sithControl_BindControl(SITHCONTROL_WSELECT9, DIK_9, (SithControlBindFlag)0);
-        sithControl_BindControl(SITHCONTROL_WSELECT10, DIK_G, (SithControlBindFlag)0);
-        sithControl_BindControl(SITHCONTROL_WSELECT11, DIK_P, (SithControlBindFlag)0);
-        sithControl_BindControl(SITHCONTROL_WSELECT12, DIK_Q, (SithControlBindFlag)0);
-        sithControl_BindControl(SITHCONTROL_WSELECT13, DIK_W, (SithControlBindFlag)0);
-        sithControl_BindControl(SITHCONTROL_WSELECT14, DIK_E, (SithControlBindFlag)0);
-        sithControl_BindControl(SITHCONTROL_WSELECT15, DIK_R, (SithControlBindFlag)0);
-        sithControl_BindControl(SITHCONTROL_WSELECT16, DIK_T, (SithControlBindFlag)0);
-        sithControl_BindControl(SITHCONTROL_PREVWEAPON, DIK_COMMA, (SithControlBindFlag)0);
-        sithControl_BindControl(SITHCONTROL_NEXTWEAPON, DIK_PERIOD, (SithControlBindFlag)0);
-        sithControl_BindControl(SITHCONTROL_GAMESAVE, DIK_F9, (SithControlBindFlag)0);
-        sithControl_BindControl(SITHCONTROL_MAP, DIK_M, (SithControlBindFlag)0);
-        sithControl_BindControl(SITHCONTROL_INCREASE, DIK_EQUALS, (SithControlBindFlag)0);
-        sithControl_BindControl(SITHCONTROL_DECREASE, DIK_MINUS, (SithControlBindFlag)0);
-        sithControl_BindControl(SITHCONTROL_TALK, DIK_F10, (SithControlBindFlag)0);
-        sithControl_BindControl(SITHCONTROL_SCREENSHOT, DIK_F12, (SithControlBindFlag)0);
-        sithControl_BindControl(SITHCONTROL_HEALTH, DIK_H, (SithControlBindFlag)0);
-        sithControl_BindControl(SITHCONTROL_CHALK, DIK_K, (SithControlBindFlag)0);
+        sithControl_BindControl(SITHCONTROL_FORWARD, STDKEY_UP, (SithControlBindFlag)0);
+        sithControl_BindControl(SITHCONTROL_BACK, STDKEY_DOWN, (SithControlBindFlag)0);
+        sithControl_BindControl(SITHCONTROL_LEFT, STDKEY_LEFT, (SithControlBindFlag)0);
+        sithControl_BindControl(SITHCONTROL_RIGHT, STDKEY_RIGHT, (SithControlBindFlag)0);
+        sithControl_BindControl(SITHCONTROL_TURNLEFT, STDKEY_LEFT, (SithControlBindFlag)0);
+        sithControl_BindControl(SITHCONTROL_TURNRIGHT, STDKEY_RIGHT, (SithControlBindFlag)0);
+        sithControl_BindControl(SITHCONTROL_LOOK, STDKEY_NUMPAD0, (SithControlBindFlag)0);
+        sithControl_BindControl(SITHCONTROL_LOOK, STDKEY_INSERT, (SithControlBindFlag)0);
+        sithControl_BindControl(SITHCONTROL_STPLEFT, STDKEY_A, (SithControlBindFlag)0);
+        sithControl_BindControl(SITHCONTROL_STPRIGHT, STDKEY_S, (SithControlBindFlag)0);
+        sithControl_BindControl(SITHCONTROL_CRAWLTOGGLE, STDKEY_C, (SithControlBindFlag)0);
+        sithControl_BindControl(SITHCONTROL_WEAPONTOGGLE, STDKEY_SPACE, (SithControlBindFlag)0);
+        sithControl_BindControl(SITHCONTROL_LIGHTERTOGGLE, STDKEY_L, (SithControlBindFlag)0);
+        sithControl_BindControl(SITHCONTROL_JUMP, STDKEY_X, (SithControlBindFlag)0);
+        sithControl_BindControl(SITHCONTROL_JUMP, STDKEY_LMENU, (SithControlBindFlag)0);
+        sithControl_BindControl(SITHCONTROL_JUMP, STDKEY_RMENU, (SithControlBindFlag)0);
+        sithControl_BindControl(SITHCONTROL_ACT1, STDKEY_LSHIFT, (SithControlBindFlag)0);
+        sithControl_BindControl(SITHCONTROL_ACT1, STDKEY_RSHIFT, (SithControlBindFlag)0);
+        sithControl_BindControl(SITHCONTROL_FIRE1, STDKEY_RCONTROL, (SithControlBindFlag)0);
+        sithControl_BindControl(SITHCONTROL_FIRE1, STDKEY_LCONTROL, (SithControlBindFlag)0);
+        sithControl_BindControl(SITHCONTROL_ACT3, STDKEY_Z, (SithControlBindFlag)0);
+        sithControl_BindControl(SITHCONTROL_ACTIVATE, STDKEY_GRAVE, (SithControlBindFlag)0);
+        sithControl_BindControl(SITHCONTROL_ACT2, STDKEY_LCONTROL, (SithControlBindFlag)0);
+        sithControl_BindControl(SITHCONTROL_ACT2, STDKEY_RCONTROL, (SithControlBindFlag)0);
+        sithControl_BindControl(SITHCONTROL_WSELECT0, STDKEY_0, (SithControlBindFlag)0);
+        sithControl_BindControl(SITHCONTROL_WSELECT1, STDKEY_1, (SithControlBindFlag)0);
+        sithControl_BindControl(SITHCONTROL_WSELECT2, STDKEY_2, (SithControlBindFlag)0);
+        sithControl_BindControl(SITHCONTROL_WSELECT3, STDKEY_3, (SithControlBindFlag)0);
+        sithControl_BindControl(SITHCONTROL_WSELECT4, STDKEY_4, (SithControlBindFlag)0);
+        sithControl_BindControl(SITHCONTROL_WSELECT5, STDKEY_5, (SithControlBindFlag)0);
+        sithControl_BindControl(SITHCONTROL_WSELECT6, STDKEY_6, (SithControlBindFlag)0);
+        sithControl_BindControl(SITHCONTROL_WSELECT7, STDKEY_7, (SithControlBindFlag)0);
+        sithControl_BindControl(SITHCONTROL_WSELECT8, STDKEY_8, (SithControlBindFlag)0);
+        sithControl_BindControl(SITHCONTROL_WSELECT9, STDKEY_9, (SithControlBindFlag)0);
+        sithControl_BindControl(SITHCONTROL_WSELECT10, STDKEY_G, (SithControlBindFlag)0);
+        sithControl_BindControl(SITHCONTROL_WSELECT11, STDKEY_P, (SithControlBindFlag)0);
+        sithControl_BindControl(SITHCONTROL_WSELECT12, STDKEY_Q, (SithControlBindFlag)0);
+        sithControl_BindControl(SITHCONTROL_WSELECT13, STDKEY_W, (SithControlBindFlag)0);
+        sithControl_BindControl(SITHCONTROL_WSELECT14, STDKEY_E, (SithControlBindFlag)0);
+        sithControl_BindControl(SITHCONTROL_WSELECT15, STDKEY_R, (SithControlBindFlag)0);
+        sithControl_BindControl(SITHCONTROL_WSELECT16, STDKEY_T, (SithControlBindFlag)0);
+        sithControl_BindControl(SITHCONTROL_PREVWEAPON, STDKEY_COMMA, (SithControlBindFlag)0);
+        sithControl_BindControl(SITHCONTROL_NEXTWEAPON, STDKEY_PERIOD, (SithControlBindFlag)0);
+        sithControl_BindControl(SITHCONTROL_GAMESAVE, STDKEY_F9, (SithControlBindFlag)0);
+        sithControl_BindControl(SITHCONTROL_MAP, STDKEY_M, (SithControlBindFlag)0);
+        sithControl_BindControl(SITHCONTROL_INCREASE, STDKEY_EQUALS, (SithControlBindFlag)0);
+        sithControl_BindControl(SITHCONTROL_DECREASE, STDKEY_MINUS, (SithControlBindFlag)0);
+        sithControl_BindControl(SITHCONTROL_TALK, STDKEY_F10, (SithControlBindFlag)0);
+        sithControl_BindControl(SITHCONTROL_SCREENSHOT, STDKEY_F12, (SithControlBindFlag)0);
+        sithControl_BindControl(SITHCONTROL_HEALTH, STDKEY_H, (SithControlBindFlag)0);
+        sithControl_BindControl(SITHCONTROL_CHALK, STDKEY_K, (SithControlBindFlag)0);
 
         // Note this if scope is removed in release version but we'll keep it
         if ( (sithMain_g_sith_mode.debugModeFlags & SITHDEBUG_INEDITOR) != 0 )
@@ -944,27 +949,27 @@ void sithControl_EnableDevControls(bool bEnable)
 {
     if ( bEnable )
     {
-        sithControl_BindControl(SITHCONTROL_CAMERAMODE, DIK_F11, (SithControlBindFlag)0); // Added: Changed to DIK_F11 from DIK_GRAVE; and _ACTIVEATE to SITHCONTROL_CAMERAMODE
+        sithControl_BindControl(SITHCONTROL_CAMERAMODE, STDKEY_F11, (SithControlBindFlag)0); // Added: Changed to STDKEY_F11 from STDKEY_GRAVE; and _ACTIVEATE to SITHCONTROL_CAMERAMODE
 
         // Following are bindings from debug version
-        sithControl_BindControl(SITHCONTROL_DEBUG, DIK_BACK, (SithControlBindFlag)0);
-        sithControl_BindControl(SITHCONTROL_GAMMA, DIK_F5, (SithControlBindFlag)0);
+        sithControl_BindControl(SITHCONTROL_DEBUG, STDKEY_BACK, (SithControlBindFlag)0);
+        sithControl_BindControl(SITHCONTROL_GAMMA, STDKEY_F5, (SithControlBindFlag)0);
 
-        sithControl_BindControl(SITHCONTROL_MLOOK, DIK_V, (SithControlBindFlag)0);
-        sithControl_BindControl(SITHCONTROL_PITCH, DIK_PRIOR, SITHCONTROLBIND_INVERT_AXIS);
-        sithControl_BindControl(SITHCONTROL_PITCH, DIK_NEXT, (SithControlBindFlag)0);
-        sithControl_BindControl(SITHCONTROL_CENTER, DIK_HOME, (SithControlBindFlag)0);
-        sithControl_BindControl(SITHCONTROL_CENTER, DIK_NUMPAD5, (SithControlBindFlag)0);
+        sithControl_BindControl(SITHCONTROL_MLOOK, STDKEY_V, (SithControlBindFlag)0);
+        sithControl_BindControl(SITHCONTROL_PITCH, STDKEY_PRIOR, SITHCONTROLBIND_INVERT_AXIS);
+        sithControl_BindControl(SITHCONTROL_PITCH, STDKEY_NEXT, (SithControlBindFlag)0);
+        sithControl_BindControl(SITHCONTROL_CENTER, STDKEY_HOME, (SithControlBindFlag)0);
+        sithControl_BindControl(SITHCONTROL_CENTER, STDKEY_NUMPAD5, (SithControlBindFlag)0);
     }
     else
     {
         sithControl_UnbindFunction(SITHCONTROL_DEBUG);
         sithControl_UnbindFunction(SITHCONTROL_GAMMA);
 
-        sithControl_UnbindFunctionControl(SITHCONTROL_MLOOK, DIK_V);
-        sithControl_UnbindFunctionControl(SITHCONTROL_PITCH, DIK_PRIOR);
-        sithControl_UnbindFunctionControl(SITHCONTROL_PITCH, DIK_NEXT);
-        sithControl_UnbindFunctionControl(SITHCONTROL_CENTER, DIK_HOME);
-        sithControl_UnbindFunctionControl(SITHCONTROL_CENTER, DIK_NUMPAD5);
+        sithControl_UnbindFunctionControl(SITHCONTROL_MLOOK, STDKEY_V);
+        sithControl_UnbindFunctionControl(SITHCONTROL_PITCH, STDKEY_PRIOR);
+        sithControl_UnbindFunctionControl(SITHCONTROL_PITCH, STDKEY_NEXT);
+        sithControl_UnbindFunctionControl(SITHCONTROL_CENTER, STDKEY_HOME);
+        sithControl_UnbindFunctionControl(SITHCONTROL_CENTER, STDKEY_NUMPAD5);
     }
 }

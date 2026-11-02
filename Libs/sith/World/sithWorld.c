@@ -1,5 +1,6 @@
 #include "sithWorld.h"
 #include <j3dcore/j3dhook.h>
+#include <stddef.h>
 
 #include <rdroid/Engine/rdMaterial.h>
 #include <rdroid/Math/rdMath.h>
@@ -30,6 +31,14 @@
 #include <std/General/stdMemory.h>
 #include <std/General/stdPlatform.h>
 #include <std/General/stdUtil.h>
+
+#ifdef J3D_STANDALONE
+// Added: Standalone builds have no retail executable to hold these. *_ResetGlobals sets the starting values.
+SithWorld* sithWorld_g_pCurrentWorld;
+SithWorld* sithWorld_g_pStaticWorld;
+SithWorld* sithWorld_g_pLastLoadedWorld;
+int sithWorld_g_bLoading;
+#endif
 
 #define SITHWORLD_COPYRIGHTLINELEN  32
 #define SITHWORLD_NUMCOPYRIGHTLINES 38
@@ -72,14 +81,14 @@ typedef struct sCndWorld
     uint32_t aSurfaces;
     uint32_t numSectors;
     uint32_t aSectors;
-    size_t numAIClasses;
-    size_t sizeAIClasses;
+    uint32_t numAIClasses;
+    uint32_t sizeAIClasses;
     uint32_t aAIClasses;
     uint32_t numModels;
     uint32_t sizeModels;
     uint32_t aModels;
-    size_t numSprites;
-    size_t sizeSprites;
+    uint32_t numSprites;
+    uint32_t sizeSprites;
     uint32_t aSprites;
     uint32_t numKeyframes;
     uint32_t sizeKeyframes;
@@ -105,6 +114,8 @@ typedef struct sCndWorld
     uint32_t sizePVS;
     uint32_t aPVS;
 } CndWorld;
+// Fixed: the former size_t fields are now uint32_t (4 bytes on 32-bit), so every field is fixed-width
+// and the cnd record keeps the exact 32-bit size on 64-bit builds too.
 static_assert(sizeof(CndWorld) == 1564, "sizeof(CndWorld) == 1564");
 
 static bool bWorldStartup = false; // Altered: Init to 0
@@ -841,8 +852,8 @@ void J3DAPI sithWorld_GetMemoryUsage(const SithWorld* pWorld, size_t(*aMemUsed)[
     SITH_ASSERTREL(aMemUsed && aCount);
     SITH_ASSERTREL(pWorld);
 
-    memset(aMemUsed, 0, sizeof(*aMemUsed)); static_assert(sizeof(*aMemUsed) == 0x44, "");
-    memset(aCount, 0, sizeof(*aCount)); static_assert(sizeof(*aCount) == 0x44, "");
+    memset(aMemUsed, 0, sizeof(*aMemUsed)); J3D_ASSERT_SIZE32(sizeof(*aMemUsed) == 0x44, "");
+    memset(aCount, 0, sizeof(*aCount)); J3D_ASSERT_SIZE32(sizeof(*aCount) == 0x44, "");
 
     (*aCount)[0] = pWorld->numMaterials;
     for ( size_t i = 0; i < pWorld->numMaterials; ++i )
@@ -868,7 +879,7 @@ void J3DAPI sithWorld_GetMemoryUsage(const SithWorld* pWorld, size_t(*aMemUsed)[
     (*aCount)[5] = pWorld->numSectors;
     for ( size_t i = 0; i < pWorld->numSectors; ++i )
     {
-        (*aMemUsed)[5] += sizeof(*pWorld->aSectors[i].aVertIdxs) * pWorld->aSectors[i].numVertices + sizeof(SithSector); static_assert(sizeof(*pWorld->aSectors[i].aVertIdxs) == 4, ""); // 4 - sizeof(int)
+        (*aMemUsed)[5] += sizeof(*pWorld->aSectors[i].aVertIdxs) * pWorld->aSectors[i].numVertices + sizeof(SithSector); J3D_ASSERT_SIZE32(sizeof(*pWorld->aSectors[i].aVertIdxs) == 4, ""); // 4 - sizeof(int)
     }
 
     (*aCount)[6] = pWorld->numSounds;
@@ -877,14 +888,14 @@ void J3DAPI sithWorld_GetMemoryUsage(const SithWorld* pWorld, size_t(*aMemUsed)[
     (*aCount)[8] = pWorld->numCogScripts;
     for ( size_t i = 0; i < pWorld->numCogScripts; ++i )
     {
-        (*aMemUsed)[8] += sizeof(*pWorld->aCogScripts[i].pCode) * pWorld->aCogScripts[i].codeSize + sizeof(SithCogScript); static_assert(sizeof(*pWorld->aCogScripts[i].pCode) == 4, ""); // 4 - sizeof(uint32_t)
+        (*aMemUsed)[8] += sizeof(*pWorld->aCogScripts[i].pCode) * pWorld->aCogScripts[i].codeSize + sizeof(SithCogScript); J3D_ASSERT_SIZE32(sizeof(*pWorld->aCogScripts[i].pCode) == 4, ""); // 4 - sizeof(uint32_t)
         (*aMemUsed)[8] += sizeof(SithCogSymbol) * pWorld->aCogScripts[i].pSymbolTable->numUsedSymbols + sizeof(SithCogSymbolTable);
     }
 
     (*aCount)[7] = pWorld->numCogs;
     for ( size_t i = 0; i < pWorld->numCogs; ++i )
     {
-        (*aMemUsed)[7] += sizeof(SithCogSymbol) * pWorld->aCogs[i].pSymbolTable->numUsedSymbols + sizeof(SithCog) + sizeof(SithCogSymbolTable); static_assert((sizeof(SithCog) + sizeof(SithCogSymbolTable)) == 0x5100, "");
+        (*aMemUsed)[7] += sizeof(SithCogSymbol) * pWorld->aCogs[i].pSymbolTable->numUsedSymbols + sizeof(SithCog) + sizeof(SithCogSymbolTable); J3D_ASSERT_SIZE32((sizeof(SithCog) + sizeof(SithCogSymbolTable)) == 0x5100, "");
     }
 
     (*aCount)[10] = pWorld->numModels;
@@ -912,7 +923,7 @@ void J3DAPI sithWorld_GetMemoryUsage(const SithWorld* pWorld, size_t(*aMemUsed)[
     for ( size_t i = 0; i < pWorld->numSprites; ++i )
     {
         (*aMemUsed)[13] +=
-            (sizeof(rdVector3) + sizeof(rdVector2)) * pWorld->aSprites[i].face.numVertices; static_assert(sizeof(rdVector3) + sizeof(rdVector2) == 20, ""); //  sizeof(rdVector3) - offset ;  sizeof(rdVector2) - aTexVerts
+            (sizeof(rdVector3) + sizeof(rdVector2)) * pWorld->aSprites[i].face.numVertices; J3D_ASSERT_SIZE32(sizeof(rdVector3) + sizeof(rdVector2) == 20, ""); //  sizeof(rdVector3) - offset ;  sizeof(rdVector2) - aTexVerts
     }
 
     (*aCount)[14] = pWorld->numThingTemplates;
@@ -1073,7 +1084,7 @@ uint32_t J3DAPI sithWorld_CalcWorldChecksum(SithWorld* pWorld, uint32_t seed)
         checksum = stdUtil_CalcChecksum((const uint8_t*)pWorld->aCogScripts[i].pCode, pWorld->aCogScripts[i].codeSize, checksum); // TODO: should the code size be multiplied by sizeof(uint32_t)?
     }
 
-    checksum = stdUtil_CalcChecksum((const uint8_t*)pWorld->aVertices, sizeof(*pWorld->aVertices) * pWorld->numVertices, checksum); static_assert(sizeof(*pWorld->aVertices) == 12, "");
+    checksum = stdUtil_CalcChecksum((const uint8_t*)pWorld->aVertices, sizeof(*pWorld->aVertices) * pWorld->numVertices, checksum); J3D_ASSERT_SIZE32(sizeof(*pWorld->aVertices) == 12, "");
 
     for ( size_t i = 0; i < pWorld->numThingTemplates; ++i )
     {
@@ -1197,7 +1208,7 @@ int J3DAPI sithWorld_ReadGeoresourceText(SithWorld* pWorld, int bSkip)
     sithWorld_UpdateLoadProgress(50.0f);
 
     size_t numVerts;
-    int nRead =  stdConffile_ScanLine(" world vertices %d", &numVerts);
+    int nRead =  stdConffile_ScanLine(" world vertices %" J3D_SCN_SIZE, &numVerts);
     if ( nRead != 1 )
     {
         if ( nRead < 0 )
@@ -1230,7 +1241,7 @@ int J3DAPI sithWorld_ReadGeoresourceText(SithWorld* pWorld, int bSkip)
     pWorld->numVertices = numVerts;
 
     size_t numTexVerts;
-    if ( nRead = stdConffile_ScanLine(" world texture vertices %d", &numTexVerts), nRead != 1 )
+    if ( nRead = stdConffile_ScanLine(" world texture vertices %" J3D_SCN_SIZE, &numTexVerts), nRead != 1 )
     {
         if ( nRead < 0 )
         {
@@ -1476,12 +1487,69 @@ int J3DAPI sithWorld_LoadEntryBinary(SithWorld* pWorld, const char* pFilePath)
     sithWorld_UpdateLoadProgress(progress);
 
     // Read world header
-    // TODO: CndWorld object shouldn't be read directly to pWorld due to SithWorld struct having pointer types.
-    //       Read CndWorld object to temp CndWorld and copy filed by field to pWorld
-    if ( sith_g_pHS->pFileRead(fh, pWorld, sizeof(CndWorld)) != sizeof(CndWorld) )
+    // Fixed: read into CndWorld and copy field by field. The original read the file record straight into
+    //        SithWorld, whose counts and pointers are wider on 64-bit. Pointer fields still get the file's value,
+    //        as the raw read did.
+    CndWorld cndWorld;
+    if ( sith_g_pHS->pFileRead(fh, &cndWorld, sizeof(CndWorld)) != sizeof(CndWorld) )
     {
         goto error;
     }
+
+    static_assert(offsetof(CndWorld, numSounds) == offsetof(SithWorld, numSounds), "CndWorld and SithWorld share the layout up to numSounds");
+    memcpy(pWorld, &cndWorld, offsetof(CndWorld, numSounds));
+    pWorld->numSounds                     = cndWorld.numSounds;
+    pWorld->numMaterials                  = cndWorld.numMaterials;
+    pWorld->sizeMaterials                 = cndWorld.sizeMaterials;
+    pWorld->numVertices                   = cndWorld.numVertices;
+    pWorld->numTexVertices                = cndWorld.numTexVertices;
+    pWorld->numAdjoins                    = cndWorld.numAdjoins;
+    pWorld->numSurfaces                   = cndWorld.numSurfaces;
+    pWorld->numSectors                    = cndWorld.numSectors;
+    pWorld->numAIClasses                  = cndWorld.numAIClasses;
+    pWorld->sizeAIClasses                 = cndWorld.sizeAIClasses;
+    pWorld->numModels                     = cndWorld.numModels;
+    pWorld->sizeModels                    = cndWorld.sizeModels;
+    pWorld->numSprites                    = cndWorld.numSprites;
+    pWorld->sizeSprites                   = cndWorld.sizeSprites;
+    pWorld->numKeyframes                  = cndWorld.numKeyframes;
+    pWorld->sizeKeyframes                 = cndWorld.sizeKeyframes;
+    pWorld->numPuppetClasses              = cndWorld.numPuppetClasses;
+    pWorld->sizePuppetClasses             = cndWorld.sizePuppetClasses;
+    pWorld->numSoundClasses               = cndWorld.numSoundClasses;
+    pWorld->sizeSoundClasses              = cndWorld.sizeSoundClasses;
+    pWorld->numCogScripts                 = cndWorld.numCogScripts;
+    pWorld->sizeCogScripts                = cndWorld.sizeCogScripts;
+    pWorld->numCogs                       = cndWorld.numCogs;
+    pWorld->sizeCogs                      = cndWorld.sizeCogs;
+    pWorld->numThingTemplates             = cndWorld.numThingTemplates;
+    pWorld->sizeThingTemplates            = cndWorld.sizeThingTemplates;
+    pWorld->numThings                     = cndWorld.numThings;
+    pWorld->lastThingIdx                  = cndWorld.lastThingIdx;
+    pWorld->sizePVS                       = cndWorld.sizePVS;
+
+    pWorld->aMaterials                    = (rdMaterial*)(uintptr_t)cndWorld.aMaterials;
+    pWorld->apMatArray                    = (rdMaterial**)(uintptr_t)cndWorld.apMatArray;
+    pWorld->aVertices                     = (rdVector3*)(uintptr_t)cndWorld.aVertices;
+    pWorld->aTransformedVertices          = (rdVector3*)(uintptr_t)cndWorld.aTransformedVertices;
+    pWorld->aVertexRenderTickIds          = (uint32_t*)(uintptr_t)cndWorld.aVertexRenderTickIds;
+    pWorld->aTexVerticies                 = (rdVector2*)(uintptr_t)cndWorld.aTexVerticies;
+    pWorld->aVertDynamicLights            = (rdVector4*)(uintptr_t)cndWorld.aVertDynamicLights;
+    pWorld->aVertDynamicLightsRenderTicks = (uint32_t*)(uintptr_t)cndWorld.aVertDynamicLightsRenderTicks;
+    pWorld->aAdjoins                      = (SithSurfaceAdjoin*)(uintptr_t)cndWorld.aAdjoins;
+    pWorld->aSurfaces                     = (SithSurface*)(uintptr_t)cndWorld.aSurfaces;
+    pWorld->aSectors                      = (SithSector*)(uintptr_t)cndWorld.aSectors;
+    pWorld->aAIClasses                    = (SithAIClass*)(uintptr_t)cndWorld.aAIClasses;
+    pWorld->aModels                       = (rdModel3*)(uintptr_t)cndWorld.aModels;
+    pWorld->aSprites                      = (rdSprite3*)(uintptr_t)cndWorld.aSprites;
+    pWorld->aKeyframes                    = (rdKeyframe*)(uintptr_t)cndWorld.aKeyframes;
+    pWorld->aPuppetClasses                = (SithPuppetClass*)(uintptr_t)cndWorld.aPuppetClasses;
+    pWorld->aSoundClasses                 = (SithSoundClass*)(uintptr_t)cndWorld.aSoundClasses;
+    pWorld->aCogScripts                   = (SithCogScript*)(uintptr_t)cndWorld.aCogScripts;
+    pWorld->aCogs                         = (SithCog*)(uintptr_t)cndWorld.aCogs;
+    pWorld->aThingTemplates               = (SithThing*)(uintptr_t)cndWorld.aThingTemplates;
+    pWorld->aThings                       = (SithThing*)(uintptr_t)cndWorld.aThings;
+    pWorld->aPVS                          = (uint8_t*)(uintptr_t)cndWorld.aPVS;
 
     curPos = sith_g_pHS->pFileTell(fh);
     progress = (float)curPos / endPos;
@@ -1515,7 +1583,7 @@ int J3DAPI sithWorld_LoadEntryBinary(SithWorld* pWorld, const char* pFilePath)
         sithWorld_UpdateLoadProgress(progress);
         STD_STRCPY(aCurSection, aBinarySectionParsers[i].pName);
 
-        Sleep(0); // ??
+        stdPlatform_Sleep(0); // ??
                   // From win32 docs: A value of zero causes the thread to relinquish the remainder of its time slice to any other thread
                   //                 that is ready to run. If there are no other threads ready to run, the function returns immediately, and the thread continues execution.
 

@@ -1,3 +1,4 @@
+#include <stdarg.h>
 #include <stdio.h>
 
 #include "std.h"
@@ -49,12 +50,6 @@ void std_InstallHooks(void)
     J3D_HOOKFUNC(stdFileSize);
     J3D_HOOKFUNC(stdFilePrintf);
     J3D_HOOKFUNC(stdFileSeek);
-
-    // Hook on stdio_open, stdio_close & stdio_flush due to stdio_services using stdFile* functions which might have conflicting FILE* object
-    // Note on debug version this should be skipped
-    J3DHookFunction(stdio_open_ADDR, (void*)stdFileOpen);
-    J3DHookFunction(stdio_close_ADDR, (void*)stdFileClose);
-    J3DHookFunction(stdio_flush_ADDR, (void*)stdFileFlush);
 }
 
 void std_ResetGlobals(void)
@@ -82,7 +77,13 @@ void J3DAPI stdStartup(tHostServices* pHS)
         // TODO: Remove when all round and rand float functions are replaced && updated
         // TODO: consider setting FE_DOWNWARD for round functions (lrintf); i.e.: fesetround(FE_DOWNWARD) to mimic same behavior as OG
         short  tmp = 0;
+#if defined(_MSC_VER)
         __asm  fnstcw word ptr[tmp];
+#elif defined(__i386__) || defined(__x86_64__)
+        __asm__ __volatile__("fnstcw %0" : "=m"(tmp)); // Altered: GCC/MinGW inline assembler syntax for the same instruction
+#else
+        // Added: fnstcw is an x87 instruction, so on other architectures the control word stays 0.
+#endif
         word_183962C = tmp;
 
         // The following flags control in binary (Indy3D.exe) FPU rounding control flags for frndint (floorf, ceilf) and fistp (lrintf)
@@ -150,7 +151,7 @@ int stdConsolePrintf(const char* pFormat, ...)
     vsnprintf_s(std_g_genBuffer, STD_ARRAYLEN(std_g_genBuffer), STD_ARRAYLEN(std_g_genBuffer) - 1, pFormat, args);
     va_end(args);
 
-    stdConsole_WriteConsole(std_g_genBuffer, FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
+    stdConsole_WriteConsole(std_g_genBuffer, STDCONSOLE_COLOR_RED | STDCONSOLE_COLOR_GREEN | STDCONSOLE_COLOR_BLUE);
     return sizeof(std_g_genBuffer);
 }
 

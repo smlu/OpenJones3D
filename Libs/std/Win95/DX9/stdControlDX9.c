@@ -1,5 +1,12 @@
+#include <std/Win95/DX9/stdSysTypesDX9.h>
 #include <std/Win95/stdControl.h>
+#include <std/Win95/stdControlTestApi.h>
 #include <std/Win95/stdWin95.h>
+
+#ifndef DIRECTINPUT_VERSION
+#  define DIRECTINPUT_VERSION 0x0800
+#endif
+#include <dinput.h>
 
 #include <j3dcore/j3dhook.h>
 #include <std/General/std.h>
@@ -8,12 +15,119 @@
 #include <std/General/stdUtil.h>
 #include <std/RTI/symbols.h>
 
-#include <Xinput.h>
+#include <xinput.h>
 #pragma comment(lib,"Xinput.lib")
 
 #include <wbemidl.h>
 #include <oleauto.h>
 #pragma comment(lib, "wbemuuid.lib")
+
+// Added: The engine's key numbers must stay equal to the scan codes DirectInput reports.
+static_assert(STDKEY_ESCAPE == DIK_ESCAPE, "STDKEY_ESCAPE");
+static_assert(STDKEY_1 == DIK_1, "STDKEY_1");
+static_assert(STDKEY_2 == DIK_2, "STDKEY_2");
+static_assert(STDKEY_3 == DIK_3, "STDKEY_3");
+static_assert(STDKEY_4 == DIK_4, "STDKEY_4");
+static_assert(STDKEY_5 == DIK_5, "STDKEY_5");
+static_assert(STDKEY_6 == DIK_6, "STDKEY_6");
+static_assert(STDKEY_7 == DIK_7, "STDKEY_7");
+static_assert(STDKEY_8 == DIK_8, "STDKEY_8");
+static_assert(STDKEY_9 == DIK_9, "STDKEY_9");
+static_assert(STDKEY_0 == DIK_0, "STDKEY_0");
+static_assert(STDKEY_MINUS == DIK_MINUS, "STDKEY_MINUS");
+static_assert(STDKEY_EQUALS == DIK_EQUALS, "STDKEY_EQUALS");
+static_assert(STDKEY_BACK == DIK_BACK, "STDKEY_BACK");
+static_assert(STDKEY_TAB == DIK_TAB, "STDKEY_TAB");
+static_assert(STDKEY_Q == DIK_Q, "STDKEY_Q");
+static_assert(STDKEY_W == DIK_W, "STDKEY_W");
+static_assert(STDKEY_E == DIK_E, "STDKEY_E");
+static_assert(STDKEY_R == DIK_R, "STDKEY_R");
+static_assert(STDKEY_T == DIK_T, "STDKEY_T");
+static_assert(STDKEY_Y == DIK_Y, "STDKEY_Y");
+static_assert(STDKEY_U == DIK_U, "STDKEY_U");
+static_assert(STDKEY_I == DIK_I, "STDKEY_I");
+static_assert(STDKEY_O == DIK_O, "STDKEY_O");
+static_assert(STDKEY_P == DIK_P, "STDKEY_P");
+static_assert(STDKEY_LBRACKET == DIK_LBRACKET, "STDKEY_LBRACKET");
+static_assert(STDKEY_RBRACKET == DIK_RBRACKET, "STDKEY_RBRACKET");
+static_assert(STDKEY_RETURN == DIK_RETURN, "STDKEY_RETURN");
+static_assert(STDKEY_LCONTROL == DIK_LCONTROL, "STDKEY_LCONTROL");
+static_assert(STDKEY_A == DIK_A, "STDKEY_A");
+static_assert(STDKEY_S == DIK_S, "STDKEY_S");
+static_assert(STDKEY_D == DIK_D, "STDKEY_D");
+static_assert(STDKEY_F == DIK_F, "STDKEY_F");
+static_assert(STDKEY_G == DIK_G, "STDKEY_G");
+static_assert(STDKEY_H == DIK_H, "STDKEY_H");
+static_assert(STDKEY_J == DIK_J, "STDKEY_J");
+static_assert(STDKEY_K == DIK_K, "STDKEY_K");
+static_assert(STDKEY_L == DIK_L, "STDKEY_L");
+static_assert(STDKEY_SEMICOLON == DIK_SEMICOLON, "STDKEY_SEMICOLON");
+static_assert(STDKEY_APOSTROPHE == DIK_APOSTROPHE, "STDKEY_APOSTROPHE");
+static_assert(STDKEY_GRAVE == DIK_GRAVE, "STDKEY_GRAVE");
+static_assert(STDKEY_LSHIFT == DIK_LSHIFT, "STDKEY_LSHIFT");
+static_assert(STDKEY_BACKSLASH == DIK_BACKSLASH, "STDKEY_BACKSLASH");
+static_assert(STDKEY_Z == DIK_Z, "STDKEY_Z");
+static_assert(STDKEY_X == DIK_X, "STDKEY_X");
+static_assert(STDKEY_C == DIK_C, "STDKEY_C");
+static_assert(STDKEY_V == DIK_V, "STDKEY_V");
+static_assert(STDKEY_B == DIK_B, "STDKEY_B");
+static_assert(STDKEY_N == DIK_N, "STDKEY_N");
+static_assert(STDKEY_M == DIK_M, "STDKEY_M");
+static_assert(STDKEY_COMMA == DIK_COMMA, "STDKEY_COMMA");
+static_assert(STDKEY_PERIOD == DIK_PERIOD, "STDKEY_PERIOD");
+static_assert(STDKEY_SLASH == DIK_SLASH, "STDKEY_SLASH");
+static_assert(STDKEY_RSHIFT == DIK_RSHIFT, "STDKEY_RSHIFT");
+static_assert(STDKEY_MULTIPLY == DIK_MULTIPLY, "STDKEY_MULTIPLY");
+static_assert(STDKEY_LMENU == DIK_LMENU, "STDKEY_LMENU");
+static_assert(STDKEY_SPACE == DIK_SPACE, "STDKEY_SPACE");
+static_assert(STDKEY_CAPITAL == DIK_CAPITAL, "STDKEY_CAPITAL");
+static_assert(STDKEY_F1 == DIK_F1, "STDKEY_F1");
+static_assert(STDKEY_F2 == DIK_F2, "STDKEY_F2");
+static_assert(STDKEY_F3 == DIK_F3, "STDKEY_F3");
+static_assert(STDKEY_F4 == DIK_F4, "STDKEY_F4");
+static_assert(STDKEY_F5 == DIK_F5, "STDKEY_F5");
+static_assert(STDKEY_F6 == DIK_F6, "STDKEY_F6");
+static_assert(STDKEY_F7 == DIK_F7, "STDKEY_F7");
+static_assert(STDKEY_F8 == DIK_F8, "STDKEY_F8");
+static_assert(STDKEY_F9 == DIK_F9, "STDKEY_F9");
+static_assert(STDKEY_F10 == DIK_F10, "STDKEY_F10");
+static_assert(STDKEY_NUMLOCK == DIK_NUMLOCK, "STDKEY_NUMLOCK");
+static_assert(STDKEY_NUMPAD7 == DIK_NUMPAD7, "STDKEY_NUMPAD7");
+static_assert(STDKEY_NUMPAD8 == DIK_NUMPAD8, "STDKEY_NUMPAD8");
+static_assert(STDKEY_NUMPAD9 == DIK_NUMPAD9, "STDKEY_NUMPAD9");
+static_assert(STDKEY_SUBTRACT == DIK_SUBTRACT, "STDKEY_SUBTRACT");
+static_assert(STDKEY_NUMPAD4 == DIK_NUMPAD4, "STDKEY_NUMPAD4");
+static_assert(STDKEY_NUMPAD5 == DIK_NUMPAD5, "STDKEY_NUMPAD5");
+static_assert(STDKEY_NUMPAD6 == DIK_NUMPAD6, "STDKEY_NUMPAD6");
+static_assert(STDKEY_ADD == DIK_ADD, "STDKEY_ADD");
+static_assert(STDKEY_NUMPAD1 == DIK_NUMPAD1, "STDKEY_NUMPAD1");
+static_assert(STDKEY_NUMPAD2 == DIK_NUMPAD2, "STDKEY_NUMPAD2");
+static_assert(STDKEY_NUMPAD3 == DIK_NUMPAD3, "STDKEY_NUMPAD3");
+static_assert(STDKEY_NUMPAD0 == DIK_NUMPAD0, "STDKEY_NUMPAD0");
+static_assert(STDKEY_DECIMAL == DIK_DECIMAL, "STDKEY_DECIMAL");
+static_assert(STDKEY_F11 == DIK_F11, "STDKEY_F11");
+static_assert(STDKEY_F12 == DIK_F12, "STDKEY_F12");
+static_assert(STDKEY_F13 == DIK_F13, "STDKEY_F13");
+static_assert(STDKEY_F14 == DIK_F14, "STDKEY_F14");
+static_assert(STDKEY_F15 == DIK_F15, "STDKEY_F15");
+static_assert(STDKEY_NUMPADEQUALS == DIK_NUMPADEQUALS, "STDKEY_NUMPADEQUALS");
+static_assert(STDKEY_NUMPADENTER == DIK_NUMPADENTER, "STDKEY_NUMPADENTER");
+static_assert(STDKEY_RCONTROL == DIK_RCONTROL, "STDKEY_RCONTROL");
+static_assert(STDKEY_NUMPADCOMMA == DIK_NUMPADCOMMA, "STDKEY_NUMPADCOMMA");
+static_assert(STDKEY_DIVIDE == DIK_DIVIDE, "STDKEY_DIVIDE");
+static_assert(STDKEY_RMENU == DIK_RMENU, "STDKEY_RMENU");
+static_assert(STDKEY_HOME == DIK_HOME, "STDKEY_HOME");
+static_assert(STDKEY_UP == DIK_UP, "STDKEY_UP");
+static_assert(STDKEY_PRIOR == DIK_PRIOR, "STDKEY_PRIOR");
+static_assert(STDKEY_LEFT == DIK_LEFT, "STDKEY_LEFT");
+static_assert(STDKEY_RIGHT == DIK_RIGHT, "STDKEY_RIGHT");
+static_assert(STDKEY_END == DIK_END, "STDKEY_END");
+static_assert(STDKEY_DOWN == DIK_DOWN, "STDKEY_DOWN");
+static_assert(STDKEY_NEXT == DIK_NEXT, "STDKEY_NEXT");
+static_assert(STDKEY_INSERT == DIK_INSERT, "STDKEY_INSERT");
+static_assert(STDKEY_DELETE == DIK_DELETE, "STDKEY_DELETE");
+static_assert(STDKEY_LWIN == DIK_LWIN, "STDKEY_LWIN");
+static_assert(STDKEY_RWIN == DIK_RWIN, "STDKEY_RWIN");
 
 #define STDCONTROL_COMSAFE_RELEASE(p) { if (p) { (p)->lpVtbl->Release(p); (p) = NULL; } }
 

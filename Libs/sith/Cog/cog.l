@@ -12,6 +12,7 @@ E			[Ee][+-]?{D}+
 #include <std/General/stdUtil.h>
 
 #include <stdio.h>
+#include <stdlib.h>
 
 static YY_CHAR aLexerCurSymText[256] = {0};
 

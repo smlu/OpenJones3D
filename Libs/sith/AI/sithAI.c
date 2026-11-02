@@ -21,6 +21,13 @@
 #include <std/General/stdUtil.h>
 #include <stdlib.h>
 
+#ifdef J3D_STANDALONE
+// Added: Standalone builds have no retail executable to hold these. *_ResetGlobals sets the starting values.
+int sithAI_g_bOpen;
+SithAIControlBlock sithAI_g_aControlBlocks[256];
+int sithAI_g_lastUsedAIIndex;
+#endif
+
 static size_t numFreeAIs = 0; // Added: Init to 0
 static size_t aFreeAIIndices[STD_ARRAYLEN(sithAI_g_aControlBlocks)];
 
@@ -522,7 +529,7 @@ void J3DAPI sithAI_EmitEvent(SithAIControlBlock* pLocal, SithAIEventType event, 
             }
             break;
         default:
-            cogParam = (int)pObject;
+            cogParam = (int)(intptr_t)pObject;
             bSendCogEvent = true;
             break;
     };
@@ -708,7 +715,7 @@ int J3DAPI sithAI_ProcessUnhandledEvent(SithAIControlBlock* pLocal, SithAIEventT
         }
         case SITHAI_EVENT_MODECHANGED:
         {
-            if ( (pLocal->mode & SITHAI_MODE_CHASE_GOAL) == 0 || ((SithAIMode)pObject & SITHAI_MODE_CHASE_GOAL) != 0 )
+            if ( (pLocal->mode & SITHAI_MODE_CHASE_GOAL) == 0 || ((SithAIMode)(intptr_t)pObject & SITHAI_MODE_CHASE_GOAL) != 0 )
             {
                 return 0;
             }
@@ -725,8 +732,8 @@ int J3DAPI sithAI_ProcessUnhandledEvent(SithAIControlBlock* pLocal, SithAIEventT
                 return 1;
             }
 
-            sithAIMove_AISetMovePos(pLocal, &pLocal->vecUnknown5, 1.7f);
-            sithAIMove_AISetLookPosEyeLevel(pLocal, &pLocal->vecUnknown5);
+            sithAIMove_AISetMovePos(pLocal, &pLocal->lastGoalSeenPos, 1.7f);
+            sithAIMove_AISetLookPosEyeLevel(pLocal, &pLocal->lastGoalSeenPos);
             return 0;
         }
         case SITHAI_EVENT_TOUCHED:

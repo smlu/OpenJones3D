@@ -18,7 +18,7 @@ int J3DAPI sithDSSThing_UpdateState(const SithThing* pThing, DPID toID, SithMess
 int J3DAPI sithDSSThing_ProcessStateUpdate(const SithMessage* pMsg);
 int J3DAPI sithDSSThing_PlaySound(const SithThing* pThing, const rdVector3* pPos, tSoundHandle hSnd, float volume, float pan, SoundPlayFlag playflags, int guid, DPID idTo, SithMessageStream outstream);
 int J3DAPI sithDSSThing_ProcessPlaySound(const SithMessage* pMsg);
-int J3DAPI sithDSSThing_PlaySoundMode(const SithThing* pThing, int16_t mode, int channel, float a4);
+int J3DAPI sithDSSThing_PlaySoundMode(const SithThing* pThing, int16_t mode, int channel, float selectionRatio);
 int J3DAPI sithDSSThing_ProcessPlaySoundMode(const SithMessage* pMsg);
 int J3DAPI sithDSSThing_PlayKey(const SithThing* pThing, const rdKeyframe* pKey, rdKeyframeFlags flags, int16_t lo, unsigned int trackGUID, DPID idTo, SithMessageStream outstream);
 int J3DAPI sithDSSThing_ProcessPlayKey(const SithMessage* pMsg);

@@ -12,6 +12,12 @@
 #include <std/General/stdUtil.h>
 
 #include <math.h>
+#include <stdlib.h>
+
+#ifdef J3D_STANDALONE
+// Added: Standalone builds have no retail executable to hold these. *_ResetGlobals sets the starting values.
+tHashTable* sithAIClass_g_pHashtable;
+#endif
 
 SithAIClass* J3DAPI sithAIClass_CacheFind(const char* pName);
 void J3DAPI sithAIClass_CacheAdd(SithAIClass* pClass);
@@ -140,7 +146,7 @@ int J3DAPI sithAIClass_ReadStaticAIClassesListBinary(tFileHandle fh, SithWorld* 
     for ( size_t i = 0; i < numAIClasses; ++i )
     {
         char aFilename[64];
-        static_assert(sizeof(aFilename) == sizeof(pWorld->aAIClasses[i].aName), "Array size mismatch");
+        J3D_ASSERT_SIZE32(sizeof(aFilename) == sizeof(pWorld->aAIClasses[i].aName), "Array size mismatch");
         if ( sith_g_pHS->pFileRead(fh, aFilename, STD_ARRAYLEN(aFilename)) != STD_ARRAYLEN(aFilename) || !sithAIClass_Load(pWorld, aFilename) )
         {
             // TODO: maybe add logging here

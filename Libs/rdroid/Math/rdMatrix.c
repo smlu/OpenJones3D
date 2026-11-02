@@ -7,6 +7,17 @@
 
 #include <std/General/stdMath.h>
 
+#ifdef J3D_STANDALONE
+// Added: Standalone builds have no retail executable to hold these. *_ResetGlobals sets the starting values.
+const rdMatrix34 rdroid_g_identMatrix34 = {
+    { { 1.0f }, { 0.0f }, { 0.0f } },
+    { { 0.0f }, { 1.0f }, { 0.0f } },
+    { { 0.0f }, { 0.0f }, { 1.0f } },
+    { { 0.0f }, { 0.0f }, { 0.0f } }
+};
+#endif
+
+
 
 void rdMatrix_InstallHooks(void)
 {
@@ -39,6 +50,8 @@ void rdMatrix_InstallHooks(void)
 
 void rdMatrix_ResetGlobals(void)
 {
+#ifndef J3D_STANDALONE
+// Altered: The standalone definition is const data, and only the injected build unprotects .rdata for this write.
     static const rdMatrix34 rdroid_g_identMatrix34_tmp = {
       { { 1.0f }, { 0.0f }, { 0.0f } },
       { { 0.0f }, { 1.0f }, { 0.0f } },
@@ -46,6 +59,7 @@ void rdMatrix_ResetGlobals(void)
       { { 0.0f }, { 0.0f }, { 0.0f } }
     };
     memcpy((rdMatrix34*)&rdroid_g_identMatrix34, &rdroid_g_identMatrix34_tmp, sizeof(rdroid_g_identMatrix34));
+#endif
 }
 
 void J3DAPI rdMatrix_Build34(rdMatrix34* res, const rdVector3* pyr, const rdVector3* pos)

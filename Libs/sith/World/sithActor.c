@@ -32,6 +32,7 @@
 
 #include <std/Win95/stdComm.h>
 
+#include <errno.h>
 #include <stdlib.h>
 
 static float sithActor_headRotDampRate = 10.0f; // Added

@@ -8,9 +8,21 @@ J3D_EXTERN_C_START
 
 typedef void (J3DAPI* tStackTracePrintFunc)(const char*, ...);
 
+// Local wall-clock time, broken into the fields the engine reads from the system clock.
+typedef struct sStdLocalTime
+{
+    uint16_t year, month, day, hour, minute, second;
+} StdLocalTime;
+
 int J3DAPI stdPlatform_InitServices(tHostServices* pHS);
 void J3DAPI stdPlatform_ClearServices(tHostServices* pHS);
 tStdTime stdPlatform_GetTimeMsec(void);
+
+// Suspends the calling thread for the given number of milliseconds.
+void J3DAPI stdPlatform_Sleep(uint32_t msec);
+
+// Fills the given struct with the current local date and time.
+void J3DAPI stdPlatform_GetLocalTime(StdLocalTime* pTime);
 
 J3DNORETURN void J3DAPI stdPlatform_Assert(const char* pErrorStr, const char* pFilename, int linenum);
 int stdPlatform_Printf(const char* format, ...);

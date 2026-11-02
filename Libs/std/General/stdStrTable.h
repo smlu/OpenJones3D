@@ -4,6 +4,10 @@
 #include <std/types.h>
 #include <std/RTI/addresses.h>
 
+#include <ctype.h>
+#include <stdlib.h>
+#include <wchar.h>
+
 J3D_EXTERN_C_START
 
 int J3DAPI stdStrTable_Load(tStringTable* pStrTable, const char* pFilename);

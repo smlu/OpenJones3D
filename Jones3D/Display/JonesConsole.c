@@ -28,6 +28,12 @@
 #include <std/Win95/stdDisplay.h>
 #include <std/Win95/stdWin95.h>
 
+#ifdef J3D_STANDALONE
+// Added: Standalone builds have no retail executable to hold these. *_ResetGlobals sets the starting values.
+int JonesConsole_g_bVisible;
+int JonesConsole_g_bStarted;
+#endif
+
 #define JONESCONSOLE_COMMANDLINEID 103
 
 static bool JonesConsole_bOpened = false;
@@ -104,7 +110,7 @@ int JonesConsole_Startup(void)
         return 1;
     }
 
-    sithConsole_RegisterPrintFunctions(JonesConsole_PrintText, 0, JonesConsole_FlushToDisplay);
+    sithConsole_RegisterPrintFunctions((SithConsoleWriteTextFunc)JonesConsole_PrintText, 0, JonesConsole_FlushToDisplay); // Altered: Cast keeps the original's returned text index while matching the callback type
 
     memset(JonesConsole_aUnused_552770, 0, sizeof(JonesConsole_aUnused_552770));// TODO: ??
 
@@ -445,7 +451,7 @@ int J3DAPI JonesConsole_JumpLevel(const SithConsoleCommand* pFunc, const char* p
     }
 
     size_t levelNum;
-    if ( !sscanf_s(pArg, "%d", &levelNum) )
+    if ( !sscanf_s(pArg, "%" J3D_SCN_SIZE, &levelNum) )
     {
         return 0;
     }

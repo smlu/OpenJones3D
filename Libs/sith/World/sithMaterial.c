@@ -169,7 +169,7 @@ int J3DAPI sithMaterial_ReadMaterialsListText(SithWorld* pWorld, int bSkip)
 
     int nRead = 0;
     size_t  numMaterials;
-    if ( nRead = stdConffile_ScanLine(" world materials %d", &numMaterials), nRead != 1 )
+    if ( nRead = stdConffile_ScanLine(" world materials %" J3D_SCN_SIZE, &numMaterials), nRead != 1 )
     {
         if ( nRead < 0 )
         {
@@ -433,7 +433,7 @@ int J3DAPI sithMaterial_ReadMaterialsListBinary(tFileHandle fh, SithWorld* pWorl
     STD_ZEROMEM(aMatInfos, sizeInfos);
 
     // Read the size of pixeldata buffer from CND file
-    size_t sizePixelBuffers;
+    uint32_t sizePixelBuffers; // Fixed: was size_t, which a 4-byte read only half fills on 64-bit
     size_t nRead = sith_g_pHS->pFileRead(fh, &sizePixelBuffers, sizeof(uint32_t));
     if ( nRead != sizeof(uint32_t) )
     {

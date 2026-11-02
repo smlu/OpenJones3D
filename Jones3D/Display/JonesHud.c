@@ -1,12 +1,13 @@
 #include "JonesHud.h"
 #include "JonesHudConstants.h"
+#include <Jones3D/Display/JonesHudSys.h>
 
 #include <j3dcore/j3dhook.h>
 
 #include <Jones3D/Display/jonesConfig.h>
 #include <Jones3D/Display/JonesReticle.h>
-#include <Jones3D/Main/jonesLevel.h>
-#include <Jones3D/Main/jonesMain.h>
+#include <Jones3D/Main/JonesLevel.h>
+#include <Jones3D/Main/JonesMain.h>
 #include <Jones3D/Main/jonesString.h>
 #include <Jones3D/Play/jonesCog.h>
 #include <Jones3D/Play/jonesInventory.h>
@@ -53,6 +54,7 @@
 
 #include <math.h>
 #include <stdbool.h>
+#include <stdlib.h>
 
 #define JONESHUD_CREDITS_SPEEDFACTOR    0.5f // default 1.5
 
@@ -166,7 +168,7 @@ static JonesHudMenuItem* JonesHud_pCurInvChangedItem   = NULL;
 static rdMaterial* JonesHud_pArrowUp   = NULL; // unused
 static rdMaterial* JonesHud_pArrowDown = NULL; // unused
 
-static HANDLE JonesHud_hProcessHelp; // Unused anymore
+static tSysHandle JonesHud_hProcessHelp; // Unused anymore
 
 static int JonesHud_msecItemChangedShowDuration  = 2000;
 static float JonesHud_itemChangedSlideEaseInRate = 4000.0f;
@@ -337,7 +339,7 @@ void J3DAPI JonesHud_RenderChangedItem(const JonesHudMenuItem* pItem, float scal
 
 void JonesHud_InitializeGameStatistics(void);
 
-HANDLE J3DAPI JonesHud_OpenHelp(HANDLE process);
+tSysHandle J3DAPI JonesHud_OpenHelp(tSysHandle process);
 
 void JonesHud_InstallHooks(void)
 {
@@ -887,7 +889,7 @@ int JonesHud_Open(void)
     //
     // Setup HUD camera
     //
-    rdCamera_sub_4C60B0(true);
+    rdCamera_SetOverlayDepthRange(true);
 
     JonesHud_pHudCamera = rdCamera_New(10.0f, 0, 1.0f, 100.0f, 1.0f);
     if ( !JonesHud_pHudCamera )
@@ -933,7 +935,7 @@ int JonesHud_Open(void)
     rdVector4 hudAmbientColor = { .red = 1.0f, .green = 1.0f, .blue = 1.0f, .alpha = 0.0f };
     rdCamera_SetAmbientLight(JonesHud_pHudCamera, &hudAmbientColor);
 
-    rdCamera_sub_4C60B0(false);
+    rdCamera_SetOverlayDepthRange(false);
 
     //
     // Initialize HUD state variables
@@ -1361,7 +1363,7 @@ int J3DAPI JonesHud_SetCanvasSize(int width, int height)
         return 0;
     }
 
-    rdCamera_sub_4C60B0(true); // This changes camera z plane
+    rdCamera_SetOverlayDepthRange(true); // This changes camera z plane
     if ( JonesHud_pHudCanvas )
     {
         rdCanvas_Free(JonesHud_pHudCanvas);
@@ -1378,7 +1380,7 @@ int J3DAPI JonesHud_SetCanvasSize(int width, int height)
     }
 
     rdCamera_SetFrustrum(JonesHud_pHudCamera, JonesHud_pHudCamera->pFrustum, 0, 0, width - 1, height - 1);
-    rdCamera_sub_4C60B0(false);
+    rdCamera_SetOverlayDepthRange(false);
     return 1;
 }
 
@@ -2036,7 +2038,7 @@ void J3DAPI JonesHud_DrawIndicatorBar(const rdVector4* pPos, float scale, const 
         pPoly->matCelNum    = 0;
         pPoly->numVertices  = 0;
 
-        D3DTLVERTEX vert;
+        StdVertexTL vert;
         vert.sx  = pPos->x;
         vert.sy  = pPos->y;
         vert.sz  = pPos->z;
@@ -2046,7 +2048,7 @@ void J3DAPI JonesHud_DrawIndicatorBar(const rdVector4* pPos, float scale, const 
 
         size_t vertNum = 0;
 
-        LPD3DTLVERTEX pOutVert = pPoly->aVertices;
+        StdVertexTL* pOutVert = pPoly->aVertices;
         *pOutVert = vert;
 
         ++pPoly->numVertices;
@@ -2188,7 +2190,7 @@ void J3DAPI JonesHud_Draw(const rdMaterial* pMaterial, const JonesHudRect* rect,
         pPoly->aVertIntensities[0].blue  = pColor->z;
         pPoly->aVertIntensities[0].alpha = pColor->alpha;
 
-        LPD3DTLVERTEX pCurOutVert = pPoly->aVertices;
+        StdVertexTL* pCurOutVert = pPoly->aVertices;
         pCurOutVert->sx = rect->x;
         pCurOutVert->sy = rect->y;
         pCurOutVert->sz = z;
@@ -2263,29 +2265,29 @@ void JonesHud_ProcessInventoryMenu(void)
                 ++v2;
             }
 
-            bActivateKeyPressed |= JonesHud_GetKey(DIK_RETURN);
-            if ( JonesHud_GetKey(DIK_NUMPADENTER) | bActivateKeyPressed )
+            bActivateKeyPressed |= JonesHud_GetKey(STDKEY_RETURN);
+            if ( JonesHud_GetKey(STDKEY_NUMPADENTER) | bActivateKeyPressed )
             {
                 JonesHud_MenuActivateItem();
             }
 
-            else if ( JonesHud_GetKey(DIK_UP) )
+            else if ( JonesHud_GetKey(STDKEY_UP) )
             {
                 JonesHud_MenuMoveUp();
             }
 
-            else if ( JonesHud_GetKey(DIK_DOWN) )
+            else if ( JonesHud_GetKey(STDKEY_DOWN) )
             {
                 JonesHud_MenuMoveDown();
             }
         }
 
-        if ( JonesHud_GetKey(DIK_RIGHT) )
+        if ( JonesHud_GetKey(STDKEY_RIGHT) )
         {
             JonesHud_MenuMoveRight();
         }
 
-        else if ( JonesHud_GetKey(DIK_LEFT) )
+        else if ( JonesHud_GetKey(STDKEY_LEFT) )
         {
             JonesHud_MenuMoveLeft();
         }
@@ -2599,19 +2601,19 @@ int J3DAPI JonesHud_GetKey(unsigned int keyId)
     JonesHud_bKeyStateUpdated = 0;
     switch ( keyId )
     {
-        case DIK_UP:
+        case STDKEY_UP:
             bKeyPressed = sithControl_GetKey(SITHCONTROL_FORWARD, &numPressed);
             break;
 
-        case DIK_LEFT:
+        case STDKEY_LEFT:
             bKeyPressed = sithControl_GetKey(SITHCONTROL_TURNLEFT, &numPressed);
             break;
 
-        case DIK_RIGHT:
+        case STDKEY_RIGHT:
             bKeyPressed = sithControl_GetKey(SITHCONTROL_TURNRIGHT, &numPressed);
             break;
 
-        case DIK_DOWN:
+        case STDKEY_DOWN:
             bKeyPressed = sithControl_GetKey(SITHCONTROL_BACK, &numPressed);
             break;
 
@@ -3355,7 +3357,7 @@ void JonesHud_MenuActivateItem(void)
             if ( pStatistics && sithGamesave_LockGameStatistics() )
             {
                 pStatistics->aLevelStatistic[pStatistics->curLevelNum].iqPoints = jonesInventory_GetTotalIQPoints() - JonesHud_levelStartIQPoints;
-                HWND hwnd = stdWin95_GetWindow();
+                tSysWindow hwnd = stdWin95_GetWindow();
                 jonesConfig_ShowStatisticsDialog(hwnd, pStatistics);
                 sithGamesave_UnlockGameStatistics();
             }
@@ -3368,10 +3370,7 @@ void JonesHud_MenuActivateItem(void)
             //       so this scope could be skipped
             if ( JonesHud_hProcessHelp )
             {
-                DWORD exitCode;
-                GetExitCodeProcess(JonesHud_hProcessHelp, &exitCode);
-                if ( exitCode != STILL_ACTIVE )
-                    //if ( exitCode != 259 )
+                if ( !JonesHudSys_IsProcessRunning(JonesHud_hProcessHelp) ) // Altered: GetExitCodeProcess check moved to JonesHudSys_IsProcessRunning
                 {
                     JonesHud_hProcessHelp = NULL;
                 }
@@ -3387,7 +3386,7 @@ void JonesHud_MenuActivateItem(void)
             {
                 JonesHud_RestoreTreasuresStatistics();
                 char aFilePath[JONESCONFIG_GAMESAVE_FILEPATHSIZE] = { 0 };
-                HWND hwnd = stdWin95_GetWindow();
+                tSysWindow hwnd = stdWin95_GetWindow();
                 dlgResult = jonesConfig_GetSaveGameFilePath(hwnd, aFilePath);
                 if ( dlgResult == 1 )
                 {
@@ -3403,7 +3402,7 @@ void JonesHud_MenuActivateItem(void)
             if ( jonesCog_g_bEnableGamesave )   // load game
             {
                 STD_ZEROMEM(JonesHud_aSlectedNdsFilePath, sizeof(JonesHud_aSlectedNdsFilePath));
-                HWND hwnd = stdWin95_GetWindow();
+                tSysWindow hwnd = stdWin95_GetWindow();
                 dlgResult = jonesConfig_GetLoadGameFilePath(hwnd, JonesHud_aSlectedNdsFilePath);
                 if ( dlgResult == 1 )
                 {
@@ -3423,13 +3422,13 @@ void JonesHud_MenuActivateItem(void)
 
         case JONESHUD_MENU_GAME_SETTINGS: // game play options
         {
-            HWND hwnd = stdWin95_GetWindow();
+            tSysWindow hwnd = stdWin95_GetWindow();
             dlgResult = jonesConfig_ShowGamePlayOptions(hwnd);
         } break;
 
         case JONESHUD_MENU_CONTROLS_SETTINGS:   // control options
         {
-            HWND hwnd = stdWin95_GetWindow();
+            tSysWindow hwnd = stdWin95_GetWindow();
             dlgResult = jonesConfig_ShowControlOptions(hwnd);
         } break;
 
@@ -3437,7 +3436,7 @@ void JonesHud_MenuActivateItem(void)
         {
             JonesDisplaySettings* pDSettings   = JonesMain_GetDisplaySettings();
             StdDisplayEnvironment* pDisplayEnv = JonesMain_GetDisplayEnvironment();
-            HWND hwnd = stdWin95_GetWindow();
+            tSysWindow hwnd = stdWin95_GetWindow();
             dlgResult = jonesConfig_ShowDisplaySettingsDialog(hwnd, pDisplayEnv, pDSettings);
             if ( dlgResult == 1 )
             {
@@ -3453,7 +3452,7 @@ void JonesHud_MenuActivateItem(void)
             sndSettings.b3DHWSupport   = Sound_Get3DHWState();
             sndSettings.bReverseSound  = stdConfig_GetBool(JONESCONFIG_CFG_SOUND_REVERSE, false);
 
-            HWND hwnd = stdWin95_GetWindow();
+            tSysWindow hwnd = stdWin95_GetWindow();
             dlgResult = jonesConfig_ShowSoundSettingsDialog(hwnd, &sndSettings);
             if ( dlgResult == 1 )
             {
@@ -3467,7 +3466,7 @@ void JonesHud_MenuActivateItem(void)
         case JONESHUD_MENU_EXIT: // exit
         {
             char aSaveGameFilename[JONESCONFIG_GAMESAVE_FILEPATHSIZE] = { 0 };
-            HWND hwnd = stdWin95_GetWindow();
+            tSysWindow hwnd = stdWin95_GetWindow();
             dlgResult = jonesConfig_ShowExitGameDialog(hwnd, aSaveGameFilename);
             if ( dlgResult == 2 )
             {
@@ -4279,44 +4278,9 @@ int JonesHud_ShowLevelCompleted(void)
     return bBoughtBounusMap;
 }
 
-HANDLE J3DAPI JonesHud_OpenHelp(HANDLE process)
-{
-    J3D_UNUSED(process);
-
-    wchar_t* pwString = sithString_GetString("SITHSTRING_HELPFILE");
-    HANDLE hProcess = NULL;
-    if ( !pwString )
-    {
-        return hProcess;
-    }
-
-    char* pFilename = stdUtil_ToAString(pwString);
-    char aPath[128] = { 0 };
-    stdConfig_GetString(SITH_CFG_INSTALLPATH, aPath, sizeof(aPath), "");
-    if ( pFilename && strlen(aPath) )
-    {
-        SHELLEXECUTEINFOA execInfo = { 0 };
-        execInfo.cbSize      = 60;
-        execInfo.fMask       = 80;
-        execInfo.lpVerb      = "open";
-        execInfo.lpFile      = pFilename;
-        execInfo.lpDirectory = aPath;
-        execInfo.nShow       = 1;
-        ShellExecuteExA(&execInfo);
-        hProcess = execInfo.hProcess;
-    }
-
-    if ( pFilename )
-    {
-        STDFREE(pFilename);
-    }
-
-    return hProcess;
-}
-
 void J3DAPI JonesHud_ShowGameOverDialog(int bPlayDiedMusic)
 {
-    HWND hwnd;
+    tSysWindow hwnd;
     int btnId;
     const char* pErrorText;
     int hSnd;

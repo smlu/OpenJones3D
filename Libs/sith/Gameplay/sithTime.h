@@ -9,25 +9,53 @@
 
 J3D_EXTERN_C_START
 
+#if defined(J3D_STANDALONE)
+extern uint32_t sithTime_g_frameTime;
+#else
 #define sithTime_g_frameTime J3D_DECL_FAR_VAR(sithTime_g_frameTime, uint32_t)
+#endif
 // extern unsigned int sithTime_g_frameTime;
 
+#if defined(J3D_STANDALONE)
+extern float sithTime_g_frameTimeFlex;
+#else
 #define sithTime_g_frameTimeFlex J3D_DECL_FAR_VAR(sithTime_g_frameTimeFlex, float)
+#endif
 // extern float sithTime_g_secFrameTime;
 
+#if defined(J3D_STANDALONE)
+extern float sithTime_g_fps;
+#else
 #define sithTime_g_fps J3D_DECL_FAR_VAR(sithTime_g_fps, float)
+#endif
 // extern float sithTime_g_fps;
 
+#if defined(J3D_STANDALONE)
+extern uint32_t sithTime_g_msecGameTime;
+#else
 #define sithTime_g_msecGameTime J3D_DECL_FAR_VAR(sithTime_g_msecGameTime, uint32_t)
+#endif
 // extern unsigned int sithTime_g_msecGameTime;
 
+#if defined(J3D_STANDALONE)
+extern float sithTime_g_secGameTime;
+#else
 #define sithTime_g_secGameTime J3D_DECL_FAR_VAR(sithTime_g_secGameTime, float)
+#endif
 // extern float sithTime_g_secGameTime;
 
+#if defined(J3D_STANDALONE)
+extern uint32_t sithTime_g_clockTime;
+#else
 #define sithTime_g_clockTime J3D_DECL_FAR_VAR(sithTime_g_clockTime, uint32_t)
+#endif
 // extern unsigned int sithTime_g_clockTime;
 
+#if defined(J3D_STANDALONE)
+extern int sithTime_g_bPaused;
+#else
 #define sithTime_g_bPaused J3D_DECL_FAR_VAR(sithTime_g_bPaused, int)
+#endif
 // extern int sithTime_g_bPaused;
 
 void sithTime_Advance(void);

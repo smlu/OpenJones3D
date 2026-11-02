@@ -15,6 +15,7 @@
 #include <std/General/stdMemory.h>
 #include <std/General/stdUtil.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #define SITHCOGPARSE_SYNTAXTREESIZE 8096u
 

@@ -1,13 +1,15 @@
 #ifndef W32UTIL_WUREGISTRY_H
 #define W32UTIL_WUREGISTRY_H
-#define STRICT
-#include <Windows.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
 #include <j3dcore/j3d.h>
 #include <w32util/RTI/addresses.h>
 
 J3D_EXTERN_C_START
 
-int J3DAPI wuRegistry_Startup(HKEY hKey, LPCSTR lpSubKey);
+/** Added: Opens settings under the machine-wide root. Returns 0 on success, like wuRegistry_Startup in wuRegistry.c. pSubKey must stay valid until wuRegistry_Shutdown. */
+int J3DAPI wuRegistry_StartupLocalMachine(const char* pSubKey);
 bool wuRegistry_HasStarted(void); // Added
 void J3DAPI wuRegistry_Shutdown();
 

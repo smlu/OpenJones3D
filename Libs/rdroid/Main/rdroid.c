@@ -7,6 +7,14 @@
 
 #include <stdbool.h>
 
+#ifdef J3D_STANDALONE
+// Added: Standalone builds have no retail executable to hold these. *_ResetGlobals sets the starting values.
+rdLightMode rdroid_g_curLightingMode;
+tHostServices* rdroid_g_pHS;
+rdGeometryMode rdroid_g_curGeometryMode;
+rdRoidFlags rdroid_g_curRenderOptions;
+#endif
+
 static bool rdroid_bRDroidStartup;
 static bool rdroid_bRDroidOpen;
 

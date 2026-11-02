@@ -1,4 +1,19 @@
+// Added: Inside this backend the opaque types are the real DirectSound and window types, so no casts are needed.
+#define sSysSoundBuffer IDirectSoundBuffer8
+#define sSysSoundDevice IDirectSound8
+#include <std/Win95/stdSysTagsWin32.h>
+
 #include "Driver.h"
+
+#include <mmreg.h>
+#if defined (J3D_DIRECTX6)
+#include <DirectX6/dsound.h>
+#elif defined (J3D_DIRECTX9)
+#include <dsound.h>
+#else
+#error "Unsuported system sound API. Please define J3D_DIRECTX6 or J3D_DIRECTX9 in your project."
+#endif
+
 #include <j3dcore/j3dhook.h>
 
 #include <rdroid/Math/rdVector.h>
@@ -1295,7 +1310,7 @@ void J3DAPI SoundDriver_RestoreSoundBufferData(tSysSoundBuffer* pDSBuf)
 {
     if ( SoundDriver_pfGetSoundBufferData )
     {
-        uint32_t dataSize = 0;  // Added: Init to 0
+        size_t dataSize = 0;  // Added: Init to 0. Altered: size_t to match SoundDriverGetSoundBufferDataFunc
         unsigned int bCompressed = 0; // Added: Init to 0
         uint8_t* pSoundData = SoundDriver_pfGetSoundBufferData(pDSBuf, &dataSize, &bCompressed);
         if ( bCompressed )

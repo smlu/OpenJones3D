@@ -11,6 +11,11 @@
 #include <std/General/stdUtil.h>
 #include <std/Win95/stdDisplay.h>
 
+#ifdef J3D_STANDALONE
+// Added: Standalone builds have no retail executable to hold these. *_ResetGlobals sets the starting values.
+int rdClip_g_faceStatus;
+#endif
+
 #include<math.h>
 
 static rdVector2 rdClip_aWorkTVerts[MAX_CLIP_VERTICIES] = { 0 };
@@ -4011,7 +4016,7 @@ int J3DAPI rdClip_FaceToPlane(const rdClipFrustum* pFrustrum, rdCacheProcEntry* 
                 float invY = 1.0f / rdClip_aWorkFaceVerts[i].y;
                 float  scale = focalLength * invY;
 
-                LPD3DTLVERTEX pOutVert = &pProcFace->aVertices[i];
+                StdVertexTL* pOutVert = &pProcFace->aVertices[i];
                 pOutVert->sx = rdClip_aWorkFaceVerts[i].x * scale + ccenterX;
                 pOutVert->sy = ccenterY - rdClip_aWorkFaceVerts[i].z * scale;
                 pOutVert->sz = (invY - invNearPlane) * invFarPlane;
@@ -4033,7 +4038,7 @@ int J3DAPI rdClip_FaceToPlane(const rdClipFrustum* pFrustrum, rdCacheProcEntry* 
                 float invY = 1.0f / rdClip_aWorkFaceVerts[i].y;
                 float  scale = focalLength * invY;
 
-                LPD3DTLVERTEX pOutVert = &pProcFace->aVertices[i];
+                StdVertexTL* pOutVert = &pProcFace->aVertices[i];
                 pOutVert->sx = rdClip_aWorkFaceVerts[i].x * scale + ccenterX;
                 pOutVert->sy = ccenterY - rdClip_aWorkFaceVerts[i].z * scale;
                 pOutVert->sz = (invY - invNearPlane) * invFarPlane;
@@ -4054,7 +4059,7 @@ int J3DAPI rdClip_FaceToPlane(const rdClipFrustum* pFrustrum, rdCacheProcEntry* 
             float invY  = 1.0f / rdClip_aWorkFaceVerts[i].y;
             float  scale = focalLength * invY;
 
-            LPD3DTLVERTEX pOutVert = &pProcFace->aVertices[i];
+            StdVertexTL* pOutVert = &pProcFace->aVertices[i];
             pOutVert->sx = rdClip_aWorkFaceVerts[i].x * scale + ccenterX;
             pOutVert->sy = ccenterY - rdClip_aWorkFaceVerts[i].z * scale;
             pOutVert->sz = (invY - invNearPlane) * invFarPlane;
@@ -4085,7 +4090,7 @@ void J3DAPI rdClip_VerticesToPlane(rdCacheProcEntry* pProcFace, const rdVector3*
         float invY = 1.0f / aVerts[i].y;
         float scale = focalLength * invY;
 
-        LPD3DTLVERTEX pOutVert = &pProcFace->aVertices[i];
+        StdVertexTL* pOutVert = &pProcFace->aVertices[i];
         pOutVert->sx = aVerts[i].x * scale + ccenterX;
         pOutVert->sy = ccenterY - aVerts[i].z * scale;
         pOutVert->sz = (invY - invNearClipPlane) * invFarClipPlane;

@@ -1,6 +1,7 @@
 #ifndef STD_SHADER_DX9_H
 #define STD_SHADER_DX9_H
 // This is new module for shader management
+#include <std/Win95/DX9/stdSysTypesDX9.h>
 
 #include <j3dcore/j3d.h>
 #include <std/Win95/stdShader.h>

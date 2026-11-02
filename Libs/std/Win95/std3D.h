@@ -45,9 +45,9 @@ size_t std3D_GetNumTextureFormats(void);
 int std3D_StartScene(void);
 void std3D_EndScene(void);
 
-void J3DAPI std3D_DrawRenderList(tSysTexture* pTex, Std3DRenderState rdflags, LPD3DTLVERTEX aVerts, size_t numVerts, LPWORD aIndices, size_t numIndices);
-void J3DAPI std3D_DrawLineStrip(LPD3DTLVERTEX aVerts, size_t numVerts);
-void J3DAPI std3D_DrawPointList(LPD3DTLVERTEX aVerts, size_t numVerts);
+void J3DAPI std3D_DrawRenderList(tSysTexture* pTex, Std3DRenderState rdflags, StdVertexTL* aVerts, size_t numVerts, uint16_t* aIndices, size_t numIndices);
+void J3DAPI std3D_DrawLineStrip(StdVertexTL* aVerts, size_t numVerts);
+void J3DAPI std3D_DrawPointList(StdVertexTL* aVerts, size_t numVerts);
 void J3DAPI std3D_SetRenderState(Std3DRenderState rdflags);
 void std3D_SetWireframeRenderState(void);
 
@@ -71,11 +71,6 @@ void std3D_ClearZBuffer(void);
 
 StdDisplayEnvironment* J3DAPI std3D_BuildDisplayEnvironment();
 void J3DAPI std3D_FreeDisplayEnvironment(StdDisplayEnvironment* pEnv);
-
-#if defined(J3D_DIRECTX9) || defined(J3D_DIRECTX6)
-const char* J3DAPI std3D_D3DGetStatus(HRESULT res);
-tSysDevice3D* std3D_GetD3DDevice(void); // Added
-#endif // J3D_DIRECTX9 || J3D_DIRECTX6
 
 // New funcs
 bool std3D_IsShaderSystemActive(void);

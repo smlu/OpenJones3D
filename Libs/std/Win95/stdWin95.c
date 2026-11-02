@@ -1,3 +1,4 @@
+#include <std/Win95/DX9/stdSysTypesDX9.h>
 
 #include "stdWin95.h"
 

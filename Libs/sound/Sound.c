@@ -29,9 +29,6 @@
 #define SOUND_LIPSYNC_END_MARGIN_MSEC     25u
 #define SOUND_MILLISECONDS_PER_SECOND     1000u
 
-// Sound load constants and macros
-#define SOUND_LOADSTATICIDXMASK 0x12344321 // Mask for static sound index
-
 // Sound handle constants & helper macros
 #define SOUND_HANDLE_ENTROPY_MAX   1111111u // Note, max 555555 handles per handle type (sound or channel)
 #define SOUND_HANDLE_MIN           1234u
@@ -99,7 +96,7 @@ static int Sound_bNoSoundCompression;
 static int Sound_bNoLipSync;
 
 // Misc vars
-static HWND Sound_hwnd;
+static tSysWindow Sound_hwnd;
 static tDirectSound* Sound_pDirectSound;
 
 // 3D sound vars
@@ -159,7 +156,7 @@ uint32_t Sound_GetEntropyFromChannelHandle(tSoundChannelHandle handle); // Added
 size_t J3DAPI Sound_GetFreeCache(size_t bankNum, size_t requiredSize);
 void J3DAPI Sound_IncreaseFreeCache(size_t bankNum, size_t nSize);
 size_t J3DAPI Sound_WriteSoundFilepathToBank(size_t bankNum, const char* pName, size_t len);
-size_t Sound_GetDeltaTime(void);
+uint32_t Sound_GetDeltaTime(void);
 
 uint8_t* J3DAPI Sound_GetSoundBufferData(tSysSoundBuffer* pSndBuf, size_t* pDataSize, uint32_t* pbCompressed);
 int J3DAPI Sound_MemFileSeek(tFileHandle fh, int offset, int origin);
@@ -170,6 +167,7 @@ void J3DAPI Sound_MemFileFree(void);
 
 void Sound_StopAllNonStaticSounds(void);
 
+static tSoundHandle Sound_LoadToBank(const char* pFilepath, uint32_t* sndIdx, size_t bankNum);
 static size_t Sound_GetLipSyncCurrentPosition(tSysSoundBuffer* pSoundBuffer);
 static void Sound_ResetLipSyncCompressor(tAudioCompressorState* pCompressorState);
 static void Sound_UncompressLipSyncData(tAudioCompressorState* pCompressorState, uint8_t* pOutSndData, const uint8_t* pCompressedData, unsigned int size);
@@ -426,7 +424,7 @@ void Sound_Shutdown(void)
     }
 }
 
-int J3DAPI Sound_Open(SoundOpenFlags flags, size_t maxSoundChannels, SoundGetThingInfoCallback pfGetThingInfo, SoundCalcListenerSoundMixFunc pfCalcListenerSoundMix, HWND hwnd)
+int J3DAPI Sound_Open(SoundOpenFlags flags, size_t maxSoundChannels, SoundGetThingInfoCallback pfGetThingInfo, SoundCalcListenerSoundMixFunc pfCalcListenerSoundMix, tSysWindow hwnd)
 {
     if ( Sound_state == SOUNDSTATE_OPEN )
     {
@@ -504,27 +502,27 @@ int J3DAPI Sound_Save(tFileHandle fh)
     // section marker (header magic)
     if ( Sound_pHS->pFileWrite(fh, &Sound_serMagic, sizeof(Sound_serMagic)) != sizeof(Sound_serMagic) )
     {
-        static_assert(sizeof(Sound_serMagic) == 4, "sizeof(Sound_sermagic) == 4");
+        J3D_ASSERT_SIZE32(sizeof(Sound_serMagic) == 4, "sizeof(Sound_sermagic) == 4");
         return 0;
     }
 
     if ( Sound_pHS->pFileWrite(fh, &Sound_pausedRefCount, sizeof(Sound_pausedRefCount)) != sizeof(Sound_pausedRefCount) )
     {
-        static_assert(sizeof(Sound_pausedRefCount) == 4, "sizeof(Sound_pausedRefCount) == 4");
+        J3D_ASSERT_SIZE32(sizeof(Sound_pausedRefCount) == 4, "sizeof(Sound_pausedRefCount) == 4");
         return 0;
     }
 
     const uint32_t curDetlatTime = Sound_GetDeltaTime();
     if ( Sound_pHS->pFileWrite(fh, &curDetlatTime, sizeof(curDetlatTime)) != sizeof(curDetlatTime) )
     {
-        static_assert(sizeof(curDetlatTime) == 4, "sizeof(curDetlatTime) == 4");
+        J3D_ASSERT_SIZE32(sizeof(curDetlatTime) == 4, "sizeof(curDetlatTime) == 4");
         return 0;
     }
 
     const uint32_t curDetlatPauseTime = SoundDriver_GetTimeMsec() - Sound_msecPauseStartTime;
     if ( Sound_pHS->pFileWrite(fh, &curDetlatPauseTime, sizeof(curDetlatPauseTime)) != sizeof(curDetlatPauseTime) )
     {
-        static_assert(sizeof(curDetlatPauseTime) == 4, "sizeof(curDetlatPauseTime) == 4");
+        J3D_ASSERT_SIZE32(sizeof(curDetlatPauseTime) == 4, "sizeof(curDetlatPauseTime) == 4");
         return 0;
     }
 
@@ -533,11 +531,12 @@ int J3DAPI Sound_Save(tFileHandle fh)
 
     while ( 1 )
     {
-        --pCurChannel;
         if ( !channelNum-- )
         {
             break;
         }
+
+        --pCurChannel; // Fixed: decrement after the count check so the pointer is never moved before the start of Sound_apChannels
 
         // TODO: Save also 2D sounds
         if ( pCurChannel->handle != SOUND_INVALIDHANDLE
@@ -554,7 +553,7 @@ int J3DAPI Sound_Save(tFileHandle fh)
                 const uint32_t nameLen = strlen((const char*)&aSndCache[pSndInfo->filePathOffset]) + 1;
                 if ( Sound_pHS->pFileWrite(fh, &nameLen, sizeof(nameLen)) != sizeof(nameLen) )
                 {
-                    static_assert(sizeof(nameLen) == 4, "sizeof(nameLen) == 4");
+                    J3D_ASSERT_SIZE32(sizeof(nameLen) == 4, "sizeof(nameLen) == 4");
                     return 0;
                 }
 
@@ -568,7 +567,7 @@ int J3DAPI Sound_Save(tFileHandle fh)
                 const uint32_t bankNum = pSndInfo->bankNum;
                 if ( Sound_pHS->pFileWrite(fh, &bankNum, sizeof(bankNum)) != sizeof(bankNum) )
                 {
-                    static_assert(sizeof(bankNum) == 4, "sizeof(bankNum) == 4");
+                    J3D_ASSERT_SIZE32(sizeof(bankNum) == 4, "sizeof(bankNum) == 4");
                     return 0;
                 }
 
@@ -576,99 +575,99 @@ int J3DAPI Sound_Save(tFileHandle fh)
                 const uint32_t sndIdx = pSndInfo->idx;
                 if ( Sound_pHS->pFileWrite(fh, &sndIdx, sizeof(sndIdx)) != sizeof(sndIdx) )
                 {
-                    static_assert(sizeof(sndIdx) == 4, "sizeof(sndIdx) == 4");
+                    J3D_ASSERT_SIZE32(sizeof(sndIdx) == 4, "sizeof(sndIdx) == 4");
                     return 0;
                 }
 
                 const uint32_t hSnd = pSndInfo->hSnd;
                 if ( Sound_pHS->pFileWrite(fh, &hSnd, sizeof(hSnd)) != sizeof(hSnd) )
                 {
-                    static_assert(sizeof(hSnd) == 4, "sizeof(hSnd) == 4");
+                    J3D_ASSERT_SIZE32(sizeof(hSnd) == 4, "sizeof(hSnd) == 4");
                     return 0;
                 }
 
                 if ( Sound_pHS->pFileWrite(fh, &pCurChannel->handle, sizeof(pCurChannel->handle)) != sizeof(pCurChannel->handle) )
                 {
-                    static_assert(sizeof(pCurChannel->handle) == 4, "sizeof(pCurChannel->handle) == 4");
+                    J3D_ASSERT_SIZE32(sizeof(pCurChannel->handle) == 4, "sizeof(pCurChannel->handle) == 4");
                     return 0;
                 }
 
                 if ( Sound_pHS->pFileWrite(fh, &pCurChannel->priority, sizeof(pCurChannel->priority)) != sizeof(pCurChannel->priority) )
                 {
-                    static_assert(sizeof(pCurChannel->priority) == 4, "sizeof(pCurChannel->handle) == 4");
+                    J3D_ASSERT_SIZE32(sizeof(pCurChannel->priority) == 4, "sizeof(pCurChannel->handle) == 4");
 
                     return 0;
                 }
 
                 if ( Sound_pHS->pFileWrite(fh, &pCurChannel->thingId, sizeof(pCurChannel->thingId)) != sizeof(pCurChannel->thingId) )
                 {
-                    static_assert(sizeof(pCurChannel->thingId) == 4, "sizeof(pCurChannel->thingId) == 4");
+                    J3D_ASSERT_SIZE32(sizeof(pCurChannel->thingId) == 4, "sizeof(pCurChannel->thingId) == 4");
                     return 0;
                 }
 
                 if ( Sound_pHS->pFileWrite(fh, &pCurChannel->playPos.x, sizeof(pCurChannel->playPos.x)) != sizeof(pCurChannel->playPos.x) )
                 {
-                    static_assert(sizeof(pCurChannel->playPos.x) == 4, "sizeof(pCurChannel->playPos.x) == 4");
+                    J3D_ASSERT_SIZE32(sizeof(pCurChannel->playPos.x) == 4, "sizeof(pCurChannel->playPos.x) == 4");
                     return 0;
                 }
 
                 if ( Sound_pHS->pFileWrite(fh, &pCurChannel->playPos.y, sizeof(pCurChannel->playPos.y)) != sizeof(pCurChannel->playPos.y) )
                 {
-                    static_assert(sizeof(pCurChannel->playPos.y) == 4, "sizeof(pCurChannel->playPos.y) == 4");
+                    J3D_ASSERT_SIZE32(sizeof(pCurChannel->playPos.y) == 4, "sizeof(pCurChannel->playPos.y) == 4");
                     return 0;
                 }
 
                 if ( Sound_pHS->pFileWrite(fh, &pCurChannel->playPos.z, sizeof(pCurChannel->playPos.z)) != sizeof(pCurChannel->playPos.z) )
                 {
-                    static_assert(sizeof(pCurChannel->playPos.z) == 4, "sizeof(pCurChannel->playPos.z) == 4");
+                    J3D_ASSERT_SIZE32(sizeof(pCurChannel->playPos.z) == 4, "sizeof(pCurChannel->playPos.z) == 4");
                     return 0;
                 }
 
                 if ( Sound_pHS->pFileWrite(fh, &pCurChannel->volume, sizeof(pCurChannel->volume)) != sizeof(pCurChannel->volume) )
                 {
-                    static_assert(sizeof(pCurChannel->volume) == 4, "sizeof(pCurChannel->volume) == 4");
+                    J3D_ASSERT_SIZE32(sizeof(pCurChannel->volume) == 4, "sizeof(pCurChannel->volume) == 4");
                     return 0;
                 }
 
                 if ( Sound_pHS->pFileWrite(fh, &pCurChannel->pitch, sizeof(pCurChannel->pitch)) != sizeof(pCurChannel->pitch) )
                 {
-                    static_assert(sizeof(pCurChannel->pitch) == 4, "sizeof(pCurChannel->pitch) == 4");
+                    J3D_ASSERT_SIZE32(sizeof(pCurChannel->pitch) == 4, "sizeof(pCurChannel->pitch) == 4");
                     return 0;
                 }
 
                 if ( Sound_pHS->pFileWrite(fh, &pCurChannel->sampleRate, sizeof(pCurChannel->sampleRate)) != sizeof(pCurChannel->sampleRate) )
                 {
-                    static_assert(sizeof(pCurChannel->sampleRate) == 4, "sizeof(pCurChannel->sampleRate) == 4");
+                    J3D_ASSERT_SIZE32(sizeof(pCurChannel->sampleRate) == 4, "sizeof(pCurChannel->sampleRate) == 4");
                     return 0;
                 }
 
                 if ( Sound_pHS->pFileWrite(fh, &pCurChannel->flags, sizeof(pCurChannel->flags)) != sizeof(pCurChannel->flags) )
                 {
-                    static_assert(sizeof(pCurChannel->flags) == 4, "sizeof(pCurChannel->flags) == 4");
+                    J3D_ASSERT_SIZE32(sizeof(pCurChannel->flags) == 4, "sizeof(pCurChannel->flags) == 4");
                     return 0;
                 }
 
                 if ( Sound_pHS->pFileWrite(fh, &pCurChannel->guid, sizeof(pCurChannel->guid)) != sizeof(pCurChannel->guid) )
                 {
-                    static_assert(sizeof(pCurChannel->guid) == 4, "sizeof(pCurChannel->guid) == 4");
+                    J3D_ASSERT_SIZE32(sizeof(pCurChannel->guid) == 4, "sizeof(pCurChannel->guid) == 4");
                     return 0;
                 }
 
                 if ( Sound_pHS->pFileWrite(fh, &pCurChannel->minRadius, sizeof(pCurChannel->minRadius)) != sizeof(pCurChannel->minRadius) )
                 {
-                    static_assert(sizeof(pCurChannel->minRadius) == 4, "sizeof(pCurChannel->minRadius) == 4");
+                    J3D_ASSERT_SIZE32(sizeof(pCurChannel->minRadius) == 4, "sizeof(pCurChannel->minRadius) == 4");
                     return 0;
                 }
 
                 if ( Sound_pHS->pFileWrite(fh, &pCurChannel->maxRadius, sizeof(pCurChannel->maxRadius)) != sizeof(pCurChannel->maxRadius) )
                 {
-                    static_assert(sizeof(pCurChannel->maxRadius) == 4, "sizeof(pCurChannel->maxRadius) == 4");
+                    J3D_ASSERT_SIZE32(sizeof(pCurChannel->maxRadius) == 4, "sizeof(pCurChannel->maxRadius) == 4");
                     return 0;
                 }
 
                 if ( Sound_pHS->pFileWrite(fh, &pCurChannel->envflags, sizeof(pCurChannel->envflags)) != sizeof(pCurChannel->envflags) )
                 {
-                    static_assert(sizeof(pCurChannel->envflags) == 4, "sizeof(pCurChannel->envflags) == 4");
+                    J3D_ASSERT_SIZE32(sizeof(pCurChannel->envflags) == 4, "sizeof(pCurChannel->envflags) == 4");
                     return 0;
                 }
             }
@@ -678,11 +677,11 @@ int J3DAPI Sound_Save(tFileHandle fh)
     // Marks end of list
     if ( Sound_pHS->pFileWrite(fh, &Sound_serSoundListEnd, sizeof(Sound_serSoundListEnd)) != sizeof(Sound_serSoundListEnd) )
     {
-        static_assert(sizeof(Sound_serSoundListEnd) == 4, "sizeof(Sound_serSoundListEnd) == 4");
+        J3D_ASSERT_SIZE32(sizeof(Sound_serSoundListEnd) == 4, "sizeof(Sound_serSoundListEnd) == 4");
         return 0;
     }
 
-    static_assert(sizeof(Sound_aFades) == 1152, "sizeof(Sound_aFades) == 1152");
+    J3D_ASSERT_SIZE32(sizeof(Sound_aFades) == 1152, "sizeof(Sound_aFades) == 1152");
     return Sound_pHS->pFileWrite(fh, &Sound_handleEntropy, sizeof(uint32_t)) == sizeof(uint32_t)
         && Sound_pHS->pFileWrite(fh, Sound_aFades, sizeof(Sound_aFades)) == sizeof(Sound_aFades);
 }
@@ -1117,14 +1116,12 @@ size_t Sound_GetMemoryUsage(void)
 
 tSoundHandle J3DAPI Sound_Load(const char* pFilepath, uint32_t* sndIdx)
 {
-    // Set bank number
-    size_t bankNum = SOUNDBANK_NORMAL_NUM;
-    if ( sndIdx && *sndIdx == SOUND_LOADSTATICIDXMASK )
-    {
-        sndIdx = (uint32_t*)sndIdx[1]; // The actual index is stored in the second parameter
-        bankNum = SOUNDBANK_STATIC_NUM;
-    }
+    return Sound_LoadToBank(pFilepath, sndIdx, SOUNDBANK_NORMAL_NUM);
+}
 
+// Altered: takes the bank as a parameter instead of reading a uint32_t* smuggled through sndIdx[1]
+static tSoundHandle Sound_LoadToBank(const char* pFilepath, uint32_t* sndIdx, size_t bankNum)
+{
     // Extract filename from file path
     size_t curPathPos     = strlen(pFilepath);
     const char* pFilename = &pFilepath[curPathPos];
@@ -1357,11 +1354,8 @@ tSoundHandle J3DAPI Sound_Load(const char* pFilepath, uint32_t* sndIdx)
 
 tSoundHandle J3DAPI Sound_LoadStatic(const char* pFilename, uint32_t* sndIdx)
 {
-    uint32_t aSndIdx[2];
-    aSndIdx[0] = SOUND_LOADSTATICIDXMASK;
-    aSndIdx[1] = (uint32_t)sndIdx;
-
-    tSoundHandle hSnd = Sound_Load(pFilename, aSndIdx);
+    // Altered: loads straight into the static bank instead of packing sndIdx into aSndIdx[1] as a uint32_t
+    tSoundHandle hSnd = Sound_LoadToBank(pFilename, sndIdx, SOUNDBANK_STATIC_NUM);
     soundbank_lastImportedBankNum = SOUNDBANK_STATIC_NUM;
     return hSnd;
 }
@@ -1477,7 +1471,7 @@ int J3DAPI Sound_SkipSoundFileSection(tFileHandle fh)
         return 0;
     }
 
-    Sound_pHS->pFileSeek(fh, sizeof(SoundInfo) * numSounds, 1); // skip sound info list
+    Sound_pHS->pFileSeek(fh, sizeof(SoundInfoDisk) * numSounds, 1); // Fixed: skip the bank's fixed-width disk records, not the in-memory SoundInfo size
     Sound_pHS->pFileSeek(fh, sizeData, 1);         // skip sound data list
     Sound_pHS->pFileSeek(fh, sizeof(uint32_t), 1); // skip next handle
     return 1;
@@ -2501,11 +2495,12 @@ void J3DAPI Sound_Update(const rdVector3* pPos, const rdVector3* pVelocity, cons
 
     while ( 1 )
     {
-        --pCurChannel;
         if ( !count-- )
         {
             break;
         }
+
+        --pCurChannel; // Fixed: decrement after the count check so the pointer is never moved before the start of Sound_apChannels
 
         if ( pCurChannel->handle != SOUND_INVALIDHANDLE && (pCurChannel->flags & SOUND_CHANNEL_3DSOUND) != 0 )
         {
@@ -2842,11 +2837,12 @@ size_t J3DAPI Sound_GetAllInstanceInfo(SoundInstanceInfo* pCurInstance, size_t s
     tSoundChannel* pCurChannel = &Sound_apChannels[Sound_numChannels];
     while ( 1 )
     {
-        --pCurChannel;
         if ( !numChannels-- )
         {
             break;
         }
+
+        --pCurChannel; // Fixed: decrement after the count check so the pointer is never moved before the start of Sound_apChannels
 
         if ( pCurChannel->handle != SOUND_INVALIDHANDLE )
         {
@@ -3312,6 +3308,43 @@ void Sound_StopAllNonStaticSounds(void)
     }
 }
 
+// Added: the banks serialize SoundInfo records through the fixed-width SoundInfoDisk layout, so 64-bit
+// builds store and load the same bytes a 32-bit build stored raw. pLipSyncData keeps the original
+// semantics: a 32-bit build wrote the pointer value itself, so store its truncated form.
+static void Sound_SoundInfoToDisk(SoundInfoDisk* pDst, const SoundInfo* pSrc)
+{
+    pDst->hSnd           = pSrc->hSnd;
+    pDst->bankNum        = pSrc->bankNum;
+    pDst->filePathOffset = pSrc->filePathOffset;
+    pDst->nameOffset     = pSrc->nameOffset;
+    pDst->dataOffset     = pSrc->dataOffset;
+    pDst->pLipSyncData   = (uint32_t)(uintptr_t)pSrc->pLipSyncData;
+    pDst->sampleRate     = pSrc->sampleRate;
+    pDst->sempleBitSize  = pSrc->sempleBitSize;
+    pDst->numChannels    = pSrc->numChannels;
+    pDst->dataSize       = pSrc->dataSize;
+    pDst->bCompressed    = pSrc->bCompressed;
+    pDst->idx            = pSrc->idx;
+}
+
+// Added: restores the in-memory record from a disk record; the pointer field comes back from the stored
+// 4 bytes, 0 meaning NULL, exactly what a raw 32-bit read of a bank produced.
+static void Sound_SoundInfoFromDisk(SoundInfo* pDst, const SoundInfoDisk* pSrc)
+{
+    pDst->hSnd           = pSrc->hSnd;
+    pDst->bankNum        = pSrc->bankNum;
+    pDst->filePathOffset = pSrc->filePathOffset;
+    pDst->nameOffset     = pSrc->nameOffset;
+    pDst->dataOffset     = pSrc->dataOffset;
+    pDst->pLipSyncData   = (uint8_t*)(uintptr_t)pSrc->pLipSyncData;
+    pDst->sampleRate     = pSrc->sampleRate;
+    pDst->sempleBitSize  = pSrc->sempleBitSize;
+    pDst->numChannels    = pSrc->numChannels;
+    pDst->dataSize       = pSrc->dataSize;
+    pDst->bCompressed    = pSrc->bCompressed;
+    pDst->idx            = pSrc->idx;
+}
+
 int J3DAPI Sound_ExportBank(tFileHandle fh, size_t bankNum)
 {
     // Write num sound infos
@@ -3327,9 +3360,16 @@ int J3DAPI Sound_ExportBank(tFileHandle fh, size_t bankNum)
     }
 
     // Write sound infos
-    if ( Sound_pHS->pFileWrite(fh, soundbank_apSoundInfos[bankNum], sizeof(SoundInfo) * soundbank_aNumSounds[bankNum]) != sizeof(SoundInfo) * soundbank_aNumSounds[bankNum] )
+    // Altered: write record by record through the fixed-width disk layout; the bytes match what the
+    // 32-bit build stored raw, including the truncated pLipSyncData pointer value.
+    for ( size_t i = 0; i < soundbank_aNumSounds[bankNum]; ++i )
     {
-        return 0;
+        SoundInfoDisk soundInfoDisk;
+        Sound_SoundInfoToDisk(&soundInfoDisk, &soundbank_apSoundInfos[bankNum][i]);
+        if ( Sound_pHS->pFileWrite(fh, &soundInfoDisk, sizeof(soundInfoDisk)) != sizeof(soundInfoDisk) )
+        {
+            return 0;
+        }
     }
 
     // Write sound data
@@ -3388,7 +3428,15 @@ int J3DAPI Sound_ImportBank(tFileHandle fh, size_t bankNum)
     }
 
     // Read sound infos, sound data and next handle
-    Sound_ReadFile(fh, soundbank_apSoundInfos[bankNum], sizeof(SoundInfo) * soundbank_aNumSounds[bankNum]);
+    // Altered: read the infos record by record through the fixed-width disk layout. pLipSyncData comes
+    // back from the stored 4 bytes (0 = NULL), the same bits a raw 32-bit read produced.
+    for ( size_t i = 0; i < soundbank_aNumSounds[bankNum]; ++i )
+    {
+        SoundInfoDisk soundInfoDisk;
+        Sound_ReadFile(fh, &soundInfoDisk, sizeof(soundInfoDisk));
+        Sound_SoundInfoFromDisk(&soundbank_apSoundInfos[bankNum][i], &soundInfoDisk);
+    }
+
     Sound_ReadFile(fh, soundbank_apSoundCache[bankNum], soundbank_aUsedCacheSizes[bankNum]);
     Sound_ReadFile(fh, &Sound_handleEntropy, sizeof(uint32_t));
 

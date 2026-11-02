@@ -1,3 +1,4 @@
+#include <std/Win95/DX9/stdSysTypesDX9.h>
 #include <unity_fixture.h>
 
 #include <stdio.h>
@@ -7,6 +8,7 @@
 #include <std/General/stdUtil.h>
 #include <std/Win95/stdDisplay.h>
 #include <std/Win95/DX9/stdShaderDX9.h>
+#include <std/Win95/DX9/stdVertexDX9.h>
 #include <std/Win95/std3D.h>
 #include <std/Win95/stdShader.h>
 

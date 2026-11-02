@@ -590,7 +590,7 @@ void J3DAPI sithCogExec_PushStack(SithCog* pCog, SithCogSymbolValue* pValue)
     {
         SITHLOG_ERROR("Stack overflow in script %s.  Bottom element discarded.\n", pCog->pScript->aName);
         STD_MOVEMEM(pCog->stack, &pCog->stack[1], (STD_ARRAYLEN(pCog->stack) - 1) * sizeof(SithCogSymbolValue)); // Fixed: the ranges overlap, STD_MOVEMEM instead of STD_COPYMEM
-        static_assert((STD_ARRAYLEN(pCog->stack) - 1) * sizeof(SithCogSymbolValue) == 4080, "STD_ARRAYLEN(pCog->stack) - 1 * sizeof(SithCogSymbolValue) == 4080");
+        J3D_ASSERT_SIZE32((STD_ARRAYLEN(pCog->stack) - 1) * sizeof(SithCogSymbolValue) == 4080, "STD_ARRAYLEN(pCog->stack) - 1 * sizeof(SithCogSymbolValue) == 4080");
         --pCog->stackSize; /// TODO: make sure the call stack size is STD_ARRAYLEN(pCog->stack) - 1
     }
 
@@ -770,7 +770,7 @@ void J3DAPI sithCogExec_PushVectorOp(SithCog* pCog)
     SITH_ASSERTREL(pCog && pCog->pScript);
     rdVector_Copy3(&value.val.vecValue, (const rdVector3*)&pCog->pScript->pCode[pCog->execPos]);
     pCog->execPos += sizeof(value.val.vecValue) / sizeof(*pCog->pScript->pCode);
-    static_assert(sizeof(value.val.vecValue) / sizeof(*pCog->pScript->pCode) == 3, "sizeof(value.val.vecValue) / sizeof(*pCog->pScript->pCode) == 3");
+    J3D_ASSERT_SIZE32(sizeof(value.val.vecValue) / sizeof(*pCog->pScript->pCode) == 3, "sizeof(value.val.vecValue) / sizeof(*pCog->pScript->pCode) == 3");
 
     value.type = SITHCOG_VALUE_VECTOR;
     sithCogExec_PushStack(pCog, &value);
@@ -1032,7 +1032,7 @@ SithCogSymbolValue* J3DAPI sithCogExec_GetPointerValue(SithCogSymbolValue* pDest
     pDest->type = SITHCOG_VALUE_POINTER;
     if ( pValue->type == SITHCOG_VALUE_SYMBOLID )
     {
-        SithCogSymbol* pSymbol = sithCogParse_GetSymbolByID(pCog->pSymbolTable, (unsigned int)pValue->val.pointerValue);
+        SithCogSymbol* pSymbol = sithCogParse_GetSymbolByID(pCog->pSymbolTable, (unsigned int)(uintptr_t)pValue->val.pointerValue);
         SITH_ASSERTREL(pSymbol != NULL);
         if ( pSymbol->value.type == SITHCOG_VALUE_POINTER )
         {

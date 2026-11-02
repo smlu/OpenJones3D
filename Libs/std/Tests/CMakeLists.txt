@@ -100,7 +100,7 @@ elseif(J3D_DIRECTX6)
     )
 endif()
 
-set(STD_TESTED_SOURCES
+set(STD_GENERAL_TESTED_SOURCES
     "${STD_GENERAL_SOURCE_DIR}/std.c"
     "${STD_GENERAL_SOURCE_DIR}/stdBmp.c"
     "${STD_GENERAL_SOURCE_DIR}/stdConffile.c"
@@ -118,13 +118,19 @@ set(STD_TESTED_SOURCES
     "${STD_GENERAL_SOURCE_DIR}/stdEffect.c"
     "${STD_GENERAL_SOURCE_DIR}/stdColor.c"
     "${STD_GENERAL_SOURCE_DIR}/stdCircBuf.c"
+)
+
+set(STD_WIN95_TESTED_SOURCES
+    "${STD_WIN95_SOURCE_DIR}/stdBmpWin32.c"
     "${STD_WIN95_SOURCE_DIR}/stdConsole.c"
+    "${STD_WIN95_SOURCE_DIR}/stdFileUtilWin32.c"
     "${STD_WIN95_SOURCE_DIR}/stdGob.c"
+    "${STD_WIN95_SOURCE_DIR}/stdPlatformWin32.c"
     "${STD_WIN95_SOURCE_DIR}/stdWin95.c"
 )
 
 if (J3D_DIRECTX9)
-    list(APPEND STD_TESTED_SOURCES
+    list(APPEND STD_WIN95_TESTED_SOURCES
         "${STD_WIN95_SOURCE_DIR}/stdComm.c"
         "${STD_WIN95_SOURCE_DIR}/DX9/stdControlDX9.c"
         "${STD_WIN95_SOURCE_DIR}/DX9/std3DX9.c"
@@ -132,12 +138,36 @@ if (J3D_DIRECTX9)
         "${STD_WIN95_SOURCE_DIR}/DX9/stdShaderDX9.c"
     )
 elseif(J3D_DIRECTX6)
-    list(APPEND STD_TESTED_SOURCES
+    list(APPEND STD_WIN95_TESTED_SOURCES
         "${STD_WIN95_SOURCE_DIR}/DX6/stdCommDX6.c"
         "${STD_WIN95_SOURCE_DIR}/DX6/stdControlDX6.c"
         "${STD_WIN95_SOURCE_DIR}/DX6/std3DX6.c"
         "${STD_WIN95_SOURCE_DIR}/DX6/stdDisplayDX6.c"
     )
+endif()
+
+# Added: The Null platform runs only the portable std/General suites. stdConsoleNull.c is not listed:
+# stdGeneralTest.c provides the stdConsole_WriteConsole stub the way it does on Windows.
+set(STD_NULL_TESTED_SOURCES
+    "${STD_SOURCE_DIR}/Null/stdFileUtilPosix.c"
+    "${STD_SOURCE_DIR}/Null/stdPlatformNull.c"
+)
+
+set(STD_TESTED_SOURCES
+    ${STD_GENERAL_TESTED_SOURCES}
+    ${STD_WIN95_TESTED_SOURCES}
+)
+
+if (J3D_PLATFORM_NULL)
+    # Added: The std/General tests are portable except stdPlatformTest.c (Windows stack frames,
+    # minidumps and a CreateProcessA death child) and stdBmpTest.c (GDI HBITMAP checks against the
+    # Win32 stdBmp backend, which the Null platform does not build).
+    list(REMOVE_ITEM STD_GENERAL_TEST_SOURCES
+        "${STD_GENERAL_TEST_DIR}/stdPlatformTest.c"
+        "${STD_GENERAL_TEST_DIR}/stdBmpTest.c"
+    )
+    set(STD_WIN95_TEST_SOURCES "")
+    set(STD_TESTED_SOURCES ${STD_GENERAL_TESTED_SOURCES} ${STD_NULL_TESTED_SOURCES})
 endif()
 
 set_source_files_properties("${STD_WIN95_SOURCE_DIR}/stdConsole.c" PROPERTIES
@@ -162,15 +192,44 @@ target_include_directories(stdTests PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}"
 )
 
+# Added: The tested sources compile the DX9 backend, whose stdSysTypesDX9.h and stdBackendTypes.h
+# live in this directory.
+if (J3D_DIRECTX9)
+    target_include_directories(stdTests PRIVATE
+        "${STD_SOURCE_DIR}/Win95/DX9"
+    )
+endif()
+
+# Added: The Null platform compiles its own stdPlatformNull.c/stdFileUtilPosix.c, whose
+# stdBackendTypes.h lives here.
+if (J3D_PLATFORM_NULL)
+    target_include_directories(stdTests PRIVATE
+        "${STD_SOURCE_DIR}/Null"
+    )
+endif()
+
+if (JONES3D_SHADER_HEADER_DIR)
+    # The std test target compiles the DX9 sources directly; add the generated shader
+    # headers to its include path and wait for them to be generated first.
+    target_include_directories(stdTests PRIVATE ${JONES3D_SHADER_HEADER_DIR})
+    add_dependencies(stdTests std_shaders)
+endif()
+
 target_link_libraries(stdTests PRIVATE
     j3dcore
     j3dTestSupport
     jansson::jansson
-    Dbghelp
-    Gdi32
-    Ole32
-    Winmm
 )
+
+# Added: Windows-only services; the Null platform's std suite links none of them.
+if (NOT J3D_PLATFORM_NULL)
+    target_link_libraries(stdTests PRIVATE
+        dbghelp
+        gdi32
+        ole32
+        winmm
+    )
+endif()
 
 if (J3D_DIRECTX6)
     target_link_libraries(stdTests PRIVATE
@@ -182,9 +241,9 @@ elseif(J3D_DIRECTX9)
         d3dcompiler
         dinput8
         dxguid
-        Xinput
+        xinput
         wbemuuid
-        OleAut32
+        oleaut32
     )
 endif()
 
@@ -220,14 +279,29 @@ if (JONES3D_BUILD_SYSTEM_TESTS)
         "${CMAKE_CURRENT_SOURCE_DIR}"
     )
 
+    # Added: The tested sources compile the DX9 backend, whose stdSysTypesDX9.h and stdBackendTypes.h
+    # live in this directory.
+    if (J3D_DIRECTX9)
+        target_include_directories(stdSystemTests PRIVATE
+            "${STD_SOURCE_DIR}/Win95/DX9"
+        )
+    endif()
+
+    if (JONES3D_SHADER_HEADER_DIR)
+        # The std system test target compiles the DX9 sources directly; add the generated shader
+        # headers to its include path and wait for them to be generated first.
+        target_include_directories(stdSystemTests PRIVATE ${JONES3D_SHADER_HEADER_DIR})
+        add_dependencies(stdSystemTests std_shaders)
+    endif()
+
     target_link_libraries(stdSystemTests PRIVATE
         j3dcore
         j3dTestSupport
         jansson::jansson
-        Dbghelp
-        Gdi32
-        Ole32
-        Winmm
+        dbghelp
+        gdi32
+        ole32
+        winmm
     )
 
     if (J3D_DIRECTX6)
@@ -240,9 +314,9 @@ if (JONES3D_BUILD_SYSTEM_TESTS)
             d3dcompiler
             dinput8
             dxguid
-            Xinput
+            xinput
             wbemuuid
-            OleAut32
+            oleaut32
         )
     endif()
 
@@ -277,14 +351,29 @@ if (JONES3D_BUILD_DISRUPTIVE_SYSTEM_TESTS)
         "${CMAKE_CURRENT_SOURCE_DIR}"
     )
 
+    # Added: The tested sources compile the DX9 backend, whose stdSysTypesDX9.h and stdBackendTypes.h
+    # live in this directory.
+    if (J3D_DIRECTX9)
+        target_include_directories(stdDisruptiveSystemTests PRIVATE
+            "${STD_SOURCE_DIR}/Win95/DX9"
+        )
+    endif()
+
+    if (JONES3D_SHADER_HEADER_DIR)
+        # The std disruptive system test target compiles the DX9 sources directly; add the generated
+        # shader headers to its include path and wait for them to be generated first.
+        target_include_directories(stdDisruptiveSystemTests PRIVATE ${JONES3D_SHADER_HEADER_DIR})
+        add_dependencies(stdDisruptiveSystemTests std_shaders)
+    endif()
+
     target_link_libraries(stdDisruptiveSystemTests PRIVATE
         j3dcore
         j3dTestSupport
         jansson::jansson
-        Dbghelp
-        Gdi32
-        Ole32
-        Winmm
+        dbghelp
+        gdi32
+        ole32
+        winmm
     )
 
     if (J3D_DIRECTX6)
@@ -297,9 +386,9 @@ if (JONES3D_BUILD_DISRUPTIVE_SYSTEM_TESTS)
             d3dcompiler
             dinput8
             dxguid
-            Xinput
+            xinput
             wbemuuid
-            OleAut32
+            oleaut32
         )
     endif()
 

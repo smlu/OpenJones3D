@@ -62,7 +62,7 @@
         STDMEMORYBLOCK_ZONE_GETPREVOFFSET((hdr)->size)))
 
 // Memory block related constants
-static_assert(sizeof(void*) == 4, "stdMemory: Only 32-bit system supported");
+J3D_ASSERT_SIZE32(sizeof(void*) == 4, "stdMemory: Only 32-bit system supported");
 
 #define STDMEMORYBLOCK_MAXBLOCKS        8456      // Number could represent targeted 256 MB memory pool. As 8456 * 31744 = 268435456 bytes (~256 MiB)
 #define STDMEMORYBLOCK_ALLOC_THRESHOLD  4096     // Maximum allocation size to go into zone blocks (maybe to fit system page size?)
@@ -71,10 +71,10 @@ static_assert(sizeof(void*) == 4, "stdMemory: Only 32-bit system supported");
 #define STDMEMORYBLOCK_ZONE_MAXDATASIZE 31728    // Available memory per zone
 
 #define STDMEMORYBLOCK_ZONE_INITIALBLOCKSIZE (STDMEMORYBLOCK_ZONE_CALCBLOCKSIZE(STDMEMORYBLOCK_ZONE_MAXDATASIZE))    // Zone size + one header
-static_assert(STDMEMORYBLOCK_ZONE_INITIALBLOCKSIZE == 31736, "STDMEMORYBLOCK_ZONE_INITIALBLOCKSIZE must be 31736 bytes");
+J3D_ASSERT_SIZE32(STDMEMORYBLOCK_ZONE_INITIALBLOCKSIZE == 31736, "STDMEMORYBLOCK_ZONE_INITIALBLOCKSIZE must be 31736 bytes");
 
 #define STDMEMORYBLOCK_ZONE_ALLOCSIZE       (STDMEMORYBLOCK_ZONE_INITIALBLOCKSIZE + sizeof(tMemoryBlockHeader))    // Total allocated size when allocating a zone heap data
-static_assert(STDMEMORYBLOCK_ZONE_ALLOCSIZE == 31744, "STDMEMORYBLOCK_ZONE_ALLOCSIZE must be 31744 bytes");
+J3D_ASSERT_SIZE32(STDMEMORYBLOCK_ZONE_ALLOCSIZE == 31744, "STDMEMORYBLOCK_ZONE_ALLOCSIZE must be 31744 bytes");
 
 // Module vars
 static bool bStartup = false;
@@ -182,7 +182,7 @@ void* J3DAPI stdMemory_Malloc(size_t size, const char* pFilename, size_t line)
     }
 
     pHeap->header.number    = stdMemory_g_curState.totalAllocs;
-    pHeap->header.id        = (uint32_t)pHeap;
+    pHeap->header.id        = (uint32_t)(uintptr_t)pHeap; // Altered: uintptr_t step; id is a low-32-bit integrity cookie
     pHeap->header.size      = size;
     pHeap->header.pFilename = pFilename;
     pHeap->header.line      = line;
@@ -199,7 +199,8 @@ void* J3DAPI stdMemory_Malloc(size_t size, const char* pFilename, size_t line)
     memset(&pHeap->pMemory, STDMEMORY_UNINIT_PATTERN, size);
 
     pHeap->header.magic = STDMEMORY_HEADERMAGIC;
-    *(void**)((char*)&pHeap->pMemory + size) = (void*)STDMEMORY_HEADERMAGIC; // Set end marker
+    uint32_t endMarker = STDMEMORY_HEADERMAGIC; // Fixed: store the end marker through memcpy; its address can be unaligned, so a void* dereference is UB (same bytes on 32-bit)
+    memcpy((char*)&pHeap->pMemory + size, &endMarker, sizeof(endMarker)); // Set end marker
 
     stdMemory_g_curState.totalBytes += size;
 
@@ -221,9 +222,11 @@ void J3DAPI stdMemory_Free(void* pBytes)
 
     tMemoryHeader* pHeader = STDMEMORY_GETHEADER(pBytes);
 
-    STD_ASSERTREL((pHeader != NULL) && ((uint32_t)pHeader == pHeader->id));
+    STD_ASSERTREL((pHeader != NULL) && ((uint32_t)(uintptr_t)pHeader == pHeader->id)); // Altered: uintptr_t step; id is a low-32-bit integrity cookie
     STD_ASSERTREL(pHeader->magic == STDMEMORY_HEADERMAGIC);
-    STD_ASSERTREL(*(uint32_t*)((uint8_t*)pBytes + pHeader->size) == STDMEMORY_HEADERMAGIC);
+    uint32_t endMarker; // Fixed: read the end marker through memcpy; its address can be unaligned, so a uint32_t dereference is UB
+    memcpy(&endMarker, (uint8_t*)pBytes + pHeader->size, sizeof(endMarker));
+    STD_ASSERTREL(endMarker == STDMEMORY_HEADERMAGIC);
 
     // Set freed memory to a free pattern
     memset(pBytes, STDMEMORY_FREE_PATTERN, pHeader->size);
@@ -261,7 +264,7 @@ void* J3DAPI stdMemory_Realloc(void* pBytes, size_t size, const char* pFilename,
     }
 
     tMemoryHeader* pHeader = STDMEMORY_GETHEADER(pBytes);
-    STD_ASSERTREL((pHeader != NULL) && ((uint32_t)pHeader == pHeader->id));
+    STD_ASSERTREL((pHeader != NULL) && ((uint32_t)(uintptr_t)pHeader == pHeader->id)); // Altered: uintptr_t step; id is a low-32-bit integrity cookie
 
     size_t curSize = pHeader->size;
     // Fixed: Avoid total-byte accounting overflow when a reallocation grows.
@@ -276,7 +279,7 @@ void* J3DAPI stdMemory_Realloc(void* pBytes, size_t size, const char* pFilename,
         return NULL;
     }
 
-    pHeap->header.id        = (uint32_t)pHeap;
+    pHeap->header.id        = (uint32_t)(uintptr_t)pHeap; // Altered: uintptr_t step; id is a low-32-bit integrity cookie
     pHeap->header.size      = size;
     pHeap->header.pFilename = pFilename;
     pHeap->header.line      = line;
@@ -293,7 +296,8 @@ void* J3DAPI stdMemory_Realloc(void* pBytes, size_t size, const char* pFilename,
     // TODO: If new size is larger set the unused memory to uninitialized pattern
 
     pHeap->header.magic = STDMEMORY_HEADERMAGIC;
-    *(void**)((char*)&pHeap->pMemory + size) = (void*)STDMEMORY_HEADERMAGIC; // Set end marker
+    uint32_t endMarker = STDMEMORY_HEADERMAGIC; // Fixed: store the end marker through memcpy; its address can be unaligned, so a void* dereference is UB (same bytes on 32-bit)
+    memcpy((char*)&pHeap->pMemory + size, &endMarker, sizeof(endMarker)); // Set end marker
 
     if ( size >= curSize )
     {
@@ -317,6 +321,15 @@ void* J3DAPI stdMemory_Realloc(void* pBytes, size_t size, const char* pFilename,
 
 void* J3DAPI stdMemory_BlockMalloc(size_t size)
 {
+#if defined(J3D_64BIT)
+    // Altered: The block zones assume a 32-bit header. They have no effect on game behavior, so 64-bit builds use the C allocator.
+    if ( !size )
+    {
+        return NULL;
+    }
+
+    return malloc(size);
+#endif
     // Fixed: Avoid zero-sized zone allocation and null best-block assertions.
     if ( !size )
     {
@@ -472,6 +485,11 @@ void* J3DAPI stdMemory_BlockMalloc(size_t size)
 
 void J3DAPI stdMemory_BlockFree(void* pMemory)
 {
+#if defined(J3D_64BIT)
+    // Altered: The block zones assume a 32-bit header. They have no effect on game behavior, so 64-bit builds use the C allocator.
+    free(pMemory); // free(NULL) is a no-op, matching the guarded release behavior below.
+    return;
+#endif
     STD_ASSERTREL(pMemory); // Fixed: Moved this check to the top before extracting header to prevent dereferencing NULL pointer
     // Added: Keep release builds from dereferencing NULL block pointers.
     STD_GUARD_VOID(pMemory);
@@ -555,6 +573,11 @@ void* J3DAPI stdMemory_BlockRealloc(void* pMemory, size_t size)
         return NULL;
     }
 
+#if defined(J3D_64BIT)
+    // Altered: The block zones assume a 32-bit header. They have no effect on game behavior, so 64-bit builds use the C allocator.
+    // Placed after the NULL and zero-size checks above so their existing return meaning is kept.
+    return realloc(pMemory, size);
+#endif
     tMemoryBlockHeader* pHeader = STDMEMORYBLOCK_ZONE_GETHEADER_FROMDATA(pMemory); // Fixed: Moved this line here to ensue pMemory is not NULL. Originally was at the top before null checks.
 
     void* pNewData = stdMemory_BlockMalloc(size);
@@ -583,6 +606,11 @@ void* J3DAPI stdMemory_BlockRealloc(void* pMemory, size_t size)
 
 void* J3DAPI stdMemory_BlockAlloc(size_t size)
 {
+#if defined(J3D_64BIT)
+    // Altered: The block zones assume a 32-bit header. They have no effect on game behavior, so 64-bit builds use the C allocator.
+    STD_ASSERTREL(0); // Added: Unreachable on 64-bit; stdMemory_BlockMalloc uses malloc directly.
+    return NULL;
+#endif
     // Fixed: Reject zero-sized and header-overflowing direct block allocations.
     if ( !size || size > SIZE_MAX - sizeof(tMemoryBlockHeader) )
     {

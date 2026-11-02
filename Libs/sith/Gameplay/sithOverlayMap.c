@@ -169,7 +169,7 @@ int J3DAPI sithOverlayMap_Open(SithOverlayMapConfig* pConfig)
         sithOverlayMap_config.aZLevelBounds[7] =  0.80000001f;
         sithOverlayMap_config.aZLevelBounds[8] =  1.0f;
 
-        sithOverlayMap_config.aZLevelColors = (D3DCOLOR*)STDMALLOC(sizeof(*sithOverlayMap_config.aZLevelColors) * sithOverlayMap_config.numZLevels);
+        sithOverlayMap_config.aZLevelColors = (uint32_t*)STDMALLOC(sizeof(*sithOverlayMap_config.aZLevelColors) * sithOverlayMap_config.numZLevels);
         if ( !sithOverlayMap_config.aZLevelColors )
         {
             sithOverlayMap_Close();
@@ -797,7 +797,7 @@ void sithOverlayMap_DrawPlayerIcon(void)
 
             for ( size_t i = 0; i < pPoly->numVertices; ++i )
             {
-                LPD3DTLVERTEX pVert = &pPoly->aVertices[i];
+                StdVertexTL* pVert = &pPoly->aVertices[i];
 
                 rdVector3 vert;
                 vert.x = sithOverlayMap_aPlayerIconVerts[i].x;
@@ -857,7 +857,7 @@ void J3DAPI sithOverlayMap_DrawThingIcon(const SithThing* pThing, const rdMateri
                 }
             }
 
-            D3DCOLOR layerColor = sithOverlayMap_config.aZLevelColors[layer];
+            uint32_t layerColor = sithOverlayMap_config.aZLevelColors[layer];
             lightColor.red   = (float)STD_GETRED(layerColor) / 255.0f;
             lightColor.green = (float)STD_GETGREEN(layerColor) / 255.0f;
             lightColor.blue  = (float)STD_GETBLUE(layerColor) / 255.0f;
@@ -902,7 +902,7 @@ void J3DAPI sithOverlayMap_DrawThingIcon(const SithThing* pThing, const rdMateri
             float posY = -pos.y + sithOverlayMap_canvasPos.y;
             for ( size_t i = 0; i < pPoly->numVertices; ++i )
             {
-                LPD3DTLVERTEX pVert = &pPoly->aVertices[i];
+                StdVertexTL* pVert = &pPoly->aVertices[i];
                 pVert->sx  = posX + aVertices[i].x * sithOverlayMap_vertexScale;
                 pVert->sy  = posY + aVertices[i].y * sithOverlayMap_vertexScale;
                 pVert->sz  = RD_FIXEDPOINT_RHW_SCALE_X2; // Altered: Changed to RD_FIXEDPOINT_RHW_SCALE_X2 from RD_FIXEDPOINT_RHW_SCALE_X5 to be drawn above geometry wireframe

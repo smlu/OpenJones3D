@@ -9,8 +9,6 @@
 
 J3D_EXTERN_C_START
 
-int __stdcall Indy3D_WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd);
-
 // Helper hooking functions
 void Indy3D_InstallHooks(void);
 void Indy3D_ResetGlobals(void);

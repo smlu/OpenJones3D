@@ -1,3 +1,4 @@
+#include <std/Win95/stdSysTagsWin32.h>
 #include "stdWin95SystemTestSupport.h"
 
 #include <unity_fixture.h>
@@ -12,6 +13,8 @@
 #include <std/Win95/stdControl.h>
 #include <std/Win95/stdDisplay.h>
 #include <std/Win95/stdWin95.h>
+
+#include <w32util/wuRegistry.h>
 
 #include "stdGeneralTest.h"
 
@@ -561,6 +564,9 @@ void StdWin95SystemTest_RequireDisplayConfig(void)
     if ( !stdConfig_HasStarted() )
     {
         StdGeneralTest_DeleteFile(STDWIN95SYSTEMTEST_CONFIG_FILE);
+        // Added: Register the fallback reader so stdConfig can start without w32util directly.
+        const StdConfigFallback fallback = { wuRegistry_HasStarted, wuRegistry_GetInt, wuRegistry_GetFloat, wuRegistry_GetStr };
+        stdConfig_SetFallback(&fallback);
         if ( !stdConfig_Startup(STDWIN95SYSTEMTEST_CONFIG_FILE) )
         {
             TEST_IGNORE_MESSAGE("stdConfig startup unavailable for system display config.");

@@ -10,6 +10,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <wchar.h>
 
 #define SITHCONSOLE_MAXLINES 32
 #define SITHCONSOLE_LINELEN  128

@@ -355,10 +355,16 @@ TEST_GROUP_RUNNER(j3dMacros)
 }
 
 void TEST_j3dMacros_GROUP_RUNNER(void);
+void TEST_j3dCrt_GROUP_RUNNER(void);
 
 static void runAllTests(void)
 {
     TEST_j3dMacros_GROUP_RUNNER();
+#if !defined(J3D_PLATFORM_NULL)
+    // Altered: on the Null platform the CRT suite runs as its own j3dcore.Crt target (j3dCrtTest.c
+    // provides main there), so it is not linked into this executable.
+    TEST_j3dCrt_GROUP_RUNNER();
+#endif
 }
 
 int main(int argc, const char* argv[])

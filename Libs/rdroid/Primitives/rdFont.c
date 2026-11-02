@@ -144,8 +144,8 @@ int J3DAPI rdFont_Write(const char* pFilename, const rdFont* pFont, tVBuffer*** 
 int J3DAPI rdFont_WriteEntry(const char* pFilename, const rdFont* pFont)
 {
     // Static san. check
-    static_assert(sizeof(rdGlyphMetrics) == 24, "sizeof(rdGlyphMetrics) == 24");
-    static_assert(sizeof(rdGlyphMetrics) == 24, "sizeof(rdGlyphMetrics) == 24"); // makes sure that 
+    J3D_ASSERT_SIZE32(sizeof(rdGlyphMetrics) == 24, "sizeof(rdGlyphMetrics) == 24");
+    J3D_ASSERT_SIZE32(sizeof(rdGlyphMetrics) == 24, "sizeof(rdGlyphMetrics) == 24"); // makes sure that 
 
     tFileHandle fh = rdroid_g_pHS->pFileOpen(pFilename, "wb+");
     if ( !fh )
@@ -234,8 +234,8 @@ rdFont* J3DAPI rdFont_Load(const char* pFilename)
 int J3DAPI rdFont_LoadEntry(const char* pFilename, rdFont* pFont)
 {
     // Static san. check
-    static_assert(sizeof(rdGlyphMetrics) == 24, "sizeof(rdGlyphMetrics) == 24");
-    static_assert(sizeof(rdGlyphMetrics) == 24, "sizeof(rdGlyphMetrics) == 24"); // makes sure that 
+    J3D_ASSERT_SIZE32(sizeof(rdGlyphMetrics) == 24, "sizeof(rdGlyphMetrics) == 24");
+    J3D_ASSERT_SIZE32(sizeof(rdGlyphMetrics) == 24, "sizeof(rdGlyphMetrics) == 24"); // makes sure that 
 
     pFont->aGlyphs = (rdGlyphMetrics*)STDMALLOC(sizeof(rdGlyphMetrics) * RDFONT_MAXGLYPHS);
     pFont->pName   = (char*)STDMALLOC(RDFONT_MAXNAMELEN);
@@ -581,7 +581,7 @@ void J3DAPI rdFont_DrawCharScaled(size_t chr, float x, float y, float z, const r
     pPoly->pMaterial    = pFont->pMaterial;
     pPoly->matCelNum    = 0;
 
-    LPD3DTLVERTEX pCurVert = pPoly->aVertices;
+    StdVertexTL* pCurVert = pPoly->aVertices;
     pCurVert->sx  = x;
     pCurVert->sy  = y;
     pCurVert->sz  = z;

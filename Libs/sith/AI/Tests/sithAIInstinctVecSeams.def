@@ -1,0 +1,8 @@
+// Engine functions that the tested sithAIInstinct/sithAI functions call and that the vector tests replace with the
+// stubs of Libs/sith/Tests/Vec/sithVecWorld.h (see Libs/sith/Tests/Vec/README.md).
+//  SITHVEC_SEAM:   engine calls with side effects; the capture harness patches the original function to jump to the stub
+//  SITHVEC_LOOKUP: pure lookups that read engine globals; the harness leaves the original running on the synthetic
+//                  world and verifies the stub against it
+// Each name N is replaced by sithVec_N in the tested source (sithAIVecTested.c, which compiles sithAI.c).
+// sithAIInstinct_InitInstincts, sithAI_RegisterInstinct and sithAI_FindInstinct only use the registry and
+// stdUtil string functions, so there are no seams yet.

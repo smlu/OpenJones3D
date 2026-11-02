@@ -4,6 +4,8 @@
 #include <std/types.h>
 #include <std/RTI/addresses.h>
 
+#include <wchar.h>
+
 J3D_EXTERN_C_START
 
 #define STDCOMM_MAX_PLAYERS 24U
@@ -13,8 +15,10 @@ int32_t J3DAPI stdComm_Send(DPID idFrom, DPID idTo, const void* pData, uint32_t 
 int32_t J3DAPI stdComm_Receive(DPID* pSender, void* pData, size_t* pLength);
 
 int J3DAPI stdComm_GetGame(size_t gameNum, StdCommGame* pGame); // Added
-HRESULT J3DAPI stdComm_CreateGame(const StdCommGame* pSettings); // Added
-HRESULT J3DAPI stdComm_SetGameParams(StdCommGame* pSettings); // Added
+// Altered: Returns int instead of HRESULT, 0 is success.
+int J3DAPI stdComm_CreateGame(const StdCommGame* pSettings); // Added
+// Altered: Returns int instead of HRESULT, 0 is success.
+int J3DAPI stdComm_SetGameParams(StdCommGame* pSettings); // Added
 int J3DAPI stdComm_JoinGame(size_t gameNum, const wchar_t* pPassword); // Added
 void stdComm_CloseGame(void);
 

@@ -14,7 +14,14 @@
 
 #include <std/Win95/stdDisplay.h>
 
-bool rdCamera_dword_5E10E8 = false;
+#ifdef J3D_STANDALONE
+// Added: Standalone builds have no retail executable to hold these. *_ResetGlobals sets the starting values.
+rdVector3 rdCamera_g_camPYR;
+rdCamera* rdCamera_g_pCurCamera;
+rdMatrix34 rdCamera_g_camMatrix;
+#endif
+
+static bool rdCamera_bOverlayDepthRange = false;
 
 void J3DAPI rdCamera_BuildFOV(rdCamera* pCamera);
 void J3DAPI rdCamera_BuildClipFrustrum(const rdCamera* pCamera, rdClipFrustum* pFrustum, float width, float height);
@@ -47,7 +54,7 @@ void rdCamera_InstallHooks(void)
     J3D_HOOKFUNC(rdCamera_SetAttenuation);
     J3D_HOOKFUNC(rdCamera_AddLight);
     J3D_HOOKFUNC(rdCamera_ClearLights);
-    J3D_HOOKFUNC(rdCamera_sub_4C60B0);
+    J3D_HOOKFUNC(rdCamera_SetOverlayDepthRange);
 }
 
 void rdCamera_ResetGlobals(void)
@@ -57,7 +64,7 @@ void rdCamera_ResetGlobals(void)
     memset(&rdCamera_g_camMatrix, 0, sizeof(rdCamera_g_camMatrix));
 }
 
-inline float rdCamera_ClampFOV(float fov)
+static inline float rdCamera_ClampFOV(float fov)
 {
     return STDMATH_CLAMP(fov, RDCAMERA_FOVMIN, RDCAMERA_FOVMAX);
 }
@@ -268,7 +275,7 @@ void J3DAPI rdCamera_BuildFOV(rdCamera* pCamera)
             float fscale         = RD_REF_APECTRATIO / (hwidth / hheight);
             pCamera->focalLength = pCamera->focalLength * fscale;
 
-            if ( rdCamera_dword_5E10E8 )
+            if ( rdCamera_bOverlayDepthRange )
             {
                 pCamera->invNearClipPlane = 1.0f / pCamera->pFrustum->nearPlane;
                 pCamera->invFarClipPlane  = 1.0f / (1.0f / pCamera->pFrustum->farPlane - pCamera->invNearClipPlane) * 0.1f;
@@ -337,7 +344,7 @@ int J3DAPI rdCamera_SetFrustrum(rdCamera* pCamera, rdClipFrustum* pFrustrum, int
     pFrustrum->nearPlane   = pCamera->pFrustum->nearPlane;
     pFrustrum->farPlane    = pCamera->pFrustum->farPlane;
 
-    if ( rdCamera_dword_5E10E8 )
+    if ( rdCamera_bOverlayDepthRange )
     {
         pCamera->invNearClipPlane = 1.0f / pCamera->pFrustum->nearPlane;
         pCamera->invFarClipPlane = 1.0f / (1.0f / pCamera->pFrustum->farPlane - pCamera->invNearClipPlane) * 0.1f;
@@ -519,12 +526,12 @@ int J3DAPI rdCamera_ClearLights(rdCamera* pCamera)
     return 1;
 }
 
-void J3DAPI rdCamera_sub_4C60B0(bool bEnable)
+void J3DAPI rdCamera_SetOverlayDepthRange(bool bEnable)
 {
-    rdCamera_dword_5E10E8 = bEnable;
+    rdCamera_bOverlayDepthRange = bEnable;
 }
 
-bool rdCamera_sub_506861(void)
+bool rdCamera_IsOverlayDepthRangeEnabled(void)
 {
-    return rdCamera_dword_5E10E8;
+    return rdCamera_bOverlayDepthRange;
 }

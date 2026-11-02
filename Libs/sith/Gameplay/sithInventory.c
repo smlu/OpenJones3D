@@ -12,6 +12,16 @@
 #include <std/General/stdUtil.h>
 #include <std/Win95/stdComm.h>
 
+#ifdef J3D_STANDALONE
+// Added: Standalone builds have no retail executable to hold these. *_ResetGlobals sets the starting values.
+int sithInventory_g_bInitInventory;
+int sithInventory_g_bSendDeactivateMessage;
+int sithInventory_g_dword_56B750;
+int sithInventory_g_dword_56B754;
+SithInventoryType sithInventory_g_aTypes[SITHINVENTORY_MAXTYPES];
+SithPowerKeybind sithInventory_g_aPowerKeybinds[20];
+#endif
+
 void sithInventory_InstallHooks(void)
 {
     J3D_HOOKFUNC(sithInventory_RegisterType);
@@ -57,7 +67,7 @@ void sithInventory_ResetGlobals(void)
     STD_ZEROMEM(&sithInventory_g_dword_56B750, sizeof(sithInventory_g_dword_56B750));
     STD_ZEROMEM(&sithInventory_g_dword_56B754, sizeof(sithInventory_g_dword_56B754));
     STD_ZEROMEM(&sithInventory_g_aTypes, sizeof(sithInventory_g_aTypes));
-    STD_ZEROMEM(&sithInventory_g_aUnknown, sizeof(sithInventory_g_aUnknown));
+    STD_ZEROMEM(&sithInventory_g_aPowerKeybinds, sizeof(sithInventory_g_aPowerKeybinds));
 }
 
 void J3DAPI sithInventory_RegisterType(size_t typeId, const char* pName, float min, float max, SithInventoryTypeFlag flags, SithCog* pItemCog, rdModel3* pInvModel, rdModel3* pItemModel)
@@ -713,28 +723,28 @@ SithInventoryType* J3DAPI sithInventory_GetInventoryType(SithThing* pThing, size
 
 // Following 3 functions were found in debug version
 
-int sithInventory_sub_45E072(void)
+int sithInventory_ClearPowerKeybinds(void)
 {
-    for ( size_t i = 0; i < STD_ARRAYLEN(sithInventory_g_aUnknown); ++i )
+    for ( size_t i = 0; i < STD_ARRAYLEN(sithInventory_g_aPowerKeybinds); ++i )
     {
-        sithInventory_g_aUnknown[i].bEnabled = 0;
+        sithInventory_g_aPowerKeybinds[i].bEnabled = 0;
     }
 
     return 0;
 }
 
-void J3DAPI sithInventory_sub_45E0B0(size_t index, int a2)
+void J3DAPI sithInventory_SetPowerKeybind(size_t index, int binding)
 {
-    sithInventory_g_aUnknown[index].bEnabled = 1;
-    sithInventory_g_aUnknown[index].unknown2 = a2;
-    sithInventory_g_aUnknown[index].unknown3 = 0;
+    sithInventory_g_aPowerKeybinds[index].bEnabled   = 1;
+    sithInventory_g_aPowerKeybinds[index].binding    = binding;
+    sithInventory_g_aPowerKeybinds[index].bActivated = 0;
 }
 
-int J3DAPI sithInventory_sub_45E0E4(size_t index)
+int J3DAPI sithInventory_GetPowerKeybind(size_t index)
 {
-    if ( sithInventory_g_aUnknown[index].bEnabled == 1 )
+    if ( sithInventory_g_aPowerKeybinds[index].bEnabled == 1 )
     {
-        return sithInventory_g_aUnknown[index].unknown2;
+        return sithInventory_g_aPowerKeybinds[index].binding;
     }
 
     return -1;

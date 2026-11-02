@@ -173,6 +173,7 @@ typedef struct yy_buffer_state *YY_BUFFER_STATE;
 #include <std/General/stdUtil.h>
 
 #include <stdio.h>
+#include <stdlib.h>
 
 static YY_CHAR aLexerCurSymText[256] = {0};
 

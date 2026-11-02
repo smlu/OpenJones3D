@@ -14,7 +14,7 @@ struct VS_OUTPUT
     float4 diffuse : COLOR0;
     float4 specular : COLOR1;
     float2 texCoord : TEXCOORD0;
-    float rhw : TEXCOORD1;
+    float4 rhw : TEXCOORD1; // Altered: float4 so Wine's shader compiler can't pack it into the same register as TEXCOORD0.
 };
 
 VS_OUTPUT main(VS_INPUT input)

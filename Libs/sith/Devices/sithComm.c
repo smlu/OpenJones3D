@@ -15,6 +15,15 @@
 #include <std/General/stdUtil.h>
 #include <std/Win95/stdComm.h>
 
+#include <wchar.h>
+
+#ifdef J3D_STANDALONE
+// Added: Standalone builds have no retail executable to hold these. *_ResetGlobals sets the starting values.
+DPID sithMessage_g_localPlayerId;
+SithMessageStream sithMessage_g_outputstream;
+SithMessageStream sithMessage_g_inputstream;
+#endif
+
 static SithMessageProcessFunc sithMessage_aTypeFuncs[65] = { 0 };
 
 static bool sithMessage_bSturtup             = false;
@@ -473,7 +482,7 @@ void sithMessage_InitMessageHandlers(void)
     sithMessage_RegisterFunction(SITHDSS_CHECKMEMBERSHIPLIST, sithMessage_ProcessCheckMembershipList);
     sithMessage_RegisterFunction(SITHDSS_QUIT, sithMulti_ProcessQuit);
     sithMessage_RegisterFunction(SITHDSS_MOVEPOS, sithDSSThing_ProcessMovePos);
-    sithMessage_RegisterFunction(SITHDSS_UNKNOWN_44, sithDSS_sub_4B3790);
+    sithMessage_RegisterFunction(SITHDSS_ENDSECTION, sithDSS_ProcessEndSection);
     sithMessage_RegisterFunction(SITHDSS_VOICESTATE, sithVoice_ProcessVoiceState);
     sithMessage_RegisterFunction(SITHDSS_VEHICLECONTROLSTATE, sithDSS_ProcessVehicleControlsState);
     sithMessage_RegisterFunction(SITHDSS_WHIPSTATUS, sithWhip_Restore);
@@ -482,8 +491,8 @@ void sithMessage_InitMessageHandlers(void)
 
 int J3DAPI sithMessage_FileWrite(const SithMessage* pMessage)
 {
-    static_assert(sizeof(pMessage->type) == 2, "sizeof(pMessage->type) == 2");
-    static_assert(sizeof(pMessage->length) == 4, "sizeof(pMessage->length) == 4");
+    J3D_ASSERT_SIZE32(sizeof(pMessage->type) == 2, "sizeof(pMessage->type) == 2");
+    J3D_ASSERT_SIZE32(sizeof(pMessage->length) == 4, "sizeof(pMessage->length) == 4");
 
     if ( stdConffile_Write(&pMessage->type, sizeof(pMessage->type)) )
     {

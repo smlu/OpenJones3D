@@ -75,7 +75,7 @@ void J3DAPI sithRenderSky_HorizonFaceToPlane(rdCacheProcEntry* pPoly, const rdFa
     pPoly->lightingMode = RD_LIGHTING_NONE;
     for ( size_t i = 0; i < numVerts; ++i )
     {
-        LPD3DTLVERTEX pOutVert = &pPoly->aVertices[i];
+        StdVertexTL* pOutVert = &pPoly->aVertices[i];
         pOutVert->sx = aVerts[i].x;
         pOutVert->sy = aVerts[i].y;
         pOutVert->sz = aVerts[i].z;
@@ -125,7 +125,7 @@ void J3DAPI sithRenderSky_CeilingFaceToPlane(rdCacheProcEntry* pPoly, const rdFa
             tu += pFace->texVertOffset.x;
             tv += pFace->texVertOffset.y;
 
-            LPD3DTLVERTEX pOutVert = &pPoly->aVertices[i];
+            StdVertexTL* pOutVert = &pPoly->aVertices[i];
             pOutVert->tu  = tu;
             pOutVert->tv  = tv;
             pOutVert->sx  = aTransformedVerts[i].x;

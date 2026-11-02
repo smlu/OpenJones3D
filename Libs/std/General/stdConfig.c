@@ -7,8 +7,6 @@
 #include <std/General/stdMemory.h>
 #include <std/General/stdUtil.h>
 
-#include <w32util/wuRegistry.h>
-
 #include <string.h>
 
 #define STDCONFIG_VERSION "1.0.0"
@@ -16,10 +14,18 @@
 static bool stdConfig_bStarted = false;
 static StdJSONHandle stdConfig_hJson = NULL;
 static tHashTable* stdConfig_pKeyMappingTable = NULL;
+static StdConfigFallback stdConfig_fallback;
 
 // Internal helper functions
 bool J3DAPI stdConfig_AddRegKeyMapping(const char* pConfigKey, const char* pRegistryKey);
 static const char* stdConfig_GetRegistryKey(const char* pConfigKey);
+
+void stdConfig_SetFallback(const StdConfigFallback* pFallback)
+{
+    STD_ASSERTREL(pFallback);
+
+    stdConfig_fallback = *pFallback;
+}
 
 void stdConfig_InitRegKeyMappings(void)
 {
@@ -77,7 +83,8 @@ bool J3DAPI stdConfig_Startup(const char* pConfigPath)
     }
 
     // Check dependencies
-    if ( !stdJSON_HasStarted() || !wuRegistry_HasStarted() )
+    // Altered: The fallback reader is registered by the upper layer instead of a direct w32util dependency.
+    if ( !stdJSON_HasStarted() || !stdConfig_fallback.pfHasStarted || !stdConfig_fallback.pfHasStarted() )
     {
         STDLOG_ERROR("stdConfig_Startup: stdJSON or wuRegistry module not started");
         return false;
@@ -235,7 +242,7 @@ bool J3DAPI stdConfig_GetBool(const char* pKey, bool defaultValue)
         const char* pRegistryKey = stdConfig_GetRegistryKey(pKey);
         if ( pRegistryKey )
         {
-            bool value = !!wuRegistry_GetInt(pRegistryKey, defaultValue ? 1 : 0);
+            bool value = !!stdConfig_fallback.pfGetInt(pRegistryKey, defaultValue ? 1 : 0);
             stdJSON_SetBool(stdConfig_hJson, pKey, value);
             return value;
         }
@@ -271,7 +278,7 @@ int J3DAPI stdConfig_GetInt(const char* pKey, int defaultValue)
         const char* pRegistryKey = stdConfig_GetRegistryKey(pKey);
         if ( pRegistryKey )
         {
-            int value = wuRegistry_GetInt(pRegistryKey, defaultValue);
+            int value = stdConfig_fallback.pfGetInt(pRegistryKey, defaultValue);
             stdJSON_SetInt(stdConfig_hJson, pKey, value);
             return value;
         }
@@ -306,7 +313,7 @@ float J3DAPI stdConfig_GetFloat(const char* pKey, float defaultValue)
         const char* pRegistryKey = stdConfig_GetRegistryKey(pKey);
         if ( pRegistryKey )
         {
-            float value = wuRegistry_GetFloat(pRegistryKey, defaultValue);
+            float value = stdConfig_fallback.pfGetFloat(pRegistryKey, defaultValue);
             stdJSON_SetFloat(stdConfig_hJson, pKey, value);
             return value;
         }
@@ -344,7 +351,7 @@ bool J3DAPI stdConfig_GetString(const char* pKey, char* pDstStr, size_t size, co
         const char* pRegistryKey = stdConfig_GetRegistryKey(pKey);
         if ( pRegistryKey )
         {
-            int result = wuRegistry_GetStr(pRegistryKey, pDstStr, size, pDefaultValue);
+            int result = stdConfig_fallback.pfGetStr(pRegistryKey, pDstStr, size, pDefaultValue);
 
             // Store the value in JSON for future access
             stdJSON_SetString(stdConfig_hJson, pKey, pDstStr);

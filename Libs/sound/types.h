@@ -1,27 +1,15 @@
 #ifndef SOUND_TYPES_H
 #define SOUND_TYPES_H
 #include <stdint.h>
-#include <Mmreg.h>
+#include <std/types.h>
 #include <j3dcore/j3d.h>
 #include <rdroid/types.h>
 
-#if defined (J3D_DIRECTX6)
-#include <DirectX6/dsound.h>
-#elif defined (J3D_DIRECTX9)
-#include <dsound.h>
-#else
-#error "Unsuported system sound API. Please define J3D_DIRECTX6 or J3D_DIRECTX9 in your project."
-#endif
-
 J3D_EXTERN_C_START
 
-#if defined (J3D_DIRECTX6)
-typedef IDirectSoundBuffer tSysSoundBuffer;
-#elif defined (J3D_DIRECTX9)
-typedef IDirectSoundBuffer8 tSysSoundBuffer;
-#else
-#error "Unsuported system sound API. Please define J3D_DIRECTX6 or J3D_DIRECTX9 in your project."
-#endif
+// Added: Opaque sound types. Each backend defines what they are.
+typedef struct sSysSoundBuffer tSysSoundBuffer;
+typedef struct sSysSoundDevice tDirectSound;
 
 typedef enum eSoundOpenFlags
 {
@@ -103,7 +91,27 @@ typedef struct sSoundInfo
     uint32_t bCompressed;
     uint32_t idx;
 } SoundInfo;
-static_assert(sizeof(SoundInfo) == 48, "sizeof(SoundInfo) == 48"); // Note the size must stay 48 bytes due to bank serialization to CND file
+J3D_ASSERT_SIZE32(sizeof(SoundInfo) == 48, "sizeof(SoundInfo) == 48"); // Note the size must stay 48 bytes due to bank serialization to CND file
+
+// Added: Serialized form of a SoundInfo record in the sound banks. The 32-bit build stored the raw
+// pLipSyncData pointer (4 bytes) into the file; keeping that slot a uint32_t makes every record the
+// exact 48-byte 32-bit layout on all platforms. The in-memory SoundInfo keeps the real pointer.
+typedef struct sSoundInfoDisk
+{
+    tSoundHandle hSnd;
+    uint32_t bankNum;
+    uint32_t filePathOffset;
+    uint32_t nameOffset;
+    uint32_t dataOffset;
+    uint32_t pLipSyncData;
+    uint32_t sampleRate;
+    uint32_t sempleBitSize;
+    uint32_t numChannels;
+    uint32_t dataSize;
+    uint32_t bCompressed;
+    uint32_t idx;
+} SoundInfoDisk;
+static_assert(sizeof(SoundInfoDisk) == 48, "sizeof(SoundInfoDisk) == 48");
 
 typedef struct sSoundChannel
 {
@@ -132,7 +140,7 @@ typedef struct sSoundFade
     uint32_t msecStartTime;
     uint32_t msecEndTime;
 } SoundFade;
-static_assert(sizeof(SoundFade) == 24, "sizeof(SoundFade) == 24");
+J3D_ASSERT_SIZE32(sizeof(SoundFade) == 24, "sizeof(SoundFade) == 24");
 
 struct sSoundThingInfo
 {
@@ -143,19 +151,17 @@ struct sSoundThingInfo
 
 typedef struct sAudioCompressorState
 {
-    uint8_t unknown0;
-    uint8_t unknown1;
-    int16_t unknown2;
-    int16_t unknown3;
-    int16_t unknown4;
+    int8_t aStepIndex[2];   // per-channel ADPCM step table index
+    int16_t aPrevSample[2]; // per-channel previous (predicted) sample
 } tAudioCompressorState;
+J3D_ASSERT_SIZE32(sizeof(tAudioCompressorState) == 6, "sizeof(tAudioCompressorState) == 6");
 
 typedef struct sAudioCompressedData
 {
     uint32_t uncompressedSize; // Note, don't change int type as it must be 4 bytes due to serialization
     uint8_t compressedData[1];
 } tAudioCompressedData;
-static_assert(sizeof(tAudioCompressedData) == 8, "sizeof(tAudioCompressedData) == 8"); // 8 - due to alignment
+J3D_ASSERT_SIZE32(sizeof(tAudioCompressedData) == 8, "sizeof(tAudioCompressedData) == 8"); // 8 - due to alignment
 
 struct sSoundSpatialInfo
 {

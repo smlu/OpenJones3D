@@ -12,6 +12,8 @@
 #include <std/General/stdUtil.h>
 #include <std/Win95/stdGob.h>
 
+#include <stdarg.h>
+
 #define JF_MAX_HANDLES 32
 
 #define JF_RES_INSTALL  0

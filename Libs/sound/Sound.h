@@ -26,7 +26,7 @@ void Sound_Uninitialize(void);
 int Sound_Startup(void);
 void Sound_Shutdown(void);
 
-int J3DAPI Sound_Open(SoundOpenFlags flags, size_t maxSoundChannels, SoundGetThingInfoCallback pfGetThingInfo, SoundCalcListenerSoundMixFunc pfCalcListenerSoundMix, HWND hwnd);
+int J3DAPI Sound_Open(SoundOpenFlags flags, size_t maxSoundChannels, SoundGetThingInfoCallback pfGetThingInfo, SoundCalcListenerSoundMixFunc pfCalcListenerSoundMix, tSysWindow hwnd);
 void Sound_Close(void);
 
 int J3DAPI Sound_Save(tFileHandle fh);

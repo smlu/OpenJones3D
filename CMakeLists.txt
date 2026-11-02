@@ -42,11 +42,26 @@ option(JONES3D_BUILD_DISRUPTIVE_SYSTEM_TESTS "Build opt-in system tests that can
 option(JONES3D_QOL_IMPROVEMENTS "Enable quality-of-life improvements" ON)
 option(JONES3D_SPEEDRUN_BUILD "Enable vanilla bugs and glitches used in speedruns" OFF)
 option(JONES3D_RUNTIME_GUARDS "Enable runtime safety guards for hardened release behavior" OFF)
+option(JONES3D_STANDALONE "Build without the retail executable: no hooks and no fixed retail addresses" OFF)
+# Added: Sanitizer flags for the native Null build (Jones3D-headless); they are GCC/Clang
+# options with no MSVC equivalent here, so Windows builds reject the option instead of
+# silently ignoring it.
+option(JONES3D_SANITIZE "Add address and undefined behavior sanitizer flags to native builds" OFF)
 
 # --- GAPI options ---
 # Add an option to enable DirectX 9 support. Default is ON.
 option(JONES3D_USE_DIRECTX9 "Build with DirectX 9 support" ON)
 #---------------------
+
+if(NOT WIN32)
+    # Added: Native non-Windows build: no DirectX backend exists yet, so configure a Null
+    # platform without the Windows backends and without the retail-executable hooks.
+    set(J3D_PLATFORM_NULL ON)
+    set(JONES3D_STANDALONE ON CACHE BOOL "" FORCE)
+    # Altered: tests stay ON on the Null platform; the portable unit suites run natively
+    # (the Windows-only suites are excluded per module below).
+    set(JONES3D_BUILD_PROGRAMS OFF CACHE BOOL "" FORCE)
+endif()
 
 if (JONES3D_QOL_IMPROVEMENTS)
     set(J3D_QOL_IMPROVEMENTS ON)
@@ -66,17 +81,43 @@ if (JONES3D_RUNTIME_GUARDS)
     set(J3D_RUNTIME_GUARDS ON)
 endif()
 
+if (JONES3D_STANDALONE)
+    # Added: test targets provide their own fake retail globals, which standalone definitions would collide with.
+    # Altered: the Null platform keeps its tests: the standalone/Null collision is resolved per test target
+    # (Libs/sith/Tests), so the portable suites can run natively. Windows standalone behavior is unchanged.
+    if (NOT J3D_PLATFORM_NULL)
+        set(JONES3D_BUILD_TESTS OFF)
+    endif()
+    add_compile_definitions(J3D_STANDALONE J3D_LOCAL_RTI J3D_LOCAL_SITH_RTI J3D_LOCAL_RDROID_RTI)
+endif()
+
 if (JONES3D_BUILD_TESTS)
     enable_testing()
 else()
     set(JONES3D_BUILD_SYSTEM_TESTS OFF)
+    # Added: the Null platform has no Windows test suite, but its native CRT shim test
+    # (j3dcore.Crt in Libs/j3dcore/Tests) needs testing enabled from the root.
+    if (J3D_PLATFORM_NULL)
+        enable_testing()
+    endif()
+endif()
+
+# Added: the Null platform has no device backends and no Windows console: system and disruptive
+# system tests stay Windows-only there. Windows behavior is unchanged.
+if (J3D_PLATFORM_NULL)
+    set(JONES3D_BUILD_SYSTEM_TESTS OFF)
+    set(JONES3D_BUILD_DISRUPTIVE_SYSTEM_TESTS OFF)
 endif()
 
 if (NOT JONES3D_BUILD_SYSTEM_TESTS)
     set(JONES3D_BUILD_DISRUPTIVE_SYSTEM_TESTS OFF)
 endif()
 
-if(JONES3D_USE_DIRECTX9)
+if(WIN32 AND NOT JONES3D_USE_DIRECTX9)
+    message(FATAL_ERROR "The DirectX 6 build is paused: its backend isn't updated for the platform layer. Configure with -DJONES3D_USE_DIRECTX9=ON.")
+endif()
+
+if(WIN32 AND JONES3D_USE_DIRECTX9)
     set(JONES3D_GAPI_NAME "DirectX 9")
     set(J3D_DIRECTX9 ON) # Set the variable for the header template
     if (NOT JONES3D_QOL_IMPROVEMENTS)
@@ -86,7 +127,7 @@ if(JONES3D_USE_DIRECTX9)
             set(JONES3D_BUILD_SUFFIX "-dx9-legacy") # Pure legacy behavior
         endif()
     endif()
-else()
+elseif(WIN32)
     set(JONES3D_GAPI_NAME "DirectX 6.1c (original)")
     set(J3D_DIRECTX6 ON) # Set the variable for the header template
     set(J3D_COLORKEYSUPPORTED ON)
@@ -99,6 +140,9 @@ else()
             set(JONES3D_BUILD_SUFFIX "-legacy") # Pure legacy behavior
         endif()
     endif()
+else()
+    # Added: The Null platform has no graphics backend yet (non-Windows configure only).
+    set(JONES3D_GAPI_NAME "Null")
 endif()
 
 # Keep configuration-specific headers in the build tree so DX6 and DX9 builds can coexist.
@@ -138,8 +182,69 @@ if (MSVC)
         "$<$<CONFIG:DEBUG>:/ZI>"
     )
     add_link_options("/Brepro")
+elseif(MINGW)
+    # MinGW-w64 i686 build used for unit tests on Linux.
+    # -msse2/-mfpmath=sse to match the MSVC i386 SSE2 code generation, -fno-strict-aliasing to
+    # keep bit relayout behavior of the original code paths the same.
+    # -mlong-double-64 makes long double 8 bytes like on MSVC (i686 GCC defaults to 12) and keeps
+    # the 64-bit form that the UCRT scanf/printf conversion specifiers expect.
+    add_compile_options(
+        "$<$<COMPILE_LANGUAGE:C>:-std=gnu11>" # keep CMAKE_C_EXTENSIONS from forcing -std=c11, tests rely on GNU behavior
+        -fms-extensions
+        -msse2
+        -mfpmath=sse
+        -fno-strict-aliasing
+        -mlong-double-64
+        -Wall
+        -Wno-unused
+        -Wno-missing-braces
+        -Wno-switch
+        -Wno-parentheses
+    )
+    add_link_options(-static-libgcc)
+elseif(NOT WIN32 AND (CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU"))
+    # Added: Native Clang/GCC non-Windows build of the engine libraries (Null platform,
+    # Windows engine .c files are intentionally not validated). -fms-extensions like the
+    # MinGW branch, -fno-strict-aliasing to keep the original bit relayout of the code paths.
+    add_compile_options(
+        "$<$<COMPILE_LANGUAGE:C>:-std=gnu11>"
+        -fms-extensions
+        -fno-strict-aliasing
+        -Wno-switch
+        -Wno-parentheses
+        -Wno-unknown-pragmas
+    )
+    # Added: glibc's backtrace_symbols in stdPlatformNull needs the engine symbols exported to the
+    # dynamic symbol table to name the frames of the headless runner.
+    add_link_options(-rdynamic)
+    # Added: glibc keeps the math functions (sinf, atan2f, sqrtf) in libm; the Windows CRT has them
+    # in the default libraries. Native test executables call engine code that uses them directly.
+    link_libraries(m)
+    if (CMAKE_C_COMPILER_ID MATCHES "Clang")
+        # Added: fail the native build on any cast that truncates a pointer (or widens an int
+        # into one) so 64-bit builds stay pointer-safe. Clang only: these warning groups have
+        # no GCC equivalent. Windows compile flags are unchanged.
+        add_compile_options(
+            -Werror=pointer-to-int-cast
+            -Werror=int-to-pointer-cast
+            -Werror=void-pointer-to-int-cast
+            -Werror=void-pointer-to-enum-cast
+            -Werror=pointer-to-enum-cast
+            -Werror=int-conversion
+        )
+    endif()
 else()
     message(FATAL_ERROR "Unsupported compiler: ${CMAKE_CXX_COMPILER_ID}")
+endif()
+
+# Added: Sanitizer flags for the native Null build; must be set before the subdirectories
+# so every native target (engine libs, Jones3DGame, Jones3D-headless) is instrumented.
+if (JONES3D_SANITIZE)
+    if (WIN32)
+        message(FATAL_ERROR "JONES3D_SANITIZE is only supported on native (non-Windows) builds")
+    endif()
+    add_compile_options(-fsanitize=address,undefined -fno-omit-frame-pointer)
+    add_link_options(-fsanitize=address,undefined)
 endif()
 
 # Add Libs subdirectory
@@ -178,6 +283,7 @@ jones3d_print_config_entry("Graphics API" "${JONES3D_GAPI_NAME}")
 jones3d_print_config_option("QOL improvements" JONES3D_QOL_IMPROVEMENTS)
 jones3d_print_config_option("Runtime guards" JONES3D_RUNTIME_GUARDS)
 jones3d_print_config_option("Speedrun build" JONES3D_SPEEDRUN_BUILD)
+jones3d_print_config_option("Standalone" JONES3D_STANDALONE)
 jones3d_print_config_option("Build programs" JONES3D_BUILD_PROGRAMS)
 jones3d_print_config_option("Build tests" JONES3D_BUILD_TESTS)
 jones3d_print_config_option("Build system tests" JONES3D_BUILD_SYSTEM_TESTS)

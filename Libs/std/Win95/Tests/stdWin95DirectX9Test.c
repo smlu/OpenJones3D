@@ -1,3 +1,4 @@
+#include <std/Win95/DX9/stdSysTypesDX9.h>
 #include <unity_fixture.h>
 #include <j3dcore/j3d.h>
 
@@ -7,7 +8,13 @@
 
 #include <std/General/stdUtil.h>
 #include <std/Win95/DX9/stdShaderDX9.h>
+#include <std/Win95/DX9/stdVertexDX9.h>
 #include <std/Win95/stdControl.h>
+
+#ifndef DIRECTINPUT_VERSION
+#  define DIRECTINPUT_VERSION 0x0800
+#endif
+#include <dinput.h>
 
 TEST_GROUP(stdWin95DirectX9);
 

@@ -11,15 +11,27 @@ J3D_EXTERN_C_START
 #define RDCAMERA_FOVMAX 179.0f
 
 // Current camera orientation
+#if defined(J3D_STANDALONE)
+extern rdVector3 rdCamera_g_camPYR;
+#else
 #define rdCamera_g_camPYR J3D_DECL_FAR_VAR(rdCamera_g_camPYR, rdVector3)
+#endif
 // extern rdVector3 rdCamera_g_camPYR;
 
 // Current camera
+#if defined(J3D_STANDALONE)
+extern rdCamera* rdCamera_g_pCurCamera;
+#else
 #define rdCamera_g_pCurCamera J3D_DECL_FAR_VAR(rdCamera_g_pCurCamera, rdCamera*)
+#endif
 // extern rdCamera *rdCamera_g_pCurCamera;
 
 // Current camera invert view matrix (for converting from view space to world space)
+#if defined(J3D_STANDALONE)
+extern rdMatrix34 rdCamera_g_camMatrix;
+#else
 #define rdCamera_g_camMatrix J3D_DECL_FAR_VAR(rdCamera_g_camMatrix, rdMatrix34)
+#endif
 // extern rdMatrix34 rdCamera_g_camMatrix;
 
 rdCamera* J3DAPI rdCamera_New(float fov, int bFarClip, float nearPlane, float farPlane, float aspectRatio);
@@ -53,8 +65,8 @@ void J3DAPI rdCamera_SetAttenuation(rdCamera* pCamera, float min, float max);
 int J3DAPI rdCamera_AddLight(rdCamera* pCamera, rdLight* pLight, const rdVector3* pPos);
 int J3DAPI rdCamera_ClearLights(rdCamera* pCamera);
 
-void J3DAPI rdCamera_sub_4C60B0(bool bEnable);
-bool rdCamera_sub_506861(void); // Added
+void J3DAPI rdCamera_SetOverlayDepthRange(bool bEnable);
+bool rdCamera_IsOverlayDepthRangeEnabled(void); // Added
 
 // Helper hooking functions
 void rdCamera_InstallHooks(void);

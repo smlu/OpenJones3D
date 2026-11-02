@@ -10,6 +10,8 @@
 #include <std/General/stdJSON.h>
 #include <std/General/stdMemory.h>
 
+#include <w32util/wuRegistry.h>
+
 #include "stdGeneralTest.h"
 
 static const char* stdConfigTest_pPath = "stdConfigTest.json";
@@ -29,6 +31,9 @@ TEST_GROUP(stdConfig);
 
 TEST_SETUP(stdConfig)
 {
+    // Added: Register the test double fallback reader so stdConfig no longer depends on w32util directly.
+    const StdConfigFallback fallback = { wuRegistry_HasStarted, wuRegistry_GetInt, wuRegistry_GetFloat, wuRegistry_GetStr };
+    stdConfig_SetFallback(&fallback);
     StdGeneralTest_Startup();
     stdConfigTest_DeleteFile();
 }
@@ -220,6 +225,22 @@ TEST(stdConfig, TestStartupRejectsInvalidPathOrMissingDependencies)
     TEST_ASSERT_TRUE(stdConfig_Startup(stdConfigTest_pPath));
 }
 
+TEST(stdConfig, TestStartupRequiresRegisteredFallback)
+{
+    TEST_ASSERT_TRUE(stdJSON_Startup());
+
+    const StdConfigFallback fallback = { 0 };
+    stdConfig_SetFallback(&fallback);
+    TEST_ASSERT_FALSE(stdConfig_Startup(stdConfigTest_pPath));
+
+    // Added: Setting the real fallback reader again lets startup succeed.
+    const StdConfigFallback registeredFallback = { wuRegistry_HasStarted, wuRegistry_GetInt, wuRegistry_GetFloat, wuRegistry_GetStr };
+    stdConfig_SetFallback(&registeredFallback);
+    TEST_ASSERT_TRUE(stdConfig_Startup(stdConfigTest_pPath));
+    TEST_ASSERT_TRUE(stdConfig_HasStarted());
+    stdConfig_Shutdown();
+}
+
 TEST(stdConfig, TestStartupCleansUpAfterAllocationFailure)
 {
     TEST_ASSERT_TRUE(stdJSON_Startup());
@@ -283,6 +304,7 @@ TEST_GROUP_RUNNER(stdConfig)
     RUN_TEST_CASE(stdConfig, TestColorRoundTripAndAcceptedFormats);
     RUN_TEST_CASE(stdConfig, TestValuesPersistAcrossRestart);
     RUN_TEST_CASE(stdConfig, TestStartupRejectsInvalidPathOrMissingDependencies);
+    RUN_TEST_CASE(stdConfig, TestStartupRequiresRegisteredFallback);
     RUN_TEST_CASE(stdConfig, TestStartupCleansUpAfterAllocationFailure);
     RUN_TEST_CASE(stdConfig, TestStartupCleansUpAfterFileOpenFailure);
     RUN_TEST_CASE(stdConfig, TestStartupCleansUpAfterFileWriteFailure);

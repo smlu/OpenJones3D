@@ -17,6 +17,8 @@
 #include <std/General/stdMemory.h>
 #include <std/General/stdUtil.h>
 
+#include <stdlib.h>
+
 #define SITHPARTICLE_MAXWORLDPARTICLES 64u // load particel when now particles allocated
 
 static tHashTable* sithParticle_pHashtable;
@@ -406,7 +408,7 @@ void J3DAPI sithParticle_CacheAdd(rdParticle* pParticle)
     SITH_ASSERTREL(strlen(pParticle->aName) > 0);
     SITH_ASSERTREL(sithParticle_pHashtable != NULL);
 
-    (tLinkListNode*)stdHashtbl_Add(sithParticle_pHashtable, pParticle->aName, pParticle);
+    stdHashtbl_Add(sithParticle_pHashtable, pParticle->aName, pParticle);
 }
 
 void J3DAPI sithParticle_CacheRemove(const rdParticle* pParticle)

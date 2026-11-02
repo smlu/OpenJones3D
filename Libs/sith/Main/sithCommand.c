@@ -32,6 +32,9 @@
 #include <std/General/stdUtil.h>
 #include <std/Win95/stdComm.h>
 
+#include <stdlib.h>
+#include <wchar.h>
+
 typedef struct sSithCommandMatInfo
 {
     size_t num;
@@ -332,7 +335,7 @@ int J3DAPI sithCommand_Jump(const SithConsoleCommand* pFunc, const char* pArg)
     }
 
     size_t playerNum;
-    if ( sscanf_s(pArg, "%d", &playerNum) == 0 )
+    if ( sscanf_s(pArg, "%" J3D_SCN_SIZE, &playerNum) == 0 )
     {
         return 0;
     }
@@ -809,7 +812,7 @@ int J3DAPI sithCommand_TwistJoint(const SithConsoleCommand* pFunc, const char* p
     size_t joinNum;
     size_t axis;
     float degrees;
-    if ( sscanf_s(pArg, "%d %d %f", &joinNum, &axis, &degrees) < 3 )
+    if ( sscanf_s(pArg, "%" J3D_SCN_SIZE " %" J3D_SCN_SIZE " %f", &joinNum, &axis, &degrees) < 3 )
     {
         sithConsole_PrintString("Format: tj JOINTNUM AXIS DEGREES");
         return 0;
@@ -1043,7 +1046,7 @@ int J3DAPI sithCommand_MatList(const SithConsoleCommand* pFunc, const char* pArg
         }
     }
 
-    qsort(aMatInfo, pWorld->numMaterials, sizeof(SithCommandMatInfo), sithCommand_CompareMatInfos);
+    qsort(aMatInfo, pWorld->numMaterials, sizeof(SithCommandMatInfo), (int (*)(const void*, const void*))sithCommand_CompareMatInfos);
     for ( int i = pWorld->numMaterials - 1; i >= 0; --i )
     {
         if ( aMatInfo[i].memPerSurf )

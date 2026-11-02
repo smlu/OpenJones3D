@@ -40,8 +40,21 @@
 #include  <std/Win95/std3D.h>
 #include  <std/Win95/stdDisplay.h>
 
+#include <float.h>
 #include <math.h>
 #include <stdint.h>
+
+#ifdef J3D_STANDALONE
+// Added: Standalone builds have no retail executable to hold these. *_ResetGlobals sets the starting values.
+float sithRender_g_fogDensity;
+size_t sithRender_g_numDrawnThings;
+size_t sithRender_g_numArchPolys;
+size_t sithRender_g_numAlphaArchPolys;
+size_t sithRender_g_numThingPolys;
+size_t sithRender_g_numAlphaThingPoly;
+size_t sithRender_g_numVisibleAdjoins;
+size_t sithRender_g_numVisibleSectors;
+#endif
 
 typedef struct sSithRenderSectorQueueEntry
 {
@@ -100,7 +113,7 @@ static float sithRender_maxLightCollectDistance = SITHRENDER_MAXLIGHTCOLLECTDIST
 static SithRenderSectorQueue sithRender_visitedSectorQueue = { 0 };
 
 // Rendering vars
-static bool sithRender_bResetCameraAspect;
+bool sithRender_bResetCameraAspect; // Note: Exported for sithDSS
 static size_t sithRender_curCamSectorIdx; // Not used for anything particular
 
 static size_t sithRender_numRenderedSectors;

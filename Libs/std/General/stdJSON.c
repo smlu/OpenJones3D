@@ -351,7 +351,7 @@ StdJSONHandle J3DAPI stdJSON_Duplicate(const StdJSONHandle hSrc)
     // Copy required keys if they exist
     if ( hSrc->numRequiredKeys > 0 && hSrc->ppRequiredKeys )
     {
-        stdJSON_SetRequiredKeys(hDst, hSrc->ppRequiredKeys, hSrc->numRequiredKeys);
+        stdJSON_SetRequiredKeys(hDst, (const char**)hSrc->ppRequiredKeys, hSrc->numRequiredKeys); // Fixed: Cast for GCC 15's strict pointer typing; no runtime change
     }
 
     return hDst;

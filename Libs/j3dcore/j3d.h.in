@@ -1,6 +1,7 @@
 
 #ifndef J3DCORE_H
 #define J3DCORE_H
+#include <assert.h> // static_assert on GCC/MinGW
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
@@ -26,6 +27,30 @@
     #define J3D_32BIT 1
 #endif
 
+// Added: Checks a struct's size on 32-bit builds, where it matches the original. On 64-bit, pointers change runtime
+// structs. Data read from files or sent over the network needs a layout that holds everywhere, and is checked separately.
+#ifdef J3D_32BIT
+#   define J3D_ASSERT_SIZE32(expr, msg) static_assert(expr, msg)
+#else
+#   define J3D_ASSERT_SIZE32(expr, msg)
+#endif
+
+// Added: like J3D_ASSERT_SIZE32, for structs holding wchar_t. wchar_t is 2 bytes on Windows, as in the original,
+// and 4 bytes on Linux and macOS, so these sizes only hold on 32-bit Windows.
+#if defined(J3D_32BIT) && defined(_WIN32)
+#   define J3D_ASSERT_SIZE32_WCHAR(expr, msg) static_assert(expr, msg)
+#else
+#   define J3D_ASSERT_SIZE32_WCHAR(expr, msg)
+#endif
+
+// Added: scanf conversion for a size_t argument. The original reads counts into size_t with %d, which only fills
+// all of it on 32-bit. 32-bit builds keep %d, so they parse exactly as before.
+#ifdef J3D_32BIT
+#   define J3D_SCN_SIZE "d"
+#else
+#   define J3D_SCN_SIZE "zu"
+#endif
+
 #cmakedefine J3D_QOL_IMPROVEMENTS
 #ifdef J3D_QOL_IMPROVEMENTS
   #define J3D_QOL_VALUE(valueQOL, valueNoQOL) (valueQOL)
@@ -38,6 +63,7 @@
 
 #cmakedefine J3D_DIRECTX6
 #cmakedefine J3D_DIRECTX9
+#cmakedefine J3D_PLATFORM_NULL
 
 #cmakedefine J3D_COLORKEYSUPPORTED
 
@@ -51,16 +77,24 @@
 #       define STRICT
 #   endif
 #   define WIN32_LEAN_AND_MEAN
-#   include <Windows.h>
+#   include <windows.h>
 #   define strcmpi _strcmpi
 #   define strncmpi _strnicmp
 #   define wstrcmpi _wcsicmp
 #   define wstrncmpi _wcsnicmp
 #else
-    // TODO: define J3D_DEBUG
-    typedef int      BOOL;
-    typedef uint8_t  BYTE;
-    typedef uint16_t WORD;
+    // Added: Non-Windows configure. Reuses the POSIX equivalents of the case-insensitive
+    // Windows CRT functions; engine code keeps calling the original names.
+#   ifndef NDEBUG
+#       define J3D_DEBUG 1
+#   endif
+#   include <strings.h>
+#   include <wchar.h>
+#   include <j3dcore/j3dcrt.h>
+#   define strcmpi strcasecmp
+#   define strncmpi strncasecmp
+#   define wstrcmpi wcscasecmp
+#   define wstrncmpi wcsncasecmp
 #endif
 
 #ifdef _MSC_VER 
@@ -86,7 +120,11 @@
 
 #define J3D_UNUSED(x) (x)
 #define J3DNORETURN _Noreturn
-#define J3DAPI __cdecl
+#ifdef _WIN32
+#   define J3DAPI __cdecl
+#else
+#   define J3DAPI
+#endif
 
 // TODO: Detect if C23 and N3030 - Enhanced Enumerations is supported
 //       In this case define macro as: #define J3D_ENUM_TYPE(x) : x

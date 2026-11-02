@@ -9,6 +9,7 @@
 #include <string.h>
 
 #include <j3dcore/Tests/j3dTest.h>
+#include <j3dcore/j3dcrt.h>
 #include <std/General/stdConffile.h>
 #include <std/General/std.h>
 #include <std/General/stdMemory.h>
@@ -245,10 +246,9 @@ int J3DAPI stdConsole_WriteConsole(const char* pText, uint32_t textAttribute)
     return StdGeneralTest_DebugPrint("%s", pText ? pText : "");
 }
 
-int J3DAPI wuRegistry_Startup(HKEY hKey, LPCSTR lpSubKey)
+int J3DAPI wuRegistry_StartupLocalMachine(const char* pSubKey)
 {
-    J3D_UNUSED(hKey);
-    J3D_UNUSED(lpSubKey);
+    J3D_UNUSED(pSubKey);
     stdGeneralTest_bRegistryStarted = true;
     return 0;
 }
@@ -461,18 +461,31 @@ void StdGeneralTest_ResetDebugOutput(void)
 // Compare the complete assertion condition using NULL spelling, independent of MSVC's expansion.
 void StdGeneralTest_AssertLastAssert(const char* pExpectedText, const char* pExpectedFile)
 {
+    // Added: the spellings of NULL in the assertion text: MSVC writes "((void *)0)", the
+    // native Clang/GCC headers write "((void*)0)". Both are normalized to "NULL".
     static const char aExpandedNull[] = "((void *)0)";
+    static const char aExpandedNullNoSpace[] = "((void*)0)";
     const char* pCaptured = J3DTest_GetLastAssertText();
     char aNormalized[2048];
     TEST_ASSERT_TRUE(strlen(pCaptured) < sizeof(aNormalized));
     char* pOutput = aNormalized;
     while ( *pCaptured )
     {
+        size_t expandedLen = 0;
         if ( strncmp(pCaptured, aExpandedNull, sizeof(aExpandedNull) - 1u) == 0 )
+        {
+            expandedLen = sizeof(aExpandedNull) - 1u;
+        }
+        else if ( strncmp(pCaptured, aExpandedNullNoSpace, sizeof(aExpandedNullNoSpace) - 1u) == 0 )
+        {
+            expandedLen = sizeof(aExpandedNullNoSpace) - 1u;
+        }
+
+        if ( expandedLen )
         {
             memcpy(pOutput, "NULL", 4u);
             pOutput += 4u;
-            pCaptured += sizeof(aExpandedNull) - 1u;
+            pCaptured += expandedLen;
         }
         else
         {
@@ -552,7 +565,18 @@ void StdGeneralTest_DeleteFile(const char* pPath)
     if ( pPath )
     {
         errno = 0;
-        if ( remove(pPath) != 0 && errno != ENOENT )
+#ifdef _WIN32
+        int bDeleted = remove(pPath) == 0;
+#else
+        // Altered: the engine file calls of the Null platform (j3dcrt fopen_s, stdFile*) resolve Windows-style
+        // test paths (backslash separators, written case) before touching the filesystem, so a file created as
+        // "dir\\name" really lives at "dir/name". Bare remove() would look for a literal "dir\name", fail with
+        // ENOENT, and leave the file (and its then non-removable directory) behind for the next test run.
+        // Deleting through the same resolution as the creating call keeps suites order-independent.
+        char aResolved[512];
+        int bDeleted = remove(j3dcrt_ResolvePath(pPath, aResolved, sizeof(aResolved))) == 0;
+#endif
+        if ( !bDeleted && errno != ENOENT )
         {
             fprintf(stderr, "Warning: Failed to delete test file '%s' (errno=%d).\n", pPath, errno);
         }

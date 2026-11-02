@@ -131,7 +131,7 @@ int J3DAPI sithSector_ReadSectorsListText(SithWorld* pWorld, int bSkip)
 
     int nRead;
     size_t numSectors;
-    if ( nRead = stdConffile_ScanLine(" world sectors %d", &numSectors), nRead != 1 )
+    if ( nRead = stdConffile_ScanLine(" world sectors %" J3D_SCN_SIZE, &numSectors), nRead != 1 )
     {
         if ( nRead < 0 ) {
             goto eof_error;
@@ -278,7 +278,7 @@ int J3DAPI sithSector_ReadSectorsListText(SithWorld* pWorld, int bSkip)
 
         // Read sector vertices
         size_t numVerts;
-        if ( nRead = stdConffile_ScanLine(" vertices %d", &numVerts), nRead != 1 )
+        if ( nRead = stdConffile_ScanLine(" vertices %" J3D_SCN_SIZE, &numVerts), nRead != 1 )
         {
             if ( nRead < 0 ) {
                 goto eof_error;
@@ -318,7 +318,7 @@ int J3DAPI sithSector_ReadSectorsListText(SithWorld* pWorld, int bSkip)
 
         // Read sector surfaces info
         size_t numSurfs; int surfIdx;
-        if ( nRead = stdConffile_ScanLine(" surfaces %d %d", &surfIdx, &numSurfs), nRead != 2 )
+        if ( nRead = stdConffile_ScanLine(" surfaces %d %" J3D_SCN_SIZE, &surfIdx, &numSurfs), nRead != 2 )
         {
             if ( nRead < 0 ) {
                 goto eof_error;

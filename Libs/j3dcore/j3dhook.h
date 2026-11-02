@@ -18,6 +18,7 @@
 #define _J3D_CALLFUNCFAR_HELPER(func_addr, func_type, ...) \
     ((func_type)func_addr)(__VA_ARGS__)
 
+#if !defined(J3D_STANDALONE)
 /**
 * @brief Simplified macro wrapper for CALLFUNCFAR.
 *
@@ -27,6 +28,10 @@
 */
 #define J3D_TRAMPOLINE_CALL(func_name, ...) \
     J3D_CALLFUNCFAR(func_name##_ADDR, func_name##_TYPE, ##__VA_ARGS__)
+#else
+// Added: A standalone build has no retail executable, so reaching a fixed address is a compile error naming the symbol.
+#define J3D_TRAMPOLINE_CALL(func_name, ...) J3D_STANDALONE_FAR_CALL_##func_name
+#endif
 
 /**
 * @brief Redirects the original function to a specified hook function.
@@ -41,9 +46,16 @@
 *             as `func_ADDR`, which is expected to be globally defined or
 *             included in the source file where this macro is used.
 */
+#if defined(J3D_STANDALONE)
+// Added: A standalone build has no retail executable, so hooks cannot be installed and the
+// J3DHookFunction helper is not compiled; the hook macro expands to nothing.
+#define J3D_HOOKFUNC(func)
+#else
 #define J3D_HOOKFUNC(func) \
     J3DHookFunction(func##_ADDR, (void*)func)
+#endif
 
+#if !defined(J3D_STANDALONE)
 /**
 * @brief Declares a variable at a specific memory address.
 *
@@ -77,12 +89,21 @@
 */
 #define J3D_DECL_FAR_ARRAYVAR(var_name, var_type) \
     (*(var_type)(var_name##_ADDR))
+#else
+// Added: A standalone build has no retail executable, so reaching a fixed address is a compile error naming the symbol.
+#define J3D_DECL_FAR_VAR(var_name, var_type) J3D_STANDALONE_FAR_GLOBAL_##var_name
+#define J3D_DECL_FAR_ARRAYVAR(var_name, var_type) J3D_STANDALONE_FAR_GLOBAL_##var_name
+#endif
 
 J3D_EXTERN_C_START
 
+// Added: The rest of this header hooks bytes in the retail executable, so everything below uses
+// VirtualProtect/FlushInstructionCache and the Win32 types. A standalone build has no retail
+// executable and does not compile or use it.
+#if !defined(J3D_STANDALONE)
 /**
- * @brief Structure to hold the context for hooking
- */
+  * @brief Structure to hold the context for hooking
+  */
     typedef struct {
     DWORD oldProtect;
     uintptr_t startAddress;
@@ -97,7 +118,7 @@ J3D_EXTERN_C_START
  * @param endAddress The end address of the region to modify
  * @return true if successful, false otherwise
  */
-inline bool J3DStartHookContext(J3DHookContext* pCtx, uintptr_t startAddress, uintptr_t endAddress)
+static inline bool J3DStartHookContext(J3DHookContext* pCtx, uintptr_t startAddress, uintptr_t endAddress)
 {
     if ( endAddress <= startAddress ) {
         return false;
@@ -113,7 +134,7 @@ inline bool J3DStartHookContext(J3DHookContext* pCtx, uintptr_t startAddress, ui
  * @param pCtx The pointer to a J3DHookContext structure
  * @return true if successful, false otherwise
  */
-inline bool J3DEndHookContext(J3DHookContext* pCtx)
+static inline bool J3DEndHookContext(J3DHookContext* pCtx)
 {
     DWORD temp;
     return VirtualProtect((LPVOID)pCtx->startAddress, pCtx->size, pCtx->oldProtect, &temp);
@@ -143,6 +164,7 @@ static bool J3DHookFunction(intptr_t pFuncAddr, void* pHookFunc)
 
     return true;
 }
+#endif // J3D_STANDALONE
 
 J3D_EXTERN_C_END
 #endif //JONES3D_HOOK_H

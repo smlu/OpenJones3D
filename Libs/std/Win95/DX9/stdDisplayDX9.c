@@ -1,3 +1,4 @@
+#include <std/Win95/DX9/stdSysTypesDX9.h>
 #include <std/Win95/std3D.h>
 #include <std/Win95/stdDisplay.h>
 #include <std/Win95/stdWin95.h>
@@ -132,7 +133,7 @@ static bool stdDisplay_RestoreTrackedVBufferSurfaces(void);
 static inline void J3DAPI stdDisplay_SetAspectRatio(StdVideoMode* pMode);
 static inline int J3DAPI stdDisplay_SetWindowMode(HWND hWnd, StdVideoMode* pDisplayMode);
 static inline int J3DAPI stdDisplay_SetFullscreenMode(HWND hwnd, const StdVideoMode* pDisplayMode, size_t numBackBuffers);
-static int J3DAPI stdDisplay_InitBuffers(PDIRECT3DDEVICE9 pDevice, StdVideoMode* pDisplayMode, bool bWindowMode, size_t numBuffers);
+static int J3DAPI stdDisplay_InitBuffers(LPDIRECT3DDEVICE9 pDevice, StdVideoMode* pDisplayMode, bool bWindowMode, size_t numBuffers);
 
 static void stdDisplay_ReleaseBuffers(void);
 static void stdDisplay_ReleaseBuffersInternal(bool bReleaseOnly);
@@ -1652,7 +1653,8 @@ static int J3DAPI stdDisplay_EnumerateVideoModes(UINT adapter)
             }
 
             int bpp = stdDisplay_BppFromD3DFormat(mode.Format);
-            if ( bpp < 16 || mode.RefreshRate < STDDISPLAY_MINFRAMERATE || mode.RefreshRate > STDDISPLAY_MAXFRAMERATE )
+            // Fixed: RefreshRate 0 means the adapter default in D3D9. Rejecting it left no modes and crashed JonesMain_LoadSettings.
+            if ( bpp < 16 || ( mode.RefreshRate != 0 && ( mode.RefreshRate < STDDISPLAY_MINFRAMERATE || mode.RefreshRate > STDDISPLAY_MAXFRAMERATE ) ) )
             {
                 continue;
             }
@@ -2006,7 +2008,7 @@ int J3DAPI stdDisplay_SetFullscreenMode(HWND hwnd, const StdVideoMode* pDisplayM
     return 1;
 }
 
-int J3DAPI stdDisplay_InitBuffers(PDIRECT3DDEVICE9 pDevice, StdVideoMode* pDisplayMode, bool bWindowMode, size_t numBuffers)
+int J3DAPI stdDisplay_InitBuffers(LPDIRECT3DDEVICE9 pDevice, StdVideoMode* pDisplayMode, bool bWindowMode, size_t numBuffers)
 {
     J3D_UNUSED(numBuffers);
 
@@ -2709,7 +2711,8 @@ int J3DAPI stdDisplay_SetBufferClipper(int bFrontBuffer)
     return 1; // Success - clipping is handled automatically
 }
 
-HRESULT J3DAPI stdDisplay_RemoveBufferClipper(int bFrontBuffer)
+// Altered: Returns int instead of HRESULT, 0 is success.
+int J3DAPI stdDisplay_RemoveBufferClipper(int bFrontBuffer)
 {
     J3D_UNUSED(bFrontBuffer);
 

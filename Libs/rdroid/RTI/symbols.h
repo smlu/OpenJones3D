@@ -85,7 +85,7 @@
 #define rdCamera_SetAttenuation_TYPE void (J3DAPI*)(rdCamera*, float, float)
 #define rdCamera_AddLight_TYPE int (J3DAPI*)(rdCamera*, rdLight*, const rdVector3*)
 #define rdCamera_ClearLights_TYPE int (J3DAPI*)(rdCamera*)
-#define rdCamera_sub_4C60B0_TYPE void (J3DAPI*)(int)
+#define rdCamera_SetOverlayDepthRange_TYPE void (J3DAPI*)(int)
 #define rdCache_Startup_TYPE void (J3DAPI*)()
 #define rdCache_AdvanceFrame_TYPE void (*)(void)
 #define rdCache_GetFrameNum_TYPE size_t (*)(void)
