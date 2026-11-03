@@ -1510,6 +1510,7 @@ tSoundHandle J3DAPI Sound_GetSoundHandle(uint32_t idx)
 
 size_t J3DAPI Sound_GetSoundIndex(tSoundHandle hSnd)
 {
+    // The original performs this check inside the bank loop, before scanning each bank; the result is the same
     if ( hSnd == SOUND_INVALIDHANDLE )
     {
         return SOUND_INVALISOUNDINFOINDEX;
@@ -1713,7 +1714,7 @@ tSoundChannelHandle J3DAPI Sound_Play(tSoundHandle hSnd, float volume, float pan
     // First scan for a free channel while tracking lowest priority
     tSoundChannel* pChannel       = Sound_apChannels;
     tSoundChannel* pLowPriChannel = NULL;
-    bool bFoundFree = false;
+    bool bFoundFree               = false; // New: The original jumps over the reuse code below when it finds a free channel
     for ( size_t i = 0; i < Sound_numChannels; ++i )
     {
          // Track lowest priority channel seen so far
@@ -2445,8 +2446,8 @@ static void Sound_UpdateFades(void) // Added
             if ( dtime < (int)pFade->msecEndTime )
             {
                 double newValue = (pFade->endValue - pFade->startValue)
-                    * (double)(dtime - pFade->msecStartTime)
-                    / (double)(pFade->msecEndTime - pFade->msecStartTime)
+                    * (double)(dtime - (int)pFade->msecStartTime) // The original evaluates the fade times signed
+                    / (double)((int)pFade->msecEndTime - (int)pFade->msecStartTime)
                     + pFade->startValue;
 
                 if ( newValue != 0.0 )

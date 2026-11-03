@@ -130,8 +130,8 @@ typedef struct sSoundFade
     int bPitch;
     float startValue;
     float endValue;
-    int32_t msecStartTime;
-    int32_t msecEndTime;
+    uint32_t msecStartTime;
+    uint32_t msecEndTime;
 } SoundFade;
 static_assert(sizeof(SoundFade) == 24, "sizeof(SoundFade) == 24");
 static_assert(offsetof(SoundFade, msecStartTime) == 16, "offsetof(SoundFade, msecStartTime) == 16");
