@@ -1,0 +1,12 @@
+digraph "Babylon" {
+node [
+  fontsize = "12"
+];
+    "node0" [ label = "babylon_core\n(babylon::core)", shape = octagon ];
+    "node1" [ label = "babylon_core_tests", shape = egg ];
+    "node1" -> "node0" [ style = dotted ] // babylon_core_tests -> babylon_core
+    "node2" [ label = "babylon_doctest_main", shape = octagon ];
+    "node3" [ label = "babylon_doctest", shape = pentagon ];
+    "node2" -> "node3"  // babylon_doctest_main -> babylon_doctest
+    "node1" -> "node2" [ style = dotted ] // babylon_core_tests -> babylon_doctest_main
+}

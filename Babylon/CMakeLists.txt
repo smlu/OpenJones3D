@@ -7,7 +7,7 @@ cmake_minimum_required(VERSION 3.24)
 
 project(Babylon VERSION 0.1.0 LANGUAGES CXX)
 
-# Babylon builds alone (cmake -S Babylon) and as a subdirectory of the Jones3D EX
+# Babylon builds alone (cmake -S Babylon) and as a subdirectory of a parent
 # repository. C++20, warnings and sanitizers are set per target in
 # cmake/BabylonModule.cmake; no variables of a parent project are touched.
 if (PROJECT_IS_TOP_LEVEL)
@@ -37,3 +37,21 @@ if (BABYLON_BUILD_TESTS)
 endif()
 
 add_subdirectory(core)
+
+# Machine checks for the Babylon boundary and the module graph (ADR-0006,
+# ADR-0008, ADR-0015). They inspect the source tree, so they carry the label
+# check, not unit, and the graph check runs only in CI (it needs a configure
+# with --graphviz).
+if (BABYLON_BUILD_TESTS)
+    find_package(Python3 COMPONENTS Interpreter)
+    if (Python3_FOUND)
+        add_test(NAME babylon.check.boundary
+            COMMAND Python3::Interpreter ${CMAKE_CURRENT_SOURCE_DIR}/tools/check_boundary.py ${CMAKE_CURRENT_SOURCE_DIR})
+        add_test(NAME babylon.check.selftest
+            COMMAND Python3::Interpreter ${CMAKE_CURRENT_SOURCE_DIR}/tools/test_checks.py)
+        set_tests_properties(babylon.check.boundary babylon.check.selftest
+            PROPERTIES LABELS "babylon;check")
+    else()
+        message(STATUS "Python3 not found: skipping the Babylon boundary checks")
+    endif()
+endif()

@@ -1,0 +1,9 @@
+digraph "Babylon" {
+node [
+  fontsize = "12"
+];
+    "node0" [ label = "babylon_core\n(babylon::core)", shape = octagon ];
+    "node1" [ label = "babylon_demo\n(babylon::demo)", shape = octagon ];
+    "node0" -> "node1" [ style = dotted ] // babylon_core -> babylon_demo
+    "node1" -> "node0" [ style = dotted ] // babylon_demo -> babylon_core
+}

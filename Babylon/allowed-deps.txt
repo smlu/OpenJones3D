@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: MPL-2.0
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+# Babylon module dependency allowlist, checked by tools/check_graph.py.
+# Changing this file is an architecture change and needs an ADR (ADR-0015).
+# One line per module:
+# <module>: <direct dependencies, space separated>
+core:

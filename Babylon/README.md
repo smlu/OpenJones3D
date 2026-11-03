@@ -51,5 +51,19 @@ Links `babylon_<name>` against the shared doctest main and registers the test
 In the repository build, `JONES3D_BUILD_BABYLON` gates the subdirectory and
 `JONES3D_BUILD_TESTS` and `JONES3D_SANITIZE` drive the Babylon equivalents.
 
+## Checks
+
+`tools/check_boundary.py` enforces the boundary: every `#include` resolves to
+Babylon, a C++20 standard header or a third-party header at an allowed
+location, public headers stay babylon/standard, and no game name appears in
+code or CMake files. It also checks that `third_party/README.md` lists every
+vendored directory and FetchContent dependency under a permissive license
+(ADR-0008). `tools/check_graph.py` compares a `--graphviz` configure
+of the standalone build against `allowed-deps.txt`: each module's direct
+dependencies must match exactly and the graph must be acyclic. Both run as
+ctest tests labelled `check` (plus a self-test of the checks) and in
+`.github/workflows/babylon.yml`. Changing `allowed-deps.txt` is an
+architecture change and needs an ADR (ADR-0015).
+
 Design rules (naming, interfaces, patterns):
 `../Docs/arc42/08-crosscutting/Babylon-Design-Rules.md`.

@@ -1,0 +1,59 @@
+name: Babylon
+
+on:
+  push:
+    paths: ["Babylon/**", ".github/workflows/babylon.yml"]
+  pull_request:
+    paths: ["Babylon/**", ".github/workflows/babylon.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.runs-on }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: linux-clang
+            runs-on: ubuntu-24.04
+            configure: "-G Ninja -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Debug"
+          - name: linux-gcc
+            runs-on: ubuntu-24.04
+            configure: "-G Ninja -DCMAKE_CXX_COMPILER=g++ -DCMAKE_BUILD_TYPE=Debug"
+          - name: linux-gcc-sanitize
+            runs-on: ubuntu-24.04
+            configure: "-G Ninja -DCMAKE_CXX_COMPILER=g++ -DCMAKE_BUILD_TYPE=Debug -DBABYLON_SANITIZE=ON"
+          - name: macos
+            runs-on: macos-15
+            configure: "-G Ninja -DCMAKE_BUILD_TYPE=Debug"
+          - name: windows-msvc
+            runs-on: windows-2025-vs2026
+            configure: '-G "Visual Studio 18 2026" -A x64'
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Ninja
+        if: runner.os == 'Linux'
+        run: sudo apt-get install -y ninja-build
+      - name: Install Ninja (macOS)
+        if: runner.os == 'macOS'
+        run: brew install ninja
+      - name: Configure
+        run: cmake -S Babylon -B build ${{ matrix.configure }} --graphviz=build/graph.dot
+      - name: Build
+        run: cmake --build build --config Debug
+      - name: Test
+        run: ctest --test-dir build -C Debug --output-on-failure
+      - name: Check dependency graph
+        if: runner.os != 'Windows'
+        run: python3 Babylon/tools/check_graph.py build/graph.dot Babylon/allowed-deps.txt
+      - name: Check dependency graph (Windows)
+        if: runner.os == 'Windows'
+        run: python Babylon/tools/check_graph.py build/graph.dot Babylon/allowed-deps.txt
