@@ -451,7 +451,7 @@ void J3DAPI rdFont_DrawTextLineEx(const char* pText, float x, float y, float z, 
                 offsetX /= 2.0f;
             }
 
-            curPosX = curPosX - (double)(int)offsetX;
+            curPosX = curPosX - trunc(offsetX);
         }
 
         for ( size_t i = 0; i < textLen; ++i )
@@ -534,7 +534,7 @@ void J3DAPI rdFont_DrawTextLineClippedEx(const char* pText, float x, float y, fl
                 offsetX /= 2.0f;
             }
 
-            curPosX = curPosX - (double)(int)offsetX;
+            curPosX = curPosX - trunc(offsetX);
         }
 
         for ( size_t i = 0; i < textLen; ++i )
