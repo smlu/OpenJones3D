@@ -1177,7 +1177,7 @@ void J3DAPI sithPhysics_UpdateDetachedPlayerPhysics(SithThing* pThing, float sec
 
     // Player physics runs at 50 FPS - accumulate time and process in fixed timesteps
     float totalTime = secDeltaTime + pPhysics->physicsRolloverFrames;
-    size_t nFrames  = (size_t)truncf(totalTime * sithPhysics_fixedFramerate); // TODO: [BUG] The original floors into an unsigned count; a negative accumulated time wraps to 0xFFFFFFFF steps
+    size_t nFrames  = (uint32_t)(int32_t)floorf(totalTime * sithPhysics_fixedFramerate); // TODO: [BUG] Floored into an unsigned count like the original, so a negative accumulated time wraps to about 4 billion steps
     pPhysics->physicsRolloverFrames = totalTime - (float)nFrames * sithPhysics_fixedTimestep;
 
     for ( size_t i = 0; i < nFrames; ++i )
@@ -2749,7 +2749,7 @@ void J3DAPI sithPhysics_UpdateExhaustFx(SithThing* pThing, const SithVehicleExha
         float lifeScatter = pExhaustInfo->lifeRandFactor * life;
         lifeScatter = (SITH_RANDF() - 0.5f) * lifeScatter;
         life = life + lifeScatter;
-        pSmoke->msecLifeLeft = (uint32_t)(int32_t)(life * 1000.0f); // Converted through a signed int like the original, so a negative life wraps
+        pSmoke->msecLifeLeft = (uint32_t)(int64_t)((double)life * 1000.0); // Like the original: the unrounded product is truncated to a 64-bit int, so a negative life wraps
 
         // Calculate sprite sizes
         float sizeRate  = (pExhaustInfo->sizeEnd - pExhaustInfo->sizeStart) / maxLifeTime;
