@@ -10,6 +10,10 @@
 add_library(babylon_doctest INTERFACE)
 target_include_directories(babylon_doctest SYSTEM INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 
+# MSVC 14.5x's <string_view> needs the real std stream declarations; doctest's own
+# forward declarations of std types break it, so doctest includes the standard headers.
+target_compile_definitions(babylon_doctest INTERFACE DOCTEST_CONFIG_USE_STD_HEADERS)
+
 # One shared doctest main for every babylon_<module>_tests executable.
 # Warnings and -Werror are not applied to this target.
 add_library(babylon_doctest_main STATIC DoctestMain.cpp)
