@@ -466,7 +466,7 @@ int J3DAPI stdGob_FileEOF(GobFileHandle* pHandle)
     // Added: Validate the Gob handle's entry before checking EOF, as it is required for bounds checking.
     STD_GUARD(pHandle->pEntry, 1);
 
-    // Altered: The original reported EOF at offset >= size - 1, i.e. one byte early.
+    // Fixed: The original reported EOF at offset >= size - 1, i.e. one byte early.
     return pHandle->offset >= pHandle->pEntry->size;
 }
 
@@ -516,7 +516,7 @@ const char* J3DAPI stdGob_FileGets(GobFileHandle* pGobFileHandle, char* pStr, si
     // Added: Validate the Gob handle's entry and parent Gob before reading, as they are required for bounds checking and seek offset calculation.
     STD_GUARD(pGobFileHandle->pEntry && pGobFileHandle->pGob, NULL);
 
-    // Altered: The original returned NULL once offset >= size - 1, so the last byte of an entry was never returned.
+    // Fixed: The original returned NULL once offset >= size - 1, so the last byte of an entry was never returned.
     // Fixed: Reject invalid offsets before calculating remaining bytes.
     if ( pGobFileHandle->offset < 0 || pGobFileHandle->pEntry->size < 0 || pGobFileHandle->offset >= pGobFileHandle->pEntry->size )
     {
