@@ -974,6 +974,13 @@ Recalculated Euler angles use an absolute tolerance of `0.00001` degrees;
 all other serialized fields remain byte-exact against the unchanged vectors.
 The math suites separately validate the numerical evaluation and constants.
 
+The `sithThingParseArg` group covers `sithThing_ParseThingArg` argument by
+argument: every type name and its control type, collide and move types, the
+float arguments (negative values, overflow, underflow, a stale `ERANGE`), thing
+flags, lights with and without a range, resource arguments with found and
+missing resources, orientations, performance levels, and arguments the function
+leaves to the other parsers.
+
 <a name="sithtemplate-fixtures"></a>
 
 ### 🧬 sithTemplate Fixtures
