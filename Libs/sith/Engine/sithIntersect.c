@@ -542,7 +542,7 @@ int J3DAPI sithIntersect_CheckSphereHit(const rdVector3* startPos, const rdVecto
     // Calc. direction dot
     // Dot is negated to get positive dot when the motion is toward the plane
     double dot = -(rdVector_Dot3(normal, moveNorm));
-    if ( dist < 0.0f ) // If away from plane
+    if ( !(dist >= 0.0f) ) // If away from plane; a NaN distance also takes this path, like in the original
     {
         if ( (colflags & 0x400) != 0 )
         {
@@ -556,12 +556,14 @@ int J3DAPI sithIntersect_CheckSphereHit(const rdVector3* startPos, const rdVecto
         return 1;
     }
 
-    if ( dot <= 0.0f )
+    // Not moving toward the plane; a NaN dot also returns here, like in the original
+    if ( !(dot > 0.0f) )
     {
         return 0;
     }
 
-    if ( dot * moveDistance < dist )
+    // Plane out of reach; a NaN also returns here, like in the original
+    if ( !(dot * moveDistance >= dist) )
     {
         return 0;
     }
