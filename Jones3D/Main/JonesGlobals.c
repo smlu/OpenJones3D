@@ -1,7 +1,7 @@
-// Added: The retail-global reset sequence from Jones3D/Platform/Win32/dllmain.c
+// Added: The retail-global reset sequence from Jones3D/Platform/Win32/WinMain.c
 // ResetGlobals, split around the module resets that only exist on Windows
 // (SoundDriver, JonesDialog, jonesConfig, stdComm, stdConsole, stdControl, stdWin95,
-// wkernel, wuRegistry) so dllmain can keep the original Windows call order while the
+// wkernel, wuRegistry) so WinMain.c can keep the original Windows call order while the
 // native Null platform resets every global it actually has. See JonesGlobals.h.
 #include <Jones3D/types.h> // Should be included first due to Windows.h / CommCtrl.h conflict
 
@@ -284,7 +284,7 @@ void Jones3D_ResetAllGlobals(void)
 {
     Jones3D_ResetGlobalsBeforeSoundDriver();
     // Altered: the Windows-only SoundDriver, JonesDialog, jonesConfig, stdComm,
-    // stdConsole, stdControl and stdWin95 resets are not here; dllmain.c calls them
+    // stdConsole, stdControl and stdWin95 resets are not here; WinMain.c calls them
     // between the runs below in their original positions.
     Jones3D_ResetGlobalsBeforeJonesDialog();
     Jones3D_ResetGlobalsBeforeJonesConfig();
@@ -292,5 +292,5 @@ void Jones3D_ResetAllGlobals(void)
     Jones3D_ResetGlobalsBeforeStdConsole();
     Jones3D_ResetGlobalsBeforeStdWin95();
     Jones3D_ResetGlobalsBeforeWkernel();
-    // Altered: the Windows-only wkernel and wuRegistry resets stay in dllmain.c.
+    // Altered: the Windows-only wkernel and wuRegistry resets stay in WinMain.c.
 }

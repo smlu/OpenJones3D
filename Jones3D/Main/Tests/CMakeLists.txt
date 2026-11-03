@@ -3,13 +3,13 @@ set(JONES3D_TEST_SOURCES
     JonesMainTest.c
 )
 
-# The test target links the game sources directly, mirroring how Jones3D_DLL is built, because
+# The test target links the game sources directly, mirroring how the standalone Jones3D exe is built, because
 # JonesMain.c depends on the rest of the game layer. The tests only call the pure lookup function
 # JonesMain_FindClosestVideoMode, so the fixed-address retail globals are never touched.
 get_filename_component(JONES3D_TEST_GAME_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../.." ABSOLUTE)
 file(GLOB_RECURSE JONES3D_TEST_GAME_SOURCES "${JONES3D_TEST_GAME_ROOT}/*.c")
 list(FILTER JONES3D_TEST_GAME_SOURCES EXCLUDE REGEX ".*/Tests/.*")
-list(FILTER JONES3D_TEST_GAME_SOURCES EXCLUDE REGEX ".*/dllmain\\.c$")
+list(FILTER JONES3D_TEST_GAME_SOURCES EXCLUDE REGEX ".*/WinMain\\.c$")
 # Added: Windows test builds never compile the Null platform backend sources.
 list(FILTER JONES3D_TEST_GAME_SOURCES EXCLUDE REGEX ".*/Platform/Null/.*")
 

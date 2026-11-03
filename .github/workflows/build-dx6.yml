@@ -158,7 +158,6 @@ jobs:
           -DJONES3D_RUNTIME_GUARDS=${{ matrix.runtime_guards }} `
           -DJONES3D_BUILD_TESTS=ON `
           -DJONES3D_BUILD_SYSTEM_TESTS=OFF `
-          -DJONES3D_ENABLE_POST_BUILD_COPY=OFF `
           -S "${{ github.workspace }}"
 
     - name: Build

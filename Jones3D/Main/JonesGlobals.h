@@ -5,11 +5,11 @@
 J3D_EXTERN_C_START
 
 // Added: Shared retail-global reset sequence, moved out of the ResetGlobals body in
-// Jones3D/Platform/Win32/dllmain.c so the native Null platform can run it too.
+// Jones3D/Platform/Win32/WinMain.c so the native Null platform can run it too.
 //
-// The original dllmain order interleaves modules that only exist on Windows:
+// The original WinMain.c order interleaves modules that only exist on Windows:
 // SoundDriver, JonesDialog, jonesConfig, stdComm, stdConsole, stdControl, stdWin95,
-// wkernel and wuRegistry. Those resets stay in dllmain, which calls the runs below
+// wkernel and wuRegistry. Those resets stay in WinMain.c, which calls the runs below
 // around them so the Windows order is unchanged.
 // Jones3D_ResetAllGlobals runs every part in the original order; on the Null platform
 // the Windows-only modules have no compiled globals, so it is the complete reset.

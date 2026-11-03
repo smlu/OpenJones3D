@@ -42,7 +42,6 @@ option(JONES3D_BUILD_DISRUPTIVE_SYSTEM_TESTS "Build opt-in system tests that can
 option(JONES3D_QOL_IMPROVEMENTS "Enable quality-of-life improvements" ON)
 option(JONES3D_SPEEDRUN_BUILD "Enable vanilla bugs and glitches used in speedruns" OFF)
 option(JONES3D_RUNTIME_GUARDS "Enable runtime safety guards for hardened release behavior" OFF)
-option(JONES3D_STANDALONE "Build without the retail executable: no hooks and no fixed retail addresses" OFF)
 # Added: Sanitizer flags for the native Null build (Jones3D-headless); they are GCC/Clang
 # options with no MSVC equivalent here, so Windows builds reject the option instead of
 # silently ignoring it.
@@ -55,9 +54,8 @@ option(JONES3D_USE_DIRECTX9 "Build with DirectX 9 support" ON)
 
 if(NOT WIN32)
     # Added: Native non-Windows build: no DirectX backend exists yet, so configure a Null
-    # platform without the Windows backends and without the retail-executable hooks.
+    # platform without the Windows backends.
     set(J3D_PLATFORM_NULL ON)
-    set(JONES3D_STANDALONE ON CACHE BOOL "" FORCE)
     # Altered: tests stay ON on the Null platform; the portable unit suites run natively
     # (the Windows-only suites are excluded per module below).
     set(JONES3D_BUILD_PROGRAMS OFF CACHE BOOL "" FORCE)
@@ -81,9 +79,8 @@ if (JONES3D_RUNTIME_GUARDS)
     set(J3D_RUNTIME_GUARDS ON)
 endif()
 
-if (JONES3D_STANDALONE)
-    add_compile_definitions(J3D_STANDALONE J3D_LOCAL_RTI J3D_LOCAL_SITH_RTI J3D_LOCAL_RDROID_RTI)
-endif()
+# The standalone build is the only build (ADR-0004); a later change removes these macros.
+add_compile_definitions(J3D_STANDALONE J3D_LOCAL_RTI J3D_LOCAL_SITH_RTI J3D_LOCAL_RDROID_RTI)
 
 if (JONES3D_BUILD_TESTS)
     enable_testing()
@@ -277,16 +274,7 @@ jones3d_print_config_entry("Graphics API" "${JONES3D_GAPI_NAME}")
 jones3d_print_config_option("QOL improvements" JONES3D_QOL_IMPROVEMENTS)
 jones3d_print_config_option("Runtime guards" JONES3D_RUNTIME_GUARDS)
 jones3d_print_config_option("Speedrun build" JONES3D_SPEEDRUN_BUILD)
-jones3d_print_config_option("Standalone" JONES3D_STANDALONE)
 jones3d_print_config_option("Build programs" JONES3D_BUILD_PROGRAMS)
 jones3d_print_config_option("Build tests" JONES3D_BUILD_TESTS)
 jones3d_print_config_option("Build system tests" JONES3D_BUILD_SYSTEM_TESTS)
 jones3d_print_config_option("Build disruptive system tests" JONES3D_BUILD_DISRUPTIVE_SYSTEM_TESTS)
-jones3d_print_config_option("Post-build copy" JONES3D_ENABLE_POST_BUILD_COPY)
-if (JONES3D_ENABLE_POST_BUILD_COPY)
-    if (JONES3D_POST_BUILD_COPY_DIR)
-        jones3d_print_config_entry("Post-build copy dir" "${JONES3D_POST_BUILD_COPY_DIR}")
-    else()
-        jones3d_print_config_entry("Post-build copy dir" "<not set>")
-    endif()
-endif()

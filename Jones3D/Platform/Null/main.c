@@ -651,7 +651,7 @@ int main(int argc, char** argv)
         JonesPlatformNull_SetLoadPath(pLoadPath);
     }
 
-    // wkernel_Run: the Startup callback (the dllmain Startup wrapper's logic).
+    // wkernel_Run: the Startup callback (the WinMain.c Startup wrapper's logic).
     if ( JonesMain_Startup("") )
     {
         JonesMain_Shutdown();
