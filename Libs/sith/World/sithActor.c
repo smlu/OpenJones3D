@@ -37,7 +37,7 @@
 
 static float sithActor_headRotDampRate = 10.0f; // Added
 
-// Raft leak damage divisor at the easiest (0) and the hardest (5) game difficulty
+// Raft leak damage divisor at the easiest (0) and the hardest (SITH_GAME_DIFFICULTY_MAX) game difficulty
 static const float sithActor_raftLeakDamageDivEasy = 1.2f;
 static const float sithActor_raftLeakDamageDivHard = 0.60000002f;
 
@@ -172,7 +172,7 @@ void J3DAPI sithActor_Update(SithThing* pThing, unsigned int msecDeltaTime)
         {
             // Update Raft damage
 
-            float rate   = (sithActor_raftLeakDamageDivHard - sithActor_raftLeakDamageDivEasy) / 5.0f;
+            float rate   = (sithActor_raftLeakDamageDivHard - sithActor_raftLeakDamageDivEasy) / (float)SITH_GAME_DIFFICULTY_MAX;
             float damage = (float)sithGetGameDifficulty() * rate + sithActor_raftLeakDamageDivEasy;
             damage = (float)msecDeltaTime / damage;
             sithThing_DamageThing(pThing, pThing, damage, SITH_DAMAGE_RAFT_LEAK);
