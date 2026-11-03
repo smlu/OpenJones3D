@@ -716,9 +716,11 @@ void J3DAPI sithRender_BuildVisibleSector(SithSector* pSector, const rdClipFrust
         if ( (pThing->flags & SITH_TF_EMITLIGHT) != 0 && (pThing->flags & (SITH_TF_DISABLED | SITH_TF_INVISIBLE | SITH_TF_DESTROYED)) == 0 )
         {
             // Collect Thing's light if light range is > 0.01f
-            if ( (pThing->light.color.red > 0.0f || pThing->light.color.green > 0.0f || pThing->light.color.blue > 0.0f)
+            // Altered: The original tests (r > 0 || g > 0 || b > 0), so a light with only negative or NaN color components is skipped; !IsZero3 collects it.
+            if ( !rdVector_IsZero3((rdVector3*)&pThing->light.color)
                 && SITHRENDER_ISDYNAMICLIGHT(pThing->light.color.alpha) )
             {
+                SITH_ASSERT(!rdVector_IsNAN3((const rdVector3*)&pThing->light.color)); // Debug builds catch NaN components, which !rdVector_IsZero3 lets through
                 sithRender_aThingLights[sithRender_numThingLights].color     = pThing->light.color;
                 sithRender_aThingLights[sithRender_numThingLights].minRadius = pThing->light.minRadius;
                 sithRender_aThingLights[sithRender_numThingLights].maxRadius = pThing->light.maxRadius;
@@ -728,13 +730,13 @@ void J3DAPI sithRender_BuildVisibleSector(SithSector* pSector, const rdClipFrust
             }
 
             // Collect actor's head light
+            // Altered: Same color test difference as for the thing light above (original: any of headLightIntensity r, g, b > 0).
             if ( (pThing->type == SITH_THING_ACTOR || pThing->type == SITH_THING_PLAYER)
                 && sithRender_numThingLights < STD_ARRAYLEN(sithRender_aThingLights)
                 && (pThing->thingInfo.actorInfo.flags & SITH_AF_HEADLIGHT) != 0
-                && (pThing->thingInfo.actorInfo.headLightIntensity.red > 0.0f
-                    || pThing->thingInfo.actorInfo.headLightIntensity.green > 0.0f
-                    || pThing->thingInfo.actorInfo.headLightIntensity.blue > 0.0f) )
+                && !rdVector_IsZero3((rdVector3*)&pThing->thingInfo.actorInfo.headLightIntensity) )
             {
+                SITH_ASSERT(!rdVector_IsNAN3((const rdVector3*)&pThing->thingInfo.actorInfo.headLightIntensity)); // Debug builds catch NaN components, which !rdVector_IsZero3 lets through
                 sithRender_aThingLights[sithRender_numThingLights].color     = pThing->thingInfo.actorInfo.headLightIntensity;
                 sithRender_aThingLights[sithRender_numThingLights].minRadius = pThing->thingInfo.actorInfo.headLightIntensity.alpha;
                 sithRender_aThingLights[sithRender_numThingLights].maxRadius = pThing->thingInfo.actorInfo.headLightIntensity.alpha;
@@ -1100,12 +1102,13 @@ void sithRender_CollectThingLights(const SithThing* pThing)
                                                                                                //        but not in case of sithRender_BuildVisibleThingSector
     {
         // Collect thing light if range is > 0.01f
-        // TODO: [BUG] The range test binds only to the blue test (&& binds tighter than || in the original), so a light
-        //       with red or green > 0 is collected as dynamic regardless of its range.
-        if ( pThing->light.color.red > 0.0f
-            || pThing->light.color.green > 0.0f
-            || (pThing->light.color.blue > 0.0f && SITHRENDER_ISDYNAMICLIGHT(pThing->light.color.alpha)) )
+        // Altered: The original (sithRender_BuildSectorThingList) tests `r > 0 || g > 0 || b > 0 && SITHRENDER_ISDYNAMICLIGHT(alpha)`, where && binds tighter than ||.
+        //          So a light with r > 0 or g > 0 was collected as dynamic regardless of its range, and negative or NaN components
+        //          were skipped. Here the range test always applies and any nonzero color passes.
+        if ( !rdVector_IsZero3((const rdVector3*)&pThing->light.color)
+            && SITHRENDER_ISDYNAMICLIGHT(pThing->light.color.alpha) )
         {
+            SITH_ASSERT(!rdVector_IsNAN3((const rdVector3*)&pThing->light.color)); // Debug builds catch NaN components, which !rdVector_IsZero3 lets through
             sithRender_aThingLights[sithRender_numThingLights].color     = pThing->light.color;
             sithRender_aThingLights[sithRender_numThingLights].minRadius = pThing->light.minRadius;
             sithRender_aThingLights[sithRender_numThingLights].maxRadius = pThing->light.maxRadius;
@@ -1115,13 +1118,13 @@ void sithRender_CollectThingLights(const SithThing* pThing)
         }
 
         // Collect actor head light
+        // Altered: Same color test difference as for the thing light above (original: any of headLightIntensity x, y, z > 0).
         if ( (pThing->type == SITH_THING_ACTOR || pThing->type == SITH_THING_PLAYER)
             && sithRender_numThingLights < STD_ARRAYLEN(sithRender_aThingLights)
             && (pThing->thingInfo.actorInfo.flags & SITH_AF_HEADLIGHT) != 0
-            && (pThing->thingInfo.actorInfo.headLightIntensity.red > 0.0f
-                || pThing->thingInfo.actorInfo.headLightIntensity.green > 0.0f
-                || pThing->thingInfo.actorInfo.headLightIntensity.blue > 0.0f) )
+            && !rdVector_IsZero3((const rdVector3*)&pThing->thingInfo.actorInfo.headLightIntensity) )
         {
+            SITH_ASSERT(!rdVector_IsNAN3((const rdVector3*)&pThing->thingInfo.actorInfo.headLightIntensity)); // Debug builds catch NaN components, which !rdVector_IsZero3 lets through
             sithRender_aThingLights[sithRender_numThingLights].color     = pThing->thingInfo.actorInfo.headLightIntensity;
             sithRender_aThingLights[sithRender_numThingLights].minRadius = pThing->thingInfo.actorInfo.headLightIntensity.alpha; // Fixed: Replaced assigning pThing->light.minRadius with headLightIntensity.alpha to match code in sithRender_BuildVisibleSector
             sithRender_aThingLights[sithRender_numThingLights].maxRadius = pThing->thingInfo.actorInfo.headLightIntensity.alpha; // Fixed: Replaced assigning pThing->light.maxRadius with headLightIntensity.alpha to match code in sithRender_BuildVisibleSector
@@ -1292,10 +1295,12 @@ void sithRender_RenderThings(void)
                 if ( bRender )
                 {
                     // Collect thing flat light
+                    // Altered: The original tests any of light.color r, g, b > 0 here; !IsZero3 also passes negative or NaN components.
                     if ( (pCurThing->flags & SITH_TF_EMITLIGHT) != 0
-                        && (pCurThing->light.color.red > 0.0f || pCurThing->light.color.green > 0.0f || pCurThing->light.color.blue > 0.0f)
+                        && !rdVector_IsZero3((rdVector3*)&pCurThing->light.color)
                         && SITHRENDER_ISFLATLIGHT(pCurThing->light.color.alpha) )// if light range is <= 0.01f
                     {
+                        SITH_ASSERT(!rdVector_IsNAN3((const rdVector3*)&pCurThing->light.color)); // Debug builds catch NaN components, which !rdVector_IsZero3 lets through
                         rdVector4 ambientLight;
                         rdVector_Add4(&ambientLight, &sectorAmbientLight, &pCurThing->light.color);
                         rdMath_ClampVector4Acc(&ambientLight, 0.0f, 1.0f);
