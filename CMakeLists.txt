@@ -82,12 +82,6 @@ if (JONES3D_RUNTIME_GUARDS)
 endif()
 
 if (JONES3D_STANDALONE)
-    # Added: test targets provide their own fake retail globals, which standalone definitions would collide with.
-    # Altered: the Null platform keeps its tests: the standalone/Null collision is resolved per test target
-    # (Libs/sith/Tests), so the portable suites can run natively. Windows standalone behavior is unchanged.
-    if (NOT J3D_PLATFORM_NULL)
-        set(JONES3D_BUILD_TESTS OFF)
-    endif()
     add_compile_definitions(J3D_STANDALONE J3D_LOCAL_RTI J3D_LOCAL_SITH_RTI J3D_LOCAL_RDROID_RTI)
 endif()
 
