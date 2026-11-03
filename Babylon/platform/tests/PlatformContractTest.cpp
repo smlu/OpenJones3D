@@ -223,14 +223,15 @@ TEST_CASE("The Null platform honors the Platform contract")
 
 TEST_CASE("The SDL platform honors the Platform contract")
 {
-    // SDL's offscreen video driver, set by the test properties, needs no
-    // display. Without it the platform is not usable at all, which is a
-    // failure to fix, not a reason to skip.
+    // SDL's offscreen video driver on Linux, the dummy driver on macOS, set
+    // by the test properties, needs no display. Without one the platform is
+    // not usable at all, which is a failure to fix, not a reason to skip.
     const std::unique_ptr<Platform> platform = babylon::platform::createSdlPlatform();
     if ( platform == nullptr )
     {
         FAIL("createSdlPlatform() returned nullptr: SDL could not initialize its "
-            "video subsystem here; run this test with SDL_VIDEO_DRIVER=offscreen");
+            "video subsystem here; run this test with the offscreen or dummy "
+            "video driver");
     }
     checkPlatformContract(*platform);
 
@@ -250,7 +251,7 @@ TEST_CASE("The SDL platform puts a window resize it applied into the queue")
     if ( platform == nullptr )
     {
         FAIL("createSdlPlatform() returned nullptr: run this test with "
-            "SDL_VIDEO_DRIVER=offscreen");
+            "the offscreen or dummy video driver");
     }
     babylon::log::CaptureSink sink;
 

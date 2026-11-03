@@ -7,6 +7,7 @@
 
 #include <doctest.h>
 
+#include <clocale>
 #include <cmath>
 #include <limits>
 #include <optional>
@@ -76,4 +77,20 @@ TEST_CASE("parseDouble refuses everything outside the grammar")
 TEST_CASE("parseDouble refuses results that overflow to infinity")
 {
     checkRefuses("1e400");
+}
+
+TEST_CASE("parseDouble ignores the C locale's decimal point")
+{
+    // The substitution only shows with a comma locale installed; on a
+    // machine without de_DE.UTF-8 this part is skipped.
+    const char* installed = std::setlocale(LC_NUMERIC, "de_DE.UTF-8");
+    if ( installed == nullptr )
+    {
+        MESSAGE("de_DE.UTF-8 is not installed here; the comma decimal point is not exercised");
+        return;
+    }
+    const std::optional<double> value = babylon::core::parseDouble("1.5");
+    std::setlocale(LC_NUMERIC, "C");
+    REQUIRE(value.has_value());
+    CHECK(*value == 1.5);
 }

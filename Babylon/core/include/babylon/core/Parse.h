@@ -18,7 +18,10 @@ namespace babylon::core
     // and at least one digit. Nothing else: no leading '+', no whitespace,
     // no hex, no "inf" or "nan", no trailing characters. Results that
     // overflow to infinity are nullopt; underflow to zero or a denormal is
-    // accepted. The value is correctly rounded.
+    // accepted. The value is correctly rounded. The conversion reads the
+    // current C locale's decimal point and substitutes it for the grammar's
+    // '.', so it gives the same result in every locale; calling setlocale
+    // from another thread while this runs is not supported.
     std::optional<double> parseDouble(std::string_view text);
 
 }
