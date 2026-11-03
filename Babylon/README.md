@@ -31,6 +31,9 @@ system layer: windows and one polled queue of OS events (ADR-0009), with the
 same two backends. `input` has no backend of its own: `InputState` folds the
 polled events into the state a game reads per frame, and `InputScript` replays
 recorded events so headless runs see exactly what a device would (ADR-0018).
+`cvars` holds named, typed settings with defaults, ranges, flags and change
+callbacks (ADR-0013, ADR-0020); a `Registry` is an ordinary object owned by the
+composition root, never a global.
 
 ## Declaring a module
 
