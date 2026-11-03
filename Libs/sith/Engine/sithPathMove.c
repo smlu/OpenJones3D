@@ -366,7 +366,7 @@ int J3DAPI sithPathMove_ParseArg(const StdConffileArg* pArg, SithThing* pThing, 
                 return 0;
             }
 
-            memset(pThing->moveInfo.pathMovement.aFrames, 0, sizeof(SithPathFrame) * (size_t)sizeFrames);
+            STD_ZEROMEM(pThing->moveInfo.pathMovement.aFrames, sizeof(SithPathFrame) * (size_t)sizeFrames);
             pThing->moveInfo.pathMovement.sizeFrames = sizeFrames;
             pThing->moveInfo.pathMovement.numFrames  = 0;
             return 1;
