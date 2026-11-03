@@ -279,7 +279,6 @@
     This preserves the script-local symbol counts and ordering used by positional COG state restoration.
   - Fixed `sithSector_ReadSectorsListText` and `sithSector_ReadSectorsListBinary` to clear the `NOGRAVITY` sector flag from level data as the original does; sectors marked in level files no longer become gravity free. Debug builds keep the flag like the debug build of the original. (79feb98)
   - Fixed `sithDSS_ProcessPuppetStatus` reading puppet track low and high priorities sign extended instead of zero extended as the original does. (49d5e2b)
-  - Fixed the thing light, head light and flat light collection in `sithRender` passing lights whose color components are all zero or below; a light is collected only when one of its red, green and blue components is above zero, as in the original. (1043dc2)
   - Fixed the alpha face list of `rdCache` holding 4096 entries instead of the original 2048 in builds without QOL improvements. (a1ba14f)
   - Fixed `SithAIRegisteredInstinct::aName` having 63 bytes instead of the original 64, so instinct names of 63 or more characters were cut one character short and not found by `sithAI_FindInstinct`. (9093b17)
   - Fixed `sithMaterial_ReadMaterialsListText` returning success when the `world materials` line is missing or malformed; it now reports an error as the original does. (53d4cb5)
