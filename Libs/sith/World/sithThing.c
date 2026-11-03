@@ -2407,7 +2407,7 @@ void J3DAPI sithThing_PlayCogDamageSound(SithThing* pThing, SithDamageType hitTy
 
     if ( hSnd )
     {
-        sithSoundMixer_PlaySoundThing(hSnd, pThing, 1.0f, J3D_QOL_VALUE(0.15f, 0.5f), J3D_QOL_VALUE(5.8f, 2.5f), (SoundPlayFlag)0); // Altered: Sound radii are 0.15 and 5.8, the original uses 0.5 and 2.5 (original Indy3D.exe v1.0 0x00434860)
+        sithSoundMixer_PlaySoundThing(hSnd, pThing, 1.0f, J3D_QOL_VALUE(0.15f, 0.5f), J3D_QOL_VALUE(5.8f, 2.5f), (SoundPlayFlag)0); // Altered: Sound radii are 0.15 and 5.8, the original uses 0.5 and 2.5
     }
 }
 
@@ -4072,7 +4072,7 @@ int J3DAPI sithThing_ParseThingArg(const StdConffileArg* pArg, SithWorld* pWorld
         }
         case SITHTHING_ARG_COLLIDE:
         {
-            errno = 0; // Fixed: Reset errno, a stale ERANGE rejected valid values
+            errno = 0;
             // Altered: Parse with strtoul instead of atoi, and only the upper bound is checked below. The original rejected values < SITH_COLLIDE_NONE too.
             // TODO: [BUG] SithCollideType is a signed enum, so a negative value (e.g. "-1") wraps to a negative enum and passes the check.
             SithCollideType coltype = strtoul(pArg->argValue, NULL, 10);
@@ -4109,9 +4109,9 @@ int J3DAPI sithThing_ParseThingArg(const StdConffileArg* pArg, SithWorld* pWorld
         }
         case SITHTHING_ARG_SIZE:
         {
-            errno = 0; // Fixed: Reset errno, a stale ERANGE rejected valid values
+            errno = 0;
             float size = strtof(pArg->argValue, NULL); // Changed: use strtof instead atof
-            // Fixed: Only reject overflow, the original (float)atof accepted underflowing values
+            // Only reject overflow, (float)atof of the original accepted underflowing values
             if ( size < 0.0f || (errno == ERANGE && fabsf(size) > 1.0f) )    // Added: Conversion range error check
             {
                 goto syntax_error;
@@ -4134,9 +4134,9 @@ int J3DAPI sithThing_ParseThingArg(const StdConffileArg* pArg, SithWorld* pWorld
         }
         case SITHTHING_ARG_TIMER:
         {
-            errno = 0; // Fixed: Reset errno, a stale ERANGE rejected valid values
+            errno = 0;
             float secLifeLeft = strtof(pArg->argValue, NULL); // Changed: use strtof instead atof
-            // Fixed: Only reject overflow, the original (float)atof accepted underflowing values
+            // Only reject overflow, (float)atof of the original accepted underflowing values
             if ( secLifeLeft < 0.0f || (errno == ERANGE && fabsf(secLifeLeft) > 1.0f) )    // Added: Conversion range error check
             {
                 goto syntax_error;
@@ -4289,9 +4289,9 @@ int J3DAPI sithThing_ParseThingArg(const StdConffileArg* pArg, SithWorld* pWorld
                 return SITHTHING_PARSEARG_PARSED;
             }
 
-            errno = 0; // Fixed: Reset errno, a stale ERANGE rejected valid values
+            errno = 0;
             float movesize = strtof(pArg->argValue, NULL); // Changed: use strtof instead atof
-            // Fixed: Only reject overflow, the original (float)atof accepted underflowing values
+            // Only reject overflow, (float)atof of the original accepted underflowing values
             if ( movesize < 0.0f || (errno == ERANGE && fabsf(movesize) > 1.0f) )    // Added: Conversion range error check
             {
                 goto syntax_error;
@@ -4318,9 +4318,9 @@ int J3DAPI sithThing_ParseThingArg(const StdConffileArg* pArg, SithWorld* pWorld
         }
         case SITHTHING_ARG_USERVAL:
         {
-            errno = 0; // Fixed: Reset errno, a stale ERANGE rejected valid values
+            errno = 0;
             float userval = strtof(pArg->argValue, NULL); // Changed: use strtof instead atof
-            // Fixed: Only reject overflow, the original (float)atof accepted underflowing values
+            // Only reject overflow, (float)atof of the original accepted underflowing values
             if ( userval < 0.0f || (errno == ERANGE && fabsf(userval) > 1.0f) )    // Added: Conversion range error check
             {
                 goto syntax_error;
@@ -4331,9 +4331,9 @@ int J3DAPI sithThing_ParseThingArg(const StdConffileArg* pArg, SithWorld* pWorld
         }
         case SITHTHING_ARG_COLLHEIGHT:
         {
-            errno = 0; // Fixed: Reset errno, a stale ERANGE rejected valid values
+            errno = 0;
             float height = strtof(pArg->argValue, NULL); // Changed: use strtof instead atof
-            // Fixed: Only reject overflow, the original (float)atof accepted underflowing values
+            // Only reject overflow, (float)atof of the original accepted underflowing values
             if ( height < 0.0f || (errno == ERANGE && fabsf(height) > 1.0f) )    // Added: Conversion range error check
             {
                 goto syntax_error;
@@ -4345,9 +4345,9 @@ int J3DAPI sithThing_ParseThingArg(const StdConffileArg* pArg, SithWorld* pWorld
         }
         case SITHTHING_ARG_COLLWIDTH:
         {
-            errno = 0; // Fixed: Reset errno, a stale ERANGE rejected valid values
+            errno = 0;
             float width = strtof(pArg->argValue, NULL); // Changed: use strtof instead atof
-            // Fixed: Only reject overflow, the original (float)atof accepted underflowing values
+            // Only reject overflow, (float)atof of the original accepted underflowing values
             if ( width < 0.0f || (errno == ERANGE && fabsf(width) > 1.0f) )    // Added: Conversion range error check
             {
                 goto syntax_error;
