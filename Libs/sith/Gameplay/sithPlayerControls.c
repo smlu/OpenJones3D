@@ -1962,6 +1962,7 @@ void J3DAPI sithPlayerControls_ProcessSwimMove(SithThing* pThing, float secDelta
     J3D_UNUSED(secDeltaTime);
     SithPhysicsInfo* pPhysics = &pThing->moveInfo.physics;
     SithActorInfo* pActor     = &pThing->thingInfo.actorInfo;
+    bool bFlying              = false; // TODO: Never set in the original, so the thrust is never rotated by the head angles (see the end of the function)
 
     sithPlayerControls_curJumpDirection = 0;
 
@@ -2305,6 +2306,19 @@ void J3DAPI sithPlayerControls_ProcessSwimMove(SithThing* pThing, float secDelta
         pPhysics->angularVelocity.yaw = 0.0f;
     }
 
+    //
+    // Transform thrust based on head rotation
+    // Retail compiles this block out because bFlying is always false; the debug build keeps it.
+    //
+    if ( !rdVector_IsZero3(&pPhysics->thrust)
+        && !rdVector_IsZero3(&pActor->headPYR)
+        && bFlying
+        && (pPhysics->flags & SITH_PF_ONWATERSURFACE) == 0 )
+    {
+        rdMatrix34 mat;
+        rdMatrix_BuildRotate34(&mat, &pActor->headPYR);
+        rdMatrix_TransformVector34Acc(&pPhysics->thrust, &mat);
+    }
 }
 
 void J3DAPI sithPlayerControls_ProcessHangMove(SithThing* pThing, float secDeltaTime)
@@ -5242,7 +5256,7 @@ void J3DAPI sithPlayerControls_ProcessPushPullMove(SithThing* pThing, float secD
     //
     // Handle pull object move
     //
-    if ( !sithControl_GetKey(SITHCONTROL_FORWARD, NULL) )
+    if ( sithControl_GetKey(SITHCONTROL_BACK, NULL) && !sithControl_GetKey(SITHCONTROL_FORWARD, NULL) ) // The forward (push) key has priority like in the original
     {
         // Check height difference for pull - can't pull objects that are higher
         if ( searchRadius > 0.05f && pThing->pos.z > sithPlayerControls_pMovableThing->pos.z )
