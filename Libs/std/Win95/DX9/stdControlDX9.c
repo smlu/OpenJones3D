@@ -1330,7 +1330,7 @@ void J3DAPI stdControl_RegisterAxis(size_t aid, int min, int max, float deadzone
     }
     else
     {
-        stdControl_aAxes[aid].deadzoneThreshold = (int)((double)deadzoneScale * (double)(max - center));
+        stdControl_aAxes[aid].deadzoneThreshold = (int)trunc((double)deadzoneScale * (double)(max - center));
     }
 }
 
