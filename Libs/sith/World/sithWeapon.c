@@ -530,9 +530,9 @@ int J3DAPI sithWeapon_ParseArg(const StdConffileArg* pArg, SithThing* pThing, in
         }
         case SITHTHING_ARG_DAMAGE:
         {
-            errno = 0; // Fixed: Reset errno, a stale ERANGE rejected valid values
+            errno = 0;
             float damage = strtof(pArg->argValue, NULL); // Changed: Use strtof instead atof
-            // Fixed: Only reject overflow, the original (float)atof accepted underflowing values
+            // Only reject overflow, (float)atof of the original accepted underflowing values
             if ( errno == ERANGE && fabsf(damage) > 1.0f )
             { // Added
                 goto syntax_error;
@@ -542,9 +542,9 @@ int J3DAPI sithWeapon_ParseArg(const StdConffileArg* pArg, SithThing* pThing, in
         }
         case SITHTHING_ARG_MINDAMAGE:
         {
-            errno = 0; // Fixed: Reset errno, a stale ERANGE rejected valid values
+            errno = 0;
             float minDamage = strtof(pArg->argValue, NULL); // Changed: Use strtof instead atof
-            // Fixed: Only reject overflow, the original (float)atof accepted underflowing values
+            // Only reject overflow, (float)atof of the original accepted underflowing values
             if ( errno == ERANGE && fabsf(minDamage) > 1.0f )
             { // Added
                 goto syntax_error;
@@ -567,9 +567,9 @@ int J3DAPI sithWeapon_ParseArg(const StdConffileArg* pArg, SithThing* pThing, in
         }
         case SITHTHING_ARG_FORCE:
         {
-            errno = 0; // Fixed: Reset errno, a stale ERANGE rejected valid values
+            errno = 0;
             float force = strtof(pArg->argValue, NULL); // Changed: Use strtof instead atof
-            // Fixed: Only reject overflow, the original (float)atof accepted underflowing values
+            // Only reject overflow, (float)atof of the original accepted underflowing values
             if ( errno == ERANGE && fabsf(force) > 1.0f )
             { // Added
                 goto syntax_error;
@@ -579,9 +579,9 @@ int J3DAPI sithWeapon_ParseArg(const StdConffileArg* pArg, SithThing* pThing, in
         }
         case SITHTHING_ARG_RANGE:
         {
-            errno = 0; // Fixed: Reset errno, a stale ERANGE rejected valid values
+            errno = 0;
             float range = strtof(pArg->argValue, NULL); // Changed: Use strtof instead atof
-            // Fixed: Only reject overflow, the original (float)atof accepted underflowing values
+            // Only reject overflow, (float)atof of the original accepted underflowing values
             if ( errno == ERANGE && fabsf(range) > 1.0f )
             { // Added
                 goto syntax_error;
@@ -591,9 +591,9 @@ int J3DAPI sithWeapon_ParseArg(const StdConffileArg* pArg, SithThing* pThing, in
         }
         case SITHTHING_ARG_RATE:
         {
-            errno = 0; // Fixed: Reset errno, a stale ERANGE rejected valid values
+            errno = 0;
             float rate = strtof(pArg->argValue, NULL); // Changed: Use strtof instead atof
-            // Fixed: Only reject overflow, the original (float)atof accepted underflowing values
+            // Only reject overflow, (float)atof of the original accepted underflowing values
             if ( errno == ERANGE && fabsf(rate) > 1.0f )
             { // Added
                 goto syntax_error;
@@ -2148,7 +2148,8 @@ static bool J3DAPI sithWeapon_GenBloodSplatterEx(SithThing* pHitThing)
             {
                 // We have either vehicle that has no human exposed to outside of vehicle
                 // or some other (non-human) actor
-                // TODO: [BUG] (QOL) The sprite created above is not attached or destroyed when returning false here; the original always attached it.
+                // Destroy the sprite created above, which is not attached here
+                sithThing_DestroyThing(pSprite);
                 return false;
             }
         #endif
@@ -2179,7 +2180,7 @@ static bool J3DAPI sithWeapon_GenBloodSplatterEx(SithThing* pHitThing)
     size = size * 2.0f;
     end.x = size;
     end.y = size;
-    end.z = J3D_QOL_VALUE(0.8f, 1.0f); // Altered: End alpha is 0.8, the original uses 1.0 (original Indy3D.exe v1.0 0x00449C40)
+    end.z = J3D_QOL_VALUE(0.8f, 1.0f); // Altered: End alpha is 0.8, the original uses 1.0
     sithAnimate_StartAnimateSpriteSize(pSprite, &start, &end, 0.5f);
 
     return true;
