@@ -238,14 +238,8 @@ earlier cases are byte-identical in the regenerated files.
 - `ProcessPuppetStatus_zerospeed`, `ProcessPuppetStatus_negativespeed`: the
   original stores the playback speed of a puppet track as read; the reconstruction
   replaces a value of zero or less with 1.0 (an intentional `Added:` change in
-  `sithDSS_ProcessPuppetStatus`). `TestOriginalPuppetStatus` expects exactly these
-  cases (and the next one) to differ and is reported as ignored.
-- `ProcessPuppetStatus_edge_keyframeMinus1_priorities`: the original reads the low and
-  high priority of a puppet track with an unsigned 16-bit read (`0x8000` becomes
-  32768); the reconstruction uses a signed read (`SITHDSS_POPINT16`) and stores
-  -32768. The writer only produces small priorities, so the difference needs an
-  edited message. Not changed in this corpus update; expected by
-  `TestOriginalPuppetStatus` like the two cases above.
+  `sithDSS_ProcessPuppetStatus`). `TestOriginalPuppetStatus` expects exactly these two
+  cases to differ and is reported as ignored.
 - None for `sithDSSThing_MoveToPos` any more: the original evaluates
   `velocity * 0.25 + newPos - pos` in x87 extended precision and rounds once, and the
   reconstruction computes the direction in double and rounds once, which reproduces

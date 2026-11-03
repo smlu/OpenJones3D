@@ -224,7 +224,7 @@ static HFONT jonesConfig_hFontGameOverDialog = NULL; // Fixed: Added init. to NU
 static HFONT jonesConfig_hFontGameStatisticsDialog = NULL; // Fixed: Added init. to NULL
 int jonesConfig_gameStatistics_curLevelNum;
 
-static const char* jonesConfig_gameStatistics__aLevelNames[JONESLEVEL_NUMLEVELS - 1] = // not including the general load level
+static const char* jonesConfig_gameStatistics__aLevelNames[JONESLEVEL_NUMLEVELS] =
 {
     "JONES_STR_CYN",
     "JONES_STR_BAB",
@@ -242,7 +242,8 @@ static const char* jonesConfig_gameStatistics__aLevelNames[JONESLEVEL_NUMLEVELS 
     "JONES_STR_NUB",
     "JONES_STR_INF",
     "JONES_STR_AET",
-    "JONES_STR_PRU"
+    "JONES_STR_PRU",
+    "JONES_STR_SUMMARY"
 };
 
 // Chapter completed dialog
@@ -1251,8 +1252,8 @@ int jonesConfig_InitKeySetsPath(void)
 
     if ( pKeySets )
     {
-        size_t len = strlen(aInstallPath) + 1;
-        if ( len == 1 )
+        size_t len = strlen(aInstallPath);
+        if ( len == 0 )
         {
             STD_FORMAT(jonesConfig_aKeySetsDirPath, "..\\\\%s", pKeySets);
             stdMemory_Free(pKeySets);
@@ -1404,6 +1405,7 @@ void jonesConfig_Shutdown(void)
     for ( size_t i = 0; i < 2; i++ ) // TODO: Bug? Why only 2?
     {
         DeleteObject(jonesConfig_apDialogIcons[i]);
+        jonesConfig_apDialogIcons[i] = NULL;
     }
 
     if ( *jonesConfig_aKeySetsDirPath )
@@ -2166,13 +2168,13 @@ int J3DAPI jonesConfig_LoadControlScheme(const char* pFilePath, JonesControlsSch
             size_t argNum = 0;
             if ( !stdConffile_ReadArgs() )
             {
-                break;
+                goto error;
             }
 
             int actionIdx = jonesConfig_ParseArgumentIndex(&argNum, &stdConffile_g_entry, jonesConfig_maxActionWords, jonesConfig_aJonesControlActionNames, STD_ARRAYLEN(jonesConfig_aJonesControlActionNames));
             if ( actionIdx == -1 )
             {
-                break;
+                goto error;
             }
 
             bindNum = 1; // Note, at index 0 the num of bindings state is stored
@@ -2218,7 +2220,8 @@ int J3DAPI jonesConfig_LoadControlScheme(const char* pFilePath, JonesControlsSch
                 bindNum++;
                 JONESCONTROL_ACTION_UPDATENUMBINDINGS(pConfig->aActions[actionIdx], bKeyboard, bController);
 
-                if ( JONESCONTROL_ACTION_GETNUMBINDS(pConfig->aActions[actionIdx]) > JONESCONTROL_ACTION_MAXBINDS ) // TODO: is this a bug? Shouldn't it be GT or EQ?
+                // TODO: [BUG] The binding at index bindNum is stored before this test, so the 9th binding is written one entry past the action row
+                if ( (uint8_t)(pConfig->aActions[actionIdx][0] & 0xFF) > JONESCONTROL_ACTION_MAXBINDS )
                 {
                     static_assert(STD_ARRAYLEN(pConfig->aActions[actionIdx]) == 9, "STD_ARRAYLEN(pConfig->aActions[actionIdx]) == 9");
                     // We've exceeded the number of key mappings
@@ -2258,10 +2261,8 @@ error:
     memset(pConfig->aName, 0, sizeof(pConfig->aName));
     for ( size_t i = 0; i < bindNum; ++i ) // TODO: Hmm is it ok using binNum here? Shouldn't it use actionCount, or just memset the whole array?
     {
-        if ( pConfig->aActions[i][0] )
-        {
-            memset(pConfig->aActions[i], 0, STD_ARRAYLEN(pConfig->aActions[i]));
-        }
+        // The original tests the address of the action row here, which is never NULL, so every row is cleared
+        memset(pConfig->aActions[i], 0, STD_ARRAYLEN(pConfig->aActions[i])); // TODO: [BUG] Clears 9 bytes, not 9 entries, as the original
     }
     // Old code
     /*if ( bindNum > 0 )
@@ -3536,9 +3537,12 @@ int J3DAPI jonesConfig_GetSaveGameFilePath(HWND hWnd, char* pOutFilePath)
     ofn.hwndOwner     = hWnd;
     ofn.hInstance     = (HINSTANCE)GetWindowLongPtr(hWnd, GWL_HINSTANCE);
 
+    char aFilterText[128] = { 0 };
+    STD_FORMAT(aFilterText, aFileterStr, "(.nds)");
+
     char aFilterStr[128] = { 0 };
-    STD_FORMAT(aFilterStr, aFileterStr, "(.nds)");
-    STD_FORMAT(aFilterStr, "%s%c%s%c", aFilterStr, '\0', "*.nds", '\0'); // Fixed: filtering only by .nds files. Note, 2 terminal nulls are required, that's way null at the end
+    // Fixed: Format from a separate buffer, formatting a buffer into itself is undefined behavior
+    STD_FORMAT(aFilterStr, "%s%c%s%c", aFilterText, '\0', "*.nds", '\0'); // Fixed: filtering only by .nds files. Note, 2 terminal nulls are required, that's way null at the end
 
     ofn.lpstrFilter = aFilterStr;
 
@@ -3618,7 +3622,7 @@ UINT_PTR CALLBACK jonesConfig_SaveGameDialogHookProc(HWND hDlg, UINT uMsg, WPARA
             HDC* hdc = (HDC*)GetWindowLongPtr(hDlg, DWL_USER);
             DeleteDC(*hdc);
             *hdc = NULL;
-            return 1;
+            return 0;
         }
         case WM_NOTIFY:
         {
@@ -3632,7 +3636,7 @@ UINT_PTR CALLBACK jonesConfig_SaveGameDialogHookProc(HWND hDlg, UINT uMsg, WPARA
                     CHAR aPath[128]     = { 0 };
                     char aFilename[128] = { 0 };
 
-                    if ( pOfNotify->lpOFN->nFileOffset < 0x8000 )
+                    if ( (int16_t)pOfNotify->lpOFN->nFileOffset > 0 )
                     {
                         CHAR aExtension[128] = { 0 };
                         STD_FORMAT(aExtension, ".%s", pOfNotify->lpOFN->lpstrDefExt);
@@ -3760,6 +3764,8 @@ UINT_PTR CALLBACK jonesConfig_SaveGameDialogHookProc(HWND hDlg, UINT uMsg, WPARA
                         SetWindowLongPtr(hDlg, DWL_MSGRESULT, 1);
                         return 1;
                     }
+
+                    return 0;
                 }
                 case CDN_INITDONE:
                 {
@@ -4000,9 +4006,12 @@ int J3DAPI jonesConfig_GetLoadGameFilePath(HWND hWnd, char* pDestNdsPath)
     LoadGameDialogData data = { 0 };
     data.hThumbnail = 0;
 
+    char aFilterText[128] = { 0 };
+    STD_FORMAT(aFilterText, aFilterFormatStr, " (.nds)");
+
     char aFilterStr[128] = { 0 };
-    STD_FORMAT(aFilterStr, aFilterFormatStr, " (.nds)");
-    STD_FORMAT(aFilterStr, "%s%c%s%c", aFilterStr, '\0', "*.nds", '\0'); // Fixed: filtering only by .nds files. Note, 2 terminal nulls are required, that's way null at the end
+    // Fixed: Format from a separate buffer, formatting a buffer into itself is undefined behavior
+    STD_FORMAT(aFilterStr, "%s%c%s%c", aFilterText, '\0', "*.nds", '\0'); // Fixed: filtering only by .nds files. Note, 2 terminal nulls are required, that's way null at the end
 
     OPENFILENAME ofn      = { 0 };
     ofn.lStructSize       = sizeof(OPENFILENAME);
@@ -4155,7 +4164,7 @@ UINT_PTR CALLBACK jonesConfig_LoadGameDialogHookProc(HWND hDlg, UINT uMsg, WPARA
                     bool bValidFile = false;
                     CHAR aPath[128] = { 0 };
                     LPOPENFILENAME pofn = pOfNotify->lpOFN;
-                    if ( pofn->nFileOffset < 0x8000 )
+                    if ( (int16_t)pofn->nFileOffset > 0 )
                     {
                         char aExtension[128] = { 0 };
                         STD_FORMAT(aExtension, ".%s", pofn->lpstrDefExt);
@@ -4954,6 +4963,7 @@ int J3DAPI jonesConfig_ShowControlOptions(HWND hWnd)
         if ( config.numSchemes <= config.selectedShemeIdx )
         {
             // Maybe add log
+            jonesConfig_FreeControlConfigEntry(&config); // Fixed: Free the copied control config, it leaked on this path
             return 2; // cancel
         }
 
@@ -6266,30 +6276,28 @@ void J3DAPI jonesConfig_EditControlScheme_EditAssignment(HWND hDlg, HWND hListCt
     {
         InvalidateRect(hDlg, 0, 1);
 
-        if ( JONESCONTROL_ACTION_GETNUMBINDS(pScheme->aActions[assignkeyData.actionId]) )
+        // The original tests the address of the action row here, which is never NULL, so the key is always assigned
+        itemIdx = ListView_GetNextItem(hListCtrl, -1, LVNI_SELECTED); // TODO: why do another call, and not use value of itemIdx returned by above func?
+        ListView_SetItemText(hListCtrl, itemIdx, 1, assignkeyData.aControlName);
+
+        LVITEM item;
+        item.mask     = LVIF_PARAM;
+        item.iItem    = itemIdx;
+        item.iSubItem = 0;
+        item.lParam   = assignkeyData.actionId | (assignkeyData.controlId << 16);
+        ListView_SetItem(hListCtrl, &item);
+
+        // Assign new key biding
+        pScheme->aActions[assignkeyData.actionId][bindIdx + 1] = assignkeyData.controlId; // Note, bindIdx must be incremented as it starts with 0, and index 0 points to num binds state
+
+        // Update num key binds only if 0
+        if ( assignkeyData.listID == 1005 && !JONESCONTROL_ACTION_GETNUMKEYBOARDBINDS(pScheme->aActions[assignkeyData.actionId]) )
         {
-            itemIdx = ListView_GetNextItem(hListCtrl, -1, LVNI_SELECTED); // TODO: why do another call, and not use value of itemIdx returned by above func?
-            ListView_SetItemText(hListCtrl, itemIdx, 1, assignkeyData.aControlName);
-
-            LVITEM item;
-            item.mask     = LVIF_PARAM;
-            item.iItem    = itemIdx;
-            item.iSubItem = 0;
-            item.lParam   = assignkeyData.actionId | (assignkeyData.controlId << 16);
-            ListView_SetItem(hListCtrl, &item);
-
-            // Assign new key biding
-            pScheme->aActions[assignkeyData.actionId][bindIdx + 1] = assignkeyData.controlId; // Note, bindIdx must be incremented as it starts with 0, and index 0 points to num binds state
-
-            // Update num key binds only if 0
-            if ( assignkeyData.listID == 1005 && !JONESCONTROL_ACTION_GETNUMKEYBOARDBINDS(pScheme->aActions[assignkeyData.actionId]) )
-            {
-                JONESCONTROL_ACTION_UPDATENUMBINDINGS_KEYBOARD(pScheme->aActions[assignkeyData.actionId], +1);
-            }
-            else if ( assignkeyData.listID == 1006 && !JONESCONTROL_ACTION_GETNUMCONTROLLERBINDS(pScheme->aActions[assignkeyData.actionId]) )
-            {
-                JONESCONTROL_ACTION_UPDATENUMBINDINGS_CONTROLLER(pScheme->aActions[assignkeyData.actionId], +1);
-            }
+            JONESCONTROL_ACTION_UPDATENUMBINDINGS_KEYBOARD(pScheme->aActions[assignkeyData.actionId], +1);
+        }
+        else if ( assignkeyData.listID == 1006 && !JONESCONTROL_ACTION_GETNUMCONTROLLERBINDS(pScheme->aActions[assignkeyData.actionId]) )
+        {
+            JONESCONTROL_ACTION_UPDATENUMBINDINGS_CONTROLLER(pScheme->aActions[assignkeyData.actionId], +1);
         }
     }
 }
@@ -6420,7 +6428,7 @@ void J3DAPI jonesConfig_EditControlScheme_AddAssignment(HWND hDlg, HWND hListCtr
         {
             item.mask   = LVIF_PARAM;
             item.lParam = MAKELONG(data.actionId, data.controlId);
-            ListView_GetItem(hListCtrl, &item);
+            ListView_SetItem(hListCtrl, &item);
         }
         else
         {
@@ -6800,13 +6808,14 @@ void J3DAPI jonesConfig_AssignControlKey_ReadKey(HWND hWnd)
                     case DIK_9:
                     case DIK_0:
                     {
-                        if ( pData->actionId >= JONESCONTROL_ACTION_BAZOOKA && pData->actionId <= JONESCONTROL_ACTION_GRENADE ) // 16 - fist; 27 - grenade
+                        if ( pData->actionId >= JONESCONTROL_ACTION_FISTS && pData->actionId <= JONESCONTROL_ACTION_GRENADE )
                         {
-                           // Got Key close dialog
+                            // Got Key close dialog
                             stdControl_SetActivation(jonesConfig_assignKey_bControlsActive);
                             bGotKy = 1;
                             KillTimer(hWnd, 1u);
                             EndDialog(hWnd, 1);
+                            return;
                         }
 
                         // Only weapon key and we have non-weapon action
@@ -8239,15 +8248,15 @@ int J3DAPI jonesConfig_ShowGameOverDialog(HWND hWnd, char* pRestoreFilename, tSo
     GameOverDialogData data;
     data.result           = 0;
     data.pRestoreFilename = pRestoreFilename;
-    data.sndChnlMusic     = 0;
+    data.sndChnlMusic     = *pSndChnlMus;
     data.hSndMusic        = 0;
     data.hSndMusic        = hSndGameOVerMus;
     JonesDialog_ShowDialog(MAKEINTRESOURCE(150), hWnd, jonesConfig_GameOverDialogProc, (LPARAM)&data);
 
-    if ( pSndChnlMus )
-    {
-        *pSndChnlMus = data.sndChnlMusic;
-    }
+#ifdef J3D_QOL_IMPROVEMENTS
+    // Altered: Return the music channel to the caller so it can stop the game over music. The original never writes it back
+    *pSndChnlMus = data.sndChnlMusic;
+#endif
     return data.result;
 }
 

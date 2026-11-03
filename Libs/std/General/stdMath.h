@@ -2,6 +2,7 @@
 #define STD_STDMATH_H
 #include <j3dcore/j3d.h>
 #include <std/types.h>
+#include <std/General/std.h>
 #include <std/RTI/addresses.h>
 
 #define _USE_MATH_DEFINES
@@ -11,8 +12,16 @@ J3D_EXTERN_C_START
 
 #define STDMATH_ZERO_EPSILON 0.00001f
 
-// Clamp value between min and max
-#define STDMATH_CLAMP(val, minv, maxv) (((val) < (minv)) ? (minv) : ((val) > (maxv)) ? (maxv) : (val))
+// Clamp value between min and max. NaN is clamped to min like in the original;
+// debug builds assert on NaN to help track down NaN related bugs.
+#ifdef J3D_DEBUG
+#  define STDMATH_CLAMP(val, minv, maxv) \
+    (((val) != (val)) \
+        ? (std_g_pHS->pAssert("STDMATH_CLAMP: NaN value " #val, J3D_FILE, __LINE__), (minv)) \
+        : (((val) >= (minv)) ? (((val) <= (maxv)) ? (val) : (maxv)) : (minv)))
+#else
+#  define STDMATH_CLAMP(val, minv, maxv) (((val) >= (minv)) ? (((val) <= (maxv)) ? (val) : (maxv)) : (minv))
+#endif
 
 // PI
 #define STDMATH_PI M_PI
@@ -76,11 +85,11 @@ float stdMath_SmoothDamp(float current, float target, float rate, float deltaTim
 
 float stdMath_ClipNearZero(float val)
 {
-    if ( fabsf(val) <= STDMATH_ZERO_EPSILON )
+    if ( fabsf(val) > STDMATH_ZERO_EPSILON )
     {
-        return 0.0f;
+        return val;
     }
-    return val;
+    return 0.0f;
 }
 
 /**

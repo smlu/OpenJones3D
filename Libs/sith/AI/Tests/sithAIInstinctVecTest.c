@@ -43,17 +43,12 @@ TEST(sithAIInstinct, TestOriginalInitInstincts)
     TEST_ASSERT_EQUAL_UINT_MESSAGE(0, numFailed, sithAIInstinctVecTest_aFailText);
 }
 
-// Direct registrations: names up to 62 characters, mode masks, a NULL function, the last free entry and a full
-// registry. Known difference: SithAIRegisteredInstinct::aName has 64 bytes in the original and 63 in the
-// reconstruction, so a name of 63 or more characters keeps 63 characters in the original (and is found by its full
-// name) but 62 in the reconstruction; see tv/sithAIInstinct/README.md.
+// Direct registrations: all name lengths, mode masks, a NULL function, the last free entry and a full registry
 TEST(sithAIInstinct, TestOriginalRegisterInstinct)
 {
-    static const char* const aKnown[] = { "RegisterInstinct_edge_name63", "RegisterInstinct_edge_name64", "RegisterInstinct_edge_name199" };
     unsigned int numFailed = sithVecTest_RunCases(&sithAIVec_instinctSuite, &sithAIInstinctVecTest_fixture, "RegisterInstinct_",
         sithAIInstinctVecTest_aFailText, sizeof(sithAIInstinctVecTest_aFailText));
-    sithVecTest_ExpectKnownDifferences(numFailed, sithAIInstinctVecTest_aFailText, aKnown, (unsigned int)SITHVEC_ARRAYLEN(aKnown),
-        "sithAI_RegisterInstinct keeps 62 name characters (63 byte name field), the original 63 (64 bytes); see tv/sithAIInstinct/README.md.");
+    TEST_ASSERT_EQUAL_UINT_MESSAGE(0, numFailed, sithAIInstinctVecTest_aFailText);
 }
 
 // Lookups in an empty registry and in one with only earlier registrations

@@ -531,7 +531,6 @@ void J3DAPI stdMemory_BlockFree(void* pMemory)
             pBlock->pFirst       = NULL;
             pBlock->availableMem = 0;
             pBlock->pLargestFree = NULL;
-            pBlock->bAllocated   = 0;
         }
         else
         {

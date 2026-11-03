@@ -93,6 +93,9 @@ void stdShutdown(void)
 {
     if ( bStdStartup )
     {
+        short tmp = word_183962C;
+        __asm fldcw word ptr[tmp];
+
         stdJSON_Shutdown();
         stdMemory_Close();
         stdMemory_Shutdown();

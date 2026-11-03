@@ -139,12 +139,14 @@ void J3DAPI sithCogFunctionAI_AIGetGoalThing(SithCog* pCog)
     if ( !pThing )
     {
         SITHLOG_ERROR("Cog %s: Bad thing passed to AIGetGoalThing\n", pCog->aName);
+        sithCogExec_PushInt(pCog, -1);
         return;
     }
 
     if ( pThing->controlType != SITH_CT_AI || !pThing->controlInfo.aiControl.pLocal )
     {
         SITHLOG_ERROR("Cog %s: thing %s is not AI controlled in AIGetGoalThing\n", pCog->aName, pThing->aName);
+        sithCogExec_PushInt(pCog, -1);
         return;
     }
 
@@ -166,17 +168,15 @@ void J3DAPI sithCogFunctionAI_AIGetGoalLVec(SithCog* pCog)
     if ( !pThing )
     {
         SITHLOG_ERROR("Cog %s: Bad THING passed to AIGetGoalLVec\n", pCog->aName);
+        sithCogExec_PushVector(pCog, &rdroid_g_zeroVector3);
         return;
     }
 
-    if ( pThing->controlType == SITH_CT_AI )
+    if ( pThing->controlType != SITH_CT_AI || !pThing->controlInfo.aiControl.pLocal )
     {
-        if ( !pThing->controlInfo.aiControl.pLocal )
-        {
-            SITHLOG_ERROR("Cog %s: THING %s is not AI controlled in AIGetGoalLVec\n", pCog->aName, pThing->aName);
-            sithCogExec_PushVector(pCog, &rdroid_g_zeroVector3);
-            return;
-        }
+        SITHLOG_ERROR("Cog %s: THING %s is not AI controlled in AIGetGoalLVec\n", pCog->aName, pThing->aName);
+        sithCogExec_PushVector(pCog, &rdroid_g_zeroVector3);
+        return;
     }
 
     sithCogExec_PushVector(pCog, &pThing->controlInfo.aiControl.pLocal->goalLVec);
@@ -722,6 +722,7 @@ void J3DAPI sithCogFunctionAI_IsAITargetInSight(SithCog* pCog)
         || !pThing->controlInfo.aiControl.pLocal )
     {
         SITHLOG_ERROR("Cog %s: Invalid AI THING in IsAITargetInSight.\n", pCog->aName);
+        sithCogExec_PushInt(pCog, 0);
         return;
     }
 

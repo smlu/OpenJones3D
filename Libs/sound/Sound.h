@@ -114,6 +114,7 @@ typedef void (J3DAPI* SoundTestUncompressFunc)(tAudioCompressorState* pCompresso
 void Sound_TestResetLipSyncState(void);
 void Sound_TestSetChannels(tSoundChannel* pChannels, size_t numChannels);
 void Sound_TestSetSoundBank(size_t bankNum, SoundInfo* pSoundInfos, size_t numSounds, uint8_t* pSoundCache, size_t cacheSize);
+void Sound_TestSetOpen(int bOpen);
 void Sound_TestSetNoLipSync(int bNoLipSync);
 void Sound_TestSetCurrentPosition(size_t position);
 void Sound_TestSetUncompressFunc(SoundTestUncompressFunc pfUncompress);

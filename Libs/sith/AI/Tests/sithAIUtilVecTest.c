@@ -399,14 +399,11 @@ TEST(sithAIUtil, TestOriginalGetNextThingsInView)
 }
 
 
-// Known difference: the SITH_RAND macro computes in double precision, the original in single precision (one ulp)
 TEST(sithAIUtil, TestOriginalMakeRandPoint)
 {
-    static const char* const aKnown[] = { "MakeRandPoint_edge_rand_ulp" };
     unsigned int numFailed = sithVecTest_RunCases(&sithAIUtilVec_suite, &sithAIUtilVecTest_fixture, "MakeRandPoint_",
         sithAIUtilVecTest_aFailText, sizeof(sithAIUtilVecTest_aFailText));
-    sithVecTest_ExpectKnownDifferences(numFailed, sithAIUtilVecTest_aFailText, aKnown, (unsigned int)SITHVEC_ARRAYLEN(aKnown),
-        "SITH_RAND of the reconstruction differs from the original by one ulp for some random numbers; see tv/sithAIUtil/README.md.");
+    TEST_ASSERT_EQUAL_UINT_MESSAGE(0, numFailed, sithAIUtilVecTest_aFailText);
 }
 
 
@@ -434,14 +431,11 @@ TEST(sithAIUtil, TestOriginalSweepMoveToPathPos)
 }
 
 
-// Known difference: the SITH_RAND macro computes in double precision, the original in single precision (one ulp)
 TEST(sithAIUtil, TestOriginalMakeRoamPos)
 {
-    static const char* const aKnown[] = { "MakeRoamPos_edge_rand_ulp" };
     unsigned int numFailed = sithVecTest_RunCases(&sithAIUtilVec_suite, &sithAIUtilVecTest_fixture, "MakeRoamPos_",
         sithAIUtilVecTest_aFailText, sizeof(sithAIUtilVecTest_aFailText));
-    sithVecTest_ExpectKnownDifferences(numFailed, sithAIUtilVecTest_aFailText, aKnown, (unsigned int)SITHVEC_ARRAYLEN(aKnown),
-        "SITH_RAND of the reconstruction differs from the original by one ulp for some random numbers; see tv/sithAIUtil/README.md.");
+    TEST_ASSERT_EQUAL_UINT_MESSAGE(0, numFailed, sithAIUtilVecTest_aFailText);
 }
 
 
