@@ -546,7 +546,7 @@ int J3DAPI sithIntersect_CheckSphereHit(const rdVector3* startPos, const rdVecto
     {
         if ( (colflags & 0x400) != 0 )
         {
-            *pSphereHitDist = *pSphereHitDist + radius; // TODO: [BUG] The original adds to an uninitialized value, see the init in sithCollision_SearchForSurfaceCollisions
+            *pSphereHitDist = *pSphereHitDist + radius; // Fixed: sithCollision_SearchForSurfaceCollisions initializes the value now, the original added the radius to an uninitialized value
         }
         else
         {
