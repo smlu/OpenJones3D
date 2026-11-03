@@ -26,7 +26,9 @@ Each module hides one platform decision and is one CMake static-library target
 `core` (version, assert) is the first module, `log` (the global logging API with
 pluggable sinks) the second. `files` hides the host file system: file access,
 directory listing, base path and per-user writable path (ADR-0019), with an
-SDL3 backend and an in-memory Null backend.
+SDL3 backend and an in-memory Null backend. `platform` hides the operating
+system layer: windows and one polled queue of OS events (ADR-0009), with the
+same two backends.
 
 ## Declaring a module
 
