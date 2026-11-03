@@ -18,7 +18,7 @@ users can share one install.
 
 ## Decision
 
-- The read search order stays in game code (`JonesFile`). Mod folders, when they come (M9), are further entries
+- The read search order stays in game code (`JonesFile`). Mod folders, when they come (M11 and later), are further entries
   in that list, marked `// Added:`.
 - Babylon's Files module provides the per-user writable directory for each platform, through SDL3.
 - `Jones.cfg`, savegames, replays and logs are written there.

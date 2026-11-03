@@ -43,7 +43,13 @@ The work is ordered so that something runs at every step. See the [roadmap](../R
 | M6. Babylon renderer | SDL3 GPU renderer at parity with DirectX 9, then the Win32 and DirectX path is removed |
 | M7. Playable | Sound through miniaudio, the original dialogs as in-game screens, playable on all three platforms |
 | M8. Release | Packages, game data installation, macOS signing, first release |
-| M9 and later. Babylon extras | Visible console, widescreen and high-framerate presentation, modding, threading |
+| M9. Presentation | Widescreen, high resolution, bloom and depth of field, high frame rates |
+| M10. Modern lighting | Per-pixel dynamic lighting and ambient occlusion on the existing CPU pipeline; vertex lighting stays as classic mode |
+| M11 and later. Babylon extras | Visible console, modding, threading; shadows and GPU geometry as an open idea |
+
+The graphics enhancements are presentation, so they may change how the game looks but never the trace. M10
+keeps the CPU transform and clipping and only hands the GPU more per vertex (view-space position and normal);
+moving geometry to the GPU for shadows would be a second render path and is not planned.
 
 Threading comes last on purpose: running game logic and rendering in parallel is the change most likely to
 break determinism, so it waits until traces guard everything else.

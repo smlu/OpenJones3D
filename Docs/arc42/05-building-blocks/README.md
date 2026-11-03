@@ -56,7 +56,7 @@ Planned for M5 and M6. The exact interfaces are decided in the M5 plan; this is 
 | Render | Devices, textures, buffers, shaders, draw submission | SDL3 GPU, Null | `std3D` |
 | Audio | Devices, voices, 3D positioning, streaming | miniaudio, Null | `Driver_*` |
 | Cvars | Named, typed settings with defaults and change callbacks | | Options, `Jones.cfg` |
-| Threads | Threads, jobs, synchronization | SDL3 | Later (M9) |
+| Threads | Threads, jobs, synchronization | SDL3 | Later (M11 and later) |
 | Log | Leveled logging with sinks | | `STDLOG_*` |
 
 Each module is its own CMake target with a public `include/` and a private `src/`, and may only use the

@@ -11,7 +11,7 @@ framework.
 
 ## Decision
 
-Babylon gets console variables (cvars) in M5. The visible console comes later, as a Babylon extra in M9.
+Babylon gets console variables (cvars) in M5. The visible console comes later, as a Babylon extra (M11 and later).
 
 ## Consequences
 
