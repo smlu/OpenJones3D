@@ -19,7 +19,6 @@
 #include <std/General/stdMemory.h>
 #include <std/General/stdUtil.h>
 
-#ifdef J3D_STANDALONE
 // Added: Standalone builds have no retail executable to hold these. *_ResetGlobals sets the starting values.
 SithCamera* sithCamera_g_pCurCamera;
 int sithCamera_g_bExtCameraLookMode;
@@ -34,7 +33,6 @@ float sithCamera_g_cameraPosDelta;
 float sithCamera_g_cameraAngleDelta;
 rdMatrix34 sithCamera_g_orbCamOrient;
 rdVector3 sithCamera_g_camLookSpot;
-#endif
 
 static size_t sithCamera_aCycleCamIndices[3] = { SITHCAMERA_INTCAMERANUM, SITHCAMERA_EXTCAMERANUM, SITHCAMERA_ORBCAMERANUM };
 

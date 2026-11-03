@@ -61,7 +61,6 @@ function(sith_add_vec_test TARGET)
 
     target_compile_definitions(${TARGET} PRIVATE
         J3D_TEST
-        J3D_LOCAL_SITH_RTI
         SITHVEC_TV_DIR="${SV_TV_DIR}"
     )
 

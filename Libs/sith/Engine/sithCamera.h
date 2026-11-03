@@ -25,95 +25,43 @@ J3D_EXTERN_C_START
 #define SITHCAMERA_ATTENUATIONMIN 0.4f
 #define SITHCAMERA_ATTENUATIONMAX 0.8f
 
-#if defined(J3D_STANDALONE)
 extern SithCamera* sithCamera_g_pCurCamera;
-#else
-#define sithCamera_g_pCurCamera J3D_DECL_FAR_VAR(sithCamera_g_pCurCamera, SithCamera*)
-#endif
 // extern SithCamera *sithCamera_g_pCurCamera;
 
-#if defined(J3D_STANDALONE)
 extern int sithCamera_g_bExtCameraLookMode;
-#else
-#define sithCamera_g_bExtCameraLookMode J3D_DECL_FAR_VAR(sithCamera_g_bExtCameraLookMode, int)
-#endif
 // extern int sithCamera_g_bExtCameraLookMode;
 
-#if defined(J3D_STANDALONE)
 extern rdVector3 sithCamera_g_camSpot;
-#else
-#define sithCamera_g_camSpot J3D_DECL_FAR_VAR(sithCamera_g_camSpot, rdVector3)
-#endif
 // extern rdVector3 sithCamera_g_camSpot;
 
-#if defined(J3D_STANDALONE)
 extern SithCamera sithCamera_g_aCameras[7];
-#else
-#define sithCamera_g_aCameras J3D_DECL_FAR_ARRAYVAR(sithCamera_g_aCameras, SithCamera(*)[7])
-#endif
 // extern SithCamera sithCamera_g_aCameras[7];
 
-#if defined(J3D_STANDALONE)
 extern int sithCamera_g_bCurCameraSet;
-#else
-#define sithCamera_g_bCurCameraSet J3D_DECL_FAR_VAR(sithCamera_g_bCurCameraSet, int)
-#endif
 // extern int sithCamera_g_bCurCameraSet;
 
-#if defined(J3D_STANDALONE)
 extern SithCameraState sithCamera_g_stateFlags;
-#else
-#define sithCamera_g_stateFlags J3D_DECL_FAR_VAR(sithCamera_g_stateFlags, SithCameraState)
-#endif
 // extern SithCameraState sithCamera_g_stateFlags;
 
-#if defined(J3D_STANDALONE)
 extern size_t sithCamera_g_curCycleCamNum;
-#else
-#define sithCamera_g_curCycleCamNum J3D_DECL_FAR_VAR(sithCamera_g_curCycleCamNum, size_t)
-#endif
 // extern int sithCamera_g_curCycleCamNum;
 
-#if defined(J3D_STANDALONE)
 extern rdVector3 sithCamera_g_vecCameraPosOffset;
-#else
-#define sithCamera_g_vecCameraPosOffset J3D_DECL_FAR_VAR(sithCamera_g_vecCameraPosOffset, rdVector3)
-#endif
 // extern rdVector3 sithCamera_g_vecCameraPosOffset;
 
-#if defined(J3D_STANDALONE)
 extern rdVector3 sithCamera_g_vecCameraAngleOffset;
-#else
-#define sithCamera_g_vecCameraAngleOffset J3D_DECL_FAR_VAR(sithCamera_g_vecCameraAngleOffset, rdVector3)
-#endif
 // extern rdVector3 sithCamera_g_vecCameraAngleOffset;
 
-#if defined(J3D_STANDALONE)
 extern float sithCamera_g_cameraPosDelta;
-#else
-#define sithCamera_g_cameraPosDelta J3D_DECL_FAR_VAR(sithCamera_g_cameraPosDelta, float)
-#endif
 // extern float sithCamera_g_cameraPosDelta;
 
-#if defined(J3D_STANDALONE)
 extern float sithCamera_g_cameraAngleDelta;
-#else
-#define sithCamera_g_cameraAngleDelta J3D_DECL_FAR_VAR(sithCamera_g_cameraAngleDelta, float)
-#endif
 // extern float sithCamera_g_cameraAngleDelta;
 
-#if defined(J3D_STANDALONE)
 extern rdMatrix34 sithCamera_g_orbCamOrient;
-#else
-#define sithCamera_g_orbCamOrient J3D_DECL_FAR_VAR(sithCamera_g_orbCamOrient, rdMatrix34)
-#endif
 // extern rdMatrix34 sithCamera_g_orbCamOrient;
 
-#if defined(J3D_STANDALONE)
 extern rdVector3 sithCamera_g_camLookSpot;
-#else
-#define sithCamera_g_camLookSpot J3D_DECL_FAR_VAR(sithCamera_g_camLookSpot, rdVector3)
-#endif
 // extern rdVector3 sithCamera_g_camLookSpot;
 
 int sithCamera_Startup(void);

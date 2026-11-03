@@ -12,18 +12,10 @@ J3D_EXTERN_C_START
 
 #define JONESCONSOLE_FRAMERATEID 102u
 
-#if defined(J3D_STANDALONE)
 extern int JonesConsole_g_bVisible;
-#else
-#define JonesConsole_g_bVisible J3D_DECL_FAR_VAR(JonesConsole_g_bVisible, int)
-#endif
 // extern int JonesConsole_g_bVisible;
 
-#if defined(J3D_STANDALONE)
 extern int JonesConsole_g_bStarted;
-#else
-#define JonesConsole_g_bStarted J3D_DECL_FAR_VAR(JonesConsole_g_bStarted, int)
-#endif
 // extern int JonesConsole_g_bStarted;
 
 int JonesConsole_Startup(void);

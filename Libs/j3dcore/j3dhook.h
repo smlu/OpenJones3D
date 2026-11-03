@@ -18,20 +18,8 @@
 #define _J3D_CALLFUNCFAR_HELPER(func_addr, func_type, ...) \
     ((func_type)func_addr)(__VA_ARGS__)
 
-#if !defined(J3D_STANDALONE)
-/**
-* @brief Simplified macro wrapper for CALLFUNCFAR.
-*
-* @param func_name Name of the function.
-*                  The global function address variable (func_name_ADDR) and type variable (func_name_TYPE) are derived from name.
-* @param ... Function parameters (can be empty for functions with no parameters).
-*/
-#define J3D_TRAMPOLINE_CALL(func_name, ...) \
-    J3D_CALLFUNCFAR(func_name##_ADDR, func_name##_TYPE, ##__VA_ARGS__)
-#else
 // Added: A standalone build has no retail executable, so reaching a fixed address is a compile error naming the symbol.
 #define J3D_TRAMPOLINE_CALL(func_name, ...) J3D_STANDALONE_FAR_CALL_##func_name
-#endif
 
 /**
 * @brief Redirects the original function to a specified hook function.
@@ -46,125 +34,19 @@
 *             as `func_ADDR`, which is expected to be globally defined or
 *             included in the source file where this macro is used.
 */
-#if defined(J3D_STANDALONE)
 // Added: A standalone build has no retail executable, so hooks cannot be installed and the
 // J3DHookFunction helper is not compiled; the hook macro expands to nothing.
 #define J3D_HOOKFUNC(func)
-#else
-#define J3D_HOOKFUNC(func) \
-    J3DHookFunction(func##_ADDR, (void*)func)
-#endif
 
-#if !defined(J3D_STANDALONE)
-/**
-* @brief Declares a variable at a specific memory address.
-*
-* This macro is used to declare a variable of a given type at a predefined
-* memory address. It's typically used for accessing variables in memory-mapped
-* regions or in external processes.
-*
-* @param var_name The name of the variable (without the _ADDR suffix).
-* @param var_type The type of the variable.
-*
-* @return A reference to the variable at the specified address.
-*
-* @note The address of the variable should be defined elsewhere as var_name_ADDR.
-*/
-#define J3D_DECL_FAR_VAR(var_name, var_type) \
-    (*(var_type *)(var_name##_ADDR))
-
-/**
-* @brief Declares an array variable at a specific memory address.
-*
-* This macro is used to declare an array variable of a given type at a predefined
-* memory address. It's typically used for accessing array variables in memory-mapped
-* regions or in external processes.
-*
-* @param var_name The name of the array variable (without the _ADDR suffix).
-* @param var_type The type of the array, including its dimensions.
-*
-* @return A reference to the array at the specified address.
-*
-* @note The address of the array should be defined elsewhere as var_name_ADDR.
-*/
-#define J3D_DECL_FAR_ARRAYVAR(var_name, var_type) \
-    (*(var_type)(var_name##_ADDR))
-#else
 // Added: A standalone build has no retail executable, so reaching a fixed address is a compile error naming the symbol.
 #define J3D_DECL_FAR_VAR(var_name, var_type) J3D_STANDALONE_FAR_GLOBAL_##var_name
 #define J3D_DECL_FAR_ARRAYVAR(var_name, var_type) J3D_STANDALONE_FAR_GLOBAL_##var_name
-#endif
 
 J3D_EXTERN_C_START
 
 // Added: The rest of this header hooks bytes in the retail executable, so everything below uses
 // VirtualProtect/FlushInstructionCache and the Win32 types. A standalone build has no retail
 // executable and does not compile or use it.
-#if !defined(J3D_STANDALONE)
-/**
-  * @brief Structure to hold the context for hooking
-  */
-    typedef struct {
-    DWORD oldProtect;
-    uintptr_t startAddress;
-    size_t size;
-} J3DHookContext;
-
-/**
- * @brief Begins the hooking context by changing memory protection to read-write
- *
- * @param pCtx The pointer to a J3DHookContext structure
- * @param startAddress The start address of the region to modify
- * @param endAddress The end address of the region to modify
- * @return true if successful, false otherwise
- */
-static inline bool J3DStartHookContext(J3DHookContext* pCtx, uintptr_t startAddress, uintptr_t endAddress)
-{
-    if ( endAddress <= startAddress ) {
-        return false;
-    }
-    pCtx->startAddress = startAddress;
-    pCtx->size = endAddress - startAddress;
-    return VirtualProtect((LPVOID)pCtx->startAddress, pCtx->size, PAGE_EXECUTE_READWRITE, &pCtx->oldProtect);
-}
-
-/**
- * @brief Ends the hooking context by restoring memory protection
- *
- * @param pCtx The pointer to a J3DHookContext structure
- * @return true if successful, false otherwise
- */
-static inline bool J3DEndHookContext(J3DHookContext* pCtx)
-{
-    DWORD temp;
-    return VirtualProtect((LPVOID)pCtx->startAddress, pCtx->size, pCtx->oldProtect, &temp);
-}
-
-/**
- * @brief Installs hook on function to redirect all calls to the new function
- *
- * @param pFuncAddr Address of the original function
- * @param pHookFunc The new function to redirect to
- * @return true if hooking was successful, false otherwise
- */
-static bool J3DHookFunction(intptr_t pFuncAddr, void* pHookFunc)
-{
-    if ( pFuncAddr == (intptr_t)pHookFunc )
-    {
-        printf("WARNING J3DHookFunction: Attempted to hook function at address %x to itself!\n", pFuncAddr);
-        return false;
-    }
-
-    // Install hook in-place
-    *(uint8_t*)(pFuncAddr) = 0xE9; // JMP opcode
-    *(uint32_t*)(pFuncAddr + 1) = ((uintptr_t)pHookFunc - pFuncAddr - 5); // relative address to h
-
-    // Flush instruction cache to ensure the CPU picks up the change
-    FlushInstructionCache(GetCurrentProcess(), (LPCVOID)pFuncAddr, 5);
-
-    return true;
-}
-#endif // J3D_STANDALONE
 
 J3D_EXTERN_C_END
 #endif //JONES3D_HOOK_H

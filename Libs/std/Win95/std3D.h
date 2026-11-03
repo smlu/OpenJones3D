@@ -18,13 +18,8 @@
 
 J3D_EXTERN_C_START
 
-#ifdef J3D_LOCAL_RTI
 extern float std3D_g_fogDensity;
 extern size_t std3D_g_maxVertices;
-#else
-#   define std3D_g_fogDensity J3D_DECL_FAR_VAR(std3D_g_fogDensity, float)
-#   define std3D_g_maxVertices J3D_DECL_FAR_VAR(std3D_g_maxVertices, size_t)
-#endif
 
 int std3D_Startup(void);
 void std3D_Shutdown(void);

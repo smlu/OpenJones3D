@@ -57,33 +57,17 @@ J3D_EXTERN_C_START
 #define SITH_CFG_GAMEPLAY_DIFFICULTY  "gameplay.difficulty"
 
 
-#if defined(J3D_LOCAL_SITH_RTI)
 extern tHostServices* sith_g_pHS;
-#else
-#   define sith_g_pHS J3D_DECL_FAR_VAR(sith_g_pHS, tHostServices*)
-#endif
 
 // TODO: Rename all to be prefixed only by 'sith'
 
-#if defined(J3D_STANDALONE)
 extern size_t sithMain_g_frameNumber;
-#else
-#define sithMain_g_frameNumber J3D_DECL_FAR_VAR(sithMain_g_frameNumber, size_t)
-#endif
 // extern int sithMain_g_frameNumber;
 
-#if defined(J3D_STANDALONE)
 extern SithMode sithMain_g_sith_mode;
-#else
-#define sithMain_g_sith_mode J3D_DECL_FAR_VAR(sithMain_g_sith_mode, SithMode)
-#endif
 // extern SithMode sithMain_g_sith_mode;
 
-#if defined(J3D_STANDALONE)
 extern size_t sithMain_g_curRenderTick;
-#else
-#define sithMain_g_curRenderTick J3D_DECL_FAR_VAR(sithMain_g_curRenderTick, size_t)
-#endif
 // extern unsigned int sithMain_g_curRenderTick;
 
 void J3DAPI sithSetServices(tHostServices* pHS);

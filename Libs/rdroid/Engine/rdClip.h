@@ -9,11 +9,7 @@ J3D_EXTERN_C_START
 
 #define MAX_CLIP_VERTICIES 80u
 
-#if defined(J3D_STANDALONE)
 extern int rdClip_g_faceStatus;
-#else
-#define rdClip_g_faceStatus J3D_DECL_FAR_VAR(rdClip_g_faceStatus, int)
-#endif
 // extern int rdClip_g_faceStatus;
 
 int J3DAPI rdClip_Line2(const rdCanvas* pCanvas, int* x1, int* y1, int* x2, int* y2);

@@ -65,7 +65,7 @@ void JonesMainSys_ClearWindowProc(void)
 
 void JonesMainSys_InstallHooks(void)
 {
-    // Added: No RTI hooks in the standalone Null build (J3D_STANDALONE): nothing to hook.
+    // Added: No RTI hooks in the standalone Null build: nothing to hook.
 }
 
 bool JonesMainSys_GetComputerName(char* pDst, size_t size)

@@ -63,11 +63,9 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#ifdef J3D_STANDALONE
 // Added: Standalone builds have no retail executable to hold these. *_ResetGlobals sets the starting values.
 char JonesMain_g_aErrorBuffer[1024];
 tSysHandle JonesMain_g_mainMutex;
-#endif
 
 #define JONES_FPSPRINT_INTERVAL  2000u // 2 sec
 

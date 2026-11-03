@@ -855,7 +855,7 @@ int stdDisplay_Update(void)
 
 void stdDisplay_InstallHooks(void)
 {
-    // Added: No RTI hooks in the standalone Null build (J3D_STANDALONE): nothing to hook.
+    // Added: No RTI hooks in the standalone Null build: nothing to hook.
 }
 
 void stdDisplay_ResetGlobals(void)

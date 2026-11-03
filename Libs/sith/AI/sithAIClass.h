@@ -8,11 +8,7 @@
 
 J3D_EXTERN_C_START
 
-#if defined(J3D_STANDALONE)
 extern tHashTable* sithAIClass_g_pHashtable;
-#else
-#define sithAIClass_g_pHashtable J3D_DECL_FAR_VAR(sithAIClass_g_pHashtable, tHashTable*)
-#endif
 // extern tHashTable *sithAIClass_g_pHashtable;
 
 int sithAIClass_Startup(void);

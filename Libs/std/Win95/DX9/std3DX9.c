@@ -26,10 +26,8 @@
 static bool bStartup    = false;
 static bool std3D_bOpen = false;
 
-#ifdef J3D_LOCAL_RTI
 float std3D_g_fogDensity = 0.0f;
 size_t std3D_g_maxVertices = 0u;
-#endif
 
 static LPDIRECT3D9 std3D_pDirect3D       = NULL;
 static LPDIRECT3DDEVICE9 std3D_pD3Device = NULL;

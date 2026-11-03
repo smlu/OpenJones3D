@@ -36,10 +36,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef J3D_STANDALONE
 // Added: Standalone builds have no retail executable to hold these. *_ResetGlobals sets the starting values.
 int sithAIUtil_g_bRenderAIWpnts;
-#endif
 
 #define SITHAIUTIL_MKPOINT_ROTATE       (SITHAIUTIL_MKPOINT_YAW | SITHAIUTIL_MKPOINT_PITCH)
 #define SITHAIUTIL_MKPOINT_TOWARDREF    (SITHAIUTIL_MKPOINT_TOWARDGOAL | SITHAIUTIL_MKPOINT_TOWARDMOVEPOS | SITHAIUTIL_MKPOINT_REFOWNER)

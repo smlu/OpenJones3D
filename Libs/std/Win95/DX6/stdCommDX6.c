@@ -109,7 +109,6 @@ void stdComm_InstallHooks(void)
 
 void stdComm_ResetGlobals(void)
 {
-#ifdef J3D_LOCAL_RTI
     // Added: Reset local DirectPlay state for standalone tests.
     bGameHost          = false;
     bGameActive        = false;
@@ -118,10 +117,8 @@ void stdComm_ResetGlobals(void)
     stdComm_numGames   = 0;
     STD_ZEROMEM(stdComm_aPlayers, sizeof(stdComm_aPlayers));
     STD_ZEROMEM(stdComm_aGames, sizeof(stdComm_aGames));
-#endif
 }
 
-#ifdef J3D_LOCAL_RTI
 void stdComm_TestSetDirectPlayState(LPDIRECTPLAY4 pDirectPlayArg, bool bActive, bool bHost, size_t numGames)
 {
     // Added: Bind a fake DirectPlay object in tests without exposing this hook in regular builds.
@@ -130,7 +127,6 @@ void stdComm_TestSetDirectPlayState(LPDIRECTPLAY4 pDirectPlayArg, bool bActive, 
     bGameHost        = bHost;
     stdComm_numGames = numGames;
 }
-#endif
 
 int32_t J3DAPI stdComm_Send(DPID idFrom, DPID idTo, const void* pData, uint32_t size, uint32_t flags)
 {

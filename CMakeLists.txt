@@ -79,9 +79,6 @@ if (JONES3D_RUNTIME_GUARDS)
     set(J3D_RUNTIME_GUARDS ON)
 endif()
 
-# The standalone build is the only build (ADR-0004); a later change removes these macros.
-add_compile_definitions(J3D_STANDALONE J3D_LOCAL_RTI J3D_LOCAL_SITH_RTI J3D_LOCAL_RDROID_RTI)
-
 if (JONES3D_BUILD_TESTS)
     enable_testing()
 else()

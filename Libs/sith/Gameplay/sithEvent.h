@@ -9,11 +9,7 @@
 
 J3D_EXTERN_C_START
 
-#if defined(J3D_STANDALONE)
 extern SithEvent* sithEvent_g_pFirstQueuedEvent;
-#else
-#define sithEvent_g_pFirstQueuedEvent J3D_DECL_FAR_VAR(sithEvent_g_pFirstQueuedEvent, SithEvent*)
-#endif
 // extern SithEvent *sithEvent_g_pFirstQueuedEvent;
 
 int sithEvent_Startup(void);

@@ -38,10 +38,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef J3D_STANDALONE
 // Added: Standalone builds have no retail executable to hold these. *_ResetGlobals sets the starting values.
 int sithPuppet_g_bPlayerLeapForward;
-#endif
 
 static float sithPuppet_watersurfaceTurnFactor = 0.0005f;
 static bool sithPuppet_bCndLoadExternal        = J3D_QOL_VALUE(true, false); // Added

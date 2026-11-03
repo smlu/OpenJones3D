@@ -17,9 +17,7 @@ static int zfilio_flags = ZFILIO_FLAG_REPORT;
 static LecModule zfilio_module = { zfilio_Register, zfilio_Unregister, zfilio_Startup, zfilio_Shutdown };
 static ZfilioInterface zfilio_interface = { zfilio_open, zfilio_close, zfilio_read, zfilio_write, zfilio_tell, zfilio_seek, zfilio_flush };
 
-#ifdef J3D_LOCAL_RTI
 FilioInterface* zfilio_pFilio = NULL;
-#endif
 static MemoryDebugInterface* zfilio_pMemory;
 static LecShare* zfilio_pServices;
 static LecDebug* zfilio_pDebug;
@@ -55,13 +53,9 @@ static gzFile Zfilio_gzopen(const char* pPath, const char* pMode)
     }
 #endif
 
-#if defined(J3D_STANDALONE)
     J3D_UNUSED(pPath);
     J3D_UNUSED(pMode);
     return NULL;
-#else
-    return J3D_TRAMPOLINE_CALL(gzopen, pPath, pMode);
-#endif
 }
 
 static int Zfilio_gzclose(gzFile file)
@@ -73,12 +67,8 @@ static int Zfilio_gzclose(gzFile file)
     }
 #endif
 
-#if defined(J3D_STANDALONE)
     J3D_UNUSED(file);
     return -1;
-#else
-    return J3D_TRAMPOLINE_CALL(gzclose, file);
-#endif
 }
 
 static int Zfilio_gzread(gzFile file, void* pBuf, unsigned int len)
@@ -90,14 +80,10 @@ static int Zfilio_gzread(gzFile file, void* pBuf, unsigned int len)
     }
 #endif
 
-#if defined(J3D_STANDALONE)
     J3D_UNUSED(file);
     J3D_UNUSED(pBuf);
     J3D_UNUSED(len);
     return -1;
-#else
-    return J3D_TRAMPOLINE_CALL(gzread, file, pBuf, len);
-#endif
 }
 
 static int Zfilio_gzwrite(gzFile file, const void* pBuf, unsigned int len)
@@ -109,14 +95,10 @@ static int Zfilio_gzwrite(gzFile file, const void* pBuf, unsigned int len)
     }
 #endif
 
-#if defined(J3D_STANDALONE)
     J3D_UNUSED(file);
     J3D_UNUSED(pBuf);
     J3D_UNUSED(len);
     return 0;
-#else
-    return J3D_TRAMPOLINE_CALL(gzwrite, file, pBuf, len);
-#endif
 }
 
 static int Zfilio_gzflush(gzFile file, int flush)
@@ -128,13 +110,9 @@ static int Zfilio_gzflush(gzFile file, int flush)
     }
 #endif
 
-#if defined(J3D_STANDALONE)
     J3D_UNUSED(file);
     J3D_UNUSED(flush);
     return -1;
-#else
-    return J3D_TRAMPOLINE_CALL(gzflush, file, flush);
-#endif
 }
 
 static long Zfilio_gzseek(gzFile file, long offset, int whence)
@@ -146,14 +124,10 @@ static long Zfilio_gzseek(gzFile file, long offset, int whence)
     }
 #endif
 
-#if defined(J3D_STANDALONE)
     J3D_UNUSED(file);
     J3D_UNUSED(offset);
     J3D_UNUSED(whence);
     return -1;
-#else
-    return J3D_TRAMPOLINE_CALL(gzseek, file, offset, whence);
-#endif
 }
 
 void Zfilio_InstallHooks(void)
@@ -176,9 +150,7 @@ void Zfilio_InstallHooks(void)
 
 void Zfilio_ResetGlobals(void)
 {
-#ifdef J3D_LOCAL_RTI
     zfilio_pFilio = NULL;
-#endif
     // Otherwise zfilio_pFilio lives in the executable and Smush_ResetGlobals clears it
     zfilio_extCount = 1;
     memset((void*)zfilio_extensions, 0, sizeof(zfilio_extensions));

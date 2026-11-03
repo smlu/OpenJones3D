@@ -16,7 +16,7 @@ static void* dsnd_pParam     = NULL;
 
 void Dsnd_InstallHooks(void)
 {
-    // Added: No RTI hooks in the standalone Null build (J3D_STANDALONE): nothing to hook.
+    // Added: No RTI hooks in the standalone Null build: nothing to hook.
 }
 
 void Dsnd_ResetGlobals(void)

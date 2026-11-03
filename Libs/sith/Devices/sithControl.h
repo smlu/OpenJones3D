@@ -12,11 +12,7 @@ J3D_EXTERN_C_START
 #define SITHCONTROL_MAXFUNCTIONS   58u
 #define STDCONTROL_IDLECAM_TIMEOUT 90000 // 90 sec, time in milliseconds before switching to idle camera due to control inactivity
 
-#if defined(J3D_STANDALONE)
 extern int sithControl_g_controlOptions;
-#else
-#define sithControl_g_controlOptions J3D_DECL_FAR_VAR(sithControl_g_controlOptions, int)
-#endif
 // extern int sithControl_g_controlOptions;
 
 int J3DAPI sithControl_Startup(int bKeyboardForeground);

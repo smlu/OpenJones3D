@@ -19,25 +19,13 @@ typedef enum eSithMessageStream
     SITHMESSAGE_STREAM_ALL  = 0xFF,
 } SithMessageStream;
 
-#if defined(J3D_STANDALONE)
 extern DPID sithMessage_g_localPlayerId;
-#else
-#define sithMessage_g_localPlayerId J3D_DECL_FAR_VAR(sithMessage_g_localPlayerId, DPID)
-#endif
 // extern DPID sithMessage_g_localPlayerId;
 
-#if defined(J3D_STANDALONE)
 extern SithMessageStream sithMessage_g_outputstream;
-#else
-#define sithMessage_g_outputstream J3D_DECL_FAR_VAR(sithMessage_g_outputstream, SithMessageStream)
-#endif
 // extern int sithMessage_g_outputstream;
 
-#if defined(J3D_STANDALONE)
 extern SithMessageStream sithMessage_g_inputstream;
-#else
-#define sithMessage_g_inputstream J3D_DECL_FAR_VAR(sithMessage_g_inputstream, SithMessageStream)
-#endif
 // extern int sithMessage_g_inputstream;
 
 // NOTE: all sithMessage functions should be in sithComm module

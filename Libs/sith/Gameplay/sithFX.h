@@ -12,25 +12,13 @@
 
 J3D_EXTERN_C_START
 
-#if defined(J3D_STANDALONE)
 extern int sithFX_g_lastChalkMarkNum;
-#else
-#define sithFX_g_lastChalkMarkNum J3D_DECL_FAR_VAR(sithFX_g_lastChalkMarkNum, int)
-#endif
 // extern int sithFX_g_lastChalkMarkNum ;
 
-#if defined(J3D_STANDALONE)
 extern SithThing* sithFX_g_aChalkMarks[10];
-#else
-#define sithFX_g_aChalkMarks J3D_DECL_FAR_ARRAYVAR(sithFX_g_aChalkMarks, SithThing*(*)[10])
-#endif
 // extern SithThing *sithFX_g_aChalkMarks[10];
 
-#if defined(J3D_STANDALONE)
 extern size_t sithFX_g_numChalkMarks;
-#else
-#define sithFX_g_numChalkMarks J3D_DECL_FAR_VAR(sithFX_g_numChalkMarks, size_t)
-#endif
 // extern size_t sithFX_g_numChalkMarks;
 
 void sithFX_Reset(void);

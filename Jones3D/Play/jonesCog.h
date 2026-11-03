@@ -9,32 +9,16 @@
 
 J3D_EXTERN_C_START
 
-#if defined(J3D_STANDALONE)
 extern int jonesCog_g_bShowHealthHUD;
-#else
-#define jonesCog_g_bShowHealthHUD J3D_DECL_FAR_VAR(jonesCog_g_bShowHealthHUD, int)
-#endif
 // extern int jonesCog_g_bShowHealthHUD;
 
-#if defined(J3D_STANDALONE)
 extern int jonesCog_g_bMenuVisible;
-#else
-#define jonesCog_g_bMenuVisible J3D_DECL_FAR_VAR(jonesCog_g_bMenuVisible, int)
-#endif
 // extern int jonesCog_g_bMenuVisible;
 
-#if defined(J3D_STANDALONE)
 extern int jonesCog_g_bEnableGamesave;
-#else
-#define jonesCog_g_bEnableGamesave J3D_DECL_FAR_VAR(jonesCog_g_bEnableGamesave, int)
-#endif
 // extern int jonesCog_g_bEnableGamesave;
 
-#if defined(J3D_STANDALONE)
 extern int jonesCog_g_dword_17EFFCC;
-#else
-#define jonesCog_g_dword_17EFFCC J3D_DECL_FAR_VAR(jonesCog_g_dword_17EFFCC, int)
-#endif
 // extern int jonesCog_g_dword_17EFFCC;
 
 int jonesCog_Startup(void);

@@ -28,10 +28,8 @@ static size_t linenumStack[STDCONFFILE_STACKSIZE] = { 0 };
 
 static char printBuffer[4096] = { 0 };
 
-#ifdef J3D_LOCAL_RTI
 StdConffileEntry stdConffile_g_entry = { 0 };
 char* stdConffile_g_aLine            = NULL;
-#endif
 
 void stdConffile_PushStack(void);
 void stdConffile_PopStack(void);
@@ -57,10 +55,6 @@ void stdConffile_InstallHooks(void)
 
 void stdConffile_ResetGlobals(void)
 {
-#ifndef J3D_LOCAL_RTI
-    STD_ZEROMEM(&stdConffile_g_entry, sizeof(stdConffile_g_entry));
-    STD_ZEROMEM(&stdConffile_g_aLine, sizeof(stdConffile_g_aLine));
-#endif
 }
 
 int J3DAPI stdConffile_Open(const char* pFilename)

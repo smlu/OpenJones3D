@@ -9,46 +9,22 @@
 
 J3D_EXTERN_C_START
 
-#if defined(J3D_STANDALONE)
 extern int sithInventory_g_bInitInventory;
-#else
-#define sithInventory_g_bInitInventory J3D_DECL_FAR_VAR(sithInventory_g_bInitInventory, int)
-#endif
 // extern int sithInventory_g_bInitInventory ;
 
-#if defined(J3D_STANDALONE)
 extern int sithInventory_g_bSendDeactivateMessage;
-#else
-#define sithInventory_g_bSendDeactivateMessage J3D_DECL_FAR_VAR(sithInventory_g_bSendDeactivateMessage, int)
-#endif
 // extern int sithInventory_g_bSendDeactivateMessage;
 
-#if defined(J3D_STANDALONE)
 extern int sithInventory_g_dword_56B750;
-#else
-#define sithInventory_g_dword_56B750 J3D_DECL_FAR_VAR(sithInventory_g_dword_56B750, int)
-#endif
 // extern int sithInventory_g_dword_56B750;
 
-#if defined(J3D_STANDALONE)
 extern int sithInventory_g_dword_56B754;
-#else
-#define sithInventory_g_dword_56B754 J3D_DECL_FAR_VAR(sithInventory_g_dword_56B754, int)
-#endif
 // extern int sithInventory_g_dword_56B754;
 
-#if defined(J3D_STANDALONE)
 extern SithInventoryType sithInventory_g_aTypes[SITHINVENTORY_MAXTYPES];
-#else
-#define sithInventory_g_aTypes J3D_DECL_FAR_ARRAYVAR(sithInventory_g_aTypes, SithInventoryType(*)[SITHINVENTORY_MAXTYPES])
-#endif
 // extern SithInventoryType sithInventory_g_aTypes[SITHINVENTORY_MAXTYPES];
 
-#if defined(J3D_STANDALONE)
 extern SithPowerKeybind sithInventory_g_aPowerKeybinds[20];
-#else
-#define sithInventory_g_aPowerKeybinds J3D_DECL_FAR_ARRAYVAR(sithInventory_g_aPowerKeybinds, SithPowerKeybind(*)[20])
-#endif
 // extern SithPowerKeybind sithInventory_g_aPowerKeybinds[20];
 
 void J3DAPI sithInventory_RegisterType(size_t typeId, const char* pName, float min, float max, SithInventoryTypeFlag flags, SithCog* pItemCog, rdModel3* pInvModel, rdModel3* pItemModel);

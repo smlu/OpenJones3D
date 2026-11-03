@@ -9,74 +9,34 @@
 
 J3D_EXTERN_C_START
 
-#if defined(J3D_STANDALONE)
 extern int sithPlayerActions_g_jewelFlyingPuppetTrackNum;
-#else
-#define sithPlayerActions_g_jewelFlyingPuppetTrackNum J3D_DECL_FAR_VAR(sithPlayerActions_g_jewelFlyingPuppetTrackNum, int)
-#endif
 // extern int sithPlayerActions_g_jewelFlyingPuppetTrackNum ;
 
-#if defined(J3D_STANDALONE)
 extern SithSurface* sithPlayerActions_g_pCurHitLedgeSurface;
-#else
-#define sithPlayerActions_g_pCurHitLedgeSurface J3D_DECL_FAR_VAR(sithPlayerActions_g_pCurHitLedgeSurface, SithSurface*)
-#endif
 // extern SithSurface *sithPlayerActions_g_pCurHitLedgeSurface;
 
-#if defined(J3D_STANDALONE)
 extern rdFace* sithPlayerActions_g_pCurHitLedgeModelFace;
-#else
-#define sithPlayerActions_g_pCurHitLedgeModelFace J3D_DECL_FAR_VAR(sithPlayerActions_g_pCurHitLedgeModelFace, rdFace*)
-#endif
 // extern rdFace *sithPlayerActions_g_pCurHitLedgeModelFace;
 
-#if defined(J3D_STANDALONE)
 extern rdModel3* sithPlayerActions_g_pCurHitLedgeModel;
-#else
-#define sithPlayerActions_g_pCurHitLedgeModel J3D_DECL_FAR_VAR(sithPlayerActions_g_pCurHitLedgeModel, rdModel3*)
-#endif
 // extern rdModel3 *sithPlayerActions_g_pCurHitLedgeModel;
 
-#if defined(J3D_STANDALONE)
 extern SithThing* sithPlayerActions_g_pPlasma;
-#else
-#define sithPlayerActions_g_pPlasma J3D_DECL_FAR_VAR(sithPlayerActions_g_pPlasma, SithThing*)
-#endif
 // extern SithThing *sithPlayerActions_g_pPlasma;
 
-#if defined(J3D_STANDALONE)
 extern int sithPlayerActions_g_bJewelFlying;
-#else
-#define sithPlayerActions_g_bJewelFlying J3D_DECL_FAR_VAR(sithPlayerActions_g_bJewelFlying, int)
-#endif
 // extern int sithPlayerActions_g_bJewelFlying;
 
-#if defined(J3D_STANDALONE)
 extern int sithPlayerActions_g_bPlayerInvisible;
-#else
-#define sithPlayerActions_g_bPlayerInvisible J3D_DECL_FAR_VAR(sithPlayerActions_g_bPlayerInvisible, int)
-#endif
 // extern int sithPlayerActions_g_bPlayerInvisible;
 
-#if defined(J3D_STANDALONE)
 extern SithSurface* sithPlayerActions_g_pChalkWriteSurf;
-#else
-#define sithPlayerActions_g_pChalkWriteSurf J3D_DECL_FAR_VAR(sithPlayerActions_g_pChalkWriteSurf, SithSurface*)
-#endif
 // extern SithSurface *sithPlayerActions_g_pChalkWriteSurf;
 
-#if defined(J3D_STANDALONE)
 extern rdVector3 sithPlayerActions_g_chalkWritePos;
-#else
-#define sithPlayerActions_g_chalkWritePos J3D_DECL_FAR_VAR(sithPlayerActions_g_chalkWritePos, rdVector3)
-#endif
 // extern rdVector3 sithPlayerActions_g_chalkWritePos;
 
-#if defined(J3D_STANDALONE)
 extern SithSector* sithPlayerActions_g_pChalkWriteSector;
-#else
-#define sithPlayerActions_g_pChalkWriteSector J3D_DECL_FAR_VAR(sithPlayerActions_g_pChalkWriteSector, SithSector*)
-#endif
 // extern SithSector *sithPlayerActions_g_pChalkWriteSector;
 
 int J3DAPI sithPlayerActions_Activate(SithThing* pPlayer);

@@ -30,11 +30,7 @@ J3D_EXTERN_C_START
 
 #define SITHPUPPET_CFG_CNDWORLDKEYFRAMES_LOADEXTERNAL "engine.world.cnd.keyframes.loadExternal"
 
-#if defined(J3D_STANDALONE)
 extern int sithPuppet_g_bPlayerLeapForward;
-#else
-#define sithPuppet_g_bPlayerLeapForward J3D_DECL_FAR_VAR(sithPuppet_g_bPlayerLeapForward, int)
-#endif
 // extern int sithPuppet_g_bPlayerLeapForward;
 
 int sithPuppet_Startup(void);

@@ -28,11 +28,9 @@
 #include <std/Win95/stdDisplay.h>
 #include <std/Win95/stdWin95.h>
 
-#ifdef J3D_STANDALONE
 // Added: Standalone builds have no retail executable to hold these. *_ResetGlobals sets the starting values.
 int JonesConsole_g_bVisible;
 int JonesConsole_g_bStarted;
-#endif
 
 #define JONESCONSOLE_COMMANDLINEID 103
 

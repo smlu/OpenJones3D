@@ -15,17 +15,10 @@ set(SITH_TESTED_SOURCES
 )
 
 set_property(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/../Cog/sithCog.c" PROPERTY COMPILE_DEFINITIONS
-    J3D_LOCAL_RTI
     sithConsole_PrintString=sithCogTest_PrintString
 )
 
-set_property(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/../Cog/Tests/sithCogTest.c" PROPERTY COMPILE_DEFINITIONS
-    J3D_LOCAL_RTI
-)
-
 set_property(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/../World/sithTemplate.c" PROPERTY COMPILE_DEFINITIONS
-    J3D_LOCAL_RTI
-    J3D_LOCAL_RDROID_RTI
     rdThing_FreeEntry=sithThingTest_FreeRdThingEntry
     stdMemory_Malloc=sithThingTest_MemoryMalloc
     stdMemory_Free=sithThingTest_MemoryFree
@@ -37,8 +30,6 @@ set_property(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/../World/sithTemplate.c" PROPER
 )
 
 set_property(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/../World/sithThing.c" PROPERTY COMPILE_DEFINITIONS
-    J3D_LOCAL_RTI
-    J3D_LOCAL_RDROID_RTI
     sithTemplate_GetTemplate=sithThingTest_GetTemplate
     sithModel_Load=sithThingTest_LoadModel
     sithSprite_Load=sithThingTest_LoadSprite
@@ -71,19 +62,8 @@ set_property(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/../World/sithThing.c" PROPERTY 
 )
 
 set_property(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/../../std/General/stdConffile.c" PROPERTY COMPILE_DEFINITIONS
-    J3D_LOCAL_RTI
     stdMemory_Malloc=sithThingTest_MemoryMalloc
     stdMemory_Free=sithThingTest_MemoryFree
-)
-
-set_property(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/../World/Tests/sithThingTest.c" PROPERTY COMPILE_DEFINITIONS
-    J3D_LOCAL_RTI
-    J3D_LOCAL_RDROID_RTI
-)
-
-set_property(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/../World/Tests/sithTemplateTest.c" PROPERTY COMPILE_DEFINITIONS
-    J3D_LOCAL_RTI
-    J3D_LOCAL_RDROID_RTI
 )
 
 add_executable(sithTests
@@ -100,7 +80,6 @@ target_link_libraries(sithTests PRIVATE
 
 target_compile_definitions(sithTests PRIVATE
     J3D_TEST
-    J3D_LOCAL_SITH_RTI
     SITH_TEST_TV_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../World/Tests/tv"
 )
 

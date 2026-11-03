@@ -53,11 +53,7 @@ J3D_ASSERT_SIZE32(sizeof(ZfilioInterface) == 0x1C, "sizeof(ZfilioInterface) == 0
  * zfilio_pFilio lives in the executable (.bss 0x0183E220, COMMON) because the executable's gzio.c reads it. It is the only INSANE
  * datum that stays at its original address; Smush_ResetGlobals clears it.
  */
-#ifdef J3D_LOCAL_RTI
 extern FilioInterface* zfilio_pFilio;
-#else
-#   define zfilio_pFilio J3D_DECL_FAR_VAR(zfilio_pFilio, FilioInterface*)
-#endif
 
 int J3DAPI zfilio_Register(LecShare* pShare, void* pParam);
 int J3DAPI zfilio_Configure(int tag, ...);

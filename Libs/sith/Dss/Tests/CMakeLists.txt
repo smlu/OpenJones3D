@@ -51,7 +51,6 @@ target_link_libraries(sithDSSTests PRIVATE
 
 target_compile_definitions(sithDSSTests PRIVATE
     J3D_TEST
-    J3D_LOCAL_SITH_RTI
     SITH_DSS_TV_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tv/sithDSS"
 )
 
@@ -136,7 +135,6 @@ target_link_libraries(sithMultiTests PRIVATE
 
 target_compile_definitions(sithMultiTests PRIVATE
     J3D_TEST
-    J3D_LOCAL_SITH_RTI
     SITH_MULTI_TV_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tv/sithMulti"
 )
 

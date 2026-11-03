@@ -16,17 +16,6 @@
 // it made and the bytes it changed in the synthetic state, the players and the module state). The tests rebuild the
 // same state, run the reconstructed functions and compare. See tv/sithMulti/README.md.
 
-// Globals the reconstructed code reaches through J3D_LOCAL_SITH_RTI
-// Added: A standalone build (the native Null platform) already defines these in the sith library
-// (Libs/sith/Main/sithMain.c, Libs/sith/World/sithWorld.c); only the injected test build needs fakes.
-#if !defined(J3D_STANDALONE)
-tHostServices* sith_g_pHS;
-SithWorld* sithWorld_g_pCurrentWorld;
-SithWorld* sithWorld_g_pStaticWorld;
-SithWorld* sithWorld_g_pLastLoadedWorld;
-int sithWorld_g_bLoading;
-#endif
-
 // Engine globals of the original executable, see sithDSSTestAddrs.h and sithMultiTestAddrs.h
 SithDSSTestGlobals sithDSSTest_g;
 SithMultiTestGlobals sithMultiTest_g;

@@ -13,18 +13,10 @@ J3D_EXTERN_C_START
 #define SITHCOG_NORETURNVALUE      -9999
 #define SITHCOG_GLOBALSYMBOLSTARTID SITHCOGSCRIPT_MAXSYMREFS
 
-#if defined(J3D_STANDALONE)
 extern SithCogSymbolTable* sithCog_g_pSymbolTable;
-#else
-#define sithCog_g_pSymbolTable J3D_DECL_FAR_VAR(sithCog_g_pSymbolTable, SithCogSymbolTable*)
-#endif
 // extern SithCogSymbolTable *sithCog_g_pSymbolTable;
 
-#if defined(J3D_STANDALONE)
 extern SithCog* sithCog_g_pMasterCog;
-#else
-#define sithCog_g_pMasterCog J3D_DECL_FAR_VAR(sithCog_g_pMasterCog, SithCog*)
-#endif
 // extern SithCog *sithCog_g_pMasterCog;
 
 int sithCog_Startup(void);

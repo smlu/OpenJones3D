@@ -32,13 +32,11 @@
 #include <std/General/stdPlatform.h>
 #include <std/General/stdUtil.h>
 
-#ifdef J3D_STANDALONE
 // Added: Standalone builds have no retail executable to hold these. *_ResetGlobals sets the starting values.
 SithWorld* sithWorld_g_pCurrentWorld;
 SithWorld* sithWorld_g_pStaticWorld;
 SithWorld* sithWorld_g_pLastLoadedWorld;
 int sithWorld_g_bLoading;
-#endif
 
 #define SITHWORLD_COPYRIGHTLINELEN  32
 #define SITHWORLD_NUMCOPYRIGHTLINES 38

@@ -183,7 +183,6 @@ add_executable(stdTests
 
 target_compile_definitions(stdTests PRIVATE
     J3D_TEST
-    J3D_LOCAL_RTI
     STD_GENERAL_TEST_TV_DIR="${STD_GENERAL_TEST_DIR}/tv"
     STD_WIN95_TEST_TV_DIR="${STD_WIN95_TEST_DIR}/tv"
 )
@@ -270,7 +269,6 @@ if (JONES3D_BUILD_SYSTEM_TESTS)
 
     target_compile_definitions(stdSystemTests PRIVATE
         J3D_TEST
-        J3D_LOCAL_RTI
         STD_GENERAL_TEST_TV_DIR="${STD_GENERAL_TEST_DIR}/tv"
         STD_WIN95_TEST_TV_DIR="${STD_WIN95_TEST_DIR}/tv"
     )
@@ -342,7 +340,6 @@ if (JONES3D_BUILD_DISRUPTIVE_SYSTEM_TESTS)
 
     target_compile_definitions(stdDisruptiveSystemTests PRIVATE
         J3D_TEST
-        J3D_LOCAL_RTI
         STD_GENERAL_TEST_TV_DIR="${STD_GENERAL_TEST_DIR}/tv"
         STD_WIN95_TEST_TV_DIR="${STD_WIN95_TEST_DIR}/tv"
     )

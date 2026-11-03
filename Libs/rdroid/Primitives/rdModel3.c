@@ -21,11 +21,9 @@
 
 #include <stdlib.h>
 
-#ifdef J3D_STANDALONE
 // Added: Standalone builds have no retail executable to hold these. *_ResetGlobals sets the starting values.
 int rdModel3_g_numDrawnFaces;
 int rdModel3_g_numDrawnAlphaFaces;
-#endif
 
 #define RDMODEL3_3DO_MAJVER      2
 #define RDMODEL3_3DO_MINVER_I    1

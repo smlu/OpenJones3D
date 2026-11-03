@@ -13,18 +13,10 @@ J3D_EXTERN_C_START
 #define RDMODEL3_MAX_FACES         16384 // Changed: Was 1528
 #define RDMODEL3_MAX_FACE_VERTICES RDCACHE_MAXFACEVERTICES 
 
-#if defined(J3D_STANDALONE)
 extern int rdModel3_g_numDrawnFaces;
-#else
-#define rdModel3_g_numDrawnFaces J3D_DECL_FAR_VAR(rdModel3_g_numDrawnFaces, int)
-#endif
 // extern int rdModel3_g_numDrawnFaces;
 
-#if defined(J3D_STANDALONE)
 extern int rdModel3_g_numDrawnAlphaFaces;
-#else
-#define rdModel3_g_numDrawnAlphaFaces J3D_DECL_FAR_VAR(rdModel3_g_numDrawnAlphaFaces, int)
-#endif
 // extern int rdModel3_g_numDrawnAlphaFaces;
 
 rdModel3LoaderFunc J3DAPI rdModel3_RegisterLoader(rdModel3LoaderFunc pfFunc);

@@ -27,12 +27,10 @@
 
 #include <stdlib.h>
 
-#ifdef J3D_STANDALONE
 // Added: Standalone builds have no retail executable to hold these. *_ResetGlobals sets the starting values.
 int sithFX_g_lastChalkMarkNum;
 SithThing* sithFX_g_aChalkMarks[10];
 size_t sithFX_g_numChalkMarks;
-#endif
 
 const char* sithFX_aChalkMarkNames[35] =
 {

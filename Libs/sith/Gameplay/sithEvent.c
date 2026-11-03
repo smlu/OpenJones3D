@@ -6,10 +6,8 @@
 
 #include <std/General/stdUtil.h>
 
-#ifdef J3D_STANDALONE
 // Added: Standalone builds have no retail executable to hold these. *_ResetGlobals sets the starting values.
 SithEvent* sithEvent_g_pFirstQueuedEvent;
-#endif
 
 bool bEventStartup = false; // Added: Init to false 
 bool bOpen         = false; // Added: Init to false 

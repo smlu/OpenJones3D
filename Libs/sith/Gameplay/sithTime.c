@@ -6,7 +6,6 @@
 #include <std/General/stdMath.h>
 #include <std/General/stdPlatform.h>
 
-#ifdef J3D_STANDALONE
 // Added: Standalone builds have no retail executable to hold these. *_ResetGlobals sets the starting values.
 uint32_t sithTime_g_frameTime;
 float sithTime_g_frameTimeFlex;
@@ -15,7 +14,6 @@ uint32_t sithTime_g_msecGameTime;
 float sithTime_g_secGameTime;
 uint32_t sithTime_g_clockTime;
 int sithTime_g_bPaused;
-#endif
 
 #define SITHTIME_MAXFRAMETIME 200 // 200ms
 

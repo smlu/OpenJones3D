@@ -15,12 +15,6 @@
 TEST_GROUP(sithCog);
 
 // Added: a standalone build (the native Null platform) links the real std_g_genBuffer from the std library.
-#if defined(J3D_LOCAL_RTI) && !defined(J3D_STANDALONE)
-// The tested copy of sithCog.c reaches std_g_genBuffer through the local RTI
-// externs; std.c's fixed-address definition is not linked into sithTests, so
-// this fixture owns the buffer the SITHCONSOLE_PRINTF path formats into.
-char std_g_genBuffer[2048] = { 0 };
-#endif
 
 // Replacement for sithConsole_PrintString in the tested copy of sithCog.c,
 // selected by the per-source COMPILE_DEFINITIONS in Tests/CMakeLists.txt.

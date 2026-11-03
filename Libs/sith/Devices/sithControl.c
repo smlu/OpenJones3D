@@ -11,10 +11,8 @@
 #include <std/General/stdUtil.h>
 #include <std/Win95/stdControl.h>
 
-#ifdef J3D_STANDALONE
 // Added: Standalone builds have no retail executable to hold these. *_ResetGlobals sets the starting values.
 int sithControl_g_controlOptions;
-#endif
 
 #define STDCONTROL_MAXBINDINGS 8
 

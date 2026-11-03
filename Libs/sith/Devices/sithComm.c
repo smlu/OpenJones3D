@@ -17,12 +17,10 @@
 
 #include <wchar.h>
 
-#ifdef J3D_STANDALONE
 // Added: Standalone builds have no retail executable to hold these. *_ResetGlobals sets the starting values.
 DPID sithMessage_g_localPlayerId;
 SithMessageStream sithMessage_g_outputstream;
 SithMessageStream sithMessage_g_inputstream;
-#endif
 
 static SithMessageProcessFunc sithMessage_aTypeFuncs[65] = { 0 };
 

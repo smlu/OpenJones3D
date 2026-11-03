@@ -49,7 +49,7 @@ static int std3D_BuildDeviceList(void);
 
 void std3D_InstallHooks(void)
 {
-    // Added: No RTI hooks in the standalone Null build (J3D_STANDALONE): nothing to hook.
+    // Added: No RTI hooks in the standalone Null build: nothing to hook.
 }
 
 void std3D_ResetGlobals(void)

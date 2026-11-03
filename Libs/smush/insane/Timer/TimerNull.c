@@ -59,7 +59,7 @@ void timer_SysStopThread(void)
 
 void timer_SysInstallHooks(void)
 {
-    // Added: No RTI hooks in the standalone Null build (J3D_STANDALONE): nothing to hook.
+    // Added: No RTI hooks in the standalone Null build: nothing to hook.
 }
 
 void timer_SysResetGlobals(void)

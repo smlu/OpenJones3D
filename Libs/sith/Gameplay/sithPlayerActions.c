@@ -29,7 +29,6 @@
 
 #include <sound/Sound.h>
 
-#ifdef J3D_STANDALONE
 // Added: Standalone builds have no retail executable to hold these. *_ResetGlobals sets the starting values.
 int sithPlayerActions_g_jewelFlyingPuppetTrackNum;
 SithSurface* sithPlayerActions_g_pCurHitLedgeSurface;
@@ -41,7 +40,6 @@ int sithPlayerActions_g_bPlayerInvisible;
 SithSurface* sithPlayerActions_g_pChalkWriteSurf;
 rdVector3 sithPlayerActions_g_chalkWritePos;
 SithSector* sithPlayerActions_g_pChalkWriteSector;
-#endif
 
 uint32_t sithPlayerActions_msecCurActivateTime = 0; // Altered: Init to 0
 static const float sithPlayerActions_raftActivateSearchRadius = 0.07f;

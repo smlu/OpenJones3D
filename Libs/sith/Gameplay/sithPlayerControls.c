@@ -37,10 +37,8 @@
 
 #include <stdlib.h>
 
-#ifdef J3D_STANDALONE
 // Added: Standalone builds have no retail executable to hold these. *_ResetGlobals sets the starting values.
 int sithPlayerControls_g_bCutsceneMode;
-#endif
 
 #define SITHPLAYERCONTROLS_THINGNAME_MINECAR       "minecar"
 #define SITHPLAYERCONTROLS_THINGNAME_MINECARPLAYER "mineplayer"

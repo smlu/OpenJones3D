@@ -42,11 +42,9 @@
 
 #include <stdlib.h>
 
-#ifdef J3D_STANDALONE
 // Added: Standalone builds have no retail executable to hold these. *_ResetGlobals sets the starting values.
 SithCogSymbolTable* sithCog_g_pSymbolTable;
 SithCog* sithCog_g_pMasterCog;
-#endif
 
 #define SITHCOG_MAXGLOBALSYMBOLS 1024u
 #define SITHCOG_MAXSCRIPTS       256u
