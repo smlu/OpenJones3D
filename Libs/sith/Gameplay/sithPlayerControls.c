@@ -876,27 +876,11 @@ void J3DAPI sithPlayerControls_ProcessLookControls(SithThing* pThing, float secD
     if ( bInputReceived )
     {
         rdVector3 newOffset = sithCamera_g_pCurCamera->offset;
-        newOffset.z += pitchDelta;
-        if ( newOffset.z < -0.07f )
-        {
-            newOffset.z = -0.07f;
-        }
-        else if ( newOffset.z > 0.15000001f )
-        {
-            newOffset.z = 0.15000001f;
-        }
+        newOffset.z = STDMATH_CLAMP(newOffset.z + pitchDelta, -0.07f, 0.15000001f);
 
         if ( yawDelta != 0.0f )
         {
-            newOffset.x += yawDelta;
-            if ( newOffset.x < -0.07f )
-            {
-                newOffset.x = -0.07f;
-            }
-            else if ( newOffset.x > 0.15000001f )
-            {
-                newOffset.x = 0.15000001f;
-            }
+            newOffset.x = STDMATH_CLAMP(newOffset.x + yawDelta, -0.07f, 0.15000001f);
         }
 
         sithCamera_SetExtCameraOffset(&newOffset);
@@ -1310,11 +1294,7 @@ void J3DAPI sithPlayerControls_ProcessJewelFlyMove(SithThing* pThing, float secD
     {
         if ( bCanMoveUp )
         {
-            pPhysics->thrust.z += thrustIncrement * sithTime_g_fps;
-            if ( pPhysics->thrust.z > 1.0f )
-            {
-                pPhysics->thrust.z = 1.0f;
-            }
+            pPhysics->thrust.z = STDMATH_CLAMP(pPhysics->thrust.z + thrustIncrement * sithTime_g_fps, -1.0f, 1.0f);
         }
         else
         {
@@ -1326,11 +1306,7 @@ void J3DAPI sithPlayerControls_ProcessJewelFlyMove(SithThing* pThing, float secD
     {
         if ( bCanMoveDown )
         {
-            pPhysics->thrust.z -= thrustIncrement * sithTime_g_fps;
-            if ( pPhysics->thrust.z < -1.0f )
-            {
-                pPhysics->thrust.z = -1.0f;
-            }
+            pPhysics->thrust.z = STDMATH_CLAMP(pPhysics->thrust.z - thrustIncrement * sithTime_g_fps, -1.0f, 1.0f);
         }
         else
         {
@@ -3734,15 +3710,7 @@ void J3DAPI sithPlayerControls_RotateAimJointsEx(SithThing* pThing, float pitch,
             int jointIdx = sithThing_GetThingJointIndex(pThing, "inrarm");
             if ( jointIdx >= 0 )
             {
-                if ( pitch > 80.0f )
-                {
-                    pitch = 80.0f;
-                }
-
-                if ( pitch < -80.0f )
-                {
-                    pitch = -80.0f;
-                }
+                pitch = STDMATH_CLAMP(pitch, -80.0f, 80.0f);
                 /*pThing->renderData.apTweakedAngles[jointIdx].yaw  = pitch;
                 pThing->renderData.apTweakedAngles[jointIdx].roll = pitch * -0.5f;*/
 
@@ -3754,15 +3722,7 @@ void J3DAPI sithPlayerControls_RotateAimJointsEx(SithThing* pThing, float pitch,
             jointIdx = sithThing_GetThingJointIndex(pThing, "intorso");
             if ( jointIdx >= 0 )
             {
-                if ( yaw > 45.0f )
-                {
-                    yaw = 45.0f;
-                }
-
-                if ( yaw < -45.0f )
-                {
-                    yaw = -45.0f;
-                }
+                yaw = STDMATH_CLAMP(yaw, -45.0f, 45.0f);
               /*pThing->renderData.apTweakedAngles[jointIdx].yaw   = yaw;
                 pThing->renderData.apTweakedAngles[jointIdx].pitch = 0.0;*/
 
@@ -3785,24 +3745,8 @@ void J3DAPI sithPlayerControls_RotateAimJointsEx(SithThing* pThing, float pitch,
             int jointIdx = sithThing_GetThingJointIndex(pThing, "intorso");
             if ( jointIdx >= 0 )
             {
-                if ( pitch > 45.0f )
-                {
-                    pitch = 45.0f;
-                }
-
-                if ( pitch < -45.0f )
-                {
-                    pitch = -45.0f;
-                }
-                if ( yaw > 45.0f )
-                {
-                    yaw = 45.0f;
-                }
-
-                if ( yaw < -45.0f )
-                {
-                    yaw = -45.0f;
-                }
+                pitch = STDMATH_CLAMP(pitch, -45.0f, 45.0f);
+                yaw   = STDMATH_CLAMP(yaw, -45.0f, 45.0f);
 
                 /*pThing->renderData.apTweakedAngles[jointIdx].pitch = pitch;
                 pThing->renderData.apTweakedAngles[jointIdx].yaw   = yaw;
@@ -3820,24 +3764,8 @@ void J3DAPI sithPlayerControls_RotateAimJointsEx(SithThing* pThing, float pitch,
             int jointIdx = sithThing_GetThingJointIndex(pThing, "intorso");
             if ( jointIdx >= 0 )
             {
-                if ( pitch > 45.0f )
-                {
-                    pitch = 45.0f;
-                }
-
-                if ( pitch < -45.0f )
-                {
-                    pitch = -45.0f;
-                }
-                if ( yaw > 45.0f )
-                {
-                    yaw = 45.0f;
-                }
-
-                if ( yaw < -45.0f )
-                {
-                    yaw = -45.0f;
-                }
+                pitch = STDMATH_CLAMP(pitch, -45.0f, 45.0f);
+                yaw   = STDMATH_CLAMP(yaw, -45.0f, 45.0f);
 
                 /*pThing->renderData.apTweakedAngles[jointIdx].pitch = pitch;
                 pThing->renderData.apTweakedAngles[jointIdx].yaw   = yaw;
