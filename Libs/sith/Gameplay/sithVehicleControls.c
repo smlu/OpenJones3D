@@ -775,7 +775,7 @@ void J3DAPI sithVehicleControls_ProcessMineCarMove(SithThing* pThing, float secD
                 sithVehicleControls_curMineCarState.secElapsedBrakingTime = 0.0f;
 
                 float thrustY = pPhysics->thrust.y;
-                if ( thrustY < (double)forwardThrustThreshold && thrustY >(double)backwardThrustThreshold )
+                if ( thrustY < (double)forwardThrustThreshold && thrustY > (double)backwardThrustThreshold )
                 {
                     sithVehicleControls_curMineCarState.moveState = SITHMINECARCONTROLS_MOVE_ACCELERATING;
                 }
@@ -818,7 +818,7 @@ void J3DAPI sithVehicleControls_ProcessMineCarMove(SithThing* pThing, float secD
                 if ( fabsf(pPhysics->thrust.y) >= fabsf(thrustDelta) )
                 {
                     pPhysics->thrust.y += thrustDelta;
-                    if ( pPhysics->thrust.y < (double)forwardThrustThreshold && pPhysics->thrust.y >(double)backwardThrustThreshold )
+                    if ( pPhysics->thrust.y < (double)forwardThrustThreshold && pPhysics->thrust.y > (double)backwardThrustThreshold )
                     {
                         sithVehicleControls_curMineCarState.moveState = SITHMINECARCONTROLS_MOVE_DECELERATING;
                     }
