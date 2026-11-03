@@ -18,6 +18,7 @@
 #include <initializer_list>
 #include <memory>
 #include <optional>
+#include <string>
 #include <variant>
 
 namespace
@@ -67,6 +68,16 @@ namespace
         // a nonzero id; two windows have different ids.
         const WindowDesc desc{ "Babylon test", Size{ 320, 240 } };
         const std::unique_ptr<Window> window = platform.createWindow(desc);
+        std::string joined;
+        for ( const auto& record : sink.records() )
+        {
+            if ( !joined.empty() )
+            {
+                joined += "; ";
+            }
+            joined += record.message;
+        }
+        INFO("captured log: " << joined);
         REQUIRE(window != nullptr);
         CHECK(window->title() == "Babylon test");
         CHECK(window->size() == Size{ 320, 240 });
@@ -245,6 +256,16 @@ TEST_CASE("The SDL platform puts a window resize it applied into the queue")
 
     const std::unique_ptr<Window> window =
         platform->createWindow(WindowDesc{ "Babylon test", Size{ 320, 240 } });
+    std::string joined;
+    for ( const auto& record : sink.records() )
+    {
+        if ( !joined.empty() )
+        {
+            joined += "; ";
+        }
+        joined += record.message;
+    }
+    INFO("captured log: " << joined);
     REQUIRE(window != nullptr);
     REQUIRE(window->resize(Size{ 800, 600 }));
     CHECK(window->size() == Size{ 800, 600 });
