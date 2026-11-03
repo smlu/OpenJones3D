@@ -23,6 +23,9 @@ Rules:
 - Pure bug and crash fixes are always on. If a fix changes the retail trace, it needs a decision, because
   speedruns may depend on the bug.
 
+Replays record each frame's time and raw input, because the simulation step is variable
+([ADR-0018](../09-decisions/ADR-0018-replays-record-frame-time-and-raw-input.md)).
+
 [QOL-And-Compatibility.md](QOL-And-Compatibility.md) lists OpenJones3D's QOL changes as they are today:
 one compile-time profile, which becomes individual runtime options.
 
@@ -52,6 +55,9 @@ crosses it.
 `Jones.cfg` holds the settings inherited from OpenJones3D ([Jones.cfg.md](../../Jones.cfg.md)). New settings
 are Babylon cvars from M5 on ([ADR-0013](../09-decisions/ADR-0013-cvars-in-foundation.md)). Cvars that
 affect the simulation are written into traces, so a trace can be replayed with the settings that made it.
+Which cvars those are is set by a flag ([ADR-0020](../09-decisions/ADR-0020-cvar-flags.md)). Configuration,
+savegames, replays and logs are written to a per-user directory, not next to the game data
+([ADR-0019](../09-decisions/ADR-0019-user-directory-for-writes.md)).
 
 ## 8.6 Errors and logging
 
@@ -63,7 +69,7 @@ testing a result. New functions return `bool` for success or failure. Failures a
 
 | Level | What | Where |
 |---|---|---|
-| Unit | One function or module, Unity Fixture in C, Babylon's own framework in C++ | `Tests/` beside the code, `Babylon/` tests inside Babylon |
+| Unit | One function or module, Unity Fixture in C, doctest in C++ ([ADR-0017](../09-decisions/ADR-0017-babylon-toolchain-and-dependencies.md)) | `Tests/` beside the code, `Babylon/` tests inside Babylon |
 | Interface | Each Babylon interface's contract, run against every backend including Null | `Babylon/` |
 | Trace | Whole-game simulation against the retail and default profiles | Headless runner |
 | Visual | The new renderer against DirectX 9, until M6 | Manual and screenshot comparison |
@@ -75,3 +81,8 @@ Details are in [Testing.md](../../Testing.md).
 `Babylon/` is MPL-2.0, everything else AGPL-3.0 ([ADR-0008](../09-decisions/ADR-0008-babylon-license.md)).
 No code moves from the AGPL side into Babylon. CI enforces the boundary: Babylon builds alone, an include
 check rejects paths outside `Babylon/`, and a license check rejects non-permissive dependencies.
+
+## 8.9 Babylon design rules
+
+Babylon's naming, interface and pattern rules are on their own page:
+[Babylon-Design-Rules.md](Babylon-Design-Rules.md).

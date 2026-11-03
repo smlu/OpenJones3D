@@ -6,6 +6,7 @@
 |---|---|---|
 | The retail reference is incomplete | Traces prove sameness with a build, not with retail, wherever the reference build already differs | Keep the decompilation as tie-breaker; record each known difference here |
 | Simulation code depends on frame rate or wall-clock time | Traces differ between machines, or a high frame rate changes gameplay | Fixed game time in headless runs; find and isolate time sources during M5 |
+| A fixed simulation step for high frame rates (M9) changes gameplay | Only player physics uses fixed slices today; the rest advances by the measured frame time, so interpolated rendering as in Doom ports isn't presentation-only | Investigate in M9 which systems depend on frame time; if adopted, an option off by default with the retail trace unchanged ([research](../Research/Engine-Patterns.md)) |
 | Threading (M9) breaks determinism | Traces become flaky | Threading comes last, behind traces for everything else |
 | SDL3 GPU shader pipeline | The renderer needs offline shader compilation for several formats | Settle the shader toolchain at the start of M6 |
 | AGPL code leaks into Babylon | Babylon's MPL-2.0 license is no longer valid | Include and license checks in CI; Babylon is written fresh |

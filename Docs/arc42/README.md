@@ -24,3 +24,4 @@ Reference material that isn't architecture stays outside arc42:
 - [COG](../COG/README.md): the scripting language
 - [Jones.cfg](../Jones.cfg.md): configuration
 - [Roadmap](../Roadmap.md): milestones and status
+- [Research](../Research/Engine-Patterns.md): patterns from comparable engines, checked against Jones3D

@@ -20,3 +20,9 @@ context, decision, consequences. Decisions aren't edited after the fact; a new A
 | [ADR-0013](ADR-0013-cvars-in-foundation.md) | Cvars are part of the Babylon foundation | Accepted |
 | [ADR-0014](ADR-0014-arc42-documentation.md) | Architecture documentation in arc42 | Accepted |
 | [ADR-0015](ADR-0015-babylon-modules-as-cmake-targets.md) | Babylon modules as CMake targets | Accepted |
+| [ADR-0016](ADR-0016-virtual-interfaces-chosen-at-startup.md) | Babylon interfaces are virtual, backends are chosen at startup | Accepted |
+| [ADR-0017](ADR-0017-babylon-toolchain-and-dependencies.md) | Babylon builds as C++20 with pinned dependencies and doctest | Accepted |
+| [ADR-0018](ADR-0018-replays-record-frame-time-and-raw-input.md) | Replays record frame time and raw input per frame | Accepted |
+| [ADR-0019](ADR-0019-user-directory-for-writes.md) | Writes go to a user directory; the game keeps its search order | Accepted |
+| [ADR-0020](ADR-0020-cvar-flags.md) | Cvars carry flags, including a simulation flag | Accepted |
+| [ADR-0021](ADR-0021-detect-game-data.md) | Detect the installed game data at startup | Accepted |
