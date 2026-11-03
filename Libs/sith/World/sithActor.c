@@ -36,6 +36,10 @@
 
 static float sithActor_headRotDampRate = 10.0f; // Added
 
+// Raft leak damage divisor at the easiest (0) and the hardest (5) game difficulty
+static const float sithActor_raftLeakDamageDivEasy = 1.2f;
+static const float sithActor_raftLeakDamageDivHard = 0.60000002f;
+
 void J3DAPI sithActor_PlayDamageSoundFx(SithThing* pThing, SithDamageType damageType);
 
 void sithActor_InstallHooks(void)
@@ -167,8 +171,8 @@ void J3DAPI sithActor_Update(SithThing* pThing, unsigned int msecDeltaTime)
         {
             // Update Raft damage
 
-            float rate   = (0.60000002f - 1.2f) / 5.0f;
-            float damage = (float)sithGetGameDifficulty() * rate + 1.2f;
+            float rate   = (sithActor_raftLeakDamageDivHard - sithActor_raftLeakDamageDivEasy) / 5.0f;
+            float damage = (float)sithGetGameDifficulty() * rate + sithActor_raftLeakDamageDivEasy;
             damage = (float)msecDeltaTime / damage;
             sithThing_DamageThing(pThing, pThing, damage, SITH_DAMAGE_RAFT_LEAK);
         }
@@ -845,9 +849,9 @@ int J3DAPI sithActor_ParseArg(const StdConffileArg* pArg, SithThing* pThing, int
         }
         case SITHTHING_ARG_HEALTH:
         {
-            errno = 0; // Fixed: Reset errno, a stale ERANGE rejected valid values
+            errno = 0;
             float health = strtof(pArg->argValue, NULL); // Changed: Use strtof instead atof
-            // Fixed: Only reject overflow, the original (float)atof accepted underflowing values
+            // Only reject overflow, (float)atof of the original accepted underflowing values
             if ( health < 0.0f || (errno == ERANGE && fabsf(health) > 1.0f) ) // Added: Conversion range error check
             {
                 goto error;
@@ -863,9 +867,9 @@ int J3DAPI sithActor_ParseArg(const StdConffileArg* pArg, SithThing* pThing, int
         }
         case SITHTHING_ARG_MAXTHRUST:
         {
-            errno = 0; // Fixed: Reset errno, a stale ERANGE rejected valid values
+            errno = 0;
             float maxthrust = strtof(pArg->argValue, NULL); // Changed: Use strtof instead atof
-            // Fixed: Only reject overflow, the original (float)atof accepted underflowing values
+            // Only reject overflow, (float)atof of the original accepted underflowing values
             if ( maxthrust < 0.0f || (errno == ERANGE && fabsf(maxthrust) > 1.0f) )    // Added: Conversion range error check
             {
                 goto error;
@@ -876,9 +880,9 @@ int J3DAPI sithActor_ParseArg(const StdConffileArg* pArg, SithThing* pThing, int
         }
         case SITHTHING_ARG_MAXROTTHRUST:
         {
-            errno = 0; // Fixed: Reset errno, a stale ERANGE rejected valid values
+            errno = 0;
             float maxrotthrust = strtof(pArg->argValue, NULL); // Changed: Use strtof instead atof
-            // Fixed: Only reject overflow, the original (float)atof accepted underflowing values
+            // Only reject overflow, (float)atof of the original accepted underflowing values
             if ( maxrotthrust < 0.0f || (errno == ERANGE && fabsf(maxrotthrust) > 1.0f) )    // Added: Conversion range error check
             {
                 goto error;
@@ -889,9 +893,9 @@ int J3DAPI sithActor_ParseArg(const StdConffileArg* pArg, SithThing* pThing, int
         }
         case SITHTHING_ARG_MAXHEADVEL:
         {
-            errno = 0; // Fixed: Reset errno, a stale ERANGE rejected valid values
+            errno = 0;
             float maxheadvel = strtof(pArg->argValue, NULL); // Changed: Use strtof instead atof
-            // Fixed: Only reject overflow, the original (float)atof accepted underflowing values
+            // Only reject overflow, (float)atof of the original accepted underflowing values
             if ( maxheadvel < 0.0f || (errno == ERANGE && fabsf(maxheadvel) > 1.0f) )    // Added: Conversion range error check
             {
                 goto error;
@@ -902,9 +906,9 @@ int J3DAPI sithActor_ParseArg(const StdConffileArg* pArg, SithThing* pThing, int
         }
         case SITHTHING_ARG_MAXHEADYAW:
         {
-            errno = 0; // Fixed: Reset errno, a stale ERANGE rejected valid values
+            errno = 0;
             float maxheadyaw = strtof(pArg->argValue, NULL); // Changed: Use strtof instead atof
-            // Fixed: Only reject overflow, the original (float)atof accepted underflowing values
+            // Only reject overflow, (float)atof of the original accepted underflowing values
             if ( maxheadyaw < 0.0f || (errno == ERANGE && fabsf(maxheadyaw) > 1.0f) )    // Added: Conversion range error check
             {
                 goto error;
@@ -915,9 +919,9 @@ int J3DAPI sithActor_ParseArg(const StdConffileArg* pArg, SithThing* pThing, int
         }
         case SITHTHING_ARG_JUMPSPEED:
         {
-            errno = 0; // Fixed: Reset errno, a stale ERANGE rejected valid values
+            errno = 0;
             float jumpspeed = strtof(pArg->argValue, NULL); // Changed: Use strtof instead atof
-            // Fixed: Only reject overflow, the original (float)atof accepted underflowing values
+            // Only reject overflow, (float)atof of the original accepted underflowing values
             if ( jumpspeed < 0.0f || (errno == ERANGE && fabsf(jumpspeed) > 1.0f) )    // Added: Conversion range error check
             {
                 goto error;
@@ -938,9 +942,9 @@ int J3DAPI sithActor_ParseArg(const StdConffileArg* pArg, SithThing* pThing, int
         }
         case SITHTHING_ARG_MAXHEALTH:
         {
-            errno = 0; // Fixed: Reset errno, a stale ERANGE rejected valid values
+            errno = 0;
             float maxhealth = strtof(pArg->argValue, NULL); // Changed: Use strtof instead atof
-            // Fixed: Only reject overflow, the original (float)atof accepted underflowing values
+            // Only reject overflow, (float)atof of the original accepted underflowing values
             if ( maxhealth < 0.0f || (errno == ERANGE && fabsf(maxhealth) > 1.0f) )    // Added: Conversion range error check
             {
                 goto error;
