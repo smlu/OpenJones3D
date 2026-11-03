@@ -10,3 +10,4 @@
 core:
 log:
 time: SDL3-static
+files: log SDL3-static

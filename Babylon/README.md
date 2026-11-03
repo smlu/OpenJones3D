@@ -24,7 +24,9 @@ Each module hides one platform decision and is one CMake static-library target
         tests/                      doctest unit tests
 
 `core` (version, assert) is the first module, `log` (the global logging API with
-pluggable sinks) the second.
+pluggable sinks) the second. `files` hides the host file system: file access,
+directory listing, base path and per-user writable path (ADR-0019), with an
+SDL3 backend and an in-memory Null backend.
 
 ## Declaring a module
 
@@ -40,10 +42,16 @@ flags. Dependencies must name modules added before this one, so the target graph
 acyclic. `LIBS` names targets outside Babylon, such as `${BABYLON_SDL3_TARGET}` from
 `cmake/BabylonSdl3.cmake`; an unknown target is a configure error.
 
-    babylon_add_module_tests(<name> SOURCES <files...>)
+    babylon_add_module_tests(<name>
+        SOURCES <files...>
+        [DEPS <babylon modules...>])        # modules the tests use directly
 
 Links `babylon_<name>` against the shared doctest main and registers the test
-`babylon.<name>` with the labels `babylon;unit`.
+`babylon.<name>` with the labels `babylon;unit`. An optional `DEPS` module is
+checked like a module dependency and linked PRIVATE to the test executable,
+for modules the tests call that the tested module keeps private, such as
+`log` when a test attaches a `CaptureSink`; such a link adds no edge to the
+module graph.
 
 ## Build and test alone
 

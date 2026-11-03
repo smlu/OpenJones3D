@@ -12,12 +12,16 @@
 #       [LIBS <external targets...>])        # non-Babylon targets, linked PRIVATE
 #
 #   babylon_add_module_tests(<name>
-#       SOURCES <files...>)
+#       SOURCES <files...>
+#       [DEPS <babylon modules...>])        # modules the tests use directly,
+#                                           # linked PRIVATE to the test binary
 #
 # A dependency must name a module already declared in an add_subdirectory added
 # before the dependent module, which keeps the target graph acyclic. LIBS names
 # targets outside Babylon, such as ${BABYLON_SDL3_TARGET}; they must exist as
-# targets and are linked PRIVATE.
+# targets and are linked PRIVATE. The DEPS of babylon_add_module_tests name
+# declared modules the same way but are linked only into the test executable;
+# they add no edge to the module graph.
 
 # Warnings and sanitizer flags for Babylon's own targets. Vendored code never
 # goes through this function, so it gets neither Babylon's warnings nor -Werror.
@@ -89,7 +93,7 @@ function(babylon_add_module_tests name)
         return()
     endif()
 
-    cmake_parse_arguments(PARSE_ARGV 1 arg "" "" "SOURCES")
+    cmake_parse_arguments(PARSE_ARGV 1 arg "" "" "SOURCES;DEPS")
     if (arg_UNPARSED_ARGUMENTS)
         message(FATAL_ERROR "babylon_add_module_tests(${name}): unknown arguments: ${arg_UNPARSED_ARGUMENTS}")
     endif()
@@ -99,9 +103,17 @@ function(babylon_add_module_tests name)
     if (NOT TARGET babylon_${name})
         message(FATAL_ERROR "babylon_add_module_tests(${name}): no such module")
     endif()
+    foreach (dep IN LISTS arg_DEPS)
+        if (NOT TARGET babylon_${dep})
+            message(FATAL_ERROR "babylon_add_module_tests(${name}): unknown dependency ${dep}")
+        endif()
+    endforeach()
 
     add_executable(babylon_${name}_tests ${arg_SOURCES})
     target_link_libraries(babylon_${name}_tests PRIVATE babylon_${name} babylon_doctest_main)
+    foreach (dep IN LISTS arg_DEPS)
+        target_link_libraries(babylon_${name}_tests PRIVATE babylon_${dep})
+    endforeach()
     set_target_properties(babylon_${name}_tests PROPERTIES
         CXX_EXTENSIONS OFF
         FOLDER Babylon)
