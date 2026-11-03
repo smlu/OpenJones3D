@@ -127,7 +127,7 @@ bool J3DAPI sithFX_GetWaterPosition(SithThing* pThing, rdVector3* waterPos, Sith
         SithSurface* pWaterSurf = sithCollision_FindWaterSurface(pStartSec, &rippleStartPos, &endPos, sithFX_surfaceOffsetZ);
         if ( pWaterSurf )
         {
-            *ppWaterSec  = pWaterSurf->pSector; // Fixed: Pass the sector by pointer, assigning the by-value parameter had no effect for the callers
+            *ppWaterSec  = pWaterSurf->pSector;
             *waterNormal = pWaterSurf->face.normal;
 
             // Assign found position
