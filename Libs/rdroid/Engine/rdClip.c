@@ -2762,12 +2762,12 @@ int J3DAPI rdClip_Face3GTOrtho(const rdClipFrustum* pFrustum, rdVector3* aVertic
     rdClip_pDestTVert   = rdClip_pSourceTVert;
     rdClip_pSourceTVert = paTVerts;
 
-    numVerts  = clipindex;
-    clipindex = 0;
-    pPrevVert = &paVerts[numVerts - 1];
+    numVerts   = clipindex;
+    clipindex  = 0;
+    pPrevVert  = &paVerts[numVerts - 1];
     pPrevTVert = &paTVerts[numVerts - 1];
-    pCurVert  = paVerts;
-    pCurTVert = paTVerts;
+    pCurVert   = paVerts;
+    pCurTVert  = paTVerts;
 
     for ( size_t i = 0; i < numVerts; ++i )
     {
@@ -3716,7 +3716,7 @@ int J3DAPI rdClip_Face3TOrtho(const rdClipFrustum* pFrustum, rdVector3* aVertice
                 rdClip_pDestTVert[clipindex].x = (pCurTVert->x - pPrevTVert->x) * lerpFactor + pPrevTVert->x;
                 rdClip_pDestTVert[clipindex].y = (pCurTVert->y - pPrevTVert->y) * lerpFactor + pPrevTVert->y;
 
-                // Fixed: The y/z intensity components interpolate from prev.y/prev.z. The original subtracted prev.x for them (original Indy3D.exe v1.0 0x004D6E70).
+                // Fixed: The y/z intensity components interpolate from prev.y/prev.z. The original subtracted prev.x for them.
                 rdClip_pDestVertIntensity[clipindex].x   = (pCurIntens->x - pPrevIntens->x) * lerpFactor + pPrevIntens->x;
                 rdClip_pDestVertIntensity[clipindex].y   = (pCurIntens->y - pPrevIntens->y) * lerpFactor + pPrevIntens->y;
                 rdClip_pDestVertIntensity[clipindex++].z = (pCurIntens->z - pPrevIntens->z) * lerpFactor + pPrevIntens->z;
