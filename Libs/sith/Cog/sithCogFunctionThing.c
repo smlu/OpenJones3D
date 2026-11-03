@@ -544,7 +544,7 @@ void J3DAPI sithCogFunctionThing_SetMoveMode(SithCog* pCog)
         return;
     }
 
-    if ( (size_t)newMode >= SITH_PUPPET_NUMMOVEMODES ) // Altered: Reject modes outside of the valid range of SITH_PUPPET_NUMMOVEMODES, the original accepts modes 0 to 107 (original Indy3D.exe v1.0 0x0046DCB0), which then fail the release assert in sithPuppet_SetMoveMode
+    if ( (size_t)newMode >= SITH_PUPPET_NUMMOVEMODES ) // Fixed: Reject modes outside of the valid range of SITH_PUPPET_NUMMOVEMODES, the original accepts modes 0 to 107, which then fail the release assert in sithPuppet_SetMoveMode
     {
         STDLOG_ERROR("Cog %s: Bad move mode for thing %s in SetMoveMode()\n", pCog->aName, pThing->aName); // Fixed: Updated format to show cog name
         sithCogExec_PushInt(pCog, -1);
@@ -5410,7 +5410,9 @@ void J3DAPI sithCogFunctionThing_StartQuetzAnim(SithCog* pCog)
         return;
     }
 
-    if ( mode < 0 || mode > 6 )
+    // TODO: [BUG] The original accepts modes up to 6, but only SITHQUETZSTRIKE_MODE_ANIM2 to ANIM5 start an animation;
+    //       modes 0, 1 and 6 do nothing. Maybe a sixth animation was planned, or the bound should be SITHQUETZSTRIKE_MODE_ANIM5.
+    if ( mode < SITHQUETZSTRIKE_MODE_NONE || mode > SITHQUETZSTRIKE_MODE_ANIM5 + 1 )
     {
         STDLOG_ERROR("Bad mode for thing %s in StartQuetzAnim()\n", pThing->aName);
         sithCogExec_PushInt(pCog, -1);
