@@ -8,13 +8,16 @@
 #   babylon_add_module(<name>
 #       SOURCES <files...>
 #       [DEPS <babylon modules...>]          # private dependencies
-#       [PUBLIC_DEPS <babylon modules...>])  # dependencies in this module's public headers
+#       [PUBLIC_DEPS <babylon modules...>]   # dependencies in this module's public headers
+#       [LIBS <external targets...>])        # non-Babylon targets, linked PRIVATE
 #
 #   babylon_add_module_tests(<name>
 #       SOURCES <files...>)
 #
 # A dependency must name a module already declared in an add_subdirectory added
-# before the dependent module, which keeps the target graph acyclic.
+# before the dependent module, which keeps the target graph acyclic. LIBS names
+# targets outside Babylon, such as ${BABYLON_SDL3_TARGET}; they must exist as
+# targets and are linked PRIVATE.
 
 # Warnings and sanitizer flags for Babylon's own targets. Vendored code never
 # goes through this function, so it gets neither Babylon's warnings nor -Werror.
@@ -44,7 +47,7 @@ function(_babylon_link_dependency name dep visibility)
 endfunction()
 
 function(babylon_add_module name)
-    cmake_parse_arguments(PARSE_ARGV 1 arg "" "" "SOURCES;DEPS;PUBLIC_DEPS")
+    cmake_parse_arguments(PARSE_ARGV 1 arg "" "" "SOURCES;DEPS;PUBLIC_DEPS;LIBS")
     if (arg_UNPARSED_ARGUMENTS)
         message(FATAL_ERROR "babylon_add_module(${name}): unknown arguments: ${arg_UNPARSED_ARGUMENTS}")
     endif()
@@ -64,6 +67,12 @@ function(babylon_add_module name)
     endforeach()
     foreach (dep IN LISTS arg_PUBLIC_DEPS)
         _babylon_link_dependency(${name} ${dep} PUBLIC)
+    endforeach()
+    foreach (lib IN LISTS arg_LIBS)
+        if (NOT TARGET ${lib})
+            message(FATAL_ERROR "babylon module ${name}: unknown library ${lib}")
+        endif()
+        target_link_libraries(babylon_${name} PRIVATE ${lib})
     endforeach()
 
     # Per-target, so the C++20 requirement never changes a parent project's globals.

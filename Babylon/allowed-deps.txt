@@ -9,3 +9,4 @@
 # <module>: <direct dependencies, space separated>
 core:
 log:
+time: SDL3-static

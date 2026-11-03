@@ -5,11 +5,12 @@
 
 cmake_minimum_required(VERSION 3.24)
 
-project(Babylon VERSION 0.1.0 LANGUAGES CXX)
+project(Babylon VERSION 0.1.0 LANGUAGES C CXX)
 
 # Babylon builds alone (cmake -S Babylon) and as a subdirectory of a parent
 # repository. C++20, warnings and sanitizers are set per target in
 # cmake/BabylonModule.cmake; no variables of a parent project are touched.
+# The C language is enabled because the fetched SDL3 builds C code.
 if (PROJECT_IS_TOP_LEVEL)
     set(BABYLON_IS_TOP_LEVEL ON)
 else()
@@ -31,6 +32,7 @@ if (BABYLON_IS_TOP_LEVEL AND BABYLON_BUILD_TESTS)
 endif()
 
 include(cmake/BabylonModule.cmake)
+include(cmake/BabylonSdl3.cmake)
 
 if (BABYLON_BUILD_TESTS)
     add_subdirectory(third_party/doctest)
@@ -38,6 +40,7 @@ endif()
 
 add_subdirectory(core)
 add_subdirectory(log)
+add_subdirectory(time)
 
 # Machine checks for the Babylon boundary and the module graph (ADR-0006,
 # ADR-0008, ADR-0015). They inspect the source tree, so they carry the label

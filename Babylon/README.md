@@ -31,12 +31,14 @@ pluggable sinks) the second.
     babylon_add_module(<name>
         SOURCES <files...>
         [DEPS <babylon modules...>]          # private dependencies
-        [PUBLIC_DEPS <babylon modules...>])  # dependencies in public headers
+        [PUBLIC_DEPS <babylon modules...>]   # dependencies in public headers
+        [LIBS <external targets...>])        # non-Babylon targets, linked PRIVATE
 
 Creates the library `babylon_<name>` (alias `babylon::<name>`) with C++20, Babylon's
 warning flags and, with `BABYLON_SANITIZE=ON`, address and undefined behavior sanitizer
 flags. Dependencies must name modules added before this one, so the target graph stays
-acyclic.
+acyclic. `LIBS` names targets outside Babylon, such as `${BABYLON_SDL3_TARGET}` from
+`cmake/BabylonSdl3.cmake`; an unknown target is a configure error.
 
     babylon_add_module_tests(<name> SOURCES <files...>)
 
