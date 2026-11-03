@@ -21,9 +21,9 @@ static D3DTLVERTEX rdCache_aVertices[RDCACHE_VERTBUFFERSIZE]      = { 0 };
 static rdVector4 rdCache_aVertIntensities[RDCACHE_VERTBUFFERSIZE] = { 0 }; // Fixed: Changed to match size of rdCache_aVertices, was 8192
 
 
-static size_t rdCache_numAlphaProcFaces               = 0;
-// Altered: The original list holds 2048 entries; a larger list means fewer early flushes, so alpha face batches (and their sort order) differ from the original.
-static rdCacheProcEntry rdCache_aAlphaProcFaces[4096] = { 0 };
+static size_t rdCache_numAlphaProcFaces                                    = 0;
+// Altered: QOL builds hold 4096 alpha faces, the original 2048; a larger list means fewer early flushes, so alpha face batches (and their sort order) differ from the original.
+static rdCacheProcEntry rdCache_aAlphaProcFaces[J3D_QOL_VALUE(4096, 2048)] = { 0 };
 
 static size_t rdCache_numUsedAlphaVertices = 0;
 static D3DTLVERTEX rdCache_aAlphaVertices[RDCACHE_VERTBUFFERSIZE]      = { 0 };
