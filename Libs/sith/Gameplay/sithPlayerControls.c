@@ -5184,7 +5184,8 @@ void J3DAPI sithPlayerControls_ProcessPushPullMove(SithThing* pThing, float secD
     //
     // Handle pull object move
     //
-    if ( sithControl_GetKey(SITHCONTROL_BACK, NULL) && !sithControl_GetKey(SITHCONTROL_FORWARD, NULL) ) // The forward (push) key has priority like in the original
+    // Pull when the forward key is not pressed; the earlier check ensures the back key is. Forward (push) has priority when both are pressed, like in the original
+    if ( !sithControl_GetKey(SITHCONTROL_FORWARD, NULL) )
     {
         // Check height difference for pull - can't pull objects that are higher
         if ( searchRadius > 0.05f && pThing->pos.z > sithPlayerControls_pMovableThing->pos.z )
