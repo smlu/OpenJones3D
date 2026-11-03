@@ -147,9 +147,9 @@ int J3DAPI sithItem_ParseArg(const StdConffileArg* pArg, SithThing* pThing, int 
 
         case SITHTHING_ARG_RESPAWN:
         {
-            errno = 0; // Fixed: Reset errno, a stale ERANGE rejected valid values
+            errno = 0;
             float spawnInterval = strtof(pArg->argValue, NULL); // Changed: Use strtof instead atof
-            // Fixed: Only reject overflow, the original (float)atof accepted underflowing values
+            // Only reject overflow, (float)atof of the original accepted underflowing values
             if ( errno == ERANGE && fabsf(spawnInterval) > 1.0f ) { // Added
                 return 0; // error
             }
