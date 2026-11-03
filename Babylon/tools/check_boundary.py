@@ -63,7 +63,7 @@ CXX_HEADERS = frozenset("""
     cstdint cstdio cstdlib cstring ctime cuchar cwchar cwctype deque exception
     execution filesystem format forward_list functional future
     initializer_list iomanip ios iosfwd iostream iterator latch limits list
-    map memory memory_resource mutex new numeric numbers optional queue
+    locale map memory memory_resource mutex new numeric numbers optional queue
     random ranges ratio regex scoped_allocator semaphore set shared_mutex
     source_location span sstream stdexcept stop_token streambuf string
     string_view syncstream system_error thread tuple type_traits typeinfo

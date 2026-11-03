@@ -5,13 +5,14 @@
 
 #include <babylon/input/InputScript.h>
 
+#include <babylon/core/Parse.h>
 #include <babylon/platform/Keys.h>
 
 #include <algorithm>
 #include <charconv>
-#include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 #include <optional>
 #include <span>
 #include <string>
@@ -117,23 +118,22 @@ namespace
         }
         return value;    }
 
-    // Parses a finite decimal with std::from_chars, no locale; anything
-    // that is not one number, including the inf and nan forms
-    // std::from_chars accepts for floats, is an error. `what` names the
-    // number in the message.
+    // Parses a finite decimal in babylon::core::parseDouble's grammar,
+    // no locale; anything that is not one number, including the inf and
+    // nan forms, is an error, and so is a value outside the float range.
+    // `what` names the number in the message.
     std::optional<float> parseNumber(std::string_view token, std::string_view what,
         std::string& error)
     {
-        float value = 0.0f;
-        const std::from_chars_result result =
-            std::from_chars(token.data(), token.data() + token.size(), value);
-        if ( result.ec != std::errc{} || result.ptr != token.data() + token.size()
-            || !std::isfinite(value) )
+        const std::optional<double> parsed = core::parseDouble(token);
+        if ( !parsed.has_value()
+            || *parsed > std::numeric_limits<float>::max()
+            || *parsed < std::numeric_limits<float>::lowest() )
         {
             error = "invalid " + quoted(what, token);
             return std::nullopt;
         }
-        return value;
+        return static_cast<float>(*parsed);
     }
 
     // True for "down", false for "up", nullopt for anything else; the

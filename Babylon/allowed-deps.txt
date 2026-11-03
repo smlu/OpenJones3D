@@ -12,4 +12,4 @@ log:
 time: SDL3-static
 files: log SDL3-static
 platform: log SDL3-static
-input: platform
+input: platform core

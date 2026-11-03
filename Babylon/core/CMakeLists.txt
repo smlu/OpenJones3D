@@ -7,7 +7,7 @@
 # own numbers are used even when it builds inside the repository.
 configure_file(include/babylon/core/Version.h.in ${CMAKE_CURRENT_BINARY_DIR}/include/babylon/core/Version.h @ONLY)
 
-babylon_add_module(core SOURCES src/Assert.cpp src/Version.cpp)
+babylon_add_module(core SOURCES src/Assert.cpp src/Parse.cpp src/Version.cpp)
 target_include_directories(babylon_core PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/include)
 
-babylon_add_module_tests(core SOURCES tests/AssertTest.cpp tests/VersionTest.cpp)
+babylon_add_module_tests(core SOURCES tests/AssertTest.cpp tests/ParseTest.cpp tests/VersionTest.cpp)

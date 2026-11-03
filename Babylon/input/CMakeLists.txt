@@ -5,6 +5,7 @@
 
 babylon_add_module(input
     SOURCES src/InputState.cpp src/InputScript.cpp
+    DEPS core
     PUBLIC_DEPS platform)
 babylon_add_module_tests(input
     SOURCES tests/InputStateTest.cpp tests/InputScriptTest.cpp)
