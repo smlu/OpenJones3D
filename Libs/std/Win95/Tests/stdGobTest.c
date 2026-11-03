@@ -587,6 +587,9 @@ TEST(stdGob, TestEntryReadFailuresDoNotAdvanceOffsets)
 
 TEST(stdGob, TestStartupShutdownAndFreeGuards)
 {
+    char aExpected[128];
+    char aCaptured[256];
+
     J3DTest_ResetAssertCapture();
     stdGob_Startup(StdGeneralTest_GetHostServices());
     TEST_ASSERT_EQUAL_INT(1, J3DTest_GetAssertCount());
@@ -598,7 +601,10 @@ TEST(stdGob, TestStartupShutdownAndFreeGuards)
 
     StdGeneralTest_ResetDebugOutput();
     stdGob_Free(NULL);
-    TEST_ASSERT_EQUAL_STRING("stdGob.c(264): Warning: attempt to free NULL Gob file ptr.\n", StdGeneralTest_GetDebugOutput());
+    TEST_ASSERT_EQUAL_STRING(
+        StdGeneralTest_NormLogLineNumbers("stdGob.c(247): Warning: attempt to free NULL Gob file ptr.\n", aExpected, sizeof(aExpected)),
+        StdGeneralTest_NormLogLineNumbers(StdGeneralTest_GetDebugOutput(), aCaptured, sizeof(aCaptured))
+    );
 
 #ifdef J3D_RUNTIME_GUARDS
     J3DTest_ResetAssertCapture();

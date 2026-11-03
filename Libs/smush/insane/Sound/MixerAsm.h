@@ -21,7 +21,6 @@ void J3DAPI mixer_Lut8(uint8_t* pDst, const uint8_t* pSrc, int n, const uint8_t*
 void J3DAPI mixer_Lut8Add(uint8_t* pDst, const uint8_t* pSrc, int n, const uint8_t* pTables, int tableIndex); // Unused by the original
 void J3DAPI mixer_FillB(void* pDst, int value, int n); // Unused by the original
 
-void MixerAsm_InstallHooks(void);
 void MixerAsm_ResetGlobals(void);
 
 J3D_EXTERN_C_END

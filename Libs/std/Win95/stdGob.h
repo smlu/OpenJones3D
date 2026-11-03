@@ -21,7 +21,6 @@ size_t J3DAPI stdGob_FileRead(GobFileHandle* pHandle, void* data, const size_t s
 const char* J3DAPI stdGob_FileGets(GobFileHandle* pGobFileHandle, char* pStr, size_t size);
 
 // Helper hooking functions
-void stdGob_InstallHooks(void);
 void stdGob_ResetGlobals(void);
 
 J3D_EXTERN_C_END

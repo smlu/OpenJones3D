@@ -14,24 +14,6 @@ const rdVector3 rdroid_g_xVector3    = { 1.0f, 0.0f, 0.0f };
 const rdVector3 rdroid_g_yVector3    = { 0.0f, 1.0f, 0.0f };
 const rdVector3 rdroid_g_zVector3    = { 0.0f, 0.0f, 1.0f };
 
-
-void rdVector_InstallHooks(void)
-{
-    J3D_HOOKFUNC(rdVector_Set3);
-    J3D_HOOKFUNC(rdVector_Set4);
-    J3D_HOOKFUNC(rdVector_Neg3);
-    J3D_HOOKFUNC(rdVector_Add3Acc);
-    J3D_HOOKFUNC(rdVector_Dot3);
-    J3D_HOOKFUNC(rdVector_Len3);
-    J3D_HOOKFUNC(rdVector_Normalize3);
-    J3D_HOOKFUNC(rdVector_Normalize2Acc);
-    J3D_HOOKFUNC(rdVector_Normalize3Acc);
-    J3D_HOOKFUNC(rdVector_Normalize3QuickAcc);
-    J3D_HOOKFUNC(rdVector_InvScale3);
-    J3D_HOOKFUNC(rdVector_Rotate3);
-    J3D_HOOKFUNC(rdVector_Rotate3Acc);
-}
-
 void rdVector_ResetGlobals(void)
 {}
 

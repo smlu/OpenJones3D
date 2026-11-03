@@ -14,7 +14,6 @@ int J3DAPI rdQClip_Face3T(const rdClipFrustum* pFrustum, rdVector3* aVerts, rdVe
 int J3DAPI rdQClip_Face3W(const rdClipFrustum* pFrustrum, rdVector3* aVertices, size_t numVertices);
 
 // Helper hooking functions
-void rdQClip_InstallHooks(void);
 void rdQClip_ResetGlobals(void);
 
 J3D_EXTERN_C_END

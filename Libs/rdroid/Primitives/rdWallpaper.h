@@ -16,7 +16,6 @@ void J3DAPI rdWallpaper_FreeWallLine(rdWallLine* pWallLine);
 void J3DAPI rdWallpaper_DrawWallLine(const rdWallLine* pLine, float progress);
 
 // Helper hooking functions
-void rdWallpaper_InstallHooks(void);
 void rdWallpaper_ResetGlobals(void);
 
 J3D_EXTERN_C_END

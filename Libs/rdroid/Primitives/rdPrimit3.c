@@ -9,13 +9,6 @@
 #include <rdroid/Math/rdVector.h>
 #include <rdroid/RTI/symbols.h>
 
-
-void rdPrimit3_InstallHooks(void)
-{
-    J3D_HOOKFUNC(rdPrimit3_DrawClippedCircle);
-    J3D_HOOKFUNC(rdPrimit3_ClipFace);
-}
-
 void rdPrimit3_ResetGlobals(void)
 {}
 

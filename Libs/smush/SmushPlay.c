@@ -205,18 +205,6 @@ void* smushplay_GetHwnd(void)
     return smushplay_hWnd;
 }
 
-void SmushPlay_InstallHooks(void)
-{
-    // Uncomment only lines for functions that have full definition and doesn't call original function (non-thunk functions)
-
-    J3D_HOOKFUNC(SmushPlay_SysStartup);
-    J3D_HOOKFUNC(SmushPlay_PlayMovie);
-    J3D_HOOKFUNC(smushplay_Blit);
-    J3D_HOOKFUNC(SmushPlay_SysShutdown);
-    J3D_HOOKFUNC(SmushPlay_SetGlobalVolume);
-    J3D_HOOKFUNC(smushplay_GetHwnd);
-}
-
 void SmushPlay_ResetGlobals(void)
 {
     smushplay_pMemory    = NULL;
@@ -232,37 +220,6 @@ void SmushPlay_ResetGlobals(void)
     smushplay_pPlay      = NULL;
     smushplay_bAbort     = 0;
     smushplay_pfBlit     = NULL;
-}
-
-void Smush_InstallHooks(void)
-{
-    SmushPlay_InstallHooks();
-    Frame_InstallHooks();
-    Pcplay_InstallHooks();
-    Bitmap_InstallHooks();
-    Blit_InstallHooks();
-    BlitAsm_InstallHooks();
-    MemCopy_InstallHooks();
-    MemFill_InstallHooks();
-    Decode_InstallHooks();
-    DecodeAsm_InstallHooks();
-    Cdstream_InstallHooks();
-    Framestream_InstallHooks();
-    Stdfile_InstallHooks();
-    Stdio_InstallHooks();
-    Zfilio_InstallHooks();
-    Bloc16Asm_InstallHooks();
-    D_bloc16_InstallHooks();
-    D_wave_InstallHooks();
-    Readauto_InstallHooks();
-    LecShare_InstallHooks();
-    Memory_InstallHooks();
-    Dsnd_InstallHooks();
-    Engine_InstallHooks();
-    Mixer_InstallHooks();
-    MixerAsm_InstallHooks();
-    Timer_InstallHooks();
-    List_InstallHooks();
 }
 
 void Smush_ResetGlobals(void)

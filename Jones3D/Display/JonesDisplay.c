@@ -50,22 +50,6 @@ rdVector4 JonesDisplay_wallLineColor = { 1.0f , 0.0f , 0.0f , 1.0f };
 static int JonesDisplay_dword_553328;
 static int JonesDisplay_dword_55332C;
 
-void JonesDisplay_InstallHooks(void)
-{
-
-    J3D_HOOKFUNC(JonesDisplay_Startup);
-    J3D_HOOKFUNC(JonesDisplay_Shutdown);
-    J3D_HOOKFUNC(JonesDisplay_Restart);
-    J3D_HOOKFUNC(JonesDisplay_SetDefaultVideoMode);
-    J3D_HOOKFUNC(JonesDisplay_Open);
-    J3D_HOOKFUNC(JonesDisplay_Close);
-    J3D_HOOKFUNC(JonesDisplay_EnableDualMonitor);
-    J3D_HOOKFUNC(JonesDisplay_UpdateDualScreenWindowSize);
-    J3D_HOOKFUNC(JonesDisplay_OpenLoadScreen);
-    J3D_HOOKFUNC(JonesDisplay_CloseLoadScreen);
-    J3D_HOOKFUNC(JonesDisplay_UpdateLoadProgress);
-}
-
 void JonesDisplay_ResetGlobals(void)
 {}
 

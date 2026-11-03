@@ -324,7 +324,6 @@ const char* J3DAPI stdControl_GetJoysticDescription(int joyNum); // Added: From 
 int J3DAPI stdControl_IsGamePad(int joyNum);
 
 // Helper hooking functions
-void stdControl_InstallHooks(void);
 void stdControl_ResetGlobals(void);
 
 J3D_EXTERN_C_END

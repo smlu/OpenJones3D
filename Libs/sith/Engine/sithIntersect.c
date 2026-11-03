@@ -15,21 +15,6 @@
 
 static const size_t sithIntersect_aFaceProjectionAxes[3][2] = { { 2, 1 }, { 0, 2 }, { 1, 0 } };
 
-void sithIntersect_InstallHooks(void)
-{
-    J3D_HOOKFUNC(sithIntersect_IsSphereInSector);
-    J3D_HOOKFUNC(sithIntersect_CheckFaceVerticesIntersection);
-    J3D_HOOKFUNC(sithIntersect_CheckSphereThingIntersection);
-    J3D_HOOKFUNC(sithIntersect_CheckSphereThingModelIntersection);
-    J3D_HOOKFUNC(sithIntersect_CheckSphereMeshIntersection);
-    J3D_HOOKFUNC(sithIntersect_CheckSphereIntersection);
-    J3D_HOOKFUNC(sithIntersect_TestSphereFaceHit);
-    J3D_HOOKFUNC(sithIntersect_CheckSphereFaceHitVerticesIntersection);
-    J3D_HOOKFUNC(sithIntersect_CheckSphereHit);
-    J3D_HOOKFUNC(sithIntersect_CheckSphereFaceIntersectionEx);
-    J3D_HOOKFUNC(sithIntersect_CheckSphereFaceIntersection);
-}
-
 void sithIntersect_ResetGlobals(void)
 {}
 

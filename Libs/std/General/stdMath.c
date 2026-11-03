@@ -65,20 +65,6 @@ static float stdMath_ClampArcTrigInput(float num)
     return num;
 }
 
-void stdMath_InstallHooks(void)
-{
-    J3D_HOOKFUNC(stdMath_FlexPower);
-    J3D_HOOKFUNC(stdMath_NormalizeAngle);
-    J3D_HOOKFUNC(stdMath_NormalizeAngleAcute);
-    J3D_HOOKFUNC(stdMath_SinCos);
-    J3D_HOOKFUNC(stdMath_Tan);
-    J3D_HOOKFUNC(stdMath_ArcSin1);
-    J3D_HOOKFUNC(stdMath_ArcSin3);
-    J3D_HOOKFUNC(stdMath_ArcTan4);
-    J3D_HOOKFUNC(stdMath_Dist2D1);
-    J3D_HOOKFUNC(stdMath_Dist3D1);
-}
-
 void stdMath_ResetGlobals(void)
 {}
 

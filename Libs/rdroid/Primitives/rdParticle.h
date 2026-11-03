@@ -25,7 +25,6 @@ int J3DAPI rdParticle_Write(const char* pFilename, rdParticle* pParticle, const 
 int J3DAPI rdParticle_Draw(const rdThing* pParticle, const rdMatrix34* pOrient);
 
 // Helper hooking functions
-void rdParticle_InstallHooks(void);
 void rdParticle_ResetGlobals(void);
 
 J3D_EXTERN_C_END

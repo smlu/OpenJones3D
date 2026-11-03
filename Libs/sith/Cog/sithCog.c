@@ -74,58 +74,6 @@ int J3DAPI sithCog_RemoveScript(SithCogScript* pScript);
 int J3DAPI sithCog_TimerEventTask(int msecTime, SithEventParams* pParams);
 void J3DAPI sithCog_Initialize();
 
-void sithCog_InstallHooks(void)
-{
-    J3D_HOOKFUNC(sithCog_Startup);
-    J3D_HOOKFUNC(sithCog_Shutdown);
-    J3D_HOOKFUNC(sithCog_Open);
-    J3D_HOOKFUNC(sithCog_Close);
-    J3D_HOOKFUNC(sithCog_FreeWorldCogs);
-    J3D_HOOKFUNC(sithCog_FreeScriptEntry);
-    J3D_HOOKFUNC(sithCog_FreeEntry);
-    J3D_HOOKFUNC(sithCog_UpdateThingTimer);
-    J3D_HOOKFUNC(sithCog_BroadcastMessage);
-    J3D_HOOKFUNC(sithCog_BroadcastMessageEx);
-    J3D_HOOKFUNC(sithCog_SendMessage);
-    J3D_HOOKFUNC(sithCog_SendMessageEx);
-    J3D_HOOKFUNC(sithCog_AllocWorldCogScripts);
-    J3D_HOOKFUNC(sithCog_AllocWorldCogs);
-    J3D_HOOKFUNC(sithCog_GetSymbolRefInitializer);
-    J3D_HOOKFUNC(sithCog_ReadCogsListText);
-    J3D_HOOKFUNC(sithCog_WriteCogsListBinary);
-    J3D_HOOKFUNC(sithCog_ReadCogsListBinary);
-    J3D_HOOKFUNC(sithCog_ParseSymbolRef);
-    J3D_HOOKFUNC(sithCog_LinkCog);
-    J3D_HOOKFUNC(sithCog_Load);
-    J3D_HOOKFUNC(sithCog_GetCogByIndex);
-    J3D_HOOKFUNC(sithCog_GetCog);
-    J3D_HOOKFUNC(sithCog_LinkCogToThing);
-    J3D_HOOKFUNC(sithCog_LinkCogToSurface);
-    J3D_HOOKFUNC(sithCog_LinkCogToSector);
-    J3D_HOOKFUNC(sithCog_FixupLinksToThings);
-    J3D_HOOKFUNC(sithCog_ThingSendMessage);
-    J3D_HOOKFUNC(sithCog_ThingSendMessageEx);
-    J3D_HOOKFUNC(sithCog_SectorSendMessage);
-    J3D_HOOKFUNC(sithCog_SectorSendMessageEx);
-    J3D_HOOKFUNC(sithCog_SurfaceSendMessage);
-    J3D_HOOKFUNC(sithCog_SurfaceSendMessageEx);
-    J3D_HOOKFUNC(sithCog_ReadCogScriptsListText);
-    J3D_HOOKFUNC(sithCog_WriteCogScriptsListBinary);
-    J3D_HOOKFUNC(sithCog_ReadCogScriptsListBinary);
-    J3D_HOOKFUNC(sithCog_LoadScript);
-    J3D_HOOKFUNC(sithCog_ProcessCog);
-    J3D_HOOKFUNC(sithCog_ProcessCogs);
-    J3D_HOOKFUNC(sithCog_AddIntSymbol);
-    J3D_HOOKFUNC(sithCog_TimerEventTask);
-    J3D_HOOKFUNC(sithCog_GetScript);
-    J3D_HOOKFUNC(sithCog_AddScript);
-    J3D_HOOKFUNC(sithCog_RemoveScript);
-    J3D_HOOKFUNC(sithCog_Initialize);
-    J3D_HOOKFUNC(sithCog_AddFloatSymbol);
-    J3D_HOOKFUNC(sithCog_RegisterFunction);
-    J3D_HOOKFUNC(sithCog_IsThingLinked);
-}
-
 void sithCog_ResetGlobals(void)
 {
     STD_ZEROMEM(&sithCog_g_pSymbolTable, sizeof(sithCog_g_pSymbolTable));

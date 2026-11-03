@@ -189,22 +189,6 @@ static const int8_t* const AudioLib_aIndexTableTable[AUDIOLIB_MAX_STEP_BITS + 1]
 static uint16_t AudioLib_aDeltaTable[AUDIOLIB_DELTA_TABLE_SIZE];
 static int AudioLib_bDeltaTableInitialized = 0;
 
-void AudioLib_InstallHooks(void)
-{
-    // Uncomment only lines for functions that have full definition and doesn't call original function (non-thunk functions)
-
-    J3D_HOOKFUNC(AudioLib_ParseWaveFileHeader);
-    J3D_HOOKFUNC(AudioLib_Compress);
-    J3D_HOOKFUNC(AudioLib_ResetCompressor);
-    J3D_HOOKFUNC(AudioLib_Uncompress);
-    J3D_HOOKFUNC(AudioLib_GetMouthPosition);
-    J3D_HOOKFUNC(AudioLib_GenerateLipSyncBlock);
-    J3D_HOOKFUNC(AudioLib_CompressBlock);
-    J3D_HOOKFUNC(AudioLib_UncompressBlock);
-    J3D_HOOKFUNC(AudioLib_WVSMCompressBlock);
-    J3D_HOOKFUNC(AudioLib_WVSMUncompressBlock);
-}
-
 void AudioLib_ResetGlobals(void)
 {}
 

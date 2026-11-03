@@ -47,11 +47,6 @@ static Std3DMipmapFilterType std3D_mipmapFilter = -1;
 static void std3D_InitTextureFormats(void);
 static int std3D_BuildDeviceList(void);
 
-void std3D_InstallHooks(void)
-{
-    // Added: No RTI hooks in the standalone Null build: nothing to hook.
-}
-
 void std3D_ResetGlobals(void)
 {
     float fogDensity = 1.0f;

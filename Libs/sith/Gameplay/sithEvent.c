@@ -20,21 +20,6 @@ size_t numFreeEventBuffers;
 void sithEvent_ResetFreeBufferTable(void);
 SithEvent* sithEvent_Create(void);
 void J3DAPI sithEvent_AddEvent(SithEvent* pEvent);
-void sithEvent_InstallHooks(void)
-{
-    J3D_HOOKFUNC(sithEvent_Startup);
-    J3D_HOOKFUNC(sithEvent_Shutdown);
-    J3D_HOOKFUNC(sithEvent_Open);
-    J3D_HOOKFUNC(sithEvent_Close);
-    J3D_HOOKFUNC(sithEvent_Reset);
-    J3D_HOOKFUNC(sithEvent_CreateEvent);
-    J3D_HOOKFUNC(sithEvent_FreeEvent);
-    J3D_HOOKFUNC(sithEvent_RegisterTask);
-    J3D_HOOKFUNC(sithEvent_Process);
-    J3D_HOOKFUNC(sithEvent_ResetFreeBufferTable);
-    J3D_HOOKFUNC(sithEvent_Create);
-    J3D_HOOKFUNC(sithEvent_AddEvent);
-}
 
 void sithEvent_ResetGlobals(void)
 {

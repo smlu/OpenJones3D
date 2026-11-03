@@ -34,7 +34,6 @@ int J3DAPI stdComm_VerifyPlayer(DPID id);
 DPID J3DAPI stdComm_GetPlayerID(size_t playerNum);
 
 // Helper hooking functions
-void stdComm_InstallHooks(void);
 void stdComm_ResetGlobals(void);
 
 J3D_EXTERN_C_END

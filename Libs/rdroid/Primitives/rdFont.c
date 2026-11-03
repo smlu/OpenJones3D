@@ -27,24 +27,6 @@ rdFontColor rdFont_aFontColors;
 static void J3DAPI rdFont_DrawChar(size_t chr, float x, float y, float z, const rdFont* pFont);
 static void J3DAPI rdFont_DrawCharScaled(size_t chr, float x, float y, float z, const rdFont* pFont, float fontSizePt); // New
 
-void rdFont_InstallHooks(void)
-{
-    J3D_HOOKFUNC(rdFont_Load);
-    J3D_HOOKFUNC(rdFont_LoadEntry);
-    J3D_HOOKFUNC(rdFont_LoadMaterial);
-    J3D_HOOKFUNC(rdFont_Free);
-    J3D_HOOKFUNC(rdFont_SetFontColor);
-    J3D_HOOKFUNC(rdFont_GetWrapLine);
-    J3D_HOOKFUNC(rdFont_GetTextWidth);
-    J3D_HOOKFUNC(rdFont_DrawTextLine);
-    J3D_HOOKFUNC(rdFont_DrawChar);
-    J3D_HOOKFUNC(rdFont_DrawTextLineClipped);
-    J3D_HOOKFUNC(rdFont_Startup);
-    J3D_HOOKFUNC(rdFont_Shutdown);
-    J3D_HOOKFUNC(rdFont_Open);
-    J3D_HOOKFUNC(rdFont_Close);
-}
-
 void rdFont_ResetGlobals(void)
 {
 

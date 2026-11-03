@@ -107,21 +107,6 @@ static SoundInterface* dwave_pSound = NULL;
 static uint8_t* dwave_pPacket       = NULL;
 static bool dwave_bTableReady       = false;
 
-void D_wave_InstallHooks(void)
-{
-    J3D_HOOKFUNC(dwave_Register);
-    J3D_HOOKFUNC(dwave_Unregister);
-    J3D_HOOKFUNC(dwave_Startup);
-    J3D_HOOKFUNC(dwave_Shutdown);
-    J3D_HOOKFUNC(dwave_Name);
-    J3D_HOOKFUNC(dwave_GetTag);
-    J3D_HOOKFUNC(dwave_GetFlags);
-    J3D_HOOKFUNC(dwave_Reset);
-    J3D_HOOKFUNC(dwave_Parse);
-    J3D_HOOKFUNC(dwave_Decode);
-    J3D_HOOKFUNC(dwave_DecodeVima);
-}
-
 void D_wave_ResetGlobals(void)
 {}
 

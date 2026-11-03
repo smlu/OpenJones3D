@@ -21,25 +21,6 @@
 static SithGameStatistics* jonesInventory_pGameStatistics;
 static uint32_t jonesInventory_msecStatisticsGameTime;
 
-void jonesInventory_InstallHooks(void)
-{
-    J3D_HOOKFUNC(jonesInventory_Open);
-    J3D_HOOKFUNC(jonesInventory_Load);
-    J3D_HOOKFUNC(jonesInventory_Close);
-    J3D_HOOKFUNC(jonesInventory_ActivateItem);
-    J3D_HOOKFUNC(jonesInventory_UseItem);
-    J3D_HOOKFUNC(jonesInventory_ResetGameStatistics);
-    J3D_HOOKFUNC(jonesInventory_GetMaxDifficultyLevel);
-    J3D_HOOKFUNC(jonesInventory_UpdateSolvedHintsStatistics);
-    J3D_HOOKFUNC(jonesInventory_UpdateIQPoints);
-    J3D_HOOKFUNC(jonesInventory_GetTotalIQPoints);
-    J3D_HOOKFUNC(jonesInventory_AdvanceStatistics);
-    J3D_HOOKFUNC(jonesInventory_AdvanceFoundTreasuresStatistics);
-    J3D_HOOKFUNC(jonesInventory_UpdateGameTimeStatistics);
-    J3D_HOOKFUNC(jonesInventory_UpdateLevelStatisticTime);
-    J3D_HOOKFUNC(jonesInventory_ResetStatisticsGameTime);
-}
-
 void jonesInventory_ResetGlobals(void)
 {}
 

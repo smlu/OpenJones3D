@@ -11,12 +11,6 @@
 
 #include <stdint.h>
 
-void stdBmp_InstallHooks(void)
-{
-    J3D_HOOKFUNC(stdBmp_WriteVBuffer);
-    J3D_HOOKFUNC(stdBmp_Load);
-}
-
 void stdBmp_ResetGlobals(void)
 {}
 

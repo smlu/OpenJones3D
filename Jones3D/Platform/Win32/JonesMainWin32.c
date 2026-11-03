@@ -412,29 +412,6 @@ void JonesMainSys_ClearWindowProc(void)
     wkernel_SetWindowProc(NULL);
 }
 
-void JonesMainSys_InstallHooks(void)
-{
-    J3D_HOOKFUNC(JonesMain_GameWndProc);
-    J3D_HOOKFUNC(JonesMain_HandleWMGetMinMaxInfo);
-    J3D_HOOKFUNC(JonesMain_HandleWMPaint);
-    J3D_HOOKFUNC(JonesMain_HandleWMTimer);
-    J3D_HOOKFUNC(JonesMain_HandleWMKeydown);
-    J3D_HOOKFUNC(JonesMain_HandleWMActivateApp);
-    J3D_HOOKFUNC(JonesMain_HandleWMActivate);
-    J3D_HOOKFUNC(JonesMain_HandleWMChar);
-    J3D_HOOKFUNC(JonesMain_HandleWMSysCommand);
-    J3D_HOOKFUNC(JonesMain_HandleWMPowerBroadcast);
-    J3D_HOOKFUNC(JonesMain_IntroWndProc);
-    J3D_HOOKFUNC(JonesMain_IntroHandleWMLButtonUp);
-    J3D_HOOKFUNC(JonesMain_IntroHandleWMKeydown);
-    J3D_HOOKFUNC(JonesMain_ShowDevDialog);
-    J3D_HOOKFUNC(JonesMain_DevDialogProc);
-    J3D_HOOKFUNC(JonesMain_DevDialogUpdateRadioButtons);
-    J3D_HOOKFUNC(JonesMain_InitDevDialog);
-    J3D_HOOKFUNC(JonesMain_DevDialogHandleCommand);
-    J3D_HOOKFUNC(JonesMain_DevDialogInitDisplayDevices);
-}
-
 // Copies the computer name of the host into pDst of at most size characters, matching GetComputerName.
 // Returns true on success, false when the name does not fit or the call failed.
 bool JonesMainSys_GetComputerName(char* pDst, size_t size)

@@ -8,14 +8,6 @@
 
 #include <stdint.h>
 
-void stdCircBuf_InstallHooks(void)
-{
-    J3D_HOOKFUNC(stdCircBuf_New);
-    J3D_HOOKFUNC(stdCircBuf_Free);
-    J3D_HOOKFUNC(stdCircBuf_Purge);
-    J3D_HOOKFUNC(stdCircBuf_GetNextElement);
-}
-
 void stdCircBuf_ResetGlobals(void)
 {}
 

@@ -9,14 +9,6 @@
 #include <std/General/std.h>
 #include <std/General/stdMemory.h>
 
-void rdLight_InstallHooks(void)
-{
-    J3D_HOOKFUNC(rdLight_NewEntry);
-    J3D_HOOKFUNC(rdLight_CalcVertexIntensities);
-    J3D_HOOKFUNC(rdLight_CalcFaceIntensity);
-    J3D_HOOKFUNC(rdLight_GetIntensity);
-}
-
 void rdLight_ResetGlobals(void)
 {
 

@@ -66,7 +66,6 @@ const char* J3DAPI animplay_DebugName(int index);
 void J3DAPI animplay_SetDebug(int flags);
 int animplay_GetDebug(void);
 
-void Pcplay_InstallHooks(void);
 void Pcplay_ResetGlobals(void);
 
 J3D_EXTERN_C_END

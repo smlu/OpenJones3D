@@ -24,7 +24,6 @@ void J3DAPI stdFnames_Concat(char* dst, const char* src, size_t size);
 void J3DAPI stdFnames_MakePath(char* aOutPath, int size, const char* pPath1, const char* pPath2);
 
 // Helper hooking functions
-void stdFnames_InstallHooks(void);
 void stdFnames_ResetGlobals(void);
 
 J3D_EXTERN_C_END

@@ -429,35 +429,5 @@ int J3DAPI sithCogFunctionSector_RegisterFunctions(SithCogSymbolTable* pTable)
         || sithCog_RegisterFunction(pTable, sithCogFunctionSector_ClearSectorSurfflags, "clearsectorsurfflags");
 }
 
-
-void sithCogFunctionSector_InstallHooks(void)
-{
-    J3D_HOOKFUNC(sithCogFunctionSector_RegisterFunctions);
-    J3D_HOOKFUNC(sithCogFunctionSector_GetSectorTint);
-    J3D_HOOKFUNC(sithCogFunctionSector_SetSectorTint);
-    J3D_HOOKFUNC(sithCogFunctionSector_GetSectorLight);
-    J3D_HOOKFUNC(sithCogFunctionSector_SetSectorLight);
-    J3D_HOOKFUNC(sithCogFunctionSector_SetSectorAdjoins);
-    J3D_HOOKFUNC(sithCogFunctionSector_SetSectorSurfflags);
-    J3D_HOOKFUNC(sithCogFunctionSector_ClearSectorSurfflags);
-    J3D_HOOKFUNC(sithCogFunctionSector_GetSectorColormap);
-    J3D_HOOKFUNC(sithCogFunctionSector_SetSectorColormap);
-    J3D_HOOKFUNC(sithCogFunctionSector_GetSectorThrust);
-    J3D_HOOKFUNC(sithCogFunctionSector_SetSectorThrust);
-    J3D_HOOKFUNC(sithCogFunctionSector_SetSectorFlags);
-    J3D_HOOKFUNC(sithCogFunctionSector_ClearSectorFlags);
-    J3D_HOOKFUNC(sithCogFunctionSector_GetSectorFlags);
-    J3D_HOOKFUNC(sithCogFunctionSector_GetSectorThingCount);
-    J3D_HOOKFUNC(sithCogFunctionSector_GetSectorPlayerCount);
-    J3D_HOOKFUNC(sithCogFunctionSector_GetSectorCount);
-    J3D_HOOKFUNC(sithCogFunctionSector_GetSectorCenter);
-    J3D_HOOKFUNC(sithCogFunctionSector_GetNumSectorVertices);
-    J3D_HOOKFUNC(sithCogFunctionSector_GetNumSectorSurfaces);
-    J3D_HOOKFUNC(sithCogFunctionSector_GetSectorVertexPos);
-    J3D_HOOKFUNC(sithCogFunctionSector_GetSectorSurfaceRef);
-    J3D_HOOKFUNC(sithCogFunctionSector_SyncSector);
-    J3D_HOOKFUNC(sithCogFunctionSector_FindSectorAtPos);
-}
-
 void sithCogFunctionSector_ResetGlobals(void)
 {}

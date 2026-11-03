@@ -93,7 +93,6 @@ int J3DAPI sithCog_RegisterFunction(SithCogSymbolTable* pTable, SithCogFunctionT
 int J3DAPI sithCog_IsThingLinked(const SithThing* pThing);
 
 // Helper hooking functions
-void sithCog_InstallHooks(void);
 void sithCog_ResetGlobals(void);
 
 J3D_EXTERN_C_END

@@ -160,7 +160,6 @@ void J3DAPI dbloc16_Scale(uint16_t* pDst, uint16_t* pSrc, int width, int height)
 uint16_t J3DAPI dbloc16_Average(uint16_t a, uint16_t b);
 void J3DAPI dbloc16_ScalePal(uint16_t* pDst, uint8_t* pSrc, int width, int height, uint16_t* pPalette);
 
-void D_bloc16_InstallHooks(void);
 void D_bloc16_ResetGlobals(void);
 
 J3D_EXTERN_C_END

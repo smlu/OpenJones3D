@@ -60,29 +60,6 @@ static rdFaceFlags extraFaceFlags = 0;
 
 void J3DAPI rdModel3_LoadPostProcess(rdModel3* pModel3); // Added
 
-void rdModel3_InstallHooks(void)
-{
-    J3D_HOOKFUNC(rdModel3_RegisterLoader);
-    J3D_HOOKFUNC(rdModel3_NewEntry);
-    J3D_HOOKFUNC(rdModel3_LoadEntry);
-    J3D_HOOKFUNC(rdModel3_FreeEntry);
-    J3D_HOOKFUNC(rdModel3_FreeEntryGeometryOnly);
-    J3D_HOOKFUNC(rdModel3_BuildExpandedRadius);
-    J3D_HOOKFUNC(rdModel3_GetMeshMatrix);
-    J3D_HOOKFUNC(rdModel3_ReplaceMesh);
-    J3D_HOOKFUNC(rdModel3_SwapMesh);
-    J3D_HOOKFUNC(rdModel3_GetThingColor);
-    J3D_HOOKFUNC(rdModel3_SetModelColor);
-    J3D_HOOKFUNC(rdModel3_SetThingColor);
-    J3D_HOOKFUNC(rdModel3_SetNodeColor);
-    J3D_HOOKFUNC(rdModel3_SetNodeColorForNonAmputatedJoints);
-    J3D_HOOKFUNC(rdModel3_Draw);
-    J3D_HOOKFUNC(rdModel3_DrawHNode);
-    J3D_HOOKFUNC(rdModel3_DrawMesh);
-    J3D_HOOKFUNC(rdModel3_DrawFace);
-    J3D_HOOKFUNC(rdModel3_EnableFogRendering);
-}
-
 void rdModel3_ResetGlobals(void)
 {
     STD_ZEROMEM(&rdModel3_g_numDrawnFaces, sizeof(rdModel3_g_numDrawnFaces));

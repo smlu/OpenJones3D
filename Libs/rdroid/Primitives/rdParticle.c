@@ -26,17 +26,6 @@ static rdVector3 rdParticle_aFaceVerts[4];
 static rdVector3 rdParticle_aTransformedVerts[RDPARTICLE_MAXVERTS];
 static rdParticleLoaderFunc rdParticle_pfLoader = NULL;
 
-void rdParticle_InstallHooks(void)
-{
-    J3D_HOOKFUNC(rdParticle_New);
-    J3D_HOOKFUNC(rdParticle_NewEntry);
-    J3D_HOOKFUNC(rdParticle_Duplicate);
-    J3D_HOOKFUNC(rdParticle_Free);
-    J3D_HOOKFUNC(rdParticle_FreeEntry);
-    J3D_HOOKFUNC(rdParticle_LoadEntry);
-    J3D_HOOKFUNC(rdParticle_Draw);
-}
-
 void rdParticle_ResetGlobals(void)
 {}
 

@@ -165,7 +165,6 @@ void J3DAPI sound_Copy(void* pDst, const void* pSrc, int n);
 void J3DAPI sound_Fill(void* pDst, int value, int n);
 int sound_Null(void); // Folded onto 0x004E74A0 (shared with other modules); never hook (see RTI/addresses.h)
 
-void Engine_InstallHooks(void);
 void Engine_ResetGlobals(void);
 
 J3D_EXTERN_C_END

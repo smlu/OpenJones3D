@@ -25,7 +25,6 @@ void J3DAPI sithVehicleControls_StartBoardCutscene(SithThing* pThing);
 void J3DAPI sithVehicleControls_EndBoardCutscene(SithThing* pThing);
 
 // Helper hooking functions
-void sithVehicleControls_InstallHooks(void);
 void sithVehicleControls_ResetGlobals(void);
 
 J3D_EXTERN_C_END

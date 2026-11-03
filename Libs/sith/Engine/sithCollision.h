@@ -47,7 +47,6 @@ float J3DAPI sithCollision_CheckFloorDistance(SithThing* pThing, const rdVector3
 int J3DAPI sithCollision_ActorPlayerSearchFilter(SithThing* pThing1, SithThing* pThing2);
 
 // Helper hooking functions
-void sithCollision_InstallHooks(void);
 void sithCollision_ResetGlobals(void);
 
 J3D_EXTERN_C_END

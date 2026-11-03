@@ -50,7 +50,6 @@ int J3DAPI sithAI_AIList(const SithConsoleCommand* pFunc, const char* pArg); //A
 int J3DAPI sithAI_AIStatus(const SithConsoleCommand* pFunc, const char* pArg); //Added: From debug version
 
 // Helper hooking functions
-void sithAI_InstallHooks(void);
 void sithAI_ResetGlobals(void);
 
 J3D_EXTERN_C_END

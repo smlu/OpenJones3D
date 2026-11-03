@@ -33,30 +33,6 @@ static rdVector2 rdClip_aWorkFaceTVerts[144]          = { 0 };
 static rdVector4 rdClip_aWorkFaceVertLight[144]       = { 0 };
 static rdVector4 rdClip_aWorkFaceVertIntensities[144] = { 0 };
 
-void rdClip_InstallHooks(void)
-{
-    J3D_HOOKFUNC(rdClip_Line2);
-    J3D_HOOKFUNC(rdClip_CalcOutcode2);
-    J3D_HOOKFUNC(rdClip_Line2Ex);
-    J3D_HOOKFUNC(rdClip_CalcOutcode2Ex);
-    J3D_HOOKFUNC(rdClip_ClipFacePVS);
-    J3D_HOOKFUNC(rdClip_Face3WPVS);
-    J3D_HOOKFUNC(rdClip_Face3W);
-    J3D_HOOKFUNC(rdClip_Face3WOrtho);
-    J3D_HOOKFUNC(rdClip_Face3S);
-    J3D_HOOKFUNC(rdClip_Face3SOrtho);
-    J3D_HOOKFUNC(rdClip_Face3GS);
-    J3D_HOOKFUNC(rdClip_Face3GSOrtho);
-    J3D_HOOKFUNC(rdClip_Face3GT);
-    J3D_HOOKFUNC(rdClip_Face3GTOrtho);
-    J3D_HOOKFUNC(rdClip_Face3T);
-    J3D_HOOKFUNC(rdClip_Face3TOrtho);
-    J3D_HOOKFUNC(rdClip_SphereInFrustrum);
-    J3D_HOOKFUNC(rdClip_QClipFaceW);
-    J3D_HOOKFUNC(rdClip_FaceToPlane);
-    J3D_HOOKFUNC(rdClip_VerticesToPlane);
-}
-
 void rdClip_ResetGlobals(void)
 {
     memset(&rdClip_g_faceStatus, 0, sizeof(rdClip_g_faceStatus));

@@ -64,7 +64,6 @@ int J3DAPI JonesMain_ShowDisplayOptions(tSysWindow hWnd, JonesState* pState); //
 size_t J3DAPI JonesMain_FindClosestVideoMode(const StdDisplayEnvironment* pList, const StdVideoMode* pVideoMode, size_t deviceNum);
 
 // Helper hooking functions
-void JonesMain_InstallHooks(void);
 void JonesMain_ResetGlobals(void);
 
 J3D_EXTERN_C_END

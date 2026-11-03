@@ -4,11 +4,6 @@
 #include <j3dcore/j3dhook.h>
 #include <std/RTI/symbols.h>
 
-void stdColor_InstallHooks(void)
-{
-    J3D_HOOKFUNC(stdColor_ColorConvertOneRow);
-}
-
 void stdColor_ResetGlobals(void)
 {}
 

@@ -129,7 +129,6 @@ int J3DAPI sithThing_CreateQuetzUserBlock(SithThing* pThing);
 void J3DAPI sithThing_UpdateQuetzUserBlock(SithThing* pThing);
 
 // Helper hooking functions
-void sithThing_InstallHooks(void);
 void sithThing_ResetGlobals(void);
 
 J3D_EXTERN_C_END

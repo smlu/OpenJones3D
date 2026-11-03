@@ -14,21 +14,6 @@
 #include <std/General/stdMemory.h>
 #include <std/General/stdUtil.h>
 
-
-void rdThing_InstallHooks(void)
-{
-    J3D_HOOKFUNC(rdThing_New);
-    J3D_HOOKFUNC(rdThing_NewEntry);
-    J3D_HOOKFUNC(rdThing_Free);
-    J3D_HOOKFUNC(rdThing_FreeEntry);
-    J3D_HOOKFUNC(rdThing_SetModel3);
-    J3D_HOOKFUNC(rdThing_SetSprite3);
-    J3D_HOOKFUNC(rdThing_SetPolyline);
-    J3D_HOOKFUNC(rdThing_SetParticleCloud);
-    J3D_HOOKFUNC(rdThing_Draw);
-    J3D_HOOKFUNC(rdThing_AccumulateMatrices);
-}
-
 void rdThing_ResetGlobals(void)
 {}
 

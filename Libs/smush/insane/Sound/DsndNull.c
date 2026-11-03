@@ -14,11 +14,6 @@
 static LecShare* dsnd_pShare = NULL;
 static void* dsnd_pParam     = NULL;
 
-void Dsnd_InstallHooks(void)
-{
-    // Added: No RTI hooks in the standalone Null build: nothing to hook.
-}
-
 void Dsnd_ResetGlobals(void)
 {
 }

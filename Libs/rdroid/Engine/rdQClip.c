@@ -20,13 +20,6 @@ static rdVector4* rdQClip_pSourceVertIntensity = NULL;
 static rdVector4* rdQClip_pDestVertIntensity   = NULL;
 static rdVector4 rdQClip_aWorkVertIntensities[RDQCLIP_MAXWORKVERTS];
 
-void rdQClip_InstallHooks(void)
-{
-
-    J3D_HOOKFUNC(rdQClip_VerticesInFrustrum);
-    J3D_HOOKFUNC(rdQClip_Face3W);
-}
-
 void rdQClip_ResetGlobals(void)
 {}
 

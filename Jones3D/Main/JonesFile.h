@@ -24,7 +24,6 @@ void J3DAPI JonesFile_SetCDPath(const char* pPath);
 const char* JonesFile_GetCDPath(void);
 
 // Helper hooking functions
-void JonesFile_InstallHooks(void);
 void JonesFile_ResetGlobals(void);
 
 J3D_EXTERN_C_END

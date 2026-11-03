@@ -19,16 +19,6 @@ int sithTime_g_bPaused;
 
 static uint32_t sithTime_msecPauseStartTime;
 
-void sithTime_InstallHooks(void)
-{
-    J3D_HOOKFUNC(sithTime_Advance);
-    J3D_HOOKFUNC(sithTime_Pause);
-    J3D_HOOKFUNC(sithTime_Resume);
-    J3D_HOOKFUNC(sithTime_Reset);
-    J3D_HOOKFUNC(sithTime_SetGameTime);
-    J3D_HOOKFUNC(sithTime_IsPaused);
-}
-
 void sithTime_ResetGlobals(void)
 {
     memset(&sithTime_g_frameTime, 0, sizeof(sithTime_g_frameTime));

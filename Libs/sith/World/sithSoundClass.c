@@ -174,35 +174,6 @@ SithSoundClass* J3DAPI sithSoundClass_CacheFind(const char* pName);
 void J3DAPI sithSoundClass_CacheAdd(SithSoundClass* pClass);
 void J3DAPI sithSoundClass_CacheRemove(const SithSoundClass* pClass);
 
-void sithSoundClass_InstallHooks(void)
-{
-    J3D_HOOKFUNC(sithSoundClass_Startup);
-    J3D_HOOKFUNC(sithSoundClass_Shutdown);
-    J3D_HOOKFUNC(sithSoundClass_ReadSoundClassesListText);
-    J3D_HOOKFUNC(sithSoundClass_WriteSoundClassesListBinary);
-    J3D_HOOKFUNC(sithSoundClass_ReadSoundClassesListBinary);
-    J3D_HOOKFUNC(sithSoundClass_Load);
-    J3D_HOOKFUNC(sithSoundClass_LoadEntry);
-    J3D_HOOKFUNC(sithSoundClass_AllocSoundClasses);
-    J3D_HOOKFUNC(sithSoundClass_FreeWorldSoundClasses);
-    J3D_HOOKFUNC(sithSoundClass_Free);
-    J3D_HOOKFUNC(sithSoundClass_PlayModeFirstEx);
-    J3D_HOOKFUNC(sithSoundClass_PlayModeFirst);
-    J3D_HOOKFUNC(sithSoundClass_PlayModeRandom);
-    J3D_HOOKFUNC(sithSoundClass_PlayVoiceModeRandom);
-    J3D_HOOKFUNC(sithSoundClass_PlayPlayerVoiceModeRandom);
-    J3D_HOOKFUNC(sithSoundClass_PlayMode);
-    J3D_HOOKFUNC(sithSoundClass_StopMode);
-    J3D_HOOKFUNC(sithSoundClass_SetModePitch);
-    J3D_HOOKFUNC(sithSoundClass_SetModeVolume);
-    J3D_HOOKFUNC(sithSoundClass_FadeModeVolume);
-    J3D_HOOKFUNC(sithSoundClass_IsModeFadingVol);
-    J3D_HOOKFUNC(sithSoundClass_PlayModeEntry);
-    J3D_HOOKFUNC(sithSoundClass_CacheFind);
-    J3D_HOOKFUNC(sithSoundClass_CacheAdd);
-    J3D_HOOKFUNC(sithSoundClass_CacheRemove);
-}
-
 void sithSoundClass_ResetGlobals(void)
 {}
 

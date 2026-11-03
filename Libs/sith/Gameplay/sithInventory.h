@@ -87,7 +87,6 @@ void J3DAPI sithInventory_BroadcastKilledMessage(const SithThing* pSender, const
 void J3DAPI sithInventory_SetSwimmingInventory(SithThing* pThing, int bItemsAvailable);
 
 // Helper hooking functions
-void sithInventory_InstallHooks(void);
 void sithInventory_ResetGlobals(void);
 
 J3D_EXTERN_C_END

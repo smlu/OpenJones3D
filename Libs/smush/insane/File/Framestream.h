@@ -88,7 +88,6 @@ int J3DAPI framestream_Mode(FrameStream* pFrames, int op);
 void J3DAPI framestream_Copy(void* pDst, const void* pSrc, int size);
 void J3DAPI framestream_CopyB(void* pDst, uint8_t value, int size);
 
-void Framestream_InstallHooks(void);
 void Framestream_ResetGlobals(void);
 
 J3D_EXTERN_C_END

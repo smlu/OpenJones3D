@@ -295,59 +295,6 @@ void J3DAPI sithPhysics_GetJeepChassisNormal(SithThing* pThing, SithJeepState* p
 void J3DAPI sithPhysics_ResetJeepWheels(SithThing* pThing, SithJeepState* pState); // Inits the jeep dimensions
 void J3DAPI sithPhysics_UpdateJeepFx(SithThing* pThing, SithVehicleEngineFxState* pFxState, float secDeltaTime);
 
-void sithPhysics_InstallHooks(void)
-{
-    // Uncomment only lines for functions that have full definition and doesn't call original function (non-thunk functions)
-
-    J3D_HOOKFUNC(sithPhysics_FindFloor);
-    J3D_HOOKFUNC(sithPhysics_FindWaterSurface);
-    J3D_HOOKFUNC(sithPhysics_UpdateThing);
-    J3D_HOOKFUNC(sithPhysics_ApplyForce);
-    J3D_HOOKFUNC(sithPhysics_SetThingLook);
-    J3D_HOOKFUNC(sithPhysics_ApplyDrag);
-    J3D_HOOKFUNC(sithPhysics_ParseArg);
-    J3D_HOOKFUNC(sithPhysics_ResetThingMovement);
-    J3D_HOOKFUNC(sithPhysics_GetThingHeight);
-    J3D_HOOKFUNC(sithPhysics_UpdateDetachedThingPhysics);
-    J3D_HOOKFUNC(sithPhysics_UpdateDetachedPlayerPhysics);
-    J3D_HOOKFUNC(sithPhysics_UpdateUnderwaterThingPhysics);
-    J3D_HOOKFUNC(sithPhysics_UpdateClimbingThingPhysics);
-    J3D_HOOKFUNC(sithPhysics_UpdateAttachedThingPhysics);
-    J3D_HOOKFUNC(sithPhysics_CreateMineCarUserBlock);
-    J3D_HOOKFUNC(sithPhysics_InitMineCarFxState);
-    J3D_HOOKFUNC(sithPhysics_InitVehicleFxState);
-    J3D_HOOKFUNC(sithPhysics_InitMineCarChassisDefault);
-    J3D_HOOKFUNC(sithPhysics_InitMineCarChassis);
-    J3D_HOOKFUNC(sithPhysics_InitTrackTruckChassis);
-    J3D_HOOKFUNC(sithPhysics_InitTrackJeepChassis);
-    J3D_HOOKFUNC(sithPhysics_InitMineCarExhaust);
-    J3D_HOOKFUNC(sithPhysics_InitJeepExhaust);
-    J3D_HOOKFUNC(sithPhysics_InitTrackTruckExhaust);
-    J3D_HOOKFUNC(sithPhysics_InitMineCarState);
-    J3D_HOOKFUNC(sithPhysics_InitTrackTruckState);
-    J3D_HOOKFUNC(sithPhysics_UpdateMineCarPhysics);
-    J3D_HOOKFUNC(sithPhysics_UpdateTrackVehicleFx);
-    J3D_HOOKFUNC(sithPhysics_UpdateMineCarFx);
-    J3D_HOOKFUNC(sithPhysics_UpdateTrackJeepFx);
-    J3D_HOOKFUNC(sithPhysics_UpdateTrackTruckFx);
-    J3D_HOOKFUNC(sithPhysics_UpdateMineCarChassis);
-    J3D_HOOKFUNC(sithPhysics_UpdateExhaustFx);
-    J3D_HOOKFUNC(sithPhysics_UpdateRaftPhysics);
-    J3D_HOOKFUNC(sithPhysics_CheckWaterSurfaceAtPos);
-    J3D_HOOKFUNC(sithPhysics_ApplyWaterThrust);
-    J3D_HOOKFUNC(sithPhysics_ProcessMineCarTrackMove);
-    J3D_HOOKFUNC(sithPhysics_ProcessTrackFace);
-    J3D_HOOKFUNC(sithPhysics_CheckForPointOnTrack);
-    J3D_HOOKFUNC(sithPhysics_MoveToTrackFaceFront);
-    J3D_HOOKFUNC(sithPhysics_UpdateJeepPhysics);
-    J3D_HOOKFUNC(sithPhysics_UpdateJeepWheels);
-    J3D_HOOKFUNC(sithPhysics_UpdateJeepWheelContact);
-    J3D_HOOKFUNC(sithPhysics_GetJeepChassisNormal);
-    J3D_HOOKFUNC(sithPhysics_CreateJeepUserBlock);
-    J3D_HOOKFUNC(sithPhysics_ResetJeepWheels);
-    J3D_HOOKFUNC(sithPhysics_UpdateJeepFx);
-}
-
 void sithPhysics_ResetGlobals(void)
 {
 }

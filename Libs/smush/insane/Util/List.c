@@ -52,14 +52,5 @@ void J3DAPI LecList_Remove(LecNode* pNode)
     }
 }
 
-void List_InstallHooks(void)
-{
-    // Uncomment only lines for functions that have full definition and doesn't call original function (non-thunk functions)
-
-    J3D_HOOKFUNC(LecList_Init);
-    J3D_HOOKFUNC(LecList_Insert);
-    J3D_HOOKFUNC(LecList_Remove);
-}
-
 void List_ResetGlobals(void)
 {}

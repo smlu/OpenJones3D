@@ -17,52 +17,6 @@
 
 #include <math.h>
 
-void sithCogExec_InstallHooks(void)
-{
-    J3D_HOOKFUNC(sithCogExec_Execute);
-    J3D_HOOKFUNC(sithCogExec_ExecuteMessage);
-    J3D_HOOKFUNC(sithCogExec_PopSymbol);
-    J3D_HOOKFUNC(sithCogExec_PopFlex);
-    J3D_HOOKFUNC(sithCogExec_PopInt);
-    J3D_HOOKFUNC(sithCogExec_PopArray);
-    J3D_HOOKFUNC(sithCogExec_PopVector);
-    J3D_HOOKFUNC(sithCogExec_PopCog);
-    J3D_HOOKFUNC(sithCogExec_PopThing);
-    J3D_HOOKFUNC(sithCogExec_TryPopThing);
-    J3D_HOOKFUNC(sithCogExec_PopTemplate);
-    J3D_HOOKFUNC(sithCogExec_PopSound);
-    J3D_HOOKFUNC(sithCogExec_PopSector);
-    J3D_HOOKFUNC(sithCogExec_PopSurface);
-    J3D_HOOKFUNC(sithCogExec_PopMaterial);
-    J3D_HOOKFUNC(sithCogExec_PopModel3);
-    J3D_HOOKFUNC(sithCogExec_PopKeyframe);
-    J3D_HOOKFUNC(sithCogExec_PopAIClass);
-    J3D_HOOKFUNC(sithCogExec_PopString);
-    J3D_HOOKFUNC(sithCogExec_PushStack);
-    J3D_HOOKFUNC(sithCogExec_PushInt);
-    J3D_HOOKFUNC(sithCogExec_PushFlex);
-    J3D_HOOKFUNC(sithCogExec_PushVector);
-    J3D_HOOKFUNC(sithCogExec_GetOpCode);
-    J3D_HOOKFUNC(sithCogExec_ResetStack);
-    J3D_HOOKFUNC(sithCogExec_PushCallstack);
-    J3D_HOOKFUNC(sithCogExec_PopCallstack);
-    J3D_HOOKFUNC(sithCogExec_PopStack);
-    J3D_HOOKFUNC(sithCogExec_FunctionCallOp);
-    J3D_HOOKFUNC(sithCogExec_RetOp);
-    J3D_HOOKFUNC(sithCogExec_PushNumberOp);
-    J3D_HOOKFUNC(sithCogExec_PushVectorOp);
-    J3D_HOOKFUNC(sithCogExec_CallOp);
-    J3D_HOOKFUNC(sithCogExec_JmpnzOp);
-    J3D_HOOKFUNC(sithCogExec_JmpzOp);
-    J3D_HOOKFUNC(sithCogExec_JmpOp);
-    J3D_HOOKFUNC(sithCogExec_ArrayOp);
-    J3D_HOOKFUNC(sithCogExec_NegFalseOps);
-    J3D_HOOKFUNC(sithCogExec_AssignOp);
-    J3D_HOOKFUNC(sithCogExec_IntererOps);
-    J3D_HOOKFUNC(sithCogExec_FloatOps);
-    J3D_HOOKFUNC(sithCogExec_GetSymbolValue);
-}
-
 void sithCogExec_ResetGlobals(void)
 {}
 

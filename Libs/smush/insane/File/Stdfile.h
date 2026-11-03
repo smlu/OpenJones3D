@@ -48,7 +48,6 @@ int J3DAPI stdfile_printf(int fh, const char* pFormat, ...);
 int J3DAPI stdfile_getc(int fh);
 int J3DAPI stdfile_putc(int fh, int c);
 
-void Stdfile_InstallHooks(void);
 void Stdfile_ResetGlobals(void);
 
 J3D_EXTERN_C_END

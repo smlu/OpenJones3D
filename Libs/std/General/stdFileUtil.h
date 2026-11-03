@@ -17,7 +17,6 @@ int J3DAPI stdFileUtil_RmDir(const char* pDir); // Added
 int J3DAPI stdFileUtil_DelFile(const char* pFilename); // Added
 
 // Helper hooking functions
-void stdFileUtil_InstallHooks(void);
 void stdFileUtil_ResetGlobals(void);
 
 J3D_EXTERN_C_END

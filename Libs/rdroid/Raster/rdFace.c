@@ -5,12 +5,6 @@
 #include <rdroid/RTI/symbols.h>
 #include <std/General/stdMemory.h>
 
-void rdFace_InstallHooks(void)
-{
-    J3D_HOOKFUNC(rdFace_NewEntry);
-    J3D_HOOKFUNC(rdFace_FreeEntry);
-}
-
 void rdFace_ResetGlobals(void)
 {}
 

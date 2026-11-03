@@ -11,20 +11,6 @@ static bool wuRegistry_bStarted = false;
 static LPCSTR appSubKey = NULL;
 static HKEY appRootKey  = NULL;
 
-void wuRegistry_InstallHooks(void)
-{
-    J3D_HOOKFUNC(wuRegistry_Startup);
-    J3D_HOOKFUNC(wuRegistry_Shutdown);
-    J3D_HOOKFUNC(wuRegistry_SaveInt);
-    J3D_HOOKFUNC(wuRegistry_SaveFloat);
-    J3D_HOOKFUNC(wuRegistry_GetInt);
-    J3D_HOOKFUNC(wuRegistry_GetFloat);
-    J3D_HOOKFUNC(wuRegistry_SaveBool);
-    J3D_HOOKFUNC(wuRegistry_GetBool);
-    J3D_HOOKFUNC(wuRegistry_SaveStr);
-    J3D_HOOKFUNC(wuRegistry_GetStr);
-}
-
 void wuRegistry_ResetGlobals(void)
 {
     //memset(&wuRegistry_g_bStarted, 0, sizeof(wuRegistry_g_bStarted));

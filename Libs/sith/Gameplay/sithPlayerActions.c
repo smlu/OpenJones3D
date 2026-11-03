@@ -47,54 +47,6 @@ static const float sithPlayerActions_raftActivateSearchRadius = 0.07f;
 float J3DAPI sithPlayerActions_GetLedgeSurfaceGrabPosZ(const SithSurface* pLedgeSurf); // Added
 float J3DAPI sithPlayerActions_GetLedgeThingGrabPosZ(const SithThing* pThing, const rdFace* pFace, const rdModel3Mesh* pMesh);
 
-void sithPlayerActions_InstallHooks(void)
-{
-    // Uncomment only lines for functions that have full definition and doesn't call original function (non-thunk functions)
-
-    J3D_HOOKFUNC(sithPlayerActions_Activate);
-    J3D_HOOKFUNC(sithPlayerActions_Jump);
-    J3D_HOOKFUNC(sithPlayerActions_MoveToPlayerPosition);
-    J3D_HOOKFUNC(sithPlayerActions_PushItem);
-    J3D_HOOKFUNC(sithPlayerActions_PullItem);
-    J3D_HOOKFUNC(sithPlayerActions_ClimbPullUp);
-    J3D_HOOKFUNC(sithPlayerActions_ClimbMove);
-    J3D_HOOKFUNC(sithPlayerActions_UnmountWall);
-    J3D_HOOKFUNC(sithPlayerActions_ClimbOn1m);
-    J3D_HOOKFUNC(sithPlayerActions_ClimbOn2m);
-    J3D_HOOKFUNC(sithPlayerActions_LeapForward);
-    J3D_HOOKFUNC(sithPlayerActions_JumpForward);
-    J3D_HOOKFUNC(sithPlayerActions_HopLeft);
-    J3D_HOOKFUNC(sithPlayerActions_HopRight);
-    J3D_HOOKFUNC(sithPlayerActions_JumpRollBack);
-    J3D_HOOKFUNC(sithPlayerActions_JumpRollForward);
-    J3D_HOOKFUNC(sithPlayerActions_StrafeLeft);
-    J3D_HOOKFUNC(sithPlayerActions_StrafeRight);
-    J3D_HOOKFUNC(sithPlayerActions_HopBack);
-    J3D_HOOKFUNC(sithPlayerActions_Stand2Crawl);
-    J3D_HOOKFUNC(sithPlayerActions_Crawl2Stand);
-    J3D_HOOKFUNC(sithPlayerActions_JumpStart);
-    J3D_HOOKFUNC(sithPlayerActions_HasActiveWeapon);
-    J3D_HOOKFUNC(sithPlayerActions_ClimbDownToClimb);
-    J3D_HOOKFUNC(sithPlayerActions_ClimbDownToHang);
-    J3D_HOOKFUNC(sithPlayerActions_CheckFloorAtPos);
-    J3D_HOOKFUNC(sithPlayerActions_FindLedge);
-    J3D_HOOKFUNC(sithPlayerActions_CanClimbOn1m);
-    J3D_HOOKFUNC(sithPlayerActions_CanClimbOn2m);
-    J3D_HOOKFUNC(sithPlayerActions_CheckClimbDownWall);
-    J3D_HOOKFUNC(sithPlayerActions_GrabLedge);
-    J3D_HOOKFUNC(sithPlayerActions_FindAndAttachToClimbWall);
-    J3D_HOOKFUNC(sithPlayerActions_CanPullUp);
-    J3D_HOOKFUNC(sithPlayerActions_GetLedgeThingGrabPosZ);
-    J3D_HOOKFUNC(sithPlayerActions_StartInvisibility);
-    J3D_HOOKFUNC(sithPlayerActions_EndInvisibility);
-    J3D_HOOKFUNC(sithPlayerActions_IsInvisible);
-    J3D_HOOKFUNC(sithPlayerActions_StartJewelFlying);
-    J3D_HOOKFUNC(sithPlayerActions_EnableJewelFlying);
-    J3D_HOOKFUNC(sithPlayerActions_DisableJewelFlying);
-    J3D_HOOKFUNC(sithPlayerActions_CenterOnClimbSurface);
-    J3D_HOOKFUNC(sithPlayerActions_MoveToCrawlPosition);
-}
-
 void sithPlayerActions_ResetGlobals(void)
 {
     int sithPlayerActions_g_jewelFlyingPuppetTrackNum_tmp = -1;

@@ -203,14 +203,19 @@ TEST(stdStrTable, TestLoadCleansEveryAllocationFailure)
 
         if ( allocation <= 2 )
         {
+            char aExpected[128];
+            char aCaptured[256];
             const char* pExpectedAssert = allocation == 0
                 ? "pStrTable->pData != NULL"
                 : "pStrTable->pHashtbl != NULL";
             const char* pExpectedLog = allocation == 0
-                ? "stdStrTable.c(84): Out of memory--cannot load string table"
-                : "stdStrTable.c(96): Out of memory--cannot load string table";
+                ? "stdStrTable.c(74): Out of memory--cannot load string table"
+                : "stdStrTable.c(86): Out of memory--cannot load string table";
 
-            TEST_ASSERT_EQUAL_STRING(pExpectedLog, StdGeneralTest_GetDebugOutput());
+            TEST_ASSERT_EQUAL_STRING(
+                StdGeneralTest_NormLogLineNumbers(pExpectedLog, aExpected, sizeof(aExpected)),
+                StdGeneralTest_NormLogLineNumbers(StdGeneralTest_GetDebugOutput(), aCaptured, sizeof(aCaptured))
+            );
             StdGeneralTest_AssertLastAssert(pExpectedAssert, "stdStrTable.c");
         }
 

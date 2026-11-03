@@ -6,12 +6,6 @@
 
 #include <string.h>
 
-void Bloc16Asm_InstallHooks(void)
-{
-    J3D_HOOKFUNC(dbloc16_Interpolate);
-    J3D_HOOKFUNC(dbloc16_Codec2);
-}
-
 void Bloc16Asm_ResetGlobals(void)
 {}
 

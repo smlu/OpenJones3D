@@ -90,7 +90,6 @@ void J3DAPI sithPlayer_IMPStartFiring(int fireType);
 void J3DAPI sithPlayer_IMPEndFiring(int fireType);
 
 // Helper hooking functions
-void sithPlayer_InstallHooks(void);
 void sithPlayer_ResetGlobals(void);
 
 J3D_EXTERN_C_END

@@ -63,11 +63,6 @@ void timer_SysStopThread(void)
     CloseHandle(timer_hEvent);
 }
 
-void timer_SysInstallHooks(void)
-{
-    J3D_HOOKFUNC(timer_Thread);
-}
-
 void timer_SysResetGlobals(void)
 {
     timer_hThread = NULL;

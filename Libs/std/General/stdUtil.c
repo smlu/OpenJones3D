@@ -11,19 +11,6 @@
 #include <ctype.h>
 #include <stdint.h>
 
-void stdUtil_InstallHooks(void)
-{
-    J3D_HOOKFUNC(stdUtil_Format);
-    J3D_HOOKFUNC(stdUtil_StringSplit);
-    J3D_HOOKFUNC(stdUtil_ParseLiteral);
-    J3D_HOOKFUNC(stdUtil_ToWStringEx);
-    J3D_HOOKFUNC(stdUtil_ToAStringEx);
-    J3D_HOOKFUNC(stdUtil_ToWString);
-    J3D_HOOKFUNC(stdUtil_ToAString);
-    J3D_HOOKFUNC(stdUtil_ToLower);
-    J3D_HOOKFUNC(stdUtil_StrCmp);
-}
-
 void stdUtil_ResetGlobals(void)
 {}
 

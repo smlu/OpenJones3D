@@ -30,18 +30,6 @@ static uint8_t decode_value;
 static uint8_t* decode_pSrc;
 static int decode_flip;
 
-void Decode_InstallHooks(void)
-{
-    J3D_HOOKFUNC(decode_Rle);
-    J3D_HOOKFUNC(decode_RleInit);
-    J3D_HOOKFUNC(decode_RleByte);
-    J3D_HOOKFUNC(decode_Run);
-    J3D_HOOKFUNC(decode_MakeTable);
-    J3D_HOOKFUNC(decode_Convert);
-    J3D_HOOKFUNC(decode_ToRGBA);
-    J3D_HOOKFUNC(decode_Begin);
-}
-
 void Decode_ResetGlobals(void)
 {}
 

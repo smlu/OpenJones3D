@@ -666,47 +666,6 @@ void J3DAPI sithCogFunctionPlayer_GetLastWeapon(SithCog* pCog)
     sithCogExec_PushInt(pCog, weaponID);
 }
 
-void sithCogFunctionPlayer_InstallHooks(void)
-{
-    J3D_HOOKFUNC(sithCogFunctionPlayer_RegisterFunctions);
-    J3D_HOOKFUNC(sithCogFunctionPlayer_IMPStartFiring);
-    J3D_HOOKFUNC(sithCogFunctionPlayer_IMPEndFiring);
-    J3D_HOOKFUNC(sithCogFunctionPlayer_SetPlayerInPor);
-    J3D_HOOKFUNC(sithCogFunctionPlayer_JewelFlyingStatus);
-    J3D_HOOKFUNC(sithCogFunctionPlayer_StartJewelFlying);
-    J3D_HOOKFUNC(sithCogFunctionPlayer_MakeMeStop);
-    J3D_HOOKFUNC(sithCogFunctionPlayer_SetInvActivated);
-    J3D_HOOKFUNC(sithCogFunctionPlayer_SetInvAvailable);
-    J3D_HOOKFUNC(sithCogFunctionPlayer_SetInvDisabled);
-    J3D_HOOKFUNC(sithCogFunctionPlayer_IsInvActivated);
-    J3D_HOOKFUNC(sithCogFunctionPlayer_IsInvAvailable);
-    J3D_HOOKFUNC(sithCogFunctionPlayer_SetGoalFlags);
-    J3D_HOOKFUNC(sithCogFunctionPlayer_ClearGoalFlags);
-    J3D_HOOKFUNC(sithCogFunctionPlayer_GetNumPlayers);
-    J3D_HOOKFUNC(sithCogFunctionPlayer_GetMaxPlayers);
-    J3D_HOOKFUNC(sithCogFunctionPlayer_GetAbsoluteMaxPlayers);
-    J3D_HOOKFUNC(sithCogFunctionPlayer_GetLocalPlayerThing);
-    J3D_HOOKFUNC(sithCogFunctionPlayer_GetPlayerThing);
-    J3D_HOOKFUNC(sithCogFunctionPlayer_GetPlayerNum);
-    J3D_HOOKFUNC(sithCogFunctionPlayer_PickupBackpack);
-    J3D_HOOKFUNC(sithCogFunctionPlayer_NthBackpackBin);
-    J3D_HOOKFUNC(sithCogFunctionPlayer_NthBackpackValue);
-    J3D_HOOKFUNC(sithCogFunctionPlayer_GetNumBackbackItems);
-    J3D_HOOKFUNC(sithCogFunctionPlayer_CreateBackpack);
-    J3D_HOOKFUNC(sithCogFunctionPlayer_GetRespawnMask);
-    J3D_HOOKFUNC(sithCogFunctionPlayer_SetRespawnMask);
-    J3D_HOOKFUNC(sithCogFunctionPlayer_SyncScores);
-    J3D_HOOKFUNC(sithCogFunctionPlayer_GetCurItem);
-    J3D_HOOKFUNC(sithCogFunctionPlayer_IsAming);
-    J3D_HOOKFUNC(sithCogFunctionPlayer_SetSwimmingInventory);
-    J3D_HOOKFUNC(sithCogFunctionPlayer_IsInvisible);
-    J3D_HOOKFUNC(sithCogFunctionPlayer_ResetInventory);
-    J3D_HOOKFUNC(sithCogFunctionPlayer_IsItemFound);
-    J3D_HOOKFUNC(sithCogFunctionPlayer_SetElectricWhip);
-    J3D_HOOKFUNC(sithCogFunctionPlayer_GetCutsceneMode);
-    J3D_HOOKFUNC(sithCogFunctionPlayer_GetLastWeapon);
-}
-
 void sithCogFunctionPlayer_ResetGlobals(void)
 {}
 

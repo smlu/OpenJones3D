@@ -18,13 +18,6 @@
 
 rdMatrix34 rdSprite_aView;
 
-void rdSprite_InstallHooks(void)
-{
-    J3D_HOOKFUNC(rdSprite_NewEntry);
-    J3D_HOOKFUNC(rdSprite_FreeEntry);
-    J3D_HOOKFUNC(rdSprite_Draw);
-}
-
 void rdSprite_ResetGlobals(void)
 {}
 

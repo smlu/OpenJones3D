@@ -25,7 +25,6 @@ WKERNELSTARTUPPROC J3DAPI wkernel_SetStartupCallback(WKERNELSTARTUPPROC pfOnStar
 WKERNELSHUTDOWNPROC J3DAPI wkernel_SetShutdownCallback(WKERNELSHUTDOWNPROC pfOnShutdown);
 
 // Helper hooking functions
-void wkernel_InstallHooks(void);
 void wkernel_ResetGlobals(void);
 
 J3D_EXTERN_C_END

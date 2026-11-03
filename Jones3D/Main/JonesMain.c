@@ -158,56 +158,6 @@ void J3DAPI JonesMain_LoadSettings(StdDisplayEnvironment* pDisplayEnv, JonesStat
 
 bool J3DAPI JonesMain_CurDisplaySupportsBPP(const JonesDisplaySettings* pSettings, size_t bpp); // Altered: declared in JonesDevDialogWin32.c for the dev dialog functions that call it from the platform layer
 
-
-void JonesMain_InstallHooks(void)
-{
-    J3D_HOOKFUNC(JonesMain_Startup);
-    JonesMainSys_InstallHooks(); // Altered: the hooks of the Win32 message and dev dialog functions moved behind the platform layer
-    J3D_HOOKFUNC(JonesMain_PrintQuickSave);
-    J3D_HOOKFUNC(JonesMain_OnAppActivate);
-    J3D_HOOKFUNC(JonesMain_Shutdown);
-    J3D_HOOKFUNC(JonesMain_PauseGame);
-    J3D_HOOKFUNC(JonesMain_ResumeGame);
-    J3D_HOOKFUNC(JonesMain_IsGamePaused);
-    J3D_HOOKFUNC(JonesMain_Process);
-    J3D_HOOKFUNC(JonesMain_ProcessWindowEvents);
-    J3D_HOOKFUNC(JonesMain_ProcessGame);
-    J3D_HOOKFUNC(JonesMain_ProcessMenu);
-    J3D_HOOKFUNC(JonesMain_PrintFramerate);
-    J3D_HOOKFUNC(JonesMain_TogglePrintFramerate);
-    J3D_HOOKFUNC(JonesMain_Open);
-    J3D_HOOKFUNC(JonesMain_EnsureLevelFile);
-    J3D_HOOKFUNC(JonesMain_Close);
-    J3D_HOOKFUNC(JonesMain_Restore);
-    J3D_HOOKFUNC(JonesMain_ProcessGamesaveState);
-    J3D_HOOKFUNC(JonesMain_UpdateLevelNum);
-    J3D_HOOKFUNC(JonesMain_ProcessStartGame);
-    J3D_HOOKFUNC(JonesMain_SetBonusLevel);
-    J3D_HOOKFUNC(JonesMain_ShowEndCredits);
-    J3D_HOOKFUNC(JonesMain_ProcessCredits);
-    J3D_HOOKFUNC(JonesMain_HasStarted);
-    J3D_HOOKFUNC(JonesMain_GetDisplayEnvironment);
-    J3D_HOOKFUNC(JonesMain_GetDisplaySettings);
-    J3D_HOOKFUNC(JonesMain_CloseWindow);
-    J3D_HOOKFUNC(JonesMain_FilePrintf);
-    J3D_HOOKFUNC(JonesMain_LogError);
-    J3D_HOOKFUNC(JonesMain_RefreshDisplayDevice);
-    J3D_HOOKFUNC(JonesMain_PlayIntroMovie);
-    J3D_HOOKFUNC(JonesMain_IntroMovieBlt565);
-    J3D_HOOKFUNC(JonesMain_IntroMovieBlt555);
-    J3D_HOOKFUNC(JonesMain_IntroMovieBlt32);
-    J3D_HOOKFUNC(JonesMain_Assert);
-    J3D_HOOKFUNC(JonesMain_BindToggleMenuControlKeys);
-    J3D_HOOKFUNC(JonesMain_InitializeHUD);
-    J3D_HOOKFUNC(JonesMain_SaveHUD);
-    J3D_HOOKFUNC(JonesMain_RestoreHUD);
-    J3D_HOOKFUNC(JonesMain_GetCurrentLevelNum);
-    J3D_HOOKFUNC(JonesMain_LogErrorToFile);
-    J3D_HOOKFUNC(JonesMain_LoadSettings);
-    J3D_HOOKFUNC(JonesMain_FindClosestVideoMode);
-    J3D_HOOKFUNC(JonesMain_CurDisplaySupportsBPP);
-}
-
 void JonesMain_ResetGlobals(void)
 {
     char JonesMain_g_aErrorBuffer_tmp[1024] = "Unknown error";

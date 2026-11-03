@@ -96,7 +96,6 @@ SithCogSymbolValue* J3DAPI sithCogExec_GetSymbolValue(SithCogSymbolValue* pDest,
 SithCogSymbolValue* J3DAPI sithCogExec_GetPointerValue(SithCogSymbolValue* pDest, SithCog* pCog, SithCogSymbolValue* pValue); // Added
 
 // Helper hooking functions
-void sithCogExec_InstallHooks(void);
 void sithCogExec_ResetGlobals(void);
 
 J3D_EXTERN_C_END

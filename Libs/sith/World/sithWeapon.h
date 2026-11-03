@@ -93,7 +93,6 @@ SithThing* J3DAPI sithWeapon_WeaponFireProjectile(SithThing* pShooter, const Sit
 int J3DAPI sithWeapon_ActivateWhip(SithThing* pThing, SithCog* pCog);
 
 // Helper hooking functions
-void sithWeapon_InstallHooks(void);
 void sithWeapon_ResetGlobals(void);
 
 J3D_EXTERN_C_END

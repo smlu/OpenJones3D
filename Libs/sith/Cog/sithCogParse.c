@@ -36,39 +36,6 @@ static SithCogSyntaxNode* pSyntaxTree;
 
 static SithCogSymbolTable* pCurrentSymbols;
 
-void sithCogParse_InstallHooks(void)
-{
-    J3D_HOOKFUNC(sithCogParse_FreeParseTree);
-    J3D_HOOKFUNC(sithCogParse_Load);
-    J3D_HOOKFUNC(sithCogParse_ParseSectionCode);
-    J3D_HOOKFUNC(sithCogParse_DuplicateSymbolTable);
-    J3D_HOOKFUNC(sithCogParse_AllocSymbolTable);
-    J3D_HOOKFUNC(sithCogParse_FreeSymbolTable);
-    J3D_HOOKFUNC(sithCogParse_AddSymbol);
-    J3D_HOOKFUNC(sithCogParse_SetSymbolValue);
-    J3D_HOOKFUNC(sithCogParse_GetSymbol);
-    J3D_HOOKFUNC(sithCogParse_GetSymbolByID);
-    J3D_HOOKFUNC(sithCogParse_GetSymbolLabel);
-    J3D_HOOKFUNC(sithCogParse_MakeLeafNode);
-    J3D_HOOKFUNC(sithCogParse_MakeVectorLeafNode);
-    J3D_HOOKFUNC(sithCogParse_MakeNode);
-    J3D_HOOKFUNC(sithCogParse_LexerSetSymbol);
-    J3D_HOOKFUNC(sithCogParse_LexerSetString);
-    J3D_HOOKFUNC(sithCogParse_LexerSetVector);
-    J3D_HOOKFUNC(sithCogParse_GetNextLabel);
-    J3D_HOOKFUNC(sithCogParse_GetNextNode);
-    J3D_HOOKFUNC(sithCogParse_ResetTreeNodes);
-    J3D_HOOKFUNC(sithCogParse_GenerateLabelTable);
-    J3D_HOOKFUNC(sithCogParse_GenerateCode);
-    J3D_HOOKFUNC(sithCogParse_ParseSymbols);
-    J3D_HOOKFUNC(sithCogParse_ParseSymbolRef);
-    J3D_HOOKFUNC(sithCogParse_ParseFlex);
-    J3D_HOOKFUNC(sithCogParse_ParseInt);
-    J3D_HOOKFUNC(sithCogParse_ParseVector);
-    J3D_HOOKFUNC(sithCogParse_ParseMessage);
-    J3D_HOOKFUNC(sithCogParse_ResolveMessageHandlers);
-}
-
 void sithCogParse_ResetGlobals(void)
 {}
 

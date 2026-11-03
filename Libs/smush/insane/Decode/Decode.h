@@ -22,7 +22,6 @@ int J3DAPI decode_Convert(uint8_t* pSrc, LecBitmapHeader* pSrcBitmap, int n, voi
 int J3DAPI decode_ToRGBA(uint8_t* pSrc, LecBitmapHeader* pBitmap, int n, void* pPalette, uint8_t* pDst);
 int J3DAPI decode_Begin(uint8_t* pDst, LecBitmapHeader* pBitmap, int n, void* pPalette, uint8_t* pSrc);
 
-void Decode_InstallHooks(void);
 void Decode_ResetGlobals(void);
 
 J3D_EXTERN_C_END

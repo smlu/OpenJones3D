@@ -23,17 +23,6 @@
 
 static bool sithExplosion_bExpandFadeSet = false;
 
-void sithExplosion_InstallHooks(void)
-{
-    J3D_HOOKFUNC(sithExplosion_Initialize);
-    J3D_HOOKFUNC(sithExplosion_CreateSpriteThing);
-    J3D_HOOKFUNC(sithExplosion_UpdateExpandFade);
-    J3D_HOOKFUNC(sithExplosion_Lerp);
-    J3D_HOOKFUNC(sithExplosion_Update);
-    J3D_HOOKFUNC(sithExplosion_MakeBlast);
-    J3D_HOOKFUNC(sithExplosion_ParseArg);
-}
-
 void sithExplosion_ResetGlobals(void)
 {}
 

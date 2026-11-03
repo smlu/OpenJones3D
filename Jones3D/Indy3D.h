@@ -10,7 +10,6 @@
 J3D_EXTERN_C_START
 
 // Helper hooking functions
-void Indy3D_InstallHooks(void);
 void Indy3D_ResetGlobals(void);
 
 J3D_EXTERN_C_END

@@ -15,14 +15,6 @@
 
 static bool JonesControl_bStartup = false; // Added: Init to false
 
-void JonesControl_InstallHooks(void)
-{
-    J3D_HOOKFUNC(JonesControl_Startup);
-    J3D_HOOKFUNC(JonesControl_Shutdown);
-    J3D_HOOKFUNC(JonesControl_ProcessControls);
-    J3D_HOOKFUNC(JonesControl_EnableJoystickAxes);
-}
-
 void JonesControl_ResetGlobals(void)
 {}
 

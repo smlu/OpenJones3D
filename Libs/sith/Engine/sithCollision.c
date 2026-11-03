@@ -56,37 +56,6 @@ int J3DAPI sithCollision_CanThingCollideWithThing(const SithThing* pThing1, cons
 int J3DAPI sithCollision_sub_4DB3CA(SithThing* pThing1, SithThing* pThing2);
 int J3DAPI sithCollision_CanCrossAdjoin(SithSurfaceAdjoinFlag adjflags, int colflags);
 
-void sithCollision_InstallHooks(void)
-{
-    J3D_HOOKFUNC(sithCollision_Startup);
-    J3D_HOOKFUNC(sithCollision_Shutdown);
-    J3D_HOOKFUNC(sithCollision_AddCollisionHandler);
-    J3D_HOOKFUNC(sithCollision_AddSurfaceCollisionHandler);
-    J3D_HOOKFUNC(sithCollision_PopStack);
-    J3D_HOOKFUNC(sithCollision_FindSectorInRadius);
-    J3D_HOOKFUNC(sithCollision_FindSectorAtThing);
-    J3D_HOOKFUNC(sithCollision_FindWaterSector);
-    J3D_HOOKFUNC(sithCollision_CheckLOS);
-    J3D_HOOKFUNC(sithCollision_CheckThingLOS);
-    J3D_HOOKFUNC(sithCollision_RotateThing);
-    J3D_HOOKFUNC(sithCollision_ApplyThingOrient);
-    J3D_HOOKFUNC(sithCollision_MoveThing);
-    J3D_HOOKFUNC(sithCollision_SearchForCollisions);
-    J3D_HOOKFUNC(sithCollision_DecreaseStackLevel);
-    J3D_HOOKFUNC(sithCollision_SearchForThingCollisions);
-    J3D_HOOKFUNC(sithCollision_SearchForSurfaceCollisions);
-    J3D_HOOKFUNC(sithCollision_HandleThingHitSurface);
-    J3D_HOOKFUNC(sithCollision_ThingCollisionHandler);
-    J3D_HOOKFUNC(sithCollision_VehicleCollisionHandler);
-    J3D_HOOKFUNC(sithCollision_DeflectThingOffSurface);
-    J3D_HOOKFUNC(sithCollision_FindItemThing);
-    J3D_HOOKFUNC(sithCollision_PushThingCollision);
-    J3D_HOOKFUNC(sithCollision_PushSurfaceCollision);
-    J3D_HOOKFUNC(sithCollision_ParticleAndActorCollisionHandler);
-    J3D_HOOKFUNC(sithCollision_CheckFloorDistance);
-    J3D_HOOKFUNC(sithCollision_ActorPlayerSearchFilter);
-}
-
 void sithCollision_ResetGlobals(void)
 {}
 

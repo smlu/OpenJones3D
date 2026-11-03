@@ -28,25 +28,6 @@ rdSprite3* J3DAPI sithSprite_CacheFind(const char* pName);
 void J3DAPI sithSprite_CacheAdd(rdSprite3* pSprite);
 void J3DAPI sithSprite_CacheRemove(const rdSprite3* pSprite);
 
-void sithSprite_InstallHooks(void)
-{
-    J3D_HOOKFUNC(sithSprite_Startup);
-    J3D_HOOKFUNC(sithSprite_Shutdown);
-    J3D_HOOKFUNC(sithSprite_Update);
-    J3D_HOOKFUNC(sithSprite_Draw);
-    J3D_HOOKFUNC(sithSprite_Create);
-    J3D_HOOKFUNC(sithSprite_ReadStaticSpritesListText);
-    J3D_HOOKFUNC(sithSprite_WriteStaticSpritesListBinary);
-    J3D_HOOKFUNC(sithSprite_ReadStaticSpritesListBinary);
-    J3D_HOOKFUNC(sithSprite_FreeWorldSprites);
-    J3D_HOOKFUNC(sithSprite_Load);
-    J3D_HOOKFUNC(sithSprite_AllocWorldSprites);
-    J3D_HOOKFUNC(sithSprite_Initialize);
-    J3D_HOOKFUNC(sithSprite_CacheFind);
-    J3D_HOOKFUNC(sithSprite_CacheAdd);
-    J3D_HOOKFUNC(sithSprite_CacheRemove);
-}
-
 void sithSprite_ResetGlobals(void)
 {}
 

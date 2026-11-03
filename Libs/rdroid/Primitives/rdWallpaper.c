@@ -17,16 +17,6 @@
 
 static rdVector4 rdWallpaper_extraLight = { 1.0f, 1.0f, 1.0f, 1.0f };
 
-void rdWallpaper_InstallHooks(void)
-{
-    J3D_HOOKFUNC(rdWallpaper_New);
-    J3D_HOOKFUNC(rdWallpaper_Free);
-    J3D_HOOKFUNC(rdWallpaper_Draw);
-    J3D_HOOKFUNC(rdWallpaper_NewWallLine);
-    J3D_HOOKFUNC(rdWallpaper_FreeWallLine);
-    J3D_HOOKFUNC(rdWallpaper_DrawWallLine);
-}
-
 void rdWallpaper_ResetGlobals(void)
 {}
 

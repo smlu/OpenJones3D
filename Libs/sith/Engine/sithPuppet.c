@@ -176,66 +176,6 @@ float J3DAPI sithPuppet_GetThingLocalVelocityAxis(SithThing* pThing, SithThingMo
 
 SithPuppetTrack* J3DAPI sithPuppet_GetModeTrackImpl(const SithThing* pThing, SithPuppetSubMode submode);
 
-void sithPuppet_InstallHooks(void)
-{
-    J3D_HOOKFUNC(sithPuppet_Startup);
-    J3D_HOOKFUNC(sithPuppet_Shutdown);
-    J3D_HOOKFUNC(sithPuppet_New);
-    J3D_HOOKFUNC(sithPuppet_Free);
-    J3D_HOOKFUNC(sithPuppet_RemoveAllTracks);
-    J3D_HOOKFUNC(sithPuppet_UpdatePuppet);
-    J3D_HOOKFUNC(sithPuppet_PlayFidgetMode);
-    J3D_HOOKFUNC(sithPuppet_StopFridgetTrack);
-    J3D_HOOKFUNC(sithPuppet_IsModeOnTrack);
-    J3D_HOOKFUNC(sithPuppet_IsAnyModeOnTrack);
-    J3D_HOOKFUNC(sithPuppet_FindActiveTrack);
-    J3D_HOOKFUNC(sithPuppet_UpdateThingMoveTracks);
-    J3D_HOOKFUNC(sithPuppet_UpdateThingMove);
-    J3D_HOOKFUNC(sithPuppet_SetSubMode);
-    J3D_HOOKFUNC(sithPuppet_SetMoveMode);
-    J3D_HOOKFUNC(sithPuppet_SetArmedMode);
-    J3D_HOOKFUNC(sithPuppet_PlayMode);
-    J3D_HOOKFUNC(sithPuppet_PlayForceMoveMode);
-    J3D_HOOKFUNC(sithPuppet_PlayKey);
-    J3D_HOOKFUNC(sithPuppet_GetTrackNumForGUID);
-    J3D_HOOKFUNC(sithPuppet_StopKey);
-    J3D_HOOKFUNC(sithPuppet_FinishForceMove);
-    J3D_HOOKFUNC(sithPuppet_DefaultCallback);
-    J3D_HOOKFUNC(sithPuppet_ReadStaticPuppetsListText);
-    J3D_HOOKFUNC(sithPuppet_WriteStaticPuppetsListBinary);
-    J3D_HOOKFUNC(sithPuppet_ReadStaticPuppetsListBinary);
-    J3D_HOOKFUNC(sithPuppet_LoadPuppetClass);
-    J3D_HOOKFUNC(sithPuppet_LoadPuppetClassEntry);
-    J3D_HOOKFUNC(sithPuppet_AllocWorldPuppets);
-    J3D_HOOKFUNC(sithPuppet_FreeWorldPuppets);
-    J3D_HOOKFUNC(sithPuppet_ReadStaticKeyframesListText);
-    J3D_HOOKFUNC(sithPuppet_WriteStaticKeyframesListBinary);
-    J3D_HOOKFUNC(sithPuppet_ReadStaticKeyframesListBinary);
-    J3D_HOOKFUNC(sithPuppet_GetKeyframeByIndex);
-    J3D_HOOKFUNC(sithPuppet_LoadKeyframe);
-    J3D_HOOKFUNC(sithPuppet_AllocWorldKeyframes);
-    J3D_HOOKFUNC(sithPuppet_FreeWorldKeyframes);
-    J3D_HOOKFUNC(sithPuppet_ClassCacheFind);
-    J3D_HOOKFUNC(sithPuppet_ClassCacheAdd);
-    J3D_HOOKFUNC(sithPuppet_ClassCacheRemove);
-    J3D_HOOKFUNC(sithPuppet_GetKeyframe);
-    J3D_HOOKFUNC(sithPuppet_KeyCacheFind);
-    J3D_HOOKFUNC(sithPuppet_KeyCacheAdd);
-    J3D_HOOKFUNC(sithPuppet_KeyCacheRemove);
-    J3D_HOOKFUNC(sithPuppet_StopMode);
-    J3D_HOOKFUNC(sithPuppet_SynchMode);
-    J3D_HOOKFUNC(sithPuppet_ClearMode);
-    J3D_HOOKFUNC(sithPuppet_RemoveTrackByIndex);
-    J3D_HOOKFUNC(sithPuppet_NewTrack);
-    J3D_HOOKFUNC(sithPuppet_AddTrack);
-    J3D_HOOKFUNC(sithPuppet_RemoveTrack);
-    J3D_HOOKFUNC(sithPuppet_FreeTrack);
-    J3D_HOOKFUNC(sithPuppet_FreeTrackByIndex);
-    J3D_HOOKFUNC(sithPuppet_GetModeTrack);
-    J3D_HOOKFUNC(sithPuppet_GetModeTrackImpl);
-    J3D_HOOKFUNC(sithPuppet_ClearTrackList);
-}
-
 void sithPuppet_ResetGlobals(void)
 {
     STD_ZEROMEM(&sithPuppet_g_bPlayerLeapForward, sizeof(sithPuppet_g_bPlayerLeapForward));

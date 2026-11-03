@@ -6,13 +6,6 @@
 
 #include <std/General/stdMemory.h>
 
-void rdCanvas_InstallHooks(void)
-{
-    J3D_HOOKFUNC(rdCanvas_New);
-    J3D_HOOKFUNC(rdCanvas_NewEntry);
-    J3D_HOOKFUNC(rdCanvas_Free);
-}
-
 void rdCanvas_ResetGlobals(void)
 {
 

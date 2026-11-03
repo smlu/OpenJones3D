@@ -56,7 +56,6 @@ void J3DAPI memory_debugFree(void* pBlock, const char* pFile, int line);
 int J3DAPI memory_Check(char* pRaw, int size, const char* pFile, int line, const char* pOp);
 void* J3DAPI memory_debugRealloc(void* pBlock, int size, const char* pFile, int line);
 
-void Memory_InstallHooks(void);
 void Memory_ResetGlobals(void);
 
 J3D_EXTERN_C_END

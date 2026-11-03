@@ -25,24 +25,6 @@ void J3DAPI sithPathMove_UpdatePath(SithThing* pThing);
 void J3DAPI sithPathMove_UpdateRotate(SithThing* pThing, float simTime); // Added: From debug version
 void J3DAPI sithPathMove_UpdateMove(SithThing* pThing, float simTime); // Added: From debug version
 
-void sithPathMove_InstallHooks(void)
-{
-    J3D_HOOKFUNC(sithPathMove_SkipToFrame);
-    J3D_HOOKFUNC(sithPathMove_MoveToFrame);
-    J3D_HOOKFUNC(sithPathMove_RotatePivot);
-    J3D_HOOKFUNC(sithPathMove_FollowNextPath);
-    J3D_HOOKFUNC(sithPathMove_MoveToPos);
-    J3D_HOOKFUNC(sithPathMove_RotateToPYR);
-    J3D_HOOKFUNC(sithPathMove_Update);
-    J3D_HOOKFUNC(sithPathMove_ParseArg);
-    J3D_HOOKFUNC(sithPathMove_SendMessageBlocked);
-    J3D_HOOKFUNC(sithPathMove_UpdatePath);
-    J3D_HOOKFUNC(sithPathMove_Finish);
-    J3D_HOOKFUNC(sithPathMove_PathMovePause);
-    J3D_HOOKFUNC(sithPathMove_PathMoveResume);
-    J3D_HOOKFUNC(sithPathMove_Create);
-}
-
 void sithPathMove_ResetGlobals(void)
 {}
 

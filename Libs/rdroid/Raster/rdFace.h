@@ -14,7 +14,6 @@ void J3DAPI rdFace_Free(rdFace* pFace); // Added
 void J3DAPI rdFace_FreeEntry(rdFace* pFace);
 
 // Helper hooking functions
-void rdFace_InstallHooks(void);
 void rdFace_ResetGlobals(void);
 
 J3D_EXTERN_C_END

@@ -42,27 +42,6 @@ float sithPlayer_g_impState;
 
 static wchar_t sithPlayer_awLocalPlayerName[64] = { 0 }; // Added: Init to 0
 
-void sithPlayer_InstallHooks(void)
-{
-    J3D_HOOKFUNC(sithPlayer_Open);
-    J3D_HOOKFUNC(sithPlayer_Close);
-    J3D_HOOKFUNC(sithPlayer_GetLocalPlayerName);
-    J3D_HOOKFUNC(sithPlayer_PlacePlayers);
-    J3D_HOOKFUNC(sithPlayer_HidePlayer);
-    J3D_HOOKFUNC(sithPlayer_ShowPlayer);
-    J3D_HOOKFUNC(sithPlayer_SetLocalPlayer);
-    J3D_HOOKFUNC(sithPlayer_Reset);
-    J3D_HOOKFUNC(sithPlayer_Update);
-    J3D_HOOKFUNC(sithPlayer_NewPlayer);
-    J3D_HOOKFUNC(sithPlayer_GetPlayerNum);
-    J3D_HOOKFUNC(sithPlayer_PlayerKilledAction);
-    J3D_HOOKFUNC(sithPlayer_KillPlayer);
-    J3D_HOOKFUNC(sithPlayer_GetThingPlayerNum);
-    J3D_HOOKFUNC(sithPlayer_ToggleGuybrush);
-    J3D_HOOKFUNC(sithPlayer_IMPStartFiring);
-    J3D_HOOKFUNC(sithPlayer_IMPEndFiring);
-}
-
 void sithPlayer_ResetGlobals(void)
 {
     int sithPlayer_g_bPlayerInPor_tmp = 1; // Must be set to 1

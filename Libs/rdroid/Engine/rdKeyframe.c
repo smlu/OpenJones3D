@@ -11,14 +11,6 @@
 static rdKeyframeLoadFunc rdKeyframe_pKeyframeLoader     = NULL; // Added: Init to null
 static rdKeyframeUnloadFunc rdKeyframe_pKeyframeUnloader = NULL;
 
-void rdKeyframe_InstallHooks(void)
-{
-    J3D_HOOKFUNC(rdKeyframe_RegisterLoader);
-    J3D_HOOKFUNC(rdKeyframe_NewEntry);
-    J3D_HOOKFUNC(rdKeyframe_LoadEntry);
-    J3D_HOOKFUNC(rdKeyframe_FreeEntry);
-}
-
 void rdKeyframe_ResetGlobals(void)
 {}
 

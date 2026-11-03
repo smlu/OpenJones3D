@@ -106,40 +106,6 @@ static const SithMainStartLevelNdsInfo sithMain_aLevelNdsInfos[17] =
 
 const char* J3DAPI sithGetPath(char* aOutPath, const char* pSithStrName, int bPrependInstallDirPath);
 
-void sithMain_InstallHooks(void)
-{
-    J3D_HOOKFUNC(sithSetServices);
-    J3D_HOOKFUNC(sithClearServices);
-    J3D_HOOKFUNC(sithStartup);
-    J3D_HOOKFUNC(sithShutdown);
-    J3D_HOOKFUNC(sithSetPerformanceLevel);
-    J3D_HOOKFUNC(sithGetPerformanceLevel);
-    J3D_HOOKFUNC(sithOpenStatic);
-    J3D_HOOKFUNC(sithCloseStatic);
-    J3D_HOOKFUNC(sithOpenNormal);
-    J3D_HOOKFUNC(sithOpenPostProcess);
-    J3D_HOOKFUNC(sithOpen);
-    J3D_HOOKFUNC(sithClose);
-    J3D_HOOKFUNC(sithUpdate);
-    J3D_HOOKFUNC(sithDrawScene);
-    J3D_HOOKFUNC(sithSetGameDifficulty);
-    J3D_HOOKFUNC(sithGetGameDifficulty);
-    J3D_HOOKFUNC(sithGetHitAccuarancyScalar);
-    J3D_HOOKFUNC(sithGetCombatDamageScalar);
-    J3D_HOOKFUNC(sithGetIMPDamageScalar);
-    J3D_HOOKFUNC(sithAdvanceRenderTick);
-    J3D_HOOKFUNC(sithMakeDirs);
-    J3D_HOOKFUNC(sithGetAutoSaveFilePrefix);
-    J3D_HOOKFUNC(sithGetPath);
-    J3D_HOOKFUNC(sithGetSaveGamesDir);
-    J3D_HOOKFUNC(sithGetQuickSaveFilePrefix);
-    J3D_HOOKFUNC(sithGetScreenShotsDir);
-    J3D_HOOKFUNC(sithGetScreenShotFileTemplate);
-    J3D_HOOKFUNC(sithSetOpenCallback);
-    J3D_HOOKFUNC(sithGetCurrentWorldSaveName);
-    J3D_HOOKFUNC(sithGetLevelSaveFilename);
-}
-
 void sithMain_ResetGlobals(void)
 {
     memset(&sith_g_pHS, 0, sizeof(sith_g_pHS));

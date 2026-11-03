@@ -34,25 +34,6 @@ char* stdConffile_g_aLine            = NULL;
 void stdConffile_PushStack(void);
 void stdConffile_PopStack(void);
 
-void stdConffile_InstallHooks(void)
-{
-    J3D_HOOKFUNC(stdConffile_Open);
-    J3D_HOOKFUNC(stdConffile_OpenWrite);
-    J3D_HOOKFUNC(stdConffile_OpenMode);
-    J3D_HOOKFUNC(stdConffile_Close);
-    J3D_HOOKFUNC(stdConffile_CloseWrite);
-    J3D_HOOKFUNC(stdConffile_Write);
-    J3D_HOOKFUNC(stdConffile_Read);
-    J3D_HOOKFUNC(stdConffile_ReadArgsFromStr);
-    J3D_HOOKFUNC(stdConffile_ReadArgs);
-    J3D_HOOKFUNC(stdConffile_ReadLine);
-    J3D_HOOKFUNC(stdConffile_GetFileHandle);
-    J3D_HOOKFUNC(stdConffile_GetLineNumber);
-    J3D_HOOKFUNC(stdConffile_GetFilename);
-    J3D_HOOKFUNC(stdConffile_PushStack);
-    J3D_HOOKFUNC(stdConffile_PopStack);
-}
-
 void stdConffile_ResetGlobals(void)
 {
 }

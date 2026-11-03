@@ -65,37 +65,6 @@ int J3DAPI sithGamesave_SaveFile(const char* pFilename);
 int J3DAPI sithGamesave_WriteThumbnail(tFileHandle fh);
 int J3DAPI sithGamesave_SeekThumbnail(tFileHandle fh);
 
-void sithGamesave_InstallHooks(void)
-{
-    J3D_HOOKFUNC(sithGamesave_GetGameStatistics);
-    J3D_HOOKFUNC(sithGamesave_LockGameStatistics);
-    J3D_HOOKFUNC(sithGamesave_UnlockGameStatistics);
-    J3D_HOOKFUNC(sithGamesave_Save);
-    J3D_HOOKFUNC(sithGamesave_Restore);
-    J3D_HOOKFUNC(sithGamesave_SaveCurrentWorld);
-    J3D_HOOKFUNC(sithGamesave_Process);
-    J3D_HOOKFUNC(sithGamesave_RestoreFile);
-    J3D_HOOKFUNC(sithGamesave_NotifyRestored);
-    J3D_HOOKFUNC(sithGamesave_ReadBlockTypeLength);
-    J3D_HOOKFUNC(sithGamesave_SaveFile);
-    J3D_HOOKFUNC(sithGamesave_SetThumbnailImage);
-    J3D_HOOKFUNC(sithGamesave_CreateThumbnail);
-    J3D_HOOKFUNC(sithGamesave_WriteThumbnail);
-    J3D_HOOKFUNC(sithGamesave_SeekThumbnail);
-    J3D_HOOKFUNC(sithGamesave_LoadThumbnail);
-    J3D_HOOKFUNC(sithGamesave_Startup);
-    J3D_HOOKFUNC(sithGamesave_Shutdown);
-    J3D_HOOKFUNC(sithGamesave_Open);
-    J3D_HOOKFUNC(sithGamesave_CloseRestore);
-    J3D_HOOKFUNC(sithGamesave_Close);
-    J3D_HOOKFUNC(sithGamesave_SetPreviousLevelFilename);
-    J3D_HOOKFUNC(sithGamesave_GetPreviousLevelFilename);
-    J3D_HOOKFUNC(sithGamesave_GetLastFilename);
-    J3D_HOOKFUNC(sithGamesave_LoadLevelFilename);
-    J3D_HOOKFUNC(sithGamesave_GetState);
-    J3D_HOOKFUNC(sithGamesave_SetSaveGameCallback);
-}
-
 void sithGamesave_ResetGlobals(void)
 {}
 

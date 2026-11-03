@@ -32,13 +32,5 @@ void J3DAPI blit_Wrapper(void* pDst, void* pSrc, int dstX, int dstY, int srcX, i
     blit_Masm(pSrc, pDst, srcX, srcY, dstX, dstY, width, height, srcPitch, dstPitch);
 }
 
-void Blit_InstallHooks(void)
-{
-    // Uncomment only lines for functions that have full definition and doesn't call original function (non-thunk functions)
-
-    J3D_HOOKFUNC(blit_Fill);
-    J3D_HOOKFUNC(blit_Wrapper);
-}
-
 void Blit_ResetGlobals(void)
 {}

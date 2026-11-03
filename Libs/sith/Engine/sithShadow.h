@@ -16,7 +16,6 @@ void J3DAPI sithShadow_DrawShadow(const rdMatrix34* orient, float size, float sc
 void J3DAPI sithShadow_DrawWalkShadow(float size, float scale, const rdVector3* leg, const rdVector3* rleg, const rdVector3* lvec, const rdVector3* rvec);
 
 // Helper hooking functions
-void sithShadow_InstallHooks(void);
 void sithShadow_ResetGlobals(void);
 
 J3D_EXTERN_C_END

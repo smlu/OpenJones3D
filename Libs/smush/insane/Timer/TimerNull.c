@@ -57,11 +57,6 @@ void timer_SysStopThread(void)
     pthread_join(timer_thread, NULL);
 }
 
-void timer_SysInstallHooks(void)
-{
-    // Added: No RTI hooks in the standalone Null build: nothing to hook.
-}
-
 void timer_SysResetGlobals(void)
 {
 }

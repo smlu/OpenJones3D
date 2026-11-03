@@ -44,7 +44,6 @@ void J3DAPI mixer_MonoSwap16(int16_t* pSrc, uint32_t count, uint32_t n, int offs
 void J3DAPI mixer_StereoSwap16(int16_t* pSrc, uint32_t count, uint32_t n, int offset, int volume);
 void J3DAPI mixer_Blit(LecBitmapHeader* pDst, MixerRect* pClip, int x, int y, LecBitmapHeader* pSrc, void* pPalette, void* pTable);
 
-void Mixer_InstallHooks(void);
 void Mixer_ResetGlobals(void);
 
 J3D_EXTERN_C_END

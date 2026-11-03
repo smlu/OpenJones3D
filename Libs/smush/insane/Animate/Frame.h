@@ -81,7 +81,6 @@ const char* J3DAPI animframe_DebugName(int index);
 void J3DAPI animframe_SetDebug(int flags);
 int animframe_GetDebug(void);
 
-void Frame_InstallHooks(void);
 void Frame_ResetGlobals(void);
 
 J3D_EXTERN_C_END

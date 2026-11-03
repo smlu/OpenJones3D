@@ -10,15 +10,6 @@ static GUID stdWin95_guid;
 static HWND stdWin95_hwnd = NULL;
 static HINSTANCE stdWin95_hInstance = NULL;
 
-void stdWin95_InstallHooks(void)
-{
-    J3D_HOOKFUNC(stdWin95_SetWindow);
-    J3D_HOOKFUNC(stdWin95_GetWindow);
-    J3D_HOOKFUNC(stdWin95_SetInstance);
-    J3D_HOOKFUNC(stdWin95_GetInstance);
-    J3D_HOOKFUNC(stdWin95_SetGuid);
-}
-
 void stdWin95_ResetGlobals(void)
 {
     /*memset(&stdWin95_guid, 0, sizeof(stdWin95_guid));

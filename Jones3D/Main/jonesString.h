@@ -14,7 +14,6 @@ int J3DAPI jonesString_Startup();
 void jonesString_Shutdown(void);
 
 // Helper hooking functions
-void jonesString_InstallHooks(void);
 void jonesString_ResetGlobals(void);
 
 J3D_EXTERN_C_END

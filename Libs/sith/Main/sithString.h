@@ -16,7 +16,6 @@ void sithString_Shutdown(void);
 wchar_t* J3DAPI sithString_GetString(const char* pStr);
 
 // Helper hooking functions
-void sithString_InstallHooks(void);
 void sithString_ResetGlobals(void);
 
 J3D_EXTERN_C_END

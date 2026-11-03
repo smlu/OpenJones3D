@@ -30,38 +30,6 @@ int J3DAPI sithSoundMixer_GetPlayPriority(SoundPlayFlag playflags);
 int J3DAPI sithSoundMixer_GetThingID(int idx);
 int J3DAPI sithSoundMixer_GetThingIndex(int thingID);
 
-void sithSoundMixer_InstallHooks(void)
-{
-    J3D_HOOKFUNC(sithSoundMixer_Startup);
-    J3D_HOOKFUNC(sithSoundMixer_Shutdown);
-    J3D_HOOKFUNC(sithSoundMixer_ClearAmbientSector);
-    J3D_HOOKFUNC(sithSoundMixer_PlaySound);
-    J3D_HOOKFUNC(sithSoundMixer_PlaySoundPos);
-    J3D_HOOKFUNC(sithSoundMixer_PlaySoundThing);
-    J3D_HOOKFUNC(sithSoundMixer_StopSound);
-    J3D_HOOKFUNC(sithSoundMixer_StopAll);
-    J3D_HOOKFUNC(sithSoundMixer_FadeVolume);
-    J3D_HOOKFUNC(sithSoundMixer_FadePitch);
-    J3D_HOOKFUNC(sithSoundMixer_SetPitchThing);
-    J3D_HOOKFUNC(sithSoundMixer_SetVolumeThing);
-    J3D_HOOKFUNC(sithSoundMixer_FadeVolumeThing);
-    J3D_HOOKFUNC(sithSoundMixer_IsThingFadingVol);
-    J3D_HOOKFUNC(sithSoundMixer_Update);
-    J3D_HOOKFUNC(sithSoundMixer_GetThingInfo);
-    J3D_HOOKFUNC(sithSoundMixer_CalcCameraRelativeSoundMix);
-    J3D_HOOKFUNC(sithSoundMixer_StopAllSoundsThing);
-    J3D_HOOKFUNC(sithSoundMixer_GetChannelHandle);
-    J3D_HOOKFUNC(sithSoundMixer_StopSoundThing);
-    J3D_HOOKFUNC(sithSoundMixer_SetSectorAmbientSound);
-    J3D_HOOKFUNC(sithSoundMixer_GameSave);
-    J3D_HOOKFUNC(sithSoundMixer_GameRestore);
-    J3D_HOOKFUNC(sithSoundMixer_GetNextChannelGUID);
-    J3D_HOOKFUNC(sithSoundMixer_PlayFlagsToChannelFlags);
-    J3D_HOOKFUNC(sithSoundMixer_GetPlayPriority);
-    J3D_HOOKFUNC(sithSoundMixer_GetThingID);
-    J3D_HOOKFUNC(sithSoundMixer_GetThingIndex);
-}
-
 void sithSoundMixer_ResetGlobals(void)
 {}
 

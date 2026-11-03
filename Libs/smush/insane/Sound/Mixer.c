@@ -814,28 +814,5 @@ void J3DAPI mixer_Blit(LecBitmapHeader* pDst, MixerRect* pClip, int x, int y, Le
     }
 }
 
-void Mixer_InstallHooks(void)
-{
-    J3D_HOOKFUNC(mixer_Init);
-    J3D_HOOKFUNC(mixer_Done);
-    J3D_HOOKFUNC(mixer_Begin);
-    J3D_HOOKFUNC(mixer_Feed);
-    J3D_HOOKFUNC(mixer_Mix);
-    J3D_HOOKFUNC(mixer_Setup);
-    J3D_HOOKFUNC(mixer_Free);
-    J3D_HOOKFUNC(mixer_Clear);
-    J3D_HOOKFUNC(mixer_Add);
-    J3D_HOOKFUNC(mixer_Output);
-    J3D_HOOKFUNC(mixer_Mono8);
-    J3D_HOOKFUNC(mixer_Stereo8);
-    J3D_HOOKFUNC(mixer_Mono16);
-    J3D_HOOKFUNC(mixer_Stereo16);
-    J3D_HOOKFUNC(mixer_MonoU16);
-    J3D_HOOKFUNC(mixer_StereoU16);
-    J3D_HOOKFUNC(mixer_MonoSwap16);
-    J3D_HOOKFUNC(mixer_StereoSwap16);
-    J3D_HOOKFUNC(mixer_Blit);
-}
-
 void Mixer_ResetGlobals(void)
 {}

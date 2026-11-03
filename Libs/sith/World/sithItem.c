@@ -17,15 +17,6 @@
 #include <errno.h>
 #include <stdlib.h>
 
-void sithItem_InstallHooks(void)
-{
-    J3D_HOOKFUNC(sithItem_PlayerCollisionHandler);
-    J3D_HOOKFUNC(sithItem_Initialize);
-    J3D_HOOKFUNC(sithItem_SetItemTaken);
-    J3D_HOOKFUNC(sithItem_DestroyItem);
-    J3D_HOOKFUNC(sithItem_ParseArg);
-}
-
 void sithItem_ResetGlobals(void)
 {}
 

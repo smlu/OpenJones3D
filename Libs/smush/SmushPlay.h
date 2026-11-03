@@ -57,10 +57,8 @@ int J3DAPI smushplay_Blit(int a1, int a2, int a3, int a4, void* pBitmap);
 void* smushplay_GetHwnd(void);
 
 // Install the hooks of / reset the globals of every smush translation unit (called from the DLL's InstallHooks/ResetGlobals)
-void Smush_InstallHooks(void);
 void Smush_ResetGlobals(void);
 
-void SmushPlay_InstallHooks(void);
 void SmushPlay_ResetGlobals(void);
 
 J3D_EXTERN_C_END

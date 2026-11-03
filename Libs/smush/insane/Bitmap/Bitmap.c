@@ -306,19 +306,6 @@ void J3DAPI bitmap_Destroy(LecBitmapHeader** ppBitmap)
     *ppBitmap = NULL;
 }
 
-void Bitmap_InstallHooks(void)
-{
-    // Uncomment only lines for functions that have full definition and doesn't call original function (non-thunk functions)
-
-    J3D_HOOKFUNC(bitmap_Register);
-    J3D_HOOKFUNC(bitmap_Unregister);
-    J3D_HOOKFUNC(bitmap_Startup);
-    J3D_HOOKFUNC(bitmap_Shutdown);
-    J3D_HOOKFUNC(bitmap_Create);
-    J3D_HOOKFUNC(bitmap_CreateEx);
-    J3D_HOOKFUNC(bitmap_Destroy);
-}
-
 void Bitmap_ResetGlobals(void)
 {
     bitmap_pMemory = NULL;

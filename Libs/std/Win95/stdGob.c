@@ -27,23 +27,6 @@ static bool stdGob_IsEntryInBounds(const tGobFileEntry* pEntry, size_t gobSize)
     return entryOffset <= gobSize && entrySize <= gobSize - entryOffset;
 }
 
-void stdGob_InstallHooks(void)
-{
-    J3D_HOOKFUNC(stdGob_Startup);
-    J3D_HOOKFUNC(stdGob_Shutdown);
-    J3D_HOOKFUNC(stdGob_Load);
-    J3D_HOOKFUNC(stdGob_LoadEntry);
-    J3D_HOOKFUNC(stdGob_Free);
-    J3D_HOOKFUNC(stdGob_FreeEntry);
-    J3D_HOOKFUNC(stdGob_FileOpen);
-    J3D_HOOKFUNC(stdGob_FileClose);
-    J3D_HOOKFUNC(stdGob_FileSeek);
-    J3D_HOOKFUNC(stdGob_FileTell);
-    J3D_HOOKFUNC(stdGob_FileEOF);
-    J3D_HOOKFUNC(stdGob_FileRead);
-    J3D_HOOKFUNC(stdGob_FileGets);
-}
-
 void stdGob_ResetGlobals(void)
 {}
 

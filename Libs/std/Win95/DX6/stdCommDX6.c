@@ -86,27 +86,6 @@ static const char* J3DAPI stdComm_DPGetStatus(HRESULT code);
 static void J3DAPI stdComm_SessionToSettings(LPDPSESSIONDESC2 pSession, StdCommGame* pSettings);
 static BOOL PASCAL stdComm_EnumPlayersCallback(DPID playerId, DWORD dwPlayerType, LPCDPNAME lpName, DWORD dwFlags, LPVOID lpContext);
 
-void stdComm_InstallHooks(void)
-{
-    J3D_HOOKFUNC(stdComm_Send);
-    J3D_HOOKFUNC(stdComm_Receive);
-    J3D_HOOKFUNC(stdComm_CloseGame);
-    J3D_HOOKFUNC(stdComm_RejoinSession);
-    J3D_HOOKFUNC(stdComm_GetSessionSettings);
-    J3D_HOOKFUNC(stdComm_IsGameActive);
-    J3D_HOOKFUNC(stdComm_IsGameHost);
-    J3D_HOOKFUNC(stdComm_UpdatePlayers);
-    J3D_HOOKFUNC(stdComm_CreatePlayer);
-    J3D_HOOKFUNC(stdComm_DestroyPlayer);
-    J3D_HOOKFUNC(stdComm_GetNumPlayers);
-    J3D_HOOKFUNC(stdComm_VerifyPlayer);
-    J3D_HOOKFUNC(stdComm_GetPlayerID);
-    J3D_HOOKFUNC(stdComm_EnumPlayersCallback);
-    J3D_HOOKFUNC(stdComm_ProcessSystemMessage);
-    J3D_HOOKFUNC(stdComm_SessionToSettings);
-    J3D_HOOKFUNC(stdComm_DPGetStatus);
-}
-
 void stdComm_ResetGlobals(void)
 {
     // Added: Reset local DirectPlay state for standalone tests.

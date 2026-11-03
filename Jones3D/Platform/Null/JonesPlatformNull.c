@@ -63,11 +63,6 @@ void JonesMainSys_ClearWindowProc(void)
     // Added: See JonesMainSys_UseGameWindowProc.
 }
 
-void JonesMainSys_InstallHooks(void)
-{
-    // Added: No RTI hooks in the standalone Null build: nothing to hook.
-}
-
 bool JonesMainSys_GetComputerName(char* pDst, size_t size)
 {
     if ( !pDst || !size )

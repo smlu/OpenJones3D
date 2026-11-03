@@ -44,25 +44,6 @@ void J3DAPI jonesCog_EndCutscene(SithCog* pCog);
 void J3DAPI jonesCog_UpdateDifficulty(SithCog* pCog);
 void J3DAPI jonesCog_InventoryItemChanged(SithCog* pCog);
 
-void jonesCog_InstallHooks(void)
-{
-    J3D_HOOKFUNC(jonesCog_Startup);
-    J3D_HOOKFUNC(jonesCog_Shutdown);
-    J3D_HOOKFUNC(jonesCog_RegisterFunctions);
-    J3D_HOOKFUNC(jonesCog_HideHealthDisplay);
-    J3D_HOOKFUNC(jonesCog_ShowHealthDisplay);
-    J3D_HOOKFUNC(jonesCog_InventoryItemChanged);
-    J3D_HOOKFUNC(jonesCog_EndLevel);
-    J3D_HOOKFUNC(jonesCog_EndLevelFunc);
-    J3D_HOOKFUNC(jonesCog_ExitToShell);
-    J3D_HOOKFUNC(jonesCog_StartCutsceneFunc);
-    J3D_HOOKFUNC(jonesCog_EndCutscene);
-    J3D_HOOKFUNC(jonesCog_UpdateDifficulty);
-    J3D_HOOKFUNC(jonesCog_EnableInterfaceFunc);
-    J3D_HOOKFUNC(jonesCog_StartCutscene);
-    J3D_HOOKFUNC(jonesCog_ToggleInterface);
-}
-
 void jonesCog_ResetGlobals(void)
 {
     memset(&jonesCog_g_bShowHealthHUD, 0, sizeof(jonesCog_g_bShowHealthHUD));

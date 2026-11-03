@@ -38,22 +38,6 @@ static SithConsoleFlushFunc pfFlushFunc;
 int J3DAPI sithConsole_CreateCommandTable(size_t size);
 void sithConsole_FreeCommandTable(void);
 
-void sithConsole_InstallHooks(void)
-{
-    J3D_HOOKFUNC(sithConsole_Startup);
-    J3D_HOOKFUNC(sithConsole_Shutdown);
-    J3D_HOOKFUNC(sithConsole_Open);
-    J3D_HOOKFUNC(sithConsole_Close);
-    J3D_HOOKFUNC(sithConsole_PrintString);
-    J3D_HOOKFUNC(sithConsole_PrintWString);
-    J3D_HOOKFUNC(sithConsole_ExeCommand);
-    J3D_HOOKFUNC(sithConsole_Flush);
-    J3D_HOOKFUNC(sithConsole_RegisterCommand);
-    J3D_HOOKFUNC(sithConsole_RegisterPrintFunctions);
-    J3D_HOOKFUNC(sithConsole_CreateCommandTable);
-    J3D_HOOKFUNC(sithConsole_FreeCommandTable);
-}
-
 void sithConsole_ResetGlobals(void)
 {}
 

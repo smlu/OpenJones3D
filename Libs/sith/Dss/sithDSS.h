@@ -179,7 +179,6 @@ static inline void J3DAPI sithDSS_WriteString(uint8_t** stream, const char* str,
 static inline void J3DAPI sithDSS_WriteWString(uint8_t** stream, const wchar_t* str, int length);
 
 // Helper hooking functions
-void sithDSS_InstallHooks(void);
 void sithDSS_ResetGlobals(void);
 
 

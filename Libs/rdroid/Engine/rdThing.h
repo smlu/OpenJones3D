@@ -23,7 +23,6 @@ int J3DAPI rdThing_Draw(rdThing* pThing, const rdMatrix34* pOrient);
 void J3DAPI rdThing_AccumulateMatrices(rdThing* pThing, const rdModel3HNode* pNode, const rdMatrix34* pPlacement);
 
 // Helper hooking functions
-void rdThing_InstallHooks(void);
 void rdThing_ResetGlobals(void);
 
 J3D_EXTERN_C_END

@@ -24,37 +24,6 @@ static bool rdCamera_bOverlayDepthRange = false;
 void J3DAPI rdCamera_BuildFOV(rdCamera* pCamera);
 void J3DAPI rdCamera_BuildClipFrustrum(const rdCamera* pCamera, rdClipFrustum* pFrustum, float width, float height);
 
-
-void rdCamera_InstallHooks(void)
-{
-    J3D_HOOKFUNC(rdCamera_New);
-    J3D_HOOKFUNC(rdCamera_NewEntry);
-    J3D_HOOKFUNC(rdCamera_Free);
-    J3D_HOOKFUNC(rdCamera_FreeEntry);
-    J3D_HOOKFUNC(rdCamera_SetCanvas);
-    J3D_HOOKFUNC(rdCamera_SetCurrent);
-    J3D_HOOKFUNC(rdCamera_SetFOV);
-    J3D_HOOKFUNC(rdCamera_SetProjectType);
-    J3D_HOOKFUNC(rdCamera_SetAspectRatio);
-    J3D_HOOKFUNC(rdCamera_BuildFOV);
-    J3D_HOOKFUNC(rdCamera_BuildClipFrustrum);
-    J3D_HOOKFUNC(rdCamera_SetFrustrum);
-    J3D_HOOKFUNC(rdCamera_Update);
-    J3D_HOOKFUNC(rdCamera_OrthoProject);
-    J3D_HOOKFUNC(rdCamera_OrthoProjectLst);
-    J3D_HOOKFUNC(rdCamera_OrthoProjectSquare);
-    J3D_HOOKFUNC(rdCamera_OrthoProjectSquareLst);
-    J3D_HOOKFUNC(rdCamera_PerspProject);
-    J3D_HOOKFUNC(rdCamera_PerspProjectLst);
-    J3D_HOOKFUNC(rdCamera_PerspProjectSquare);
-    J3D_HOOKFUNC(rdCamera_PerspProjectSquareLst);
-    J3D_HOOKFUNC(rdCamera_SetAmbientLight);
-    J3D_HOOKFUNC(rdCamera_SetAttenuation);
-    J3D_HOOKFUNC(rdCamera_AddLight);
-    J3D_HOOKFUNC(rdCamera_ClearLights);
-    J3D_HOOKFUNC(rdCamera_SetOverlayDepthRange);
-}
-
 void rdCamera_ResetGlobals(void)
 {
     memset(&rdCamera_g_camPYR, 0, sizeof(rdCamera_g_camPYR));

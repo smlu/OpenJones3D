@@ -171,19 +171,6 @@ void* J3DAPI memory_debugRealloc(void* pBlock, int size, const char* pFile, int 
     return pNew + MEMORY_PREFIX_SIZE;
 }
 
-void Memory_InstallHooks(void)
-{
-    // Uncomment only lines for functions that have full definition and doesn't call original function (non-thunk functions)
-
-    J3D_HOOKFUNC(memory_Register);
-    J3D_HOOKFUNC(memory_Unregister);
-    J3D_HOOKFUNC(memory_debugAlloc);
-    J3D_HOOKFUNC(memory_Track);
-    J3D_HOOKFUNC(memory_debugFree);
-    J3D_HOOKFUNC(memory_Check);
-    J3D_HOOKFUNC(memory_debugRealloc);
-}
-
 void Memory_ResetGlobals(void)
 {
     memset(&memory_list, 0, sizeof(memory_list));

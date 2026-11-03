@@ -21,7 +21,6 @@ void J3DAPI decode_565toRGBA(void* pDst, const void* pSrc, int n);
 void J3DAPI decode_RGBAto565B(void* pDst, const void* pSrc, int n);
 void J3DAPI decode_565BtoRGBA(void* pDst, const void* pSrc, int n);
 
-void DecodeAsm_InstallHooks(void);
 void DecodeAsm_ResetGlobals(void);
 
 J3D_EXTERN_C_END

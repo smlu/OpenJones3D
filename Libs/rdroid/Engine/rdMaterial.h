@@ -21,7 +21,6 @@ size_t J3DAPI rdMaterial_GetMaterialMemUsage(const rdMaterial* pMaterial);
 size_t J3DAPI rdMaterial_GetMipSize(int width, int height, size_t mipLevels);
 
 // Helper hooking functions
-void rdMaterial_InstallHooks(void);
 void rdMaterial_ResetGlobals(void);
 
 J3D_EXTERN_C_END

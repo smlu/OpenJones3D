@@ -98,7 +98,6 @@ int J3DAPI bitmap_Create(LecBitmapHeader** ppBitmap, int width, int height, int 
 int J3DAPI bitmap_CreateEx(LecBitmapHeader** ppBitmap, int width, int height, int colorMode, int a5, int a6, const void* pFormat);
 void J3DAPI bitmap_Destroy(LecBitmapHeader** ppBitmap);
 
-void Bitmap_InstallHooks(void);
 void Bitmap_ResetGlobals(void);
 
 J3D_EXTERN_C_END

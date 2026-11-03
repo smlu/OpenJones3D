@@ -35,7 +35,6 @@ void J3DAPI rdPuppet_ResetTrack(rdPuppet* pPuppet, int32_t track);
 void J3DAPI rdPuppet_BuildJointMatrices(rdThing* prdThing, const rdMatrix34* pPlacement);
 
 // Helper hooking functions
-void rdPuppet_InstallHooks(void);
 void rdPuppet_ResetGlobals(void);
 
 J3D_EXTERN_C_END

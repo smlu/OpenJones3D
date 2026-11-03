@@ -39,22 +39,6 @@ static float sithActor_headRotDampRate = 10.0f; // Added
 
 void J3DAPI sithActor_PlayDamageSoundFx(SithThing* pThing, SithDamageType damageType);
 
-void sithActor_InstallHooks(void)
-{
-    J3D_HOOKFUNC(sithActor_SetDifficulty);
-    J3D_HOOKFUNC(sithActor_Update);
-    J3D_HOOKFUNC(sithActor_DamageActor);
-    J3D_HOOKFUNC(sithActor_DamageRaftActor);
-    J3D_HOOKFUNC(sithActor_PlayDamageSoundFx);
-    J3D_HOOKFUNC(sithActor_KillActor);
-    J3D_HOOKFUNC(sithActor_SurfaceCollisionHandler);
-    J3D_HOOKFUNC(sithActor_ActorCollisionHandler);
-    J3D_HOOKFUNC(sithActor_SetHeadPYR);
-    J3D_HOOKFUNC(sithActor_DestroyActor);
-    J3D_HOOKFUNC(sithActor_DestroyCorpse);
-    J3D_HOOKFUNC(sithActor_ParseArg);
-}
-
 void sithActor_ResetGlobals(void)
 {}
 

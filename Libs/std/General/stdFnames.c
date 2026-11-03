@@ -4,16 +4,6 @@
 #include <j3dcore/j3dhook.h>
 #include <std/RTI/symbols.h>
 
-void stdFnames_InstallHooks(void)
-{
-    J3D_HOOKFUNC(stdFnames_FindMedName);
-    J3D_HOOKFUNC(stdFnames_FindExt);
-    J3D_HOOKFUNC(stdFnames_StripExtAndDot);
-    J3D_HOOKFUNC(stdFnames_ChangeExt);
-    J3D_HOOKFUNC(stdFnames_Concat);
-    J3D_HOOKFUNC(stdFnames_MakePath);
-}
-
 void stdFnames_ResetGlobals(void)
 {
 }

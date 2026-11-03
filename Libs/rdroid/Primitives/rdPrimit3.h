@@ -13,7 +13,6 @@ void J3DAPI rdPrimit3_DrawClippedCircle(const rdVector3* pPos, float radius, flo
 void J3DAPI rdPrimit3_ClipFace(const rdClipFrustum* pFrustrum, rdGeometryMode geoMode, rdLightMode lightMode, const rdPrimit3* pSrc, rdPrimit3* pDest, const rdVector2* pTexVertOffset);
 
 // Helper hooking functions
-void rdPrimit3_InstallHooks(void);
 void rdPrimit3_ResetGlobals(void);
 
 J3D_EXTERN_C_END

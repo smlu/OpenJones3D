@@ -30,18 +30,6 @@ static int wkernel_wndMenuBarHeight = 0;
 static inline int J3DAPI wkernel_CreateWindow(HINSTANCE hInstance, int nShowCmd, LPCSTR lpWindowName);
 static LRESULT CALLBACK wkernel_MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
-void wkernel_InstallHooks(void)
-{
-    J3D_HOOKFUNC(wkernel_Run);
-    J3D_HOOKFUNC(wkernel_PeekProcessEvents);
-    J3D_HOOKFUNC(wkernel_ProcessEvents);
-    J3D_HOOKFUNC(wkernel_SetWindowStyle);
-    J3D_HOOKFUNC(wkernel_SetWindowSize);
-    J3D_HOOKFUNC(wkernel_SetWindowProc);
-    J3D_HOOKFUNC(wkernel_CreateWindow);
-    J3D_HOOKFUNC(wkernel_MainWndProc);
-}
-
 void wkernel_ResetGlobals(void)
 {}
 

@@ -15,37 +15,6 @@ const rdMatrix34 rdroid_g_identMatrix34 = {
     { { 0.0f }, { 0.0f }, { 0.0f } }
 };
 
-
-
-void rdMatrix_InstallHooks(void)
-{
-    J3D_HOOKFUNC(rdMatrix_Build34);
-    J3D_HOOKFUNC(rdMatrix_BuildFromLook34);
-    J3D_HOOKFUNC(rdMatrix_InvertOrtho34);
-    J3D_HOOKFUNC(rdMatrix_BuildRotate34);
-    J3D_HOOKFUNC(rdMatrix_BuildTranslate34);
-    J3D_HOOKFUNC(rdMatrix_BuildScale34);
-    J3D_HOOKFUNC(rdMatrix_BuildFromVectorAngle34);
-    J3D_HOOKFUNC(rdMatrix_LookAt);
-    J3D_HOOKFUNC(rdMatrix_ExtractAngles34);
-    J3D_HOOKFUNC(rdMatrix_Normalize34);
-    J3D_HOOKFUNC(rdMatrix_Copy34);
-    J3D_HOOKFUNC(rdMatrix_Multiply34);
-    J3D_HOOKFUNC(rdMatrix_PreMultiply34);
-    J3D_HOOKFUNC(rdMatrix_PostMultiply34);
-    J3D_HOOKFUNC(rdMatrix_PreRotate34);
-    J3D_HOOKFUNC(rdMatrix_PostRotate34);
-    J3D_HOOKFUNC(rdMatrix_PreTranslate34);
-    J3D_HOOKFUNC(rdMatrix_PostTranslate34);
-    J3D_HOOKFUNC(rdMatrix_PostScale34);
-    J3D_HOOKFUNC(rdMatrix_TransformVector34);
-    J3D_HOOKFUNC(rdMatrix_TransformVectorOrtho34);
-    J3D_HOOKFUNC(rdMatrix_TransformVector34Acc);
-    J3D_HOOKFUNC(rdMatrix_TransformPoint34);
-    J3D_HOOKFUNC(rdMatrix_TransformPoint34Acc);
-    J3D_HOOKFUNC(rdMatrix_TransformPointList34);
-}
-
 void rdMatrix_ResetGlobals(void)
 {
 }

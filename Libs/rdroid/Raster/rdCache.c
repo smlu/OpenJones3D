@@ -42,24 +42,6 @@ static size_t rdCache_frameNum   = 0;
 int J3DAPI rdCache_ProcFaceDistanceCompare(const rdCacheProcEntry* pEntry1, const rdCacheProcEntry* pEntry2);
 int J3DAPI rdCache_ProcFaceCompare(const rdCacheProcEntry* pEntry1, const rdCacheProcEntry* pEntry2);
 
-void rdCache_InstallHooks(void)
-{
-    J3D_HOOKFUNC(rdCache_Startup);
-    J3D_HOOKFUNC(rdCache_AdvanceFrame);
-    J3D_HOOKFUNC(rdCache_GetFrameNum);
-    J3D_HOOKFUNC(rdCache_GetProcEntry);
-    J3D_HOOKFUNC(rdCache_GetAlphaProcEntry);
-    J3D_HOOKFUNC(rdCache_Flush);
-    J3D_HOOKFUNC(rdCache_FlushAlpha);
-    J3D_HOOKFUNC(rdCache_AddProcFace);
-    J3D_HOOKFUNC(rdCache_AddAlphaProcFace);
-    J3D_HOOKFUNC(rdCache_SendFaceListToHardware);
-    J3D_HOOKFUNC(rdCache_SendWireframeFaceListToHardware);
-    J3D_HOOKFUNC(rdCache_AddToTextureCache);
-    J3D_HOOKFUNC(rdCache_ProcFaceDistanceCompare);
-    J3D_HOOKFUNC(rdCache_ProcFaceCompare);
-}
-
 void rdCache_ResetGlobals(void)
 {}
 

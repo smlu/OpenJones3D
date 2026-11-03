@@ -1161,20 +1161,6 @@ const char* J3DAPI sithCommand_CipherText(const char* pText)
     return aCipherTextBuf;
 }
 
-void sithCommand_InstallHooks(void)
-{
-    J3D_HOOKFUNC(sithCommand_RegisterCommands);
-    J3D_HOOKFUNC(sithCommand_DebugMode);
-    J3D_HOOKFUNC(sithCommand_Wuss);
-    J3D_HOOKFUNC(sithCommand_Fixme);
-    J3D_HOOKFUNC(sithCommand_Ouch);
-    J3D_HOOKFUNC(sithCommand_Coords);
-    J3D_HOOKFUNC(sithCommand_Memory);
-    J3D_HOOKFUNC(sithCommand_DynamicMemory);
-    J3D_HOOKFUNC(sithCommand_MemoryDump);
-    J3D_HOOKFUNC(sithCommand_CipherText);
-}
-
 void sithCommand_ResetGlobals(void)
 {}
 

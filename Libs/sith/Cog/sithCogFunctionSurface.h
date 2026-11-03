@@ -12,7 +12,6 @@ J3D_EXTERN_C_START
 void J3DAPI sithCogFunctionSurface_RegisterFunctions(SithCogSymbolTable* pTbl);
 
 // Helper hooking functions
-void sithCogFunctionSurface_InstallHooks(void);
 void sithCogFunctionSurface_ResetGlobals(void);
 
 J3D_EXTERN_C_END

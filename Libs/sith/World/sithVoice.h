@@ -66,7 +66,6 @@ void sithVoice_TestGetState(SithVoiceTestState* pState);
 #endif
 
 // Helper hooking functions
-void sithVoice_InstallHooks(void);
 void sithVoice_ResetGlobals(void);
 
 J3D_EXTERN_C_END

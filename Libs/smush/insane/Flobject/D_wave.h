@@ -39,7 +39,6 @@ int dwave_Query1(void); // Folded onto 0x004E8260 (shared with dbloc16_Query1, d
 int J3DAPI dwave_Query(const uint8_t* pData, int tag, int* pX, int* pY, int* pWidth, int* pHeight); // Folded onto 0x004E8260; no address of its own, never hook
 void J3DAPI dwave_DecodeVima(int16_t* pDst, const uint8_t* pSrc, uint32_t count, uint32_t channels);
 
-void D_wave_InstallHooks(void);
 void D_wave_ResetGlobals(void);
 
 J3D_EXTERN_C_END

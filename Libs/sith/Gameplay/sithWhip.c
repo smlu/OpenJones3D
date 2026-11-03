@@ -47,30 +47,6 @@ void sithWhip_RemoveWhip(void);
 int J3DAPI sithWhip_SearchWhipSwingThing(SithThing* pThing);
 int J3DAPI sithWhip_SearchWhipClimbThing(SithThing* pThing);
 
-void sithWhip_InstallHooks(void)
-{
-    J3D_HOOKFUNC(sithWhip_UpdateWhipAim);
-    J3D_HOOKFUNC(sithWhip_StartWhipSwing);
-    J3D_HOOKFUNC(sithWhip_FinishWhipSwing);
-    J3D_HOOKFUNC(sithWhip_StartWhipClimb);
-    J3D_HOOKFUNC(sithWhip_SetActorWhipClimbIdle);
-    J3D_HOOKFUNC(sithWhip_FinishWhipClimbDismount);
-    J3D_HOOKFUNC(sithWhip_WhipClimbDismount);
-    J3D_HOOKFUNC(sithWhip_ProcessWhipClimbMove);
-    J3D_HOOKFUNC(sithWhip_WhipFirePuppetCallback);
-    J3D_HOOKFUNC(sithWhip_WhipClimbPuppetCallback);
-    J3D_HOOKFUNC(sithWhip_ClimbDismountPuppetCallback);
-    J3D_HOOKFUNC(sithWhip_GetWhipSwingThing);
-    J3D_HOOKFUNC(sithWhip_GetWhipClimbThing);
-    J3D_HOOKFUNC(sithWhip_Reset);
-    J3D_HOOKFUNC(sithWhip_Save);
-    J3D_HOOKFUNC(sithWhip_Restore);
-    J3D_HOOKFUNC(sithWhip_SearchWhipSwingThing);
-    J3D_HOOKFUNC(sithWhip_SearchWhipClimbThing);
-    J3D_HOOKFUNC(sithWhip_CreatePlayerWhip);
-    J3D_HOOKFUNC(sithWhip_RemoveWhip);
-}
-
 void sithWhip_ResetGlobals(void)
 {}
 

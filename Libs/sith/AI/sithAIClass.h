@@ -27,7 +27,6 @@ SithAIClass* J3DAPI sithAIClass_Load(SithWorld* pWorld, const char* pName);
 int J3DAPI sithAIClass_LoadEntry(const char* pPath, SithAIClass* pClass);
 
 // Helper hooking functions
-void sithAIClass_InstallHooks(void);
 void sithAIClass_ResetGlobals(void);
 
 J3D_EXTERN_C_END

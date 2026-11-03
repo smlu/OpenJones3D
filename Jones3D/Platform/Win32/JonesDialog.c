@@ -30,31 +30,6 @@ static int JonesDialog_dword_5532E4;
 static int JonesDialog_bCursorTrackingInited;
 static int JonesDialog_dword_5532EC;
 
-void JonesDialog_InstallHooks(void)
-{
-    J3D_HOOKFUNC(JonesDialog_InitCursorTracking);
-    J3D_HOOKFUNC(JonesDialog_TrackCursor);
-    J3D_HOOKFUNC(JonesDialog_ResetCursorTracking);
-    J3D_HOOKFUNC(JonesDialog_CopyRectToDrawBuffer);
-    J3D_HOOKFUNC(JonesDialog_RestoreBackground);
-    J3D_HOOKFUNC(JonesDialog_ShowDialog);
-    J3D_HOOKFUNC(JonesDialog_SetGameState);
-    J3D_HOOKFUNC(JonesDialog_ResetGameState);
-    J3D_HOOKFUNC(JonesDialog_DummyFlipGDI);
-    J3D_HOOKFUNC(JonesDialog_SubclassDialogProc);
-    J3D_HOOKFUNC(JonesDialog_SubclassDialogWindowProc);
-    J3D_HOOKFUNC(JonesDialog_HandleWM_ERASEBKGND);
-    J3D_HOOKFUNC(JonesDialog_HandleWM_PAINT);
-    J3D_HOOKFUNC(JonesDialog_HandleWM_NCPAINT);
-    J3D_HOOKFUNC(JonesDialog_AllocScreenDBISection);
-    J3D_HOOKFUNC(JonesDialog_AllocOffScreenGDISection);
-    J3D_HOOKFUNC(JonesDialog_FreeScreenDIBSection);
-    J3D_HOOKFUNC(JonesDialog_AllocOffScreenDIBSection);
-    J3D_HOOKFUNC(JonesDialog_FreeOffScreenDIBSection);
-    J3D_HOOKFUNC(JonesDialog_ShowFileSelectDialog);
-    J3D_HOOKFUNC(JonesDialog_SubclassFileDialogProc);
-}
-
 void JonesDialog_ResetGlobals(void)
 {
 

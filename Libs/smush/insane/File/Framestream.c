@@ -14,25 +14,6 @@
 
 static int framestream_lastFrame; // The last frame number framestream_Continue accepted (only written)
 
-void Framestream_InstallHooks(void)
-{
-    // Uncomment only lines for functions that have full definition and doesn't call original function (non-thunk functions)
-
-    J3D_HOOKFUNC(framestream_Reset);
-    J3D_HOOKFUNC(framestream_Tick);
-    J3D_HOOKFUNC(framestream_Fetch);
-    J3D_HOOKFUNC(framestream_Continue);
-    J3D_HOOKFUNC(framestream_Present);
-    J3D_HOOKFUNC(framestream_Header);
-    J3D_HOOKFUNC(framestream_IsOpen);
-    J3D_HOOKFUNC(framestream_Stall);
-    J3D_HOOKFUNC(framestream_Open);
-    J3D_HOOKFUNC(framestream_Seek);
-    J3D_HOOKFUNC(framestream_Mode);
-    J3D_HOOKFUNC(framestream_Copy);
-    J3D_HOOKFUNC(framestream_CopyB);
-}
-
 void Framestream_ResetGlobals(void)
 {
     framestream_lastFrame = 0;

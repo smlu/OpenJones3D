@@ -33,18 +33,6 @@ void J3DAPI sithAIAwareness_ProcessEvent(const SithAIAwarenessEvent* pEvent, con
 float J3DAPI sithAIAwareness_CheckAdjoinDistance(const SithSurfaceAdjoin* pAdjoin, const rdVector3* startPos, rdVector3* pHitPos, float moveDistance);
 int J3DAPI sithAIAwareness_CreateEvent(SithSector* pSector, const rdVector3* pos, int type, float levelAtTransmittingPos, SithThing* pThing);
 
-void sithAIAwareness_InstallHooks(void)
-{
-    J3D_HOOKFUNC(sithAIAwareness_Close);
-    J3D_HOOKFUNC(sithAIAwareness_CreateTransmittingEvent);
-    J3D_HOOKFUNC(sithAIAwareness_ProcessEvents);
-    J3D_HOOKFUNC(sithAIAwareness_Update);
-    J3D_HOOKFUNC(sithAIAwareness_IsInTransmittingRange);
-    J3D_HOOKFUNC(sithAIAwareness_ProcessEvent);
-    J3D_HOOKFUNC(sithAIAwareness_CheckAdjoinDistance);
-    J3D_HOOKFUNC(sithAIAwareness_CreateEvent);
-}
-
 void sithAIAwareness_ResetGlobals(void)
 {
     memset(&sithAIAwareness_g_aSectors, 0, sizeof(sithAIAwareness_g_aSectors));

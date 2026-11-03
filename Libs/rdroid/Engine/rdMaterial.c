@@ -17,17 +17,6 @@
 rdMaterialLoaderFunc rdMaterial_pMaterialsLoader     = NULL;
 rdMaterialUnloaderFunc rdMaterial_pMaterialsUnloader = NULL;
 
-void rdMaterial_InstallHooks(void)
-{
-    J3D_HOOKFUNC(rdMaterial_RegisterLoader);
-    J3D_HOOKFUNC(rdMaterial_Load);
-    J3D_HOOKFUNC(rdMaterial_LoadEntry);
-    J3D_HOOKFUNC(rdMaterial_Free);
-    J3D_HOOKFUNC(rdMaterial_FreeEntry);
-    J3D_HOOKFUNC(rdMaterial_GetMaterialMemUsage);
-    J3D_HOOKFUNC(rdMaterial_GetMipSize);
-}
-
 void rdMaterial_ResetGlobals(void)
 {}
 

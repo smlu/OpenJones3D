@@ -6,13 +6,6 @@
 
 #include <string.h>
 
-void MemFill_InstallHooks(void)
-{
-    // Uncomment only lines for functions that have full definition and doesn't call original function (non-thunk functions)
-
-    J3D_HOOKFUNC(blit_MemCopyB);
-}
-
 void MemFill_ResetGlobals(void)
 {}
 

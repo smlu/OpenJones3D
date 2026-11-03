@@ -20,16 +20,6 @@
 
 rdVector3 rdPolyline_aView[4];
 
-void rdPolyline_InstallHooks(void)
-{
-    J3D_HOOKFUNC(rdPolyline_New);
-    J3D_HOOKFUNC(rdPolyline_NewEntry);
-    J3D_HOOKFUNC(rdPolyline_Free);
-    J3D_HOOKFUNC(rdPolyline_FreeEntry);
-    J3D_HOOKFUNC(rdPolyline_Draw);
-    J3D_HOOKFUNC(rdPolyline_DrawFace);
-}
-
 void rdPolyline_ResetGlobals(void)
 {}
 

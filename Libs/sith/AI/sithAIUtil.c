@@ -98,63 +98,6 @@ static SithThing** sithAIUtil_aThingsInView             = NULL;
 static float sithAIUtil_maxDistanceToThingsInView       = 0.0f;
 static int sithAIUtil_thingInViewTypeMask               = 0;
 
-void sithAIUtil_InstallHooks(void)
-{
-    J3D_HOOKFUNC(sithAIUtil_UpdateTargetSight);
-    J3D_HOOKFUNC(sithAIUtil_UpdateGoalSight);
-    J3D_HOOKFUNC(sithAIUtil_GetDistanceToTarget);
-    J3D_HOOKFUNC(sithAIUtil_GetDistanceToTargetPos);
-    J3D_HOOKFUNC(sithAIUtil_AIFire);
-    J3D_HOOKFUNC(sithAIUtil_AIPauseMove);
-    J3D_HOOKFUNC(sithAIUtil_AIResetWaypoints);
-    J3D_HOOKFUNC(sithAIUtil_SyncWpnts);
-    J3D_HOOKFUNC(sithAIUtil_ProcessSyncWpnts);
-    J3D_HOOKFUNC(sithAIUtil_AISetWpnt);
-    J3D_HOOKFUNC(sithAIUtil_AIGetWpntThing);
-    J3D_HOOKFUNC(sithAIUtil_AISetWpntRank);
-    J3D_HOOKFUNC(sithAIUtil_AISetWpntFlags);
-    J3D_HOOKFUNC(sithAIUtil_AIClearWpntFlags);
-    J3D_HOOKFUNC(sithAIUtil_AISetActiveWpntLayer);
-    J3D_HOOKFUNC(sithAIUtil_AIConnectWpnts);
-    J3D_HOOKFUNC(sithAIUtil_AIMoveToNextWpnt);
-    J3D_HOOKFUNC(sithAIUtil_AITraverseWpnts);
-    J3D_HOOKFUNC(sithAIUtil_AIAdvanceToNextWpnt);
-    J3D_HOOKFUNC(sithAIUtil_SelectWpntLink);
-    J3D_HOOKFUNC(sithAIUtil_CheckWpntMoveAlign);
-    J3D_HOOKFUNC(sithAIUtil_AIFindNearestWpnt);
-    J3D_HOOKFUNC(sithAIUtil_RankWpntsFromPlayer);
-    J3D_HOOKFUNC(sithAIUtil_RankWpntsFromThing);
-    J3D_HOOKFUNC(sithAIUtil_CreateAIWaypoint);
-    J3D_HOOKFUNC(sithAIUtil_ClearAIWaypoint);
-    J3D_HOOKFUNC(sithAIUtil_GetAIWaypointNum);
-    J3D_HOOKFUNC(sithAIUtil_CompareAIWpntDistances);
-    J3D_HOOKFUNC(sithAIUtil_RenderAIWaypoints);
-    J3D_HOOKFUNC(sithAIUtil_CheckPathToPoint);
-    J3D_HOOKFUNC(sithAIUtil_CheckPosition);
-    J3D_HOOKFUNC(sithAIUtil_CheckFloorAtPos);
-    J3D_HOOKFUNC(sithAIUtil_MakeRandPoint);
-    J3D_HOOKFUNC(sithAIUtil_RetryMakeRandPoint);
-    J3D_HOOKFUNC(sithAIUtil_CheckPathToPos);
-    J3D_HOOKFUNC(sithAIUtil_SweepMoveToPathPos);
-    J3D_HOOKFUNC(sithAIUtil_MakeRoamPos);
-    J3D_HOOKFUNC(sithAIUtil_MakePathPos);
-    J3D_HOOKFUNC(sithAIUtil_IsLineOfFireClear);
-    J3D_HOOKFUNC(sithAIUtil_AIPlaySoundMode);
-    J3D_HOOKFUNC(sithAIUtil_AISetMode);
-    J3D_HOOKFUNC(sithAIUtil_AIClearMode);
-    J3D_HOOKFUNC(sithAIUtil_SetWeaponFireFlags);
-    J3D_HOOKFUNC(sithAIUtil_AIGetMovePos);
-    J3D_HOOKFUNC(sithAIUtil_GetXYHeadingVector);
-    J3D_HOOKFUNC(sithAIUtil_GetXYZHeadingVector);
-    J3D_HOOKFUNC(sithAIUtil_CanAttackTarget);
-    J3D_HOOKFUNC(sithAIUtil_IsThingMoving);
-    J3D_HOOKFUNC(sithAIUtil_ApplyForce);
-    J3D_HOOKFUNC(sithAIUtil_RandomRotate);
-    J3D_HOOKFUNC(sithAIUtil_GetThingsInView);
-    J3D_HOOKFUNC(sithAIUtil_GetNextThingsInView);
-    J3D_HOOKFUNC(sithAIUtil_CanSeeTarget);
-}
-
 void sithAIUtil_ResetGlobals(void)
 {
     memset(&sithAIUtil_g_bRenderAIWpnts, 0, sizeof(sithAIUtil_g_bRenderAIWpnts));

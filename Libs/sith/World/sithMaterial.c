@@ -36,22 +36,6 @@ static inline size_t sithMaterial_GetTotalPixelDataSize(size_t width, size_t hei
 static inline size_t sithMaterial_GetCndMaterialPixelDataSize(const CndMaterialInfo* pInfo);
 static bool sithMaterial_FileExists(const char* pFilename);
 
-void sithMaterial_InstallHooks(void)
-{
-    J3D_HOOKFUNC(sithMaterial_Startup);
-    J3D_HOOKFUNC(sithMaterial_Shutdown);
-    J3D_HOOKFUNC(sithMaterial_FreeWorldMaterials);
-    J3D_HOOKFUNC(sithMaterial_ReadMaterialsListText);
-    J3D_HOOKFUNC(sithMaterial_WriteMaterialsListBinary);
-    J3D_HOOKFUNC(sithMaterial_ReadMaterialsListBinary);
-    J3D_HOOKFUNC(sithMaterial_Load);
-    J3D_HOOKFUNC(sithMaterial_GetMaterialByIndex);
-    J3D_HOOKFUNC(sithMaterial_AllocWorldMaterials);
-    J3D_HOOKFUNC(sithMaterial_CacheFind);
-    J3D_HOOKFUNC(sithMaterial_CacheAdd);
-    J3D_HOOKFUNC(sithMaterial_CacheRemove);
-}
-
 void sithMaterial_ResetGlobals(void)
 {}
 

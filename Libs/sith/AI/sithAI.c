@@ -44,37 +44,6 @@ int J3DAPI sithAI_FreeAI(size_t aiNum);
 int sithAI_CreateAI(void);
 void sithAI_ResetAllAIs(void);
 
-void sithAI_InstallHooks(void)
-{
-    J3D_HOOKFUNC(sithAI_Startup);
-    J3D_HOOKFUNC(sithAI_Shutdown);
-    J3D_HOOKFUNC(sithAI_Open);
-    J3D_HOOKFUNC(sithAI_Close);
-    J3D_HOOKFUNC(sithAI_Create);
-    J3D_HOOKFUNC(sithAI_Free);
-    J3D_HOOKFUNC(sithAI_Process);
-    J3D_HOOKFUNC(sithAI_ProcessAIStateChange);
-    J3D_HOOKFUNC(sithAI_InstinctUpdate);
-    J3D_HOOKFUNC(sithAI_ForceInstinctUpdate);
-    J3D_HOOKFUNC(sithAI_EmitEvent);
-    J3D_HOOKFUNC(sithAI_ProcessBlockedEvent);
-    J3D_HOOKFUNC(sithAI_ProcessUnhandledEvent);
-    J3D_HOOKFUNC(sithAI_ProcessUnhandledWpntEvent);
-    J3D_HOOKFUNC(sithAI_Stop);
-    J3D_HOOKFUNC(sithAI_StopAllAttackingAIs);
-    J3D_HOOKFUNC(sithAI_RegisterInstinct);
-    J3D_HOOKFUNC(sithAI_FindInstinct);
-    J3D_HOOKFUNC(sithAI_GetInstinctIndex);
-    J3D_HOOKFUNC(sithAI_HasInstinct);
-    J3D_HOOKFUNC(sithAI_EnableInstinct);
-    J3D_HOOKFUNC(sithAI_ParseArg);
-    J3D_HOOKFUNC(sithAI_AllocAIFrames);
-    J3D_HOOKFUNC(sithAI_CreateInstinctRegistry);
-    J3D_HOOKFUNC(sithAI_FreeAI);
-    J3D_HOOKFUNC(sithAI_CreateAI);
-    J3D_HOOKFUNC(sithAI_ResetAllAIs);
-}
-
 void sithAI_ResetGlobals(void)
 {
     STD_ZEROMEM(&sithAI_g_bOpen, sizeof(sithAI_g_bOpen));

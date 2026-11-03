@@ -130,24 +130,6 @@ static long Zfilio_gzseek(gzFile file, long offset, int whence)
     return -1;
 }
 
-void Zfilio_InstallHooks(void)
-{
-    // Uncomment only lines for functions that have full definition and doesn't call original function (non-thunk functions)
-
-    J3D_HOOKFUNC(zfilio_Register);
-    J3D_HOOKFUNC(zfilio_Configure);
-    J3D_HOOKFUNC(zfilio_Unregister);
-    J3D_HOOKFUNC(zfilio_Startup);
-    J3D_HOOKFUNC(zfilio_Shutdown);
-    J3D_HOOKFUNC(zfilio_open);
-    J3D_HOOKFUNC(zfilio_close);
-    J3D_HOOKFUNC(zfilio_read);
-    J3D_HOOKFUNC(zfilio_write);
-    J3D_HOOKFUNC(zfilio_tell);
-    J3D_HOOKFUNC(zfilio_seek);
-    J3D_HOOKFUNC(zfilio_flush);
-}
-
 void Zfilio_ResetGlobals(void)
 {
     zfilio_pFilio = NULL;

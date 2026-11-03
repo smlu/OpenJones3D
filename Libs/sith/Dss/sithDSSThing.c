@@ -35,51 +35,6 @@
 
 #include <string.h>
 
-void sithDSSThing_InstallHooks(void)
-{
-    // Uncomment only lines for functions that have full definition and doesn't call original function (non-thunk functions)
-
-    J3D_HOOKFUNC(sithDSSThing_Pos);
-    J3D_HOOKFUNC(sithDSSThing_ProcessPos);
-    J3D_HOOKFUNC(sithDSSThing_MovePos);
-    J3D_HOOKFUNC(sithDSSThing_ProcessMovePos);
-    J3D_HOOKFUNC(sithDSSThing_UpdateState);
-    J3D_HOOKFUNC(sithDSSThing_ProcessStateUpdate);
-    J3D_HOOKFUNC(sithDSSThing_PlaySound);
-    J3D_HOOKFUNC(sithDSSThing_ProcessPlaySound);
-    J3D_HOOKFUNC(sithDSSThing_PlaySoundMode);
-    J3D_HOOKFUNC(sithDSSThing_ProcessPlaySoundMode);
-    J3D_HOOKFUNC(sithDSSThing_PlayKey);
-    J3D_HOOKFUNC(sithDSSThing_ProcessPlayKey);
-    J3D_HOOKFUNC(sithDSSThing_PlayKeyMode);
-    J3D_HOOKFUNC(sithDSSThing_ProcessPlayKeyMode);
-    J3D_HOOKFUNC(sithDSSThing_SetModel);
-    J3D_HOOKFUNC(sithDSSThing_ProcessSetModel);
-    J3D_HOOKFUNC(sithDSSThing_StopKey);
-    J3D_HOOKFUNC(sithDSSThing_ProcessStopKey);
-    J3D_HOOKFUNC(sithDSSThing_StopSound);
-    J3D_HOOKFUNC(sithDSSThing_ProcessStopSound);
-    J3D_HOOKFUNC(sithDSSThing_Fire);
-    J3D_HOOKFUNC(sithDSSThing_ProcessFire);
-    J3D_HOOKFUNC(sithDSSThing_Death);
-    J3D_HOOKFUNC(sithDSSThing_ProcessDeath);
-    J3D_HOOKFUNC(sithDSSThing_DamageThing);
-    J3D_HOOKFUNC(sithDSSThing_ProcessDamage);
-    J3D_HOOKFUNC(sithDSSThing_ThingFullDescription);
-    J3D_HOOKFUNC(sithDSSThing_ProcessThingFullDescription);
-    J3D_HOOKFUNC(sithDSSThing_PathMove);
-    J3D_HOOKFUNC(sithDSSThing_ProcessPathMove);
-    J3D_HOOKFUNC(sithDSSThing_Attachment);
-    J3D_HOOKFUNC(sithDSSThing_ProcessAttachment);
-    J3D_HOOKFUNC(sithDSSThing_Take);
-    J3D_HOOKFUNC(sithDSSThing_ProcessTake);
-    J3D_HOOKFUNC(sithDSSThing_CreateThing);
-    J3D_HOOKFUNC(sithDSSThing_ProcessCreateThing);
-    J3D_HOOKFUNC(sithDSSThing_DestroyThing);
-    J3D_HOOKFUNC(sithDSSThing_ProcessDestroyThing);
-    J3D_HOOKFUNC(sithDSSThing_MoveToPos);
-}
-
 // MoveToPos: time in seconds to predict the thing's position ahead and distance below which the thing is steered instead of snapped
 #define SITHDSS_MOVETOPOS_PREDICTTIME 0.25
 #define SITHDSS_MOVETOPOS_SMOOTHDIST  0.5f

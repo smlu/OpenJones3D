@@ -6,18 +6,6 @@
 
 #include <string.h>
 
-void DecodeAsm_InstallHooks(void)
-{
-    J3D_HOOKFUNC(decode_Lut8);
-    J3D_HOOKFUNC(decode_Lut16);
-    J3D_HOOKFUNC(decode_RGBAto555);
-    J3D_HOOKFUNC(decode_555toRGBA);
-    J3D_HOOKFUNC(decode_RGBAto565);
-    J3D_HOOKFUNC(decode_565toRGBA);
-    J3D_HOOKFUNC(decode_RGBAto565B);
-    J3D_HOOKFUNC(decode_565BtoRGBA);
-}
-
 void DecodeAsm_ResetGlobals(void)
 {}
 

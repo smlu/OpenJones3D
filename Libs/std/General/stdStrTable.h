@@ -18,7 +18,6 @@ wchar_t* J3DAPI stdStrTable_GetValueOrKey(const tStringTable* pStrTable, const c
 int J3DAPI stdStrTable_ReadLine(tFileHandle fh, char* pStr, int size);
 
 // Helper hooking functions
-void stdStrTable_InstallHooks(void);
 void stdStrTable_ResetGlobals(void);
 
 J3D_EXTERN_C_END

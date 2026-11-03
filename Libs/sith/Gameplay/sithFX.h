@@ -55,7 +55,6 @@ SithThing* J3DAPI sithFX_CreateLightningThing(const SithThing* pSourceThing, con
 SithThing* J3DAPI sithFX_CreatePolylineThing(const SithThing* pSourceThing, SithThing* pEndThing, const rdVector3* endPos, const rdMaterial* pMaterial, float baseRadius, float tipRadius, float duration);
 
 // Helper hooking functions
-void sithFX_InstallHooks(void);
 void sithFX_ResetGlobals(void);
 
 J3D_EXTERN_C_END

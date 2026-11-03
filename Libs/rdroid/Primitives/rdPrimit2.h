@@ -18,7 +18,6 @@ int J3DAPI rdPrimit2_DrawRectangle(rdCanvas* pCanvas, int x1, int y1, int x2, in
 int J3DAPI rdPrimit2_DrawTriangle(rdCanvas* pCanvas, int x1, int y1, int x2, int y2, int a6, int a7, uint32_t color, uint32_t pattern); // Added
 
 // Helper hooking functions
-void rdPrimit2_InstallHooks(void);
 void rdPrimit2_ResetGlobals(void);
 
 J3D_EXTERN_C_END

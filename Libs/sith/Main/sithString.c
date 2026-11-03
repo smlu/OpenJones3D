@@ -13,14 +13,6 @@ static tStringTable sithStringsTbl;
 static tStringTable voiceStringsTbl;
 static bool bStartup = false;
 
-
-void sithString_InstallHooks(void)
-{
-    J3D_HOOKFUNC(sithString_Startup);
-    J3D_HOOKFUNC(sithString_Shutdown);
-    J3D_HOOKFUNC(sithString_GetString);
-}
-
 void sithString_ResetGlobals(void)
 {
 }

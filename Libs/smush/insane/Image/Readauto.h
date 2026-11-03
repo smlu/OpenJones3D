@@ -47,7 +47,6 @@ int J3DAPI readauto_Op3(void* pHandle, int a, int b, int c, int d, int e);
 int J3DAPI readauto_Op4(void* pHandle, int a, int b);
 int J3DAPI readauto_Recognize(const char* pFile, int pass); // Folded onto 0x004E74A0; no address of its own, never hook
 
-void Readauto_InstallHooks(void);
 void Readauto_ResetGlobals(void);
 
 J3D_EXTERN_C_END

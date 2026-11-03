@@ -72,28 +72,6 @@ int J3DAPI JonesConsole_Money(const SithConsoleCommand* pFunc, const char* pArg)
 int J3DAPI JonesConsole_Menu(const SithConsoleCommand* pFunc, const char* pArg); // Added
 int J3DAPI JonesConsole_Hud(const SithConsoleCommand* pFunc, const char* pArg); // Added
 
-void JonesConsole_InstallHooks(void)
-{
-    J3D_HOOKFUNC(JonesConsole_Startup);
-    J3D_HOOKFUNC(JonesConsole_Shutdown);
-    J3D_HOOKFUNC(JonesConsole_Open);
-    J3D_HOOKFUNC(JonesConsole_Close);
-    J3D_HOOKFUNC(JonesConsole_FlushToDisplay);
-    J3D_HOOKFUNC(JonesConsole_PrintText);
-    J3D_HOOKFUNC(JonesConsole_PrintTextWithID);
-    J3D_HOOKFUNC(JonesConsole_ClearText);
-    J3D_HOOKFUNC(JonesConsole_ExeCommand);
-    J3D_HOOKFUNC(JonesConsole_ShowConsole);
-    J3D_HOOKFUNC(JonesConsole_HandelChar);
-    J3D_HOOKFUNC(JonesConsole_FlushCommandLine);
-    J3D_HOOKFUNC(JonesConsole_HideConsole);
-    J3D_HOOKFUNC(JonesConsole_PrintVersion);
-    J3D_HOOKFUNC(JonesConsole_PrintFramerate);
-    J3D_HOOKFUNC(JonesConsole_PrintPolys);
-    J3D_HOOKFUNC(JonesConsole_ShowEndCredits);
-    J3D_HOOKFUNC(JonesConsole_RemoveExpired);
-}
-
 void JonesConsole_ResetGlobals(void)
 {
     memset(&JonesConsole_g_bVisible, 0, sizeof(JonesConsole_g_bVisible));

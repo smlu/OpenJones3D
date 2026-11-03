@@ -4,12 +4,6 @@
 #include <j3dcore/j3dhook.h>
 #include <std/RTI/symbols.h>
 
-void stdLinkList_InstallHooks(void)
-{
-    J3D_HOOKFUNC(stdLinkList_AddNode);
-    J3D_HOOKFUNC(stdLinkList_RemoveNode);
-}
-
 void stdLinkList_ResetGlobals(void)
 {}
 

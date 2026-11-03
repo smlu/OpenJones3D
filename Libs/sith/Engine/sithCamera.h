@@ -109,7 +109,6 @@ void J3DAPI sithCamera_SetCameraStateFlags(SithCameraState flags);
 SithCameraState J3DAPI sithCamera_GetCameraStateFlags();
 
 // Helper hooking functions
-void sithCamera_InstallHooks(void);
 void sithCamera_ResetGlobals(void);
 
 J3D_EXTERN_C_END

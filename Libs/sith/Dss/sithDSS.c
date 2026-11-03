@@ -55,38 +55,6 @@ static const rdPuppetTrackCallback sithDSS_aPuppetCallbacks[7][2] = {
 //    &sithWhip_WhipFirePuppetCallback
 //};
 
-void sithDSS_InstallHooks(void)
-{
-    // Uncomment only lines for functions that have full definition and doesn't call original function (non-thunk functions)
-
-    J3D_HOOKFUNC(sithDSS_SurfaceStatus);
-    J3D_HOOKFUNC(sithDSS_ProcessSurfaceStatus);
-    J3D_HOOKFUNC(sithDSS_SectorStatus);
-    J3D_HOOKFUNC(sithDSS_SyncSeenSectors);
-    J3D_HOOKFUNC(sithDSS_ProcessSyncSeenSecors);
-    J3D_HOOKFUNC(sithDSS_ProcessSectorStatus);
-    J3D_HOOKFUNC(sithDSS_SectorFlags);
-    J3D_HOOKFUNC(sithDSS_ProcessSectorFlags);
-    J3D_HOOKFUNC(sithDSS_AIStatus);
-    J3D_HOOKFUNC(sithDSS_ProcessAIStatus);
-    J3D_HOOKFUNC(sithDSS_Inventory);
-    J3D_HOOKFUNC(sithDSS_ProcessInventory);
-    J3D_HOOKFUNC(sithDSS_AnimStatus);
-    J3D_HOOKFUNC(sithDSS_ProcessAnimStatus);
-    J3D_HOOKFUNC(sithDSS_PuppetStatus);
-    J3D_HOOKFUNC(sithDSS_ProcessPuppetStatus);
-    J3D_HOOKFUNC(sithDSS_SyncTaskEvents);
-    J3D_HOOKFUNC(sithDSS_ProcessSyncTaskEvents);
-    J3D_HOOKFUNC(sithDSS_SyncCameras);
-    J3D_HOOKFUNC(sithDSS_ProcessSyncCameras);
-    J3D_HOOKFUNC(sithDSS_SyncGameState);
-    J3D_HOOKFUNC(sithDSS_ProcessSyncGameState);
-    J3D_HOOKFUNC(sithDSS_SyncVehicleControlState);
-    J3D_HOOKFUNC(sithDSS_ProcessVehicleControlsState);
-    J3D_HOOKFUNC(sithDSS_SendEndSection);
-    J3D_HOOKFUNC(sithDSS_ProcessEndSection);
-}
-
 void sithDSS_ResetGlobals(void)
 {}
 

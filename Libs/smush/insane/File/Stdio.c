@@ -15,17 +15,6 @@ static FilioInterface stdio_filio = { stdio_open, stdio_close, stdio_read, stdio
 static void* stdio_pParam;
 static LecShare* stdio_pShare;
 
-void Stdio_InstallHooks(void)
-{
-    // Uncomment only lines for functions that have full definition and doesn't call original function (non-thunk functions)
-
-    J3D_HOOKFUNC(stdio_Register);
-    J3D_HOOKFUNC(stdio_Unregister);
-    J3D_HOOKFUNC(stdio_open);
-    J3D_HOOKFUNC(stdio_close);
-    J3D_HOOKFUNC(stdio_flush);
-}
-
 void Stdio_ResetGlobals(void)
 {
     stdio_pParam = NULL;

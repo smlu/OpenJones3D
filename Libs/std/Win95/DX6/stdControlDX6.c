@@ -122,47 +122,6 @@ static void stdControl_ApplyMouseButtonState(const DIMOUSESTATE* pState);
 const char* J3DAPI stdControl_DIGetStatus(int HRESULT);
 BOOL CALLBACK stdControl_EnumDevicesCallback(LPCDIDEVICEINSTANCEA pdidInstance, LPVOID pContext);
 
-void stdControl_InstallHooks(void)
-{
-    J3D_HOOKFUNC(stdControl_Startup);
-    J3D_HOOKFUNC(stdControl_Shutdown);
-    J3D_HOOKFUNC(stdControl_Open);
-    J3D_HOOKFUNC(stdControl_Close);
-    J3D_HOOKFUNC(stdControl_Reset);
-    J3D_HOOKFUNC(stdControl_DisableReadJoysticks);
-    J3D_HOOKFUNC(stdControl_EnableAxis);
-    J3D_HOOKFUNC(stdControl_ReadControls);
-    J3D_HOOKFUNC(stdControl_ReadAxis);
-    J3D_HOOKFUNC(stdControl_ReadAxisRaw);
-    J3D_HOOKFUNC(stdControl_ReadKeyAsAxis);
-    J3D_HOOKFUNC(stdControl_ReadAxisAsKey);
-    J3D_HOOKFUNC(stdControl_ReadAxisAsKeyEx);
-    J3D_HOOKFUNC(stdControl_ReadKey);
-    J3D_HOOKFUNC(stdControl_ControlsActive);
-    J3D_HOOKFUNC(stdControl_SetActivation);
-    J3D_HOOKFUNC(stdControl_ToggleMouse);
-    J3D_HOOKFUNC(stdControl_EnableMouse);
-    J3D_HOOKFUNC(stdControl_ControlsIdle);
-    J3D_HOOKFUNC(stdControl_TestAxisFlag);
-    J3D_HOOKFUNC(stdControl_SetAxisFlags);
-    J3D_HOOKFUNC(stdControl_InitJoysticks);
-    J3D_HOOKFUNC(stdControl_InitKeyboard);
-    J3D_HOOKFUNC(stdControl_InitMouse);
-    J3D_HOOKFUNC(stdControl_EnableAxisRead);
-    J3D_HOOKFUNC(stdControl_ReadKeyboard);
-    J3D_HOOKFUNC(stdControl_ReadJoysticks);
-    J3D_HOOKFUNC(stdControl_ReadMouse);
-    J3D_HOOKFUNC(stdControl_RegisterAxis);
-    J3D_HOOKFUNC(stdControl_DIGetStatus);
-    J3D_HOOKFUNC(stdControl_EnumDevicesCallback);
-    J3D_HOOKFUNC(stdControl_ResetMousePos);
-    J3D_HOOKFUNC(stdControl_GetMaxJoystickButtons);
-    J3D_HOOKFUNC(stdControl_GetNumJoysticks);
-    J3D_HOOKFUNC(stdControl_EnableMouseSensitivity);
-    J3D_HOOKFUNC(stdControl_ShowMouseCursor);
-    J3D_HOOKFUNC(stdControl_IsGamePad);
-}
-
 void stdControl_ResetGlobals(void)
 {}
 

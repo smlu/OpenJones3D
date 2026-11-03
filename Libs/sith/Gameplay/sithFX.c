@@ -150,33 +150,6 @@ bool J3DAPI sithFX_GetWaterPosition(SithThing* pThing, rdVector3* waterPos, Sith
     return false;
 }
 
-void sithFX_InstallHooks(void)
-{
-    J3D_HOOKFUNC(sithFX_Reset);
-    J3D_HOOKFUNC(sithFX_ClearChalkMarks);
-    J3D_HOOKFUNC(sithFX_DestroyFairyDustDeluxe);
-    J3D_HOOKFUNC(sithFX_CreateFairyDust);
-    J3D_HOOKFUNC(sithFX_SetFairyDustSize);
-    J3D_HOOKFUNC(sithFX_UpdateFairyDustUserBlock);
-    J3D_HOOKFUNC(sithFX_CreateFairyDustDelux);
-    J3D_HOOKFUNC(sithFX_CreateFairyDustDeluxDusts);
-    J3D_HOOKFUNC(sithFX_CreateBubble);
-    J3D_HOOKFUNC(sithFX_CreateWaterRipple);
-    J3D_HOOKFUNC(sithFX_CreateRaftSplatterFX);
-    J3D_HOOKFUNC(sithFX_CreateRaftWakeFX);
-    J3D_HOOKFUNC(sithFX_CreatePaddleWaterSplash);
-    J3D_HOOKFUNC(sithFX_CreateRaftPaddleWaterFX);
-    J3D_HOOKFUNC(sithFX_CreateRaftInflateWaterFX);
-    J3D_HOOKFUNC(sithFX_CreateMineCarSparks);
-    J3D_HOOKFUNC(sithFX_CreateChalkMark);
-    J3D_HOOKFUNC(sithFX_CreateThingOnSurface);
-    J3D_HOOKFUNC(sithFX_UpdatePolyline);
-    J3D_HOOKFUNC(sithFX_ResetPolylineTexVertOffset);
-    J3D_HOOKFUNC(sithFX_CreateLaserThing);
-    J3D_HOOKFUNC(sithFX_CreateLightningThing);
-    J3D_HOOKFUNC(sithFX_CreatePolylineThing);
-}
-
 void sithFX_ResetGlobals(void)
 {
     int sithFX_g_lastChalkMarkNum_tmp = -1;

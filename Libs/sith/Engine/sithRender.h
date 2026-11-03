@@ -119,7 +119,6 @@ void sithRender_TogglePVSCull(void); // Added from debug
 int sithRender_MakeScreenShot(void);
 
 // Helper hooking functions
-void sithRender_InstallHooks(void);
 void sithRender_ResetGlobals(void);
 
 J3D_EXTERN_C_END

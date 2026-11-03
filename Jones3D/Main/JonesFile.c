@@ -53,32 +53,6 @@ int J3DAPI JonesFile_FileSeek(tFileHandle fh, int offset, int origin);
 size_t J3DAPI JonesFile_FileSize(const char* pFilename);
 int JonesFile_FilePrintf(tFileHandle fh, const char* aFormat, ...);
 
-void JonesFile_InstallHooks(void)
-{
-    J3D_HOOKFUNC(JonesFile_Startup);
-    J3D_HOOKFUNC(JonesFile_Shutdown);
-    J3D_HOOKFUNC(JonesFile_Open);
-    J3D_HOOKFUNC(JonesFile_Close);
-    J3D_HOOKFUNC(JonesFile_GetCurrentCDNum);
-    J3D_HOOKFUNC(JonesFile_FileExists);
-    J3D_HOOKFUNC(JonesFile_SetInstallPath);
-    J3D_HOOKFUNC(JonesFile_SetCDPath);
-    J3D_HOOKFUNC(JonesFile_InitServices);
-    J3D_HOOKFUNC(JonesFile_ResetServices);
-    J3D_HOOKFUNC(JonesFile_OpenResource);
-    J3D_HOOKFUNC(JonesFile_CloseResource);
-    J3D_HOOKFUNC(JonesFile_OpenFile);
-    J3D_HOOKFUNC(JonesFile_CloseFile);
-    J3D_HOOKFUNC(JonesFile_FileRead);
-    J3D_HOOKFUNC(JonesFile_FileWrite);
-    J3D_HOOKFUNC(JonesFile_FileGets);
-    J3D_HOOKFUNC(JonesFile_FileEOF);
-    J3D_HOOKFUNC(JonesFile_FileTell);
-    J3D_HOOKFUNC(JonesFile_FileSeek);
-    J3D_HOOKFUNC(JonesFile_FileSize);
-    J3D_HOOKFUNC(JonesFile_FilePrintf);
-}
-
 void JonesFile_ResetGlobals(void)
 {}
 

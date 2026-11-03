@@ -105,58 +105,6 @@ int sithWeapon_IsLocalPlayerUnableToUseWeapon(void);
 static void J3DAPI sithWeapon_GenBloodsplort(SithThing* pHitThing); // Keeping for hooking on vanilla exe
 static bool J3DAPI sithWeapon_GenBloodSplatterEx(SithThing* pHitThing); // Returns false if thing is vehicle, splort template not found, or fails to create sprite thing
 
-void sithWeapon_InstallHooks(void)
-{
-    J3D_HOOKFUNC(sithWeapon_Open);
-    J3D_HOOKFUNC(sithWeapon_InitalizeActorWeapon);
-    J3D_HOOKFUNC(sithWeapon_UpdateActorWeapon);
-    J3D_HOOKFUNC(sithWeapon_Update);
-    J3D_HOOKFUNC(sithWeapon_SelectWeapon);
-    J3D_HOOKFUNC(sithWeapon_HandleImpact);
-    J3D_HOOKFUNC(sithWeapon_ParseArg);
-    J3D_HOOKFUNC(sithWeapon_WeaponFire);
-    J3D_HOOKFUNC(sithWeapon_WeaponFireProjectile);
-    J3D_HOOKFUNC(sithWeapon_DamageWeapon);
-    J3D_HOOKFUNC(sithWeapon_ThingCollisionHandler);
-    J3D_HOOKFUNC(sithWeapon_SurfaceCollisionHandler);
-    J3D_HOOKFUNC(sithWeapon_DestroyWeapon);
-    J3D_HOOKFUNC(sithWeapon_CreateWeaponExplosion);
-    J3D_HOOKFUNC(sithWeapon_GetMountWait);
-    J3D_HOOKFUNC(sithWeapon_SetMountWait);
-    J3D_HOOKFUNC(sithWeapon_SetFireWait);
-    J3D_HOOKFUNC(sithWeapon_SetAimWait);
-    J3D_HOOKFUNC(sithWeapon_ActivateWeapon);
-    J3D_HOOKFUNC(sithWeapon_DeactivateWeapon);
-    J3D_HOOKFUNC(sithWeapon_ProcessWeaponControls);
-    J3D_HOOKFUNC(sithWeapon_DeselectWeapon);
-    J3D_HOOKFUNC(sithWeapon_IsMountingWeapon);
-    J3D_HOOKFUNC(sithWeapon_HasWeaponSelected);
-    J3D_HOOKFUNC(sithWeapon_GetAimOrient);
-    J3D_HOOKFUNC(sithWeapon_FireProjectile);
-    J3D_HOOKFUNC(sithWeapon_DeactivateCurrentWeapon);
-    J3D_HOOKFUNC(sithWeapon_SelectNextWeapon);
-    J3D_HOOKFUNC(sithWeapon_SelectPreviousWeapon);
-    J3D_HOOKFUNC(sithWeapon_SetWeaponModel);
-    J3D_HOOKFUNC(sithWeapon_ResetWeaponModel);
-    J3D_HOOKFUNC(sithWeapon_SetHolsterModel);
-    J3D_HOOKFUNC(sithWeapon_ResetHolsterModel);
-    J3D_HOOKFUNC(sithWeapon_SendMessageAim);
-    J3D_HOOKFUNC(sithWeapon_SetActorKilledCallback);
-    J3D_HOOKFUNC(sithWeapon_IsAiming);
-    J3D_HOOKFUNC(sithWeapon_GenBloodsplort);
-    J3D_HOOKFUNC(sithWeapon_GetLastWeapon);
-    J3D_HOOKFUNC(sithWeapon_SetLastWeapon);
-    J3D_HOOKFUNC(sithWeapon_GetWeaponMaxAimDistance);
-    J3D_HOOKFUNC(sithWeapon_GetWeaponCollideSize);
-    J3D_HOOKFUNC(sithWeapon_IsLocalPlayerUnableToUseWeapon);
-    J3D_HOOKFUNC(sithWeapon_Save);
-    J3D_HOOKFUNC(sithWeapon_Restore);
-    J3D_HOOKFUNC(sithWeapon_GetWeaponForControlKey);
-    J3D_HOOKFUNC(sithWeapon_FireProjectileEx);
-    J3D_HOOKFUNC(sithWeapon_CreateWeaponFireFx);
-    J3D_HOOKFUNC(sithWeapon_ActivateWhip);
-}
-
 void sithWeapon_ResetGlobals(void)
 {}
 

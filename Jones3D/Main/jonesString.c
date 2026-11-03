@@ -11,13 +11,6 @@ static tStringTable jonesString_jonesStringsTbl;
 static char jonesString_aBuffer[512] = { 0 };
 static bool jonesString_bStarted = false;
 
-void jonesString_InstallHooks(void)
-{
-    J3D_HOOKFUNC(jonesString_GetString);
-    J3D_HOOKFUNC(jonesString_Startup);
-    J3D_HOOKFUNC(jonesString_Shutdown);
-}
-
 void jonesString_ResetGlobals(void)
 {
     //memset(&jonesString_jonesStringsTbl, 0, sizeof(jonesString_jonesStringsTbl));

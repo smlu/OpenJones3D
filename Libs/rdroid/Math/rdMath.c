@@ -6,13 +6,6 @@
 
 #include <std/General/stdMath.h>
 
-
-void rdMath_InstallHooks(void)
-{
-    J3D_HOOKFUNC(rdMath_DistancePointToPlane);
-    J3D_HOOKFUNC(rdMath_DeltaAngleNormalized);
-}
-
 void rdMath_ResetGlobals(void)
 {}
 

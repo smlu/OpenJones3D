@@ -148,38 +148,6 @@ static int J3DAPI sithPlayerControls_FindLedgeInDirection(SithThing* pThing, con
 static SithSurface* J3DAPI sithPlayerControls_FindClimbSurface(SithThing* pThing, const rdVector3* moveNorm, int climbDir, int* pbHitNonClimbSurface);
 static bool J3DAPI sithPlayerControls_CanStrafeMove(SithThing* pThing, int bMoveRight);
 
-void sithPlayerControls_InstallHooks(void)
-{
-    J3D_HOOKFUNC(sithPlayerControls_PuppetCallback);
-    J3D_HOOKFUNC(sithPlayerControls_Process);
-    J3D_HOOKFUNC(sithPlayerControls_ProcessPlayerDebugControls);
-    J3D_HOOKFUNC(sithPlayerControls_ProcessLookControls);
-    J3D_HOOKFUNC(sithPlayerControls_ProcessGeneralMove);
-    J3D_HOOKFUNC(sithPlayerControls_ProcessClimbMove);
-    J3D_HOOKFUNC(sithPlayerControls_ProcessJewelFlyMove);
-    J3D_HOOKFUNC(sithPlayerControls_ProcessFlyMove);
-    J3D_HOOKFUNC(sithPlayerControls_ProcessHUDControls);
-    J3D_HOOKFUNC(sithPlayerControls_ProcessEditorDebugControls);
-    J3D_HOOKFUNC(sithPlayerControls_ProcessDeadPlayer);
-    J3D_HOOKFUNC(sithPlayerControls_ProcessFallingMove);
-    J3D_HOOKFUNC(sithPlayerControls_ProcessSwimMove);
-    J3D_HOOKFUNC(sithPlayerControls_ProcessHangMove);
-    J3D_HOOKFUNC(sithPlayerControls_ProcessWeaponAim);
-    J3D_HOOKFUNC(sithPlayerControls_CheckAimRange);
-    J3D_HOOKFUNC(sithPlayerControls_GetPushPullMoveNorm);
-    J3D_HOOKFUNC(sithPlayerControls_CheckWaterLedge);
-    J3D_HOOKFUNC(sithPlayerControls_FindLedgeInDirection);
-    J3D_HOOKFUNC(sithPlayerControls_FindClimbSurface);
-    J3D_HOOKFUNC(sithPlayerControls_BoardVehicle);
-    J3D_HOOKFUNC(sithPlayerControls_ExitVehicle);
-    J3D_HOOKFUNC(sithPlayerControls_RotateAimJoints);
-    J3D_HOOKFUNC(sithPlayerControls_ResetAimJoints);
-    J3D_HOOKFUNC(sithPlayerControls_GetTargetThing);
-    J3D_HOOKFUNC(sithPlayerControls_GetVehicleBoardedThing);
-    J3D_HOOKFUNC(sithPlayerControls_SetVehicleBoardedThing);
-    J3D_HOOKFUNC(sithPlayerControls_CanStrafeMove);
-}
-
 void sithPlayerControls_ResetGlobals(void)
 {
     sithPlayerControls_g_bCutsceneMode = 0;

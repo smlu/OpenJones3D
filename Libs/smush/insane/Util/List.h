@@ -30,7 +30,6 @@ void J3DAPI LecList_Init(LecList* pList);
 void J3DAPI LecList_Insert(LecNode* pNode, LecNode* pRef, int before);
 void J3DAPI LecList_Remove(LecNode* pNode);
 
-void List_InstallHooks(void);
 void List_ResetGlobals(void);
 
 J3D_EXTERN_C_END

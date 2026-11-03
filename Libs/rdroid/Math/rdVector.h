@@ -771,7 +771,6 @@ void J3DAPI rdVector_SmoothDamp4Acc(rdVector4* dest, const rdVector4* target, fl
 }
 
 // Helper hooking functions
-void rdVector_InstallHooks(void);
 void rdVector_ResetGlobals(void);
 
 J3D_EXTERN_C_END

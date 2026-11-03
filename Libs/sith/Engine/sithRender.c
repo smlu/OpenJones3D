@@ -160,32 +160,6 @@ static void sithRender_RenderThings(void);
 static int J3DAPI sithRender_RenderThing(SithThing* pThing);
 static void sithRender_RenderAlphaAdjoins(void);
 
-void sithRender_InstallHooks(void)
-{
-    J3D_HOOKFUNC(sithRender_Startup);
-    J3D_HOOKFUNC(sithRender_Open);
-    J3D_HOOKFUNC(sithRender_Close);
-    J3D_HOOKFUNC(sithRender_Shutdown);
-    J3D_HOOKFUNC(sithRender_SetRenderFlags);
-    J3D_HOOKFUNC(sithRender_GetRenderFlags);
-    J3D_HOOKFUNC(sithRender_SetLightingMode);
-    J3D_HOOKFUNC(sithRender_Draw);
-    J3D_HOOKFUNC(sithRender_BuildVisibleSectorList);
-    J3D_HOOKFUNC(sithRender_BuildVisibleSurface);
-    J3D_HOOKFUNC(sithRender_BuildClipFrustrum);
-    J3D_HOOKFUNC(sithRender_BuildVisibleSectorListPVS);
-    J3D_HOOKFUNC(sithRender_BuildVisibleSectorPVS);
-    J3D_HOOKFUNC(sithRender_BuildVisibleSector);
-    J3D_HOOKFUNC(sithRender_RenderSectors);
-    J3D_HOOKFUNC(sithRender_BuildVisibleThingSectorList);
-    J3D_HOOKFUNC(sithRender_CollectVisibleThingSector);
-    J3D_HOOKFUNC(sithRender_BuildDynamicLights);
-    J3D_HOOKFUNC(sithRender_RenderThings);
-    J3D_HOOKFUNC(sithRender_RenderThing);
-    J3D_HOOKFUNC(sithRender_RenderAlphaAdjoins);
-    J3D_HOOKFUNC(sithRender_MakeScreenShot);
-}
-
 void sithRender_ResetGlobals(void)
 {
     float jonesConfig_g_fogDensity_tmp = 100.0f;

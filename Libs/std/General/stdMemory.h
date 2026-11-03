@@ -52,7 +52,6 @@ void* J3DAPI stdMemory_BlockRealloc(void* pData, size_t size);
 void* J3DAPI stdMemory_BlockAlloc(size_t size);
 
 // Helper hooking functions
-void stdMemory_InstallHooks(void);
 void stdMemory_ResetGlobals(void);
 
 J3D_EXTERN_C_END

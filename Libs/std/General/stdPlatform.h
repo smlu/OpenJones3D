@@ -43,7 +43,6 @@ bool J3DAPI stdPlatform_DirExists(const char* pPath);
 void J3DAPI stdPlatform_InstallSignalHandler(void);
 
 // Helper hooking functions
-void stdPlatform_InstallHooks(void);
 void stdPlatform_ResetGlobals(void);
 
 J3D_EXTERN_C_END

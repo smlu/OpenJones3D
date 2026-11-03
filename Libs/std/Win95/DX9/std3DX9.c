@@ -152,48 +152,6 @@ void std3D_ShutdownShaderSystem(void);
 
 static void std3D_UpdateShaderState(StdShaderHandle activeShader);
 
-void std3D_InstallHooks(void)
-{
-    J3D_HOOKFUNC(std3D_Startup);
-    J3D_HOOKFUNC(std3D_Shutdown);
-    J3D_HOOKFUNC(std3D_GetNumDevices);
-    J3D_HOOKFUNC(std3D_GetAllDevices);
-    J3D_HOOKFUNC(std3D_Open);
-    J3D_HOOKFUNC(std3D_Close);
-    J3D_HOOKFUNC(std3D_GetTextureFormat);
-    J3D_HOOKFUNC(std3D_GetColorFormat);
-    J3D_HOOKFUNC(std3D_GetNumTextureFormats);
-    J3D_HOOKFUNC(std3D_StartScene);
-    J3D_HOOKFUNC(std3D_EndScene);
-    J3D_HOOKFUNC(std3D_DrawRenderList);
-    J3D_HOOKFUNC(std3D_SetWireframeRenderState);
-    J3D_HOOKFUNC(std3D_DrawLineStrip);
-    J3D_HOOKFUNC(std3D_DrawPointList);
-    J3D_HOOKFUNC(std3D_SetRenderState);
-    J3D_HOOKFUNC(std3D_AllocSystemTexture);
-    J3D_HOOKFUNC(std3D_GetValidDimensions);
-    J3D_HOOKFUNC(std3D_ClearSystemTexture);
-    J3D_HOOKFUNC(std3D_AddToTextureCache);
-    J3D_HOOKFUNC(std3D_GetMipMapCount);
-    J3D_HOOKFUNC(std3D_ResetTextureCache);
-    J3D_HOOKFUNC(std3D_UpdateFrameCount);
-    J3D_HOOKFUNC(std3D_FindClosestFormat);
-    J3D_HOOKFUNC(std3D_InitRenderState);
-    J3D_HOOKFUNC(std3D_SetMipmapFilter);
-    J3D_HOOKFUNC(std3D_SetProjection);
-    J3D_HOOKFUNC(std3D_EnableFog);
-    J3D_HOOKFUNC(std3D_SetFog);
-    J3D_HOOKFUNC(std3D_ClearZBuffer);
-    J3D_HOOKFUNC(std3D_CreateViewport);
-    J3D_HOOKFUNC(std3D_AddTextureToCacheList);
-    J3D_HOOKFUNC(std3D_RemoveTextureFromCacheList);
-    J3D_HOOKFUNC(std3D_PurgeTextureCache);
-    J3D_HOOKFUNC(std3D_D3DGetStatus);
-    J3D_HOOKFUNC(std3D_BuildDisplayEnvironment);
-    J3D_HOOKFUNC(std3D_FreeDisplayEnvironment);
-    J3D_HOOKFUNC(std3D_SetFindAllDevices);
-}
-
 void std3D_ResetGlobals(void)
 {
     float std3D_g_fogDensity_tmp = 1.0f;

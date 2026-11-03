@@ -58,7 +58,6 @@ void jonesConfig_UpdateCurrentLevelNum(void); // Updates cached current level nu
                                               // Cached level num is used for statistics dialog
 
 // Helper hooking functions
-void jonesConfig_InstallHooks(void);
 void jonesConfig_ResetGlobals(void);
 
 J3D_EXTERN_C_END

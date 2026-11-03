@@ -176,57 +176,6 @@ static void J3DAPI stdDisplay_SetPixels32(uint32_t* pPixels32, uint32_t pixel, s
     }
 }
 
-void stdDisplay_InstallHooks(void)
-{
-    J3D_HOOKFUNC(stdDisplay_Startup);
-    J3D_HOOKFUNC(stdDisplay_Shutdown);
-    J3D_HOOKFUNC(stdDisplay_Open);
-    J3D_HOOKFUNC(stdDisplay_Close);
-    J3D_HOOKFUNC(stdDisplay_SetMode);
-    J3D_HOOKFUNC(stdDisplay_ClearMode);
-    J3D_HOOKFUNC(stdDisplay_GetNumDevices);
-    J3D_HOOKFUNC(stdDisplay_GetDevice);
-    J3D_HOOKFUNC(stdDisplay_GetCurrentDevice);
-    J3D_HOOKFUNC(stdDisplay_Refresh);
-    J3D_HOOKFUNC(stdDisplay_VBufferNew);
-    J3D_HOOKFUNC(stdDisplay_VBufferFree);
-    J3D_HOOKFUNC(stdDisplay_VBufferLock);
-    J3D_HOOKFUNC(stdDisplay_VBufferUnlock);
-    J3D_HOOKFUNC(stdDisplay_VBufferFill);
-    J3D_HOOKFUNC(stdDisplay_VBufferConvertColorFormat);
-    J3D_HOOKFUNC(stdDisplay_VideoModeCompare);
-    J3D_HOOKFUNC(stdDisplay_GetTextureMemory);
-    J3D_HOOKFUNC(stdDisplay_GetTotalMemory);
-    J3D_HOOKFUNC(stdDisplay_CreateZBuffer);
-    J3D_HOOKFUNC(stdDisplay_SetAspectRatio);
-    J3D_HOOKFUNC(stdDisplay_SetWindowMode);
-    J3D_HOOKFUNC(stdDisplay_SetFullscreenMode);
-    J3D_HOOKFUNC(stdDisplay_ReleaseBuffers);
-    J3D_HOOKFUNC(stdDisplay_LockSurface);
-    J3D_HOOKFUNC(stdDisplay_UnlockSurface);
-    J3D_HOOKFUNC(stdDisplay_Update);
-    J3D_HOOKFUNC(stdDisplay_ColorFillSurface);
-    J3D_HOOKFUNC(stdDisplay_BackBufferFill);
-    J3D_HOOKFUNC(stdDisplay_SaveScreen);
-    J3D_HOOKFUNC(stdDisplay_SetDefaultResolution);
-    J3D_HOOKFUNC(stdDisplay_GetBackBufferSize);
-    J3D_HOOKFUNC(stdDisplay_GetNumVideoModes);
-    J3D_HOOKFUNC(stdDisplay_GetVideoMode);
-    J3D_HOOKFUNC(stdDisplay_GetCurrentVideoMode);
-    J3D_HOOKFUNC(stdDisplay_GetFrontBufferDC);
-    J3D_HOOKFUNC(stdDisplay_ReleaseFrontBufferDC);
-    J3D_HOOKFUNC(stdDisplay_GetBackBufferDC);
-    J3D_HOOKFUNC(stdDisplay_ReleaseBackBufferDC);
-    J3D_HOOKFUNC(stdDisplay_FlipToGDISurface);
-    J3D_HOOKFUNC(stdDisplay_CanRenderWindowed);
-    J3D_HOOKFUNC(stdDisplay_SetBufferClipper);
-    J3D_HOOKFUNC(stdDisplay_RemoveBufferClipper);
-    J3D_HOOKFUNC(stdDisplay_IsFullscreen);
-    J3D_HOOKFUNC(stdDisplay_LockBackBuffer);
-    J3D_HOOKFUNC(stdDisplay_UnlockBackBuffer);
-    J3D_HOOKFUNC(stdDisplay_EncodeFromRGB565);
-}
-
 void stdDisplay_ResetGlobals(void)
 {
     memset(&stdDisplay_g_frontBuffer, 0, sizeof(stdDisplay_g_frontBuffer));

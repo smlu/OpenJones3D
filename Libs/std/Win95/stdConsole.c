@@ -18,16 +18,6 @@ static int stdConsole_dword_5DCCCC  = 0;
 static int stdConsole_dword_5DCCD8  = 0;
 static int stdConsole_dword_5DCCDC  = 0;
 
-void stdConsole_InstallHooks(void)
-{
-    J3D_HOOKFUNC(stdConsole_Startup);
-    J3D_HOOKFUNC(stdConsole_Shutdown);
-    J3D_HOOKFUNC(stdConsole_SetAttributes);
-    J3D_HOOKFUNC(stdConsole_SetConsoleTextAttribute);
-    J3D_HOOKFUNC(stdConsole_InitOutputConsole);
-    J3D_HOOKFUNC(stdConsole_WriteConsole);
-}
-
 void stdConsole_ResetGlobals(void)
 {}
 

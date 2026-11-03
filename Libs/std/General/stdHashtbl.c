@@ -20,22 +20,6 @@ static inline unsigned int J3DAPI CalculateHash(const char* pData, signed int ha
 static inline size_t J3DAPI GetNextPrime(size_t nextPrime);
 static inline int J3DAPI isPrime(size_t val);
 
-void stdHashtbl_InstallHooks(void)
-{
-    J3D_HOOKFUNC(stdHashtbl_New);
-    J3D_HOOKFUNC(CalculateHash);
-    J3D_HOOKFUNC(GetNextPrime);
-    J3D_HOOKFUNC(isPrime);
-    J3D_HOOKFUNC(stdHashtbl_nextPrime);
-    J3D_HOOKFUNC(stdHashtbl_Free);
-    J3D_HOOKFUNC(stdHashtbl_FreeListNodes);
-    J3D_HOOKFUNC(stdHashtbl_Add);
-    J3D_HOOKFUNC(stdHashtbl_GetTailNode);
-    J3D_HOOKFUNC(stdHashtbl_Find);
-    J3D_HOOKFUNC(stdHashtbl_FindNode);
-    J3D_HOOKFUNC(stdHashtbl_Remove);
-}
-
 void stdHashtbl_ResetGlobals(void)
 {}
 

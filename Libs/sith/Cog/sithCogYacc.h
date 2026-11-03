@@ -48,8 +48,6 @@ int yyparse(void);
 int yylex(void);
 void yyrestart(tFileHandle input_file);
 
-// Helper hooking functions
-static void sithCogYacc_InstallHooks(void){}
 static void sithCogYacc_ResetGlobals(void){}
 
 J3D_EXTERN_C_END

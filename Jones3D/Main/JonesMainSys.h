@@ -42,7 +42,6 @@ bool JonesMainSys_CloseHandle(tSysHandle handle); // Implemented in Jones3D/Plat
 int JonesMainSys_ShowFatalMessage(const char* pText, const char* pTitle, bool bIconStop); // Implemented in Jones3D/Platform/Win32/JonesMainWin32.c
 
 // Registers the RTI hook targets that now live in the Win32 platform files.
-void JonesMainSys_InstallHooks(void); // Implemented in Jones3D/Platform/Win32/JonesMainWin32.c
 
 // Quick save (F5): saves the game into the player's quicksave slot.
 void JonesMain_OnQuickSaveKey(tSysWindow hWnd); // Implemented in Jones3D/Main/JonesMain.c

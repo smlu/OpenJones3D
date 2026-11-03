@@ -83,31 +83,6 @@ void J3DAPI sithOverlayMap_DrawThingIcon(const SithThing* pThing, const rdMateri
 int J3DAPI sithOverlayMap_EasterEggConsoleCallback(const SithConsoleCommand* pFunc, const char* pArg);
 int J3DAPI sithOverlayMap_CanDrawSurfaceEdge(SithSurface* pSurface, int vertIdx, int nextVertIdx);
 
-void sithOverlayMap_InstallHooks(void)
-{
-    J3D_HOOKFUNC(sithOverlayMap_EasterEggConsoleCallback);
-    J3D_HOOKFUNC(sithOverlayMap_Open);
-    J3D_HOOKFUNC(sithOverlayMap_Close);
-    J3D_HOOKFUNC(sithOverlayMap_IsMapVisible);
-    J3D_HOOKFUNC(sithOverlayMap_ToggleMap);
-    J3D_HOOKFUNC(sithOverlayMap_ZoomIn);
-    J3D_HOOKFUNC(sithOverlayMap_ZoomOut);
-    J3D_HOOKFUNC(sithOverlayMap_Draw);
-    J3D_HOOKFUNC(sithOverlayMap_SetShowHints);
-    J3D_HOOKFUNC(sithOverlayMap_EnableMapRotation);
-    J3D_HOOKFUNC(sithOverlayMap_GetMapRotation);
-    J3D_HOOKFUNC(sithOverlayMap_GetShowHints);
-    J3D_HOOKFUNC(sithOverlayMap_UpdateHints);
-    J3D_HOOKFUNC(sithOverlayMap_SetHintSolved);
-    J3D_HOOKFUNC(sithOverlayMap_SetHintUnsolved);
-    J3D_HOOKFUNC(sithOverlayMap_GetNumSeenHints);
-    J3D_HOOKFUNC(sithOverlayMap_DrawSectors);
-    J3D_HOOKFUNC(sithOverlayMap_DrawSector);
-    J3D_HOOKFUNC(sithOverlayMap_DrawPlayerIcon);
-    J3D_HOOKFUNC(sithOverlayMap_DrawThingIcon);
-    J3D_HOOKFUNC(sithOverlayMap_CanDrawSurfaceEdge);
-}
-
 void sithOverlayMap_ResetGlobals(void)
 {}
 

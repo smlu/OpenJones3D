@@ -119,7 +119,6 @@ void J3DAPI sithPlayerActions_QuickTurnLeft(SithThing* pThing); // Added from de
 void J3DAPI sithPlayerActions_QuickTurnRight(SithThing* pThing); // Added from debug
 
 // Helper hooking functions
-void sithPlayerActions_InstallHooks(void);
 void sithPlayerActions_ResetGlobals(void);
 
 J3D_EXTERN_C_END

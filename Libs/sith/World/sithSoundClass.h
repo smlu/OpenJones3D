@@ -42,7 +42,6 @@ bool J3DAPI sithSoundClass_IsModePitchFading(SithThing* pThing, SithSoundClassMo
 int J3DAPI sithSoundClass_SetThingClass(SithThing* pThing, SithSoundClass* pSoundClass); // Added: From debug version
 
 // Helper hooking functions
-void sithSoundClass_InstallHooks(void);
 void sithSoundClass_ResetGlobals(void);
 
 J3D_EXTERN_C_END

@@ -693,48 +693,6 @@ void J3DAPI sithCogFunctionSurface_RegisterFunctions(SithCogSymbolTable* pTbl)
     sithCog_RegisterFunction(pTbl, sithCogFunctionSurface_SetAdjoinAlpha, "setadjoinalpha");
 }
 
-void sithCogFunctionSurface_InstallHooks(void)
-{
-    J3D_HOOKFUNC(sithCogFunctionSurface_RegisterFunctions);
-    J3D_HOOKFUNC(sithCogFunctionSurface_GetAdjoinAlpha);
-    J3D_HOOKFUNC(sithCogFunctionSurface_SetAdjoinAlpha);
-    J3D_HOOKFUNC(sithCogFunctionSurface_GetSurfaceAdjoin);
-    J3D_HOOKFUNC(sithCogFunctionSurface_GetSurfaceSector);
-    J3D_HOOKFUNC(sithCogFunctionSurface_GetNumSurfaceVertices);
-    J3D_HOOKFUNC(sithCogFunctionSurface_GetSurfaceVertexPos);
-    J3D_HOOKFUNC(sithCogFunctionSurface_SetHorizonSkyOffset);
-    J3D_HOOKFUNC(sithCogFunctionSurface_GetHorizonSkyOffset);
-    J3D_HOOKFUNC(sithCogFunctionSurface_SetCeilingSkyOffset);
-    J3D_HOOKFUNC(sithCogFunctionSurface_GetCeilingSkyOffset);
-    J3D_HOOKFUNC(sithCogFunctionSurface_SlideHorizonSky);
-    J3D_HOOKFUNC(sithCogFunctionSurface_SlideCeilingSky);
-    J3D_HOOKFUNC(sithCogFunctionSurface_SurfaceLightAnim);
-    J3D_HOOKFUNC(sithCogFunctionSurface_SlideWall);
-    J3D_HOOKFUNC(sithCogFunctionSurface_GetWallCel);
-    J3D_HOOKFUNC(sithCogFunctionSurface_SetWallCel);
-    J3D_HOOKFUNC(sithCogFunctionSurface_GetSurfaceMaterial);
-    J3D_HOOKFUNC(sithCogFunctionSurface_SetSurfaceMaterial);
-    J3D_HOOKFUNC(sithCogFunctionSurface_SetSurfaceFlags);
-    J3D_HOOKFUNC(sithCogFunctionSurface_ClearSurfaceFlags);
-    J3D_HOOKFUNC(sithCogFunctionSurface_GetSurfaceFlags);
-    J3D_HOOKFUNC(sithCogFunctionSurface_SetAdjoinFlags);
-    J3D_HOOKFUNC(sithCogFunctionSurface_ClearAdjoinFlags);
-    J3D_HOOKFUNC(sithCogFunctionSurface_GetAdjoinFlags);
-    J3D_HOOKFUNC(sithCogFunctionSurface_SetFaceType);
-    J3D_HOOKFUNC(sithCogFunctionSurface_ClearFaceType);
-    J3D_HOOKFUNC(sithCogFunctionSurface_GetFaceType);
-    J3D_HOOKFUNC(sithCogFunctionSurface_SetFaceGeoMode);
-    J3D_HOOKFUNC(sithCogFunctionSurface_GetFaceGeoMode);
-    J3D_HOOKFUNC(sithCogFunctionSurface_SetFaceLightMode);
-    J3D_HOOKFUNC(sithCogFunctionSurface_GetFaceLightMode);
-    J3D_HOOKFUNC(sithCogFunctionSurface_SetSurfaceLight);
-    J3D_HOOKFUNC(sithCogFunctionSurface_GetSurfaceLight);
-    J3D_HOOKFUNC(sithCogFunctionSurface_GetSurfaceCenter);
-    J3D_HOOKFUNC(sithCogFunctionSurface_GetSurfaceCount);
-    J3D_HOOKFUNC(sithCogFunctionSurface_GetSurfaceNormal);
-    J3D_HOOKFUNC(sithCogFunctionSurface_SyncSurface);
-}
-
 void sithCogFunctionSurface_ResetGlobals(void)
 {
 

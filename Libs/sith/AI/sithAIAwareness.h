@@ -23,7 +23,6 @@ int J3DAPI sithAIAwareness_CreateTransmittingEvent(SithSector* pSector, const rd
 int J3DAPI sithAIAwareness_IsInTransmittingRange(const SithAIAwarenessSector* pAISector, int type, const SithThing* pThing);
 
 // Helper hooking functions
-void sithAIAwareness_InstallHooks(void);
 void sithAIAwareness_ResetGlobals(void);
 
 J3D_EXTERN_C_END

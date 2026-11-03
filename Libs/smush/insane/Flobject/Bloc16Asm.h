@@ -21,7 +21,6 @@ J3D_EXTERN_C_START
 void J3DAPI dbloc16_Interpolate(uint8_t* pDst, const uint8_t* pSrc, int stride, int rows, const uint8_t* pTable); // No caller in the original; parameter roles inferred from the assembly
 void J3DAPI dbloc16_Codec2(uint16_t* pDst, uint8_t* pSrc, int offset1, int offset2, int width, int16_t* pMotion, uint8_t* pParams, int height, int nextLine, Bl16Small* pSmall, Bl16Big* pBig, uint16_t* pPalette);
 
-void Bloc16Asm_InstallHooks(void);
 void Bloc16Asm_ResetGlobals(void);
 
 J3D_EXTERN_C_END

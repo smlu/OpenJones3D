@@ -29,14 +29,6 @@ static float lookYaw;
 static float lookRollCos;
 static float lookRollSin;
 
-void sithRenderSky_InstallHooks(void)
-{
-    J3D_HOOKFUNC(sithRenderSky_Open);
-    J3D_HOOKFUNC(sithRenderSky_Update);
-    J3D_HOOKFUNC(sithRenderSky_HorizonFaceToPlane);
-    J3D_HOOKFUNC(sithRenderSky_CeilingFaceToPlane);
-}
-
 void sithRenderSky_ResetGlobals(void)
 {}
 

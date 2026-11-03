@@ -18,19 +18,6 @@
 static bool bStartup = false; // Added: Init to false
 static bool bSkipRestoringSounds;
 
-void sithSound_InstallHooks(void)
-{
-    J3D_HOOKFUNC(sithSound_Initialize);
-    J3D_HOOKFUNC(sithSound_Startup);
-    J3D_HOOKFUNC(sithSound_Shutdown);
-    J3D_HOOKFUNC(sithSound_ReadSoundsListText);
-    J3D_HOOKFUNC(sithSound_WriteSoundsListBinary);
-    J3D_HOOKFUNC(sithSound_ReadSoundsListBinary);
-    J3D_HOOKFUNC(sithSound_FreeWorldSounds);
-    J3D_HOOKFUNC(sithSound_Load);
-    J3D_HOOKFUNC(sithSound_SetSkipRestoringSounds);
-}
-
 void sithSound_ResetGlobals(void)
 {}
 

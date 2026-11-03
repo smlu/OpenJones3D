@@ -68,7 +68,6 @@ void J3DAPI sithAIUtil_GetNextThingsInView(SithSector* pSector, const rdMatrix34
 int J3DAPI sithAIUtil_CanSeeTarget(const SithAIControlBlock* pLocal, SithThing* pTarget, float distance);
 
 // Helper hooking functions
-void sithAIUtil_InstallHooks(void);
 void sithAIUtil_ResetGlobals(void);
 
 J3D_EXTERN_C_END

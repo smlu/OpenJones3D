@@ -14,16 +14,6 @@ static wchar_t stdStrTable_aBuffer[64] = { 0 };
 
 static void stdStrTable_FreeData(tStringTable* pStrTable);
 
-void stdStrTable_InstallHooks(void)
-{
-    J3D_HOOKFUNC(stdStrTable_Load);
-    J3D_HOOKFUNC(stdStrTable_ParseLiteral);
-    J3D_HOOKFUNC(stdStrTable_Free);
-    J3D_HOOKFUNC(stdStrTable_GetValue);
-    J3D_HOOKFUNC(stdStrTable_GetValueOrKey);
-    J3D_HOOKFUNC(stdStrTable_ReadLine);
-}
-
 void stdStrTable_ResetGlobals(void)
 {}
 

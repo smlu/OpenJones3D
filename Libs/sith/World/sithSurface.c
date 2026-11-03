@@ -30,30 +30,6 @@
 static SithSurface* sithSurface_apUnsyncedSurfaces[32] = { 0 }; // Added: Init to 0
 static size_t sithSurface_numUnsyncedSurfaces = 0; // Added: Init to 0
 
-void sithSurface_InstallHooks(void)
-{
-    J3D_HOOKFUNC(sithSurface_HideSectorAdjoin);
-    J3D_HOOKFUNC(sithSurface_ShowSectorAdjoin);
-    J3D_HOOKFUNC(sithSurface_AllocWorldSurfaces);
-    J3D_HOOKFUNC(sithSurface_FreeWorldSurfaces);
-    J3D_HOOKFUNC(sithSurface_WriteAdjoinsListBinary);
-    J3D_HOOKFUNC(sithSurface_ReadAdjoinsListBinary);
-    J3D_HOOKFUNC(sithSurface_AllocWorldAdjoins);
-    J3D_HOOKFUNC(sithSurface_WriteSurfacesListBinary);
-    J3D_HOOKFUNC(sithSurface_ReadSurfacesListBinary);
-    J3D_HOOKFUNC(sithSurface_ReadSurfacesListText);
-    J3D_HOOKFUNC(sithSurface_ValidateSurfacePointer);
-    J3D_HOOKFUNC(sithSurface_ValidateWorldSurfaces);
-    J3D_HOOKFUNC(sithSurface_HandleThingImpact);
-    J3D_HOOKFUNC(sithSurface_PlaySurfaceHitSound);
-    J3D_HOOKFUNC(sithSurface_GetCenterPoint);
-    J3D_HOOKFUNC(sithSurface_SyncSurface);
-    J3D_HOOKFUNC(sithSurface_SyncSurfaces);
-    J3D_HOOKFUNC(sithSurface_GetSurfaceEx);
-    J3D_HOOKFUNC(sithSurface_GetSurfaceIndex);
-    J3D_HOOKFUNC(sithSurface_GetSurfaceIndexEx);
-}
-
 void sithSurface_ResetGlobals(void)
 {}
 

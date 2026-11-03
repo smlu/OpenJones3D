@@ -120,7 +120,6 @@ void Sound_TestSetUncompressFunc(SoundTestUncompressFunc pfUncompress);
 #endif
 
 // Helper hooking functions
-void Sound_InstallHooks(void);
 void Sound_ResetGlobals(void);
 
 J3D_EXTERN_C_END

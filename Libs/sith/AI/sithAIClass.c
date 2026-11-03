@@ -21,22 +21,6 @@ SithAIClass* J3DAPI sithAIClass_CacheFind(const char* pName);
 void J3DAPI sithAIClass_CacheAdd(SithAIClass* pClass);
 void J3DAPI sithAIClass_CacheRemove(const SithAIClass* pClass);
 
-void sithAIClass_InstallHooks(void)
-{
-    J3D_HOOKFUNC(sithAIClass_Startup);
-    J3D_HOOKFUNC(sithAIClass_Shutdown);
-    J3D_HOOKFUNC(sithAIClass_ReadStaticAIClassesListText);
-    J3D_HOOKFUNC(sithAIClass_WriteStaticAIClassesListBinary);
-    J3D_HOOKFUNC(sithAIClass_ReadStaticAIClassesListBinary);
-    J3D_HOOKFUNC(sithAIClass_AllocWorldAIClasses);
-    J3D_HOOKFUNC(sithAIClass_FreeWorldAIClasses);
-    J3D_HOOKFUNC(sithAIClass_Load);
-    J3D_HOOKFUNC(sithAIClass_LoadEntry);
-    J3D_HOOKFUNC(sithAIClass_CacheFind);
-    J3D_HOOKFUNC(sithAIClass_CacheAdd);
-    J3D_HOOKFUNC(sithAIClass_CacheRemove);
-}
-
 void sithAIClass_ResetGlobals(void)
 {
     STD_ZEROMEM(&sithAIClass_g_pHashtable, sizeof(sithAIClass_g_pHashtable));

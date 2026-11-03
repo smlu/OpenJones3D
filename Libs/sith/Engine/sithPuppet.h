@@ -137,7 +137,6 @@ SithPuppetTrack* J3DAPI sithPuppet_GetModeTrack(const SithThing* pThing, SithPup
 void J3DAPI sithPuppet_ClearTrackList(SithThing* pThing);
 
 // Helper hooking functions
-void sithPuppet_InstallHooks(void);
 void sithPuppet_ResetGlobals(void);
 
 J3D_EXTERN_C_END

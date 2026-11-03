@@ -68,36 +68,6 @@ static int sithCamera_bOpen;
 
 SithSector* J3DAPI sithCamera_SearchSectorInRadius(int a1, SithSector* pSector, const rdVector3* startPos, rdVector3* endPos, float unused, int flags);
 
-void sithCamera_InstallHooks(void)
-{
-    J3D_HOOKFUNC(sithCamera_Startup);
-    J3D_HOOKFUNC(sithCamera_Shutdown);
-    J3D_HOOKFUNC(sithCamera_Open);
-    J3D_HOOKFUNC(sithCamera_Close);
-    J3D_HOOKFUNC(sithCamera_ResetAllCameras);
-    J3D_HOOKFUNC(sithCamera_NewEntry);
-    J3D_HOOKFUNC(sithCamera_FreeEntry);
-    J3D_HOOKFUNC(sithCamera_SetCameraCanvas);
-    J3D_HOOKFUNC(sithCamera_SetCurrentCamera);
-    J3D_HOOKFUNC(sithCamera_CycleCamera);
-    J3D_HOOKFUNC(sithCamera_SetCurrentToCycleCamera);
-    J3D_HOOKFUNC(sithCamera_SetCameraFocus);
-    J3D_HOOKFUNC(sithCamera_SetCameraFOV);
-    J3D_HOOKFUNC(sithCamera_SetCameraPosition);
-    J3D_HOOKFUNC(sithCamera_GetCameraPosition);
-    J3D_HOOKFUNC(sithCamera_SetExtCameraOffset);
-    J3D_HOOKFUNC(sithCamera_SetExtCameraLookOffset);
-    J3D_HOOKFUNC(sithCamera_RestoreExtCamera);
-    J3D_HOOKFUNC(sithCamera_GetPrimaryFocus);
-    J3D_HOOKFUNC(sithCamera_GetSecondaryFocus);
-    J3D_HOOKFUNC(sithCamera_Update);
-    J3D_HOOKFUNC(sithCamera_RenderScene);
-    J3D_HOOKFUNC(sithCamera_SetPOVShake);
-    J3D_HOOKFUNC(sithCamera_SearchSectorInRadius);
-    J3D_HOOKFUNC(sithCamera_SetCameraStateFlags);
-    J3D_HOOKFUNC(sithCamera_GetCameraStateFlags);
-}
-
 void sithCamera_ResetGlobals(void)
 {
     STD_ZEROMEM(&sithCamera_g_pCurCamera, sizeof(sithCamera_g_pCurCamera));

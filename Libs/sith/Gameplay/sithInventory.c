@@ -20,42 +20,6 @@ int sithInventory_g_dword_56B754;
 SithInventoryType sithInventory_g_aTypes[SITHINVENTORY_MAXTYPES];
 SithPowerKeybind sithInventory_g_aPowerKeybinds[20];
 
-void sithInventory_InstallHooks(void)
-{
-    J3D_HOOKFUNC(sithInventory_RegisterType);
-    J3D_HOOKFUNC(sithInventory_FindNextTypeID);
-    J3D_HOOKFUNC(sithInventory_FindPreviousTypeID);
-    J3D_HOOKFUNC(sithInventory_GetType);
-    J3D_HOOKFUNC(sithInventory_GetCurrentWeapon);
-    J3D_HOOKFUNC(sithInventory_SetCurrentWeapon);
-    J3D_HOOKFUNC(sithInventory_GetCurrentItem);
-    J3D_HOOKFUNC(sithInventory_SetCurrentItem);
-    J3D_HOOKFUNC(sithInventory_ChangeInventory);
-    J3D_HOOKFUNC(sithInventory_GetInventory);
-    J3D_HOOKFUNC(sithInventory_SetInventory);
-    J3D_HOOKFUNC(sithInventory_SetInventoryActivated);
-    J3D_HOOKFUNC(sithInventory_IsInventoryActivated);
-    J3D_HOOKFUNC(sithInventory_SetInventoryAvailable);
-    J3D_HOOKFUNC(sithInventory_IsInventoryAvailable);
-    J3D_HOOKFUNC(sithInventory_SetInventoryDisabled);
-    J3D_HOOKFUNC(sithInventory_IsBackpackItem);
-    J3D_HOOKFUNC(sithInventory_IsWeapon);
-    J3D_HOOKFUNC(sithInventory_GetInventoryMinimum);
-    J3D_HOOKFUNC(sithInventory_GetInventoryMaximum);
-    J3D_HOOKFUNC(sithInventory_SetInventoryFlags);
-    J3D_HOOKFUNC(sithInventory_BroadcastMessage);
-    J3D_HOOKFUNC(sithInventory_ResetInventory);
-    J3D_HOOKFUNC(sithInventory_CreateBackpack);
-    J3D_HOOKFUNC(sithInventory_PickupBackpack);
-    J3D_HOOKFUNC(sithInventory_GetBackpackItemID);
-    J3D_HOOKFUNC(sithInventory_GetBackpackItemValue);
-    J3D_HOOKFUNC(sithInventory_GetNumBackpackItems);
-    J3D_HOOKFUNC(sithInventory_GetInventoryType);
-    J3D_HOOKFUNC(sithInventory_InitInventory);
-    J3D_HOOKFUNC(sithInventory_BroadcastKilledMessage);
-    J3D_HOOKFUNC(sithInventory_SetSwimmingInventory);
-}
-
 void sithInventory_ResetGlobals(void)
 {
     int sithInventory_g_bResetInventory_tmp = 1;

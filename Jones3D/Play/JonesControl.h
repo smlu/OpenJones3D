@@ -19,7 +19,6 @@ int J3DAPI JonesControl_ProcessControls(SithThing* pPlayer, float secDeltaTime);
 void JonesControl_EnableJoystickAxes(void);
 
 // Helper hooking functions
-void JonesControl_InstallHooks(void);
 void JonesControl_ResetGlobals(void);
 
 J3D_EXTERN_C_END

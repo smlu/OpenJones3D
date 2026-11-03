@@ -83,7 +83,6 @@ typedef struct sZfilioTestGz
 void Zfilio_TestSetGz(const ZfilioTestGz* pGz);
 #endif
 
-void Zfilio_InstallHooks(void);
 void Zfilio_ResetGlobals(void);
 
 J3D_EXTERN_C_END

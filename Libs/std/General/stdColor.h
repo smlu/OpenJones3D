@@ -335,7 +335,6 @@ static inline void stdColor_CalcColorBits(uint32_t bitmask, uint32_t* cbpp, int3
 }
 
 // Helper hooking functions
-void stdColor_InstallHooks(void);
 void stdColor_ResetGlobals(void);
 
 J3D_EXTERN_C_END

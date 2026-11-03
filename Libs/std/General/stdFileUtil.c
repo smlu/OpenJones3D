@@ -7,15 +7,6 @@
 #include <j3dcore/j3dhook.h>
 #include <std/RTI/symbols.h>
 
-void stdFileUtil_InstallHooks(void)
-{
-    J3D_HOOKFUNC(stdFileUtil_NewFind);
-    J3D_HOOKFUNC(stdFileUtil_DisposeFind);
-    J3D_HOOKFUNC(stdFileUtil_FindNext);
-    J3D_HOOKFUNC(stdFileUtil_MkDir);
-    J3D_HOOKFUNC(stdFileUtil_FileExists);
-}
-
 void stdFileUtil_ResetGlobals(void)
 {}
 

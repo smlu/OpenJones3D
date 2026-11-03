@@ -77,25 +77,6 @@ static int animframe_fade                                     = 0;
 static int animframe_lastFragment                             = 0;
 static int animframe_fragTag                                  = 0;
 
-void Frame_InstallHooks(void)
-{
-    // Uncomment only lines for functions that have full definition and doesn't call original function (non-thunk functions)
-
-    J3D_HOOKFUNC(animframe_Register);
-    J3D_HOOKFUNC(animframe_Unregister);
-    J3D_HOOKFUNC(animframe_Startup);
-    J3D_HOOKFUNC(animframe_Shutdown);
-    J3D_HOOKFUNC(animframe_ResetDecoders);
-    J3D_HOOKFUNC(animframe_Parse);
-    J3D_HOOKFUNC(animframe_Decode);
-    J3D_HOOKFUNC(animframe_Load);
-    J3D_HOOKFUNC(animframe_Fetch);
-    J3D_HOOKFUNC(animframe_Draw);
-    J3D_HOOKFUNC(animframe_DebugName);
-    J3D_HOOKFUNC(animframe_SetDebug);
-    J3D_HOOKFUNC(animframe_GetDebug);
-}
-
 void Frame_ResetGlobals(void)
 {
     animframe_lastDecoder = -1;

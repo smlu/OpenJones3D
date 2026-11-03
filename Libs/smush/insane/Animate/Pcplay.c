@@ -50,31 +50,6 @@ static SoundInterface* animplay_pVoice;
 static int animplay_debugMask;
 static int animplay_bVoicePaused;
 
-void Pcplay_InstallHooks(void)
-{
-    // Uncomment only lines for functions that have full definition and doesn't call original function (non-thunk functions)
-
-    J3D_HOOKFUNC(animplay_Register);
-    J3D_HOOKFUNC(animplay_Unregister);
-    J3D_HOOKFUNC(animplay_Startup);
-    J3D_HOOKFUNC(animplay_Shutdown);
-    J3D_HOOKFUNC(animplay_Play);
-    J3D_HOOKFUNC(animplay_Create);
-    J3D_HOOKFUNC(animplay_GetTime);
-    J3D_HOOKFUNC(animplay_Pace);
-    J3D_HOOKFUNC(animplay_Draw);
-    J3D_HOOKFUNC(animplay_Destroy);
-    J3D_HOOKFUNC(animplay_SetRate);
-    J3D_HOOKFUNC(animplay_Rewind);
-    J3D_HOOKFUNC(animplay_IsDone);
-    J3D_HOOKFUNC(animplay_Step);
-    J3D_HOOKFUNC(animplay_TickCallback);
-    J3D_HOOKFUNC(animplay_PaceCallback);
-    J3D_HOOKFUNC(animplay_DebugName);
-    J3D_HOOKFUNC(animplay_SetDebug);
-    J3D_HOOKFUNC(animplay_GetDebug);
-}
-
 void Pcplay_ResetGlobals(void)
 {
     animplay_ops.SetRate = animplay_SetRate;

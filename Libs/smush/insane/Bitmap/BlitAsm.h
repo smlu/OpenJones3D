@@ -13,7 +13,6 @@ J3D_EXTERN_C_START
 
 void J3DAPI blit_Masm(void* pSrc, void* pDst, int srcX, int srcY, int dstX, int dstY, int width, int height, int srcPitch, int dstPitch);
 
-void BlitAsm_InstallHooks(void);
 void BlitAsm_ResetGlobals(void);
 
 J3D_EXTERN_C_END

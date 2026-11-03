@@ -27,7 +27,6 @@ void J3DAPI sithRenderSky_HorizonFaceToPlane(rdCacheProcEntry* pPoly, const rdFa
 void J3DAPI sithRenderSky_CeilingFaceToPlane(rdCacheProcEntry* pPoly, const rdFace* pFace, const rdVector3* aVerts, const rdVector3* aTransformedVerts, size_t numVerts);
 
 // Helper hooking functions
-void sithRenderSky_InstallHooks(void);
 void sithRenderSky_ResetGlobals(void);
 
 J3D_EXTERN_C_END

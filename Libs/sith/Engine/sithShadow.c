@@ -22,15 +22,6 @@ static rdVector3 sithShadow_aVertices[4];
 static rdVector3 sithShadow_aView[STD_ARRAYLEN(sithShadow_aVertices)];
 static const rdVector2 sithShadow_aShadowUVs[STD_ARRAYLEN(sithShadow_aVertices)] = { { 0.0f, 1.0f }, { 0.0f, 0.0f }, { 1.0f, 0.0f }, { 1.0f, 1.0f } };
 
-void sithShadow_InstallHooks(void)
-{
-    J3D_HOOKFUNC(sithShadow_RenderThingShadow);
-    J3D_HOOKFUNC(sithShadow_SearchForAttachDistance);
-    J3D_HOOKFUNC(sithShadow_DistanceThingToSurface);
-    J3D_HOOKFUNC(sithShadow_DrawShadow);
-    J3D_HOOKFUNC(sithShadow_DrawWalkShadow);
-}
-
 void sithShadow_ResetGlobals(void)
 {}
 

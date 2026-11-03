@@ -45,25 +45,6 @@ void J3DAPI sithTemplate_CacheAdd(SithThing* pThing);
 void J3DAPI sithTemplate_CacheRemove(const SithThing* pThing);
 int J3DAPI sithTemplate_ParseTemplateList(SithWorld* pWorld);
 
-void sithTemplate_InstallHooks(void)
-{
-    J3D_HOOKFUNC(sithTemplate_Startup);
-    J3D_HOOKFUNC(sithTemplate_Shutdown);
-    J3D_HOOKFUNC(sithTemplate_AllocWorldTemplates);
-    J3D_HOOKFUNC(sithTemplate_GetTemplateByIndex);
-    J3D_HOOKFUNC(sithTemplate_GetTemplateIndex);
-    J3D_HOOKFUNC(sithTemplate_ReadThingTemplatesListText);
-    J3D_HOOKFUNC(sithTemplate_WriteThingTemplatesListBinary);
-    J3D_HOOKFUNC(sithTemplate_ReadThingTemplatesListBinary);
-    J3D_HOOKFUNC(sithTemplate_AddTemplate);
-    J3D_HOOKFUNC(sithTemplate_FreeWorldTemplates);
-    J3D_HOOKFUNC(sithTemplate_Parse);
-    J3D_HOOKFUNC(sithTemplate_CacheFind);
-    J3D_HOOKFUNC(sithTemplate_CacheAdd);
-    J3D_HOOKFUNC(sithTemplate_CacheRemove);
-    J3D_HOOKFUNC(sithTemplate_ParseTemplateList);
-}
-
 void sithTemplate_ResetGlobals(void)
 {}
 

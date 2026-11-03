@@ -194,30 +194,6 @@ void sithVoice_TestGetState(SithVoiceTestState* pState)
 }
 #endif
 
-void sithVoice_InstallHooks(void)
-{
-    J3D_HOOKFUNC(sithVoice_Startup);
-    J3D_HOOKFUNC(sithVoice_Open);
-    J3D_HOOKFUNC(sithVoice_Shutdown);
-    J3D_HOOKFUNC(sithVoice_Close);
-    J3D_HOOKFUNC(sithVoice_RegisterCogFunctions);
-    J3D_HOOKFUNC(sithVoice_PlayThingVoice);
-    J3D_HOOKFUNC(sithVoice_UpdateLipSync);
-    J3D_HOOKFUNC(sithVoice_PlayVoice);
-    J3D_HOOKFUNC(sithVoice_SetThingVoiceHeads);
-    J3D_HOOKFUNC(sithVoice_SetVoiceHeadHeight);
-    J3D_HOOKFUNC(sithVoice_SetThingVoiceColor);
-    J3D_HOOKFUNC(sithVoice_SetVoiceParams);
-    J3D_HOOKFUNC(sithVoice_GetShowText);
-    J3D_HOOKFUNC(sithVoice_ShowText);
-    J3D_HOOKFUNC(sithVoice_AddSubtitle);
-    J3D_HOOKFUNC(sithVoice_PurgeDrawnSubtitles);
-    J3D_HOOKFUNC(sithVoice_Draw);
-    J3D_HOOKFUNC(sithVoice_SyncVoiceState);
-    J3D_HOOKFUNC(sithVoice_ProcessVoiceState);
-    J3D_HOOKFUNC(sithVoice_GetTextFont);
-}
-
 void sithVoice_ResetGlobals(void)
 {}
 

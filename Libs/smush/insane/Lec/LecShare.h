@@ -67,7 +67,6 @@ int J3DAPI LecShare_NameCmp(const char* pA, const char* pB);
 int J3DAPI LecShare_NameNCmp(const char* pA, const char* pB, int n);
 void J3DAPI lec_Log(const char* pFormat, ...);
 
-void LecShare_InstallHooks(void);
 void LecShare_ResetGlobals(void);
 
 J3D_EXTERN_C_END

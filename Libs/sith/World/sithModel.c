@@ -35,27 +35,6 @@ rdModel3* J3DAPI sithModel_GetModelByIndexWrap(uint16_t modelIdx)
     return sithModel_GetModelByIndex(modelIdx);
 }
 
-void sithModel_InstallHooks(void)
-{
-    J3D_HOOKFUNC(sithModel_Startup);
-    J3D_HOOKFUNC(sithModel_Shutdown);
-    J3D_HOOKFUNC(sithModel_ReadStaticModelsListText);
-    J3D_HOOKFUNC(sithModel_WriteStaticModelsListBinary);
-    J3D_HOOKFUNC(sithModel_ReadStaticModelsListBinary);
-    J3D_HOOKFUNC(sithModel_FreeWorldModels);
-    J3D_HOOKFUNC(sithModel_Load);
-    J3D_HOOKFUNC(sithModel_GetModelMemUsage);
-    J3D_HOOKFUNC(sithModel_AllocWorldModels);
-
-    J3D_HOOKFUNC(sithModel_GetModelIndex);
-    J3D_HOOKFUNC(sithModel_GetModel);
-    J3D_HOOKFUNC(sithModel_GetMeshIndex);
-    J3D_HOOKFUNC(sithModel_EnableHiPoly);
-    J3D_HOOKFUNC(sithModel_CacheRemove);
-    J3D_HOOKFUNC(sithModel_CacheAdd);
-    J3D_HOOKFUNC(sithModel_CacheFind);
-}
-
 void sithModel_ResetGlobals(void)
 {}
 

@@ -79,7 +79,6 @@ void std3D_TestSetUseBuffers(bool bUseBuffers);
 #endif
 
 // Helper hooking functions
-void std3D_InstallHooks(void);
 void std3D_ResetGlobals(void);
 
 J3D_EXTERN_C_END

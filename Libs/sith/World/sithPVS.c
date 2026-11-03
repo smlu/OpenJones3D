@@ -8,15 +8,6 @@
 #define SITHPVS_SER_NUM_PERLINE 16
 #define SITHPVS_SER_LINESIZE    (sizeof(uint32_t) * SITHPVS_SER_NUM_PERLINE) // 64
 
-
-void sithPVS_InstallHooks(void)
-{
-    J3D_HOOKFUNC(sithPVS_ReadPVSText);
-    J3D_HOOKFUNC(sithPVS_WritePVSBinary);
-    J3D_HOOKFUNC(sithPVS_ReadPVSBinary);
-    J3D_HOOKFUNC(sithPVS_SetTable);
-}
-
 void sithPVS_ResetGlobals(void)
 {}
 

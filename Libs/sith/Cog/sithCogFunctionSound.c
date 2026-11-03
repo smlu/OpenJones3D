@@ -452,27 +452,6 @@ int J3DAPI sithCogFunctionSound_RegisterFunctions(SithCogSymbolTable* pTable)
         || sithCog_RegisterFunction(pTable, sithCogFunctionSound_StopAllSoundsThing, "stopallsoundsthing");
 }
 
-void sithCogFunctionSound_InstallHooks(void)
-{
-    J3D_HOOKFUNC(sithCogFunctionSound_RegisterFunctions);
-    J3D_HOOKFUNC(sithCogFunctionSound_PlaySoundThing);
-    J3D_HOOKFUNC(sithCogFunctionSound_StopSoundThing);
-    J3D_HOOKFUNC(sithCogFunctionSound_StopAllSoundsThing);
-    J3D_HOOKFUNC(sithCogFunctionSound_PlaySoundPos);
-    J3D_HOOKFUNC(sithCogFunctionSound_PlaySoundLocal);
-    J3D_HOOKFUNC(sithCogFunctionSound_PlaySoundGlobal);
-    J3D_HOOKFUNC(sithCogFunctionSound_StopSound);
-    J3D_HOOKFUNC(sithCogFunctionSound_LoadSound);
-    J3D_HOOKFUNC(sithCogFunctionSound_PlaySoundClass);
-    J3D_HOOKFUNC(sithCogFunctionSound_StopSoundClass);
-    J3D_HOOKFUNC(sithCogFunctionSound_PlayVoiceMode);
-    J3D_HOOKFUNC(sithCogFunctionSound_ChangeVolume);
-    J3D_HOOKFUNC(sithCogFunctionSound_ChangePitch);
-    J3D_HOOKFUNC(sithCogFunctionSound_SectorSound);
-    J3D_HOOKFUNC(sithCogFunctionSound_GetSoundLen);
-    J3D_HOOKFUNC(sithCogFunctionSound_WaitForSound);
-}
-
 void sithCogFunctionSound_ResetGlobals(void)
 {
 }

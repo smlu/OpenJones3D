@@ -16,21 +16,6 @@ rdRoidFlags rdroid_g_curRenderOptions;
 static bool rdroid_bRDroidStartup;
 static bool rdroid_bRDroidOpen;
 
-
-void rdroid_InstallHooks(void)
-{
-    J3D_HOOKFUNC(rdSetServices);
-    J3D_HOOKFUNC(rdClearServices);
-    J3D_HOOKFUNC(rdStartup);
-    J3D_HOOKFUNC(rdShutdown);
-    J3D_HOOKFUNC(rdOpen);
-    J3D_HOOKFUNC(rdClose);
-    J3D_HOOKFUNC(rdSetRenderOptions);
-    J3D_HOOKFUNC(rdSetGeometryMode);
-    J3D_HOOKFUNC(rdSetLightingMode);
-    J3D_HOOKFUNC(rdGetRenterOptions);
-}
-
 void rdroid_ResetGlobals(void)
 {
     memset(&rdroid_g_curLightingMode, 0, sizeof(rdroid_g_curLightingMode));

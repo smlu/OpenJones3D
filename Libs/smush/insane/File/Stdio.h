@@ -25,7 +25,6 @@ int J3DAPI stdio_tell(int fh); // Folded onto stdFileTell 0x004C0660; no address
 int J3DAPI stdio_seek(int fh, int offset, int whence); // Folded onto stdFileSeek 0x004EA0C0; no address of its own, never hook
 void J3DAPI stdio_flush(int fh);
 
-void Stdio_InstallHooks(void);
 void Stdio_ResetGlobals(void);
 
 J3D_EXTERN_C_END

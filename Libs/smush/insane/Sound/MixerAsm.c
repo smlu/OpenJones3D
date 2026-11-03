@@ -9,20 +9,6 @@
 #define MIXERASM_TABLE16_SHIFT 9 // 256-word (512-byte) tables
 #define MIXERASM_TABLE8_SHIFT  8 // 256-byte tables
 
-void MixerAsm_InstallHooks(void)
-{
-    // Uncomment only lines for functions that have full definition and doesn't call original function (non-thunk functions)
-
-    J3D_HOOKFUNC(mixer_MemCopy);
-    J3D_HOOKFUNC(mixer_MemFill);
-    J3D_HOOKFUNC(mixer_Lut16);
-    J3D_HOOKFUNC(mixer_Lut16Add);
-    J3D_HOOKFUNC(mixer_Fill16);
-    J3D_HOOKFUNC(mixer_Lut8);
-    J3D_HOOKFUNC(mixer_Lut8Add);
-    J3D_HOOKFUNC(mixer_FillB);
-}
-
 void MixerAsm_ResetGlobals(void)
 {}
 

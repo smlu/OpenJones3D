@@ -27,23 +27,6 @@ rdParticle* J3DAPI sithParticle_CacheFind(const char* pName);
 void J3DAPI sithParticle_CacheAdd(rdParticle* pParticle);
 void J3DAPI sithParticle_CacheRemove(const rdParticle* pParticle);
 
-void sithParticle_InstallHooks(void)
-{
-    J3D_HOOKFUNC(sithParticle_Startup);
-    J3D_HOOKFUNC(sithParticle_Shutdown);
-    J3D_HOOKFUNC(sithParticle_Load);
-    J3D_HOOKFUNC(sithParticle_AllocWorldParticles);
-    J3D_HOOKFUNC(sithParticle_ParseArg);
-    J3D_HOOKFUNC(sithParticle_Update);
-    J3D_HOOKFUNC(sithParticle_Initalize);
-    J3D_HOOKFUNC(sithParticle_DestroyParticle);
-    J3D_HOOKFUNC(sithParticle_Free);
-    J3D_HOOKFUNC(sithParticle_FreeWorldParticles);
-    J3D_HOOKFUNC(sithParticle_CacheFind);
-    J3D_HOOKFUNC(sithParticle_CacheAdd);
-    J3D_HOOKFUNC(sithParticle_CacheRemove);
-}
-
 void sithParticle_ResetGlobals(void)
 {}
 

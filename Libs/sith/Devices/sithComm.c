@@ -37,25 +37,6 @@ int J3DAPI sithMessage_ProcessCheckMembershipList(const SithMessage* pMsg);
 void sithMessage_InitMessageHandlers(void);
 int J3DAPI sithMessage_FileWrite(const SithMessage* pMessage);
 
-void sithComm_InstallHooks(void)
-{
-    J3D_HOOKFUNC(sithMessage_Startup);
-    J3D_HOOKFUNC(sithMessage_Shutdown);
-    J3D_HOOKFUNC(sithMessage_SendMessage);
-    J3D_HOOKFUNC(sithMessage_ProcessMessages);
-    J3D_HOOKFUNC(sithMessage_StopProcessMessages);
-    J3D_HOOKFUNC(sithMessage_GetSenderID);
-    J3D_HOOKFUNC(sithMessage_NetWrite);
-    J3D_HOOKFUNC(sithMessage_ReceiveMessage);
-    J3D_HOOKFUNC(sithMessage_CloseGame);
-    J3D_HOOKFUNC(sithMessage_CheckMembershipList);
-    J3D_HOOKFUNC(sithMessage_ProcessCheckMembershipList);
-    J3D_HOOKFUNC(sithMessage_RegisterFunction);
-    J3D_HOOKFUNC(sithMessage_Process);
-    J3D_HOOKFUNC(sithMessage_InitMessageHandlers);
-    J3D_HOOKFUNC(sithMessage_FileWrite);
-}
-
 void sithComm_ResetGlobals(void)
 {
     memset(&sithMessage_g_localPlayerId, 0, sizeof(sithMessage_g_localPlayerId));

@@ -78,7 +78,6 @@ void timer_Tick(void);
 void timer_Poll(void);
 void timer_RunDeferred(void);
 
-void Timer_InstallHooks(void);
 void Timer_ResetGlobals(void);
 
 J3D_EXTERN_C_END

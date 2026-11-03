@@ -22,29 +22,6 @@ static SithSector* sithSector_aModifiedSectors[16] = { 0 }; // Added Init to 0
 static int sithSector_aSyncFlags[16];
 static size_t sithSector_numModifiedSectors = 0; // Added Init to 0
 
-void sithSector_InstallHooks(void)
-{
-    J3D_HOOKFUNC(sithSector_ReadSectorsListText);
-    J3D_HOOKFUNC(sithSector_WriteSectorsListBinary);
-    J3D_HOOKFUNC(sithSector_ReadSectorsListBinary);
-    J3D_HOOKFUNC(sithSector_ValidateSectorPointer);
-    J3D_HOOKFUNC(sithSector_AllocWorldSectors);
-    J3D_HOOKFUNC(sithSector_ResetAllSectors);
-    J3D_HOOKFUNC(sithSector_FreeWorldSectors);
-    J3D_HOOKFUNC(sithSector_FindSectorAtPos);
-    J3D_HOOKFUNC(sithSector_HideSectorAdjoins);
-    J3D_HOOKFUNC(sithSector_ShowSectorAdjoins);
-    J3D_HOOKFUNC(sithSector_SetSectorFlags);
-    J3D_HOOKFUNC(sithSector_ClearSectorFlags);
-    J3D_HOOKFUNC(sithSector_GetSectorThingCount);
-    J3D_HOOKFUNC(sithSector_GetSectorPlayerCount);
-    J3D_HOOKFUNC(sithSector_SyncSector);
-    J3D_HOOKFUNC(sithSector_SyncSectors);
-    J3D_HOOKFUNC(sithSector_GetSectorEx);
-    J3D_HOOKFUNC(sithSector_GetSectorIndexEx);
-    J3D_HOOKFUNC(sithSector_GetSectorIndex);
-}
-
 void sithSector_ResetGlobals(void)
 {}
 

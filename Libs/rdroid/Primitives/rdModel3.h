@@ -85,7 +85,6 @@ void J3DAPI rdModel3_BendJointRoll(rdThing* pThing, size_t jointNum, float angle
 void J3DAPI rdModel3_BendJoint(rdThing* pThing, size_t jointNum, const rdVector3* targetPYR, float rate, float secDeltaTime); // New
 
 // Helper hooking functions
-void rdModel3_InstallHooks(void);
 void rdModel3_ResetGlobals(void);
 
 J3D_EXTERN_C_END

@@ -81,7 +81,6 @@ static inline float sithPlayerControls_CalculateAngularVelocity(SithActorInfo* p
 }
 
 // Helper hooking functions
-void sithPlayerControls_InstallHooks(void);
 void sithPlayerControls_ResetGlobals(void);
 
 J3D_EXTERN_C_END

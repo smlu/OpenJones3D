@@ -95,57 +95,6 @@ static float sithAIMove_mardukTailYawSpeed = 720.0f; // In degrees per sec
 
 void J3DAPI sithAIMove_AIFinalizeSpecialMove(SithAIControlBlock* pLocal, SithActorSpecialMoveFlags type);
 
-void sithAIMove_InstallHooks(void)
-{
-    // Uncomment only lines for functions that have full definition and doesn't call original function (non-thunk functions)
-
-    J3D_HOOKFUNC(sithAIMove_Update);
-    J3D_HOOKFUNC(sithAIMove_UpdateMineCar);
-    J3D_HOOKFUNC(sithAIMove_UpdateTurn);
-    J3D_HOOKFUNC(sithAIMove_UpdateMove);
-    J3D_HOOKFUNC(sithAIMove_CheckMoveAlign);
-    J3D_HOOKFUNC(sithAIMove_GetGoalTolerance);
-    J3D_HOOKFUNC(sithAIMove_CheckWalkMove);
-    J3D_HOOKFUNC(sithAIMove_CheckFlyMove);
-    J3D_HOOKFUNC(sithAIMove_CheckSwimMove);
-    J3D_HOOKFUNC(sithAIMove_AIGetMoveState);
-    J3D_HOOKFUNC(sithAIMove_AISpecialTurn);
-    J3D_HOOKFUNC(sithAIMove_UpdateAIMove);
-    J3D_HOOKFUNC(sithAIMove_GetAIMoveModes);
-    J3D_HOOKFUNC(sithAIMove_SetSubMode);
-    J3D_HOOKFUNC(sithAIMove_PuppetCallback);
-    J3D_HOOKFUNC(sithAIMove_AISetLookThing);
-    J3D_HOOKFUNC(sithAIMove_AISetLookPos);
-    J3D_HOOKFUNC(sithAIMove_AISetLookPosEyeLevel);
-    J3D_HOOKFUNC(sithAIMove_AISetMovePos);
-    J3D_HOOKFUNC(sithAIMove_AISetMoveTargetPos);
-    J3D_HOOKFUNC(sithAIMove_AISpecialMove);
-    J3D_HOOKFUNC(sithAIMove_AIFinalizeSpecialMove);
-    J3D_HOOKFUNC(sithAIMove_AIJump);
-    J3D_HOOKFUNC(sithAIMove_AIStop);
-    J3D_HOOKFUNC(sithAIMove_SetGoalReached);
-    J3D_HOOKFUNC(sithAIMove_Unreachable);
-    J3D_HOOKFUNC(sithAIMove_StopAIMovement);
-    J3D_HOOKFUNC(sithAIMove_ResetAILook);
-    J3D_HOOKFUNC(sithAIMove_UpdateBoss);
-    J3D_HOOKFUNC(sithAIMove_UpdateHeadTrackTarget);
-    J3D_HOOKFUNC(sithAIMove_UpdateHeadTrackLookPos);
-    J3D_HOOKFUNC(sithAIMove_GetQuetzStrikeAngles);
-    J3D_HOOKFUNC(sithAIMove_UpdateQuetzStrike);
-    J3D_HOOKFUNC(sithAIMove_GetQuetzAnim2Angles);
-    J3D_HOOKFUNC(sithAIMove_UpdateQuetzAnim2);
-    J3D_HOOKFUNC(sithAIMove_UpdateQuetzAnim3);
-    J3D_HOOKFUNC(sithAIMove_UpdateQuetzAnim5);
-    J3D_HOOKFUNC(sithAIMove_UpdateQuetzAnim4);
-    J3D_HOOKFUNC(sithAIMove_UpdateQuetzTail);
-    J3D_HOOKFUNC(sithAIMove_StartQuetzStrike);
-    J3D_HOOKFUNC(sithAIMove_StartQuetzAnim2);
-    J3D_HOOKFUNC(sithAIMove_StartQuetzAnim3);
-    J3D_HOOKFUNC(sithAIMove_StartQuetzAnim5);
-    J3D_HOOKFUNC(sithAIMove_StartQuetzAnim4);
-    J3D_HOOKFUNC(sithAIMove_UpdateMardukTail);
-}
-
 void sithAIMove_ResetGlobals(void)
 {}
 

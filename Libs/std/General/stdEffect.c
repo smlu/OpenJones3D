@@ -4,14 +4,6 @@
 
 static tStdFadeFactor stdEffect_fadeFactor;
 
-void stdEffect_InstallHooks(void)
-{
-    J3D_HOOKFUNC(stdEffect_Startup);
-    J3D_HOOKFUNC(stdEffect_Reset);
-    J3D_HOOKFUNC(stdEffect_SetFadeFactor);
-    J3D_HOOKFUNC(stdEffect_GetFadeFactor);
-}
-
 void stdEffect_ResetGlobals(void)
 {
 }

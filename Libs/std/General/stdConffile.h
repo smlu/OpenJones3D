@@ -56,7 +56,6 @@ const char* stdConffile_GetFilename(void);
 const char* stdConffile_GetWriteFilename(void); // Added
 
 // Helper hooking functions
-void stdConffile_InstallHooks(void);
 void stdConffile_ResetGlobals(void);
 
 /**

@@ -8,14 +8,6 @@
 #include <sith/World/sithThing.h>
 #include <sith/World/sithWorld.h>
 
-void sithDSSCog_InstallHooks(void)
-{
-    J3D_HOOKFUNC(sithDSSCog_SendMessage);
-    J3D_HOOKFUNC(sithDSSCog_ProcessMessage);
-    J3D_HOOKFUNC(sithDSSCog_SyncCogState);
-    J3D_HOOKFUNC(sithDSSCog_ProcessCogState);
-}
-
 void sithDSSCog_ResetGlobals(void)
 {}
 

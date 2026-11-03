@@ -240,39 +240,6 @@ static float sithAIInstinct_snakeLastDotFwd      = 1.0f; // Dot of the facing an
 static float sithAIInstinct_snakeSlitherDir      = 0.0f; // Last slither direction (-1, 0 or 1) a slither sound was played for
 static float sithAIInstinct_snakeFollowNearRange = 0.0f; // Range below which a non attacking snake backs off, never written by the original
 
-void sithAIInstinct_InstallHooks(void)
-{
-    J3D_HOOKFUNC(sithAIInstinct_InitInstincts);
-    J3D_HOOKFUNC(sithAIInstinct_Listen);
-    J3D_HOOKFUNC(sithAIInstinct_LookForTarget);
-    J3D_HOOKFUNC(sithAIInstinct_SenseDanger);
-    J3D_HOOKFUNC(sithAIInstinct_FearGunshot);
-    J3D_HOOKFUNC(sithAIInstinct_Hop);
-    J3D_HOOKFUNC(sithAIInstinct_HoverDrift);
-    J3D_HOOKFUNC(sithAIInstinct_Talk);
-    J3D_HOOKFUNC(sithAIInstinct_RandomTurn);
-    J3D_HOOKFUNC(sithAIInstinct_OpenDoors);
-    J3D_HOOKFUNC(sithAIInstinct_Jump);
-    J3D_HOOKFUNC(sithAIInstinct_LobFire);
-    J3D_HOOKFUNC(sithAIInstinct_PrimaryFire);
-    J3D_HOOKFUNC(sithAIInstinct_AlternateFire);
-    J3D_HOOKFUNC(sithAIInstinct_CircleStrafe);
-    J3D_HOOKFUNC(sithAIInstinct_Dodge);
-    J3D_HOOKFUNC(sithAIInstinct_HitAndRun);
-    J3D_HOOKFUNC(sithAIInstinct_Retreat);
-    J3D_HOOKFUNC(sithAIInstinct_RandomMove);
-    J3D_HOOKFUNC(sithAIInstinct_HumanCombatMove);
-    J3D_HOOKFUNC(sithAIInstinct_Roam);
-    J3D_HOOKFUNC(sithAIInstinct_ReturnHome);
-    J3D_HOOKFUNC(sithAIInstinct_Flee);
-    J3D_HOOKFUNC(sithAIInstinct_BasicFallow);
-    J3D_HOOKFUNC(sithAIInstinct_WallCrawl);
-    J3D_HOOKFUNC(sithAIInstinct_SnakeFindMovePos);
-    J3D_HOOKFUNC(sithAIInstinct_SnakeMungeTestCheck);
-    J3D_HOOKFUNC(sithAIInstinct_SnakeFollow);
-    J3D_HOOKFUNC(sithAIInstinct_SnakePlaySlitherSound);
-}
-
 void sithAIInstinct_ResetGlobals(void)
 {
 }

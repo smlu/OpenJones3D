@@ -116,60 +116,6 @@ SithSurface* J3DAPI sithAnimate_GetThingFloorSurface(const SithThing* pThing);
 void J3DAPI sithAnimate_ExitFloorSurface(const SithThing* pThing, const SithSurface* pSurface);
 void J3DAPI sithAnimate_FindAndEnterFloorSurface(const SithThing* pSrcThing, const SithSurface* pSurf);
 
-void sithAnimate_InstallHooks(void)
-{
-    J3D_HOOKFUNC(sithAnimate_Startup);
-    J3D_HOOKFUNC(sithAnimate_Open);
-    J3D_HOOKFUNC(sithAnimate_Close);
-    J3D_HOOKFUNC(sithAnimate_Reset);
-    J3D_HOOKFUNC(sithAnimate_Stop);
-    J3D_HOOKFUNC(sithAnimate_GetSurfaceAnimIndex);
-    J3D_HOOKFUNC(sithAnimate_StartScrollSurfaceAnim);
-    J3D_HOOKFUNC(sithAnimate_BuildScrollFaceRotate);
-    J3D_HOOKFUNC(sithAnimate_ExtractUVAngle);
-    J3D_HOOKFUNC(sithAnimate_StartSideSkyAnim);
-    J3D_HOOKFUNC(sithAnimate_StartSpriteAnim);
-    J3D_HOOKFUNC(sithAnimate_StartSurfaceAnim);
-    J3D_HOOKFUNC(sithAnimate_StartMaterialAnim);
-    J3D_HOOKFUNC(sithAnimate_StartSurfaceLightAnim);
-    J3D_HOOKFUNC(sithAnimate_StartAnimateSpriteSize);
-    J3D_HOOKFUNC(sithAnimate_StartSectorLightAnim);
-    J3D_HOOKFUNC(sithAnimate_StartThingLightAnim);
-    J3D_HOOKFUNC(sithAnimate_StartThingMove);
-    J3D_HOOKFUNC(sithAnimate_StartThingMoveToPos);
-    J3D_HOOKFUNC(sithAnimate_StartThingFadeAnim);
-    J3D_HOOKFUNC(sithAnimate_CameraZoom);
-    J3D_HOOKFUNC(sithAnimate_PushItem);
-    J3D_HOOKFUNC(sithAnimate_PullItem);
-    J3D_HOOKFUNC(sithAnimate_Update);
-    J3D_HOOKFUNC(sithAnimate_UpdateThingQuickTurnAnim);
-    J3D_HOOKFUNC(sithAnimate_GetSurfaceAnim);
-    J3D_HOOKFUNC(sithAnimate_GetSurfaceScrollingDirection);
-    J3D_HOOKFUNC(sithAnimate_GetAnim);
-    J3D_HOOKFUNC(sithAnimate_GetMaterialAnim);
-    J3D_HOOKFUNC(sithAnimate_Create);
-    J3D_HOOKFUNC(sithAnimate_Save);
-    J3D_HOOKFUNC(sithAnimate_UpdateCameraZoomAnim);
-    J3D_HOOKFUNC(sithAnimate_UpdateSpriteSizeAnim);
-    J3D_HOOKFUNC(sithAnimate_UpdateLightAnim);
-    J3D_HOOKFUNC(sithAnimate_UpdateThingMoveAnim);
-    J3D_HOOKFUNC(sithAnimate_UpdateThingMoveToPosAnim);
-    J3D_HOOKFUNC(sithAnimate_UpdateThingFadeAnim);
-    J3D_HOOKFUNC(sithAnimate_UpdateSurfaceScrollAnim);
-    J3D_HOOKFUNC(sithAnimate_UpdateSlideSkyAnim);
-    J3D_HOOKFUNC(sithAnimate_UpdatePageFlipAnim);
-    J3D_HOOKFUNC(sithAnimate_FreeAllAnims);
-    J3D_HOOKFUNC(sithAnimate_FreeAnim);
-    J3D_HOOKFUNC(sithAnimate_NewAnim);
-    J3D_HOOKFUNC(sithAnimate_UpdatePushItemAnim);
-    J3D_HOOKFUNC(sithAnimate_UpdatePullItemAnim);
-    J3D_HOOKFUNC(sithAnimate_GetAnimFrameIndex);
-    J3D_HOOKFUNC(sithAnimate_GetPuppetTrackCurFrame);
-    J3D_HOOKFUNC(sithAnimate_GetThingFloorSurface);
-    J3D_HOOKFUNC(sithAnimate_ExitFloorSurface);
-    J3D_HOOKFUNC(sithAnimate_FindAndEnterFloorSurface);
-}
-
 void sithAnimate_ResetGlobals(void)
 {}
 

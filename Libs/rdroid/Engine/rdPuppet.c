@@ -13,25 +13,6 @@
 
 #include <math.h>
 
-void rdPuppet_InstallHooks(void)
-{
-    J3D_HOOKFUNC(rdPuppet_New);
-    J3D_HOOKFUNC(rdPuppet_NewEntry);
-    J3D_HOOKFUNC(rdPuppet_Free);
-    J3D_HOOKFUNC(rdPuppet_AddTrack);
-    J3D_HOOKFUNC(rdPuppet_RemoveTrack);
-    J3D_HOOKFUNC(rdPuppet_SetStatus);
-    J3D_HOOKFUNC(rdPuppet_SetCallback);
-    J3D_HOOKFUNC(rdPuppet_PlayTrack);
-    J3D_HOOKFUNC(rdPuppet_FadeInTrack);
-    J3D_HOOKFUNC(rdPuppet_FadeOutTrack);
-    J3D_HOOKFUNC(rdPuppet_SetTrackSpeed);
-    J3D_HOOKFUNC(rdPuppet_AdvanceTrack);
-    J3D_HOOKFUNC(rdPuppet_UpdateTracks);
-    J3D_HOOKFUNC(rdPuppet_ResetTrack);
-    J3D_HOOKFUNC(rdPuppet_BuildJointMatrices);
-}
-
 void rdPuppet_ResetGlobals(void)
 {}
 

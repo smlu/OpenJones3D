@@ -71,7 +71,6 @@ void J3DAPI dsnd_OpenSecondary(int blocks);
 void dsnd_Release(void);
 int dsnd_GetPlayPos(void);
 
-void Dsnd_InstallHooks(void);
 void Dsnd_ResetGlobals(void);
 
 J3D_EXTERN_C_END

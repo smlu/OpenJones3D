@@ -104,30 +104,6 @@ static uint16_t* dbloc16_pBuf1;
 static Bl16Small dbloc16_small[BL16_NUMTABLES];
 static int16_t dbloc16_offsets[BL16_NUMTABLES];
 
-void D_bloc16_InstallHooks(void)
-{
-    J3D_HOOKFUNC(dbloc16_Register);
-    J3D_HOOKFUNC(dbloc16_Configure);
-    J3D_HOOKFUNC(dbloc16_Unregister);
-    J3D_HOOKFUNC(dbloc16_Startup);
-    J3D_HOOKFUNC(dbloc16_Shutdown);
-    J3D_HOOKFUNC(dbloc16_Name);
-    J3D_HOOKFUNC(dbloc16_GetTag);
-    J3D_HOOKFUNC(dbloc16_Reset);
-    J3D_HOOKFUNC(dbloc16_Parse);
-    J3D_HOOKFUNC(dbloc16_Alloc);
-    J3D_HOOKFUNC(dbloc16_Free);
-    J3D_HOOKFUNC(dbloc16_Decode);
-    J3D_HOOKFUNC(dbloc16_Query);
-    J3D_HOOKFUNC(dbloc16_MakeTables);
-    J3D_HOOKFUNC(dbloc16_MakeGlyphs);
-    J3D_HOOKFUNC(dbloc16_DecodeFrame);
-    J3D_HOOKFUNC(dbloc16_BuildLut);
-    J3D_HOOKFUNC(dbloc16_Scale);
-    J3D_HOOKFUNC(dbloc16_Average);
-    J3D_HOOKFUNC(dbloc16_ScalePal);
-}
-
 void D_bloc16_ResetGlobals(void)
 {}
 

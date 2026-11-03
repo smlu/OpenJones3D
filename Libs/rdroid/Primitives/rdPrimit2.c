@@ -14,15 +14,6 @@
 
 StdVertexTL rdPrimit2_aD3DVertices[2];
 
-void rdPrimit2_InstallHooks(void)
-{
-    J3D_HOOKFUNC(rdPrimit2_DrawClippedLine);
-    J3D_HOOKFUNC(rdPrimit2_Reset);
-    J3D_HOOKFUNC(rdPrimit2_DrawClippedLine2);
-    J3D_HOOKFUNC(rdPrimit2_DrawClippedCircle);
-    J3D_HOOKFUNC(rdPrimit2_DrawClippedCircle2);
-}
-
 void rdPrimit2_ResetGlobals(void)
 {}
 

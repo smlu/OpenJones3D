@@ -66,41 +66,6 @@ static SithMultiNewPlayerJoinedCallback sithMulti_pfNewPlayerJoinedCallback = NU
 
 static void sithMulti_FinishWelcomingPlayer(void);
 
-void sithMulti_InstallHooks(void)
-{
-    // Uncomment only lines for functions that have full definition and doesn't call original function (non-thunk functions)
-
-    J3D_HOOKFUNC(sithMulti_CloseGame);
-    J3D_HOOKFUNC(sithMulti_CheckPlayers);
-    J3D_HOOKFUNC(sithMulti_ProcessPlayerLost);
-    J3D_HOOKFUNC(sithMulti_RemovePlayer);
-    J3D_HOOKFUNC(sithMulti_SendWelcome);
-    J3D_HOOKFUNC(sithMulti_ProcessWelcome);
-    J3D_HOOKFUNC(sithMulti_ProcessPlayerJoin);
-    J3D_HOOKFUNC(sithMulti_SyncPlayers);
-    J3D_HOOKFUNC(sithMulti_ProcessSyncPlayers);
-    J3D_HOOKFUNC(sithMulti_ProcessJoinRequest);
-    J3D_HOOKFUNC(sithMulti_FinishJoining);
-    J3D_HOOKFUNC(sithMulti_ProcessChat);
-    J3D_HOOKFUNC(sithMulti_ProcessPing);
-    J3D_HOOKFUNC(sithMulti_ProcessPong);
-    J3D_HOOKFUNC(sithMulti_QuitPlayer);
-    J3D_HOOKFUNC(sithMulti_ProcessQuit);
-    J3D_HOOKFUNC(sithMulti_Update);
-    J3D_HOOKFUNC(sithMulti_SyncScores);
-    J3D_HOOKFUNC(sithMulti_GetPlayerIndexByID);
-    J3D_HOOKFUNC(sithMulti_ProcessKilledPlayer);
-    J3D_HOOKFUNC(sithMulti_QuitGame);
-    J3D_HOOKFUNC(sithMulti_Respawn);
-    J3D_HOOKFUNC(sithMulti_RemoveStaticThing);
-    J3D_HOOKFUNC(sithMulti_UpdateSurfaces);
-    J3D_HOOKFUNC(sithMulti_UpdateSectors);
-    J3D_HOOKFUNC(sithMulti_UpdateThings);
-    J3D_HOOKFUNC(sithMulti_UpdateRemovals);
-    J3D_HOOKFUNC(sithMulti_StartWelcomingPlayer);
-    J3D_HOOKFUNC(sithMulti_StopWelcomingPlayer);
-}
-
 void sithMulti_ResetGlobals(void)
 {
     STD_ZEROMEM(&sithMulti_g_serverId, sizeof(sithMulti_g_serverId));

@@ -84,21 +84,6 @@ tMemoryState stdMemory_g_curState;
 
 static tMemoryBlock stdMemory_aZoneData[STDMEMORYBLOCK_MAXBLOCKS] = { 0 }; // Array of memory blocks; Altered: Init to 0
 
-void stdMemory_InstallHooks(void)
-{
-    J3D_HOOKFUNC(stdMemory_Startup);
-    J3D_HOOKFUNC(stdMemory_Shutdown);
-    J3D_HOOKFUNC(stdMemory_Open);
-    J3D_HOOKFUNC(stdMemory_Close);
-    J3D_HOOKFUNC(stdMemory_Malloc);
-    J3D_HOOKFUNC(stdMemory_Free);
-    J3D_HOOKFUNC(stdMemory_Realloc);
-    J3D_HOOKFUNC(stdMemory_BlockMalloc);
-    J3D_HOOKFUNC(stdMemory_BlockFree);
-    J3D_HOOKFUNC(stdMemory_BlockRealloc);
-    J3D_HOOKFUNC(stdMemory_BlockAlloc);
-}
-
 void stdMemory_ResetGlobals(void)
 {
 }

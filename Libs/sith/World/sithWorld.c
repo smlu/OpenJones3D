@@ -257,33 +257,6 @@ static const SithWorldBinarySectionParser aBinarySectionParsers[17] =
     }
 };
 
-void sithWorld_InstallHooks(void)
-{
-    J3D_HOOKFUNC(sithWorld_Startup);
-    J3D_HOOKFUNC(sithWorld_Shutdown);
-    J3D_HOOKFUNC(sithWorld_SetLoadProgressCallback);
-    J3D_HOOKFUNC(sithWorld_UpdateLoadProgress);
-    J3D_HOOKFUNC(sithWorld_Load);
-    J3D_HOOKFUNC(sithWorld_LoadPostProcess);
-    J3D_HOOKFUNC(sithWorld_LoadEntryText);
-    J3D_HOOKFUNC(sithWorld_Close);
-    J3D_HOOKFUNC(sithWorld_NewEntry);
-    J3D_HOOKFUNC(sithWorld_Free);
-    J3D_HOOKFUNC(sithWorld_ReadHeaderText);
-    J3D_HOOKFUNC(sithWorld_ReadCopyrightText);
-    J3D_HOOKFUNC(sithWorld_GetMemoryUsage);
-    J3D_HOOKFUNC(sithWorld_RegisterTextSectionParser);
-    J3D_HOOKFUNC(sithWorld_ResetRenderState);
-    J3D_HOOKFUNC(sithWorld_ValidateWorld);
-    J3D_HOOKFUNC(sithWorld_InitPlayers);
-    J3D_HOOKFUNC(sithWorld_ReadTextSection);
-    J3D_HOOKFUNC(sithWorld_GetTextSectionParserIndex);
-    J3D_HOOKFUNC(sithWorld_ReadGeoresourceText);
-    J3D_HOOKFUNC(sithWorld_WriteGeoresourceBinary);
-    J3D_HOOKFUNC(sithWorld_ReadGeoresourceBinary);
-    J3D_HOOKFUNC(sithWorld_LoadEntryBinary);
-}
-
 void sithWorld_ResetGlobals(void)
 {
     memset(&sithWorld_g_pCurrentWorld, 0, sizeof(sithWorld_g_pCurrentWorld));

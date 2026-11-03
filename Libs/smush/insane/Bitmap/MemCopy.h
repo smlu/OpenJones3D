@@ -9,7 +9,6 @@ J3D_EXTERN_C_START
 
 void J3DAPI blit_MemCopy(void* pDst, const void* pSrc, int size);
 
-void MemCopy_InstallHooks(void);
 void MemCopy_ResetGlobals(void);
 
 J3D_EXTERN_C_END

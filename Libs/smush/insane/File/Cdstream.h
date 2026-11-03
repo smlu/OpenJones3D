@@ -86,7 +86,6 @@ int J3DAPI streamer_Cancel(Stream* pStream);
 int J3DAPI streamer_InRange(Stream* pStream, int n);
 int J3DAPI streamer_Percent(Stream* pStream);
 
-void Cdstream_InstallHooks(void);
 void Cdstream_ResetGlobals(void);
 
 J3D_EXTERN_C_END

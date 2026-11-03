@@ -23,27 +23,6 @@ static int16_t word_183962C;
 static int16_t word_1839630;
 static int16_t word_183962E;
 
-void std_InstallHooks(void)
-{
-    J3D_HOOKFUNC(stdStartup);
-    J3D_HOOKFUNC(stdShutdown);
-    J3D_HOOKFUNC(stdPrintf);
-    J3D_HOOKFUNC(stdConsolePrintf);
-    J3D_HOOKFUNC(stdFileFromPath);
-    J3D_HOOKFUNC(stdCalcBitPos);
-    J3D_HOOKFUNC(stdFileOpen);
-    J3D_HOOKFUNC(stdFileClose);
-    J3D_HOOKFUNC(stdFileRead);
-    J3D_HOOKFUNC(stdFileWrite);
-    J3D_HOOKFUNC(stdFileGets);
-    J3D_HOOKFUNC(stdFileGetws);
-    J3D_HOOKFUNC(stdFileEof);
-    J3D_HOOKFUNC(stdFileTell);
-    J3D_HOOKFUNC(stdFileSize);
-    J3D_HOOKFUNC(stdFilePrintf);
-    J3D_HOOKFUNC(stdFileSeek);
-}
-
 void std_ResetGlobals(void)
 {
 }

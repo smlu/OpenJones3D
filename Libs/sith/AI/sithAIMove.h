@@ -60,7 +60,6 @@ void J3DAPI sithAIMove_StartQuetzAnim4(SithAIControlBlock* pLocal);
 void J3DAPI sithAIMove_UpdateMardukTail(SithThing* pThing, float secDeltaTime);
 
 // Helper hooking functions
-void sithAIMove_InstallHooks(void);
 void sithAIMove_ResetGlobals(void);
 
 J3D_EXTERN_C_END

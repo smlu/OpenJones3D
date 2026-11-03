@@ -53,7 +53,6 @@ void J3DAPI JonesDisplay_UpdateLoadProgress(float progress);
 int JonesDisplay_ShowSplashDemo(void); // Added
 
 // Helper hooking functions
-void JonesDisplay_InstallHooks(void);
 void JonesDisplay_ResetGlobals(void);
 
 J3D_EXTERN_C_END

@@ -99,34 +99,6 @@ const char* const aFunctionNames[SITHCONTROL_MAXFUNCTIONS + 1] =
 
 void sithControl_FinishRead(void);
 
-void sithControl_InstallHooks(void)
-{
-    J3D_HOOKFUNC(sithControl_Startup);
-    J3D_HOOKFUNC(sithControl_Shutdown);
-    J3D_HOOKFUNC(sithControl_Open);
-    J3D_HOOKFUNC(sithControl_Close);
-    J3D_HOOKFUNC(sithControl_RegisterAxisFunction);
-    J3D_HOOKFUNC(sithControl_RegisterKeyFunction);
-    J3D_HOOKFUNC(sithControl_BindControl);
-    J3D_HOOKFUNC(sithControl_BindAxis);
-    J3D_HOOKFUNC(sithControl_UnbindFunction);
-    J3D_HOOKFUNC(sithControl_UnbindFunctionIndex);
-    J3D_HOOKFUNC(sithControl_UnbindControl);
-    J3D_HOOKFUNC(sithControl_RegisterControlCallback);
-    J3D_HOOKFUNC(sithControl_Update);
-    J3D_HOOKFUNC(sithControl_GetKeyAsAxis);
-    J3D_HOOKFUNC(sithControl_GetAxis);
-    J3D_HOOKFUNC(sithControl_GetKey);
-    J3D_HOOKFUNC(sithControl_ReadControls);
-    J3D_HOOKFUNC(sithControl_FinishRead);
-    J3D_HOOKFUNC(sithControl_UnbindJoystickAxes);
-    J3D_HOOKFUNC(sithControl_UnbindMouseAxes);
-    J3D_HOOKFUNC(sithControl_Reset);
-    J3D_HOOKFUNC(sithControl_RegisterControlFunctions);
-    J3D_HOOKFUNC(sithControl_RegisterKeyboardBindings);
-    J3D_HOOKFUNC(sithControl_RegisterJoystickBindings);
-}
-
 void sithControl_ResetGlobals(void)
 {
     memset(&sithControl_g_controlOptions, 0, sizeof(sithControl_g_controlOptions));

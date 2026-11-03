@@ -153,27 +153,6 @@ bool J3DAPI sithVehicleControls_CanUnboardInDirection(SithThing* pThing, const r
 void J3DAPI sithVehicleControls_ExitRaft(SithThing* pRaftPlayer);
 void J3DAPI sithVehicleControls_UpdateRaftPaddleSoundFx(SithThing* pThing);
 
-void sithVehicleControls_InstallHooks(void)
-{
-    J3D_HOOKFUNC(sithVehicleControls_GetMineCarState);
-    J3D_HOOKFUNC(sithVehicleControls_SetMineCarState);
-    J3D_HOOKFUNC(sithVehicleControls_GetRaftState);
-    J3D_HOOKFUNC(sithVehicleControls_SetRaftState);
-    J3D_HOOKFUNC(sithVehicleControls_PuppetCallback);
-    J3D_HOOKFUNC(sithVehicleControls_ProcessMineCarMove);
-    J3D_HOOKFUNC(sithVehicleControls_ProcessJeepMove);
-    J3D_HOOKFUNC(sithVehicleControls_PlayRaftPuppetMode);
-    J3D_HOOKFUNC(sithVehicleControls_ProcessRaftMove);
-    J3D_HOOKFUNC(sithVehicleControls_FindRaftUnboardPosition);
-    J3D_HOOKFUNC(sithVehicleControls_FindWallSurface);
-    J3D_HOOKFUNC(sithVehicleControls_FadeJeepMoveSounds);
-    J3D_HOOKFUNC(sithVehicleControls_CanUnboardInDirection);
-    J3D_HOOKFUNC(sithVehicleControls_ExitRaft);
-    J3D_HOOKFUNC(sithVehicleControls_UpdateRaftPaddleSoundFx);
-    J3D_HOOKFUNC(sithVehicleControls_StartBoardCutscene);
-    J3D_HOOKFUNC(sithVehicleControls_EndBoardCutscene);
-}
-
 void sithVehicleControls_ResetGlobals(void)
 {}
 

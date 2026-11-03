@@ -853,11 +853,6 @@ int stdDisplay_Update(void)
     return 0;
 }
 
-void stdDisplay_InstallHooks(void)
-{
-    // Added: No RTI hooks in the standalone Null build: nothing to hook.
-}
-
 void stdDisplay_ResetGlobals(void)
 {
     STD_ZEROMEM(&stdDisplay_g_frontBuffer, sizeof(stdDisplay_g_frontBuffer));

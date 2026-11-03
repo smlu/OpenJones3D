@@ -23,7 +23,6 @@ SithCollisionType J3DAPI sithIntersect_CheckSphereFaceIntersection(const rdVecto
 int J3DAPI sithIntersect_CheckThingBoundBoxIntersection(const SithThing* pThing1, const SithThing* pThing2, const rdVector3* moveNorm, float moveDist, float* hitDist); // Added
 
 // Helper hooking functions
-void sithIntersect_InstallHooks(void);
 void sithIntersect_ResetGlobals(void);
 
 J3D_EXTERN_C_END

@@ -91,47 +91,6 @@ double J3DAPI SoundDriver_CalcDistToListener(float x1, float y1, float z1, float
 
 void J3DAPI SoundDriver_RestoreSoundBufferData(tSysSoundBuffer* pDSBuf);
 
-void SoundDriver_InstallHooks(void)
-{
-    J3D_HOOKFUNC(SoundDriver_Open);
-    J3D_HOOKFUNC(SoundDriver_Close);
-    J3D_HOOKFUNC(SoundDriver_SetMaxVolume);
-    J3D_HOOKFUNC(SoundDriver_CreateAndPlay);
-    J3D_HOOKFUNC(SoundDriver_Release);
-    J3D_HOOKFUNC(SoundDriver_Play);
-    J3D_HOOKFUNC(SoundDriver_Stop);
-    J3D_HOOKFUNC(SoundDriver_SetVolume);
-    J3D_HOOKFUNC(SoundDriver_GetVolume);
-    J3D_HOOKFUNC(SoundDriver_SetPan);
-    J3D_HOOKFUNC(SoundDriver_SetFrequency);
-    J3D_HOOKFUNC(SoundDriver_GetFrequency);
-    J3D_HOOKFUNC(SoundDriver_GetCurrentPosition);
-    J3D_HOOKFUNC(SoundDriver_GetStatusAndCaps);
-    J3D_HOOKFUNC(SoundDriver_SetListenerPosition);
-    J3D_HOOKFUNC(SoundDriver_ListenerCommitDeferred);
-    J3D_HOOKFUNC(SoundDriver_SetPosAndVelocity);
-    J3D_HOOKFUNC(SoundDriver_Update3DSound);
-    J3D_HOOKFUNC(SoundDriver_SetGlobals);
-    J3D_HOOKFUNC(SoundDriver_Use3DCaps);
-    J3D_HOOKFUNC(SoundDriver_GetDSound);
-    J3D_HOOKFUNC(SoundDriver_CreateDirectSound);
-    J3D_HOOKFUNC(SoundDriver_ReleaseDirectSound);
-    J3D_HOOKFUNC(SoundDriver_CreateListener);
-    J3D_HOOKFUNC(SoundDriver_ReleaseListener);
-    J3D_HOOKFUNC(SoundDriver_SetOuputFormat);
-    J3D_HOOKFUNC(SoundDriver_GetPrimaryDSBuffer);
-    J3D_HOOKFUNC(SoundDriver_ReleasePrimaryDSBuffer);
-    J3D_HOOKFUNC(SoundDriver_GetDecibelVolume);
-    J3D_HOOKFUNC(SoundDriver_GetIntPan);
-    J3D_HOOKFUNC(SoundDriver_GetVolumeFromDecibels);
-    J3D_HOOKFUNC(SoundDriver_InitPanTable);
-    J3D_HOOKFUNC(SoundDriver_DSCheckStatus);
-    J3D_HOOKFUNC(SoundDriver_CalcListeneSoundMix);
-    J3D_HOOKFUNC(SoundDriver_CalcDistToListener);
-    J3D_HOOKFUNC(SoundDriver_RestoreSoundBufferData);
-    J3D_HOOKFUNC(SoundDriver_Sleep);
-}
-
 void SoundDriver_ResetGlobals(void)
 {}
 

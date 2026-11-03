@@ -13,20 +13,6 @@
 
 static bool stdPlatform_bAssert = false;
 
-void stdPlatform_InstallHooks(void)
-{
-    J3D_HOOKFUNC(stdPlatform_InitServices);
-    J3D_HOOKFUNC(stdPlatform_ClearServices);
-    J3D_HOOKFUNC(stdPlatform_GetTimeMsec);
-    J3D_HOOKFUNC(stdPlatform_Assert);
-    J3D_HOOKFUNC(stdPlatform_Printf);
-    J3D_HOOKFUNC(stdPlatform_AllocHandle);
-    J3D_HOOKFUNC(stdPlatform_FreeHandle);
-    J3D_HOOKFUNC(stdPlatform_ReallocHandle);
-    J3D_HOOKFUNC(stdPlatform_LockHandle);
-    J3D_HOOKFUNC(stdPlatform_UnlockHandle);
-}
-
 void stdPlatform_ResetGlobals(void)
 {}
 
