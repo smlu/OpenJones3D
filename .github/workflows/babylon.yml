@@ -39,9 +39,11 @@ jobs:
         shell: bash
     steps:
       - uses: actions/checkout@v4
-      - name: Install Ninja
+      - name: Install Ninja and SDL3 build dependencies
         if: runner.os == 'Linux'
-        run: sudo apt-get install -y ninja-build
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build libx11-dev libxext-dev libxrandr-dev libxcursor-dev libxi-dev libxss-dev libxtst-dev libxfixes-dev libxkbcommon-dev libwayland-dev wayland-protocols libegl1-mesa-dev libdrm-dev libgbm-dev libdecor-0-dev libasound2-dev libpulse-dev libudev-dev libdbus-1-dev
       - name: Install Ninja (macOS)
         if: runner.os == 'macOS'
         run: brew install ninja
