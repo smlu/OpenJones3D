@@ -104,7 +104,7 @@ int J3DAPI sithMessage_SendMessage(SithMessage* pMessage, DPID idTo, SithMessage
     }
 
     pMessage->msecTime = sithTime_g_msecGameTime;
-    int result = 1; // Added: Init result, the original returns an uninitialized value when neither stream bit is set
+    int result = 1; // Fixed: Init result, the original returns an uninitialized value when neither stream bit is set
     if ( (stream & SITHMESSAGE_STREAM_NET) != 0 )
     {
         result = sithMessage_NetWrite(pMessage, idTo, dwDPFlags);
