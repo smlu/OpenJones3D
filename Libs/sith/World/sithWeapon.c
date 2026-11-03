@@ -530,10 +530,9 @@ int J3DAPI sithWeapon_ParseArg(const StdConffileArg* pArg, SithThing* pThing, in
         }
         case SITHTHING_ARG_DAMAGE:
         {
-            errno = 0;
-            float damage = strtof(pArg->argValue, NULL); // Changed: Use strtof instead atof
+            float damage = STD_STRTOF(pArg->argValue); // Changed: Use strtof instead atof
             // Only reject overflow, (float)atof of the original accepted underflowing values
-            if ( errno == ERANGE && fabsf(damage) > 1.0f )
+            if ( STD_ISRANGEERROR() && fabsf(damage) > 1.0f )
             { // Added
                 goto syntax_error;
             }
@@ -542,10 +541,9 @@ int J3DAPI sithWeapon_ParseArg(const StdConffileArg* pArg, SithThing* pThing, in
         }
         case SITHTHING_ARG_MINDAMAGE:
         {
-            errno = 0;
-            float minDamage = strtof(pArg->argValue, NULL); // Changed: Use strtof instead atof
+            float minDamage = STD_STRTOF(pArg->argValue); // Changed: Use strtof instead atof
             // Only reject overflow, (float)atof of the original accepted underflowing values
-            if ( errno == ERANGE && fabsf(minDamage) > 1.0f )
+            if ( STD_ISRANGEERROR() && fabsf(minDamage) > 1.0f )
             { // Added
                 goto syntax_error;
             }
@@ -567,10 +565,9 @@ int J3DAPI sithWeapon_ParseArg(const StdConffileArg* pArg, SithThing* pThing, in
         }
         case SITHTHING_ARG_FORCE:
         {
-            errno = 0;
-            float force = strtof(pArg->argValue, NULL); // Changed: Use strtof instead atof
+            float force = STD_STRTOF(pArg->argValue); // Changed: Use strtof instead atof
             // Only reject overflow, (float)atof of the original accepted underflowing values
-            if ( errno == ERANGE && fabsf(force) > 1.0f )
+            if ( STD_ISRANGEERROR() && fabsf(force) > 1.0f )
             { // Added
                 goto syntax_error;
             }
@@ -579,10 +576,9 @@ int J3DAPI sithWeapon_ParseArg(const StdConffileArg* pArg, SithThing* pThing, in
         }
         case SITHTHING_ARG_RANGE:
         {
-            errno = 0;
-            float range = strtof(pArg->argValue, NULL); // Changed: Use strtof instead atof
+            float range = STD_STRTOF(pArg->argValue); // Changed: Use strtof instead atof
             // Only reject overflow, (float)atof of the original accepted underflowing values
-            if ( errno == ERANGE && fabsf(range) > 1.0f )
+            if ( STD_ISRANGEERROR() && fabsf(range) > 1.0f )
             { // Added
                 goto syntax_error;
             }
@@ -591,10 +587,9 @@ int J3DAPI sithWeapon_ParseArg(const StdConffileArg* pArg, SithThing* pThing, in
         }
         case SITHTHING_ARG_RATE:
         {
-            errno = 0;
-            float rate = strtof(pArg->argValue, NULL); // Changed: Use strtof instead atof
+            float rate = STD_STRTOF(pArg->argValue); // Changed: Use strtof instead atof
             // Only reject overflow, (float)atof of the original accepted underflowing values
-            if ( errno == ERANGE && fabsf(rate) > 1.0f )
+            if ( STD_ISRANGEERROR() && fabsf(rate) > 1.0f )
             { // Added
                 goto syntax_error;
             }

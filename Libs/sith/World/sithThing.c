@@ -4072,11 +4072,10 @@ int J3DAPI sithThing_ParseThingArg(const StdConffileArg* pArg, SithWorld* pWorld
         }
         case SITHTHING_ARG_COLLIDE:
         {
-            errno = 0;
             // Altered: Parse with strtoul instead of atoi, and only the upper bound is checked below. The original rejected values < SITH_COLLIDE_NONE too.
             // TODO: [BUG] SithCollideType is a signed enum, so a negative value (e.g. "-1") wraps to a negative enum and passes the check.
-            SithCollideType coltype = strtoul(pArg->argValue, NULL, 10);
-            if ( coltype > SITH_COLLIDE_FACE || (errno == ERANGE) )      // Added: Conversion range error check
+            SithCollideType coltype = STD_STRTOUL(pArg->argValue, 10);
+            if ( coltype > SITH_COLLIDE_FACE || STD_ISRANGEERROR() )      // Added: Conversion range error check
             {
                 goto syntax_error;
             }
@@ -4109,10 +4108,9 @@ int J3DAPI sithThing_ParseThingArg(const StdConffileArg* pArg, SithWorld* pWorld
         }
         case SITHTHING_ARG_SIZE:
         {
-            errno = 0;
-            float size = strtof(pArg->argValue, NULL); // Changed: use strtof instead atof
+            float size = STD_STRTOF(pArg->argValue); // Changed: use strtof instead atof
             // Only reject overflow, (float)atof of the original accepted underflowing values
-            if ( size < 0.0f || (errno == ERANGE && fabsf(size) > 1.0f) )    // Added: Conversion range error check
+            if ( size < 0.0f || (STD_ISRANGEERROR() && fabsf(size) > 1.0f) )    // Added: Conversion range error check
             {
                 goto syntax_error;
             }
@@ -4134,10 +4132,9 @@ int J3DAPI sithThing_ParseThingArg(const StdConffileArg* pArg, SithWorld* pWorld
         }
         case SITHTHING_ARG_TIMER:
         {
-            errno = 0;
-            float secLifeLeft = strtof(pArg->argValue, NULL); // Changed: use strtof instead atof
+            float secLifeLeft = STD_STRTOF(pArg->argValue); // Changed: use strtof instead atof
             // Only reject overflow, (float)atof of the original accepted underflowing values
-            if ( secLifeLeft < 0.0f || (errno == ERANGE && fabsf(secLifeLeft) > 1.0f) )    // Added: Conversion range error check
+            if ( secLifeLeft < 0.0f || (STD_ISRANGEERROR() && fabsf(secLifeLeft) > 1.0f) )    // Added: Conversion range error check
             {
                 goto syntax_error;
             }
@@ -4289,10 +4286,9 @@ int J3DAPI sithThing_ParseThingArg(const StdConffileArg* pArg, SithWorld* pWorld
                 return SITHTHING_PARSEARG_PARSED;
             }
 
-            errno = 0;
-            float movesize = strtof(pArg->argValue, NULL); // Changed: use strtof instead atof
+            float movesize = STD_STRTOF(pArg->argValue); // Changed: use strtof instead atof
             // Only reject overflow, (float)atof of the original accepted underflowing values
-            if ( movesize < 0.0f || (errno == ERANGE && fabsf(movesize) > 1.0f) )    // Added: Conversion range error check
+            if ( movesize < 0.0f || (STD_ISRANGEERROR() && fabsf(movesize) > 1.0f) )    // Added: Conversion range error check
             {
                 goto syntax_error;
             }
@@ -4318,10 +4314,9 @@ int J3DAPI sithThing_ParseThingArg(const StdConffileArg* pArg, SithWorld* pWorld
         }
         case SITHTHING_ARG_USERVAL:
         {
-            errno = 0;
-            float userval = strtof(pArg->argValue, NULL); // Changed: use strtof instead atof
+            float userval = STD_STRTOF(pArg->argValue); // Changed: use strtof instead atof
             // Only reject overflow, (float)atof of the original accepted underflowing values
-            if ( userval < 0.0f || (errno == ERANGE && fabsf(userval) > 1.0f) )    // Added: Conversion range error check
+            if ( userval < 0.0f || (STD_ISRANGEERROR() && fabsf(userval) > 1.0f) )    // Added: Conversion range error check
             {
                 goto syntax_error;
             }
@@ -4331,10 +4326,9 @@ int J3DAPI sithThing_ParseThingArg(const StdConffileArg* pArg, SithWorld* pWorld
         }
         case SITHTHING_ARG_COLLHEIGHT:
         {
-            errno = 0;
-            float height = strtof(pArg->argValue, NULL); // Changed: use strtof instead atof
+            float height = STD_STRTOF(pArg->argValue); // Changed: use strtof instead atof
             // Only reject overflow, (float)atof of the original accepted underflowing values
-            if ( height < 0.0f || (errno == ERANGE && fabsf(height) > 1.0f) )    // Added: Conversion range error check
+            if ( height < 0.0f || (STD_ISRANGEERROR() && fabsf(height) > 1.0f) )    // Added: Conversion range error check
             {
                 goto syntax_error;
             }
@@ -4345,10 +4339,9 @@ int J3DAPI sithThing_ParseThingArg(const StdConffileArg* pArg, SithWorld* pWorld
         }
         case SITHTHING_ARG_COLLWIDTH:
         {
-            errno = 0;
-            float width = strtof(pArg->argValue, NULL); // Changed: use strtof instead atof
+            float width = STD_STRTOF(pArg->argValue); // Changed: use strtof instead atof
             // Only reject overflow, (float)atof of the original accepted underflowing values
-            if ( width < 0.0f || (errno == ERANGE && fabsf(width) > 1.0f) )    // Added: Conversion range error check
+            if ( width < 0.0f || (STD_ISRANGEERROR() && fabsf(width) > 1.0f) )    // Added: Conversion range error check
             {
                 goto syntax_error;
             }

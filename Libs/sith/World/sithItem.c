@@ -12,6 +12,7 @@
 #include <sith/World/sithThing.h>
 #include <sith/RTI/symbols.h>
 
+#include <std/General/stdUtil.h>
 #include <std/Win95/stdComm.h>
 
 void sithItem_InstallHooks(void)
@@ -147,10 +148,9 @@ int J3DAPI sithItem_ParseArg(const StdConffileArg* pArg, SithThing* pThing, int 
 
         case SITHTHING_ARG_RESPAWN:
         {
-            errno = 0;
-            float spawnInterval = strtof(pArg->argValue, NULL); // Changed: Use strtof instead atof
+            float spawnInterval = STD_STRTOF(pArg->argValue); // Changed: Use strtof instead atof
             // Only reject overflow, (float)atof of the original accepted underflowing values
-            if ( errno == ERANGE && fabsf(spawnInterval) > 1.0f ) { // Added
+            if ( STD_ISRANGEERROR() && fabsf(spawnInterval) > 1.0f ) { // Added
                 return 0; // error
             }
 
