@@ -198,13 +198,13 @@ void J3DAPI jonesInventory_UpdateIQPoints(size_t difficulty)
     {
         if ( jonesInventory_pGameStatistics->aLevelStatistic[jonesInventory_pGameStatistics->curLevelNum].numIQUpdates < 20 )
         {
-            if ( difficulty > 5 )
+            if ( difficulty > SITH_GAME_DIFFICULTY_MAX )
             {
-                difficulty = 5;
+                difficulty = SITH_GAME_DIFFICULTY_MAX;
             }
 
-            int penalty = 5 - difficulty;
-            if ( (int)(5 - difficulty + jonesInventory_pGameStatistics->aLevelStatistic[jonesInventory_pGameStatistics->curLevelNum].numIQUpdates) <= 20 )
+            int penalty = SITH_GAME_DIFFICULTY_MAX - difficulty;
+            if ( (int)(SITH_GAME_DIFFICULTY_MAX - difficulty + jonesInventory_pGameStatistics->aLevelStatistic[jonesInventory_pGameStatistics->curLevelNum].numIQUpdates) <= 20 )
             {
                 jonesInventory_pGameStatistics->aLevelStatistic[jonesInventory_pGameStatistics->curLevelNum].numIQUpdates += penalty;
             }
