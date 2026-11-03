@@ -14,13 +14,14 @@ namespace babylon::platform
 
     // Platform on SDL3's window system (ADR-0009): windows over
     // SDL_CreateWindow and the event queue over SDL_PollEvent. It
-    // initializes the SDL video subsystem (SDL_InitSubSystem) in the factory
-    // and releases it (SDL_QuitSubSystem) in the destructor, so the platform
-    // must outlive its windows. SDL's video subsystem belongs to the whole
-    // process, so a second platform while one exists is refused: nullptr and
-    // one warning. Both cases need no display: with SDL_VIDEO_DRIVER=offscreen
-    // the backend runs headless. The returned platform is owned by the
-    // caller.
+    // initializes the SDL video and gamepad subsystems (SDL_InitSubSystem)
+    // in the factory and quits them again, gamepad first, in the destructor,
+    // opening each gamepad as it is connected and closing it again when it
+    // goes, so the platform must outlive its windows and gamepads. SDL's
+    // video subsystem belongs to the whole process, so a second platform
+    // while one exists is refused: nullptr and one warning. Both cases need
+    // no display: with SDL_VIDEO_DRIVER=offscreen the backend runs headless.
+    // The returned platform is owned by the caller.
     std::unique_ptr<Platform> createSdlPlatform();
 
 }

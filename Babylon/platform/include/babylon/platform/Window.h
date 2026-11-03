@@ -58,6 +58,17 @@ namespace babylon::platform
         // never 0. Events about this window carry it.
         virtual WindowId id() const = 0;
 
+        // Hides the cursor and reports only relative motion (mouse look):
+        // the MouseMoved events of this window then carry their meaning in
+        // dx and dy. Returns false and logs one warning if the backend
+        // refused, leaving relativeMouse() as it was. The Null backend
+        // always accepts and records the state.
+        [[nodiscard]] virtual bool setRelativeMouse(bool enabled) = 0;
+
+        // The relative mouse mode the backend reports now: what
+        // setRelativeMouse() set last unless it was refused.
+        virtual bool relativeMouse() const = 0;
+
     private:
         // Called only with a size that passed the check in resize(). Returns
         // false and logs one warning if the backend refused it.

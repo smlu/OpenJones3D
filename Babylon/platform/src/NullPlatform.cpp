@@ -50,9 +50,22 @@ namespace
             return m_id;
         }
 
+        // A Null window has no cursor to hide, so nothing can refuse: the
+        // mode is only the state the interface promises to report back.
+        bool setRelativeMouse(bool enabled) override
+        {
+            m_relativeMouse = enabled;
+            return true;
+        }
+
+        bool relativeMouse() const override
+        {
+            return m_relativeMouse;
+        }
+
     private:
-        // A Null window has nothing that could refuse: the size already
-        // passed the shared check in resize().
+        // Called only with a size that passed the shared check in resize(). Returns
+        // false and logs one warning if the backend refused it.
         bool doResize(Size size) override
         {
             m_size = size;
@@ -62,6 +75,7 @@ namespace
         std::string m_title;
         Size m_size;
         WindowId m_id;
+        bool m_relativeMouse = false;
     };
 
 }

@@ -16,8 +16,9 @@ namespace babylon::platform
 
     // Platform that touches no operating system at all, for tests and
     // headless runs. Windows are records in memory: ids start at 1 and count
-    // up, resize() always succeeds once the size passed the shared check, and
-    // the title and size are exactly what was asked for.
+    // up, resize() always succeeds once the size passed the shared check, the
+    // title and size are exactly what was asked for, and relative mouse mode
+    // is recorded per window.
     //
     // Nothing ever arrives in the event queue by itself: only pushEvent(),
     // from a test or from the headless runner, puts events in it. They come

@@ -5,20 +5,26 @@
 
 #include <babylon/platform/SdlPlatform.h>
 
+#include "SdlEventTranslation.h"
+
 #include <babylon/log/Log.h>
 #include <babylon/platform/Event.h>
+#include <babylon/platform/Keys.h>
 #include <babylon/platform/Platform.h>
 #include <babylon/platform/Window.h>
 
 #include <SDL3/SDL_error.h>
 #include <SDL3/SDL_events.h>
+#include <SDL3/SDL_gamepad.h>
 #include <SDL3/SDL_init.h>
+#include <SDL3/SDL_mouse.h>
 #include <SDL3/SDL_video.h>
 
 #include <memory>
 #include <optional>
 #include <string>
 #include <string_view>
+#include <unordered_map>
 
 namespace babylon::platform
 {
@@ -29,13 +35,6 @@ namespace
     // runs one platform at a time: the factory sets the flag, the destructor
     // clears it, and a second platform while one lives is refused.
     bool videoInUse = false;
-
-    // The SDL id of the window an SDL window event refers to, which is the
-    // id that window reports through Window::id().
-    WindowId windowId(const SDL_Event& sdlEvent)
-    {
-        return static_cast<WindowId>(sdlEvent.window.windowID);
-    }
 
     // One window SDL created. SDL_Window* is owned here and destroyed with
     // this object, which must happen before the SdlPlatform quits the video
@@ -93,6 +92,25 @@ namespace
             return m_id;
         }
 
+        // SDL hides the cursor and reports only relative motion in this
+        // mode; a window system that cannot do it makes the call fail, which
+        // is one warning and the mode unchanged.
+        bool setRelativeMouse(bool enabled) override
+        {
+            if ( !SDL_SetWindowRelativeMouseMode(m_window, enabled) )
+            {
+                log::warning("platform: setting relative mouse mode {} on the window failed: {}",
+                    enabled, SDL_GetError());
+                return false;
+            }
+            return true;
+        }
+
+        bool relativeMouse() const override
+        {
+            return SDL_GetWindowRelativeMouseMode(m_window);
+        }
+
     private:
         // SDL applies a requested size asynchronously, so this waits for the
         // window system with SDL_SyncWindow: size() reports the new size as
@@ -125,9 +143,12 @@ namespace
     public:
         ~SdlPlatform() override
         {
-            // Windows come first: Platform.h says every window is destroyed
-            // before its platform, and SDL frees window resources as part of
-            // quitting the subsystem.
+            // Windows and gamepads come first: Platform.h says every window
+            // is destroyed before its platform, SDL frees window resources
+            // as part of quitting the video subsystem, and a gamepad handle
+            // must be closed before the subsystem that made it goes away.
+            closeAllGamepads();
+            SDL_QuitSubSystem(SDL_INIT_GAMEPAD);
             SDL_QuitSubSystem(SDL_INIT_VIDEO);
             videoInUse = false;
         }
@@ -175,28 +196,65 @@ namespace
                 {
                     return std::nullopt;   // nothing of ours left in the queue
                 }
-                switch ( sdlEvent.type )
+                // SDL only sends button and axis events for a gamepad that
+                // is open, so open and close them as they come and go, and
+                // keep the handles until the platform dies.
+                if ( sdlEvent.type == SDL_EVENT_GAMEPAD_ADDED )
                 {
-                    case SDL_EVENT_QUIT:
-                        return QuitRequested{};
-                    case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
-                        return WindowCloseRequested{windowId(sdlEvent)};
-                    case SDL_EVENT_WINDOW_FOCUS_GAINED:
-                        return WindowFocusChanged{windowId(sdlEvent), true};
-                    case SDL_EVENT_WINDOW_FOCUS_LOST:
-                        return WindowFocusChanged{windowId(sdlEvent), false};
-                    case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
-                        return WindowResized{windowId(sdlEvent),
-                            Size{sdlEvent.window.data1, sdlEvent.window.data2}};
-                    default:
-                        // Every other SDL event (mouse motion, key repeat,
-                        // display changes, the SDL3 equivalents of the ones
-                        // above) is not part of this queue yet; drop it and
-                        // keep looking.
-                        break;
+                    openGamepad(sdlEvent.gdevice.which);
                 }
+                else if ( sdlEvent.type == SDL_EVENT_GAMEPAD_REMOVED )
+                {
+                    closeGamepad(sdlEvent.gdevice.which);
+                }
+                if ( std::optional<Event> event = sdl::translateEvent(sdlEvent); event.has_value() )
+                {
+                    return event;
+                }
+                // Everything translateEvent() does not deliver (display
+                // changes, sensors, audio devices, unmapped buttons) is
+                // dropped here and the search continues.
             }
         }
+
+    private:
+        // SDL ids count up from 1, so the cast to GamepadId never collides
+        // with "no gamepad" and maps back without loss.
+        void openGamepad(SDL_JoystickID which)
+        {
+            const GamepadId gamepad = static_cast<GamepadId>(which);
+            SDL_Gamepad* const handle = SDL_OpenGamepad(which);
+            if ( handle == nullptr )
+            {
+                // The connect event is still delivered; only button and
+                // axis events are missing for this gamepad.
+                log::warning("platform: opening gamepad {} failed: {}", gamepad, SDL_GetError());
+                return;
+            }
+            m_gamepads[gamepad] = handle;
+        }
+
+        void closeGamepad(SDL_JoystickID which)
+        {
+            const auto found = m_gamepads.find(static_cast<GamepadId>(which));
+            if ( found == m_gamepads.end() )
+            {
+                return;   // the open failed, or a removal without an add
+            }
+            SDL_CloseGamepad(found->second);
+            m_gamepads.erase(found);
+        }
+
+        void closeAllGamepads()
+        {
+            for ( const auto& entry : m_gamepads )
+            {
+                SDL_CloseGamepad(entry.second);
+            }
+            m_gamepads.clear();
+        }
+
+        std::unordered_map<GamepadId, SDL_Gamepad*> m_gamepads;
     };
 
 }
@@ -213,6 +271,15 @@ namespace
         {
             log::warning("platform: initializing the SDL video subsystem failed: {}",
                 SDL_GetError());
+            return nullptr;
+        }
+        // Gamepads need their own subsystem; SDL only sends the hotplug,
+        // button and axis events this queue carries while it is up.
+        if ( !SDL_InitSubSystem(SDL_INIT_GAMEPAD) )
+        {
+            log::warning("platform: initializing the SDL gamepad subsystem failed: {}",
+                SDL_GetError());
+            SDL_QuitSubSystem(SDL_INIT_VIDEO);
             return nullptr;
         }
         videoInUse = true;

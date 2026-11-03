@@ -4,6 +4,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 #include <babylon/platform/Event.h>
+#include <babylon/platform/Keys.h>
 #include <babylon/platform/NullPlatform.h>
 #include <babylon/platform/Platform.h>
 #include <babylon/platform/Window.h>
@@ -131,4 +132,115 @@ TEST_CASE("The Null queue hands back what was pushed, first in first out")
     platform.pushEvent(babylon::platform::QuitRequested{});
     CHECK(platform.pollEvent() != std::nullopt);
     CHECK(platform.pollEvent() == std::nullopt);
+}
+
+TEST_CASE("The Null queue carries key, mouse and gamepad events unchanged")
+{
+    NullPlatform platform;
+
+    platform.pushEvent(babylon::platform::KeyChanged{ 3, babylon::platform::Key::F5, true, false });
+    platform.pushEvent(babylon::platform::MouseMoved{ 3, 120.5f, 64.25f, -8.f, 2.5f });
+    platform.pushEvent(
+        babylon::platform::MouseButtonChanged{ 4, babylon::platform::MouseButton::X2, true });
+    platform.pushEvent(babylon::platform::MouseWheelMoved{ 4, 0.f, -1.5f });
+    platform.pushEvent(babylon::platform::GamepadConnected{ 9 });
+    platform.pushEvent(babylon::platform::GamepadDisconnected{ 9 });
+    platform.pushEvent(babylon::platform::GamepadButtonChanged{ 9,
+        babylon::platform::GamepadButton::North, true });
+    platform.pushEvent(babylon::platform::GamepadAxisMoved{ 9,
+        babylon::platform::GamepadAxis::LeftTrigger, 0.5f });
+
+    const std::optional<babylon::platform::Event> key = platform.pollEvent();
+    REQUIRE(key.has_value());
+    const auto* const keyEvent = std::get_if<babylon::platform::KeyChanged>(&*key);
+    REQUIRE(keyEvent != nullptr);
+    CHECK(keyEvent->window == 3);
+    CHECK(keyEvent->key == babylon::platform::Key::F5);
+    CHECK(keyEvent->down);
+    CHECK_FALSE(keyEvent->repeat);
+
+    const std::optional<babylon::platform::Event> moved = platform.pollEvent();
+    REQUIRE(moved.has_value());
+    const auto* const movedEvent = std::get_if<babylon::platform::MouseMoved>(&*moved);
+    REQUIRE(movedEvent != nullptr);
+    CHECK(movedEvent->window == 3);
+    CHECK(movedEvent->x == 120.5f);
+    CHECK(movedEvent->y == 64.25f);
+    CHECK(movedEvent->dx == -8.f);
+    CHECK(movedEvent->dy == 2.5f);
+
+    const std::optional<babylon::platform::Event> button = platform.pollEvent();
+    REQUIRE(button.has_value());
+    const auto* const buttonEvent = std::get_if<babylon::platform::MouseButtonChanged>(&*button);
+    REQUIRE(buttonEvent != nullptr);
+    CHECK(buttonEvent->window == 4);
+    CHECK(buttonEvent->button == babylon::platform::MouseButton::X2);
+    CHECK(buttonEvent->down);
+
+    const std::optional<babylon::platform::Event> wheel = platform.pollEvent();
+    REQUIRE(wheel.has_value());
+    const auto* const wheelEvent = std::get_if<babylon::platform::MouseWheelMoved>(&*wheel);
+    REQUIRE(wheelEvent != nullptr);
+    CHECK(wheelEvent->window == 4);
+    CHECK(wheelEvent->dx == 0.f);
+    CHECK(wheelEvent->dy == -1.5f);
+
+    const std::optional<babylon::platform::Event> added = platform.pollEvent();
+    REQUIRE(added.has_value());
+    const auto* const addedEvent = std::get_if<babylon::platform::GamepadConnected>(&*added);
+    REQUIRE(addedEvent != nullptr);
+    CHECK(addedEvent->gamepad == 9);
+
+    const std::optional<babylon::platform::Event> removed = platform.pollEvent();
+    REQUIRE(removed.has_value());
+    const auto* const removedEvent =
+        std::get_if<babylon::platform::GamepadDisconnected>(&*removed);
+    REQUIRE(removedEvent != nullptr);
+    CHECK(removedEvent->gamepad == 9);
+
+    const std::optional<babylon::platform::Event> pressed = platform.pollEvent();
+    REQUIRE(pressed.has_value());
+    const auto* const pressedEvent =
+        std::get_if<babylon::platform::GamepadButtonChanged>(&*pressed);
+    REQUIRE(pressedEvent != nullptr);
+    CHECK(pressedEvent->gamepad == 9);
+    CHECK(pressedEvent->button == babylon::platform::GamepadButton::North);
+    CHECK(pressedEvent->down);
+
+    const std::optional<babylon::platform::Event> axis = platform.pollEvent();
+    REQUIRE(axis.has_value());
+    const auto* const axisEvent = std::get_if<babylon::platform::GamepadAxisMoved>(&*axis);
+    REQUIRE(axisEvent != nullptr);
+    CHECK(axisEvent->gamepad == 9);
+    CHECK(axisEvent->axis == babylon::platform::GamepadAxis::LeftTrigger);
+    CHECK(axisEvent->value == 0.5f);
+
+    CHECK(platform.pollEvent() == std::nullopt);
+}
+
+TEST_CASE("The Null window records relative mouse mode")
+{
+    NullPlatform platform;
+    babylon::log::CaptureSink sink;
+
+    const std::unique_ptr<Window> window =
+        platform.createWindow(WindowDesc{ "one", Size{ 64, 64 } });
+    REQUIRE(window != nullptr);
+    const std::unique_ptr<Window> other =
+        platform.createWindow(WindowDesc{ "two", Size{ 64, 64 } });
+    REQUIRE(other != nullptr);
+
+    // Off as long as nobody asked, and the Null backend never refuses.
+    CHECK_FALSE(window->relativeMouse());
+    CHECK(window->setRelativeMouse(true));
+    CHECK(window->relativeMouse());
+
+    // The mode is recorded per window.
+    CHECK_FALSE(other->relativeMouse());
+
+    CHECK(window->setRelativeMouse(false));
+    CHECK_FALSE(window->relativeMouse());
+
+    // A mode that cannot fail never logs.
+    CHECK(sink.records().empty());
 }

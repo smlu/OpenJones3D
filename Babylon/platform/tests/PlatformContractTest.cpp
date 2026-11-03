@@ -123,6 +123,26 @@ namespace
         CHECK(resizable->id() != biggest->id());
         noWarning();
 
+        // Relative mouse: once accepted, relativeMouse() reports the mode
+        // until it is switched off again. A window system that cannot do it
+        // (SDL's offscreen driver may refuse) answers false with exactly one
+        // warning and the state unchanged; that is allowed, not a failure.
+        if ( window->setRelativeMouse(true) )
+        {
+            noWarning();
+            CHECK(window->relativeMouse());
+            CHECK(window->setRelativeMouse(false));
+            noWarning();
+            CHECK_FALSE(window->relativeMouse());
+        }
+        else
+        {
+            MESSAGE("this backend refused setRelativeMouse(true); checked only the "
+                "refusal contract: one warning, state unchanged");
+            oneWarning();
+            CHECK_FALSE(window->relativeMouse());
+        }
+
         // Draining the queue terminates: the backend does not make events
         // faster than they are taken out. 10,000 calls is far past what
         // four windows and one resize can produce.
