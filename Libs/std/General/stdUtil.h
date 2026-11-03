@@ -1,5 +1,7 @@
 #ifndef STD_STDUTIL_H
 #define STD_STDUTIL_H
+#include <errno.h>
+#include <stdlib.h>
 #include <string.h>
 #include <j3dcore/j3d.h>
 #include <std/types.h>
@@ -191,6 +193,27 @@ J3D_EXTERN_C_START
 * @return true if equal, false otherwise
 */
 #define STD_EQUALMEM(dest, src, size) (memcmp((dest), (src), (size)) == 0)
+
+/**
+* Converts a string to float with strtof, resetting errno first so STD_ISRANGEERROR reports only this conversion.
+* @param str - String to convert
+* @return The converted value
+*/
+#define STD_STRTOF(str) (errno = 0, strtof((str), NULL))
+
+/**
+* Converts a string to unsigned long with strtoul, resetting errno first so STD_ISRANGEERROR reports only this conversion.
+* @param str  - String to convert
+* @param base - Number base
+* @return The converted value
+*/
+#define STD_STRTOUL(str, base) (errno = 0, strtoul((str), NULL, (base)))
+
+/**
+* Tests whether the last STD_STRTOF or STD_STRTOUL conversion was out of range.
+* @return true if errno is ERANGE, false otherwise
+*/
+#define STD_ISRANGEERROR() (errno == ERANGE)
 
 
 char* J3DAPI stdUtil_StringDuplicate(const char* pSource, tHostServices* pHS); // Added: From debug version
