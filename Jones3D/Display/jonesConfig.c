@@ -2261,6 +2261,7 @@ error:
     memset(pConfig->aName, 0, sizeof(pConfig->aName));
     for ( size_t i = 0; i < bindNum; ++i ) // TODO: Hmm is it ok using binNum here? Shouldn't it use actionCount, or just memset the whole array?
     {
+        // The original tests the address of the action row here, which is never NULL, so every row is cleared
         memset(pConfig->aActions[i], 0, STD_ARRAYLEN(pConfig->aActions[i])); // TODO: [BUG] Clears 9 bytes, not 9 entries, as the original
     }
     // Old code
@@ -6275,6 +6276,7 @@ void J3DAPI jonesConfig_EditControlScheme_EditAssignment(HWND hDlg, HWND hListCt
     {
         InvalidateRect(hDlg, 0, 1);
 
+        // The original tests the address of the action row here, which is never NULL, so the key is always assigned
         itemIdx = ListView_GetNextItem(hListCtrl, -1, LVNI_SELECTED); // TODO: why do another call, and not use value of itemIdx returned by above func?
         ListView_SetItemText(hListCtrl, itemIdx, 1, assignkeyData.aControlName);
 
@@ -8252,7 +8254,7 @@ int J3DAPI jonesConfig_ShowGameOverDialog(HWND hWnd, char* pRestoreFilename, tSo
     JonesDialog_ShowDialog(MAKEINTRESOURCE(150), hWnd, jonesConfig_GameOverDialogProc, (LPARAM)&data);
 
 #ifdef J3D_QOL_IMPROVEMENTS
-    // Altered: Return the music channel to the caller so it can stop the game over music. The original never writes it back (Indy3D.exe v1.0 0x0040C800)
+    // Altered: Return the music channel to the caller so it can stop the game over music. The original never writes it back
     *pSndChnlMus = data.sndChnlMusic;
 #endif
     return data.result;
