@@ -23,7 +23,8 @@ Each module hides one platform decision and is one CMake static-library target
         backends/<backend>/         per-backend code
         tests/                      doctest unit tests
 
-`core` (version, assert) is the first module.
+`core` (version, assert) is the first module, `log` (the global logging API with
+pluggable sinks) the second.
 
 ## Declaring a module
 

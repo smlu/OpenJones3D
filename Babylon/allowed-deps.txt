@@ -8,3 +8,4 @@
 # One line per module:
 # <module>: <direct dependencies, space separated>
 core:
+log:
