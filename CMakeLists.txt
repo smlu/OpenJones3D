@@ -102,6 +102,14 @@ else()
     endif()
 endif()
 
+# Babylon Engine: built before the game's compile options so it keeps its own flags.
+option(JONES3D_BUILD_BABYLON "Build the Babylon Engine" ON)
+if (JONES3D_BUILD_BABYLON)
+    set(BABYLON_BUILD_TESTS ${JONES3D_BUILD_TESTS} CACHE BOOL "" FORCE)
+    set(BABYLON_SANITIZE ${JONES3D_SANITIZE} CACHE BOOL "" FORCE)
+    add_subdirectory(Babylon)
+endif()
+
 # Added: the Null platform has no device backends and no Windows console: system and disruptive
 # system tests stay Windows-only there. Windows behavior is unchanged.
 if (J3D_PLATFORM_NULL)
