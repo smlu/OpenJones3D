@@ -132,6 +132,8 @@ TEST(stdMemory, TestAllocationFailureAndOverflowRejections)
 TEST(stdMemory, TestCloseReportsUnfreedAllocations)
 {
     void* pData;
+    char aExpected[256];
+    char aCaptured[2048];
 
     TEST_ASSERT_EQUAL_INT(1, stdMemory_Startup());
     TEST_ASSERT_EQUAL_INT(1, stdMemory_Open());
@@ -142,10 +144,14 @@ TEST(stdMemory, TestCloseReportsUnfreedAllocations)
     StdGeneralTest_ResetDebugOutput();
     stdMemory_Close();
     TEST_ASSERT_EQUAL_STRING(
-        "stdMemory.c(149): Maximum dynamic memory used: 24 bytes.\n"
-        "stdMemory.c(153): UNFREED MEMORY ALERT!\n\n"
-        "File\tLine\tSize\tNumber\n\nstdMemoryLeakTest.c\t91\t24\t0\n",
-        StdGeneralTest_GetDebugOutput()
+        StdGeneralTest_NormLogLineNumbers(
+            "stdMemory.c(149): Maximum dynamic memory used: 24 bytes.\n"
+            "stdMemory.c(153): UNFREED MEMORY ALERT!\n\n"
+            "File\tLine\tSize\tNumber\n\nstdMemoryLeakTest.c\t91\t24\t0\n",
+            aExpected,
+            sizeof(aExpected)
+        ),
+        StdGeneralTest_NormLogLineNumbers(StdGeneralTest_GetDebugOutput(), aCaptured, sizeof(aCaptured))
     );
 
     stdMemory_Free(pData);

@@ -503,6 +503,44 @@ const char* StdGeneralTest_GetDebugOutput(void)
     return stdGeneralTest_aDebugOutput;
 }
 
+// Added: STDLOG writes "<file>.c(<line>)" from __LINE__ of the logging call, so that number changes
+// with unrelated edits to the logging source file. Tests check the file name and the message only:
+// this copies pSrc to pDst with every ".c(<digits>)" replaced by ".c(N)".
+const char* StdGeneralTest_NormLogLineNumbers(const char* pSrc, char* pDst, size_t dstSize)
+{
+    size_t num = 0;
+    char* pOut = pDst;
+
+    TEST_ASSERT_NOT_NULL(pSrc);
+    TEST_ASSERT_NOT_NULL(pDst);
+    TEST_ASSERT_TRUE(strlen(pSrc) < dstSize);
+
+    while ( *pSrc )
+    {
+        if ( pSrc[0] == '.' && pSrc[1] == 'c' && pSrc[2] == '(' )
+        {
+            num = 3u;
+            while ( pSrc[num] >= '0' && pSrc[num] <= '9' )
+            {
+                ++num;
+            }
+
+            if ( num > 3u && pSrc[num] == ')' )
+            {
+                memcpy(pOut, ".c(N)", 5u);
+                pOut += 5u;
+                pSrc += num + 1u;
+                continue;
+            }
+        }
+
+        *pOut++ = *pSrc++;
+    }
+
+    *pOut = '\0';
+    return pDst;
+}
+
 uint32_t StdGeneralTest_GetConsoleAttributes(void)
 {
     return stdGeneralTest_consoleAttributes;

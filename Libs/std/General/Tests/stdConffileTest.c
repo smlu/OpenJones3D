@@ -652,6 +652,8 @@ TEST(stdConffile, TestPrintfTruncatesAndWarnsForOversizedOutput)
     const char* pPath = "stdConffile_write.cfg";
     // Verify both the complete truncation warning and every byte written to the file.
     char aLargeText[5000];
+    char aExpected[256];
+    char aCaptured[2048];
 
     memset(aLargeText, 'x', sizeof(aLargeText));
     aLargeText[sizeof(aLargeText) - 1u] = '\0';
@@ -660,8 +662,12 @@ TEST(stdConffile, TestPrintfTruncatesAndWarnsForOversizedOutput)
     StdGeneralTest_ResetDebugOutput();
     TEST_ASSERT_EQUAL_INT(0, stdConffile_Printf("%s", aLargeText));
     TEST_ASSERT_EQUAL_STRING(
-        "stdConffile.c(240): stdConffile_Printf: Truncated formatted output for 'stdConffile_write.cfg' from 4999 to 4095 bytes.\n",
-        StdGeneralTest_GetDebugOutput()
+        StdGeneralTest_NormLogLineNumbers(
+            "stdConffile.c(240): stdConffile_Printf: Truncated formatted output for 'stdConffile_write.cfg' from 4999 to 4095 bytes.\n",
+            aExpected,
+            sizeof(aExpected)
+        ),
+        StdGeneralTest_NormLogLineNumbers(StdGeneralTest_GetDebugOutput(), aCaptured, sizeof(aCaptured))
     );
     stdConffile_CloseWrite();
     TEST_ASSERT_EQUAL_size_t(4095u, stdFileSize(pPath));

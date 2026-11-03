@@ -26,6 +26,13 @@ void StdGeneralTest_ClearFileFailures(void);
 
 void StdGeneralTest_ResetDebugOutput(void);
 const char* StdGeneralTest_GetDebugOutput(void);
+
+// Copies pSrc to pDst with every ".c(<digits>)" replaced by ".c(N)", so a test can compare logged
+// STDLOG text without depending on the line number the logger took from __LINE__. The normalized
+// copy is never longer than pSrc, so dstSize must be greater than strlen(pSrc). Returns pDst; the
+// caller owns the buffer and the result is valid until pDst is written again. Unity-fails when pSrc
+// or pDst is NULL, or when the copy does not fit.
+const char* StdGeneralTest_NormLogLineNumbers(const char* pSrc, char* pDst, size_t dstSize);
 uint32_t StdGeneralTest_GetConsoleAttributes(void);
 size_t StdGeneralTest_GetConsoleWriteCount(void);
 
