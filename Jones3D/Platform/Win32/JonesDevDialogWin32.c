@@ -1,8 +1,8 @@
 #include <std/Win95/stdSysTagsWin32.h>
-#include <windowsx.h>
 #include <Jones3D/Main/JonesMain.h>
 #include <Jones3D/Main/JonesMainSys.h>
 #include <windows.h> // Fixed: types.h no longer includes windows.h; include it after Strict is defined
+#include <windowsx.h>
 #include <Jones3D/Display/JonesDisplay.h>
 #include <Jones3D/Display/jonesConfig.h>
 #include <Jones3D/Main/JonesFile.h>
