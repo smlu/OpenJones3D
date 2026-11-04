@@ -789,6 +789,9 @@ and the same two on `macos-15-intel` with the system Apple clang. SDL3 is built 
 CI, so the Linux columns install the same dependency packages as `babylon.yml`; macOS needs
 only Ninja.
 
+The macOS columns of this workflow and of `babylon.yml` are commented out for now because the
+macOS runners are flaky (jobs not acquired, timing failures). Uncomment them to turn macOS back on.
+
 - Unit suites run as `ctest -N -L unit` followed by `ctest --output-on-failure -L unit`, so the
   discovery list is logged before the results.
 - The Babylon boundary checks (`babylon.check.boundary`, `babylon.check.selftest`) carry the

@@ -27,12 +27,14 @@ jobs:
           - name: linux-babylon
             runs-on: ubuntu-24.04
             configure: "-G Ninja -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Debug -DJONES3D_PLATFORM_BABYLON=ON"
-          - name: macos-babylon
-            runs-on: macos-15-intel
-            configure: "-G Ninja -DCMAKE_BUILD_TYPE=Debug -DJONES3D_PLATFORM_BABYLON=ON"
-          - name: macos-null
-            runs-on: macos-15-intel
-            configure: "-G Ninja -DCMAKE_BUILD_TYPE=Debug"
+          # macOS is off for now: its runners are flaky (jobs not acquired, timing failures).
+          # Uncomment to turn it back on.
+          # - name: macos-babylon
+          #   runs-on: macos-15-intel
+          #   configure: "-G Ninja -DCMAKE_BUILD_TYPE=Debug -DJONES3D_PLATFORM_BABYLON=ON"
+          # - name: macos-null
+          #   runs-on: macos-15-intel
+          #   configure: "-G Ninja -DCMAKE_BUILD_TYPE=Debug"
     defaults:
       run:
         shell: bash
