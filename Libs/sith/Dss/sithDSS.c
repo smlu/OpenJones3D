@@ -421,6 +421,15 @@ int J3DAPI sithDSS_ProcessAIStatus(const SithMessage* pMsg)
     SithWorld* pWorld = sithWorld_g_pCurrentWorld;
     SITH_ASSERTREL(pWorld && pMsg);
 
+    // Fixed: Bound the fixed fields and the backing buffer before reading a malformed update.
+    // Four 16-bit indexes, eleven 32-bit scalars and eight vectors include the trailing state.
+    const size_t fixedMessageSize = 4 * sizeof(uint16_t) + 11 * sizeof(uint32_t) + 8 * sizeof(rdVector3);
+    if ( pMsg->length < fixedMessageSize || pMsg->length > sizeof(pMsg->data) )
+    {
+        SITHLOG_ERROR("DSS::AiStatus - Bad message length %u.\n", (unsigned int)pMsg->length);
+        return 0;
+    }
+
     SITHDSS_STARTIN(pMsg);
 
     size_t thingIdx = SITHDSS_POPUINT16();
@@ -447,9 +456,37 @@ int J3DAPI sithDSS_ProcessAIStatus(const SithMessage* pMsg)
         return 0;
     }
 
-    pLocal->pClass         = &pWorld->aAIClasses[classIdx];
-    pLocal->numInstincts   = pLocal->pClass->numInstincts;
-    pLocal->mode           = SITHDSS_POPINT32();
+    SithAIClass* pClass = &pWorld->aAIClasses[classIdx];
+    if ( pClass->numInstincts > STD_ARRAYLEN(pLocal->aInstinctStates) )
+    {
+        SITHLOG_ERROR("DSS::AiStatus - Too many instincts in AI class.\n");
+        return 0;
+    }
+
+    SithAIMode mode = SITHDSS_POPINT32();
+    size_t requiredSize = fixedMessageSize
+        + pClass->numInstincts * (2 * sizeof(uint32_t) + sizeof(pLocal->aInstinctStates[0].aParams));
+    if ( (mode & SITHAI_MODE_MOVING) != 0 )
+    {
+        requiredSize += sizeof(rdVector3);
+    }
+    if ( (mode & SITHAI_MODE_TURNING) != 0 )
+    {
+        requiredSize += sizeof(rdVector3);
+    }
+    if ( (mode & SITHAI_MODE_FLEEING) != 0 )
+    {
+        requiredSize += sizeof(uint16_t);
+    }
+    if ( pMsg->length < requiredSize )
+    {
+        SITHLOG_ERROR("DSS::AiStatus - Truncated AI state.\n");
+        return 0;
+    }
+
+    pLocal->pClass         = pClass;
+    pLocal->numInstincts   = pClass->numInstincts;
+    pLocal->mode           = mode;
     pLocal->submode        = SITHDSS_POPINT32();
     pLocal->msecNextUpdate = SITHDSS_POPINT32();
 
@@ -499,7 +536,17 @@ int J3DAPI sithDSS_ProcessAIStatus(const SithMessage* pMsg)
 
     pLocal->msecFireWaitTime   = SITHDSS_POPINT32();
     pLocal->msecPauseMoveUntil = SITHDSS_POPINT32();
-    pLocal->numFrames          = SITHDSS_POPINT32();
+    int numFrames = SITHDSS_POPINT32();
+    const size_t trailingSize = sizeof(uint32_t) + 2 * sizeof(rdVector3) + sizeof(float);
+    size_t remainingSize = pMsg->length - SITHDSS_CURPOS();
+    // Fixed: Validate the frame payload before freeing old frames or sizing an allocation.
+    if ( numFrames < 0 || remainingSize < trailingSize
+         || (size_t)numFrames > (remainingSize - trailingSize) / sizeof(rdVector3) )
+    {
+        SITHLOG_ERROR("DSS::AiStatus - Bad frame count %d.\n", numFrames);
+        return 0;
+    }
+    pLocal->numFrames = (size_t)numFrames;
 
     // Fixed: Release the old frames even when the incoming update has no frames.
     if ( pLocal->aFrames )
@@ -520,6 +567,9 @@ int J3DAPI sithDSS_ProcessAIStatus(const SithMessage* pMsg)
     {
         pLocal->sizeFrames = 0;
         pLocal->numFrames  = 0;
+        // Fixed: A failed allocation still consumes the validated frame payload,
+        // otherwise the fields below are read from frame coordinates.
+        pCurDSSMsgData_ += (size_t)numFrames * sizeof(rdVector3);
     }
 
     pLocal->allowedSurfaceTypes = SITHDSS_POPINT32();

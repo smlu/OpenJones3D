@@ -337,13 +337,13 @@ SITHDSSTEST_FAMILY(SurfaceStatus, "SurfaceStatus_", "ProcessSurfaceStatus_")
 SITHDSSTEST_FAMILY(SectorStatus, "SectorStatus_", "ProcessSectorStatus_")
 SITHDSSTEST_FAMILY(SectorFlags, "SectorFlags_", "ProcessSectorFlags_")
 SITHDSSTEST_FAMILY(SyncSeenSectors, "SyncSeenSectors", "ProcessSyncSeenSecors")
-// Insert the expected free of the old frames before replacement. The empty
-// message also clears aFrames; all other original events and changed bytes stay
-// independently specified by the untouched fixture.
+// Keep the original record exact except for the added old-frame FREE, the empty
+// update's cleared pointer, and the allocation-failure trailer read from its proper offset.
 static int sithDSSTest_AdjustAIStatus(const SithDSSTestFixCase* pCase, DssvBuf* pOut)
 {
     uint32_t evSize = sithDSSTest_Rd32(pCase->pRec + 12);
     int emptyFrames = strcmp(pCase->aName, "ProcessAIStatus_noframes") == 0;
+    int allocFail   = strcmp(pCase->aName, "ProcessAIStatus_allocfail") == 0;
     if ( strncmp(pCase->aName, "ProcessAIStatus_", 16) != 0
          || (!emptyFrames && (evSize == 0 || pCase->pRec[16] != DSSV_EV_MALLOC)) )
     {
@@ -355,45 +355,62 @@ static int sithDSSTest_AdjustAIStatus(const SithDSSTestFixCase* pCase, DssvBuf* 
     dssvB_u8(pOut, DSSV_EV_FREE);
     dssvB_u32(pOut, 0xDEAD0000u); // dssv_Id of the synthetic old aiFrames array
     dssvB_put(pOut, pCase->pRec + 16, evSize);
-    if ( !emptyFrames )
+    if ( !emptyFrames && !allocFail )
     {
         dssvB_put(pOut, pCase->pRec + 16 + evSize, pCase->recSize - 16 - evSize);
         return 1;
     }
 
-    // A sparse delta records only changed bytes. Rebuild an equivalent pair of
-    // images: unchanged bytes match, and each original changed byte differs.
-    // Add precisely old normalized aiFrames -> NULL, then use the same delta
-    // serializer to retain exact ordering and contiguous-run boundaries.
-    size_t pointerOff = offsetof(DssvArena, aiBlocks) + offsetof(SithAIControlBlock, aFrames);
-    const uint8_t* pDelta = pCase->pRec + 16 + evSize;
-    uint32_t count = sithDSSTest_Rd32(pDelta);
-    const uint8_t* p = pDelta + 4;
-    size_t imageSize = pointerOff + sizeof(uint32_t);
+    // Rebuild the original prestate rather than inventing unchanged bytes: a
+    // corrected field can now equal a byte the original sparse delta omitted.
+    dssv_fill = 0xA5;
+    dssv_BuildWorld(dssv_Hash(pCase->aName));
+    dssv_BuildGlobals();
+    dssv_WatchAll();
+    DssvBuf pre = { 0 }, post = { 0 };
+    dssv_Capture(&pre);
+    dssvB_put(&post, pre.p, pre.size);
+    const uint8_t* p = pCase->pRec + 16 + evSize;
+    uint32_t count = sithDSSTest_Rd32(p);
+    p += 4;
     for ( uint32_t i = 0; i < count; ++i )
     {
         uint32_t off = sithDSSTest_Rd32(p);
         unsigned len = p[4] | (p[5] << 8);
-        if ( (size_t)off + len > imageSize ) imageSize = (size_t)off + len;
+        TEST_ASSERT_TRUE((size_t)off + len <= post.size);
+        memcpy(post.p + off, p + 6, len);
         p += 6 + len;
     }
     TEST_ASSERT_EQUAL_PTR(pCase->pRec + pCase->recSize, p);
 
-    DssvBuf pre = { 0 }, post = { 0 };
-    dssvB_put(&pre, NULL, imageSize);
-    dssvB_put(&post, NULL, imageSize);
-    p = pDelta + 4;
-    for ( uint32_t i = 0; i < count; ++i )
+    size_t aiOff = offsetof(DssvArena, aiBlocks);
+    if ( emptyFrames )
     {
-        uint32_t off = sithDSSTest_Rd32(p);
-        unsigned len = p[4] | (p[5] << 8);
-        memcpy(post.p + off, p + 6, len);
-        for ( unsigned j = 0; j < len; ++j ) pre.p[off + j] = (uint8_t)~p[6 + j];
-        p += 6 + len;
+        memset(post.p + aiOff + offsetof(SithAIControlBlock, aFrames), 0, sizeof(uint32_t));
     }
-    uint32_t oldPointer = dssv_NormWord((uint32_t)(uintptr_t)dssv_arena.aiFrames);
-    memcpy(pre.p + pointerOff, &oldPointer, sizeof(oldPointer));
-    memset(post.p + pointerOff, 0, sizeof(oldPointer));
+    if ( allocFail )
+    {
+        // The original decodes these four fields from the frame coordinates on
+        // allocation failure. Normalize only the actual final 32 payload bytes.
+        static const struct { size_t off, size; } aFields[] = {
+            { offsetof(SithAIControlBlock, allowedSurfaceTypes), sizeof(uint32_t) },
+            { offsetof(SithAIControlBlock, savedMovePos), sizeof(rdVector3) },
+            { offsetof(SithAIControlBlock, moveStartPos), sizeof(rdVector3) },
+            { offsetof(SithAIControlBlock, maxHomeDist), sizeof(float) }
+        };
+        TEST_ASSERT_TRUE(pCase->inLength >= 32u);
+        p = pCase->pInData + pCase->inLength - 32u;
+        for ( size_t i = 0; i < sizeof(aFields) / sizeof(aFields[0]); ++i )
+        {
+            for ( size_t j = 0; j < aFields[i].size; j += sizeof(uint32_t) )
+            {
+                uint32_t word = dssv_NormWord(sithDSSTest_Rd32(p));
+                memcpy(post.p + aiOff + aFields[i].off + j, &word, sizeof(word));
+                p += sizeof(word);
+            }
+        }
+        TEST_ASSERT_EQUAL_PTR(pCase->pInData + pCase->inLength, p);
+    }
     dssv_Delta(pOut, &pre, &post);
     dssvB_free(&pre);
     dssvB_free(&post);
@@ -917,20 +934,64 @@ TEST(sithDSSFix, SyncGameStateLoadsNegativeJewelTrack)
     TEST_ASSERT_EQUAL_INT(0x1234, sithPlayerActions_g_jewelFlyingPuppetTrackNum);
 }
 
-// Reader variants: bit 0 starts without an old frame allocation, bit 1 makes
-// the incoming frame allocation fail. The world/message builder is otherwise
-// identical to the original-vector harness.
+enum
+{
+    SITHDSS_FIX_AI_NO_OLD_FRAMES = 1,
+    SITHDSS_FIX_AI_ALLOC_FAIL = 2,
+    SITHDSS_FIX_AI_NO_INSTINCTS = 4,
+    SITHDSS_FIX_AI_EXCESS_INSTINCTS = 8,
+    SITHDSS_FIX_AI_HUGE_INSTINCTS = 16,
+    SITHDSS_FIX_AI_MAX_INSTINCTS = 32,
+    SITHDSS_FIX_AI_OVERSIZED_LENGTH = 64
+};
+
+static SithAIControlBlock sithDSSFixTest_aiBefore;
+static rdVector3 sithDSSFixTest_aOldAIFrames[4];
+
+// The original harness supplies the state; variants alter only the condition under test.
 static int sithDSSFixTest_ReadAIFrames(DssvCtx* cx)
 {
-    if ( DSSV_VAR & 1 )
+    SithAIControlBlock* pLocal = &DSSV_A->aiBlocks[0];
+    if ( DSSV_VAR & SITHDSS_FIX_AI_NO_OLD_FRAMES )
     {
-        DSSV_A->aiBlocks[0].aFrames = NULL;
-        DSSV_A->aiBlocks[0].numFrames = 0;
-        DSSV_A->aiBlocks[0].sizeFrames = 0;
+        pLocal->aFrames = NULL;
+        pLocal->numFrames = 0;
+        pLocal->sizeFrames = 0;
     }
-    dssv_bAllocFail = (DSSV_VAR & 2) != 0;
+    if ( DSSV_VAR & SITHDSS_FIX_AI_NO_INSTINCTS )
+    {
+        DSSV_A->aiClasses[0].numInstincts = 0;
+    }
+    if ( DSSV_VAR & SITHDSS_FIX_AI_EXCESS_INSTINCTS )
+    {
+        DSSV_A->aiClasses[0].numInstincts = SITHAI_MAXINSTINCTS + 1u;
+    }
+    if ( DSSV_VAR & SITHDSS_FIX_AI_HUGE_INSTINCTS )
+    {
+        DSSV_A->aiClasses[0].numInstincts = SIZE_MAX;
+    }
+    if ( DSSV_VAR & SITHDSS_FIX_AI_MAX_INSTINCTS )
+    {
+        DSSV_A->aiClasses[0].numInstincts = SITHAI_MAXINSTINCTS;
+    }
+    if ( DSSV_VAR & SITHDSS_FIX_AI_OVERSIZED_LENGTH )
+    {
+        cx->inMsg.length = sizeof(cx->inMsg.data) + 1u;
+    }
+    dssv_bAllocFail = (DSSV_VAR & SITHDSS_FIX_AI_ALLOC_FAIL) != 0;
+    memcpy(&sithDSSFixTest_aiBefore, pLocal, sizeof(sithDSSFixTest_aiBefore));
+    memcpy(sithDSSFixTest_aOldAIFrames, DSSV_A->aiFrames, sizeof(sithDSSFixTest_aOldAIFrames));
     dssv_Begin(cx);
     return sithDSS_ProcessAIStatus(DSSV_MSG);
+}
+
+static void sithDSSFixTest_CheckAITrailer(const uint8_t* pExpected)
+{
+    const SithAIControlBlock* pLocal = &dssv_arena.aiBlocks[0];
+    TEST_ASSERT_EQUAL_MEMORY(pExpected, &pLocal->allowedSurfaceTypes, sizeof(uint32_t));
+    TEST_ASSERT_EQUAL_MEMORY(pExpected + 4, &pLocal->savedMovePos, sizeof(rdVector3));
+    TEST_ASSERT_EQUAL_MEMORY(pExpected + 16, &pLocal->moveStartPos, sizeof(rdVector3));
+    TEST_ASSERT_EQUAL_MEMORY(pExpected + 28, &pLocal->maxHomeDist, sizeof(float));
 }
 
 static void sithDSSFixTest_CheckAIFrameUpdate(int incomingEmpty, int noOldFrames, int allocFail)
@@ -939,7 +1000,9 @@ static void sithDSSFixTest_CheckAIFrameUpdate(int incomingEmpty, int noOldFrames
     DssvCase reader = { "Fix_AIFrames_reader", sithDSSFixTest_ReadAIFrames, (noOldFrames ? 1 : 0) | (allocFail ? 2 : 0), NULL, DSSV_NOMUT };
     sithDSSFixTest_RunWriter(&writer);
     rdVector3 expectedFrames[3];
+    uint8_t expectedTrailer[32];
     memcpy(expectedFrames, dssv_arena.aiFrames, sizeof(expectedFrames));
+    memcpy(expectedTrailer, dssv_lastMsg.data + dssv_lastMsg.length - sizeof(expectedTrailer), sizeof(expectedTrailer));
 
     TEST_ASSERT_EQUAL_UINT32(1, sithDSSFixTest_RunReader(&reader));
     const SithAIControlBlock* pLocal = &dssv_arena.aiBlocks[0];
@@ -976,14 +1039,10 @@ static void sithDSSFixTest_CheckAIFrameUpdate(int incomingEmpty, int noOldFrames
         TEST_ASSERT_EQUAL_UINT(3, pLocal->sizeFrames);
         TEST_ASSERT_EQUAL_MEMORY(expectedFrames, pLocal->aFrames, sizeof(expectedFrames));
     }
-    // Allocation failure already has a separate inherited stream-consumption
-    // defect. This test verifies release order and empty ownership state only;
-    // it does not assert that the remaining fields were deserialized correctly.
-    if ( !allocFail )
-    {
-        TEST_ASSERT_EQUAL_UINT(0, dssv_numAsserts);
-        TEST_ASSERT_EQUAL_UINT(0, dssv_numErrors);
-    }
+    // Allocation failure must consume the frames before reading all four trailing fields.
+    sithDSSFixTest_CheckAITrailer(expectedTrailer);
+    TEST_ASSERT_EQUAL_UINT(0, dssv_numAsserts);
+    TEST_ASSERT_EQUAL_UINT(0, dssv_numErrors);
 }
 
 TEST(sithDSSFix, AIStatusReleasesFramesForEmptyUpdate)
@@ -1011,6 +1070,198 @@ TEST(sithDSSFix, AIStatusAllocatesWithoutOldFrames)
     sithDSSFixTest_CheckAIFrameUpdate(0, 1, 0);
 }
 
+static void sithDSSFixTest_CheckAIRejection(const DssvCase* pReader, int unchangedAI)
+{
+    TEST_ASSERT_EQUAL_UINT32(0, sithDSSFixTest_RunReader(pReader));
+    const SithAIControlBlock* pLocal = &dssv_arena.aiBlocks[0];
+    TEST_ASSERT_EQUAL_size_t(0, dssv_ev.size);
+    TEST_ASSERT_EQUAL_UINT(0, dssv_numMallocs);
+    TEST_ASSERT_EQUAL_UINT(0, dssv_numAsserts);
+    TEST_ASSERT_EQUAL_UINT(1, dssv_numErrors);
+    TEST_ASSERT_EQUAL_PTR(sithDSSFixTest_aiBefore.aFrames, pLocal->aFrames);
+    TEST_ASSERT_EQUAL_size_t(sithDSSFixTest_aiBefore.numFrames, pLocal->numFrames);
+    TEST_ASSERT_EQUAL_size_t(sithDSSFixTest_aiBefore.sizeFrames, pLocal->sizeFrames);
+    TEST_ASSERT_EQUAL_MEMORY(sithDSSFixTest_aOldAIFrames, dssv_arena.aiFrames, sizeof(sithDSSFixTest_aOldAIFrames));
+    if ( unchangedAI )
+    {
+        TEST_ASSERT_EQUAL_MEMORY(&sithDSSFixTest_aiBefore, pLocal, sizeof(*pLocal));
+    }
+}
+
+TEST(sithDSSFix, AIStatusRejectsInvalidFrameCountsBeforeFree)
+{
+    static const uint32_t aBad[] = { UINT32_MAX, 0x80000000u, INT_MAX, 4u, 256u };
+    static const DssvCase writer = { "Fix_AIFrames_count_writer", dssvc_AIStatus, 0, NULL, DSSV_NOMUT };
+    static const DssvCase reader = { "Fix_AIFrames_count_reader", sithDSSFixTest_ReadAIFrames, 0, NULL, DSSV_NOMUT };
+    for ( size_t i = 0; i < sizeof(aBad) / sizeof(aBad[0]); ++i )
+    {
+        sithDSSFixTest_RunWriter(&writer);
+        size_t countOff = dssv_lastMsg.length - 32u - 3u * sizeof(rdVector3) - sizeof(uint32_t);
+        sithDSSFixTest_SetWord(countOff, aBad[i]);
+        sithDSSFixTest_CheckAIRejection(&reader, 0);
+    }
+}
+
+TEST(sithDSSFix, AIStatusRejectsTruncatedFixedAndOptionalFields)
+{
+    static const unsigned aShort[] = { 0u, 1u, 3u, 7u, 147u };
+    DssvCase writer = { "Fix_AIFrames_short_writer", dssvc_AIStatus, 0, NULL, DSSV_NOMUT };
+    DssvCase reader = { "Fix_AIFrames_short_reader", sithDSSFixTest_ReadAIFrames, 0, NULL, DSSV_NOMUT };
+    for ( size_t i = 0; i < sizeof(aShort) / sizeof(aShort[0]); ++i )
+    {
+        sithDSSFixTest_RunWriter(&writer);
+        dssv_lastMsg.length = aShort[i];
+        sithDSSFixTest_CheckAIRejection(&reader, 1);
+    }
+
+    // Truncate each variable-layout contribution with zero frames so every
+    // otherwise required fixed/trailing field is present in the writer output.
+    static const int aVariants[] = { 8, 8 | 1, 8 | 2, 8 | 4, 8 | 7, 8 | 32 };
+    for ( size_t i = 0; i < sizeof(aVariants) / sizeof(aVariants[0]); ++i )
+    {
+        writer.var = aVariants[i];
+        sithDSSFixTest_RunWriter(&writer);
+        --dssv_lastMsg.length;
+        sithDSSFixTest_CheckAIRejection(&reader, 1);
+    }
+
+    // Alter length inside the reader wrapper, avoiding an oversized copy in the harness.
+    writer.var = 0;
+    reader.var = SITHDSS_FIX_AI_OVERSIZED_LENGTH;
+    sithDSSFixTest_RunWriter(&writer);
+    sithDSSFixTest_CheckAIRejection(&reader, 1);
+}
+
+TEST(sithDSSFix, AIStatusRejectsExcessInstinctCounts)
+{
+    static const DssvCase writer = { "Fix_AIFrames_instinct_writer", dssvc_AIStatus, 0, NULL, DSSV_NOMUT };
+    DssvCase reader = { "Fix_AIFrames_instinct_reader", sithDSSFixTest_ReadAIFrames, 0, NULL, DSSV_NOMUT };
+    static const int aVariants[] = { SITHDSS_FIX_AI_EXCESS_INSTINCTS, SITHDSS_FIX_AI_HUGE_INSTINCTS };
+    for ( size_t i = 0; i < sizeof(aVariants) / sizeof(aVariants[0]); ++i )
+    {
+        reader.var = aVariants[i];
+        sithDSSFixTest_RunWriter(&writer);
+        sithDSSFixTest_CheckAIRejection(&reader, 1);
+    }
+}
+
+TEST(sithDSSFix, AIStatusRejectsTruncatedFramesAndTrailer)
+{
+    static const DssvCase writer = { "Fix_AIFrames_payload_writer", dssvc_AIStatus, 0, NULL, DSSV_NOMUT };
+    static const DssvCase reader = { "Fix_AIFrames_payload_reader", sithDSSFixTest_ReadAIFrames, 0, NULL, DSSV_NOMUT };
+    static const unsigned aMissing[] = { 1u, 12u, 31u, 32u, 36u };
+    for ( size_t i = 0; i < sizeof(aMissing) / sizeof(aMissing[0]); ++i )
+    {
+        sithDSSFixTest_RunWriter(&writer);
+        dssv_lastMsg.length -= aMissing[i];
+        sithDSSFixTest_CheckAIRejection(&reader, 0);
+    }
+}
+
+static int sithDSSFixTest_WriteAIMinOrMaxInstincts(DssvCtx* cx)
+{
+    SithAIControlBlock* pLocal = &DSSV_A->aiBlocks[0];
+    pLocal->pClass->numInstincts = (size_t)DSSV_VAR;
+    pLocal->numInstincts = (size_t)DSSV_VAR;
+    pLocal->numFrames = 0;
+    if ( DSSV_VAR )
+    {
+        pLocal->mode |= SITHAI_MODE_MOVING | SITHAI_MODE_TURNING | SITHAI_MODE_FLEEING;
+    }
+    dssv_Begin(cx);
+    return sithDSS_AIStatus(pLocal, DSSV_IDTO, DSSV_STREAM);
+}
+
+TEST(sithDSSFix, AIStatusAcceptsMinimumAndMaximumInstinctLayouts)
+{
+    DssvCase writer = { "Fix_AIFrames_limits_writer", sithDSSFixTest_WriteAIMinOrMaxInstincts, 0, NULL, DSSV_NOMUT };
+    DssvCase reader = { "Fix_AIFrames_limits_reader", sithDSSFixTest_ReadAIFrames, SITHDSS_FIX_AI_NO_INSTINCTS, NULL, DSSV_NOMUT };
+    for ( unsigned i = 0; i < 2u; ++i )
+    {
+        writer.var = i ? SITHAI_MAXINSTINCTS : 0;
+        reader.var = i ? SITHDSS_FIX_AI_MAX_INSTINCTS : SITHDSS_FIX_AI_NO_INSTINCTS;
+        sithDSSFixTest_RunWriter(&writer);
+        TEST_ASSERT_EQUAL_UINT32(i ? 558u : 148u, dssv_lastMsg.length);
+        SithAIInstinctState expectedInstincts[SITHAI_MAXINSTINCTS];
+        uint8_t expectedTrailer[32];
+        memcpy(expectedInstincts, dssv_arena.aiBlocks[0].aInstinctStates, sizeof(expectedInstincts));
+        memcpy(expectedTrailer, dssv_lastMsg.data + dssv_lastMsg.length - sizeof(expectedTrailer), sizeof(expectedTrailer));
+        TEST_ASSERT_EQUAL_UINT32(1, sithDSSFixTest_RunReader(&reader));
+        const SithAIControlBlock* pLocal = &dssv_arena.aiBlocks[0];
+        TEST_ASSERT_EQUAL_size_t(writer.var, pLocal->numInstincts);
+        for ( size_t k = 0; k < pLocal->numInstincts; ++k )
+        {
+            TEST_ASSERT_EQUAL_INT(expectedInstincts[k].flags, pLocal->aInstinctStates[k].flags);
+            TEST_ASSERT_EQUAL_UINT32(expectedInstincts[k].msecNextUpdate, pLocal->aInstinctStates[k].msecNextUpdate);
+            TEST_ASSERT_EQUAL_MEMORY(expectedInstincts[k].aParams, pLocal->aInstinctStates[k].aParams, sizeof(expectedInstincts[k].aParams));
+        }
+        TEST_ASSERT_NULL(pLocal->aFrames);
+        TEST_ASSERT_EQUAL_size_t(0, pLocal->numFrames);
+        TEST_ASSERT_EQUAL_size_t(0, pLocal->sizeFrames);
+        TEST_ASSERT_EQUAL_size_t(5, dssv_ev.size);
+        TEST_ASSERT_EQUAL_UINT8(DSSV_EV_FREE, dssv_ev.p[0]);
+        TEST_ASSERT_EQUAL_UINT32(0xDEAD0000u, sithDSSTest_Rd32(dssv_ev.p + 1));
+        TEST_ASSERT_EQUAL_UINT(0, dssv_numMallocs);
+        TEST_ASSERT_EQUAL_UINT(0, dssv_numErrors);
+        TEST_ASSERT_EQUAL_UINT(0, dssv_numAsserts);
+        sithDSSFixTest_CheckAITrailer(expectedTrailer);
+    }
+}
+
+static int sithDSSFixTest_WriteAIMaxFrames(DssvCtx* cx)
+{
+    static rdVector3 aFrames[256];
+    SithAIControlBlock* pLocal = &DSSV_A->aiBlocks[0];
+    pLocal->numFrames = (size_t)DSSV_VAR;
+    pLocal->aFrames = aFrames;
+    for ( size_t i = 0; i < pLocal->numFrames; ++i )
+    {
+        aFrames[i].x = (float)i;
+        aFrames[i].y = -(float)i;
+        aFrames[i].z = (float)i + 0.5f;
+    }
+    dssv_Begin(cx);
+    return sithDSS_AIStatus(pLocal, DSSV_IDTO, DSSV_STREAM);
+}
+
+TEST(sithDSSFix, AIStatusAcceptsMaximumPayloadAndRejectsAnotherFrame)
+{
+    // Two instincts leave room for 239 frames in the 3072-byte backing buffer.
+    // The harness pool is smaller, so this valid payload exercises the OOM path.
+    static const DssvCase writer = { "Fix_AIFrames_capacity_writer", sithDSSFixTest_WriteAIMaxFrames, 239, NULL, DSSV_NOMUT };
+    static const DssvCase reader = { "Fix_AIFrames_capacity_reader", sithDSSFixTest_ReadAIFrames, 0, NULL, DSSV_NOMUT };
+    for ( unsigned padded = 0; padded < 2u; ++padded )
+    {
+        sithDSSFixTest_RunWriter(&writer);
+        TEST_ASSERT_EQUAL_UINT32(3064u, dssv_lastMsg.length);
+        uint8_t expectedTrailer[32];
+        memcpy(expectedTrailer, dssv_lastMsg.data + dssv_lastMsg.length - sizeof(expectedTrailer), sizeof(expectedTrailer));
+        if ( padded )
+        {
+            memset(dssv_lastMsg.data + dssv_lastMsg.length, 0xA5, 8u);
+            dssv_lastMsg.length += 8u;
+        }
+        TEST_ASSERT_EQUAL_UINT32(1, sithDSSFixTest_RunReader(&reader));
+        const SithAIControlBlock* pLocal = &dssv_arena.aiBlocks[0];
+        TEST_ASSERT_NULL(pLocal->aFrames);
+        TEST_ASSERT_EQUAL_size_t(0, pLocal->numFrames);
+        TEST_ASSERT_EQUAL_size_t(0, pLocal->sizeFrames);
+        TEST_ASSERT_EQUAL_size_t(10, dssv_ev.size);
+        TEST_ASSERT_EQUAL_UINT8(DSSV_EV_FREE, dssv_ev.p[0]);
+        TEST_ASSERT_EQUAL_UINT32(0xDEAD0000u, sithDSSTest_Rd32(dssv_ev.p + 1));
+        TEST_ASSERT_EQUAL_UINT8(DSSV_EV_MALLOC, dssv_ev.p[5]);
+        TEST_ASSERT_EQUAL_UINT32(239u * sizeof(rdVector3), sithDSSTest_Rd32(dssv_ev.p + 6));
+        TEST_ASSERT_EQUAL_UINT(1, dssv_numMallocs);
+        TEST_ASSERT_EQUAL_UINT(0, dssv_numErrors);
+        TEST_ASSERT_EQUAL_UINT(0, dssv_numAsserts);
+        sithDSSFixTest_CheckAITrailer(expectedTrailer);
+    }
+
+    sithDSSFixTest_RunWriter(&writer);
+    sithDSSFixTest_SetWord(196u - 32u - sizeof(uint32_t), 240u);
+    sithDSSFixTest_CheckAIRejection(&reader, 0);
+}
+
 TEST_GROUP_RUNNER(sithDSSFix)
 {
     RUN_TEST_CASE(sithDSSFix, AIStatusReleasesFramesForEmptyUpdate);
@@ -1018,6 +1269,12 @@ TEST_GROUP_RUNNER(sithDSSFix)
     RUN_TEST_CASE(sithDSSFix, AIStatusKeepsEmptyOwnershipAfterAllocationFailure);
     RUN_TEST_CASE(sithDSSFix, AIStatusAcceptsEmptyUpdateWithoutOldFrames);
     RUN_TEST_CASE(sithDSSFix, AIStatusAllocatesWithoutOldFrames);
+    RUN_TEST_CASE(sithDSSFix, AIStatusRejectsInvalidFrameCountsBeforeFree);
+    RUN_TEST_CASE(sithDSSFix, AIStatusRejectsTruncatedFixedAndOptionalFields);
+    RUN_TEST_CASE(sithDSSFix, AIStatusRejectsExcessInstinctCounts);
+    RUN_TEST_CASE(sithDSSFix, AIStatusRejectsTruncatedFramesAndTrailer);
+    RUN_TEST_CASE(sithDSSFix, AIStatusAcceptsMinimumAndMaximumInstinctLayouts);
+    RUN_TEST_CASE(sithDSSFix, AIStatusAcceptsMaximumPayloadAndRejectsAnotherFrame);
     RUN_TEST_CASE(sithDSSFix, WelcomeRejectsInvalidPlayerNum);
     RUN_TEST_CASE(sithDSSFix, SyncPlayersRejectsTooManyPlayers);
     RUN_TEST_CASE(sithDSSFix, SyncPlayersAcceptsMaxPlayers);
