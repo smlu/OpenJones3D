@@ -84,6 +84,9 @@ void j3dcrt_srand(unsigned int seed);
 // its forced address headers redirects rand afterwards with #undef and #define (sithVecTestAddrs.h,
 // sithMultiTested.c); a redirect established before this header is processed must win over it.
 // The macros are placed after <stdlib.h> so the C runtime's own declarations are not affected.
+// C++ code keeps the standard names, because the macros would rewrite std::rand in the C++
+// standard headers, and no C++ code in the engine calls rand.
+#ifndef __cplusplus
 #ifndef rand
 #define rand j3dcrt_rand
 #endif
@@ -97,6 +100,7 @@ void j3dcrt_srand(unsigned int seed);
 // clean redefinition.
 #undef RAND_MAX
 #define RAND_MAX 0x7FFF
+#endif // __cplusplus
 
 #endif // _WIN32
 
