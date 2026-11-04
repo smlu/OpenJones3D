@@ -71,6 +71,9 @@ static void __cdecl j3dCrtTest_IgnoreInvalidParameter(const wchar_t* pExpression
 
 static _invalid_parameter_handler j3dCrtTest_pfPrevInvalidParameterHandler = NULL;
 static int                        j3dCrtTest_prevAssertReportMode          = 0;
+#ifdef _MSC_VER
+static size_t                     j3dCrtTest_prevDebugFillThreshold        = 0;
+#endif
 #endif
 
 TEST_GROUP(j3dCrt);
@@ -80,8 +83,13 @@ TEST_SETUP(j3dCrt)
 #ifdef _WIN32
     // The UCRT calls the invalid parameter handler for the ERANGE/EINVAL cases before it returns;
     // a no-op handler lets the tests see the return values the shim must match.
+    // The debug CRT also fills the unused buffer tail with 0xFE, which the tests check is left
+    // untouched.
     j3dCrtTest_pfPrevInvalidParameterHandler = _set_invalid_parameter_handler(j3dCrtTest_IgnoreInvalidParameter);
     j3dCrtTest_prevAssertReportMode          = _CrtSetReportMode(_CRT_ASSERT, 0);
+#ifdef _MSC_VER
+    j3dCrtTest_prevDebugFillThreshold = _CrtSetDebugFillThreshold(0);
+#endif
 #endif
 }
 
@@ -90,6 +98,9 @@ TEST_TEAR_DOWN(j3dCrt)
 #ifdef _WIN32
     _set_invalid_parameter_handler(j3dCrtTest_pfPrevInvalidParameterHandler);
     _CrtSetReportMode(_CRT_ASSERT, j3dCrtTest_prevAssertReportMode);
+#ifdef _MSC_VER
+    _CrtSetDebugFillThreshold(j3dCrtTest_prevDebugFillThreshold);
+#endif
 #endif
 }
 
