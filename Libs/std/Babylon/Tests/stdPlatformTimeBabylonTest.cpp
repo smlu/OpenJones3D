@@ -32,6 +32,9 @@ TEST_SETUP(stdPlatformTimeBabylon)
     pVirtualClock = new babylon::time::NullClock();
     context.pClock        = pRealClock;
     context.pVirtualClock = pVirtualClock;
+
+    // The time adapter never touches files, so this suite leaves pFileSystem null.
+    context.pFileSystem = nullptr;
     stdBabylon_SetContext(&context);
 
     // The latch is file-static and never resets on its own; clear it so each test starts unlatched.
@@ -97,14 +100,4 @@ TEST_GROUP_RUNNER(stdPlatformTimeBabylon)
     RUN_TEST_CASE(stdPlatformTimeBabylon, LatchedUsesTheVirtualClockOnly);
     RUN_TEST_CASE(stdPlatformTimeBabylon, VirtualClockWrapsAt2Pow32);
     RUN_TEST_CASE(stdPlatformTimeBabylon, SubMillisecondElapsedIsTruncated);
-}
-
-static void runAllTests(void)
-{
-    RUN_TEST_GROUP(stdPlatformTimeBabylon);
-}
-
-int main(int argc, const char* argv[])
-{
-    return UnityMain(argc, argv, runAllTests);
 }

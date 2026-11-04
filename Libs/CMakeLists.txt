@@ -67,6 +67,10 @@ if (JONES3D_BUILD_TESTS)
 endif()
 
 # Then add other modules
+# Added: std_use_babylon_test_main, the Babylon column's context entry for game test executables,
+# must be defined before the module directories below add their Tests subdirectories.
+include("${CMAKE_CURRENT_SOURCE_DIR}/std/Babylon/stdBabylonTestMain.cmake")
+
 foreach(MODULE ${LIB_MODULES})
     if(NOT ${MODULE} STREQUAL "j3dcore")
         add_subdirectory(${MODULE})

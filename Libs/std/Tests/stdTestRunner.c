@@ -56,7 +56,14 @@ static void runAllTests(void)
 #endif
 }
 
-int main(int argc, const char* argv[])
+// Added: the entry name is overridable so the Babylon column's test main can call this runner
+// after it has installed the platform context (J3D_TEST_RUNNER_ENTRY=j3dTestRunner_Main); plain
+// builds keep main.
+#ifndef J3D_TEST_RUNNER_ENTRY
+#define J3D_TEST_RUNNER_ENTRY main
+#endif
+
+int J3D_TEST_RUNNER_ENTRY(int argc, const char* argv[])
 {
 #if !defined(J3D_PLATFORM_NULL)
     if ( argc == 2 && strcmp(argv[1], "--std-platform-death-child") == 0 )

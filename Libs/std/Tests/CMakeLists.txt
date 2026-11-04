@@ -262,6 +262,75 @@ set_tests_properties(std PROPERTIES
     LABELS "unit;std;${STD_DIRECTX_TEST_LABEL}"
 )
 
+# Added: the same suites once more through the Babylon files adapter: the Null platform's file
+# sources General/stdFile.c and Null/stdFileUtilPosix.c are replaced by the adapter files and the
+# adapter context, and a C++ entry installs the context and calls stdTestRunner.c's renamed entry.
+# Only the Babylon column builds it.
+if (J3D_PLATFORM_BABYLON)
+    set(STD_BABYLON_SOURCE_DIR "${STD_SOURCE_DIR}/Babylon")
+
+    set(STD_BABYLON_TESTED_SOURCES ${STD_TESTED_SOURCES})
+    list(REMOVE_ITEM STD_BABYLON_TESTED_SOURCES
+        "${STD_GENERAL_SOURCE_DIR}/stdFile.c"
+        "${STD_SOURCE_DIR}/Null/stdFileUtilPosix.c"
+    )
+    list(APPEND STD_BABYLON_TESTED_SOURCES
+        "${STD_BABYLON_SOURCE_DIR}/stdBabylon.cpp"
+        "${STD_BABYLON_SOURCE_DIR}/stdBabylonPath.cpp"
+        "${STD_BABYLON_SOURCE_DIR}/stdFileBabylon.cpp"
+        "${STD_BABYLON_SOURCE_DIR}/stdFileUtilBabylon.cpp"
+    )
+
+    add_executable(stdTestsBabylon
+        stdTestRunner.c
+        stdGeneralTest.c
+        ${STD_GENERAL_TEST_SOURCES}
+        ${STD_BABYLON_TESTED_SOURCES}
+        "${STD_BABYLON_SOURCE_DIR}/Tests/stdBabylonTestMain.cpp"
+    )
+
+    # Added: stdTestRunner.c is shared with stdTests, and the source-level entry rename in
+    # std_use_babylon_test_main would rename that executable's main too; this target therefore
+    # renames the entry with a target definition. Everything else matches what the function does.
+    target_compile_definitions(stdTestsBabylon PRIVATE
+        J3D_TEST
+        J3D_TEST_RUNNER_ENTRY=j3dTestRunner_Main
+        STD_GENERAL_TEST_TV_DIR="${STD_GENERAL_TEST_DIR}/tv"
+        STD_WIN95_TEST_TV_DIR="${STD_WIN95_TEST_DIR}/tv"
+    )
+
+    # The test sources include <std/...> (via Libs through j3dcore), the Null backend types and
+    # the adapter headers next to the tested sources.
+    target_include_directories(stdTestsBabylon PRIVATE
+        "${CMAKE_CURRENT_SOURCE_DIR}"
+        "${STD_SOURCE_DIR}/Null"
+    )
+
+    target_link_libraries(stdTestsBabylon PRIVATE
+        j3dcore
+        j3dTestSupport
+        jansson::jansson
+        babylon::time
+        babylon::files
+    )
+
+    set_target_properties(stdTestsBabylon PROPERTIES
+        FOLDER "Tests/Libs/std"
+        LINKER_LANGUAGE CXX
+    )
+
+    source_group("Tested Sources" FILES ${STD_BABYLON_TESTED_SOURCES})
+
+    # Run in a private working directory: the suites create their temporary files and directories
+    # relative to it, and the std suite does the same next door.
+    file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/OnBabylon")
+    add_test(NAME std.OnBabylon COMMAND stdTestsBabylon)
+    set_tests_properties(std.OnBabylon PROPERTIES
+        LABELS "std;unit"
+        WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/OnBabylon"
+    )
+endif()
+
 if (JONES3D_BUILD_SYSTEM_TESTS)
     add_executable(stdSystemTests
         ${STD_SYSTEM_TEST_SUPPORT_SOURCES}

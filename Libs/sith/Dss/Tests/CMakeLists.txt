@@ -49,6 +49,9 @@ target_link_libraries(sithDSSTests PRIVATE
     w32util
 )
 
+# Added: the Babylon column runs this suite under the adapter context.
+std_use_babylon_test_main(sithDSSTests "${CMAKE_CURRENT_SOURCE_DIR}/sithDSSTestRunner.c")
+
 target_compile_definitions(sithDSSTests PRIVATE
     J3D_TEST
     SITH_DSS_TV_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tv/sithDSS"
@@ -132,6 +135,9 @@ target_link_libraries(sithMultiTests PRIVATE
     unity
     w32util
 )
+
+# Added: the Babylon column runs this suite under the adapter context.
+std_use_babylon_test_main(sithMultiTests "${CMAKE_CURRENT_SOURCE_DIR}/sithMultiTestRunner.c")
 
 target_compile_definitions(sithMultiTests PRIVATE
     J3D_TEST

@@ -24,14 +24,20 @@ else()
     list(FILTER SOURCES EXCLUDE REGEX ".*Null\\.c$")
 endif()
 
-# Added: the Babylon column is the Null column with the stdPlatform time functions moved onto a
-# babylon::time::Clock. Drop the Null time file and compile the adapter in its place; the .cpp
-# files are never globbed (the GLOB above is .c only), so they are added explicitly.
+# Added: the Babylon column is the Null column with the stdPlatform time functions and the host
+# file services moved onto Babylon. Drop the Null time file, the stdFile CRT wrappers and the
+# Posix file utilities, and compile the adapters in their place; the .cpp files are never globbed
+# (the GLOB above is .c only), so they are added explicitly.
 if (J3D_PLATFORM_BABYLON)
     list(FILTER SOURCES EXCLUDE REGEX "stdPlatformTimeNull\\.c$")
+    list(FILTER SOURCES EXCLUDE REGEX "/General/stdFile\\.c$")
+    list(FILTER SOURCES EXCLUDE REGEX "/Null/stdFileUtilPosix\\.c$")
     list(APPEND SOURCES
         "${CMAKE_CURRENT_SOURCE_DIR}/Babylon/stdBabylon.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/Babylon/stdPlatformTimeBabylon.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Babylon/stdBabylonPath.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Babylon/stdFileBabylon.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Babylon/stdFileUtilBabylon.cpp"
     )
 endif()
 
@@ -79,10 +85,11 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
     j3dcore
 )
 
-# Added: the Babylon column's time adapter runs on the Babylon clock interface.
+# Added: the Babylon column's adapters run on the Babylon clock and file system interfaces.
 if (J3D_PLATFORM_BABYLON)
     target_link_libraries(${PROJECT_NAME} PUBLIC
         babylon::time
+        babylon::files
     )
 endif()
 

@@ -78,6 +78,9 @@ target_link_libraries(sithTests PRIVATE
     w32util
 )
 
+# Added: the Babylon column runs this suite under the adapter context.
+std_use_babylon_test_main(sithTests "${CMAKE_CURRENT_SOURCE_DIR}/sithTestRunner.c")
+
 target_compile_definitions(sithTests PRIVATE
     J3D_TEST
     SITH_TEST_TV_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../World/Tests/tv"

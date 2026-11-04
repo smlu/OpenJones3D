@@ -59,6 +59,11 @@ function(sith_add_vec_test TARGET)
         w32util
     )
 
+    # Added: the Babylon column runs the vector suites under the adapter context; the shared
+    # runner source is used only by these sith_add_vec_test executables, so the source-level
+    # entry rename is consistent for all of them.
+    std_use_babylon_test_main(${TARGET} "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/sithVecTestRunner.c")
+
     target_compile_definitions(${TARGET} PRIVATE
         J3D_TEST
         SITHVEC_TV_DIR="${SV_TV_DIR}"

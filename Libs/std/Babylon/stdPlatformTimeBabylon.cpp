@@ -6,8 +6,6 @@
 
 #include <chrono>
 #include <cstdint>
-#include <cstdio>
-#include <cstdlib>
 
 #include <std/General/stdPlatform.h>
 #include <std/Null/stdPlatformNull.h>
@@ -16,27 +14,14 @@
 
 static bool stdPlatformTimeBabylon_bVirtualClock = false;
 
-// The installed context, or a hard stop: every entry point needs it and there is no way to recover.
-static StdBabylonContext* stdPlatformTimeBabylon_Context(const char* pFunction)
-{
-    StdBabylonContext* pContext = stdBabylon_GetContext();
-    if ( !pContext )
-    {
-        fprintf(stderr, "ERROR: %s: no Babylon platform context installed!\n", pFunction);
-        abort();
-    }
-
-    return pContext;
-}
-
 extern "C" {
 
 void stdPlatformNull_UseVirtualClock(tStdTime startMsec)
 {
-    StdBabylonContext* pContext = stdPlatformTimeBabylon_Context("stdPlatformNull_UseVirtualClock");
+    StdBabylonContext& rContext = stdBabylon_RequireContext("stdPlatformNull_UseVirtualClock");
 
     // The virtual clock starts at zero, so latching at startMsec means advancing by startMsec.
-    static_cast<void>(pContext->pVirtualClock->advance(std::chrono::milliseconds(static_cast<uint64_t>(startMsec))));
+    static_cast<void>(rContext.pVirtualClock->advance(std::chrono::milliseconds(static_cast<uint64_t>(startMsec))));
     stdPlatformTimeBabylon_bVirtualClock = true;
 }
 
@@ -47,17 +32,17 @@ void stdPlatformNull_AdvanceClock(uint32_t msec)
         return;
     }
 
-    StdBabylonContext* pContext = stdPlatformTimeBabylon_Context("stdPlatformNull_AdvanceClock");
-    static_cast<void>(pContext->pVirtualClock->advance(std::chrono::milliseconds(msec)));
+    StdBabylonContext& rContext = stdBabylon_RequireContext("stdPlatformNull_AdvanceClock");
+    static_cast<void>(rContext.pVirtualClock->advance(std::chrono::milliseconds(msec)));
 }
 
 tStdTime stdPlatform_GetTimeMsec(void)
 {
-    StdBabylonContext* pContext = stdPlatformTimeBabylon_Context("stdPlatform_GetTimeMsec");
+    StdBabylonContext& rContext = stdBabylon_RequireContext("stdPlatform_GetTimeMsec");
 
     const babylon::time::Clock* pClock = stdPlatformTimeBabylon_bVirtualClock
-        ? static_cast<const babylon::time::Clock*>(pContext->pVirtualClock)
-        : pContext->pClock;
+        ? static_cast<const babylon::time::Clock*>(rContext.pVirtualClock)
+        : rContext.pClock;
 
     const uint64_t ms = static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(pClock->now()).count());
     return static_cast<tStdTime>(ms);
@@ -71,8 +56,8 @@ void J3DAPI stdPlatform_Sleep(uint32_t msec)
         return;
     }
 
-    StdBabylonContext* pContext = stdPlatformTimeBabylon_Context("stdPlatform_Sleep");
-    pContext->pClock->sleepFor(std::chrono::milliseconds(msec));
+    StdBabylonContext& rContext = stdBabylon_RequireContext("stdPlatform_Sleep");
+    rContext.pClock->sleepFor(std::chrono::milliseconds(msec));
 }
 
 } // extern "C"

@@ -29,6 +29,9 @@ target_link_libraries(smushTests PRIVATE
     unity
 )
 
+# Added: the Babylon column runs this suite under the adapter context.
+std_use_babylon_test_main(smushTests "${CMAKE_CURRENT_SOURCE_DIR}/smushTestRunner.c")
+
 target_compile_definitions(smushTests PRIVATE
     J3D_TEST
 )
