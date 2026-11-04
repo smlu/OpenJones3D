@@ -19,6 +19,11 @@
 #include <unistd.h>
 #endif
 
+#ifdef _WIN32
+#include <stdlib.h>
+#include <crtdbg.h>
+#endif
+
 #ifndef STRUNCATE
 #define STRUNCATE 80
 #endif
@@ -53,14 +58,39 @@ static int j3dCrtTest_CallVsscanfS(const char* pBuf, const char* pFormat, ...)
     return result;
 }
 
+#ifdef _WIN32
+static void __cdecl j3dCrtTest_IgnoreInvalidParameter(const wchar_t* pExpression,
+    const wchar_t* pFunction, const wchar_t* pFile, unsigned int line, uintptr_t reserved)
+{
+    (void)pExpression;
+    (void)pFunction;
+    (void)pFile;
+    (void)line;
+    (void)reserved;
+}
+
+static _invalid_parameter_handler j3dCrtTest_pfPrevInvalidParameterHandler = NULL;
+static int                        j3dCrtTest_prevAssertReportMode          = 0;
+#endif
+
 TEST_GROUP(j3dCrt);
 
 TEST_SETUP(j3dCrt)
 {
+#ifdef _WIN32
+    // The UCRT calls the invalid parameter handler for the ERANGE/EINVAL cases before it returns;
+    // a no-op handler lets the tests see the return values the shim must match.
+    j3dCrtTest_pfPrevInvalidParameterHandler = _set_invalid_parameter_handler(j3dCrtTest_IgnoreInvalidParameter);
+    j3dCrtTest_prevAssertReportMode          = _CrtSetReportMode(_CRT_ASSERT, 0);
+#endif
 }
 
 TEST_TEAR_DOWN(j3dCrt)
 {
+#ifdef _WIN32
+    _set_invalid_parameter_handler(j3dCrtTest_pfPrevInvalidParameterHandler);
+    _CrtSetReportMode(_CRT_ASSERT, j3dCrtTest_prevAssertReportMode);
+#endif
 }
 
 TEST(j3dCrt, TestStrnlenS)
