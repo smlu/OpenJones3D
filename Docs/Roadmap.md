@@ -19,5 +19,7 @@ Where Jones3D EX stands and what comes next. The reasons behind the order are in
 | M10. Modern lighting | Per-pixel dynamic lighting and screen-space ambient occlusion, with the original vertex lighting kept as the classic mode | |
 | M11 and later. Babylon extras | Visible console; modding (loose-file overrides, mod folders, COG); threading last. Open idea: shadows and geometry on the GPU | |
 
+The enhancements planned so far, and what each needs from Babylon, are listed in [Enhancements.md](Enhancements.md).
+
 Each milestone ends with a check that can be seen, such as a run of the game or a passing CI job, before the
 next one starts.
