@@ -16,7 +16,6 @@ void J3DAPI rdPrimit2_DrawClippedCircle2(float centerX, float centerY, float rad
 int J3DAPI rdPrimit2_DrawRectangle(rdCanvas* pCanvas, int x1, int y1, int x2, int y2, uint32_t color, uint32_t pattern); //Added
 int J3DAPI rdPrimit2_DrawTriangle(rdCanvas* pCanvas, int x1, int y1, int x2, int y2, int a6, int a7, uint32_t color, uint32_t pattern); // Added
 
-// Helper hooking functions
 void rdPrimit2_ResetGlobals(void);
 
 J3D_EXTERN_C_END

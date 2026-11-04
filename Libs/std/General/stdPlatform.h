@@ -41,7 +41,6 @@ bool J3DAPI stdPlatform_DirExists(const char* pPath);
 // On windows this will generate a minidump
 void J3DAPI stdPlatform_InstallSignalHandler(void);
 
-// Helper hooking functions
 void stdPlatform_ResetGlobals(void);
 
 J3D_EXTERN_C_END

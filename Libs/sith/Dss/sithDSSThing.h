@@ -49,7 +49,6 @@ int J3DAPI sithDSSThing_DestroyThing(int guid, DPID idTo);
 int J3DAPI sithDSSThing_ProcessDestroyThing(const SithMessage* pMsg);
 void J3DAPI sithDSSThing_MoveToPos(SithThing* pThing, const rdVector3* pPos, SithSector* pSector);
 
-// Helper hooking functions
 void sithDSSThing_ResetGlobals(void);
 
 J3D_EXTERN_C_END

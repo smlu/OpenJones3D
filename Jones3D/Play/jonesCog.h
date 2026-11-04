@@ -31,7 +31,6 @@ void J3DAPI jonesCog_EnableInterface(bool bEnable); // Added
 
 void J3DAPI jonesCog_EnableIndicatrors(bool bEnable); // Added
 
-// Helper hooking functions
 void jonesCog_ResetGlobals(void);
 
 J3D_EXTERN_C_END

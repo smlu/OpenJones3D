@@ -46,7 +46,6 @@ int J3DAPI sithGamesave_LoadLevelFilename(const char* pNdsFilePath, char* pDestF
 int J3DAPI sithGamesave_GetState(const char** ppCurFilename);
 void J3DAPI sithGamesave_SetSaveGameCallback(SithGameSaveCallback pfCallback);
 
-// Helper hooking functions
 void sithGamesave_ResetGlobals(void);
 
 J3D_EXTERN_C_END

@@ -24,7 +24,6 @@ void J3DAPI jonesInventory_UpdateGameTimeStatistics(uint32_t msecTime);
 void J3DAPI jonesInventory_UpdateLevelStatisticTime(uint32_t elapsedSec, SithLevelStatistic* pLevelStats, uint32_t msecNewTime, uint32_t msecPreviousTime);
 void jonesInventory_ResetStatisticsGameTime(void);
 
-// Helper hooking functions
 void jonesInventory_ResetGlobals(void);
 
 J3D_EXTERN_C_END

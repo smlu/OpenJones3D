@@ -56,7 +56,6 @@ void J3DAPI sithMulti_UpdateRemovals();
 void J3DAPI sithMulti_StartWelcomingPlayer(DPID playerId);
 void J3DAPI sithMulti_StopWelcomingPlayer(int bError);
 
-// Helper hooking functions
 void sithMulti_ResetGlobals(void);
 
 J3D_EXTERN_C_END

@@ -32,7 +32,6 @@ void J3DAPI sithSound_FreeWorldSounds(SithWorld* pWorld);
 tSoundHandle J3DAPI sithSound_Load(SithWorld* pWorld, const char* filename);
 void J3DAPI sithSound_SetSkipRestoringSounds(int bSkip);
 
-// Helper hooking functions
 void sithSound_ResetGlobals(void);
 
 J3D_EXTERN_C_END

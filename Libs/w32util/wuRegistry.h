@@ -28,7 +28,6 @@ int J3DAPI wuRegistry_SaveStr(const char* pKey, const char* pStr);
 int J3DAPI wuRegistry_GetStr(const char* pKey, char* pDstStr, size_t size, const char* pDefaultValue);
 
 
-// Helper hooking functions
 void wuRegistry_ResetGlobals(void);
 
 J3D_EXTERN_C_END

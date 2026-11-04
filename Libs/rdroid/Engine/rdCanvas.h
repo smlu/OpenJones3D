@@ -14,7 +14,6 @@ int J3DAPI rdCanvas_NewEntry(rdCanvas* pCanvas, int flags, tVBuffer* pVBuffer, i
 void J3DAPI rdCanvas_Free(rdCanvas* pCanvas);
 void J3DAPI rdCanvas_FreeEntry(rdCanvas* pCanvas); // Added
 
-// Helper hooking functions
 void rdCanvas_ResetGlobals(void);
 
 J3D_EXTERN_C_END

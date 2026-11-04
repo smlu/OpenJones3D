@@ -86,7 +86,6 @@ void stdDisplay_UnlockBackBuffer(void);
 
 uint32_t J3DAPI stdDisplay_EncodeFromRGB565(uint16_t pixel);
 
-// Helper hooking functions
 void stdDisplay_ResetGlobals(void);
 
 J3D_EXTERN_C_END

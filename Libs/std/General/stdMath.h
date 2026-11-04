@@ -106,7 +106,6 @@ static inline float stdMath_Expm1f(float x)
 #endif
 }
 
-// Helper hooking functions
 void stdMath_ResetGlobals(void);
 
 J3D_EXTERN_C_END

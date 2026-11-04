@@ -332,7 +332,7 @@ Follow [Docs/Testing.md](Docs/Testing.md) for the workflow, coverage checklist,
 fixture generation, layout, naming, build commands, and validation reporting.
 These requirements apply equally to manual and AI-assisted changes.
 
-Scope mock callbacks, local RTI storage, test compiler definitions, and dependency
+Scope mock callbacks, test compiler definitions, and dependency
 substitutions to test targets and their source files. Review the generated build
 configuration to confirm that production targets retain their normal dependencies
 and contain no test controls or original-executable calls.

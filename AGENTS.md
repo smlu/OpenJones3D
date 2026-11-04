@@ -59,7 +59,7 @@ build/native/Jones3D/Jones3D-headless --load <save>.nds --frames 1000 --state st
 ```
 
 The legacy Win32 and DirectX 9 build (until M6) builds with MSVC Win32 or with MinGW through
-`cmake/mingw-i686.cmake`, with `-DJONES3D_STANDALONE=ON`. Code that touches it needs a Windows build. Say
+`cmake/mingw-i686.cmake`; both produce the standalone `Jones3D.exe`. Code that touches it needs a Windows build. Say
 so when you couldn't build it, and never describe unbuilt or untested code as validated.
 
 ## Fidelity

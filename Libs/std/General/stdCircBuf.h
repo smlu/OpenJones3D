@@ -10,7 +10,6 @@ void J3DAPI stdCircBuf_Free(tCircularBuffer* pCirc);
 void J3DAPI stdCircBuf_Purge(tCircularBuffer* pCirc);
 void* J3DAPI stdCircBuf_GetNextElement(tCircularBuffer* pCirc);
 
-// Helper hooking functions
 void stdCircBuf_ResetGlobals(void);
 
 J3D_EXTERN_C_END

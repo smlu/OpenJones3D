@@ -41,7 +41,6 @@ static inline void sithActor_ResetStateChange(SithThing* pActor) // Added
     }
 }
 
-// Helper hooking functions
 void sithActor_ResetGlobals(void);
 
 J3D_EXTERN_C_END

@@ -106,7 +106,6 @@ void J3DAPI rdMath_ProjectPointOntoPlaneNormalized(rdVector3* dest, const rdVect
     rdVector_Normalize3Acc(dest);
 }
 
-// Helper hooking functions
 void rdMath_ResetGlobals(void);
 
 J3D_EXTERN_C_END

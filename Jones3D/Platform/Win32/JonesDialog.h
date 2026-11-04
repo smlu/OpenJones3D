@@ -31,7 +31,6 @@ int J3DAPI JonesDialog_FreeOffScreenDIBSection();
 BOOL J3DAPI JonesDialog_ShowFileSelectDialog(LPOPENFILENAMEA pofn, int bOpen);
 UINT_PTR CALLBACK JonesDialog_SubclassFileDialogProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
-// Helper hooking functions
 void JonesDialog_ResetGlobals(void);
 
 J3D_EXTERN_C_END

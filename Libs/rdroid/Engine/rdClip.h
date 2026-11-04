@@ -55,7 +55,6 @@ int J3DAPI rdClip_FaceToPlane(const rdClipFrustum* pFrustrum, rdCacheProcEntry* 
 // aVerts here should be transformed to camera space.
 void J3DAPI rdClip_VerticesToPlane(rdCacheProcEntry* pProcFace, const rdVector3* aVerts, const rdVector2* aTexVerts, size_t numVerts);
 
-// Helper hooking functions
 void rdClip_ResetGlobals(void);
 
 J3D_EXTERN_C_END

@@ -56,7 +56,6 @@ int J3DAPI jonesConfig_ShowDialogInsertCD(tSysWindow hWnd, intptr_t dwInitParam)
 void jonesConfig_UpdateCurrentLevelNum(void); // Updates cached current level num from JonesMain module. 
                                               // Cached level num is used for statistics dialog
 
-// Helper hooking functions
 void jonesConfig_ResetGlobals(void);
 
 J3D_EXTERN_C_END

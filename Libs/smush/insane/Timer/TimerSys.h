@@ -16,8 +16,6 @@ void timer_SysStartThread(void);
 // Signals the tick thread, waits for it to exit and releases its resources
 void timer_SysStopThread(void);
 
-// Hooks the tick thread function in injected builds
-
 // Clears the thread and event handles
 void timer_SysResetGlobals(void);
 

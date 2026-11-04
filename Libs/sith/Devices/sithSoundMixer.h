@@ -67,7 +67,6 @@ void J3DAPI sithSoundMixer_SetSectorAmbientSound(SithSector* pSector, tSoundHand
 int J3DAPI sithSoundMixer_GameSave(tFileHandle fh);
 signed int J3DAPI sithSoundMixer_GameRestore(tFileHandle fh);
 
-// Helper hooking functions
 void sithSoundMixer_ResetGlobals(void);
 
 J3D_EXTERN_C_END

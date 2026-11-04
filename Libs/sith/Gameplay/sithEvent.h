@@ -44,7 +44,6 @@ void J3DAPI sithEvent_FreeEvent(SithEvent* pEvent);
 
 void sithEvent_Process(void);
 
-// Helper hooking functions
 void sithEvent_ResetGlobals(void);
 
 J3D_EXTERN_C_END

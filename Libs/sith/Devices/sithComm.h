@@ -47,7 +47,6 @@ void sithMessage_CloseGame(void);
 
 void J3DAPI sithMessage_RegisterFunction(int type, SithMessageProcessFunc pFunc);
 
-// Helper hooking functions
 void sithComm_ResetGlobals(void);
 
 J3D_EXTERN_C_END

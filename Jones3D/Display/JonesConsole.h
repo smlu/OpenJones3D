@@ -31,7 +31,6 @@ void JonesConsole_ShowConsole(void);
 void J3DAPI JonesConsole_HandelChar(char chr);
 void JonesConsole_HideConsole(void);
 
-// Helper hooking functions
 void JonesConsole_ResetGlobals(void);
 
 J3D_EXTERN_C_END

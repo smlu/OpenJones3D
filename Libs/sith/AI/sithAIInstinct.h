@@ -39,7 +39,6 @@ int J3DAPI sithAIInstinct_SnakeMungeTestCheck(SithAIControlBlock* pLocal, rdVect
 signed int J3DAPI sithAIInstinct_SnakeFollow(SithAIControlBlock* pLocal, SithAIInstinct* pInstinct, SithAIInstinctState* pState, SithAIEventType event, SithThing* pThing);
 void J3DAPI sithAIInstinct_SnakePlaySlitherSound(const SithThing* pThing, float slitherDir);
 
-// Helper hooking functions
 void sithAIInstinct_ResetGlobals(void);
 
 J3D_EXTERN_C_END

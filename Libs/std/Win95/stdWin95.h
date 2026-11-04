@@ -12,7 +12,6 @@ tSysInstance stdWin95_GetInstance(void);
 void J3DAPI stdWin95_SetGuid(const tSysGuid* pGuid);
 const tSysGuid* J3DAPI stdWin95_GetGuid(void); // Added
 
-// Helper hooking functions
 void stdWin95_ResetGlobals(void);
 
 J3D_EXTERN_C_END

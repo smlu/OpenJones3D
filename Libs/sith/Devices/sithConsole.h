@@ -44,7 +44,6 @@ void J3DAPI sithConsole_RegisterPrintFunctions(SithConsoleWriteTextFunc pfWriteT
 
 int J3DAPI sithConsole_Help(const SithConsoleCommand* pFunc, const char* pArg); // Added
 
-// Helper hooking functions
 void sithConsole_ResetGlobals(void);
 
 J3D_EXTERN_C_END

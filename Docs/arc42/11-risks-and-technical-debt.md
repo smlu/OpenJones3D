@@ -17,7 +17,6 @@
 
 | Debt | Where | Plan |
 |---|---|---|
-| Hook and RTI machinery from the reconstruction | `j3dcore`, `<module>/RTI/` | Delete after the documentation rewrite ([ADR-0004](09-decisions/ADR-0004-drop-binary-compatibility.md)) |
 | QOL behavior as one compile-time profile | `J3D_QOL_IMPROVEMENTS`, `J3D_SPEEDRUN_BUILD` | Individual runtime options ([ADR-0003](09-decisions/ADR-0003-fidelity-split.md)) |
 | Platform types in shared headers | For example `std3D_DrawLineStrip(LPD3DTLVERTEX, size_t)` | Removed as subsystems move behind Babylon in M5 |
 | Win32 dialogs | `jonesConfig.c`, `JonesDialog.c` | Replaced by in-game screens in M7 |

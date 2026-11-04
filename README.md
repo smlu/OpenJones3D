@@ -64,17 +64,17 @@ CMake 3.15 or newer is required.
 
 ### Windows (legacy Win32 and DirectX 9 build)
 
-With Visual Studio (the standalone build hasn't been checked with MSVC yet):
+With Visual Studio:
 
 ```bat
-cmake -S . -B build -G "Visual Studio 17 2022" -A Win32 -DJONES3D_STANDALONE=ON
+cmake -S . -B build -G "Visual Studio 17 2022" -A Win32
 cmake --build build --config Release
 ```
 
 With MinGW (i686), from any host:
 
 ```bash
-cmake -S . -B build/mingw -G Ninja -DCMAKE_TOOLCHAIN_FILE=cmake/mingw-i686.cmake -DCMAKE_BUILD_TYPE=Release -DJONES3D_STANDALONE=ON
+cmake -S . -B build/mingw -G Ninja -DCMAKE_TOOLCHAIN_FILE=cmake/mingw-i686.cmake -DCMAKE_BUILD_TYPE=Release
 cmake --build build/mingw
 ```
 

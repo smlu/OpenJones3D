@@ -110,7 +110,6 @@ void J3DAPI sithSetOpenCallback(SithOpenCallback pfCallback);
 const char* sithGetCurrentWorldSaveName(void);
 const char* J3DAPI sithGetLevelSaveFilename(size_t levelNum);
 
-// Helper hooking functions
 void sithMain_ResetGlobals(void);
 
 J3D_EXTERN_C_END

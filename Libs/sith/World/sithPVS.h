@@ -15,7 +15,6 @@ int J3DAPI sithPVS_WritePVSBinary(tFileHandle fh, const SithWorld* pWorld);
 int J3DAPI sithPVS_ReadPVSBinary(tFileHandle fh, SithWorld* pWorld);
 void J3DAPI sithPVS_SetTable(uint8_t* paAdjoinTable, const uint8_t* aElements, size_t numAdjoints);
 
-// Helper hooking functions
 void sithPVS_ResetGlobals(void);
 
 J3D_EXTERN_C_END

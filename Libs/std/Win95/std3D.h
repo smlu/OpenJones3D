@@ -77,7 +77,6 @@ bool std3D_IsMSAASupported(void);                 // Checks if underlying GAPI s
 void std3D_TestSetUseBuffers(bool bUseBuffers);
 #endif
 
-// Helper hooking functions
 void std3D_ResetGlobals(void);
 
 J3D_EXTERN_C_END

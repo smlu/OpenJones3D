@@ -89,7 +89,6 @@ void J3DAPI rdSetGeometryMode(rdGeometryMode mode);
 rdLightMode rdGetLightingMode(void); // Added
 void J3DAPI rdSetLightingMode(rdLightMode mode);
 
-// Helper hooking functions
 void rdroid_ResetGlobals(void);
 
 J3D_EXTERN_C_END

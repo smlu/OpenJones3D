@@ -66,7 +66,6 @@ size_t J3DAPI sithAIUtil_GetThingsInView(SithSector* pStartSector, const rdMatri
 void J3DAPI sithAIUtil_GetNextThingsInView(SithSector* pSector, const rdMatrix34* pOrient, float distance);
 int J3DAPI sithAIUtil_CanSeeTarget(const SithAIControlBlock* pLocal, SithThing* pTarget, float distance);
 
-// Helper hooking functions
 void sithAIUtil_ResetGlobals(void);
 
 J3D_EXTERN_C_END

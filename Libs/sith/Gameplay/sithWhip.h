@@ -33,7 +33,6 @@ void J3DAPI sithWhip_WhipFirePuppetCallback(SithThing* pThing, int track, rdKeyM
 void J3DAPI sithWhip_WhipClimbPuppetCallback(SithThing* pThing, int track, rdKeyMarkerType markerType);
 void J3DAPI sithWhip_ClimbDismountPuppetCallback(SithThing* pThing, int track, rdKeyMarkerType mt);
 
-// Helper hooking functions
 void sithWhip_ResetGlobals(void);
 
 J3D_EXTERN_C_END

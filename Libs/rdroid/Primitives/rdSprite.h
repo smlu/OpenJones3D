@@ -12,7 +12,6 @@ void J3DAPI rdSprite_Free(rdSprite3* pSprite); // Added
 void J3DAPI rdSprite_FreeEntry(rdSprite3* pSprite);
 int J3DAPI rdSprite_Draw(rdThing* prdThing, const rdMatrix34* orient);
 
-// Helper hooking functions
 void rdSprite_ResetGlobals(void);
 
 J3D_EXTERN_C_END

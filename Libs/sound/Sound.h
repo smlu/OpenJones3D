@@ -118,7 +118,6 @@ void Sound_TestSetCurrentPosition(size_t position);
 void Sound_TestSetUncompressFunc(SoundTestUncompressFunc pfUncompress);
 #endif
 
-// Helper hooking functions
 void Sound_ResetGlobals(void);
 
 J3D_EXTERN_C_END

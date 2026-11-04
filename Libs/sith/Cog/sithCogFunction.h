@@ -9,7 +9,6 @@ int J3DAPI sithCogFunction_RegisterFunctions(SithCogSymbolTable* pTable);
 void J3DAPI sithCogFunction_EnablePrint(bool bEnable); // Added
 bool sithCogFunction_IsPrintEnabled(void); // Added
 
-// Helper hooking functions
 void sithCogFunction_ResetGlobals(void);
 
 J3D_EXTERN_C_END

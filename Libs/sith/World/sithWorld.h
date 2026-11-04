@@ -62,7 +62,6 @@ int J3DAPI sithWorld_ReadGeoresourceBinary(tFileHandle fh, SithWorld* pWorld);
 
 int J3DAPI sithWorld_LoadEntryBinary(SithWorld* pWorld, const char* pFilePath);
 
-// Helper hooking functions
 void sithWorld_ResetGlobals(void);
 
 J3D_EXTERN_C_END

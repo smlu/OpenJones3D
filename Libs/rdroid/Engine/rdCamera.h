@@ -55,7 +55,6 @@ int J3DAPI rdCamera_ClearLights(rdCamera* pCamera);
 void J3DAPI rdCamera_SetOverlayDepthRange(bool bEnable);
 bool rdCamera_IsOverlayDepthRangeEnabled(void); // Added
 
-// Helper hooking functions
 void rdCamera_ResetGlobals(void);
 
 J3D_EXTERN_C_END

@@ -46,7 +46,6 @@ SithAnimationSlot* sithAnimate_Create(void);
 int J3DAPI sithAnimate_Save(unsigned int outstream);
 
 
-// Helper hooking functions
 void sithAnimate_ResetGlobals(void);
 
 J3D_EXTERN_C_END

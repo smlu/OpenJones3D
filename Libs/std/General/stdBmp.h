@@ -8,7 +8,6 @@ J3D_EXTERN_C_START
 int J3DAPI stdBmp_WriteVBuffer(const char* pFilename, tVBuffer* pVBuffer);
 tSysBitmap J3DAPI stdBmp_Load(const char* pFilename);
 
-// Helper hooking functions
 void stdBmp_ResetGlobals(void);
 
 J3D_EXTERN_C_END

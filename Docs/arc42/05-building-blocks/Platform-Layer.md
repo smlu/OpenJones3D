@@ -249,13 +249,13 @@ These are refused in review, even when they would pass the check:
 
 ## Selection
 
-Build time, as DX6 and DX9 already work: one implementation linked per build, chosen in CMake. No function-pointer tables. `tHostServices` stays as it is. This keeps the original symbol names, which hooks and binary comparison rely on.
+Build time, as DX6 and DX9 already work: one implementation linked per build, chosen in CMake. No function-pointer tables. `tHostServices` stays as it is. This keeps the original symbol names, which comparison with the decompilation relies on.
 
 ## Names
 
-Recovered names stay wherever they fit: `std3D_`, `stdDisplay_`, `stdControl_`, `stdComm_`, `wkernel_`, `wuRegistry_`, `Sound_`. A signature changes only where it leaks a platform type. `RTI/symbols.h` is updated with it, so the injected build still compiles. On 32-bit Windows the replacement types have the same size and calling convention, so hooks keep working.
+Recovered names stay wherever they fit: `std3D_`, `stdDisplay_`, `stdControl_`, `stdComm_`, `wkernel_`, `wuRegistry_`, `Sound_`. A signature changes only where it leaks a platform type.
 
-`J3D_HOOKFUNC` lines stay. In builds without injection, including native ones, the macro expands to nothing. `VirtualProtect` and `FlushInstructionCache` in `j3dhook.h` compile only for the injected build.
+The hook machinery (`J3D_HOOKFUNC`, `j3dhook.h`) and the injected build were removed with binary compatibility ([ADR-0004](../09-decisions/ADR-0004-drop-binary-compatibility.md)).
 
 ## Types
 

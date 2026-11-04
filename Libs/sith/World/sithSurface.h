@@ -39,7 +39,6 @@ SithSurface* J3DAPI sithSurface_GetSurfaceEx(const SithWorld* pWorld, int surfId
 int J3DAPI sithSurface_GetSurfaceIndex(const SithSurface* pSurf);
 int J3DAPI sithSurface_GetSurfaceIndexEx(const SithWorld* pWorld, const SithSurface* pSurface);
 
-// Helper hooking functions
 void sithSurface_ResetGlobals(void);
 
 J3D_EXTERN_C_END

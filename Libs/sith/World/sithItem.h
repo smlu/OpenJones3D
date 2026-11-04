@@ -16,7 +16,6 @@ void J3DAPI sithItem_SetItemTaken(SithThing* pItem, const SithThing* pSrcThing, 
 void J3DAPI sithItem_DestroyItem(SithThing* pItem);
 int J3DAPI sithItem_ParseArg(const StdConffileArg* pArg, SithThing* pThing, int adjNum);
 
-// Helper hooking functions
 void sithItem_ResetGlobals(void);
 
 J3D_EXTERN_C_END

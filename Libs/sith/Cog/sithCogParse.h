@@ -50,7 +50,6 @@ int J3DAPI sithCogParse_ParseVector(SithCogScript* pScript, int bParseDescriptio
 int J3DAPI sithCogParse_ParseMessage(SithCogScript* pScript);
 void J3DAPI sithCogParse_ResolveMessageHandlers(SithCogScript* pScript);
 
-// Helper hooking functions
 void sithCogParse_ResetGlobals(void);
 
 J3D_EXTERN_C_END

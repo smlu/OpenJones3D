@@ -93,7 +93,6 @@ int J3DAPI JonesHud_DrawCredits(int bEndCredits, tSoundChannelHandle hSndChannel
 void JonesHud_RestoreGameStatistics(void);
 void JonesHud_RestoreTreasuresStatistics(void);
 
-// Helper hooking functions
 void JonesHud_ResetGlobals(void);
 
 J3D_EXTERN_C_END

@@ -4,7 +4,7 @@ This page documents how control enters OpenJones3D, how the subsystem stack is s
 
 Primary source files:
 
-- [`Jones3D/dllmain.c`](../../../Jones3D/dllmain.c)
+- [`Jones3D/Platform/Win32/WinMain.c`](../../../Jones3D/Platform/Win32/WinMain.c)
 - [`Jones3D/Main/JonesMain.c`](../../../Jones3D/Main/JonesMain.c)
 - [`Libs/wkernel/wkernel.c`](../../../Libs/wkernel/wkernel.c)
 - [`Libs/std/General/std.c`](../../../Libs/std/General/std.c)
@@ -17,12 +17,12 @@ Primary source files:
 
 The game does not start in [`JonesMain_Startup()`](../../../Jones3D/Main/JonesMain.c#L254) directly. The real entry chain is:
 
-1. [`Indy3D_WinMain()`](../../../Jones3D/dllmain.c#L219) in [`Jones3D/dllmain.c`](../../../Jones3D/dllmain.c)
+1. [`WinMain()`](../../../Jones3D/Platform/Win32/WinMain.c#L59), which resets the globals and calls [`Indy3D_WinMain()`](../../../Jones3D/Platform/Win32/WinMain.c#L40) in [`Jones3D/Platform/Win32/WinMain.c`](../../../Jones3D/Platform/Win32/WinMain.c)
 2. [`wkernel_SetProcessProc()`](../../../Libs/wkernel/wkernel.c#L104), [`wkernel_SetStartupCallback()`](../../../Libs/wkernel/wkernel.c#L111), and [`wkernel_SetShutdownCallback()`](../../../Libs/wkernel/wkernel.c#L118)
 3. [`wkernel_Run()`](../../../Libs/wkernel/wkernel.c#L46)
 4. [`JonesMain_Startup()`](../../../Jones3D/Main/JonesMain.c#L254)
 
-[`Indy3D_WinMain()`](../../../Jones3D/dllmain.c#L219) creates the single-instance mutex, installs the top-level callbacks, and hands control to [`wkernel_Run()`](../../../Libs/wkernel/wkernel.c#L46). `wkernel` is the outer host shell: it creates the main window, pumps Win32 messages, calls the startup callback once, and then repeatedly calls the registered process callback until the application requests exit.
+[`Indy3D_WinMain()`](../../../Jones3D/Platform/Win32/WinMain.c#L40) creates the single-instance mutex, installs the top-level callbacks, and hands control to [`wkernel_Run()`](../../../Libs/wkernel/wkernel.c#L46). `wkernel` is the outer host shell: it creates the main window, pumps Win32 messages, calls the startup callback once, and then repeatedly calls the registered process callback until the application requests exit.
 
 That means the runtime has a clear split:
 

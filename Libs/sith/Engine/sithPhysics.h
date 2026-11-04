@@ -97,7 +97,6 @@ static inline bool sithPhysics_CheckSlopeAngle(float cosAngle);  // new func
  */
 static inline float sithPhysics_CalcWheelRotationAngle(const SithThing* pThing, float wheelRadius, float secDeltaTime); // new func
 
-// Helper hooking functions
 void sithPhysics_ResetGlobals(void);
 
 

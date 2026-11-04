@@ -29,7 +29,6 @@ int J3DAPI sithSprite_ReadStaticSpritesListText(SithWorld* pWorld, int bSkip);
 int J3DAPI sithSprite_WriteStaticSpritesListBinary(tFileHandle fh, const SithWorld* pWorld);
 int J3DAPI sithSprite_ReadStaticSpritesListBinary(tFileHandle fh, SithWorld* pWorld);
 
-// Helper hooking functions
 void sithSprite_ResetGlobals(void);
 
 J3D_EXTERN_C_END

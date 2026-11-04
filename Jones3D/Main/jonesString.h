@@ -12,7 +12,6 @@ const char* J3DAPI jonesString_GetString(const char* pKey);
 int J3DAPI jonesString_Startup();
 void jonesString_Shutdown(void);
 
-// Helper hooking functions
 void jonesString_ResetGlobals(void);
 
 J3D_EXTERN_C_END

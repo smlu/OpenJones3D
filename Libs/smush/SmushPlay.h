@@ -55,7 +55,7 @@ int J3DAPI SmushPlay_PlayMovie(const char* pFilename, int rate, int flags, int a
 int J3DAPI smushplay_Blit(int a1, int a2, int a3, int a4, void* pBitmap);
 void* smushplay_GetHwnd(void);
 
-// Install the hooks of / reset the globals of every smush translation unit (called from the DLL's InstallHooks/ResetGlobals)
+// Reset the globals of every smush translation unit
 void Smush_ResetGlobals(void);
 
 void SmushPlay_ResetGlobals(void);

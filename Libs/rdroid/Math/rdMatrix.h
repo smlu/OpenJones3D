@@ -61,7 +61,6 @@ void J3DAPI rdMatrix_Copy34(rdMatrix34* dest, const rdMatrix34* src)
     STD_COPYMEM(dest, src, sizeof(rdMatrix34));
 }
 
-// Helper hooking functions
 void rdMatrix_ResetGlobals(void);
 
 J3D_EXTERN_C_END

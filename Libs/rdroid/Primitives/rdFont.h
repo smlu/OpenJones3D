@@ -187,7 +187,6 @@ void J3DAPI rdFont_DrawTextLineClipped(const char* pText, float x, float y, floa
  */
 void J3DAPI rdFont_DrawTextLineClippedEx(const char* pText, float x, float y, float z, const rdFont* pFont, int alignFlags, float fontSizePt); // New
 
-// Helper hooking functions
 void rdFont_ResetGlobals(void);
 
 J3D_EXTERN_C_END

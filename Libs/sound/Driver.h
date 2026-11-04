@@ -62,7 +62,6 @@ float J3DAPI SoundDriver_GetPanFromTable(int pan); // Added From debug
 uint32_t SoundDriver_GetTimeMsec(void);
 void J3DAPI SoundDriver_Sleep(unsigned int dwMilliseconds);
 
-// Helper hooking functions
 void SoundDriver_ResetGlobals(void);
 
 J3D_EXTERN_C_END

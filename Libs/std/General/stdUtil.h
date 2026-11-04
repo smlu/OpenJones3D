@@ -357,7 +357,6 @@ static inline bool J3DAPI stdUtil_StringNumCat(char* pDst, size_t destSize, cons
     return strncat_s(pDst, destSize, pSrc, num) == 0;
 }
 
-// Helper hooking functions
 void stdUtil_ResetGlobals(void);
 
 J3D_EXTERN_C_END

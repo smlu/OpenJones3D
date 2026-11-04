@@ -79,7 +79,6 @@ static inline float sithPlayerControls_CalculateAngularVelocity(SithActorInfo* p
     return (axisDirection * sithTime_g_fps) + (pActor->maxRotVelocity * keyDirection * speedFactor);
 }
 
-// Helper hooking functions
 void sithPlayerControls_ResetGlobals(void);
 
 J3D_EXTERN_C_END

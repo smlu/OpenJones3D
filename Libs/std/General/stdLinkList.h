@@ -17,7 +17,6 @@ tLinkListNode* J3DAPI stdLinklist_GetNode(const tLinkListNode* pFirstNode, int n
 tLinkListNode* J3DAPI stdLinklist_GetLastNode(const tLinkListNode* pCur); // Added
 tLinkListNode* J3DAPI stdLinklist_GetFirstNode(const tLinkListNode* pCur); // Added
 
-// Helper hooking functions
 void stdLinkList_ResetGlobals(void);
 
 J3D_EXTERN_C_END

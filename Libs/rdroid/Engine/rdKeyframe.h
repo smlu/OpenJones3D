@@ -18,7 +18,6 @@ void J3DAPI rdKeyframe_FreeEntry(rdKeyframe* pKeyfreame);
 
 void rdKeyframe_PrintKeyframe(const rdKeyframe* pKeyframe); // Added
 
-// Helper hooking functions
 void rdKeyframe_ResetGlobals(void);
 
 J3D_EXTERN_C_END

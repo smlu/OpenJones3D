@@ -16,7 +16,6 @@ void J3DAPI rdPolyline_FreeEntry(rdPolyline* pPolyline);
 int J3DAPI rdPolyline_Draw(const rdThing* pLine, const rdMatrix34* pOrient);
 void J3DAPI rdPolyline_DrawFace(const rdThing* pLine, const rdFace* pFace, const rdVector3* aVerts, const rdVector2* aTVerts);
 
-// Helper hooking functions
 void rdPolyline_ResetGlobals(void);
 
 J3D_EXTERN_C_END

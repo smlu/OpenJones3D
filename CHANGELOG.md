@@ -5,6 +5,9 @@
   - The last state compatible with OpenJones3D is tagged `upstream-compatible-final`. Entries below are
     OpenJones3D's own history.
   - The game builds natively on Linux and other systems and runs headless there, on 32-bit and 64-bit.
+  - Binary compatibility with the retail executable is gone: Windows builds always produce the standalone
+    `Jones3D.exe`. The `Jones3D.dll` injected into `Indy3D.exe`, its launcher, the `JONES3D_STANDALONE` option
+    and the post-build copy options (`JONES3D_ENABLE_POST_BUILD_COPY`, `JONES3D_POST_BUILD_COPY_DIR`) are removed.
 
 ## v0.4.0
 ### DirectX 9 Port, Redesigned HUD, Auto Aim Reticle, Enhanced Graphics & Gameplay QOL Improvements

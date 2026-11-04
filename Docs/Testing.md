@@ -293,7 +293,7 @@ See [Google's test isolation guidance](https://testing.googleblog.com/2010/12/te
 
 ### 🔧 Shared Test Support And Macro Assertions
 
-Tests that need fixed-address RTI globals or host-service assertion capture should link `j3dTestSupport` and include `#include <j3dcore/Tests/j3dTest.h>`. Use `J3DTest_Startup()` and `J3DTest_BindHostServicesGlobal(<module>_g_pHS_ADDR)` in `TEST_SETUP`, then `J3DTest_Shutdown()` in `TEST_TEAR_DOWN`, instead of duplicating OS-specific memory mapping in each test file.
+Tests that need host-service assertion capture should link `j3dTestSupport` and include `#include <j3dcore/Tests/j3dTest.h>`. Use `J3DTest_Startup()` and `J3DTest_BindHostServicesGlobal((uintptr_t)&<module>_g_pHS)` in `TEST_SETUP`, then `J3DTest_Shutdown()` in `TEST_TEAR_DOWN`. Some older tests pass a `<module>_g_pHS_ADDR` macro that their test header defines as that address; the retail addresses these names once stood for are gone ([ADR-0004](arc42/09-decisions/ADR-0004-drop-binary-compatibility.md)).
 
 For header and macro tests, prefer stable behavior checks over release-specific value checks. For example, `j3d.h` macro tests should verify string/memory helpers, runtime guard behavior, platform flags, logging/assertion macros, and compile-time shape, but should not pin exact `J3D_VERSION_STRING` or `J3D_VERSION_FULL` values because those change with release numbers and suffixes.
 
@@ -465,8 +465,8 @@ Loading an EXE with `ctypes`/`LoadLibrary` is not a replacement for running the
 initialized engine: Windows does not resolve an EXE's static imports that way.
 See [Microsoft's LoadLibrary documentation](https://learn.microsoft.com/en-us/windows/win32/api/libloaderapi/nf-libloaderapi-loadlibrarya).
 
-The project RTI `<function>_ADDR` and `<function>_TYPE` declarations describe
-retail v1.0 entry points and prototypes. Resolve and verify the matching addresses
+The RTI `<function>_ADDR` and `<function>_TYPE` declarations of the reconstruction (removed in Jones3D EX,
+still in the `upstream-compatible-final` tag) described retail v1.0 entry points and prototypes. Resolve and verify the matching addresses
 and layouts separately for the debug build or an eligible v1.2 fix; do not reuse
 v1.0 addresses for a different binary. `J3D_CALLFUNCFAR` and
 `J3D_TRAMPOLINE_CALL` call addresses directly; they do not preserve an unpatched

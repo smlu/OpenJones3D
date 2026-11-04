@@ -91,7 +91,6 @@ void J3DAPI sithWeapon_CreateWeaponFireFx(SithThing* pThing, rdVector3* pos);
 SithThing* J3DAPI sithWeapon_WeaponFireProjectile(SithThing* pShooter, const SithThing* pProjectileTemplate, const rdVector3* pFireDir, rdVector3* pFirePos, tSoundHandle hFireSnd, SithPuppetSubMode submode, float extra, SithFireProjectileFlags flags, float secDeltaTime);
 int J3DAPI sithWeapon_ActivateWhip(SithThing* pThing, SithCog* pCog);
 
-// Helper hooking functions
 void sithWeapon_ResetGlobals(void);
 
 J3D_EXTERN_C_END

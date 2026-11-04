@@ -37,7 +37,6 @@ void sithTime_Reset(void);
 void J3DAPI sithTime_SetGameTime(uint32_t msecTime);
 int sithTime_IsPaused(void);
 
-// Helper hooking functions
 void sithTime_ResetGlobals(void);
 
 J3D_EXTERN_C_END

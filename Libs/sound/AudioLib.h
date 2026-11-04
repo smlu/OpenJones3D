@@ -53,7 +53,6 @@ void J3DAPI AudioLib_UncompressBlock(tAudioCompressorState* pCompressorState, ui
 int J3DAPI AudioLib_WVSMCompressBlock(uint8_t* pOutBuffer, const uint8_t* pInBuffer, int blockSize, FILE* pFile);
 int J3DAPI AudioLib_WVSMUncompressBlock(uint8_t* pOutBuffer, const uint8_t* pInBuffer, int blockSize);
 
-// Helper hooking functions
 void AudioLib_ResetGlobals(void);
 
 J3D_EXTERN_C_END

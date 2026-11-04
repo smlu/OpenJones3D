@@ -26,7 +26,6 @@ int J3DAPI sithMaterial_ReadMaterialsListBinary(tFileHandle fh, SithWorld* pWorl
 rdMaterial* J3DAPI sithMaterial_Load(const char* pName);
 rdMaterial* J3DAPI sithMaterial_GetMaterialByIndex(int idx);
 
-// Helper hooking functions
 void sithMaterial_ResetGlobals(void);
 
 J3D_EXTERN_C_END

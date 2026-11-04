@@ -35,7 +35,6 @@ void J3DAPI sithOverlayMap_GetNumSeenHints(size_t* pOutNumSeenHints, size_t* pOu
 SithThing* sithOverlayMap_GetCurrentHintThing(void); // Added: From debug
 
 
-// Helper hooking functions
 void sithOverlayMap_ResetGlobals(void);
 
 J3D_EXTERN_C_END

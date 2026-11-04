@@ -19,7 +19,7 @@
 | QOL | Quality-of-life changes inherited from OpenJones3D, on by default, each switchable back to retail |
 | Recovered name | A function or type name from the original engine, kept in game code |
 | Retail | The behavior of the original game as released |
-| RTI | OpenJones3D's tables of retail executable addresses, used for hooking; being removed |
+| RTI | OpenJones3D's tables of retail executable addresses, used for hooking; removed with binary compatibility |
 | Sith | The LucasArts engine Jones3D descends from. Also the gameplay runtime in `Libs/sith/` |
 | Simulation | Physics, collision, AI, COG, game time and savegames. Measured against retail by traces |
 | SMUSH | The game's cutscene video format |

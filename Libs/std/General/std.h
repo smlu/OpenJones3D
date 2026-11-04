@@ -54,7 +54,6 @@ size_t J3DAPI stdFileSize(const char* pFilePath);
 int stdFilePrintf(tFileHandle fh, const char* pFormat, ...);
 int J3DAPI stdFileSeek(tFileHandle pFile, int offset, int origin);
 
-// Helper hooking functions
 void std_ResetGlobals(void);
 
 J3D_EXTERN_C_END

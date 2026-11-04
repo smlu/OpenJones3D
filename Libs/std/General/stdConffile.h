@@ -53,7 +53,6 @@ size_t stdConffile_GetLineNumber(void);
 const char* stdConffile_GetFilename(void);
 const char* stdConffile_GetWriteFilename(void); // Added
 
-// Helper hooking functions
 void stdConffile_ResetGlobals(void);
 
 /**

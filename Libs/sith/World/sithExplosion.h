@@ -19,7 +19,6 @@ void J3DAPI sithExplosion_Update(SithThing* pThing, float secDeltaTime);
 void J3DAPI sithExplosion_MakeBlast(SithThing* pThing);
 int J3DAPI sithExplosion_ParseArg(const StdConffileArg* pArg, SithThing* pThing, int adjNum);
 
-// Helper hooking functions
 void sithExplosion_ResetGlobals(void);
 
 J3D_EXTERN_C_END

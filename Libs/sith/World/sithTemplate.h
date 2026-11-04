@@ -27,7 +27,6 @@ void sithTemplate_FreeMasterFile(void); // Added: From debug version
 
 SithThing* J3DAPI sithTemplate_GetTemplate(const char* pName);
 
-// Helper hooking functions
 void sithTemplate_ResetGlobals(void);
 
 J3D_EXTERN_C_END

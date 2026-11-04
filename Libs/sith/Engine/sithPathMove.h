@@ -27,7 +27,6 @@ int J3DAPI sithPathMove_PathMoveResume(SithThing* pThing);
 
 void J3DAPI sithPathMove_Create(SithThing* pNewThing, const SithThing* pMarker, const rdVector3* pOffset);
 
-// Helper hooking functions
 void sithPathMove_ResetGlobals(void);
 
 J3D_EXTERN_C_END

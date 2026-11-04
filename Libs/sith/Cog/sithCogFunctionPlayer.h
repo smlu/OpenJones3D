@@ -10,7 +10,6 @@ J3D_EXTERN_C_START
 
 int J3DAPI sithCogFunctionPlayer_RegisterFunctions(SithCogSymbolTable* pTable);
 
-// Helper hooking functions
 void sithCogFunctionPlayer_ResetGlobals(void);
 
 J3D_EXTERN_C_END

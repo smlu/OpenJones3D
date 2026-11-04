@@ -14,7 +14,6 @@ float J3DAPI sithShadow_DistanceThingToSurface(const SithThing* pThing, const rd
 void J3DAPI sithShadow_DrawShadow(const rdMatrix34* orient, float size, float scale, int bCar);
 void J3DAPI sithShadow_DrawWalkShadow(float size, float scale, const rdVector3* leg, const rdVector3* rleg, const rdVector3* lvec, const rdVector3* rvec);
 
-// Helper hooking functions
 void sithShadow_ResetGlobals(void);
 
 J3D_EXTERN_C_END

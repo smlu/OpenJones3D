@@ -1,15 +1,14 @@
 # QOL And Compatibility
 
-> **Being replaced.** The `j3dcore` hook layer described here is removed
-> ([ADR-0004](../09-decisions/ADR-0004-drop-binary-compatibility.md)), and the compile-time QOL profile becomes
-> individual runtime options, on by default ([ADR-0003](../09-decisions/ADR-0003-fidelity-split.md)).
+> **Partly historical.** The `j3dcore` hook layer described in the reconstruction section below was removed with
+> binary compatibility ([ADR-0004](../09-decisions/ADR-0004-drop-binary-compatibility.md)). The compile-time QOL
+> profile becomes individual runtime options, on by default ([ADR-0003](../09-decisions/ADR-0003-fidelity-split.md)).
 
 This page documents how OpenJones3D preserves the original architecture while still adding modern behavior, fixes, and optional replacements under compile-time or runtime control.
 
 Primary source files:
 
 - [`Libs/j3dcore/j3d.h`](../../../Libs/j3dcore/j3d.h)
-- [`Libs/j3dcore/j3dhook.h`](../../../Libs/j3dcore/j3dhook.h)
 - [`CMakeLists.txt`](../../../CMakeLists.txt)
 - [`Libs/sith/Engine/sithRender.h`](../../../Libs/sith/Engine/sithRender.h)
 - [`Libs/sith/Engine/sithRender.c`](../../../Libs/sith/Engine/sithRender.c)
@@ -31,23 +30,15 @@ OpenJones3D is built around a simple principle:
 
 That is why the engine still looks like Jones3D/Sith internally instead of becoming a new engine with the same file formats.
 
-## j3dcore: The Compatibility Layer
+## j3dcore and the former hook layer
 
-The main OpenJones3D-specific architectural addition is [`j3dcore`](../../../Libs/j3dcore).
+During the reconstruction, `j3dcore` also held a compatibility layer: far-address declarations for the original
+executable's globals, trampolines to original functions, and `J3D_HOOKFUNC` to patch original entry points so
+they jumped into the new C code. That let functions be replaced one at a time inside the running retail game.
 
-It provides:
-
-- far-address declarations for original globals
-- trampolines to original functions
-- hook installation for reimplemented functions
-
-[`J3D_HOOKFUNC()`](../../../Libs/j3dcore/j3dhook.h#L44) patches the original entry point so execution jumps into the new C implementation. [`J3D_TRAMPOLINE_CALL()`](../../../Libs/j3dcore/j3dhook.h#L28) can still invoke the original code when a function is only partially replaced or when original behavior is still needed.
-
-This is not just a development convenience. It is a central architectural strategy:
-
-- original binary behavior remains accessible during reconstruction
-- new implementations can replace functions incrementally
-- compatibility is maintained even before every subsystem is fully rewritten
+Jones3D EX removed that layer together with the injected build, the per-module `RTI/` address tables and the
+`_InstallHooks` functions ([ADR-0004](../09-decisions/ADR-0004-drop-binary-compatibility.md)). The last state with
+it is tagged `upstream-compatible-final`. `j3dcore` keeps the shared macros, sized types and the CRT shim.
 
 ## Compile-Time Profiles
 
@@ -68,7 +59,7 @@ The following are some of the most important architecture-level or runtime-level
 | Area | Legacy / Original Direction | OpenJones3D Direction |
 | --- | --- | --- |
 | Graphics backend | DirectX 6.1c path only | DirectX 9 backend added, legacy DX6 path kept |
-| Hook model | Original binary only | Hook/trampoline reconstruction through `j3dcore` |
+| Hook model | Original binary only | Hooks into the original executable during the reconstruction; removed in Jones3D EX |
 | Configuration | Windows Registry | `Jones.cfg` JSON with registry fallback/migration |
 | Off-screen thing/light traversal | Legacy DFS-like traversal | BFS traversal available and enabled by default under `QOL` |
 | Thing/light collection distance | 8.0 / 8.0 default | 18.0 / 18.0 default under `QOL` |

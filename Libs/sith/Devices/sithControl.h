@@ -60,7 +60,6 @@ void sithControl_RegisterMouseBindings(void); // Added
 
 void sithControl_EnableDevControls(bool bEnable); // Added
 
-// Helper hooking functions
 void sithControl_ResetGlobals(void);
 
 J3D_EXTERN_C_END

@@ -17,7 +17,6 @@ int J3DAPI sithDSSCog_ProcessMessage(const SithMessage* pMsg);
 int J3DAPI sithDSSCog_SyncCogState(const SithCog* pCog, DPID idTO, SithMessageStream outstream);
 int J3DAPI sithDSSCog_ProcessCogState(const SithMessage* pMsg);
 
-// Helper hooking functions
 void sithDSSCog_ResetGlobals(void);
 
 J3D_EXTERN_C_END

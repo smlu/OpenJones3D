@@ -48,7 +48,6 @@ void J3DAPI sithAI_CreateAIFramesFomMarker(SithThing* pNewThing, const SithThing
 int J3DAPI sithAI_AIList(const SithConsoleCommand* pFunc, const char* pArg); //Added: From debug version
 int J3DAPI sithAI_AIStatus(const SithConsoleCommand* pFunc, const char* pArg); //Added: From debug version
 
-// Helper hooking functions
 void sithAI_ResetGlobals(void);
 
 J3D_EXTERN_C_END
