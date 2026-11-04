@@ -24,6 +24,7 @@ Rules that apply to all of them ([ADR-0003](arc42/09-decisions/ADR-0003-fidelity
 | E4 | **Faster crouching and weapon holster and unholster animations** | Simulation: animation timing changes when actions finish (Enhanced on, Retail off) | Playback speed options in the puppet and key-frame code (`sithPuppet`), one cvar per action group | Simulation cvars (M5.8, in the game from M5.13) | After M5.13 |
 | E5 | **Overlay weather effects**, such as snow in outdoor levels | Presentation, as long as it neither changes game state nor uses the simulation's random numbers | Per-level settings saying where and what (outdoor sectors, density) | A particle or screen-space overlay pass in the renderer, its own random number source, per-level effect data | M9, after the renderer (M6) |
 | E6 | **Cheat menu** | Presentation for the menu itself; the cheats are the existing console commands (`devmode`, `invul`, `weapons`, ...) and change game state as they do today | Calls the existing console commands; may mark a savegame as cheated if speedrun or statistics rules need it | The 2D overlay layer and input routing (E1); the visible console (M11) shares the command plumbing | M9, or with the visible console |
+| E7 | **Linux packages that don't touch the system**: AppImage or Flatpak | Release tooling | None | Nothing beyond what the build already has: SDL3 and miniaudio are linked in; the game data stays outside the package, in the user directory (ADR-0019), and is never shipped | M8 release |
 
 ## Shared needs
 
@@ -44,3 +45,6 @@ E1, E2 and E6 need the same three Babylon pieces, so they are planned together:
 - E4: which actions exactly, and how much faster; whether the speed is one setting or one per action.
 - E5: which levels count as outdoor, and whether the effect follows the camera or the level geometry.
 - E6: whether using cheats marks a savegame or the statistics.
+- E7: AppImage (one file, no runtime, runs anywhere with a recent glibc) or Flatpak (sandboxed, updates
+  through Flathub, but the sandbox needs permission to read the player's game data and the installer must
+  work inside it); possibly both.
