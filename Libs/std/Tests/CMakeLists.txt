@@ -312,6 +312,7 @@ if (J3D_PLATFORM_BABYLON)
         jansson::jansson
         babylon::time
         babylon::files
+        babylon::platform
     )
 
     set_target_properties(stdTestsBabylon PROPERTIES

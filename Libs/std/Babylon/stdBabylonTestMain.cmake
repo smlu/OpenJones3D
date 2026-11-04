@@ -23,6 +23,6 @@ function(std_use_babylon_test_main target runner_source)
     target_sources(${target} PRIVATE "${STDBABYLON_TEST_MAIN_DIR}/Tests/stdBabylonTestMain.cpp")
     set_property(SOURCE "${runner_source}" APPEND PROPERTY COMPILE_DEFINITIONS
         "J3D_TEST_RUNNER_ENTRY=j3dTestRunner_Main")
-    target_link_libraries(${target} PRIVATE babylon::time babylon::files)
+    target_link_libraries(${target} PRIVATE babylon::time babylon::files babylon::platform)
     set_target_properties(${target} PROPERTIES LINKER_LANGUAGE CXX)
 endfunction()

@@ -35,6 +35,7 @@
 #include <sith/World/sithWorld.h>
 
 #include <std/General/stdPlatform.h>
+#include <std/Null/stdControlNull.h>
 #include <std/Null/stdPlatformNull.h>
 #include <std/Win95/stdControl.h>
 #include <std/Win95/stdKeys.h>
@@ -415,8 +416,9 @@ static bool Headless_InputLoadFile(const char* pPath)
 }
 
 // Fires every pending input event whose frame is due at the given engine frame count, in file
-// order. Commands go through sithConsole_ExeCommand, keys through stdControl_UpdateKeyState with
-// the same clock the Null input backend stamps its reads with.
+// order. Commands go through sithConsole_ExeCommand, keys through the platform column's device seam
+// (stdControl_QueueKeyEvent), which queues them: a key takes effect at the next
+// stdControl_ReadControls, in both columns.
 static void Headless_InputFireDue(size_t frameCount)
 {
     while ( nextInputEvent < numInputEvents && apInputEvents[nextInputEvent].frame <= frameCount )
@@ -430,7 +432,15 @@ static void Headless_InputFireDue(size_t frameCount)
         }
         else
         {
-            stdControl_UpdateKeyState(pEvent->keyId, pEvent->bPressed, stdPlatform_GetTimeMsec());
+            // Altered: the key now enters through the column's device seam instead of reaching
+            // stdControl_UpdateKeyState directly. Both columns queue it, so it takes effect at the
+            // next stdControl_ReadControls; applying it at once, as the Null column used to, lost
+            // its press count to that read's clear of the per-read state.
+            if ( !stdControl_QueueKeyEvent(pEvent->keyId, pEvent->bPressed) )
+            {
+                printf("WARNING: Jones3D-headless: input frame=%zu: key %d can't be delivered on this platform\n",
+                    pEvent->frame, pEvent->keyId);
+            }
         }
 
         ++nextInputEvent;
