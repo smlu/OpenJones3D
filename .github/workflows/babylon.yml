@@ -34,6 +34,9 @@ jobs:
           - name: windows-msvc
             runs-on: windows-2025-vs2026
             configure: '-G "Visual Studio 18 2026" -A x64'
+          - name: windows-msvc-x86
+            runs-on: windows-2025-vs2026
+            configure: '-G "Visual Studio 18 2026" -A Win32'
     defaults:
       run:
         shell: bash
