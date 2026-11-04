@@ -125,6 +125,14 @@ namespace babylon::files
         // isn't a readable directory.
         virtual std::optional<std::vector<DirectoryEntry>> listDirectory(std::string_view path) = 0;
 
+        // The names of a directory's entries, sorted by name (byte order),
+        // without "." and "..": the cheap form of listDirectory for callers
+        // that only need names, so a backend can answer without reading one
+        // entry's metadata. Same path rules and failure behavior as
+        // listDirectory(): nullopt and a warning if the path is invalid or
+        // isn't a readable directory.
+        virtual std::optional<std::vector<std::string>> listNames(std::string_view path) = 0;
+
         // The directory the program was started from (where the executable
         // is), ending with '/'. Empty string and a warning if the backend
         // cannot determine it.

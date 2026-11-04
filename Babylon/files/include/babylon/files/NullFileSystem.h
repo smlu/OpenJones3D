@@ -42,6 +42,7 @@ namespace babylon::files
         bool createDirectory(std::string_view path) override;
         bool remove(std::string_view path) override;
         std::optional<std::vector<DirectoryEntry>> listDirectory(std::string_view path) override;
+        std::optional<std::vector<std::string>> listNames(std::string_view path) override;
         std::string basePath() override;
         std::string currentPath() override;
         std::string userPath(std::string_view organization, std::string_view application) override;

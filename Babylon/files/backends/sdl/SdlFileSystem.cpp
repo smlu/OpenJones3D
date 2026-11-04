@@ -245,6 +245,22 @@ namespace
         return SDL_ENUM_CONTINUE;
     }
 
+    // A names-only enumeration: the cheap form of collectEntry for
+    // listNames(), which reports no per-entry metadata and therefore never
+    // stats an entry.
+    SDL_EnumerationResult SDLCALL collectName(void* userdata, const char* /*dirname*/,
+        const char* fname)
+    {
+        auto* const names = static_cast<std::vector<std::string>*>(userdata);
+        const std::string_view name(fname);
+        if ( name == "." || name == ".." )
+        {
+            return SDL_ENUM_CONTINUE;   // SDL3 already skips them; the interface promises it
+        }
+        names->emplace_back(name);
+        return SDL_ENUM_CONTINUE;
+    }
+
     class SdlFileSystem final : public FileSystem
     {
     public:
@@ -360,6 +376,32 @@ namespace
             std::sort(entries.begin(), entries.end(),
                 [](const DirectoryEntry& a, const DirectoryEntry& b) { return a.name < b.name; });
             return entries;
+        }
+
+        std::optional<std::vector<std::string>> listNames(std::string_view path) override
+        {
+            if ( !isValidPath(path) )
+            {
+                log::warning("files: rejected invalid path '{}'", path);
+                return std::nullopt;
+            }
+            const std::string native = toNativePath(path);
+            SDL_PathInfo info;
+            if ( !SDL_GetPathInfo(native.c_str(), &info) || info.type != SDL_PATHTYPE_DIRECTORY )
+            {
+                SDL_ClearError();
+                log::warning("files: can not list '{}': not a readable directory", path);
+                return std::nullopt;
+            }
+
+            std::vector<std::string> names;
+            if ( !SDL_EnumerateDirectory(native.c_str(), collectName, &names) )
+            {
+                log::warning("files: listing '{}' failed: {}", path, SDL_GetError());
+                return std::nullopt;
+            }
+            std::sort(names.begin(), names.end());
+            return names;
         }
 
         std::string basePath() override

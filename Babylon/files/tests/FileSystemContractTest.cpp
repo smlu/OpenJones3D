@@ -247,6 +247,22 @@ namespace
         CHECK_FALSE(fs.listDirectory(dataPath).has_value());
         oneWarning();
 
+        // listNames() is the cheap form: the same names in the same order,
+        // without metadata, and the same failures with one warning each.
+        const std::optional<std::vector<std::string>> names = fs.listNames(listPath);
+        REQUIRE(names.has_value());
+        noWarning();
+        std::vector<std::string> expectedNames;
+        for ( const DirectoryEntry& entry : expected )
+        {
+            expectedNames.push_back(entry.name);
+        }
+        CHECK(*names == expectedNames);
+        CHECK_FALSE(fs.listNames(babylon::files::joinPath(root, "no-such-dir")).has_value());
+        oneWarning();
+        CHECK_FALSE(fs.listNames(dataPath).has_value());
+        oneWarning();
+
         // open() of a missing file for Read, of an invalid path, and of a
         // file whose parent directory is missing: nullptr and one warning.
         CHECK(fs.open(babylon::files::joinPath(root, "missing.txt"), OpenMode::Read) == nullptr);
