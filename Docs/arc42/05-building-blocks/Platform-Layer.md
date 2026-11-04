@@ -260,6 +260,13 @@ These are refused in review, even when they would pass the check:
 
 Build time, as DX6 and DX9 already work: one implementation linked per build, chosen in CMake. No function-pointer tables. `tHostServices` stays as it is. This keeps the original symbol names, which comparison with the decompilation relies on.
 
+M5 added a third column the same way: `-DJONES3D_PLATFORM_BABYLON=ON` builds the Null column with some files
+replaced by adapter files on the Babylon Engine (time, files, input devices, the wkernel event loop, the
+simulation cvars). Where a Null file has device code mixed with engine logic, it was split first so the
+column can replace the device part only: `stdPlatformTimeNull.c`, `General/stdFile.c`,
+`stdControlDevicesNull.c` behind `stdControlNull.h`, and `stdCvarNull.c` behind `stdCvarNull.h`. Inside the
+Babylon column the backends (SDL3 or Null) are chosen at startup by the composition root (ADR-0016).
+
 ## Names
 
 Recovered names stay wherever they fit: `std3D_`, `stdDisplay_`, `stdControl_`, `stdComm_`, `wkernel_`, `wuRegistry_`, `Sound_`. A signature changes only where it leaks a platform type.

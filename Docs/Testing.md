@@ -334,6 +334,19 @@ cd <game>/Resource
 <build>/Jones3D/Jones3D-headless --load ../SaveGames/<save>.nds --frames 1000 --state state.txt
 ```
 
+Both non-Windows columns build `Jones3D-headless`; the Babylon column
+(`-DJONES3D_PLATFORM_BABYLON=ON`) must give the same state file as the Null column for the same run.
+`--input <file>` feeds a scripted-input file of `frame <n>: cmd <command>` and
+`frame <n>: key <name|number> down|up` lines; scripted keys take effect at the next
+`stdControl_ReadControls`, as device input does on Windows.
+
+The state file starts with one `cvar <name> <value>` line per simulation cvar (today
+`cvar game.profile enhanced` or `retail`), followed by the frame, game time, player state and one line per
+active thing.
+
+Since M5 native builds use Microsoft's `rand` generator (the `j3dcrt` shim), as the original does, so native
+traces follow the retail random sequence ([research](Research/Time-Sources.md)).
+
 Rules:
 
 - The reference for the retail profile is a build of the tagged baseline with
