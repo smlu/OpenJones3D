@@ -9,6 +9,9 @@
 #include <smush/insane/Flobject/D_wave.h>
 #include <smush/insane/Memory/Memory.h>
 #include <smush/insane/Sound/Engine.h>
+#include <smush/insane/Timer/Timer.h>
+
+void Engine_TestReset(void);
 
 // Unit tests of the smush Codec area (D_bloc16, D_wave, Decode) with synthetic chunks and mock LEC services. The tests run
 // against the real Bloc16Asm, DecodeAsm, Framestream and Mixer translations.
@@ -30,6 +33,9 @@ static int mock_numUnpublished;
 static int mock_numErrors;
 static int mock_numAllocs;
 static int mock_numFrees;
+static uint8_t mock_allocFill;
+static void* mock_lastAllocation;
+static int mock_waveStarted, mock_engineStarted;
 
 static int mock_Publish(const char* pName, void* pInterface)
 {
@@ -49,7 +55,9 @@ static void* mock_Alloc(int size, const char* pFile, int line)
 {
     J3D_UNUSED(pFile); J3D_UNUSED(line);
     mock_numAllocs++;
-    return calloc(1, size);
+    mock_lastAllocation = malloc(size);
+    if ( mock_lastAllocation ) memset(mock_lastAllocation, mock_allocFill, size);
+    return mock_lastAllocation;
 }
 
 static void mock_Free(void* pBlock, const char* pFile, int line)
@@ -63,14 +71,44 @@ static MemoryDebugInterface mock_memory = { mock_Alloc, mock_Free, NULL };
 
 static int mock_numPlays;
 static uint8_t mock_lastPacket[256];
+static int mock_forwardSound;
 static void mock_Play(uint8_t* pData, int id, int volume, int pan, int priority)
 {
     J3D_UNUSED(id); J3D_UNUSED(volume); J3D_UNUSED(pan); J3D_UNUSED(priority);
     mock_numPlays++;
     memcpy(mock_lastPacket, pData, sizeof(mock_lastPacket));
+    if ( mock_forwardSound ) sound_Play(pData, id, volume, pan, priority);
 }
 
 static SoundInterface mock_sound;
+
+// Minimal services for the decoder-to-engine regression. The real sound_Callback
+// feeds the captured PCM; no physical audio device or timer thread is involved.
+static int mock_DriverStart(int rate, int tracks, void (*pfnFill)(int, SoundFeed))
+{
+    J3D_UNUSED(rate); J3D_UNUSED(tracks);
+    TEST_ASSERT_TRUE(pfnFill == sound_Callback);
+    return 0;
+}
+static void mock_DriverStop(void) {}
+static int mock_DriverGetRate(void) { return 22050; }
+static int mock_GetTicks(void) { return 0; }
+static void mock_Sync(int ticks) { J3D_UNUSED(ticks); }
+static SndDriver mock_driver = { mock_DriverStart, mock_DriverStop, NULL, NULL, NULL, mock_DriverGetRate };
+static TimerInterface mock_timer = { NULL, NULL, NULL, NULL, NULL, NULL, mock_GetTicks, NULL, mock_Sync };
+
+static int mock_pcmBytes;
+static int16_t mock_pcm[6];
+static void mock_PcmFeed(void* pSrc, int offset, int n, int bytes, int a5, int volume, int pan, int format)
+{
+    J3D_UNUSED(offset); J3D_UNUSED(a5); J3D_UNUSED(pan);
+    TEST_ASSERT_EQUAL_INT(SOUND_FORMAT_MONO16, format);
+    TEST_ASSERT_EQUAL_INT(n * 2, bytes);
+    TEST_ASSERT_GREATER_THAN_INT(0, volume);
+    TEST_ASSERT_TRUE(mock_pcmBytes + bytes <= (int)sizeof(mock_pcm));
+    memcpy((uint8_t*)mock_pcm + mock_pcmBytes, pSrc, bytes);
+    mock_pcmBytes += bytes;
+}
 
 static int mock_failBitmapCreate;
 
@@ -129,6 +167,8 @@ static BitmapInterface mock_bitmap = { mock_CreateBitmap, NULL, mock_DestroyBitm
 static void* mock_Subscribe(const char* pName, void* pParam)
 {
     J3D_UNUSED(pParam);
+    if ( strcmp(pName, "SNDDRIVER.driver") == 0 ) return &mock_driver;
+    if ( strcmp(pName, "TIMER.external_sync") == 0 ) return &mock_timer;
     if ( strcmp(pName, "SOUND") == 0 ) {
         return &mock_sound;
     }
@@ -176,11 +216,26 @@ TEST_SETUP(SmushCodec)
     mock_sound.Play = mock_Play;
     mock_numPublished = mock_numUnpublished = mock_numErrors = mock_numAllocs = mock_numFrees = mock_numPlays = 0;
     mock_failBitmapCreate = 0;
+    mock_allocFill = 0;
+    mock_lastAllocation = NULL;
+    mock_forwardSound = mock_waveStarted = mock_engineStarted = 0;
     Mock_FlushFreedPixels();
 }
 
 TEST_TEAR_DOWN(SmushCodec)
-{}
+{
+    if ( mock_waveStarted )
+    {
+        dwave_Shutdown();
+        dwave_Unregister();
+    }
+    if ( mock_engineStarted )
+    {
+        sound_Shutdown();
+        sound_Unregister();
+        Engine_TestReset();
+    }
+}
 
 TEST(SmushCodec, DWaveRegisterAndInfo)
 {
@@ -238,6 +293,83 @@ TEST(SmushCodec, DWaveDecodeMonoPackets)
     dwave_Shutdown();
     TEST_ASSERT_EQUAL_INT(1, mock_numFrees);
     dwave_Unregister();
+}
+
+TEST(SmushCodec, DWavePacketHeadersIgnorePoisonedAllocationAndReuse)
+{
+    static const uint8_t aChunk[] = { 0, 0, 0, 2, 0, 0, 0, 0x01, 0, 0, 0 };
+    static const uint8_t aPoison[] = { 0xCD, 0xA5, 0x80 };
+    // Complete first PSAD header for two mono samples and total PCM size 16.
+    // Reserved bytes and the per-packet priority are zero, independent of heap contents.
+    static const uint8_t aFirst[] = {
+        'P', 'S', 'A', 'D', 0, 0, 0, 50, 100, 0, 0, 0, 100, 0, 0, 0, 127, 0,
+        0, 0, 0, 0, 0, 0, 0, 52, 0, 0, 0, 0, 0, 0, 0, 12,
+        1, 8, 0, 0, 0, 0, 0, 0, 0, 16, 5, 0, 'S', '6', 'M', 'Z', 0, 0, 0, 16,
+        0, 0, 1, 0
+    };
+    static const uint8_t aNext[] = {
+        'P', 'S', 'A', 'D', 0, 0, 0, 14, 100, 0, 1, 0, 100, 0, 0, 0, 127, 0, 0, 0, 1, 0
+    };
+    uint8_t aMeta[16] = { 0 };
+    aMeta[8] = 16;
+    for ( size_t poison = 0; poison < sizeof(aPoison); ++poison )
+    {
+        mock_numPublished = 0;
+        mock_allocFill = aPoison[poison];
+        TEST_ASSERT_EQUAL_INT(0, dwave_Register(&mock_share, NULL));
+        TEST_ASSERT_EQUAL_INT(0, dwave_Startup());
+        mock_waveStarted = 1;
+        uint8_t* pPacket = mock_lastAllocation;
+        dwave_Parse(aMeta, sizeof(aMeta));
+        dwave_Decode(NULL, 0, 0, 0, NULL, aChunk, sizeof(aChunk), 0, 0, 0);
+        TEST_ASSERT_EQUAL_MEMORY(aFirst, mock_lastPacket, sizeof(aFirst));
+        pPacket[14] = 0x80; pPacket[15] = 0xFF; // Corrupt the reused header before a continuation.
+        dwave_Decode(NULL, 0, 0, 0, NULL, aChunk, sizeof(aChunk), 0, 0, 0);
+        TEST_ASSERT_EQUAL_MEMORY(aNext, mock_lastPacket, sizeof(aNext));
+        // A reset reuses a packet whose old payload overlaps the next first header.
+        memset(pPacket, aPoison[poison], 54);
+        dwave_Reset();
+        dwave_Decode(NULL, 0, 0, 0, NULL, aChunk, sizeof(aChunk), 0, 0, 0);
+        TEST_ASSERT_EQUAL_MEMORY(aFirst, mock_lastPacket, sizeof(aFirst));
+        dwave_Shutdown(); dwave_Unregister(); mock_waveStarted = 0;
+    }
+}
+
+TEST(SmushCodec, DWaveFeedsEntireSyntheticClipForEveryStalePriorityByte)
+{
+    // Three packets of two identical mono samples: 1000, -2000, then 3000.
+    uint8_t aChunk[] = { 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0 };
+    static const int16_t aExpected[] = { 1000, 1000, -2000, -2000, 3000, 3000 };
+    uint8_t aMeta[16] = { 0 };
+    aMeta[8] = sizeof(aExpected);
+    Engine_TestReset();
+    mock_allocFill = 0xCD;
+    TEST_ASSERT_EQUAL_INT(0, sound_Register(&mock_share, NULL));
+    TEST_ASSERT_EQUAL_INT(0, sound_Startup());
+    mock_engineStarted = mock_forwardSound = 1;
+    TEST_ASSERT_EQUAL_INT(0, dwave_Register(&mock_share, NULL));
+    TEST_ASSERT_EQUAL_INT(0, dwave_Startup());
+    mock_waveStarted = 1;
+    uint8_t* pPacket = mock_lastAllocation;
+    dwave_Parse(aMeta, sizeof(aMeta));
+    for ( int stale = 0; stale < 256; ++stale )
+    {
+        sound_StopAll();
+        sound_Callback(1, mock_PcmFeed);
+        dwave_Reset();
+        mock_pcmBytes = 0;
+        for ( int packet = 0; packet < 3; ++packet )
+        {
+            uint16_t sample = (uint16_t)aExpected[packet * 2];
+            aChunk[5] = (uint8_t)(sample >> 8); aChunk[6] = (uint8_t)sample;
+            pPacket[14] = (uint8_t)stale;
+            pPacket[15] = (uint8_t)(stale ^ 0xA5);
+            dwave_Decode(NULL, 0, 0, 0, NULL, aChunk, sizeof(aChunk), 0, 0, 0);
+            sound_Callback(2, mock_PcmFeed);
+            TEST_ASSERT_EQUAL_INT((packet + 1) * 4, mock_pcmBytes);
+        }
+        TEST_ASSERT_EQUAL_MEMORY(aExpected, mock_pcm, sizeof(aExpected));
+    }
 }
 
 TEST(SmushCodec, DWaveDecodeVimaZeroCount)
@@ -885,6 +1017,8 @@ TEST_GROUP_RUNNER(SmushCodec)
 {
     RUN_TEST_CASE(SmushCodec, DWaveRegisterAndInfo);
     RUN_TEST_CASE(SmushCodec, DWaveDecodeMonoPackets);
+    RUN_TEST_CASE(SmushCodec, DWavePacketHeadersIgnorePoisonedAllocationAndReuse);
+    RUN_TEST_CASE(SmushCodec, DWaveFeedsEntireSyntheticClipForEveryStalePriorityByte);
     RUN_TEST_CASE(SmushCodec, DWaveDecodeVimaZeroCount);
     RUN_TEST_CASE(SmushCodec, DecodeRle);
     RUN_TEST_CASE(SmushCodec, DecodeRleByteStream);
