@@ -88,6 +88,7 @@ jobs:
           'std',
           'sound',
           'sith',
+          'sith.Engine',
           'sith.DSS',
           'sith.Multi',
           'sith.ThingQuetz',

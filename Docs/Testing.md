@@ -233,6 +233,7 @@ startup and a stable module-level CTest entry.
 | `soundTests` | `sound` | Deterministic lip-sync generation and lookup, AudioLib codec and header vectors | Available |
 | `smushTests` | `smush` | INSANE movie player: core, bitmap, codec, sound, stream areas and original-engine assembly vectors | Available |
 | `sithTests` | `sith` | World thing/template I/O and voice lip-sync | Available |
+| `sithEngineTests` | `sith.Engine` | Sphere/plane intersection and rotating-path clamp/completion regressions | Available |
 | `sithThingQuetzVecTests` | `sith.ThingQuetz` | Original-engine vectors of the Quetz tail functions (world-state harness, `Libs/sith/Tests/Vec`) | Available |
 | `sithAIInstinctVecTests` | `sith.AIInstinct` | Original-engine vectors of the instinct registration (world-state harness) | Available |
 | `sithAIInstinctFnVecTests` | `sith.AIInstinctFn` | Original-engine vectors of the instinct functions (world-state harness) | Available |
@@ -289,6 +290,11 @@ See [Google's test isolation guidance](https://testing.googleblog.com/2010/12/te
 Tests that need fixed-address RTI globals or host-service assertion capture should link `j3dTestSupport` and include `#include <j3dcore/Tests/j3dTest.h>`. Use `J3DTest_Startup()` and `J3DTest_BindHostServicesGlobal(<module>_g_pHS_ADDR)` in `TEST_SETUP`, then `J3DTest_Shutdown()` in `TEST_TEAR_DOWN`, instead of duplicating OS-specific memory mapping in each test file.
 
 For header and macro tests, prefer stable behavior checks over release-specific value checks. For example, `j3d.h` macro tests should verify string/memory helpers, runtime guard behavior, platform flags, logging/assertion macros, and compile-time shape, but should not pin exact `J3D_VERSION_STRING` or `J3D_VERSION_FULL` values because those change with release numbers and suffixes.
+
+The `stdUtil` group directly tests `STD_STRTOF`, `STD_STRTOUL` and
+`STD_ISRANGEERROR`: return types and values, bases, stale errors, overflow,
+underflow, special values and single argument evaluation. Range errors are
+captured immediately after conversion, before assertions or other CRT calls.
 
 <a name="test-scope"></a>
 
@@ -655,10 +661,10 @@ with the exact checked-out source revision and configuration. The reusable test
 workflow checks out that revision, restores the build at its original workspace
 path, discovers every registered CTest suite, and runs them all with finite
 timeouts, without a test-name filter. New suites registered in the CI build are
-included automatically. Discovery also requires the existing 13 suites:
+included automatically. Discovery also requires the existing 14 suites:
 
 - `j3dcore.Macros`, `rdroid.Math`, `std`, `sound`, and `smush`
-- `sith`, `sith.DSS`, `sith.Multi`, and `sith.ThingQuetz`
+- `sith`, `sith.Engine`, `sith.DSS`, `sith.Multi`, and `sith.ThingQuetz`
 - `sith.AIInstinct`, `sith.AIInstinctFn`, `sith.AIMove`, and `sith.AIUtil`
 
 Test failures, missing required suites, and empty discovery fail the job.
@@ -980,6 +986,21 @@ float arguments (negative values, overflow, underflow, a stale `ERANGE`), thing
 flags, lights with and without a range, resource arguments with found and
 missing resources, orientations, performance levels, and arguments the function
 leaves to the other parsers.
+
+<a name="sithengine-regressions"></a>
+
+### 🧭 Sith Engine Regressions
+
+The `sith.Engine` suite calls the reconstructed sphere/plane intersection and
+rotating-path helper directly. It covers finite contacts and misses, overlap
+flags, unordered dot/reach comparisons, NaN rotation clamping, completion flags
+and orientation callbacks. Path tests control the matrix/collision dependencies
+to isolate state and call ordering; they do not validate full moving geometry.
+Expected non-finite branches were independently verified against the original
+retail v1.2 binary (`CheckSphereHit` at `0x004AFF20`, with rotation inlined in
+`Update` at `0x004AC470`). Assertion-service slots are redirected to local fixture
+memory and bound with the shared test support. The permanent tests need no
+original executable or game data.
 
 <a name="sithtemplate-fixtures"></a>
 
