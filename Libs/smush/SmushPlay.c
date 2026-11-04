@@ -122,6 +122,14 @@ int J3DAPI SmushPlay_PlayMovie(const char* pFilename, int rate, int flags, int a
         rate = SMUSHPLAY_DEFAULT_RATE;
     }
 
+    // Fixed: The services are only filled by a successful SmushPlay_SysStartup; without them (natively,
+    // where the sound module can't subscribe a SNDDRIVER and startup never succeeds) play nothing instead
+    // of calling through a NULL interface. Same failure value as the Create failure below.
+    if ( !smushplay_pBitmap )
+    {
+        return 0;
+    }
+
     LecBitmapHeader* pBitmap;
     if ( smushplay_pBitmap->Create(&pBitmap, width, height, LECBITMAP_TYPE_RGB565) )
     {
