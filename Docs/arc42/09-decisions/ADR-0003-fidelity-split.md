@@ -26,7 +26,7 @@ default**. Those that change the simulation (for example player physics at 150 H
 thing and light collection distances, breadth-first visibility traversal) become individual runtime options
 instead of one compile-time profile, so a player or speedrunner can return to retail behavior. Pure bug and
 crash fixes stay on unconditionally. New simulation changes are on by default too (amended 2026-11-04, see
-below). Traces run against the retail profile and against the default profile.
+below). Traces run against the Retail profile and against the Enhanced (default) profile.
 
 ## Consequences
 
@@ -43,5 +43,10 @@ option back to retail. A **Retail profile** turns every simulation option off at
 speedrunners who want the original game and for the fidelity checks. Example: time slowing down while an
 item wheel is open is on by default and off in the Retail profile; the wheel itself is presentation.
 
-Consequences: the retail trace is checked with the Retail profile and must stay identical; the default
+OpenJones3D's QOL changes are Jones3D EX enhancements from now on, like any new one. Players get two
+choices: **Enhanced** (the default, every enhancement on) and **Retail** (the original game's behavior).
+The individual options stay underneath (cvars with the simulation flag, ADR-0020) so each one can be tested
+and reviewed on its own.
+
+Consequences: the retail trace is checked with the Retail profile and must stay identical; the Enhanced
 profile is traced too, and its expected trace changes only by a reviewed decision.
