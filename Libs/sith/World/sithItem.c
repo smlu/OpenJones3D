@@ -150,7 +150,7 @@ int J3DAPI sithItem_ParseArg(const StdConffileArg* pArg, SithThing* pThing, int 
         {
             float spawnInterval = STD_STRTOF(pArg->argValue); // Changed: Use strtof instead atof
             // Only reject overflow, (float)atof of the original accepted underflowing values
-            if ( STD_ISRANGEERROR() && fabsf(spawnInterval) > 1.0f ) { // Added
+            if ( STD_STRCONV_RANGE_ERROR() && fabsf(spawnInterval) > 1.0f ) { // Added
                 return 0; // error
             }
 

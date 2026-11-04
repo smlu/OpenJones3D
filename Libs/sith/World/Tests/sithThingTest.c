@@ -2444,38 +2444,117 @@ TEST(sithThingParseArg, TestType)
     }
 }
 
-TEST(sithThingParseArg, TestCollide)
+static void sithThingTest_CheckCollideArg(const char* pValue, int expectedResult, SithCollideType expectedType, int initialErrno)
 {
-    for ( int type = SITH_COLLIDE_NONE; type <= SITH_COLLIDE_FACE; ++type )
+    // Compare the full object: accepted values change only the type, rejected values change nothing.
+    STD_ZEROMEM(&sithThingTest_parseThing, sizeof(sithThingTest_parseThing));
+    sithThingTest_parseThing.idx           = 27;
+    sithThingTest_parseThing.guid          = 41;
+    sithThingTest_parseThing.type          = SITH_THING_ITEM;
+    sithThingTest_parseThing.moveType      = SITH_MT_PHYSICS;
+    sithThingTest_parseThing.msecLifeLeft  = 12345u;
+    sithThingTest_parseThing.collide.type  = SITH_COLLIDE_SPHERE;
+    sithThingTest_parseThing.collide.size  = 0.75f;
+    sithThingTest_parseThing.pos.x         = 1.25f;
+    sithThingTest_parseThing.pos.y         = -2.5f;
+    sithThingTest_parseThing.userval       = 9.0f;
+    STD_STRCPY(sithThingTest_parseThing.aName, "collide_contract");
+    SithThing expected;
+    memcpy(&expected, &sithThingTest_parseThing, sizeof(expected));
+    if ( expectedResult == SITHTHING_TEST_PARSEARG_PARSED )
     {
-        char aValue[8];
-        STD_FORMAT(aValue, "%d", type);
-        sithThingTest_parseThing.collide.type = (SithCollideType)99;
-        TEST_ASSERT_EQUAL_INT(SITHTHING_TEST_PARSEARG_PARSED, sithThingTest_ParseArg(SITHTHING_ARG_COLLIDE, "collide", aValue));
-        TEST_ASSERT_EQUAL_INT(type, sithThingTest_parseThing.collide.type);
+        expected.collide.type = expectedType;
     }
 
-    // A value without digits converts to 0
-    sithThingTest_parseThing.collide.type = SITH_COLLIDE_FACE;
-    TEST_ASSERT_EQUAL_INT(SITHTHING_TEST_PARSEARG_PARSED, sithThingTest_ParseArg(SITHTHING_ARG_COLLIDE, "collide", "abc"));
-    TEST_ASSERT_EQUAL_INT(SITH_COLLIDE_NONE, sithThingTest_parseThing.collide.type);
+    int savedErrno = errno;
+    errno = initialErrno;
+    int result          = sithThingTest_ParseArg(SITHTHING_ARG_COLLIDE, "collide", pValue);
+    int conversionErrno = errno;
+    errno = savedErrno;
+    TEST_ASSERT_EQUAL_INT_MESSAGE(expectedResult, result, pValue);
+    TEST_ASSERT_EQUAL_MEMORY_MESSAGE(&expected, &sithThingTest_parseThing, sizeof(expected), pValue);
+    if ( expectedResult == SITHTHING_TEST_PARSEARG_PARSED )
+    {
+        TEST_ASSERT_EQUAL_INT_MESSAGE(0, conversionErrno, pValue);
+    }
+}
 
-    // Above the last collide type and out of the conversion range: rejected, the type is unchanged
-    sithThingTest_parseThing.collide.type = SITH_COLLIDE_SPHERE;
-    TEST_ASSERT_EQUAL_INT(SITHTHING_TEST_PARSEARG_BADSYNTAX, sithThingTest_ParseArg(SITHTHING_ARG_COLLIDE, "collide", "4"));
-    TEST_ASSERT_EQUAL_INT(SITHTHING_TEST_PARSEARG_BADSYNTAX, sithThingTest_ParseArg(SITHTHING_ARG_COLLIDE, "collide", "99999999999999999999"));
-    TEST_ASSERT_EQUAL_INT(SITH_COLLIDE_SPHERE, sithThingTest_parseThing.collide.type);
+TEST(sithThingParseArg, TestCollide)
+{
+    // Preserve atoi-style decimal prefix parsing, including signs, negative zero and no digits.
+    static const struct { const char* pValue; SithCollideType expected; } aCases[] = {
+        { "0", SITH_COLLIDE_NONE }, { "1", SITH_COLLIDE_SPHERE },
+        { "2", (SithCollideType)2 }, { "3", SITH_COLLIDE_FACE },
+        { "+0", SITH_COLLIDE_NONE }, { "+1", SITH_COLLIDE_SPHERE },
+        { "+2", (SithCollideType)2 }, { "+3", SITH_COLLIDE_FACE },
+        { " \t\r\n+3", SITH_COLLIDE_FACE }, { "-0", SITH_COLLIDE_NONE },
+        { " \t-0000tail", SITH_COLLIDE_NONE }, { "01", SITH_COLLIDE_SPHERE },
+        { "003", SITH_COLLIDE_FACE }, { "1suffix", SITH_COLLIDE_SPHERE },
+        { " +2tail", (SithCollideType)2 }, { "3.9", SITH_COLLIDE_FACE },
+        { "-0.9", SITH_COLLIDE_NONE }, { "1e3", SITH_COLLIDE_SPHERE },
+        { "0x3", SITH_COLLIDE_NONE }, { "", SITH_COLLIDE_NONE },
+        { "abc", SITH_COLLIDE_NONE }, { " \t\r\n", SITH_COLLIDE_NONE },
+        { "+", SITH_COLLIDE_NONE }, { "-", SITH_COLLIDE_NONE },
+        { "+ 2", SITH_COLLIDE_NONE }, { "--1", SITH_COLLIDE_NONE }
+    };
+    static const int aInitialErrnos[] = { 0, ERANGE, EDOM };
+    for ( size_t i = 0; i < STD_ARRAYLEN(aCases); ++i )
+    {
+        for ( size_t j = 0; j < STD_ARRAYLEN(aInitialErrnos); ++j )
+        {
+            sithThingTest_CheckCollideArg(aCases[i].pValue, SITHTHING_TEST_PARSEARG_PARSED, aCases[i].expected, aInitialErrnos[j]);
+        }
+    }
+}
 
-    // A stale ERANGE does not reject a valid value
-    errno = ERANGE;
-    TEST_ASSERT_EQUAL_INT(SITHTHING_TEST_PARSEARG_PARSED, sithThingTest_ParseArg(SITHTHING_ARG_COLLIDE, "collide", "2"));
-    TEST_ASSERT_EQUAL_INT(2, sithThingTest_parseThing.collide.type);
+TEST(sithThingParseArg, TestCollideRejectsOutOfRangeWithoutChanges)
+{
+    char aMin[sizeof(long) * CHAR_BIT + 3u];
+    char aMax[sizeof(aMin)];
+    char aBelowMin[sizeof(aMin)];
+    char aAboveMax[sizeof(aMin)];
+    snprintf(aMin, sizeof(aMin), "%ld", LONG_MIN);
+    snprintf(aMax, sizeof(aMax), "%ld", LONG_MAX);
+    snprintf(aBelowMin, sizeof(aBelowMin), "-%lu", (unsigned long)(-(LONG_MIN + 1l)) + 2ul);
+    snprintf(aAboveMax, sizeof(aAboveMax), "%lu", (unsigned long)LONG_MAX + 1ul);
+    const char* const aInvalid[] = {
+        "-1", "4", "-1tail", "+4tail", "-0001suffix", "  +0004.0",
+        aMin, aMax, aBelowMin, aAboveMax,
+        "2147483648", "4294967295", "4294967296", "4294967297", "4294967298", "4294967299",
+        // strtoul wraps these negative magnitudes to valid collide types on Win32.
+        "-4294967295", "-4294967294", "-4294967293", "  -4294967295tail",
+        "99999999999999999999999999999999999999999999999999tail",
+        "-99999999999999999999999999999999999999999999999999tail"
+    };
+    for ( size_t i = 0; i < STD_ARRAYLEN(aInvalid); ++i )
+    {
+        sithThingTest_CheckCollideArg(aInvalid[i], SITHTHING_TEST_PARSEARG_BADSYNTAX, SITH_COLLIDE_SPHERE, ERANGE);
+        sithThingTest_CheckCollideArg(aInvalid[i], SITHTHING_TEST_PARSEARG_BADSYNTAX, SITH_COLLIDE_SPHERE, EDOM);
+    }
+}
 
-    // Preserve atoi-style whitespace/sign/partial parsing while checking the signed enum range.
-    TEST_ASSERT_EQUAL_INT(SITHTHING_TEST_PARSEARG_PARSED, sithThingTest_ParseArg(SITHTHING_ARG_COLLIDE, "collide", " +2tail"));
-    TEST_ASSERT_EQUAL_INT(2, sithThingTest_parseThing.collide.type);
-    TEST_ASSERT_EQUAL_INT(SITHTHING_TEST_PARSEARG_BADSYNTAX, sithThingTest_ParseArg(SITHTHING_ARG_COLLIDE, "collide", "-1"));
-    TEST_ASSERT_EQUAL_INT(2, sithThingTest_parseThing.collide.type);
+TEST(sithThingParseArg, TestCollideLongPrefixesAndMalformedInputs)
+{
+    char aValue[4096];
+    // A long prefix of zeroes has no magnitude overflow; the valid decimal prefix is still accepted.
+    memset(aValue, '0', sizeof(aValue));
+    memcpy(aValue + sizeof(aValue) - sizeof("3tail"), "3tail", sizeof("3tail"));
+    sithThingTest_CheckCollideArg(aValue, SITHTHING_TEST_PARSEARG_PARSED, SITH_COLLIDE_FACE, ERANGE);
+
+    memset(aValue, ' ', sizeof(aValue));
+    memcpy(aValue + sizeof(aValue) - sizeof("+2x"), "+2x", sizeof("+2x"));
+    sithThingTest_CheckCollideArg(aValue, SITHTHING_TEST_PARSEARG_PARSED, (SithCollideType)2, EDOM);
+
+    // No digits still means zero even when the malformed input is much longer than a normal token.
+    memset(aValue, 'x', sizeof(aValue) - 1u);
+    aValue[sizeof(aValue) - 1u] = '\0';
+    sithThingTest_CheckCollideArg(aValue, SITHTHING_TEST_PARSEARG_PARSED, SITH_COLLIDE_NONE, ERANGE);
+
+    memset(aValue, '9', sizeof(aValue) - 1u);
+    aValue[sizeof(aValue) - 1u] = '\0';
+    sithThingTest_CheckCollideArg(aValue, SITHTHING_TEST_PARSEARG_BADSYNTAX, SITH_COLLIDE_SPHERE, 0);
+    aValue[0] = '-';
+    sithThingTest_CheckCollideArg(aValue, SITHTHING_TEST_PARSEARG_BADSYNTAX, SITH_COLLIDE_SPHERE, 0);
 }
 
 TEST(sithThingParseArg, TestMove)
@@ -2843,6 +2922,8 @@ TEST_GROUP_RUNNER(sithThingParseArg)
 {
     RUN_TEST_CASE(sithThingParseArg, TestType);
     RUN_TEST_CASE(sithThingParseArg, TestCollide);
+    RUN_TEST_CASE(sithThingParseArg, TestCollideRejectsOutOfRangeWithoutChanges);
+    RUN_TEST_CASE(sithThingParseArg, TestCollideLongPrefixesAndMalformedInputs);
     RUN_TEST_CASE(sithThingParseArg, TestMove);
     RUN_TEST_CASE(sithThingParseArg, TestFloatArgs);
     RUN_TEST_CASE(sithThingParseArg, TestTimerConversion);
