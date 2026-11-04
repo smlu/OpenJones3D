@@ -23,6 +23,14 @@ WKERNELPROC J3DAPI wkernel_SetProcessProc(WKERNELPROC pfProc);
 WKERNELSTARTUPPROC J3DAPI wkernel_SetStartupCallback(WKERNELSTARTUPPROC pfOnStartup);
 WKERNELSHUTDOWNPROC J3DAPI wkernel_SetShutdownCallback(WKERNELSHUTDOWNPROC pfOnShutdown);
 
+// Added: for the Babylon column's wkernel (wkernelBabylon.cpp): it hands the game window's
+// focus changes, taken from the Babylon platform event queue, to this callback; that is how
+// JonesMain_OnAppActivate runs there without Win32 messages. The Win32 wkernel.c does not need
+// it (its window procedure calls JonesMain_OnAppActivate directly); wkernelNull.c stores it and
+// never calls it. Returns the previous callback, like wkernel_SetProcessProc.
+typedef void (J3DAPI* WKERNELACTIVATEPROC)(int bActive);
+WKERNELACTIVATEPROC J3DAPI wkernel_SetActivateCallback(WKERNELACTIVATEPROC pfProc);
+
 void wkernel_ResetGlobals(void);
 
 J3D_EXTERN_C_END

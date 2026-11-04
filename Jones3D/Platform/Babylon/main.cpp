@@ -20,10 +20,12 @@ int main(int argc, char** argv)
     std::unique_ptr<babylon::time::Clock> pClock = babylon::time::createSdlClock();
     babylon::time::NullClock virtualClock;
     // Added: the headless run has no OS input, so the platform is a NullPlatform whose queue the
-    // runner's --input script feeds; M5.12 brings the SDL platform. Both context pointers name it:
-    // stdControl_ReadDevices() pumps it and stdControl_QueueKeyEvent() pushes into it.
+    // runner's --input script feeds; the windowed entry (mainWindowed.cpp) uses the SDL platform.
+    // Both context pointers name it: stdControl_ReadDevices() pumps it and stdControl_QueueKeyEvent()
+    // pushes into it.
     babylon::platform::NullPlatform platform;
-    StdBabylonContext context{ pClock.get(), &virtualClock, pFileSystem.get(), &platform, &platform };
+    // Added: the headless run has no game window; the windowed composition root sets pWindow.
+    StdBabylonContext context{ pClock.get(), &virtualClock, pFileSystem.get(), &platform, &platform, nullptr };
     stdBabylon_SetContext(&context);
     int exitCode = JonesHeadless_Run(argc, argv);
     stdBabylon_SetContext(nullptr);

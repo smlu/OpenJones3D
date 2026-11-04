@@ -13,6 +13,10 @@ if (J3D_PLATFORM_NULL)
     list(FILTER JONES3D_GAME_HEADERS EXCLUDE REGEX ".*/Platform/Win32/.*")
     list(FILTER JONES3D_GAME_SOURCES EXCLUDE REGEX ".*/Platform/Null/.*")
     list(FILTER JONES3D_GAME_HEADERS EXCLUDE REGEX ".*/Platform/Null/.*")
+    # Added: the Babylon column's platform directory (JonesBabylon.c) is linked into the
+    # executables that own it, never globbed into the shared application layer.
+    list(FILTER JONES3D_GAME_SOURCES EXCLUDE REGEX ".*/Platform/Babylon/.*")
+    list(FILTER JONES3D_GAME_HEADERS EXCLUDE REGEX ".*/Platform/Babylon/.*")
 
     add_library(Jones3DGame OBJECT ${JONES3D_GAME_SOURCES} ${JONES3D_GAME_HEADERS})
 
@@ -54,6 +58,33 @@ if (J3D_PLATFORM_NULL)
     # Added: The Null platform links libm directly (the Windows CRT math functions come
     # with the CRT shim wherever they are shimmed).
     target_link_libraries(Jones3D-headless PRIVATE m)
+
+    # Added: the windowed Jones3D of the Babylon column: the Platform/Babylon composition root
+    # and run, plus the Platform/Null helpers except its main() and the headless runner. Linked
+    # exactly like Jones3D-headless. Jones3D-headless itself never sees these sources.
+    if (J3D_PLATFORM_BABYLON)
+        set(JONES3D_WINDOWED_SOURCES
+            "${CMAKE_CURRENT_SOURCE_DIR}/Platform/Babylon/mainWindowed.cpp"
+            "${CMAKE_CURRENT_SOURCE_DIR}/Platform/Babylon/JonesBabylon.c"
+        )
+        foreach(JONES3D_NULL_SOURCE ${JONES3D_NULL_SOURCES})
+            if (NOT JONES3D_NULL_SOURCE MATCHES "/Platform/Null/(main|JonesHeadless)\\.c$")
+                list(APPEND JONES3D_WINDOWED_SOURCES ${JONES3D_NULL_SOURCE})
+            endif()
+        endforeach()
+
+        add_executable(Jones3D ${JONES3D_WINDOWED_SOURCES})
+        target_include_directories(Jones3D PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..)
+        set_target_properties(Jones3D PROPERTIES LINKER_LANGUAGE CXX)
+
+        target_link_libraries(Jones3D PRIVATE
+            -Wl,--start-group
+            Jones3DGame
+            ${JONES3D_LIBS_INTERFACE}
+            -Wl,--end-group
+        )
+        target_link_libraries(Jones3D PRIVATE m)
+    endif()
     return()
 endif()
 

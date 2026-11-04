@@ -34,3 +34,15 @@ int J3DAPI wkernel_SetWindowSize(int width, int height)
     J3D_UNUSED(height);
     return 1;
 }
+
+// Added: the activation callback exists for the Babylon column's wkernel (wkernelBabylon.cpp).
+// It is stored here so the Null column links; there is no focus event on this platform, so it
+// is never called.
+static WKERNELACTIVATEPROC wkernel_pfActivate = NULL;
+
+WKERNELACTIVATEPROC J3DAPI wkernel_SetActivateCallback(WKERNELACTIVATEPROC pfProc)
+{
+    WKERNELACTIVATEPROC pfCurProc = wkernel_pfActivate;
+    wkernel_pfActivate = pfProc;
+    return pfCurProc;
+}
