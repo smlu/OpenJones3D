@@ -6,6 +6,7 @@
 // running the time suite of stdPlatformTimeBabylonTest.cpp together with these groups.
 #include <unity_fixture.h>
 
+#include <algorithm>
 #include <cstddef>
 #include <cstring>
 #include <cwchar>
@@ -115,6 +116,70 @@ namespace
         stdFileUtil_DisposeFind(pData);
         return numFound;
     }
+
+    // A file system that forwards everything to an inner NullFileSystem, reports another current
+    // path, records the exists() probes and counts the listNames() calls, to check that the
+    // resolver trusts the current path's segments and lists parents without metadata.
+    class cCountingFileSystem final : public babylon::files::FileSystem
+    {
+    public:
+        std::unique_ptr<babylon::files::File> open(std::string_view aPath, babylon::files::OpenMode eMode) override
+        {
+            return m_fs.open(aPath, eMode);
+        }
+
+        bool exists(std::string_view aPath) override
+        {
+            m_aProbed.emplace_back(aPath);
+            return m_fs.exists(aPath);
+        }
+
+        bool createDirectory(std::string_view aPath) override
+        {
+            return m_fs.createDirectory(aPath);
+        }
+
+        bool remove(std::string_view aPath) override
+        {
+            return m_fs.remove(aPath);
+        }
+
+        std::optional<std::vector<babylon::files::DirectoryEntry>> listDirectory(std::string_view aPath) override
+        {
+            return m_fs.listDirectory(aPath);
+        }
+
+        std::optional<std::vector<std::string>> listNames(std::string_view aPath) override
+        {
+            ++m_numListNames;
+            return m_fs.listNames(aPath);
+        }
+
+        std::string basePath() override
+        {
+            return m_fs.basePath();
+        }
+
+        std::string currentPath() override
+        {
+            return "/work/dir/";
+        }
+
+        std::string userPath(std::string_view aOrganization, std::string_view aApplication) override
+        {
+            return m_fs.userPath(aOrganization, aApplication);
+        }
+
+        // True when exists() saw exactly this path.
+        bool Probed(std::string_view aPath) const
+        {
+            return std::find(m_aProbed.begin(), m_aProbed.end(), aPath) != m_aProbed.end();
+        }
+
+        babylon::files::NullFileSystem m_fs;
+        std::vector<std::string>       m_aProbed;
+        size_t                         m_numListNames = 0;
+    };
 }
 
 TEST_SETUP(stdBabylonPath)
@@ -193,11 +258,42 @@ TEST(stdBabylonPath, KeepsTrailingSeparatorsAndRejectsEmptyInput)
     TEST_ASSERT_EQUAL_STRING("keep", out.c_str());
 }
 
+TEST(stdBabylonPath, TrustsTheCurrentPathSegments)
+{
+    cCountingFileSystem counting;
+    TEST_ASSERT_TRUE(counting.m_fs.createDirectory("/work/dir/"));
+
+    // A relative probe for a missing loose file: the walk starts at the first segment the input
+    // contributes and never probes the current path's own segments.
+    std::string out;
+    TEST_ASSERT_TRUE(stdBabylonPath_Resolve(counting, "missing\\file.txt", out));
+    TEST_ASSERT_EQUAL_STRING("/work/dir/missing/file.txt", out.c_str());
+    TEST_ASSERT_FALSE(counting.Probed("/work"));
+    TEST_ASSERT_FALSE(counting.Probed("/work/"));
+    TEST_ASSERT_FALSE(counting.Probed("/work/dir"));
+    TEST_ASSERT_FALSE(counting.Probed("/work/dir/"));
+    TEST_ASSERT_TRUE(counting.Probed("/work/dir/missing"));
+    TEST_ASSERT_EQUAL_INT(1, static_cast<int>(counting.m_numListNames));
+
+    // A ".." that pops into the current path untrusts exactly the popped segment: /work stays
+    // trusted, Dir resolves to the real dir through a listing of /work, and /work itself is
+    // still never passed to exists().
+    counting.m_aProbed.clear();
+    counting.m_numListNames = 0;
+    TEST_ASSERT_TRUE(stdBabylonPath_Resolve(counting, "..\\Dir\\x", out));
+    TEST_ASSERT_EQUAL_STRING("/work/dir/x", out.c_str());
+    TEST_ASSERT_FALSE(counting.Probed("/work"));
+    TEST_ASSERT_FALSE(counting.Probed("/work/"));
+    TEST_ASSERT_TRUE(counting.Probed("/work/Dir"));
+    TEST_ASSERT_EQUAL_INT(2, static_cast<int>(counting.m_numListNames));
+}
+
 TEST_GROUP_RUNNER(stdBabylonPath)
 {
     RUN_TEST_CASE(stdBabylonPath, ResolvesExistingEntriesCaseInsensitively);
     RUN_TEST_CASE(stdBabylonPath, NormalizesDotsAndStopsAtMissingSegments);
     RUN_TEST_CASE(stdBabylonPath, KeepsTrailingSeparatorsAndRejectsEmptyInput);
+    RUN_TEST_CASE(stdBabylonPath, TrustsTheCurrentPathSegments);
 }
 
 TEST_SETUP(stdFileBabylon)

@@ -4,7 +4,9 @@
 // Unlike a lexical OS resolution, ".." is applied to the segment list before any directory is
 // opened: the result differs from the operating system only across symbolic links to directories.
 // The root handling assumes a POSIX absolute path ('/' as the root); the Babylon column is
-// non-Windows for now, and its CMake option refuses Windows.
+// non-Windows for now, and its CMake option refuses Windows. Relative input is prefixed with
+// fs.currentPath(), whose segments are trusted real directory names: the resolver never probes
+// them, and each ".." that pops into them untrusts one.
 #ifndef STD_STDBABYLONPATH_H
 #define STD_STDBABYLONPATH_H
 #ifndef __cplusplus

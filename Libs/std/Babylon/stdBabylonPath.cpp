@@ -80,6 +80,7 @@ bool stdBabylonPath_Resolve(babylon::files::FileSystem& fs, const char* pPath, s
 
     std::string aNormalized;
     aNormalized.reserve(std::strlen(pPath) + 1);
+    size_t numTrusted = 0;
     if ( !bAbsolute )
     {
         const std::string aCurrentPath = fs.currentPath();
@@ -89,6 +90,27 @@ bool stdBabylonPath_Resolve(babylon::files::FileSystem& fs, const char* pPath, s
         }
 
         aNormalized = aCurrentPath;
+
+        // The current path's segments are real directory names, so they exist with the case the
+        // backend reports them in and the walk below must not probe them. Count them with the
+        // same normalization the split uses: a valid path has no '.' or '..' segment and no
+        // empty segment except the leading one.
+        size_t curTrusted = 0;
+        while ( curTrusted < aCurrentPath.size() )
+        {
+            size_t curEnd = aCurrentPath.find('/', curTrusted);
+            if ( curEnd == std::string::npos )
+            {
+                curEnd = aCurrentPath.size();
+            }
+
+            if ( curEnd != curTrusted )
+            {
+                ++numTrusted;
+            }
+
+            curTrusted = curEnd + 1;
+        }
     }
 
     for ( const char* p = pPath; *p != '\0'; ++p )
@@ -120,6 +142,9 @@ bool stdBabylonPath_Resolve(babylon::files::FileSystem& fs, const char* pPath, s
             {
                 aSegments.pop_back();
             }
+
+            // A ".." that pops into the current path's segments leaves fewer of them trusted.
+            numTrusted = ( numTrusted < aSegments.size() ) ? numTrusted : aSegments.size();
         }
         else
         {
@@ -150,64 +175,77 @@ bool stdBabylonPath_Resolve(babylon::files::FileSystem& fs, const char* pPath, s
     // Fast path: when the whole normalized path already exists (as a file or as a directory), it
     // is already exact: the walk below would keep every segment, so the two exist() probes stand
     // in for one pair per segment. The engine mostly opens existing files by their real path.
-    const std::string aFull = joinSegments(aSegments);
-    if ( fs.exists(aFull) || fs.exists(aFull + "/") )
+    // Skipped when every segment is trusted: then the path is the current directory itself and
+    // there is nothing to check.
+    if ( numTrusted < aSegments.size() )
     {
-        std::string aFastResult = aFull;
-        if ( bTrailingSeparator && !aSegments.empty() )
+        const std::string aFull = joinSegments(aSegments);
+        if ( fs.exists(aFull) || fs.exists(aFull + "/") )
         {
-            aFastResult += "/";
-        }
-
-        out = std::move(aFastResult);
-        return true;
-    }
-
-    // Case: walk the segments from the root. A segment that exists with the case it is written in
-    // is kept; otherwise the parent directory (the root for the first segment) is listed and the
-    // smallest name that is ASCII-case-insensitively equal replaces it. Without a match, or when
-    // the listing fails, this and all later segments stay as given.
-    std::string aResolved;
-    for ( size_t curSegment = 0; curSegment < aSegments.size(); ++curSegment )
-    {
-        const std::string aPrefix = aResolved + "/" + aSegments[curSegment];
-        if ( fs.exists(aPrefix) || fs.exists(aPrefix + "/") )
-        {
-            aResolved = aPrefix;
-            continue;
-        }
-
-        const std::optional<std::vector<babylon::files::DirectoryEntry>> aListing =
-            fs.listDirectory(aResolved.empty() ? std::string_view("/") : std::string_view(aResolved));
-        if ( !aListing )
-        {
-            break;
-        }
-
-        bool           bFound  = false;
-        std::string_view aPick;
-        for ( const babylon::files::DirectoryEntry& rEntry : *aListing )
-        {
-            if ( !stdBabylonPath_EqualsFolded(rEntry.name, aSegments[curSegment]) )
+            std::string aFastResult = aFull;
+            if ( bTrailingSeparator && !aSegments.empty() )
             {
+                aFastResult += "/";
+            }
+
+            out = std::move(aFastResult);
+            return true;
+        }
+
+            // Case: walk the segments from the first untrusted one. A segment that exists with the
+            // case it is written in is kept; otherwise the parent directory is listed and the
+            // smallest name that is ASCII-case-insensitively equal replaces it. Without a match, or
+            // when the listing fails, this and all later segments stay as given. The trusted leading
+            // segments are the backend's own current path: real names, not probed. listNames() is
+            // enough here: only the names decide the pick, no entry metadata.
+            std::string aResolved;
+        for ( size_t curTrustedSegment = 0; curTrustedSegment < numTrusted; ++curTrustedSegment )
+        {
+            aResolved += "/";
+            aResolved += aSegments[curTrustedSegment];
+        }
+
+        for ( size_t curSegment = numTrusted; curSegment < aSegments.size(); ++curSegment )
+        {
+            const std::string aPrefix = aResolved + "/" + aSegments[curSegment];
+            if ( fs.exists(aPrefix) || fs.exists(aPrefix + "/") )
+            {
+                aResolved = aPrefix;
                 continue;
             }
 
-            if ( !bFound || stdBabylonPath_CompareNames(rEntry.name, aPick) < 0 )
+            const std::optional<std::vector<std::string>> aListing =
+                fs.listNames(aResolved.empty() ? std::string_view("/") : std::string_view(aResolved));
+            if ( !aListing )
             {
-                aPick  = rEntry.name;
-                bFound = true;
+                break;
             }
-        }
 
-        if ( !bFound )
-        {
-            break;
-        }
+            bool             bFound = false;
+            std::string_view aPick;
+            for ( const std::string& aName : *aListing )
+            {
+                if ( !stdBabylonPath_EqualsFolded(aName, aSegments[curSegment]) )
+                {
+                    continue;
+                }
 
-        aSegments[curSegment].assign(aPick);
-        aResolved += "/";
-        aResolved += aPick;
+                if ( !bFound || stdBabylonPath_CompareNames(aName, aPick) < 0 )
+                {
+                    aPick  = aName;
+                    bFound = true;
+                }
+            }
+
+            if ( !bFound )
+            {
+                break;
+            }
+
+            aSegments[curSegment].assign(aPick);
+            aResolved += "/";
+            aResolved += aPick;
+        }
     }
 
     std::string aResult = joinSegments(aSegments);
