@@ -368,6 +368,26 @@ namespace
             return fromNativePath(base);
         }
 
+        std::string currentPath() override
+        {
+            // SDL hands the working directory to the caller, owned here,
+            // with native separators and a trailing separator (SDL 3.2+).
+            char* const directory = SDL_GetCurrentDirectory();
+            if ( directory == nullptr )
+            {
+                log::warning("files: finding the current directory failed: {}", SDL_GetError());
+                return {};
+            }
+            std::string result = fromNativePath(directory);
+            SDL_free(directory);
+            if ( !isValidPath(result) )
+            {
+                log::warning("files: the current path '{}' is not usable", result);
+                return {};
+            }
+            return result;
+        }
+
         std::string userPath(std::string_view organization,
             std::string_view application) override
         {

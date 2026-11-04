@@ -295,6 +295,14 @@ namespace
         CHECK_FALSE(base.empty());
         CHECK(base.back() == '/');
         noWarning();
+
+        // currentPath() is where relative paths resolve: not empty, a
+        // valid path, ending with '/'.
+        const std::string current = fs.currentPath();
+        CHECK_FALSE(current.empty());
+        CHECK(babylon::files::isValidPath(current));
+        CHECK(current.back() == '/');
+        noWarning();
     }
 }
 
@@ -331,6 +339,21 @@ TEST_CASE("The SDL file system honors the FileSystem contract")
         const std::unique_ptr<FileSystem> fs = babylon::files::createSdlFileSystem();
         REQUIRE(fs != nullptr);
         checkFileSystemContract(*fs, rootString);
+
+        // A relative path resolves against currentPath(): a file opened
+        // through the bare name exists at joinPath(currentPath(), name)
+        // and is gone again after remove() of that absolute path.
+        {
+            const std::unique_ptr<File> file = fs->open("m5_10_cur.txt", OpenMode::Write);
+            REQUIRE(file != nullptr);
+        }
+        const std::string absolute =
+            babylon::files::joinPath(fs->currentPath(), "m5_10_cur.txt");
+        REQUIRE(!absolute.empty());
+        CHECK(fs->exists(absolute));
+        CHECK(fs->remove(absolute));
+        CHECK_FALSE(fs->exists(absolute));
+
         // The contract must not leave files open beyond the helper.
     }
 

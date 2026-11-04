@@ -94,6 +94,7 @@ TEST_CASE("The Null base path and user path match the documented layout")
 
     CHECK(fs.basePath() == "/base/");
     CHECK(fs.exists("/base/"));
+    CHECK(fs.currentPath() == "/");
 
     CHECK(fs.userPath("Aster Studio", "Field Trip") == "/user/Aster Studio/Field Trip/");
     CHECK(fs.userPath("Aster Studio", "Field Trip") == "/user/Aster Studio/Field Trip/");

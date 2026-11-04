@@ -127,6 +127,12 @@ namespace babylon::files
         // cannot determine it.
         virtual std::string basePath() = 0;
 
+        // The directory relative paths resolve against (the process working
+        // directory for host backends), absolute, ending with '/'. Empty
+        // string and a warning if the backend cannot determine it or it is
+        // not a valid path.
+        virtual std::string currentPath() = 0;
+
         // A per-user writable directory for this organization and
         // application, created if missing, ending with '/'. Empty string
         // and a warning on failure, or if either name is empty, contains

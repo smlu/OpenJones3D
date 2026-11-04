@@ -408,6 +408,11 @@ namespace
         return "/base/";
     }
 
+    std::string NullFileSystem::currentPath()
+    {
+        return "/";   // the tree's root is where relative paths resolve
+    }
+
     std::string NullFileSystem::userPath(std::string_view organization,
         std::string_view application)
     {
