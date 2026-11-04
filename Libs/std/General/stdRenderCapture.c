@@ -42,6 +42,9 @@ typedef struct sStdRenderCaptureHandleEntry
 
 static bool stdRenderCapture_bOpen;
 static tFileHandle stdRenderCapture_fileHandle;
+// Added: the file services of the Open, kept so a game that swaps the host file services
+// mid-run (JonesFile does) cannot change the functions used for this capture's handle.
+static tHostServices stdRenderCapture_fileServices;
 static char* stdRenderCapture_pPath; // owned copy, so blob verification can reopen the file for reading
 static uint64_t stdRenderCapture_filePos; // logical end-of-file, tracked byte by byte
 static bool stdRenderCapture_bFramesEnabled = true;
@@ -122,7 +125,7 @@ static void stdRenderCapture_PackU64(uint8_t* pDst, uint64_t value)
 // false when the write came up short; the caller logs and closes.
 static bool stdRenderCapture_WriteData(const void* pData, size_t size)
 {
-    if ( size != std_g_pHS->pFileWrite(stdRenderCapture_fileHandle, pData, size) )
+    if ( size != stdRenderCapture_fileServices.pFileWrite(stdRenderCapture_fileHandle, pData, size) )
     {
         return false;
     }
@@ -188,7 +191,7 @@ static void stdRenderCapture_CloseInternal(void)
 {
     if ( stdRenderCapture_bOpen )
     {
-        std_g_pHS->pFileClose(stdRenderCapture_fileHandle);
+        stdRenderCapture_fileServices.pFileClose(stdRenderCapture_fileHandle);
     }
 
     stdRenderCapture_fileHandle = 0;
@@ -318,22 +321,22 @@ static int stdRenderCapture_CompareStoredBlob(const StdRenderCaptureBlob* pEntry
         return 0; // pFileSeek takes an int offset: too far to verify is treated as no match
     }
 
-    if ( std_g_pHS->pFileSeek(stdRenderCapture_fileHandle, 0, SEEK_CUR) )
+    if ( stdRenderCapture_fileServices.pFileSeek(stdRenderCapture_fileHandle, 0, SEEK_CUR) )
     {
         stdRenderCapture_FailAndClose("could not flush the capture for a blob comparison.");
         return -1;
     }
 
-    readHandle = std_g_pHS->pFileOpen(stdRenderCapture_pPath, "rb");
+    readHandle = stdRenderCapture_fileServices.pFileOpen(stdRenderCapture_pPath, "rb");
     if ( !readHandle )
     {
         stdRenderCapture_FailAndClose("could not reopen the capture to verify a blob.");
         return -1;
     }
 
-    if ( std_g_pHS->pFileSeek(readHandle, (int)pEntry->dataOffset, SEEK_SET) )
+    if ( stdRenderCapture_fileServices.pFileSeek(readHandle, (int)pEntry->dataOffset, SEEK_SET) )
     {
-        std_g_pHS->pFileClose(readHandle);
+        stdRenderCapture_fileServices.pFileClose(readHandle);
         stdRenderCapture_FailAndClose("could not seek to a stored blob.");
         return -1;
     }
@@ -351,10 +354,10 @@ static int stdRenderCapture_CompareStoredBlob(const StdRenderCaptureBlob* pEntry
             ? STDRENDERCAPTURE_READCHUNKSIZE
             : remaining;
 
-        if ( std_g_pHS->pFileRead(readHandle, pChunk, chunkSize) != chunkSize )
+        if ( stdRenderCapture_fileServices.pFileRead(readHandle, pChunk, chunkSize) != chunkSize )
         {
             STDFREE(pChunk);
-            std_g_pHS->pFileClose(readHandle);
+            stdRenderCapture_fileServices.pFileClose(readHandle);
             stdRenderCapture_FailAndClose("could not read back a stored blob.");
             return -1;
         }
@@ -374,7 +377,7 @@ static int stdRenderCapture_CompareStoredBlob(const StdRenderCaptureBlob* pEntry
         STDFREE(pChunk);
     }
 
-    std_g_pHS->pFileClose(readHandle);
+    stdRenderCapture_fileServices.pFileClose(readHandle);
     return bMatch;
 }
 
@@ -417,7 +420,8 @@ bool stdRenderCapture_Open(const char* pPath, const char* pColumn)
 
     memcpy(pPathCopy, pPath, pathLen);
 
-    stdRenderCapture_fileHandle = std_g_pHS->pFileOpen(pPath, "w+b");
+    stdRenderCapture_fileServices = *std_g_pHS;
+    stdRenderCapture_fileHandle = stdRenderCapture_fileServices.pFileOpen(pPath, "w+b");
     if ( !stdRenderCapture_fileHandle )
     {
         STDFREE(pPathCopy);
@@ -923,4 +927,36 @@ void stdRenderCapture_ReleaseHandle(StdRenderCaptureHandleKind kind, const void*
             return;
         }
     }
+}
+
+// The live table is kept in assignment order (ReleaseHandle moves the later entries down), so the
+// first match is the first-assigned match.
+uint32_t stdRenderCapture_FindHandleWhere(
+    StdRenderCaptureHandleKind kind,
+    bool (*pfMatch)(const void* p, const void* pContext),
+    const void* pContext
+)
+{
+    size_t i;
+
+    if ( !stdRenderCapture_bOpen || !pfMatch )
+    {
+        return 0u;
+    }
+
+    if ( !stdRenderCapture_IsValidKind(kind) )
+    {
+        STDLOG_ERROR("Render capture: invalid handle kind %d.\n", (int)kind);
+        return 0u;
+    }
+
+    for ( i = 0; i < stdRenderCapture_aHandleCounts[kind]; ++i )
+    {
+        if ( pfMatch(stdRenderCapture_apHandleEntries[kind][i].pPtr, pContext) )
+        {
+            return stdRenderCapture_apHandleEntries[kind][i].handle;
+        }
+    }
+
+    return 0u;
 }

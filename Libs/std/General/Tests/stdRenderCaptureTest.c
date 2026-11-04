@@ -587,6 +587,100 @@ TEST(stdRenderCapture, TestDeterministicBytes)
     remove("stdRenderCapture_DeterminismB.rcap");
 }
 
+// Matches when the live entry pointer is one of the wanted pointers in pContext.
+typedef struct sStdRenderCaptureTest_MatchSet
+{
+    const void* apWant[4];
+    size_t numWant;
+} StdRenderCaptureTest_MatchSet;
+
+static bool stdRenderCaptureTest_MatchAny(const void* p, const void* pContext)
+{
+    const StdRenderCaptureTest_MatchSet* pSet = (const StdRenderCaptureTest_MatchSet*)pContext;
+    size_t i;
+
+    for ( i = 0; i < pSet->numWant; ++i )
+    {
+        if ( pSet->apWant[i] == p )
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+TEST(stdRenderCapture, TestFindHandleWhere)
+{
+    static int aObjects[5];
+    const StdRenderCaptureTest_MatchSet matchA2 = { { &aObjects[2], NULL, NULL, NULL }, 1u };
+    const StdRenderCaptureTest_MatchSet matchA2A0 = { { &aObjects[2], &aObjects[0], NULL, NULL }, 2u };
+    const StdRenderCaptureTest_MatchSet matchNone = { { &aObjects[4], NULL, NULL, NULL }, 1u };
+    const StdRenderCaptureTest_MatchSet matchAll = {
+        { &aObjects[0], &aObjects[1], &aObjects[2], &aObjects[3] }, 4u
+    };
+    const StdRenderCaptureTest_MatchSet matchA0A3 = {
+        { &aObjects[0], &aObjects[3], NULL, NULL }, 2u
+    };
+
+    remove("stdRenderCapture_FindHandleWhere.rcap");
+
+    // A NULL predicate and any call while closed return 0.
+    TEST_ASSERT_EQUAL_UINT32(0u, stdRenderCapture_FindHandleWhere(STDRENDERCAPTURE_HANDLE_VBUFFER, stdRenderCaptureTest_MatchAny, &matchA2));
+    TEST_ASSERT_EQUAL_UINT32(0u, stdRenderCapture_FindHandleWhere(STDRENDERCAPTURE_HANDLE_VBUFFER, NULL, NULL));
+
+    TEST_ASSERT_TRUE(stdRenderCapture_Open("stdRenderCapture_FindHandleWhere.rcap", "null"));
+
+    TEST_ASSERT_EQUAL_UINT32(1u, stdRenderCapture_AddHandle(STDRENDERCAPTURE_HANDLE_VBUFFER, &aObjects[0]));
+    TEST_ASSERT_EQUAL_UINT32(2u, stdRenderCapture_AddHandle(STDRENDERCAPTURE_HANDLE_VBUFFER, &aObjects[1]));
+    TEST_ASSERT_EQUAL_UINT32(3u, stdRenderCapture_AddHandle(STDRENDERCAPTURE_HANDLE_VBUFFER, &aObjects[2]));
+
+    // Single match, and the first entry in assignment order when several match.
+    TEST_ASSERT_EQUAL_UINT32(3u, stdRenderCapture_FindHandleWhere(STDRENDERCAPTURE_HANDLE_VBUFFER, stdRenderCaptureTest_MatchAny, &matchA2));
+    TEST_ASSERT_EQUAL_UINT32(1u, stdRenderCapture_FindHandleWhere(STDRENDERCAPTURE_HANDLE_VBUFFER, stdRenderCaptureTest_MatchAny, &matchA2A0));
+
+    // No match, a NULL predicate and the other kind all return 0.
+    TEST_ASSERT_EQUAL_UINT32(0u, stdRenderCapture_FindHandleWhere(STDRENDERCAPTURE_HANDLE_VBUFFER, stdRenderCaptureTest_MatchAny, &matchNone));
+    TEST_ASSERT_EQUAL_UINT32(0u, stdRenderCapture_FindHandleWhere(STDRENDERCAPTURE_HANDLE_VBUFFER, NULL, &matchA2));
+    TEST_ASSERT_EQUAL_UINT32(0u, stdRenderCapture_FindHandleWhere(STDRENDERCAPTURE_HANDLE_SYSTEXTURE, stdRenderCaptureTest_MatchAny, &matchAll));
+
+    // Released entries are skipped: with aObjects[0] released, the first live match of the
+    // assignment order is now aObjects[2].
+    stdRenderCapture_ReleaseHandle(STDRENDERCAPTURE_HANDLE_VBUFFER, &aObjects[0]);
+    TEST_ASSERT_EQUAL_UINT32(3u, stdRenderCapture_FindHandleWhere(STDRENDERCAPTURE_HANDLE_VBUFFER, stdRenderCaptureTest_MatchAny, &matchA2A0));
+    TEST_ASSERT_EQUAL_UINT32(2u, stdRenderCapture_FindHandleWhere(STDRENDERCAPTURE_HANDLE_VBUFFER, stdRenderCaptureTest_MatchAny, &matchAll));
+
+    // A newly added entry keeps the assignment order at the end of the table: the released
+    // aObjects[0] is skipped and the new aObjects[3] matches last.
+    TEST_ASSERT_EQUAL_UINT32(4u, stdRenderCapture_AddHandle(STDRENDERCAPTURE_HANDLE_VBUFFER, &aObjects[3]));
+    TEST_ASSERT_EQUAL_UINT32(4u, stdRenderCapture_FindHandleWhere(STDRENDERCAPTURE_HANDLE_VBUFFER, stdRenderCaptureTest_MatchAny, &matchA0A3));
+
+    // It may be called while a record is open and writes nothing.
+    stdRenderCapture_BeginRecord(0x21);
+    TEST_ASSERT_EQUAL_UINT32(4u, stdRenderCapture_FindHandleWhere(STDRENDERCAPTURE_HANDLE_VBUFFER, stdRenderCaptureTest_MatchAny, &matchA0A3));
+    TEST_ASSERT_TRUE(stdRenderCapture_EndRecord());
+
+    stdRenderCapture_Close();
+    TEST_ASSERT_EQUAL_UINT32(0u, stdRenderCapture_FindHandleWhere(STDRENDERCAPTURE_HANDLE_VBUFFER, stdRenderCaptureTest_MatchAny, &matchA2));
+
+    // Only the 8-byte record header reached the file: the handle table and the query write nothing.
+    {
+        static const uint8_t aExpected[] = {
+            0x4A, 0x33, 0x44, 0x52, 0x43, 0x41, 0x50, 0x00,
+            0x01, 0x00, 0x00, 0x00,
+            0x04, 0x00, 0x00, 0x00,
+            0x6E, 0x75, 0x6C, 0x6C,
+            0x21, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        };
+        uint8_t aFile[512];
+        size_t size = stdRenderCaptureTest_ReadFile("stdRenderCapture_FindHandleWhere.rcap", aFile, sizeof(aFile));
+        TEST_ASSERT_EQUAL_size_t(sizeof(aExpected), size);
+        TEST_ASSERT_EQUAL_MEMORY(aExpected, aFile, sizeof(aExpected));
+    }
+
+    remove("stdRenderCapture_FindHandleWhere.rcap");
+}
+
 TEST_GROUP_RUNNER(stdRenderCapture)
 {
     RUN_TEST_CASE(stdRenderCapture, TestHeaderOnly);
@@ -594,6 +688,7 @@ TEST_GROUP_RUNNER(stdRenderCapture)
     RUN_TEST_CASE(stdRenderCapture, TestBlobDedupAndInvalidArgs);
     RUN_TEST_CASE(stdRenderCapture, TestBlobForcedHashCollision);
     RUN_TEST_CASE(stdRenderCapture, TestHandles);
+    RUN_TEST_CASE(stdRenderCapture, TestFindHandleWhere);
     RUN_TEST_CASE(stdRenderCapture, TestReleasedHandlesLeaveTheTable);
     RUN_TEST_CASE(stdRenderCapture, TestGlobals);
     RUN_TEST_CASE(stdRenderCapture, TestFramesRecords);

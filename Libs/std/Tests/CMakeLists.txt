@@ -162,6 +162,12 @@ set(STD_NULL_TESTED_SOURCES
     "${STD_SOURCE_DIR}/Null/stdPlatformNull.c"
     "${STD_SOURCE_DIR}/Null/stdPlatformTimeNull.c"
     "${STD_SOURCE_DIR}/Null/stdCvarNull.c"
+    # Added: the renderer forwarding layer and the Null backends it forwards to, tested by
+    # stdRenderCaptureForwardTest.c (the std tests only link the files they compile here).
+    "${STD_SOURCE_DIR}/Null/std3DNull.c"
+    "${STD_SOURCE_DIR}/Null/stdDisplayNull.c"
+    "${STD_WIN95_SOURCE_DIR}/std3DCapture.c"
+    "${STD_WIN95_SOURCE_DIR}/stdDisplayCapture.c"
 )
 
 set(STD_TESTED_SOURCES
@@ -180,6 +186,9 @@ if (J3D_PLATFORM_NULL)
     )
     list(APPEND STD_GENERAL_TEST_SOURCES
         "${CMAKE_CURRENT_SOURCE_DIR}/stdCvarNullTest.c"
+        # Added: the renderer forwarding layer records through the Null backend only here; the
+        # Windows columns cover the same files through the Win95 suite and the DX9 system tests.
+        "${CMAKE_CURRENT_SOURCE_DIR}/stdRenderCaptureForwardTest.c"
     )
     set(STD_WIN95_TEST_SOURCES "")
     set(STD_TESTED_SOURCES ${STD_GENERAL_TESTED_SOURCES} ${STD_NULL_TESTED_SOURCES})

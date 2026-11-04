@@ -90,6 +90,18 @@ uint32_t stdRenderCapture_AddHandle(StdRenderCaptureHandleKind kind, const void*
  */
 void stdRenderCapture_ReleaseHandle(StdRenderCaptureHandleKind kind, const void* p);
 
+/**
+ * @brief Return the handle of the first live entry of this kind, in assignment order, for which
+ * pfMatch returns true; pContext is passed through to every call. Returns 0 when none matches,
+ * when nothing is open, or when pfMatch is NULL. May be called while a record is open (it writes
+ * nothing). Logs nothing (an invalid kind logs an error like the other handle calls).
+ */
+uint32_t stdRenderCapture_FindHandleWhere(
+    StdRenderCaptureHandleKind kind,
+    bool (*pfMatch)(const void* p, const void* pContext),
+    const void* pContext
+);
+
 #ifdef J3D_TEST
 /**
  * @brief Test seam: replace the blob content hash (64-bit FNV-1a by default) to force collisions.
