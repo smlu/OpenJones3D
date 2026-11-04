@@ -103,8 +103,8 @@ namespace
             }
             const std::size_t num = std::min<std::size_t>(
                 buffer.size(), static_cast<std::size_t>(fileSize - m_position));
-            std::copy(m_data->begin() + m_position,
-                m_data->begin() + m_position + static_cast<std::ptrdiff_t>(num),
+            std::copy(m_data->begin() + static_cast<std::ptrdiff_t>(m_position),
+                m_data->begin() + static_cast<std::ptrdiff_t>(m_position) + static_cast<std::ptrdiff_t>(num),
                 buffer.begin());
             m_position += static_cast<std::int64_t>(num);
             return num;
