@@ -228,11 +228,17 @@ elseif(NOT WIN32 AND (CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU"))
         -Wno-unknown-pragmas
     )
     # Added: glibc's backtrace_symbols in stdPlatformNull needs the engine symbols exported to the
-    # dynamic symbol table to name the frames of the headless runner.
+    # dynamic symbol table to name the frames of the headless runner. The option is not Linux-only:
+    # on Apple hosts the Clang driver turns -rdynamic into ld64's -export_dynamic (and ignores it on
+    # linkers too old for that option), so the same flag line works on both native platforms.
     add_link_options(-rdynamic)
     # Added: glibc keeps the math functions (sinf, atan2f, sqrtf) in libm; the Windows CRT has them
     # in the default libraries. Native test executables call engine code that uses them directly.
-    link_libraries(m)
+    # Altered: macOS has no libm to name: its math functions are in libSystem, which the driver
+    # always links, so the Apple link line stays without it. Linux and Windows are unchanged.
+    if (NOT APPLE)
+        link_libraries(m)
+    endif()
     if (CMAKE_C_COMPILER_ID MATCHES "Clang")
         # Added: fail the native build on any cast that truncates a pointer (or widens an int
         # into one) so 64-bit builds stay pointer-safe. Clang only: these warning groups have

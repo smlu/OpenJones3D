@@ -1,0 +1,72 @@
+name: Game (native)
+
+on:
+  push:
+    paths-ignore: ["Docs/**", "**/*.md"]
+  pull_request:
+    paths-ignore: ["Docs/**", "**/*.md"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.runs-on }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # The Null column is the default non-Windows configure; the Babylon column moves the
+          # platform services onto the Babylon Engine.
+          - name: linux-null
+            runs-on: ubuntu-24.04
+            configure: "-G Ninja -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Debug"
+          - name: linux-babylon
+            runs-on: ubuntu-24.04
+            configure: "-G Ninja -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Debug -DJONES3D_PLATFORM_BABYLON=ON"
+          - name: macos-babylon
+            runs-on: macos-15-intel
+            configure: "-G Ninja -DCMAKE_BUILD_TYPE=Debug -DJONES3D_PLATFORM_BABYLON=ON"
+          - name: macos-null
+            runs-on: macos-15-intel
+            configure: "-G Ninja -DCMAKE_BUILD_TYPE=Debug"
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      # The macOS images provide the system SDK and Apple clang, so only Ninja is installed there;
+      # the Linux list is the SDL3 build dependency set of babylon.yml, which the Babylon platform
+      # backend (and therefore the game's Babylon column) needs.
+      - name: Install Ninja and SDL3 build dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build libx11-dev libxext-dev libxrandr-dev libxcursor-dev libxi-dev libxss-dev libxtst-dev libxfixes-dev libxkbcommon-dev libwayland-dev wayland-protocols libegl1-mesa-dev libdrm-dev libgbm-dev libdecor-0-dev libasound2-dev libpulse-dev libudev-dev libdbus-1-dev
+      - name: Install Ninja (macOS)
+        if: runner.os == 'macOS'
+        run: brew install ninja
+      - name: Configure
+        run: cmake -S . -B build ${{ matrix.configure }}
+      - name: Build
+        run: cmake --build build
+      # The unit suites are labelled unit; confirming the discovery list is what shows that the
+      # expected suites were found and that the run validated something.
+      - name: List unit tests
+        run: ctest --test-dir build -N -L unit
+      - name: Run unit tests
+        run: ctest --test-dir build --output-on-failure -L unit
+      # The Babylon boundary checks (babylon.check.boundary, babylon.check.selftest) carry the
+      # labels "babylon;check", not "unit", because they inspect the source tree instead of
+      # running engine code, so a second labelled ctest call runs them.
+      - name: List boundary checks
+        run: ctest --test-dir build -N -L check
+      - name: Run boundary checks
+        run: ctest --test-dir build --output-on-failure -L check
+      # Windows/DirectX use above the platform layer is measured once per run, not once per column.
+      - name: Check the platform boundary
+        if: matrix.name == 'linux-null'
+        run: python3 Scripts/checkboundary.py --check

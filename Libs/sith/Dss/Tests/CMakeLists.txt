@@ -1,6 +1,15 @@
 # Original-engine vector tests of the DSS (save/network) serialization functions.
 # The tested sources run on synthetic engine state; the engine functions they call are replaced by the stubs of
 # sithDSSVec*.h through the rename list of sithDSSSeams.def (name -> dssv_name).
+#
+# Added: both suites of this directory link at a fixed high base with the GNU ld options
+# -no-pie -Wl,-Ttext-segment=0x20000000 below (see the same note in Tests/Vec/CMakeLists.txt), which
+# is what keeps the normalized addresses out of the generated integers and floats. ld64 (macOS) has
+# no equivalent and rejects -Ttext-segment, so these suites are not built on Apple hosts.
+if (APPLE)
+    return()
+endif()
+
 set(SITHDSS_TEST_SOURCES
     sithDSSTestRunner.c
     sithDSSTest.c
