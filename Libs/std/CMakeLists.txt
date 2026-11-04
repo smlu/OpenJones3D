@@ -53,6 +53,9 @@ if(J3D_DIRECTX6)
   # Remove DX9 files.
     list(FILTER SOURCES EXCLUDE REGEX ".*DX9\\.c$")
     list(FILTER SOURCES EXCLUDE REGEX "stdComm.c$")
+    # DX6 defines the public renderer names itself, so the M6.0 forwarding layer is not built for it.
+    list(FILTER SOURCES EXCLUDE REGEX "std3DCapture\\.c$")
+    list(FILTER SOURCES EXCLUDE REGEX "stdDisplayCapture\\.c$")
 
     set(SHADERS "")
     set(SHADER_INCLUDES "")

@@ -1,4 +1,5 @@
 #include <std/Win95/DX9/stdSysTypesDX9.h>
+#include <std/Win95/stdRenderBackend.h>
 #include <std/Win95/DX9/stdDX9Api.h>
 #include <std/Win95/std3D.h>
 #include <std/Win95/stdDisplay.h>

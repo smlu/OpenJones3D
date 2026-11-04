@@ -132,6 +132,10 @@ set(STD_WIN95_TESTED_SOURCES
 
 if (J3D_DIRECTX9)
     list(APPEND STD_WIN95_TESTED_SOURCES
+        # M6.0: the DX9 backend sources below define std3DBackend_*/stdDisplayBackend_*, so these
+        # targets also need the forwarding layer that carries the public std3D_*/stdDisplay_* names.
+        "${STD_WIN95_SOURCE_DIR}/std3DCapture.c"
+        "${STD_WIN95_SOURCE_DIR}/stdDisplayCapture.c"
         "${STD_WIN95_SOURCE_DIR}/stdComm.c"
         "${STD_WIN95_SOURCE_DIR}/DX9/stdControlDX9.c"
         "${STD_WIN95_SOURCE_DIR}/DX9/std3DX9.c"
