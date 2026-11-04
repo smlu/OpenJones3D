@@ -63,6 +63,44 @@ static bool dsnd_busy = false;
 static bool dsnd_ownDS = false;
 static int dsnd_hTimer = 0;
 static bool dsnd_tablesReady = false;
+static bool dsnd_restorePrimaryVolume = false;
+static bool dsnd_recoveryPending = false;
+
+// Fixed: A restored buffer has no valid PCM. Clear it before resuming playback.
+static HRESULT dsnd_ClearSecondary(void)
+{
+    LPVOID pPtr1 = NULL, pPtr2 = NULL;
+    DWORD len1 = 0, len2 = 0;
+    HRESULT hr = IDirectSoundBuffer_Lock(dsnd_pSecondary, 0, dsnd_numBlocks * DSND_BLOCKSIZE, &pPtr1, &len1, &pPtr2, &len2, 0);
+    if ( hr != DS_OK ) return hr;
+    memset(pPtr1, 0, len1);
+    if ( pPtr2 && len2 ) memset(pPtr2, 0, len2);
+    return IDirectSoundBuffer_Unlock(dsnd_pSecondary, pPtr1, len1, pPtr2, len2);
+}
+
+static HRESULT dsnd_RestoreSecondary(void)
+{
+    if ( !dsnd_pSecondary ) return DSERR_INVALIDCALL;
+    dsnd_recoveryPending = true; // Keep retrying if restoring contents, positioning or restarting fails.
+    // Focus can still belong to another application. Try once and let the next
+    // timer tick retry instead of blocking the movie thread in a restore loop.
+    HRESULT hr = IDirectSoundBuffer_Restore(dsnd_pSecondary);
+    if ( hr == DS_OK ) hr = dsnd_ClearSecondary();
+    if ( hr == DS_OK ) hr = IDirectSoundBuffer_SetCurrentPosition(dsnd_pSecondary, 0);
+    if ( hr == DS_OK ) hr = IDirectSoundBuffer_Play(dsnd_pSecondary, 0, 0, DSBPLAY_LOOPING);
+    if ( hr == DS_OK )
+    {
+        dsnd_lastBlock = 0; // Prime the next block after the reset play cursor.
+        dsnd_recoveryPending = false;
+    }
+    return hr;
+}
+
+static HRESULT dsnd_PlaySecondary(void)
+{
+    HRESULT hr = IDirectSoundBuffer_Play(dsnd_pSecondary, 0, 0, DSBPLAY_LOOPING);
+    return hr == DSERR_BUFFERLOST ? dsnd_RestoreSecondary() : hr;
+}
 
 int J3DAPI dsnd_Register(LecShare* pShare, void* pParam)
 {
@@ -156,18 +194,23 @@ int J3DAPI dsnd_Start(int rate, int a2, void (*pfnFill)(int, SoundFeed))
         rate = DSND_DEFAULT_RATE;
     }
 
-    if ( dsnd_Init() ) {
-        return -1;
-    }
-
-    if ( mixer_Init(dsnd_pMixerTable, DSND_MIXER_HEADROOM, DSND_MIXER_SIZE, 0, 1, 1) ) {
-        return -1;
-    }
+    // Fixed: Do not report a running stream when device, mixer or timer setup fails.
+    LPDIRECTSOUND pBorrowed = dsnd_ownDS ? NULL : dsnd_pDS;
+    if ( dsnd_Init() ) goto error;
+    if ( mixer_Init(dsnd_pMixerTable, DSND_MIXER_HEADROOM, DSND_MIXER_SIZE, 0, 1, 1) ) goto error;
 
     dsnd_pfnFill = pfnFill;
     dsnd_rate = rate;
     dsnd_hTimer = dsnd_pTimer->Alloc(dsnd_Callback, DSND_TICKRATE / (rate / DSND_TIMERBLOCKFRAMES), 2, 0);
+    if ( dsnd_hTimer == 0 ) goto error;
     return 0;
+
+error:
+    mixer_Done(dsnd_pMixerTable);
+    dsnd_Release();
+    dsnd_pDS = pBorrowed; // Retain the game's configured object for a later retry; never release it.
+    dsnd_pfnFill = NULL;
+    return -1;
 }
 
 void dsnd_Stop(void)
@@ -177,6 +220,7 @@ void dsnd_Stop(void)
     }
 
     dsnd_hTimer = 0;
+    dsnd_pfnFill = NULL;
     mixer_Done(dsnd_pMixerTable);
     dsnd_Release();
 }
@@ -232,6 +276,20 @@ void J3DAPI dsnd_Callback(int index, int param)
     J3D_UNUSED(index);
     J3D_UNUSED(param);
 
+    if ( dsnd_hTimer == 0 ) return;
+
+    // Fixed: A focus/device handoff may lose or stop the secondary buffer. The
+    // original silently kept polling it forever without restarting audio.
+    DWORD status = 0;
+    if ( dsnd_busy || !dsnd_pSecondary || !dsnd_pfnFill || dsnd_numBlocks == 0 ) goto rearm;
+    HRESULT statusResult = IDirectSoundBuffer_GetStatus(dsnd_pSecondary, &status);
+    if ( dsnd_recoveryPending || statusResult == DSERR_BUFFERLOST || (status & DSBSTATUS_BUFFERLOST) != 0 )
+    {
+        if ( dsnd_RestoreSecondary() != DS_OK ) goto rearm;
+    }
+    else if ( statusResult != DS_OK ) goto rearm;
+    else if ( (status & DSBSTATUS_PLAYING) == 0 && dsnd_PlaySecondary() != DS_OK ) goto rearm;
+
     int cur = dsnd_GetPlayPos();
     if ( cur != -1 )
     {
@@ -242,12 +300,18 @@ void J3DAPI dsnd_Callback(int index, int param)
                 lastBlock = cur;
             }
 
-            dsnd_lastBlock = (lastBlock + 1) % dsnd_numBlocks;
+            int nextBlock = (lastBlock + 1) % dsnd_numBlocks;
 
             LPVOID pPtr1, pPtr2;
             DWORD len1, len2;
-            if ( IDirectSoundBuffer_Lock(dsnd_pSecondary, dsnd_lastBlock * DSND_BLOCKSIZE, DSND_BLOCKSIZE, &pPtr1, &len1, &pPtr2, &len2, 0) == 0 )
+            HRESULT hr = IDirectSoundBuffer_Lock(dsnd_pSecondary, nextBlock * DSND_BLOCKSIZE, DSND_BLOCKSIZE, &pPtr1, &len1, &pPtr2, &len2, 0);
+            if ( hr == DSERR_BUFFERLOST )
             {
+                dsnd_recoveryPending = true; // A loss can occur after recovery; restore at most once per timer tick.
+            }
+            else if ( hr == DS_OK )
+            {
+                dsnd_lastBlock = nextBlock;
                 int chunk;
                 char* pDst;
                 if ( pPtr2 && len2 )
@@ -270,11 +334,12 @@ void J3DAPI dsnd_Callback(int index, int param)
                     memcpy(pPtr2, dsnd_scratch + len1, len2);
                 }
 
-                IDirectSoundBuffer_Unlock(dsnd_pSecondary, pPtr1, len1, pPtr2, len2);
+                if ( IDirectSoundBuffer_Unlock(dsnd_pSecondary, pPtr1, len1, pPtr2, len2) != DS_OK ) dsnd_recoveryPending = true;
             }
         }
     }
 
+rearm:
     dsnd_pTimer->SetInterval(dsnd_hTimer, DSND_TICKRATE / (dsnd_rate / DSND_TIMERBLOCKFRAMES));
 }
 
@@ -283,7 +348,7 @@ int dsnd_Init(void)
     if ( dsnd_pDS != NULL )
     {
         dsnd_OpenSecondary(DSND_MINBLOCKS);
-        return 0;
+        return dsnd_pSecondary ? 0 : -1;
     }
 
     HRESULT hr = DirectSoundCreate(NULL, &dsnd_pDS, NULL);
@@ -294,6 +359,7 @@ int dsnd_Init(void)
         return -1;
     }
 
+    dsnd_ownDS = true; // Own it immediately so partial initialization is released on failure.
     hr = IDirectSound_SetCooperativeLevel(dsnd_pDS, (HWND)smushplay_GetHwnd(), DSSCL_EXCLUSIVE);
     if ( hr )
     {
@@ -327,9 +393,9 @@ int dsnd_Init(void)
         return -1;
     }
 
+    dsnd_restorePrimaryVolume = true;
     dsnd_OpenSecondary(DSND_MINBLOCKS);
-    dsnd_ownDS = true;
-    return 0;
+    return dsnd_pSecondary ? 0 : -1;
 }
 
 // The driver's error print: an empty body (linker-folded onto 0x0046D9E0 in the original); never hook.
@@ -346,6 +412,7 @@ void J3DAPI dsnd_OpenSecondary(int blocks)
     }
 
     dsnd_pSecondary = NULL;
+    dsnd_recoveryPending = false;
     if ( blocks < DSND_MINBLOCKS ) {
         blocks = DSND_MINBLOCKS;
     }
@@ -362,23 +429,28 @@ void J3DAPI dsnd_OpenSecondary(int blocks)
     desc.dwFlags = DSBCAPS_GETCURRENTPOSITION2 | DSBCAPS_CTRLVOLUME;
     desc.dwReserved = 0;
     desc.lpwfxFormat = &dsnd_streamFormat;
-    if ( IDirectSound_CreateSoundBuffer(dsnd_pDS, &desc, &dsnd_pSecondary, NULL) == 0 )
+    // Fixed: Check every setup result. A failed Play otherwise left a silent
+    // buffer behind while dsnd_Start claimed success.
+    HRESULT hr = IDirectSound_CreateSoundBuffer(dsnd_pDS, &desc, &dsnd_pSecondary, NULL);
+    dsnd_lastBlock = -1;
+    if ( hr == DS_OK ) hr = IDirectSoundBuffer_SetVolume(dsnd_pSecondary, 0);
+    if ( hr == DS_OK )
     {
-        LPVOID pPtr1, pPtr2;
-        DWORD len1, len2;
-
-        IDirectSoundBuffer_SetVolume(dsnd_pSecondary, 0);
-        if ( IDirectSoundBuffer_Lock(dsnd_pSecondary, 0, dsnd_numBlocks * DSND_BLOCKSIZE, &pPtr1, &len1, &pPtr2, &len2, 0) == 0 )
+        hr = dsnd_ClearSecondary();
+        if ( hr == DSERR_BUFFERLOST ) hr = dsnd_RestoreSecondary();
+        else if ( hr == DS_OK ) hr = dsnd_PlaySecondary();
+        if ( hr == DSERR_BUFFERLOST || hr == DSERR_PRIOLEVELNEEDED )
         {
-            memset(pPtr1, 0, len1);
-            if ( pPtr2 ) {
-                memset(pPtr2, 0, len2);
-            }
-
-            IDirectSoundBuffer_Unlock(dsnd_pSecondary, pPtr1, len1, pPtr2, len2);
+            // Fixed: The sound engine intentionally falls back to silence if Start fails.
+            // Retain a valid secondary during a temporary focus loss so timer ticks can recover it.
+            dsnd_recoveryPending = true;
+            hr = DS_OK;
         }
-
-        IDirectSoundBuffer_Play(dsnd_pSecondary, 0, 0, DSBPLAY_LOOPING);
+    }
+    if ( hr != DS_OK && dsnd_pSecondary )
+    {
+        IDirectSoundBuffer_Release(dsnd_pSecondary);
+        dsnd_pSecondary = NULL;
     }
 
     dsnd_busy = false;
@@ -393,7 +465,7 @@ void dsnd_Release(void)
     dsnd_pSecondary = NULL;
     if ( dsnd_pPrimary && dsnd_ownDS )
     {
-        IDirectSoundBuffer_SetVolume(dsnd_pPrimary, dsnd_savedVolume);
+        if ( dsnd_restorePrimaryVolume ) IDirectSoundBuffer_SetVolume(dsnd_pPrimary, dsnd_savedVolume);
         IDirectSoundBuffer_Release(dsnd_pPrimary);
         dsnd_pPrimary = NULL;
     }
@@ -405,15 +477,19 @@ void dsnd_Release(void)
     }
 
     dsnd_pDS = NULL;
+    dsnd_numBlocks = 0;
+    dsnd_lastBlock = -1;
+    dsnd_restorePrimaryVolume = false;
+    dsnd_recoveryPending = false;
 }
 
 int dsnd_GetPlayPos(void)
 {
-    if ( dsnd_pSecondary )
+    if ( dsnd_pSecondary && dsnd_numBlocks > 0 )
     {
-        if ( IDirectSoundBuffer_GetCurrentPosition(dsnd_pSecondary, (LPDWORD)&dsnd_playPos, (LPDWORD)&dsnd_writePos) == 0 ) {
-            return (dsnd_playPos / DSND_BLOCKSIZE) % dsnd_numBlocks;
-        }
+        HRESULT hr = IDirectSoundBuffer_GetCurrentPosition(dsnd_pSecondary, (LPDWORD)&dsnd_playPos, (LPDWORD)&dsnd_writePos);
+        if ( hr == DS_OK ) return (dsnd_playPos / DSND_BLOCKSIZE) % dsnd_numBlocks;
+        if ( hr == DSERR_BUFFERLOST ) dsnd_recoveryPending = true;
     }
 
     return -1;
@@ -432,6 +508,8 @@ void Dsnd_TestReset(void)
     dsnd_pSecondary = NULL;
     dsnd_busy = false;
     dsnd_ownDS = false;
+    dsnd_restorePrimaryVolume = false;
+    dsnd_recoveryPending = false;
     dsnd_hTimer = 0;
     dsnd_numBlocks = 0;
 }

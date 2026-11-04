@@ -94,7 +94,8 @@ int J3DAPI SmushPlay_SysStartup(HWND hwnd, tDirectSound* pDSound)
     {
         zfilio_Configure(1, ".snm", 0);
         zfilio_Configure(1, ".znm", 0);
-        dsnd_Configure(5, pDSound);
+        // Fixed: Terminate the tag list instead of reading past the supplied arguments.
+        dsnd_Configure(DSND_CONFIG_DSOUND, pDSound, DSND_CONFIG_END);
         if ( LecShare_Startup() == 0 )
         {
             if ( ((int (*)(LecBatch*, const char*))smushplay_pShare->pfn10)(smushplay_aServices, NULL) == 0 )
@@ -142,7 +143,8 @@ int J3DAPI SmushPlay_PlayMovie(const char* pFilename, int rate, int flags, int a
     smushplay_pSound->SetVolume(SOUND_NOTRACK, smushplay_volume);
     smushplay_pfBlit = pBlit;
     smushplay_bAbort = 0;
-    dbloc16_Configure(1, smushplay_Blit);
+    // Fixed: The decoder configuration also requires a terminating zero tag.
+    dbloc16_Configure(1, smushplay_Blit, 0);
 
     // TODO: [BUG] The original returns an uninitialized rc if the loop doesn't run (loops is -1 if 0 is passed in), here it is 0.
     int rc = 0; // Fixed: Init to 0
