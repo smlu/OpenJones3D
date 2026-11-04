@@ -1,4 +1,6 @@
-// Added: Null-platform headless entry point. It runs the real game loop the way
+// Added: the headless run the platform columns share. This is the run logic (JonesHeadless_Run),
+// not the entry point: main() lives in main.c (Null column) and Platform/Babylon/main.cpp (Babylon
+// column). It runs the real game loop the way
 // WinMain, Indy3D_WinMain and wkernel_Run do on Windows, in the same order:
 // global reset, Startup (JonesMain_Startup failing means JonesMain_Shutdown and a
 // nonzero exit), then JonesMain_Process() until the engine quits or the frame limit is
@@ -558,7 +560,7 @@ static bool Headless_WriteStateFile(const char* pPath, size_t frameCount)
     return bClosed != 0;
 }
 
-int main(int argc, char** argv)
+int JonesHeadless_Run(int argc, char** argv)
 {
     const char* pLoadPath    = NULL;
     const char* pStatePath   = NULL;
