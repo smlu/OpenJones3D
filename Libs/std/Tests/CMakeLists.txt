@@ -102,6 +102,7 @@ endif()
 
 set(STD_GENERAL_TESTED_SOURCES
     "${STD_GENERAL_SOURCE_DIR}/std.c"
+    "${STD_GENERAL_SOURCE_DIR}/stdFile.c"
     "${STD_GENERAL_SOURCE_DIR}/stdBmp.c"
     "${STD_GENERAL_SOURCE_DIR}/stdConffile.c"
     "${STD_GENERAL_SOURCE_DIR}/stdConfig.c"
