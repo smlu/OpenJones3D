@@ -172,20 +172,20 @@ TEST(j3dCrt, TestStrncatS)
 {
     char buf[8];
 
-    strcpy(buf, "ab");
+    strcpy_s(buf, sizeof(buf), "ab");
     TEST_ASSERT_EQUAL_INT(0, strncat_s(buf, sizeof(buf), "cd", 2));
     TEST_ASSERT_EQUAL_STRING("abcd", buf);
 
-    strcpy(buf, "ab");
+    strcpy_s(buf, sizeof(buf), "ab");
     TEST_ASSERT_EQUAL_INT(STRUNCATE, strncat_s(buf, 4, "cde", _TRUNCATE)); // only 'c' fits
     TEST_ASSERT_EQUAL_STRING("abc", buf);
 
-    strcpy(buf, "ab");
+    strcpy_s(buf, sizeof(buf), "ab");
     TEST_ASSERT_EQUAL_INT(STRUNCATE, strncat_s(buf, 3, "cd", _TRUNCATE)); // nothing fits
     TEST_ASSERT_EQUAL_STRING("ab", buf);
 
     errno = 0;
-    strcpy(buf, "abcd");
+    strcpy_s(buf, sizeof(buf), "abcd");
     TEST_ASSERT_EQUAL_INT(ERANGE, strncat_s(buf, 5, "efgh", 4)); // does not fit, emptied
     TEST_ASSERT_EQUAL_INT('\0', buf[0]);
     TEST_ASSERT_EQUAL_INT(ERANGE, errno);
