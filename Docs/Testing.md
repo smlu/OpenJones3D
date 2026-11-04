@@ -312,7 +312,7 @@ only the module name or whether a test file was edited.
 | --- | --- |
 | Any engine code | Native build (Clang), unit suites in Debug |
 | Code the legacy Win32/DirectX 9 build compiles (until M6) | Also a Windows build (MinGW or MSVC) with its unit suites. DX6 is paused and not required |
-| Simulation behavior (physics, collision, AI, COG, game time, savegames) | Also a [trace comparison](#trace-tests) against the retail profile, and against the default profile when a QOL branch changed |
+| Simulation behavior (physics, collision, AI, COG, game time, savegames) | Also a [trace comparison](#trace-tests) against the retail profile, and against the Enhanced profile when an enhancement changed |
 | Memory handling, file or savegame parsing, 64-bit portability | Also a sanitizer build (`-DJONES3D_SANITIZE=ON`) |
 | Babylon interfaces or backends | Babylon's own tests against every backend, including Null, and its standalone build |
 
@@ -336,8 +336,8 @@ cd <game>/Resource
 Rules:
 
 - The reference for the retail profile is a build of the tagged baseline with
-  all simulation options set to retail. The default profile is compared against
-  the same baseline with its QOL options on.
+  all simulation options set to retail. The Enhanced profile (the default) is compared
+  against the same baseline with its enhancements on.
 - Identical state files are the expected result. Any difference is investigated
   before anything else changes; reference traces are never edited to make a
   change pass.
@@ -348,7 +348,7 @@ Rules:
 
 **Status:** the headless runner, scripted input and state files exist and are
 deterministic across 32-bit, 64-bit and sanitizer builds. Selecting the retail
-or default profile at run time waits for the QOL options to become runtime
+or Enhanced profile at run time waits for the QOL options to become runtime
 options; until then, the profile is the build's `JONES3D_QOL_IMPROVEMENTS`
 setting.
 

@@ -16,9 +16,11 @@
 | Null backend | A backend that honors an interface's contract without a device: draws are discarded, no key is pressed |
 | OpenJones3D | The upstream project this is forked from, a function-by-function reconstruction |
 | Presentation | Rendering, resolution, audio output and UI. Free to change |
-| QOL | Quality-of-life changes inherited from OpenJones3D, on by default, each switchable back to retail |
+| Enhanced profile | The default: every enhancement on (OpenJones3D's QOL changes, now Jones3D EX enhancements, and new ones) |
+| QOL | Quality-of-life changes inherited from OpenJones3D; they are Jones3D EX enhancements and part of the Enhanced profile |
 | Recovered name | A function or type name from the original engine, kept in game code |
 | Retail | The behavior of the original game as released |
+| Retail profile | Every simulation enhancement off: the original game's behavior, for players, speedrunners and the fidelity check |
 | RTI | OpenJones3D's tables of retail executable addresses, used for hooking; removed with binary compatibility |
 | Sith | The LucasArts engine Jones3D descends from. Also the gameplay runtime in `Libs/sith/` |
 | Simulation | Physics, collision, AI, COG, game time and savegames. Measured against retail by traces |

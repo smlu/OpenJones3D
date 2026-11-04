@@ -65,9 +65,9 @@ so when you couldn't build it, and never describe unbuilt or untested code as va
 ## Fidelity
 
 - **Simulation** (physics, collision, AI, COG, game time, savegames) is measured against retail behavior.
-  Enhancements are on by default: OpenJones3D's QOL changes and new simulation changes alike. Each one is an
-  option that switches back to retail, and the Retail profile turns them all off; with it, the retail trace
-  must stay identical.
+  Two profiles: **Enhanced** (the default) and **Retail**. OpenJones3D's QOL changes are this project's
+  enhancements, and new simulation changes join them, on by default. Each is an option the Retail profile
+  turns off; with the Retail profile, the retail trace must stay identical.
 - **Presentation** (renderer, resolution, audio output, UI) is free to improve.
 - Keep the simulation deterministic: no wall-clock time, thread timing, uninitialized memory or pointer
   values in anything that reaches state.

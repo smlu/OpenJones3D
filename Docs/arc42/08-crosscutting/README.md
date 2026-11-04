@@ -8,8 +8,8 @@ The simulation is measured against retail behavior ([ADR-0003](../09-decisions/A
 |---|---|
 | Simulation | Physics, collision, AI, COG, game time, events, savegames: everything that decides what happens |
 | Presentation | Rendering, resolution, audio output, UI: everything that decides how it is shown |
-| Retail profile | All simulation options set to retail behavior |
-| Default profile | OpenJones3D's QOL changes on, which is what a player gets |
+| Retail profile | Every simulation enhancement off: retail behavior |
+| Enhanced profile | The default: every enhancement on, OpenJones3D's QOL changes included |
 | Trace | The simulation state written by a headless run, frame by frame |
 
 Rules:
