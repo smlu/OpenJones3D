@@ -2162,8 +2162,6 @@ int J3DAPI jonesConfig_LoadControlScheme(const char* pFilePath, JonesControlsSch
     {
         stdConffile_ReadArgs(); // Skip header line
 
-        size_t actionCount = 0;
-
         for ( size_t i = 0; i < STD_ARRAYLEN(pConfig->aActions); ++i )
         {
             size_t argNum = 0;
@@ -2266,12 +2264,17 @@ int J3DAPI jonesConfig_LoadControlScheme(const char* pFilePath, JonesControlsSch
 
 error:
     memset(pConfig->aName, 0, sizeof(pConfig->aName));
-    for ( size_t i = 0; i < bindNum; ++i ) // TODO: Hmm is it ok using binNum here? Shouldn't it use actionCount, or just memset the whole array?
+#ifdef J3D_QOL_IMPROVEMENTS
+    // Fixed: An input row can name any action, so its binding count cannot identify
+    // the rows changed before an error. Clear every action after a failed load.
+    memset(pConfig->aActions, 0, sizeof(pConfig->aActions));
+#else
+    for ( size_t i = 0; i < bindNum; ++i )
     {
-        // The original tests the address of the action row here, which is never NULL, so every row is cleared
-        // Fixed: Clear the whole action row, the original clears 9 bytes, which is not even 3 of the 9 entries.
-        memset(pConfig->aActions[i], 0, J3D_QOL_VALUE(sizeof(pConfig->aActions[i]), STD_ARRAYLEN(pConfig->aActions[i])));
+        // Legacy: The original clears nine bytes in each of bindNum rows.
+        memset(pConfig->aActions[i], 0, STD_ARRAYLEN(pConfig->aActions[i]));
     }
+#endif
     // Old code
     /*if ( bindNum > 0 )
     {
