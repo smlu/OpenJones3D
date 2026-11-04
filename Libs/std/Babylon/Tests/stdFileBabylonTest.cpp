@@ -60,6 +60,7 @@ namespace
         context.pFileSystem     = pFileSystem;
         context.pPlatform       = pPlatform;
         context.pScriptPlatform = pPlatform;
+        context.pWindow         = nullptr;
         stdBabylon_SetContext(&context);
     }
 
@@ -706,6 +707,7 @@ static void runAllTests(void)
     RUN_TEST_GROUP(stdFileBabylon);
     RUN_TEST_GROUP(stdFileUtilBabylon);
     RUN_TEST_GROUP(stdControlBabylon);
+    RUN_TEST_GROUP(stdBabylonEvents);
 }
 
 int main(int argc, const char* argv[])

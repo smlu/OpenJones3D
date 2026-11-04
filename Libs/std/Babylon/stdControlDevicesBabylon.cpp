@@ -1,8 +1,8 @@
 // Added: the Babylon column's device side of std/Null/stdControlNull.h. The engine's keyboard and
-// mouse buttons come from the Babylon platform event queue through one babylon::input::InputState,
-// read once per stdControl_ReadControls as a snapshot of every key's state, the way
-// stdControlDX9.c polls DirectInput; the headless runner's scripted keys go into that same queue.
-// Mouse axes and gamepads are not read yet, and the file uses no platform header of its own.
+// mouse buttons come from the Babylon platform event queue through the one shared
+// babylon::input::InputState of stdBabylonEvents.cpp, read once per stdControl_ReadControls as a
+// snapshot of every key's state, the way stdControlDX9.c polls DirectInput; the headless runner's
+// scripted keys go into that same queue. Mouse axes and gamepads are not read yet.
 // Adapter code: no Fixed/Added markers inside.
 #include <babylon/input/InputState.h>
 #include <babylon/platform/Event.h>
@@ -15,6 +15,7 @@
 #include <optional>
 #include <span>
 
+#include <std/Babylon/stdBabylonEvents.h>
 #include <std/Babylon/stdControlDevicesBabylon.h>
 #include <std/Null/stdControlNull.h>
 #include <std/Win95/stdControl.h>
@@ -144,11 +145,6 @@ namespace
         babylon::platform::MouseButton::X1,
     };
 
-    // The key states the reads report: what the events pumped since the last beginFrame() add up
-    // to. File-static like the DX9 backend's device objects, so a key held down stays down across
-    // reads.
-    babylon::input::InputState inputState;
-
     // True when no engine key id and no Babylon key appears twice in aKeyMappings, so every entry
     // pairs one engine id with one key and both directions of the lookup are unambiguous. Keys
     // either side lacks stay out of the table, so they cannot collide.
@@ -221,7 +217,7 @@ int stdControlDevicesBabylon_EngineIdFromKey(babylon::platform::Key key)
 #ifdef J3D_TEST
 void stdControlDevicesBabylon_ResetForTest()
 {
-    inputState = babylon::input::InputState();
+    stdBabylonEvents_ResetForTest();
 }
 #endif
 
@@ -229,30 +225,20 @@ extern "C" {
 
 void stdControl_ReadDevices(uint32_t readTime, bool bReadMouse)
 {
-    StdBabylonContext& rContext = stdBabylon_RequireContext("stdControl_ReadDevices");
+    // The frame's events: everything the platform has queued, applied in the order it made them,
+    // through the column's one pump. The pump is safe to call any number of times per frame, so
+    // the window adapter may have drained the queue already; the held-key state then still says
+    // what this read reports.
+    stdBabylonEvents_Pump();
 
-    inputState.beginFrame();
-
-    // The frame's events: everything the platform has queued, applied in the order it made them.
-    // TODO: M5.12 moves the event pump to the window adapter, which must hand input events on here.
-    for (;;)
-    {
-        const std::optional<babylon::platform::Event> pEvent = rContext.pPlatform->pollEvent();
-        if ( !pEvent )
-        {
-            break;
-        }
-
-        // Events that carry no input (window, quit) are ignored by InputState.
-        inputState.apply(*pEvent);
-    }
+    babylon::input::InputState& rInputState = stdBabylonEvents_InputState();
 
     // The keyboard snapshot, stdControlDX9.c's stdControl_ApplyKeyboardState over the device state:
     // every mapped key is reported as it is now, so a key that went down and came up between two
     // reads never shows as down, exactly like the polled device.
     for ( const StdBabylonKeyMapping& rMapping : aKeyMappings )
     {
-        stdControl_UpdateKeyState(rMapping.engineKeyId, inputState.keyDown(rMapping.key) ? 1 : 0, readTime);
+        stdControl_UpdateKeyState(rMapping.engineKeyId, rInputState.keyDown(rMapping.key) ? 1 : 0, readTime);
     }
 
     // The mouse button snapshot, stdControlDX9.c's stdControl_ApplyMouseButtonState, only for the
@@ -262,9 +248,13 @@ void stdControl_ReadDevices(uint32_t readTime, bool bReadMouse)
         for ( size_t i = 0; i < STD_ARRAYLEN(aMouseButtons); ++i )
         {
             const int keyId = (int)(STDCONTROL_KID_MOUSE_LBUTTON + i);
-            stdControl_UpdateKeyState(keyId, inputState.mouseButtonDown(aMouseButtons[i]) ? 1 : 0, readTime);
+            stdControl_UpdateKeyState(keyId, rInputState.mouseButtonDown(aMouseButtons[i]) ? 1 : 0, readTime);
         }
     }
+
+    // The snapshot is taken: clear the per-frame flags, so the next pump records the next frame's
+    // transitions, the way beginFrame before the apply of the frame's events did.
+    rInputState.beginFrame();
 
     // TODO: the mouse axes (stdControl_ReadAxis on STDCONTROL_AID_MOUSE_X, _Y and _Z) and the
     // gamepad buttons and axes are not read yet; they come with the playable build.

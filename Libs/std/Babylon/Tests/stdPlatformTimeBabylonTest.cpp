@@ -42,6 +42,7 @@ TEST_SETUP(stdPlatformTimeBabylon)
     context.pFileSystem      = nullptr;
     context.pPlatform        = pPlatform;
     context.pScriptPlatform  = pPlatform;
+    context.pWindow          = nullptr;
     stdBabylon_SetContext(&context);
 
     // The latch is file-static and never resets on its own; clear it so each test starts unlatched.

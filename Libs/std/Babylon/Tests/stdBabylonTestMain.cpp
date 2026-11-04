@@ -34,7 +34,8 @@ int main(int argc, char** argv)
     // Added: the game tests read no OS input, but the context contract needs a platform; the
     // NullPlatform stands in, and as the script platform it is the queue --input would use.
     babylon::platform::NullPlatform platform;
-    StdBabylonContext context{ pClock.get(), &virtualClock, pFileSystem.get(), &platform, &platform };
+    // Added: no game window in the game tests: the context's pWindow stays null.
+    StdBabylonContext context{ pClock.get(), &virtualClock, pFileSystem.get(), &platform, &platform, nullptr };
     stdBabylon_SetContext(&context);
 
     // C++ refuses the char** to const char** qualification change that C accepts for main's argv.

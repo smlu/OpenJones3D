@@ -20,6 +20,7 @@ struct StdBabylonContext
     babylon::files::FileSystem* pFileSystem; // never null while installed
     babylon::platform::Platform* pPlatform;  // never null while installed
     babylon::platform::NullPlatform* pScriptPlatform; // the headless runner's queue, or nullptr
+    babylon::platform::Window* pWindow;      // the game window, or nullptr (headless)
 };
 
 // Installs the context (nullptr uninstalls). The pointer must stay valid until it is uninstalled.

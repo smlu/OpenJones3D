@@ -7,7 +7,9 @@ add_executable(stdBabylonTests
     stdPlatformTimeBabylonTest.cpp
     stdFileBabylonTest.cpp
     stdControlBabylonTest.cpp
+    stdBabylonEventsTest.cpp
     "${STDBABYLON_SOURCE_DIR}/stdBabylon.cpp"
+    "${STDBABYLON_SOURCE_DIR}/stdBabylonEvents.cpp"
     "${STDBABYLON_SOURCE_DIR}/stdPlatformTimeBabylon.cpp"
     "${STDBABYLON_SOURCE_DIR}/stdBabylonPath.cpp"
     "${STDBABYLON_SOURCE_DIR}/stdFileBabylon.cpp"
@@ -43,6 +45,7 @@ set_target_properties(stdBabylonTests PROPERTIES
 
 source_group("Tested Sources" FILES
     "${STDBABYLON_SOURCE_DIR}/stdBabylon.cpp"
+    "${STDBABYLON_SOURCE_DIR}/stdBabylonEvents.cpp"
     "${STDBABYLON_SOURCE_DIR}/stdPlatformTimeBabylon.cpp"
     "${STDBABYLON_SOURCE_DIR}/stdBabylonPath.cpp"
     "${STDBABYLON_SOURCE_DIR}/stdFileBabylon.cpp"

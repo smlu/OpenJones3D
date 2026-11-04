@@ -48,6 +48,9 @@ namespace
         context.pPlatform       = pPlatform;
         context.pScriptPlatform = bScriptPlatform ? pPlatform : nullptr;
 
+        // The device read is the headless one: no game window, so the pump records no window events.
+        context.pWindow = nullptr;
+
         // The control adapter never touches files, so this suite leaves pFileSystem null.
         context.pFileSystem = nullptr;
         stdBabylon_SetContext(&context);
