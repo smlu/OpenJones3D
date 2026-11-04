@@ -15,7 +15,7 @@ context, decision, consequences. Decisions aren't edited after the fact; a new A
 | [ADR-0008](ADR-0008-babylon-license.md) | Babylon Engine is MPL-2.0 with permissive dependencies | Accepted |
 | [ADR-0009](ADR-0009-sdl3-and-sdl3-gpu.md) | SDL3 for the platform and the SDL3 GPU API for rendering | Accepted |
 | [ADR-0010](ADR-0010-miniaudio.md) | miniaudio for audio | Accepted |
-| [ADR-0011](ADR-0011-retire-win32-directx.md) | Retire the Win32 and DirectX path after renderer parity | Accepted |
+| [ADR-0011](ADR-0011-retire-win32-directx.md) | Retire the Win32 and DirectX path after renderer parity (amended: once the references are recorded) | Accepted |
 | [ADR-0012](ADR-0012-desktop-first-portable-interfaces.md) | Desktop platforms first, portable interfaces | Accepted |
 | [ADR-0013](ADR-0013-cvars-in-foundation.md) | Cvars are part of the Babylon foundation | Accepted |
 | [ADR-0014](ADR-0014-arc42-documentation.md) | Architecture documentation in arc42 | Accepted |
@@ -26,3 +26,4 @@ context, decision, consequences. Decisions aren't edited after the fact; a new A
 | [ADR-0019](ADR-0019-user-directory-for-writes.md) | Writes go to a user directory; the game keeps its search order | Accepted |
 | [ADR-0020](ADR-0020-cvar-flags.md) | Cvars carry flags, including a simulation flag | Accepted |
 | [ADR-0021](ADR-0021-detect-game-data.md) | Detect the installed game data at startup | Accepted |
+| [ADR-0022](ADR-0022-shaders-compiled-at-build-time.md) | Shaders are compiled at build time, with a local cache | Accepted |
