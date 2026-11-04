@@ -42,14 +42,16 @@ static LONG SmushCoreTest_InterlockedIncrement(volatile LONG* pValue)
 #define InterlockedIncrement SmushCoreTest_InterlockedIncrement
 #endif
 
+#include <smush/SmushPlay.h>
 #include <smush/insane/Bitmap/Bitmap.h>
 #include <smush/insane/Lec/LecShare.h>
 #include <smush/insane/Memory/Memory.h>
 #include <smush/insane/Timer/Timer.h>
 #include <smush/insane/Util/List.h>
 
-// Unit tests of the smush Core area (LecShare, Timer, Memory, List, Bitmap). SmushPlay and Blit are not covered: they
-// need the other areas' modules (and the assembly blitters).
+// Unit tests of the smush Core area (SmushPlay, LecShare, Timer, Memory, List, Bitmap). Only the SmushPlay entry points
+// that need no INSANE services are covered; the movie playback itself and Blit need the other areas' modules (and the
+// assembly blitters).
 TEST_GROUP(SmushCore);
 
 TEST_SETUP(SmushCore)
@@ -1314,6 +1316,37 @@ TEST(SmushCore, Timer_Start_Stop_Reference_Counted)
     TEST_ASSERT_EQUAL_INT(ticks, pTimer->GetTicks());
 }
 
+/* ---- SmushPlay ---- */
+
+static int g_smushplayBlits;
+
+static int J3DAPI SmushCoreTest_BlitCount(const SmushBitmap* pBitmap, int frame)
+{
+    (void)pBitmap;
+    (void)frame;
+    g_smushplayBlits++;
+    return 0;
+}
+
+TEST(SmushCore, SmushPlay_PlayMovie_NoStartup)
+{
+    // The INSANE services only exist after a successful SmushPlay_SysStartup, and the Null platform never
+    // gets one (its DsndNull publishes no SNDDRIVER, so the sound module fails to start and the batch
+    // subscribe is never reached). Playing a movie then returns the failure value it returns for its other
+    // early failures instead of calling through the NULL BITMAP.app interface.
+    SmushPlay_ResetGlobals();
+    g_smushplayBlits = 0;
+
+    TEST_ASSERT_EQUAL_INT(0, SmushPlay_PlayMovie("missing.snm", 15, 0, 0, 0, 640, 480, -1, 0, SmushCoreTest_BlitCount, 1, 1000000, 1000000));
+    TEST_ASSERT_EQUAL_INT(0, g_smushplayBlits);
+
+    // A rate of 0 takes the default and must not change the outcome
+    TEST_ASSERT_EQUAL_INT(0, SmushPlay_PlayMovie("missing.snm", 0, 0, 0, 0, 640, 480, -1, 0, SmushCoreTest_BlitCount, 1, 1000000, 1000000));
+    TEST_ASSERT_EQUAL_INT(0, g_smushplayBlits);
+
+    SmushPlay_ResetGlobals();
+}
+
 /* ---- Runner ---- */
 
 TEST_GROUP_RUNNER(SmushCore)
@@ -1363,4 +1396,5 @@ TEST_GROUP_RUNNER(SmushCore)
     RUN_TEST_CASE(SmushCore, Timer_Sync);
     RUN_TEST_CASE(SmushCore, Timer_Paused_NoCallbacks);
     RUN_TEST_CASE(SmushCore, Timer_Start_Stop_Reference_Counted);
+    RUN_TEST_CASE(SmushCore, SmushPlay_PlayMovie_NoStartup);
 }
