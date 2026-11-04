@@ -151,6 +151,7 @@ endif()
 set(STD_NULL_TESTED_SOURCES
     "${STD_SOURCE_DIR}/Null/stdFileUtilPosix.c"
     "${STD_SOURCE_DIR}/Null/stdPlatformNull.c"
+    "${STD_SOURCE_DIR}/Null/stdPlatformTimeNull.c"
 )
 
 set(STD_TESTED_SOURCES
