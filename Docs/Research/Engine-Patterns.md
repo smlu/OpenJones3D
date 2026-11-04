@@ -109,7 +109,7 @@ against this codebase. This page records findings and their sources; decisions t
 - **Verdict:** fits. Flags for saved, read-only and startup-only cvars, plus a simulation flag so that
   simulation cvars are recorded in traces automatically
   ([ADR-0013](../arc42/09-decisions/ADR-0013-cvars-in-foundation.md)). Protecting path cvars becomes a
-  requirement once a console or mods can set cvars (M9).
+  requirement once a console or mods can set cvars (M11 and later).
 - **Decided:** [ADR-0020](../arc42/09-decisions/ADR-0020-cvar-flags.md).
 
 ### Game data detection

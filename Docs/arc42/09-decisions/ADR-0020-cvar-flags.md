@@ -31,5 +31,5 @@ Babylon.
 - Recording simulation settings in traces happens through the flag, not through a hand-kept list.
 - Changing a simulation cvar during a recorded run is either refused or recorded at that frame; the M5 plan
   decides which.
-- Once a console or mods can set cvars (M9), startup-only and path cvars must reject those writes. This is
-  recorded as an M9 requirement.
+- Once a console or mods can set cvars (M11 and later), startup-only and path cvars must reject those writes. This is
+  recorded as a requirement for that milestone.

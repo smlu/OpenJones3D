@@ -1,0 +1,4 @@
+# The core module links nothing; test and doctest targets are ignored by the
+# checker, so they need no entry.
+
+core:

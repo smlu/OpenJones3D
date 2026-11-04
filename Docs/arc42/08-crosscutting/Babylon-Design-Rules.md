@@ -133,6 +133,6 @@ Avoid:
 - Singletons and static self-registration ([ADR-0015](../09-decisions/ADR-0015-babylon-modules-as-cmake-targets.md))
 - Inheritance deeper than interface to backend
 - Observers beyond cvar change callbacks
-- ECS or a job system in the foundation (threads come in M9)
+- ECS or a job system in the foundation (threads come in M11 and later)
 - Shared ownership through `shared_ptr`
 - Heavy template metaprogramming in public headers

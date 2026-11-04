@@ -1,0 +1,27 @@
+// SPDX-License-Identifier: MPL-2.0
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+#pragma once
+
+#include <string_view>
+
+// The whole version as "major.minor.patch", e.g. "0.1.0".
+#define BABYLON_VERSION_STRING "@Babylon_VERSION_MAJOR@.@Babylon_VERSION_MINOR@.@Babylon_VERSION_PATCH@"
+
+namespace babylon::core
+{
+
+    // Babylon's semantic version, generated from the project() version in
+    // Babylon/CMakeLists.txt when the build tree configures.
+    inline constexpr int kVersionMajor = @Babylon_VERSION_MAJOR@;
+    inline constexpr int kVersionMinor = @Babylon_VERSION_MINOR@;
+    inline constexpr int kVersionPatch = @Babylon_VERSION_PATCH@;
+
+    // Returns the version string. The view points to a static string literal,
+    // is valid for the program's lifetime and must not be freed. Callable
+    // at any time.
+    std::string_view versionString();
+
+}
