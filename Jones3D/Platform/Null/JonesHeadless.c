@@ -8,7 +8,7 @@
 // behind: the retail mutex, the Win32 signal handler, window creation and the
 // stdWin95 window/instance/Guid registration.
 //
-// Usage: Jones3D-headless [--load <save.nds>] [--frames <n>] [--step <msec>] [--state <file>] [--input <file>]
+// Usage: Jones3D-headless [--load <save.nds>] [--frames <n>] [--step <msec>] [--state <file>] [--input <file>] [--capture <file>]
 //   --load   answers the load-game dialog once with the given path; needs the
 //            "startMode = 1" (load game) entry in Jones.cfg, like on Windows.
 //   --frames frame limit of the engine's own game-state frame counter (default 1000).
@@ -21,6 +21,10 @@
 //            and "frame <n>: key <name|number> down|up" lines press keys at engine frame <n>.
 //            A malformed script aborts the run before startup, so the same script keeps a run
 //            deterministic like every other aspect of the run.
+//   --capture records every renderer forwarder call of the run into an RCAP v1 capture file.
+//            The game opens it during JonesMain_Startup (once the host services exist) and closes
+//            it during JonesMain_Shutdown. The column named in its header is "babylon" for the
+//            Babylon column and "null" otherwise.
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -75,7 +79,7 @@ typedef struct HeadlessInputEvent
 
 static void Headless_PrintUsage(const char* pProgramName)
 {
-    fprintf(stderr, "usage: %s [--load <save.nds>] [--frames <n, default %d>] [--step <msec, default %d>] [--state <file>] [--input <file>]\n",
+    fprintf(stderr, "usage: %s [--load <save.nds>] [--frames <n, default %d>] [--step <msec, default %d>] [--state <file>] [--input <file>] [--capture <file>]\n",
         pProgramName ? pProgramName : "Jones3D-headless", HEADLESS_DEFAULT_FRAMES, HEADLESS_DEFAULT_STEP);
 }
 
@@ -595,13 +599,14 @@ int JonesHeadless_Run(int argc, char** argv)
     const char* pLoadPath    = NULL;
     const char* pStatePath   = NULL;
     const char* pInputPath   = NULL;
+    const char* pCapturePath = NULL;
     size_t frameLimit        = HEADLESS_DEFAULT_FRAMES;
     unsigned long step       = HEADLESS_DEFAULT_STEP;
 
     for ( int i = 1; i < argc; ++i )
     {
         if ( !strcmp(argv[i], "--load") || !strcmp(argv[i], "--frames") || !strcmp(argv[i], "--step")
-            || !strcmp(argv[i], "--state") || !strcmp(argv[i], "--input") )
+            || !strcmp(argv[i], "--state") || !strcmp(argv[i], "--input") || !strcmp(argv[i], "--capture") )
         {
             if ( i + 1 >= argc )
             {
@@ -644,6 +649,10 @@ int JonesHeadless_Run(int argc, char** argv)
             {
                 pInputPath = argv[++i];
             }
+            else if ( !strcmp(argv[i], "--capture") )
+            {
+                pCapturePath = argv[++i];
+            }
             else
             {
                 pStatePath = argv[++i];
@@ -681,6 +690,18 @@ int JonesHeadless_Run(int argc, char** argv)
     if ( pLoadPath )
     {
         JonesPlatformNull_SetLoadPath(pLoadPath);
+    }
+
+    // Added: --capture: hand the file to the game, which opens it in JonesMain_Startup after the
+    // host services exist and closes it in JonesMain_Shutdown before they are torn down.
+    if ( pCapturePath )
+    {
+#ifdef J3D_PLATFORM_BABYLON
+        const char* pCaptureColumn = "babylon";
+#else
+        const char* pCaptureColumn = "null";
+#endif
+        JonesMain_SetCapture(pCapturePath, pCaptureColumn);
     }
 
     // wkernel_Run: the Startup callback (the WinMain.c Startup wrapper's logic).

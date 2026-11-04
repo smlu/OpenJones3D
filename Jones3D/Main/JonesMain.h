@@ -14,6 +14,11 @@ extern char JonesMain_g_aErrorBuffer[1024];
 extern tSysHandle JonesMain_g_mainMutex;
 // extern tSysHandle JonesMain_g_mainMutex;
 
+// Added: select the render capture file the game opens during startup and closes during shutdown.
+// Call before JonesMain_Startup; a NULL path means no capture. The strings must stay valid until
+// JonesMain_Startup returns.
+void JonesMain_SetCapture(const char* pPath, const char* pColumn);
+
 int J3DAPI JonesMain_Startup(const char* lpCmdLine);
 void JonesMain_Shutdown(void);
 

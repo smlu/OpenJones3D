@@ -64,6 +64,7 @@
 #cmakedefine J3D_DIRECTX6
 #cmakedefine J3D_DIRECTX9
 #cmakedefine J3D_PLATFORM_NULL
+#cmakedefine J3D_PLATFORM_BABYLON
 
 #cmakedefine J3D_COLORKEYSUPPORTED
 

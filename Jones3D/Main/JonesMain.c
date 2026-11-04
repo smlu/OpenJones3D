@@ -53,6 +53,7 @@
 #include <std/Win95/stdConsole.h>
 #include <std/Win95/stdControl.h>
 #include <std/Win95/stdDisplay.h>
+#include <std/Win95/stdDisplayCapture.h>
 #include <std/Win95/stdWin95.h>
 
 #include <wkernel/wkernel.h>
@@ -73,6 +74,11 @@ tSysHandle JonesMain_g_mainMutex;
 #define JONES_LOGCONSOLE_DEBUGCOLOR    STDCONSOLE_COLOR_RED | STDCONSOLE_COLOR_GREEN | STDCONSOLE_COLOR_BLUE
 
 static bool JonesMain_bStartup = false; // Added: Init to false
+
+// Added: the render capture requested for this run, owned by the game so it opens after the host
+// services exist and closes before they are torn down. Not per-run state: ResetGlobals keeps it.
+static const char* JonesMain_pCapturePath;
+static const char* JonesMain_pCaptureColumn;
 
 static JonesMainProcessFunc JonesMain_pfCurProcess = NULL; // Added: Init. to NULL
 static JonesMainProcessFunc JonesMain_pfProcess    = NULL; // Changed: Set to NULL, OG JonesMain_ProcessGame was assigned
@@ -163,6 +169,14 @@ void JonesMain_ResetGlobals(void)
     memset(&JonesMain_g_mainMutex, 0, sizeof(JonesMain_g_mainMutex));
 }
 
+// Added: only remembers the strings; the capture opens in JonesMain_Startup once the host services
+// exist. ResetGlobals deliberately leaves them alone, so the reset order cannot drop the request.
+void JonesMain_SetCapture(const char* pPath, const char* pColumn)
+{
+    JonesMain_pCapturePath   = pPath;
+    JonesMain_pCaptureColumn = pColumn;
+}
+
 int J3DAPI JonesMain_Startup(const char* lpCmdLine)
 {
     JonesMain_bPrintQuickSave = false;
@@ -182,6 +196,17 @@ int J3DAPI JonesMain_Startup(const char* lpCmdLine)
     rdSetServices(&JonesMain_hs);
     sithSetServices(&JonesMain_hs);
     sithSound_Initialize(&JonesMain_hs);
+
+    // Added: the host services exist now and no renderer call has happened yet, so the capture can
+    // open and record the whole run. The writer keeps the file services of this moment, so the
+    // JonesFile swap later cannot change the functions behind the capture's handle.
+    if ( JonesMain_pCapturePath
+        && !stdDisplayCapture_Open(JonesMain_pCapturePath, JonesMain_pCaptureColumn) )
+    {
+        JonesMain_LogErrorToFile("Couldn't open the render capture file.");
+        JonesMain_CloseWindow();
+        return 1;
+    }
 
     // Fixed: Move initialization of JonesMain_circBuf here in case there is engine error and exiting happens sooner
     stdCircBuf_New(&JonesMain_circBuf, 4, 128);
@@ -896,6 +921,9 @@ void JonesMain_Shutdown(void)
     stdConfig_Shutdown(); // Added
     wuRegistry_Shutdown();
     JonesFile_Shutdown();
+
+    // Added: close the render capture while the host services still exist; no-op when not open.
+    stdDisplayCapture_Close();
 
     stdShutdown();
     sithSound_Uninitialize();
