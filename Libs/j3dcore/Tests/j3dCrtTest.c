@@ -395,11 +395,27 @@ static void j3dCrtTest_MakeTree(void)
     fclose(pFile);
 }
 
+// The resolver's job only exists on case-sensitive file systems; on a case-insensitive one the
+// host already does it. Call after j3dCrtTest_MakeTree(): the lowercase spelling of a file that
+// was created with another letter case is what tells the two apart.
+static int j3dCrtTest_IsCaseSensitive(void)
+{
+    struct stat st;
+
+    return stat(J3DCRTTEST_DIR "/sub/file.txt", &st) != 0;
+}
+
 TEST(j3dCrt, TestResolvePath)
 {
     char aPath[260];
 
     j3dCrtTest_MakeTree();
+
+    if ( !j3dCrtTest_IsCaseSensitive() )
+    {
+        j3dCrtTest_CleanTree();
+        TEST_IGNORE_MESSAGE("needs a case-sensitive file system (this volume ignores letter case)");
+    }
 
     // Backslashes become slashes, and components that exist in another letter case are rewritten.
     TEST_ASSERT_EQUAL_STRING(J3DCRTTEST_DIR "/Sub/File.TXT",
@@ -436,6 +452,12 @@ TEST(j3dCrt, TestFopenResolvePath)
     int         ch;
 
     j3dCrtTest_MakeTree();
+
+    if ( !j3dCrtTest_IsCaseSensitive() )
+    {
+        j3dCrtTest_CleanTree();
+        TEST_IGNORE_MESSAGE("needs a case-sensitive file system (this volume ignores letter case)");
+    }
 
     // The path does not exist with the case it is written in, and j3dcrt_fopen opens it anyway.
     TEST_ASSERT_EQUAL_INT(-1, stat(J3DCRTTEST_DIR "/sub/file.txt", &st));
@@ -586,6 +608,70 @@ TEST(j3dCrt, TestVsscanfS)
     TEST_ASSERT_EQUAL_INT(EOF, j3dCrtTest_CallVsscanfS("", "%s", buf, (rsize_t)sizeof(buf)));
 }
 
+// Microsoft's rand/srand: the documented seed = seed * 214013 + 2531011 generator, result
+// (seed >> 16) & 0x7FFF, first values after srand(1) are 41, 18467, 6334, 26500, 19169. Runs
+// against the j3dcrt shim on the Null platform and against the real Microsoft CRT on Windows;
+// the expectations are Microsoft's in both. srand(1) is restored at the end so the other tests
+// and the other suites in the process see the default state.
+TEST(j3dCrt, TestRandSequence)
+{
+    srand(1);
+    TEST_ASSERT_EQUAL_INT(41, rand());
+    TEST_ASSERT_EQUAL_INT(18467, rand());
+    TEST_ASSERT_EQUAL_INT(6334, rand());
+    TEST_ASSERT_EQUAL_INT(26500, rand());
+    TEST_ASSERT_EQUAL_INT(19169, rand());
+
+    // srand(1) restarts the sequence.
+    srand(1);
+    TEST_ASSERT_EQUAL_INT(41, rand());
+    TEST_ASSERT_EQUAL_INT(18467, rand());
+
+    // ... also from the middle of the sequence.
+    srand(1);
+    TEST_ASSERT_EQUAL_INT(41, rand());
+    TEST_ASSERT_EQUAL_INT(18467, rand());
+    TEST_ASSERT_EQUAL_INT(6334, rand());
+    srand(1);
+    TEST_ASSERT_EQUAL_INT(41, rand());
+    TEST_ASSERT_EQUAL_INT(18467, rand());
+    TEST_ASSERT_EQUAL_INT(6334, rand());
+    TEST_ASSERT_EQUAL_INT(26500, rand());
+    TEST_ASSERT_EQUAL_INT(19169, rand());
+
+    // Restore the default state.
+    srand(1);
+}
+
+TEST(j3dCrt, TestRandSeedZero)
+{
+    // srand sets the generator state to the seed; state 0 gives the first value of the seed 0
+    // sequence: 0 * 214013 + 2531011 = 2531011, (2531011 >> 16) & 0x7FFF = 38.
+    srand(0);
+    TEST_ASSERT_EQUAL_INT(38, rand());
+
+    // Restore the default state.
+    srand(1);
+}
+
+TEST(j3dCrt, TestRandRange)
+{
+    // Microsoft's RAND_MAX is 32767, and every value is in 0..RAND_MAX. The state at program
+    // start is 1, so a sequence from program start would equal the srand(1) sequence, but that
+    // is not tested: it would depend on this test being the first rand user in the process.
+    TEST_ASSERT_EQUAL_INT(32767, RAND_MAX);
+
+    srand(1);
+    for ( int cur = 0; cur < 10000; ++cur )
+    {
+        int value = rand();
+        TEST_ASSERT_TRUE_MESSAGE(value >= 0 && value <= RAND_MAX, "rand() out of 0..RAND_MAX");
+    }
+
+    // Restore the default state.
+    srand(1);
+}
+
 TEST_GROUP_RUNNER(j3dCrt)
 {
     RUN_TEST_CASE(j3dCrt, TestStrnlenS);
@@ -607,6 +693,9 @@ TEST_GROUP_RUNNER(j3dCrt)
     RUN_TEST_CASE(j3dCrt, TestSscanfS);
     RUN_TEST_CASE(j3dCrt, TestSscanfSNoOverrun);
     RUN_TEST_CASE(j3dCrt, TestVsscanfS);
+    RUN_TEST_CASE(j3dCrt, TestRandSequence);
+    RUN_TEST_CASE(j3dCrt, TestRandSeedZero);
+    RUN_TEST_CASE(j3dCrt, TestRandRange);
 }
 
 void TEST_j3dCrt_GROUP_RUNNER(void);

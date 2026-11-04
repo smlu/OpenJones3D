@@ -13,6 +13,10 @@ if (J3D_PLATFORM_NULL)
     list(FILTER JONES3D_GAME_HEADERS EXCLUDE REGEX ".*/Platform/Win32/.*")
     list(FILTER JONES3D_GAME_SOURCES EXCLUDE REGEX ".*/Platform/Null/.*")
     list(FILTER JONES3D_GAME_HEADERS EXCLUDE REGEX ".*/Platform/Null/.*")
+    # Added: the Babylon column's platform directory (JonesBabylon.c) is linked into the
+    # executables that own it, never globbed into the shared application layer.
+    list(FILTER JONES3D_GAME_SOURCES EXCLUDE REGEX ".*/Platform/Babylon/.*")
+    list(FILTER JONES3D_GAME_HEADERS EXCLUDE REGEX ".*/Platform/Babylon/.*")
 
     add_library(Jones3DGame OBJECT ${JONES3D_GAME_SOURCES} ${JONES3D_GAME_HEADERS})
 
@@ -24,23 +28,86 @@ if (J3D_PLATFORM_NULL)
     # Added: The Null headless runner: the application layer object library plus the
     # Platform/Null main(). Link groups/repeated libs resolve the static-library cycles.
     file(GLOB JONES3D_NULL_SOURCES Platform/Null/*.c)
-    add_executable(Jones3D-headless ${JONES3D_NULL_SOURCES})
+
+    # Added: the Babylon column swaps the Null main() for the Platform/Babylon composition root.
+    set(JONES3D_HEADLESS_SOURCES ${JONES3D_NULL_SOURCES})
+    if (J3D_PLATFORM_BABYLON)
+        enable_language(CXX)
+        list(REMOVE_ITEM JONES3D_HEADLESS_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Platform/Null/main.c")
+        list(APPEND JONES3D_HEADLESS_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Platform/Babylon/main.cpp")
+    endif()
+
+    add_executable(Jones3D-headless ${JONES3D_HEADLESS_SOURCES})
     target_include_directories(Jones3D-headless PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..)
+
+    if (J3D_PLATFORM_BABYLON)
+        set_target_properties(Jones3D-headless PROPERTIES LINKER_LANGUAGE CXX)
+    endif()
 
     # Added: The same "Libs" interface dependencies as the Windows Jones3D targets link,
     # repeated inside a GNU ld start/end group so the static-library cycles resolve.
     get_property(JONES3D_LIBS_INTERFACE TARGET Libs PROPERTY INTERFACE_LINK_LIBRARIES)
 
-    target_link_libraries(Jones3D-headless PRIVATE
-        -Wl,--start-group
-        Jones3DGame
-        ${JONES3D_LIBS_INTERFACE}
-        -Wl,--end-group
-    )
+    # Added: --start-group/--end-group are GNU ld and lld options; macOS's ld64 has no such options
+    # and rescans static libraries by itself, so the Apple branch links the same libraries without
+    # the group flags. Linux and Windows link lines are unchanged.
+    if (APPLE)
+        target_link_libraries(Jones3D-headless PRIVATE
+            Jones3DGame
+            ${JONES3D_LIBS_INTERFACE}
+        )
+    else()
+        target_link_libraries(Jones3D-headless PRIVATE
+            -Wl,--start-group
+            Jones3DGame
+            ${JONES3D_LIBS_INTERFACE}
+            -Wl,--end-group
+        )
+    endif()
 
     # Added: The Null platform links libm directly (the Windows CRT math functions come
-    # with the CRT shim wherever they are shimmed).
-    target_link_libraries(Jones3D-headless PRIVATE m)
+    # with the CRT shim wherever they are shimmed). macOS has no libm: its math functions are
+    # in libSystem, which the driver always links, so naming it there would fail to resolve.
+    if (NOT APPLE)
+        target_link_libraries(Jones3D-headless PRIVATE m)
+    endif()
+
+    # Added: the windowed Jones3D of the Babylon column: the Platform/Babylon composition root
+    # and run, plus the Platform/Null helpers except its main() and the headless runner. Linked
+    # exactly like Jones3D-headless. Jones3D-headless itself never sees these sources.
+    if (J3D_PLATFORM_BABYLON)
+        set(JONES3D_WINDOWED_SOURCES
+            "${CMAKE_CURRENT_SOURCE_DIR}/Platform/Babylon/mainWindowed.cpp"
+            "${CMAKE_CURRENT_SOURCE_DIR}/Platform/Babylon/JonesBabylon.c"
+        )
+        foreach(JONES3D_NULL_SOURCE ${JONES3D_NULL_SOURCES})
+            if (NOT JONES3D_NULL_SOURCE MATCHES "/Platform/Null/(main|JonesHeadless)\\.c$")
+                list(APPEND JONES3D_WINDOWED_SOURCES ${JONES3D_NULL_SOURCE})
+            endif()
+        endforeach()
+
+        add_executable(Jones3D ${JONES3D_WINDOWED_SOURCES})
+        target_include_directories(Jones3D PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..)
+        set_target_properties(Jones3D PROPERTIES LINKER_LANGUAGE CXX)
+
+        # Added: no group flags on macOS, as for Jones3D-headless above.
+        if (APPLE)
+            target_link_libraries(Jones3D PRIVATE
+                Jones3DGame
+                ${JONES3D_LIBS_INTERFACE}
+            )
+        else()
+            target_link_libraries(Jones3D PRIVATE
+                -Wl,--start-group
+                Jones3DGame
+                ${JONES3D_LIBS_INTERFACE}
+                -Wl,--end-group
+            )
+        endif()
+        if (NOT APPLE)
+            target_link_libraries(Jones3D PRIVATE m)
+        endif()
+    endif()
     return()
 endif()
 
@@ -52,6 +119,9 @@ list(FILTER JONES3D_HEADERS EXCLUDE REGEX ".*/Tests/.*")
 # Added: Windows builds never compile the Null platform backend sources.
 list(FILTER JONES3D_SOURCES EXCLUDE REGEX ".*/Platform/Null/.*")
 list(FILTER JONES3D_HEADERS EXCLUDE REGEX ".*/Platform/Null/.*")
+# Added: Windows builds never compile the Babylon column's platform sources either.
+list(FILTER JONES3D_SOURCES EXCLUDE REGEX ".*/Platform/Babylon/.*")
+list(FILTER JONES3D_HEADERS EXCLUDE REGEX ".*/Platform/Babylon/.*")
 list(REMOVE_ITEM JONES3D_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/sha256.h")
 
 # Added: One self-contained Jones3D.exe instead of a DLL plus an injector.

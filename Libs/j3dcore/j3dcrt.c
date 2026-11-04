@@ -8,6 +8,7 @@
 
 #include <ctype.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdlib.h>
 
 #include <dirent.h>
@@ -566,6 +567,26 @@ errno_t fopen_s(FILE** ppFile, const char* pFilename, const char* pMode)
         return errno ? errno : EIO;
     }
     return 0;
+}
+
+// Added: j3dcrt_rand and j3dcrt_srand mirror Microsoft's documented CRT rand and srand, the
+// generator of the statically linked Microsoft C runtime the original executable uses:
+// seed = seed * 214013 + 2531011; return (seed >> 16) & 0x7FFF, RAND_MAX 32767. The state starts
+// at 1 like the CRT's at program start (the game never calls srand), and j3dcrt_srand sets it to
+// the seed. Microsoft keeps the state per thread; the engine's simulation is single-threaded, so
+// this one file-static state is enough. The implementation names no C runtime rand/srand entry,
+// so the macros from j3dcrt.h need no #undef here.
+static uint32_t j3dcrt_randSeed = 1u;
+
+int j3dcrt_rand(void)
+{
+    j3dcrt_randSeed = j3dcrt_randSeed * 214013u + 2531011u;
+    return (int)((j3dcrt_randSeed >> 16) & 0x7FFFu);
+}
+
+void j3dcrt_srand(unsigned int seed)
+{
+    j3dcrt_randSeed = (uint32_t)seed;
 }
 
 // scanf_s processing collects up to this many receiving arguments from the va_list.

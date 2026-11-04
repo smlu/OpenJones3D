@@ -39,25 +39,32 @@ Dependencies only point down. Babylon depends on nothing above it, and nothing i
 or Sith concept ([ADR-0006](../09-decisions/ADR-0006-babylon-engine-in-repo.md),
 [ADR-0007](../09-decisions/ADR-0007-adapter-between-game-and-babylon.md)).
 
-**Today:** the adapter layer still contains the platform code itself: the Win32, DirectX 9 and Null
-backends from milestones M3 and M4, described in [Platform-Layer.md](Platform-Layer.md). Babylon doesn't
-exist yet. M5 creates it and turns these modules into adapters, one subsystem at a time.
+**Today (end of M5):** three platform columns exist side by side, chosen at configure time. The Win32 and
+DirectX 9 column and the Null column are the M3 and M4 backends described in
+[Platform-Layer.md](Platform-Layer.md). The **Babylon column** (`-DJONES3D_PLATFORM_BABYLON=ON`, non-Windows)
+is the Null column with time, files, input and the window moved onto Babylon; rendering and sound still use
+the Null backends until M6 and M7. Both non-Windows columns produce identical headless traces.
 
 ## 5.2 Level 2: Babylon Engine
 
-Planned for M5 and M6. The exact interfaces are decided in the M5 plan; this is the intended cut.
+Modules marked M5 exist and are used by the Babylon column; the others are still planned.
 
-| Module | Role | Backends | Adapter that uses it |
-|---|---|---|---|
-| Platform | Application lifecycle, windows, events, displays | SDL3, Null | `wkernel`, `stdDisplay` |
-| Input | Keyboard, mouse, gamepads, as devices and events | SDL3, Null, Script (replays recorded input) | `stdControl` |
-| Time | Monotonic clock, frame pacing | SDL3, Null (fixed step) | `stdPlatform` timers |
-| Files | Paths, user directories, file access | SDL3, Null | `stdFile`, `stdFileUtil` |
-| Render | Devices, textures, buffers, shaders, draw submission | SDL3 GPU, Null | `std3D` |
-| Audio | Devices, voices, 3D positioning, streaming | miniaudio, Null | `Driver_*` |
-| Cvars | Named, typed settings with defaults and change callbacks | | Options, `Jones.cfg` |
-| Threads | Threads, jobs, synchronization | SDL3 | Later (M11 and later) |
-| Log | Leveled logging with sinks | | `STDLOG_*` |
+| Module | Role | Backends | Adapter that uses it | State |
+|---|---|---|---|---|
+| core | Shared types, version, locale-free number parsing | | | M5 |
+| Log | Leveled logging with sinks | | | M5 (the game still logs through `STDLOG_*`) |
+| Platform | Windows and the one event queue (window, key, mouse and gamepad events) | SDL3, Null | `wkernelBabylon.cpp`, `stdBabylonEvents.cpp` | M5 |
+| Input | Input state built from platform events; input scripts (ADR-0018) | none of its own: events come from Platform or a script | `stdControlDevicesBabylon.cpp` | M5 (keys and mouse buttons; mouse axes and gamepads later) |
+| Time | Monotonic clock and a caller-driven Null clock | SDL3, Null | `stdPlatformTimeBabylon.cpp` | M5 |
+| Files | Files, directory listing, base, current and user directories | SDL3, Null | `stdFileBabylon.cpp`, `stdFileUtilBabylon.cpp`, `stdBabylonPath.cpp` | M5 |
+| Cvars | Named, typed settings with flags, ranges and change callbacks (ADR-0020) | | `stdCvarBabylon.cpp` (`game.profile`) | M5 |
+| Render | Devices, textures, buffers, shaders, draw submission | SDL3 GPU, Null | `std3D`, `stdDisplay` | M6 |
+| Audio | Devices, voices, 3D positioning, streaming | miniaudio, Null | `Driver_*` | M7 |
+| Threads | Threads, jobs, synchronization | SDL3 | | M11 and later |
+
+The adapter files live in `Libs/std/Babylon/` and `Libs/wkernel/`; they reach Babylon through one context
+pointer (`Libs/std/Babylon/stdBabylon.h`) that the composition root fills
+(`Jones3D/Platform/Babylon/main.cpp` for `Jones3D-headless`, `mainWindowed.cpp` for the windowed `Jones3D`).
 
 Each module is its own CMake target with a public `include/` and a private `src/`, and may only use the
 modules it declares ([ADR-0015](../09-decisions/ADR-0015-babylon-modules-as-cmake-targets.md)).

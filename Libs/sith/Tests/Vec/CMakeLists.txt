@@ -8,6 +8,17 @@
 #     SEAMS   <seams .def files>            (SITHVEC_SEAM(name) / SITHVEC_LOOKUP(name) lines)
 #     ADDRS   <address header>              (force-included after sithVecTestAddrs.h)
 #     TV_DIR  <fixture directory>)          (SITHVEC_TV_DIR)
+#
+# Added: every suite of this directory links at a fixed high base with the GNU ld options
+# -no-pie -Wl,-Ttext-segment=0x20000000 below, which put the synthetic arena inside the
+# 0x10000000..0x3C000000 window that sithVecTest_AssertArenaPlacement requires. ld64 (macOS) has no
+# equivalent: it ignores -no-pie and rejects -Ttext-segment, and it loads executables above 4 GB, so
+# the suites cannot satisfy that precondition there and are not built on Apple hosts. The vector
+# coverage on native hosts therefore runs on Linux only until the harness gets a portable window.
+if (APPLE)
+    return()
+endif()
+
 function(sith_add_vec_test TARGET)
     cmake_parse_arguments(SV "" "TEST;ADDRS;TV_DIR" "SOURCES;TESTED;SEAMS" ${ARGN})
 
@@ -58,6 +69,11 @@ function(sith_add_vec_test TARGET)
         unity
         w32util
     )
+
+    # Added: the Babylon column runs the vector suites under the adapter context; the shared
+    # runner source is used only by these sith_add_vec_test executables, so the source-level
+    # entry rename is consistent for all of them.
+    std_use_babylon_test_main(${TARGET} "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/sithVecTestRunner.c")
 
     target_compile_definitions(${TARGET} PRIVATE
         J3D_TEST

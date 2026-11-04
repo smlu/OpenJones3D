@@ -194,7 +194,12 @@ static StdFileUtilFindCursor* stdFileUtil_NewCursor(const char* pFilter)
 
     if ( numEntries == 0 )
     {
-        stdMemory_Free(pEntries);
+        // Fixed: a search with no match never allocated the list, and stdMemory_Free asserts on
+        // NULL in builds without runtime guards.
+        if ( pEntries )
+        {
+            stdMemory_Free(pEntries);
+        }
         return NULL;
     }
 

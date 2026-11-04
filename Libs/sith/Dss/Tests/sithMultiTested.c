@@ -7,6 +7,10 @@
 #include <stdlib.h>
 
 int msv_rand(void);
+// The force-included address headers reach j3dcrt.h, which on the Null platform macros rand to
+// j3dcrt_rand; drop that first so this capture redirect wins (no-op on Windows, where j3dcrt.h
+// compiles out and rand is not a macro).
+#undef rand
 #define rand msv_rand
 
 #include "../sithMulti.c"

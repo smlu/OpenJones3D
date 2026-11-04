@@ -61,6 +61,9 @@ if(NOT WIN32)
     set(JONES3D_BUILD_PROGRAMS OFF CACHE BOOL "" FORCE)
 endif()
 
+# Added: the Babylon column: the Null column with platform services moved onto the Babylon Engine one by one.
+option(JONES3D_PLATFORM_BABYLON "Build the Babylon platform column instead of the Null column (non-Windows)" OFF)
+
 if (JONES3D_QOL_IMPROVEMENTS)
     set(J3D_QOL_IMPROVEMENTS ON)
 else()
@@ -92,6 +95,20 @@ endif()
 
 # Babylon Engine: built before the game's compile options so it keeps its own flags.
 option(JONES3D_BUILD_BABYLON "Build the Babylon Engine" ON)
+
+# Added: the Babylon column replaces the Null column's stdPlatform time functions with Babylon ones,
+# so it needs the Babylon Engine and only exists where the Null column exists (non-Windows).
+# J3D_PLATFORM_BABYLON implies J3D_PLATFORM_NULL, which still means "the non-Windows columns".
+if (JONES3D_PLATFORM_BABYLON)
+    if (WIN32)
+        message(FATAL_ERROR "JONES3D_PLATFORM_BABYLON is only supported on non-Windows hosts.")
+    endif()
+    if (NOT JONES3D_BUILD_BABYLON)
+        message(FATAL_ERROR "JONES3D_PLATFORM_BABYLON needs the Babylon Engine: configure with -DJONES3D_BUILD_BABYLON=ON.")
+    endif()
+    set(J3D_PLATFORM_BABYLON ON)
+endif()
+
 if (JONES3D_BUILD_BABYLON)
     set(BABYLON_BUILD_TESTS ${JONES3D_BUILD_TESTS} CACHE BOOL "" FORCE)
     set(BABYLON_SANITIZE ${JONES3D_SANITIZE} CACHE BOOL "" FORCE)
@@ -211,11 +228,17 @@ elseif(NOT WIN32 AND (CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU"))
         -Wno-unknown-pragmas
     )
     # Added: glibc's backtrace_symbols in stdPlatformNull needs the engine symbols exported to the
-    # dynamic symbol table to name the frames of the headless runner.
+    # dynamic symbol table to name the frames of the headless runner. The option is not Linux-only:
+    # on Apple hosts the Clang driver turns -rdynamic into ld64's -export_dynamic (and ignores it on
+    # linkers too old for that option), so the same flag line works on both native platforms.
     add_link_options(-rdynamic)
     # Added: glibc keeps the math functions (sinf, atan2f, sqrtf) in libm; the Windows CRT has them
     # in the default libraries. Native test executables call engine code that uses them directly.
-    link_libraries(m)
+    # Altered: macOS has no libm to name: its math functions are in libSystem, which the driver
+    # always links, so the Apple link line stays without it. Linux and Windows are unchanged.
+    if (NOT APPLE)
+        link_libraries(m)
+    endif()
     if (CMAKE_C_COMPILER_ID MATCHES "Clang")
         # Added: fail the native build on any cast that truncates a pointer (or widens an int
         # into one) so 64-bit builds stay pointer-safe. Clang only: these warning groups have

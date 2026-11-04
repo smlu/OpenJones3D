@@ -18,6 +18,9 @@ target_link_libraries(soundTests PRIVATE
     unity
 )
 
+# Added: the Babylon column runs this suite under the adapter context.
+std_use_babylon_test_main(soundTests "${CMAKE_CURRENT_SOURCE_DIR}/soundTestRunner.c")
+
 target_compile_definitions(soundTests PRIVATE
     J3D_TEST
     AUDIOLIB_TEST_TV_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tv"

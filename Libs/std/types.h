@@ -24,11 +24,11 @@ typedef struct sSysTexture tSysTexture;
 // Added: Types embedded by value. Engine code can hold them but can't read them. A backend defines
 // STD_SYS_BACKEND_TYPES and its real types first, and asserts that the sizes match.
 #if !defined(STD_SYS_BACKEND_TYPES)
-typedef struct sSysSurfaceDesc { _Alignas(STD_SYS_ALIGN) uint8_t aData[STD_SYS_SURFACEDESC_SIZE]; } tSysSurfaceDesc;
-typedef struct sSysDisplayDeviceCaps { _Alignas(STD_SYS_ALIGN) uint8_t aData[STD_SYS_DISPLAYCAPS_SIZE]; } tSysDisplayDeviceCaps;
-typedef struct sSysDevice3DDesc { _Alignas(STD_SYS_ALIGN) uint8_t aData[STD_SYS_DEVICE3DDESC_SIZE]; } tSysDevice3DDesc;
-typedef struct sSysPixelFormat { _Alignas(STD_SYS_ALIGN) uint8_t aData[STD_SYS_PIXELFORMAT_SIZE]; } tSysPixelFormat;
-typedef struct sSysGuid { _Alignas(STD_SYS_ALIGN) uint8_t aData[STD_SYS_GUID_SIZE]; } tSysGuid;
+typedef struct sSysSurfaceDesc { J3D_ALIGNAS(STD_SYS_ALIGN) uint8_t aData[STD_SYS_SURFACEDESC_SIZE]; } tSysSurfaceDesc;
+typedef struct sSysDisplayDeviceCaps { J3D_ALIGNAS(STD_SYS_ALIGN) uint8_t aData[STD_SYS_DISPLAYCAPS_SIZE]; } tSysDisplayDeviceCaps;
+typedef struct sSysDevice3DDesc { J3D_ALIGNAS(STD_SYS_ALIGN) uint8_t aData[STD_SYS_DEVICE3DDESC_SIZE]; } tSysDevice3DDesc;
+typedef struct sSysPixelFormat { J3D_ALIGNAS(STD_SYS_ALIGN) uint8_t aData[STD_SYS_PIXELFORMAT_SIZE]; } tSysPixelFormat;
+typedef struct sSysGuid { J3D_ALIGNAS(STD_SYS_ALIGN) uint8_t aData[STD_SYS_GUID_SIZE]; } tSysGuid;
 #endif
 
 // DirectPlay

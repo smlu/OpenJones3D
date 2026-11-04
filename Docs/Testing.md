@@ -29,6 +29,7 @@ default from now on; see [Running Tests](#running-tests).
 - [📦 Original-Engine I/O Test Vectors](#original-engine-io-test-vectors)
 - [▶️ Running Tests](#running-tests)
     - [🤖 CI Profiles](#ci-profiles)
+    - [🐧 Native CI Columns](#native-ci-columns)
     - [🔎 Intermittent Failures](#intermittent-failures)
     - [⏱️ Timeouts And Shared Devices](#timeouts-and-shared-devices)
 - [🖼️ Visual System Tests](#visual-system-tests)
@@ -312,7 +313,7 @@ only the module name or whether a test file was edited.
 | --- | --- |
 | Any engine code | Native build (Clang), unit suites in Debug |
 | Code the legacy Win32/DirectX 9 build compiles (until M6) | Also a Windows build (MinGW or MSVC) with its unit suites. DX6 is paused and not required |
-| Simulation behavior (physics, collision, AI, COG, game time, savegames) | Also a [trace comparison](#trace-tests) against the retail profile, and against the default profile when a QOL branch changed |
+| Simulation behavior (physics, collision, AI, COG, game time, savegames) | Also a [trace comparison](#trace-tests) against the retail profile, and against the Enhanced profile when an enhancement changed |
 | Memory handling, file or savegame parsing, 64-bit portability | Also a sanitizer build (`-DJONES3D_SANITIZE=ON`) |
 | Babylon interfaces or backends | Babylon's own tests against every backend, including Null, and its standalone build |
 
@@ -333,11 +334,24 @@ cd <game>/Resource
 <build>/Jones3D/Jones3D-headless --load ../SaveGames/<save>.nds --frames 1000 --state state.txt
 ```
 
+Both non-Windows columns build `Jones3D-headless`; the Babylon column
+(`-DJONES3D_PLATFORM_BABYLON=ON`) must give the same state file as the Null column for the same run.
+`--input <file>` feeds a scripted-input file of `frame <n>: cmd <command>` and
+`frame <n>: key <name|number> down|up` lines; scripted keys take effect at the next
+`stdControl_ReadControls`, as device input does on Windows.
+
+The state file starts with one `cvar <name> <value>` line per simulation cvar (today
+`cvar game.profile enhanced` or `retail`), followed by the frame, game time, player state and one line per
+active thing.
+
+Since M5 native builds use Microsoft's `rand` generator (the `j3dcrt` shim), as the original does, so native
+traces follow the retail random sequence ([research](Research/Time-Sources.md)).
+
 Rules:
 
 - The reference for the retail profile is a build of the tagged baseline with
-  all simulation options set to retail. The default profile is compared against
-  the same baseline with its QOL options on.
+  all simulation options set to retail. The Enhanced profile (the default) is compared
+  against the same baseline with its enhancements on.
 - Identical state files are the expected result. Any difference is investigated
   before anything else changes; reference traces are never edited to make a
   change pass.
@@ -348,7 +362,7 @@ Rules:
 
 **Status:** the headless runner, scripted input and state files exist and are
 deterministic across 32-bit, 64-bit and sanitizer builds. Selecting the retail
-or default profile at run time waits for the QOL options to become runtime
+or Enhanced profile at run time waits for the QOL options to become runtime
 options; until then, the profile is the build's `JONES3D_QOL_IMPROVEMENTS`
 setting.
 
@@ -763,6 +777,30 @@ skipped stage does not report a passing result. See
 These profiles check debug assertions, optimization-sensitive behavior, and
 opt-in guard rejection paths. System and disruptive tests remain outside CI
 because they require local devices or can disturb the desktop.
+
+<a name="native-ci-columns"></a>
+
+### 🐧 Native CI Columns
+
+`Game (native)` (`.github/workflows/game-native.yml`) builds the game natively and runs its
+tests on Linux and macOS in four Debug columns with Ninja and `fail-fast: false`: the Null
+column and the Babylon column (`-DJONES3D_PLATFORM_BABYLON=ON`) on `ubuntu-24.04` with Clang,
+and the same two on `macos-15-intel` with the system Apple clang. SDL3 is built from source in
+CI, so the Linux columns install the same dependency packages as `babylon.yml`; macOS needs
+only Ninja.
+
+- Unit suites run as `ctest -N -L unit` followed by `ctest --output-on-failure -L unit`, so the
+  discovery list is logged before the results.
+- The Babylon boundary checks (`babylon.check.boundary`, `babylon.check.selftest`) carry the
+  labels `babylon;check`, not `unit`, because they inspect the source tree instead of running
+  engine code. A second labelled call, `ctest -L check`, runs them in every column.
+- `python3 Scripts/checkboundary.py --check` (the Windows/DirectX include boundary) runs once per
+  push, in the `linux-null` column.
+- The address-pinned sith vector suites (`sith.DSS`, `sith.Multi`, `sith.ThingQuetz`,
+  `sith.AIInstinct`, `sith.AIInstinctFn`, `sith.AIMove`, `sith.AIUtil`) are not built on Apple
+  hosts: they need GNU ld's `-no-pie -Wl,-Ttext-segment=0x20000000` to put the synthetic arena in
+  the window that `sithVecTest_AssertArenaPlacement` requires, and ld64 offers no equivalent.
+  Both Linux columns still run them.
 
 <a name="intermittent-failures"></a>
 

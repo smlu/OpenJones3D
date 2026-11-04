@@ -212,10 +212,19 @@ Not a separation pattern, but the choice for dialogs. `jonesConfig.c` and `Jones
 | Check | Catches | When |
 |---|---|---|
 | `Scripts/checkboundary.py --check` | Platform names and includes above the line, per file. The allowlist can only shrink | Every slice |
-| Compile with no platform headers | What the text check can't see, such as names arriving through `j3d.h` | Repeated during M3, must pass at M5 |
+| Compile with no platform headers | What the text check can't see, such as names arriving through `j3d.h` | Passed at M5: the native (Linux) build compiles every game file except the Windows backends with no Windows or DirectX headers available |
 | Null backend links | Interfaces that are incomplete or depend on one platform | M4 |
 | Per-backend `static_assert`s | Size, layout and key number drift | Every build |
 | Tests through the interface | Behavior that differs between backends | Every slice |
+
+The M5 run of the compile check (2026-11-04): of the tracked game `.c` files outside tests, `Libs/external`
+and the Win32, DX6 and DX9 backend directories, the native build leaves out only these Windows backend files:
+`Libs/sith/Dss/sithGamesaveWin32.c`, `Libs/smush/insane/Sound/Dsnd.c`, `Libs/smush/insane/Timer/TimerWin32.c`,
+`Libs/sound/DriverDX6.c`, `Libs/sound/DriverDX9.c`, `Libs/std/Win95/stdBmpWin32.c`, `stdComm.c`,
+`stdConsole.c`, `stdFileUtilWin32.c`, `stdPlatformWin32.c`, `stdWin95.c`, `Libs/w32util/wuRegistry.c` and
+`Libs/wkernel/wkernel.c` (plus `Jones3D/Platform/Babylon/JonesBabylon.c`, which only the Babylon column
+builds). Everything else compiles on Linux, where no platform header exists, so nothing above the line needs
+one. The game CI job on Linux and macOS (M5.15) repeats the check on every push.
 
 ## Wrong ways to cross the line
 
@@ -250,6 +259,13 @@ These are refused in review, even when they would pass the check:
 ## Selection
 
 Build time, as DX6 and DX9 already work: one implementation linked per build, chosen in CMake. No function-pointer tables. `tHostServices` stays as it is. This keeps the original symbol names, which comparison with the decompilation relies on.
+
+M5 added a third column the same way: `-DJONES3D_PLATFORM_BABYLON=ON` builds the Null column with some files
+replaced by adapter files on the Babylon Engine (time, files, input devices, the wkernel event loop, the
+simulation cvars). Where a Null file has device code mixed with engine logic, it was split first so the
+column can replace the device part only: `stdPlatformTimeNull.c`, `General/stdFile.c`,
+`stdControlDevicesNull.c` behind `stdControlNull.h`, and `stdCvarNull.c` behind `stdCvarNull.h`. Inside the
+Babylon column the backends (SDL3 or Null) are chosen at startup by the composition root (ADR-0016).
 
 ## Names
 

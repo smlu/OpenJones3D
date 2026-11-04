@@ -12,6 +12,7 @@
 #include <SDL3/SDL_filesystem.h>
 #include <SDL3/SDL_iostream.h>
 #include <SDL3/SDL_stdinc.h>
+#include <SDL3/SDL_timer.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -213,10 +214,11 @@ namespace
         OpenMode m_mode;
     };
 
-    // One enumerated entry: SDL hands the bare name, so the type comes
-    // from a stat of the full path. An entry that cannot be statted (a
-    // broken symbolic link, or one removed during the listing) is reported
-    // as a file rather than failing the whole listing.
+    // One enumerated entry: SDL hands the bare name, so the type and the
+    // modification time come from a stat of the full path. An entry that
+    // cannot be statted (a broken symbolic link, or one removed during the
+    // listing) is reported as a file with time 0 rather than failing the
+    // whole listing.
     SDL_EnumerationResult SDLCALL collectEntry(void* userdata, const char* dirname,
         const char* fname)
     {
@@ -229,13 +231,33 @@ namespace
         std::string full(dirname);   // dirname ends with the native separator
         full.append(fname);
         SDL_PathInfo info;
-        const bool isDirectory =
-            SDL_GetPathInfo(full.c_str(), &info) && info.type == SDL_PATHTYPE_DIRECTORY;
+        const bool bStatted = SDL_GetPathInfo(full.c_str(), &info);
+        const bool isDirectory = bStatted && info.type == SDL_PATHTYPE_DIRECTORY;
         if ( !isDirectory )
         {
             SDL_ClearError();
         }
-        entries->push_back({std::string(name), isDirectory});
+        DirectoryEntry entry;
+        entry.name             = std::string(name);
+        entry.isDirectory      = isDirectory;
+        entry.modifiedSeconds  = bStatted ? SDL_NS_TO_SECONDS(info.modify_time) : 0;
+        entries->push_back(std::move(entry));
+        return SDL_ENUM_CONTINUE;
+    }
+
+    // A names-only enumeration: the cheap form of collectEntry for
+    // listNames(), which reports no per-entry metadata and therefore never
+    // stats an entry.
+    SDL_EnumerationResult SDLCALL collectName(void* userdata, const char* /*dirname*/,
+        const char* fname)
+    {
+        auto* const names = static_cast<std::vector<std::string>*>(userdata);
+        const std::string_view name(fname);
+        if ( name == "." || name == ".." )
+        {
+            return SDL_ENUM_CONTINUE;   // SDL3 already skips them; the interface promises it
+        }
+        names->emplace_back(name);
         return SDL_ENUM_CONTINUE;
     }
 
@@ -356,6 +378,32 @@ namespace
             return entries;
         }
 
+        std::optional<std::vector<std::string>> listNames(std::string_view path) override
+        {
+            if ( !isValidPath(path) )
+            {
+                log::warning("files: rejected invalid path '{}'", path);
+                return std::nullopt;
+            }
+            const std::string native = toNativePath(path);
+            SDL_PathInfo info;
+            if ( !SDL_GetPathInfo(native.c_str(), &info) || info.type != SDL_PATHTYPE_DIRECTORY )
+            {
+                SDL_ClearError();
+                log::warning("files: can not list '{}': not a readable directory", path);
+                return std::nullopt;
+            }
+
+            std::vector<std::string> names;
+            if ( !SDL_EnumerateDirectory(native.c_str(), collectName, &names) )
+            {
+                log::warning("files: listing '{}' failed: {}", path, SDL_GetError());
+                return std::nullopt;
+            }
+            std::sort(names.begin(), names.end());
+            return names;
+        }
+
         std::string basePath() override
         {
             // SDL caches this string and owns it; it must not be freed.
@@ -366,6 +414,26 @@ namespace
                 return {};
             }
             return fromNativePath(base);
+        }
+
+        std::string currentPath() override
+        {
+            // SDL hands the working directory to the caller, owned here,
+            // with native separators and a trailing separator (SDL 3.2+).
+            char* const directory = SDL_GetCurrentDirectory();
+            if ( directory == nullptr )
+            {
+                log::warning("files: finding the current directory failed: {}", SDL_GetError());
+                return {};
+            }
+            std::string result = fromNativePath(directory);
+            SDL_free(directory);
+            if ( !isValidPath(result) )
+            {
+                log::warning("files: the current path '{}' is not usable", result);
+                return {};
+            }
+            return result;
         }
 
         std::string userPath(std::string_view organization,

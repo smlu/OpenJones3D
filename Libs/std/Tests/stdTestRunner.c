@@ -19,6 +19,11 @@ void TEST_stdConfig_GROUP_RUNNER(void);
 void TEST_stdFileUtil_GROUP_RUNNER(void);
 void TEST_stdJSON_GROUP_RUNNER(void);
 void TEST_stdStrTable_GROUP_RUNNER(void);
+#if defined(J3D_PLATFORM_NULL)
+// Added: the non-Windows columns' simulation cvar seam (ADR-0020), stdCvarNull.c; the Babylon
+// column's replacement is covered by stdCvarBabylon.cpp in stdBabylonTests.
+void TEST_stdCvarNull_GROUP_RUNNER(void);
+#endif
 #if !defined(J3D_PLATFORM_NULL)
 // Added: these suites are not built on the Null platform: stdBmpTest.c checks GDI HBITMAPs from the
 // Win32 stdBmp backend, stdPlatformTest.c uses Windows stack frames, minidumps and a CreateProcessA
@@ -50,13 +55,23 @@ static void runAllTests(void)
     TEST_stdBmp_GROUP_RUNNER();
     TEST_stdPlatform_GROUP_RUNNER();
 #endif
+#if defined(J3D_PLATFORM_NULL)
+    TEST_stdCvarNull_GROUP_RUNNER();
+#endif
     TEST_stdStrTable_GROUP_RUNNER();
 #if !defined(J3D_PLATFORM_NULL)
     StdWin95Test_RunAllTests();
 #endif
 }
 
-int main(int argc, const char* argv[])
+// Added: the entry name is overridable so the Babylon column's test main can call this runner
+// after it has installed the platform context (J3D_TEST_RUNNER_ENTRY=j3dTestRunner_Main); plain
+// builds keep main.
+#ifndef J3D_TEST_RUNNER_ENTRY
+#define J3D_TEST_RUNNER_ENTRY main
+#endif
+
+int J3D_TEST_RUNNER_ENTRY(int argc, const char* argv[])
 {
 #if !defined(J3D_PLATFORM_NULL)
     if ( argc == 2 && strcmp(argv[1], "--std-platform-death-child") == 0 )

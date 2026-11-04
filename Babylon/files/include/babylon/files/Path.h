@@ -14,9 +14,10 @@ namespace babylon::files
 
     // Paths in the files interface are UTF-8 and use '/' as their separator
     // on every platform; the backend translates. Relative paths resolve
-    // against the process working directory (SDL backend) or the root '/'
-    // (Null backend). Case is passed through unchanged: whether "A.TXT"
-    // finds "a.txt" is up to the host file system.
+    // against FileSystem::currentPath(): the process working directory
+    // (SDL backend) or the root '/' (Null backend). Case is passed through
+    // unchanged: whether "A.TXT" finds "a.txt" is up to the host file
+    // system.
 
     // Longest path, in bytes, the files interface accepts. Both backends
     // check every path against it before touching a device.

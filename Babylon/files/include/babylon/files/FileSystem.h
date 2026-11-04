@@ -41,6 +41,9 @@ namespace babylon::files
     {
         std::string name;
         bool isDirectory;
+        // Last modification, in seconds since the Unix epoch; 0 when the
+        // backend keeps no times.
+        std::int64_t modifiedSeconds = 0;
     };
 
     // An open file, created by FileSystem::open and closed when destroyed.
@@ -122,10 +125,24 @@ namespace babylon::files
         // isn't a readable directory.
         virtual std::optional<std::vector<DirectoryEntry>> listDirectory(std::string_view path) = 0;
 
+        // The names of a directory's entries, sorted by name (byte order),
+        // without "." and "..": the cheap form of listDirectory for callers
+        // that only need names, so a backend can answer without reading one
+        // entry's metadata. Same path rules and failure behavior as
+        // listDirectory(): nullopt and a warning if the path is invalid or
+        // isn't a readable directory.
+        virtual std::optional<std::vector<std::string>> listNames(std::string_view path) = 0;
+
         // The directory the program was started from (where the executable
         // is), ending with '/'. Empty string and a warning if the backend
         // cannot determine it.
         virtual std::string basePath() = 0;
+
+        // The directory relative paths resolve against (the process working
+        // directory for host backends), absolute, ending with '/'. Empty
+        // string and a warning if the backend cannot determine it or it is
+        // not a valid path.
+        virtual std::string currentPath() = 0;
 
         // A per-user writable directory for this organization and
         // application, created if missing, ending with '/'. Empty string

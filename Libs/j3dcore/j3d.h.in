@@ -119,7 +119,13 @@
 
 
 #define J3D_UNUSED(x) (x)
-#define J3DNORETURN _Noreturn
+// Added: portable noreturn specifier: C++ spells it [[noreturn]], C11 spells it _Noreturn; GCC
+// rejects _Noreturn in C++, so headers shared with the C++ adapter use this. Layout unaffected.
+#ifdef __cplusplus
+#   define J3DNORETURN [[noreturn]]
+#else
+#   define J3DNORETURN _Noreturn
+#endif
 #ifdef _WIN32
 #   define J3DAPI __cdecl
 #else
@@ -285,5 +291,13 @@
 #  define J3D_EXTERN_C_START
 #  define J3D_EXTERN_C_END
 #endif // __cplusplus
+
+// Added: portable alignment specifier. C++ spells it alignas, C11 spells it _Alignas; GCC rejects
+// _Alignas in C++, so headers shared with the C++ adapter use this. Same layout either way.
+#ifdef __cplusplus
+#  define J3D_ALIGNAS(n) alignas(n)
+#else
+#  define J3D_ALIGNAS(n) _Alignas(n)
+#endif
 
 #endif // J3DCORE_H

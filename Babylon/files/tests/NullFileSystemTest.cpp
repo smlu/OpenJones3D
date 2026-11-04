@@ -94,6 +94,7 @@ TEST_CASE("The Null base path and user path match the documented layout")
 
     CHECK(fs.basePath() == "/base/");
     CHECK(fs.exists("/base/"));
+    CHECK(fs.currentPath() == "/");
 
     CHECK(fs.userPath("Aster Studio", "Field Trip") == "/user/Aster Studio/Field Trip/");
     CHECK(fs.userPath("Aster Studio", "Field Trip") == "/user/Aster Studio/Field Trip/");
@@ -196,4 +197,23 @@ TEST_CASE("The Null tree is separate from the host file system")
     REQUIRE(fs.createDirectory("/nested/deep/dir/"));
     CHECK(fs.exists("/nested/deep/dir"));
     CHECK_FALSE(std::filesystem::exists(std::filesystem::path("nested")));
+}
+
+TEST_CASE("Null directory entries keep no modification times")
+{
+    babylon::files::NullFileSystem fs;
+    babylon::log::CaptureSink sink;
+
+    REQUIRE(fs.addFile("timed/one.txt", toBytes("x")));
+    REQUIRE(fs.createDirectory("timed/sub/"));
+    const std::optional<std::vector<babylon::files::DirectoryEntry>> listing =
+        fs.listDirectory("timed");
+    REQUIRE(listing.has_value());
+    CHECK(sink.records().empty());
+    REQUIRE(listing->size() == 2);
+    for ( const babylon::files::DirectoryEntry& entry : *listing )
+    {
+        // The Null tree keeps no times: every entry reports 0.
+        CHECK(entry.modifiedSeconds == 0);
+    }
 }

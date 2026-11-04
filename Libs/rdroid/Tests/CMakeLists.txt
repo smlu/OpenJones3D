@@ -25,6 +25,9 @@ target_link_libraries(rdroidTests PRIVATE
     j3dTestSupport
 )
 
+# Added: the Babylon column runs this suite under the adapter context.
+std_use_babylon_test_main(rdroidTests "${CMAKE_CURRENT_SOURCE_DIR}/rdroidTestRunner.c")
+
 set_target_properties(rdroidTests PROPERTIES
     FOLDER "Tests/Libs/rdroid"
 )

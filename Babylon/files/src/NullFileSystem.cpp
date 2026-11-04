@@ -403,9 +403,55 @@ namespace
         return entries;
     }
 
+    std::optional<std::vector<std::string>> NullFileSystem::listNames(std::string_view path)
+    {
+        if ( !isValidPath(path) )
+        {
+            log::warning("files: rejected invalid path '{}'", path);
+            return std::nullopt;
+        }
+        const std::string key = directoryKey(absolutePath(path));
+        if ( m_directories.find(key) == m_directories.end() )
+        {
+            log::warning("files: can not list '{}': not a readable directory", path);
+            return std::nullopt;
+        }
+
+        // The same names as listDirectory(), gathered without building a
+        // DirectoryEntry per child: the tree's keys already answer what this
+        // call reports, so no metadata is read at all.
+        std::vector<std::string> names;
+        for ( const auto& entry : m_files )
+        {
+            if ( parentKey(entry.first) == key )
+            {
+                names.push_back(baseName(entry.first));
+            }
+        }
+        for ( const std::string& otherKey : m_directories )
+        {
+            if ( otherKey == key || otherKey == "/" )
+            {
+                continue;
+            }
+            const std::string canonical = otherKey.substr(0, otherKey.size() - 1);
+            if ( parentKey(canonical) == key )
+            {
+                names.push_back(baseName(canonical));
+            }
+        }
+        std::sort(names.begin(), names.end());
+        return names;
+    }
+
     std::string NullFileSystem::basePath()
     {
         return "/base/";
+    }
+
+    std::string NullFileSystem::currentPath()
+    {
+        return "/";   // the tree's root is where relative paths resolve
     }
 
     std::string NullFileSystem::userPath(std::string_view organization,

@@ -1,4 +1,4 @@
-project(std C)
+project(std C CXX)
 
 file(GLOB_RECURSE SOURCES *.c)
 file(GLOB_RECURSE HEADERS *.h)
@@ -22,6 +22,30 @@ else()
     # Windows builds never compile the Null backend sources.
     list(FILTER SOURCES EXCLUDE REGEX ".*/Null/.*")
     list(FILTER SOURCES EXCLUDE REGEX ".*Null\\.c$")
+endif()
+
+# Added: the Babylon column is the Null column with the stdPlatform time functions, the host file
+# services and the simulation cvar seam moved onto Babylon. Drop the Null time file, the stdFile CRT
+# wrappers, the Posix file utilities, the Null device read of stdControl and the fixed simulation
+# cvar table, and compile the adapters in their place; the .cpp files are never globbed (the GLOB
+# above is .c only), so they are added explicitly.
+if (J3D_PLATFORM_BABYLON)
+    list(FILTER SOURCES EXCLUDE REGEX "stdPlatformTimeNull\\.c$")
+    list(FILTER SOURCES EXCLUDE REGEX "/General/stdFile\\.c$")
+    list(FILTER SOURCES EXCLUDE REGEX "/Null/stdFileUtilPosix\\.c$")
+    list(FILTER SOURCES EXCLUDE REGEX "/Null/stdControlDevicesNull\\.c$")
+    list(FILTER SOURCES EXCLUDE REGEX "/Null/stdCvarNull\\.c$")
+    list(APPEND SOURCES
+        "${CMAKE_CURRENT_SOURCE_DIR}/Babylon/stdBabylon.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Babylon/stdBabylonCvars.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Babylon/stdBabylonEvents.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Babylon/stdPlatformTimeBabylon.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Babylon/stdBabylonPath.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Babylon/stdFileBabylon.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Babylon/stdFileUtilBabylon.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Babylon/stdControlDevicesBabylon.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Babylon/stdCvarBabylon.cpp"
+    )
 endif()
 
 # Remove DirectX 6/9 specific files based on the build option
@@ -67,6 +91,18 @@ endif()
 target_link_libraries(${PROJECT_NAME} PUBLIC
     j3dcore
 )
+
+# Added: the Babylon column's adapters run on the Babylon clock, file system, platform event queue,
+# input state and cvar registry.
+if (J3D_PLATFORM_BABYLON)
+    target_link_libraries(${PROJECT_NAME} PUBLIC
+        babylon::time
+        babylon::files
+        babylon::platform
+        babylon::input
+        babylon::cvars
+    )
+endif()
 
 # Added: Windows-only services; the Null platform has none of them (no DirectX, no winmm).
 if (NOT J3D_PLATFORM_NULL)
@@ -199,4 +235,9 @@ source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCES} ${HEADERS} ${SHAD
 
 if (JONES3D_BUILD_TESTS)
     add_subdirectory(Tests)
+endif()
+
+# Added: the Babylon column's adapter test suite lives next to the adapter it covers.
+if (JONES3D_BUILD_TESTS AND J3D_PLATFORM_BABYLON)
+    add_subdirectory(Babylon/Tests)
 endif()
