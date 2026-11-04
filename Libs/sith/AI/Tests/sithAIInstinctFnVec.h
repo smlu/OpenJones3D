@@ -330,6 +330,32 @@ enum
 static SithAIFnStubs sithAIFnVec_cfg;
 static struct
 {
+    unsigned numLookEye, numFire, numPath;
+    unsigned numCallbacks;
+    uint32_t aCallbacks[8];
+    rdVector3 lookEyePos, sightEndPos, pathStart, pathDirection;
+    SithAIControlBlock* pLookLocal;
+    SithAIUtilPathFlags pathFlags;
+    float minMoveDist, moveDist, radius;
+    int burstCount, weaponNum;
+    float minFireDist, maxFireDist, fireDot, aimError;
+    SithAIUtilFireFlags fireFlags;
+    float waypointSpeed;
+    int waypointMode;
+} sithAIFnVec_observed;
+
+static void sithAIFnVec_ObserveCallback(uint32_t id)
+{
+    if ( sithAIFnVec_observed.numCallbacks < SITHVEC_ARRAYLEN(sithAIFnVec_observed.aCallbacks) )
+    {
+        sithAIFnVec_observed.aCallbacks[sithAIFnVec_observed.numCallbacks] = id;
+    }
+    ++sithAIFnVec_observed.numCallbacks;
+}
+
+
+static struct
+{
     unsigned canAttack, sightPos, sightThing, nextWpnt, lineOfFire, fire, sweep, pathPos, roamPos, getMovePos, isMoving;
     unsigned checkPath, checkPos, checkFloor, setMovePos, setMoveTarget, special, onTrack, hasWeapon, isAiming, inRange;
     unsigned hasInstinct, quetz, channel, parent, dist;
@@ -371,6 +397,9 @@ SITHVEC_STUB void J3DAPI sithVec_sithAIMove_AISetLookPos(SithAIControlBlock* pLo
 
 SITHVEC_STUB void J3DAPI sithVec_sithAIMove_AISetLookPosEyeLevel(SithAIControlBlock* pLocal, const rdVector3* targetPos)
 {
+    ++sithAIFnVec_observed.numLookEye;
+    sithAIFnVec_observed.lookEyePos = *targetPos;
+    sithAIFnVec_observed.pLookLocal = pLocal;
     sithVec_Ev(SITHAIFN_EV_LOOKPOSEYE, 1, SP(pLocal));
     sithAIFnVec_EvVec(targetPos);
 }
@@ -418,6 +447,7 @@ SITHVEC_STUB void J3DAPI sithVec_sithAIMove_StopAIMovement(SithAIControlBlock* p
 // sithAIUtil
 SITHVEC_STUB void J3DAPI sithVec_sithAIUtil_AISetMode(SithAIControlBlock* pLocal, SithAIMode mode)
 {
+    sithAIFnVec_ObserveCallback(SITHAIFN_EV_SETMODE);
     sithVec_Ev(SITHAIFN_EV_SETMODE, 2, SP(pLocal), (uint32_t)mode);
     pLocal->mode |= mode;
 }
@@ -430,6 +460,7 @@ SITHVEC_STUB void J3DAPI sithVec_sithAIUtil_AIClearMode(SithAIControlBlock* pLoc
 
 SITHVEC_STUB void J3DAPI sithVec_sithAIUtil_AIPlaySoundMode(SithAIControlBlock* pLocal, SithSoundClassMode mode)
 {
+    sithAIFnVec_ObserveCallback(SITHAIFN_EV_PLAYSOUNDMODE);
     sithVec_Ev(SITHAIFN_EV_PLAYSOUNDMODE, 2, SP(pLocal), (uint32_t)mode);
 }
 
@@ -476,6 +507,7 @@ SITHVEC_STUB SithAISightState J3DAPI sithVec_sithAIUtil_GetDistanceToTargetPos(S
     sithVec_Ev(SITHAIFN_EV_GETDISTPOS, 4, SP(pViewer), SF(fov), SF(sightDistance), SF(collisionSize));
     sithAIFnVec_EvVec(startPos);
     sithAIFnVec_EvVec(endPos);
+    sithAIFnVec_observed.sightEndPos = *endPos;
     sithAIFnVec_DistCall(pDist, toTarget);
     return (SithAISightState)sithAIFnVec_Seq(sithAIFnVec_cfg.sightPos, &sithAIFnVec_ctr.sightPos);
 }
@@ -490,6 +522,9 @@ SITHVEC_STUB SithAISightState J3DAPI sithVec_sithAIUtil_GetDistanceToTarget(Sith
 
 SITHVEC_STUB int J3DAPI sithVec_sithAIUtil_AIMoveToNextWpnt(SithAIControlBlock* pLocal, float moveSpeed, float degTurn, int mode)
 {
+    sithAIFnVec_ObserveCallback(SITHAIFN_EV_NEXTWPNT);
+    sithAIFnVec_observed.waypointSpeed = moveSpeed;
+    sithAIFnVec_observed.waypointMode  = mode;
     sithVec_Ev(SITHAIFN_EV_NEXTWPNT, 4, SP(pLocal), SF(moveSpeed), SF(degTurn), (uint32_t)mode);
     return (int)sithAIFnVec_Seq(sithAIFnVec_cfg.nextWpnt, &sithAIFnVec_ctr.nextWpnt);
 }
@@ -516,6 +551,14 @@ SITHVEC_STUB int J3DAPI sithVec_sithAIUtil_IsLineOfFireClear(const SithAIControl
 
 SITHVEC_STUB int J3DAPI sithVec_sithAIUtil_AIFire(SithAIControlBlock* pLocal, float minDist, float maxDist, float fireDot, float aimError, int weaponNum, SithAIUtilFireFlags flags, int burstCount)
 {
+    ++sithAIFnVec_observed.numFire;
+    sithAIFnVec_observed.burstCount = burstCount;
+    sithAIFnVec_observed.weaponNum  = weaponNum;
+    sithAIFnVec_observed.minFireDist = minDist;
+    sithAIFnVec_observed.maxFireDist = maxDist;
+    sithAIFnVec_observed.fireDot = fireDot;
+    sithAIFnVec_observed.aimError = aimError;
+    sithAIFnVec_observed.fireFlags = flags;
     sithVec_Ev(SITHAIFN_EV_AIFIRE, 8, SP(pLocal), SF(minDist), SF(maxDist), SF(fireDot), SF(aimError), (uint32_t)weaponNum, (uint32_t)flags, (uint32_t)burstCount);
     return (int)sithAIFnVec_Seq(sithAIFnVec_cfg.fire, &sithAIFnVec_ctr.fire);
 }
@@ -529,6 +572,13 @@ SITHVEC_STUB int J3DAPI sithVec_sithAIUtil_SweepMoveToPathPos(SithAIControlBlock
 
 SITHVEC_STUB SithAIUtilPathResult J3DAPI sithVec_sithAIUtil_CheckPathToPos(SithAIControlBlock* pLocal, SithSector* pStartSector, rdVector3* startPos, SithAIUtilPathFlags flags, float minMoveDist, float moveDist, float radius, rdVector3* pDirection, rdVector3* pEndPos)
 {
+    ++sithAIFnVec_observed.numPath;
+    sithAIFnVec_observed.pathFlags = flags;
+    sithAIFnVec_observed.pathStart = *startPos;
+    sithAIFnVec_observed.pathDirection = *pDirection;
+    sithAIFnVec_observed.minMoveDist = minMoveDist;
+    sithAIFnVec_observed.moveDist = moveDist;
+    sithAIFnVec_observed.radius = radius;
     uint32_t mask = sithAIFnVec_cfg.pathFlagsMask ? sithAIFnVec_cfg.pathFlagsMask : 0xFFFFFFFFu;
     sithVec_Ev(SITHAIFN_EV_CHECKPATH, 6, SP(pLocal), SP(pStartSector), (uint32_t)flags & mask, SF(minMoveDist), SF(moveDist), SF(radius));
     sithAIFnVec_EvVec(startPos);
@@ -1091,6 +1141,7 @@ static void sithAIFnVec_Build(const SithVecCase* pCase)
 
     // Stubs
     sithAIFnVec_cfg = pP->stubs;
+    memset(&sithAIFnVec_observed, 0, sizeof(sithAIFnVec_observed));
     memset(&sithAIFnVec_ctr, 0, sizeof(sithAIFnVec_ctr));
     sithVec_stubFindSectorNullFrom = pP->stubs.nullSectorFrom;
     sithVec_stubRandSeed           = sithAIFnVec_FindSeed(pP->rnd);

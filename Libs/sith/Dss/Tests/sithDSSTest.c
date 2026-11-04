@@ -337,13 +337,15 @@ SITHDSSTEST_FAMILY(SurfaceStatus, "SurfaceStatus_", "ProcessSurfaceStatus_")
 SITHDSSTEST_FAMILY(SectorStatus, "SectorStatus_", "ProcessSectorStatus_")
 SITHDSSTEST_FAMILY(SectorFlags, "SectorFlags_", "ProcessSectorFlags_")
 SITHDSSTEST_FAMILY(SyncSeenSectors, "SyncSeenSectors", "ProcessSyncSeenSecors")
-// sithDSS_ProcessAIStatus frees the frames array it replaces (marked Fixed: in the source; the original leaks it). The record
-// of the original therefore gets one more engine call in the cases that allocate new frames: the free of the old array,
-// which is the frames array of the AI of the synthetic world, before the allocation.
+// Insert the expected free of the old frames before replacement. The empty
+// message also clears aFrames; all other original events and changed bytes stay
+// independently specified by the untouched fixture.
 static int sithDSSTest_AdjustAIStatus(const SithDSSTestFixCase* pCase, DssvBuf* pOut)
 {
     uint32_t evSize = sithDSSTest_Rd32(pCase->pRec + 12);
-    if ( strncmp(pCase->aName, "ProcessAIStatus_", 16) != 0 || evSize == 0 || pCase->pRec[16] != DSSV_EV_MALLOC )
+    int emptyFrames = strcmp(pCase->aName, "ProcessAIStatus_noframes") == 0;
+    if ( strncmp(pCase->aName, "ProcessAIStatus_", 16) != 0
+         || (!emptyFrames && (evSize == 0 || pCase->pRec[16] != DSSV_EV_MALLOC)) )
     {
         return 0;
     }
@@ -351,8 +353,50 @@ static int sithDSSTest_AdjustAIStatus(const SithDSSTestFixCase* pCase, DssvBuf* 
     dssvB_put(pOut, pCase->pRec, 12);
     dssvB_u32(pOut, evSize + 5);
     dssvB_u8(pOut, DSSV_EV_FREE);
-    dssvB_u32(pOut, 0xDEAD0000u); // dssv_Id of a pointer that is not an entity of the world
-    dssvB_put(pOut, pCase->pRec + 16, pCase->recSize - 16);
+    dssvB_u32(pOut, 0xDEAD0000u); // dssv_Id of the synthetic old aiFrames array
+    dssvB_put(pOut, pCase->pRec + 16, evSize);
+    if ( !emptyFrames )
+    {
+        dssvB_put(pOut, pCase->pRec + 16 + evSize, pCase->recSize - 16 - evSize);
+        return 1;
+    }
+
+    // A sparse delta records only changed bytes. Rebuild an equivalent pair of
+    // images: unchanged bytes match, and each original changed byte differs.
+    // Add precisely old normalized aiFrames -> NULL, then use the same delta
+    // serializer to retain exact ordering and contiguous-run boundaries.
+    size_t pointerOff = offsetof(DssvArena, aiBlocks) + offsetof(SithAIControlBlock, aFrames);
+    const uint8_t* pDelta = pCase->pRec + 16 + evSize;
+    uint32_t count = sithDSSTest_Rd32(pDelta);
+    const uint8_t* p = pDelta + 4;
+    size_t imageSize = pointerOff + sizeof(uint32_t);
+    for ( uint32_t i = 0; i < count; ++i )
+    {
+        uint32_t off = sithDSSTest_Rd32(p);
+        unsigned len = p[4] | (p[5] << 8);
+        if ( (size_t)off + len > imageSize ) imageSize = (size_t)off + len;
+        p += 6 + len;
+    }
+    TEST_ASSERT_EQUAL_PTR(pCase->pRec + pCase->recSize, p);
+
+    DssvBuf pre = { 0 }, post = { 0 };
+    dssvB_put(&pre, NULL, imageSize);
+    dssvB_put(&post, NULL, imageSize);
+    p = pDelta + 4;
+    for ( uint32_t i = 0; i < count; ++i )
+    {
+        uint32_t off = sithDSSTest_Rd32(p);
+        unsigned len = p[4] | (p[5] << 8);
+        memcpy(post.p + off, p + 6, len);
+        for ( unsigned j = 0; j < len; ++j ) pre.p[off + j] = (uint8_t)~p[6 + j];
+        p += 6 + len;
+    }
+    uint32_t oldPointer = dssv_NormWord((uint32_t)(uintptr_t)dssv_arena.aiFrames);
+    memcpy(pre.p + pointerOff, &oldPointer, sizeof(oldPointer));
+    memset(post.p + pointerOff, 0, sizeof(oldPointer));
+    dssv_Delta(pOut, &pre, &post);
+    dssvB_free(&pre);
+    dssvB_free(&post);
     return 1;
 }
 
@@ -873,8 +917,107 @@ TEST(sithDSSFix, SyncGameStateLoadsNegativeJewelTrack)
     TEST_ASSERT_EQUAL_INT(0x1234, sithPlayerActions_g_jewelFlyingPuppetTrackNum);
 }
 
+// Reader variants: bit 0 starts without an old frame allocation, bit 1 makes
+// the incoming frame allocation fail. The world/message builder is otherwise
+// identical to the original-vector harness.
+static int sithDSSFixTest_ReadAIFrames(DssvCtx* cx)
+{
+    if ( DSSV_VAR & 1 )
+    {
+        DSSV_A->aiBlocks[0].aFrames = NULL;
+        DSSV_A->aiBlocks[0].numFrames = 0;
+        DSSV_A->aiBlocks[0].sizeFrames = 0;
+    }
+    dssv_bAllocFail = (DSSV_VAR & 2) != 0;
+    dssv_Begin(cx);
+    return sithDSS_ProcessAIStatus(DSSV_MSG);
+}
+
+static void sithDSSFixTest_CheckAIFrameUpdate(int incomingEmpty, int noOldFrames, int allocFail)
+{
+    DssvCase writer = { "Fix_AIFrames_writer", dssvc_AIStatus, incomingEmpty ? 8 : 0, NULL, DSSV_NOMUT };
+    DssvCase reader = { "Fix_AIFrames_reader", sithDSSFixTest_ReadAIFrames, (noOldFrames ? 1 : 0) | (allocFail ? 2 : 0), NULL, DSSV_NOMUT };
+    sithDSSFixTest_RunWriter(&writer);
+    rdVector3 expectedFrames[3];
+    memcpy(expectedFrames, dssv_arena.aiFrames, sizeof(expectedFrames));
+
+    TEST_ASSERT_EQUAL_UINT32(1, sithDSSFixTest_RunReader(&reader));
+    const SithAIControlBlock* pLocal = &dssv_arena.aiBlocks[0];
+    uint8_t expectedCalls[10];
+    size_t numBytes = 0;
+    if ( !noOldFrames )
+    {
+        uint32_t oldId = 0xDEAD0000u;
+        expectedCalls[numBytes++] = DSSV_EV_FREE;
+        memcpy(expectedCalls + numBytes, &oldId, sizeof(oldId));
+        numBytes += sizeof(oldId);
+    }
+    if ( !incomingEmpty )
+    {
+        uint32_t bytes = sizeof(expectedFrames);
+        expectedCalls[numBytes++] = DSSV_EV_MALLOC;
+        memcpy(expectedCalls + numBytes, &bytes, sizeof(bytes));
+        numBytes += sizeof(bytes);
+    }
+    TEST_ASSERT_EQUAL_size_t(numBytes, dssv_ev.size);
+    if ( numBytes ) TEST_ASSERT_EQUAL_MEMORY(expectedCalls, dssv_ev.p, numBytes);
+    TEST_ASSERT_EQUAL_UINT(incomingEmpty ? 0 : 1, dssv_numMallocs);
+    if ( incomingEmpty || allocFail )
+    {
+        TEST_ASSERT_NULL(pLocal->aFrames);
+        TEST_ASSERT_EQUAL_UINT(0, pLocal->numFrames);
+        TEST_ASSERT_EQUAL_UINT(0, pLocal->sizeFrames);
+    }
+    else
+    {
+        TEST_ASSERT_NOT_NULL(pLocal->aFrames);
+        TEST_ASSERT_TRUE(pLocal->aFrames != dssv_arena.aiFrames);
+        TEST_ASSERT_EQUAL_UINT(3, pLocal->numFrames);
+        TEST_ASSERT_EQUAL_UINT(3, pLocal->sizeFrames);
+        TEST_ASSERT_EQUAL_MEMORY(expectedFrames, pLocal->aFrames, sizeof(expectedFrames));
+    }
+    // Allocation failure already has a separate inherited stream-consumption
+    // defect. This test verifies release order and empty ownership state only;
+    // it does not assert that the remaining fields were deserialized correctly.
+    if ( !allocFail )
+    {
+        TEST_ASSERT_EQUAL_UINT(0, dssv_numAsserts);
+        TEST_ASSERT_EQUAL_UINT(0, dssv_numErrors);
+    }
+}
+
+TEST(sithDSSFix, AIStatusReleasesFramesForEmptyUpdate)
+{
+    sithDSSFixTest_CheckAIFrameUpdate(1, 0, 0);
+}
+
+TEST(sithDSSFix, AIStatusFreesFramesBeforeReplacement)
+{
+    sithDSSFixTest_CheckAIFrameUpdate(0, 0, 0);
+}
+
+TEST(sithDSSFix, AIStatusKeepsEmptyOwnershipAfterAllocationFailure)
+{
+    sithDSSFixTest_CheckAIFrameUpdate(0, 0, 1);
+}
+
+TEST(sithDSSFix, AIStatusAcceptsEmptyUpdateWithoutOldFrames)
+{
+    sithDSSFixTest_CheckAIFrameUpdate(1, 1, 0);
+}
+
+TEST(sithDSSFix, AIStatusAllocatesWithoutOldFrames)
+{
+    sithDSSFixTest_CheckAIFrameUpdate(0, 1, 0);
+}
+
 TEST_GROUP_RUNNER(sithDSSFix)
 {
+    RUN_TEST_CASE(sithDSSFix, AIStatusReleasesFramesForEmptyUpdate);
+    RUN_TEST_CASE(sithDSSFix, AIStatusFreesFramesBeforeReplacement);
+    RUN_TEST_CASE(sithDSSFix, AIStatusKeepsEmptyOwnershipAfterAllocationFailure);
+    RUN_TEST_CASE(sithDSSFix, AIStatusAcceptsEmptyUpdateWithoutOldFrames);
+    RUN_TEST_CASE(sithDSSFix, AIStatusAllocatesWithoutOldFrames);
     RUN_TEST_CASE(sithDSSFix, WelcomeRejectsInvalidPlayerNum);
     RUN_TEST_CASE(sithDSSFix, SyncPlayersRejectsTooManyPlayers);
     RUN_TEST_CASE(sithDSSFix, SyncPlayersAcceptsMaxPlayers);

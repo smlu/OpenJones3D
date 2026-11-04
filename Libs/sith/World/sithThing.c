@@ -4072,9 +4072,10 @@ int J3DAPI sithThing_ParseThingArg(const StdConffileArg* pArg, SithWorld* pWorld
         }
         case SITHTHING_ARG_COLLIDE:
         {
-            // Altered: Parse with strtoul instead of atoi. The value is compared as unsigned, so a negative value (e.g. "-1") is rejected like in the original.
-            unsigned long coltype = STD_STRTOUL(pArg->argValue, 10);
-            if ( coltype > SITH_COLLIDE_FACE || STD_ISRANGEERROR() )      // Added: Conversion range error check
+            // Altered: Use a checked signed conversion; strtoul can wrap negative input into a valid collide type.
+            errno = 0;
+            long coltype = strtol(pArg->argValue, NULL, 10);
+            if ( coltype < SITH_COLLIDE_NONE || coltype > SITH_COLLIDE_FACE || STD_ISRANGEERROR() )
             {
                 goto syntax_error;
             }

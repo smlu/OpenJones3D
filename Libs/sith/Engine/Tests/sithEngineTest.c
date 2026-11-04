@@ -31,11 +31,13 @@ void SithEngineTest_Shutdown(void)
 
 void TEST_sithIntersect_GROUP_RUNNER(void);
 void TEST_sithPathMove_GROUP_RUNNER(void);
+void TEST_sithPhysics_GROUP_RUNNER(void);
 
 static void SithEngineTest_RunAllTests(void)
 {
     TEST_sithIntersect_GROUP_RUNNER();
     TEST_sithPathMove_GROUP_RUNNER();
+    TEST_sithPhysics_GROUP_RUNNER();
 }
 
 int main(int argc, const char* argv[])

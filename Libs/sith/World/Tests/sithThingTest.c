@@ -2261,7 +2261,7 @@ TEST(sithThingBinary, TestParseArgFloatRange)
 
 TEST(sithThingBinary, TestParseArgCollideRange)
 {
-    // The collide type is parsed unsigned: values above SITH_COLLIDE_FACE and negative values are rejected like in the original.
+    // A checked signed conversion rejects negative types, including magnitudes strtoul would wrap into 1..3.
     static SithThing thing;
     memset(&thing, 0, sizeof(thing));
 
@@ -2277,7 +2277,11 @@ TEST(sithThingBinary, TestParseArgCollideRange)
     TEST_ASSERT_EQUAL_INT(0, sithThing_ParseThingArg(&arg, &sithThingTest_staticWorld, &thing, SITHTHING_ARG_COLLIDE));
     TEST_ASSERT_EQUAL_INT(SITH_COLLIDE_NONE, thing.collide.type);
 
-    static const char* const aInvalid[] = { "4", "-1", "-2", "-2147483648", "4294967295", "99999999999" };
+    // strtoul accepts the three wide negative inputs as 1, 2 and 3 on Win32 without ERANGE.
+    static const char* const aInvalid[] = {
+        "4", "-1", "-2", "-2147483648", "2147483648", "4294967295", "99999999999",
+        "-4294967295", "-4294967294", "-4294967293", "  -4294967295", "-99999999999"
+    };
     for ( size_t i = 0; i < sizeof(aInvalid) / sizeof(aInvalid[0]); ++i )
     {
         thing.collide.type = SITH_COLLIDE_SPHERE;
@@ -2467,7 +2471,9 @@ TEST(sithThingParseArg, TestCollide)
     TEST_ASSERT_EQUAL_INT(SITHTHING_TEST_PARSEARG_PARSED, sithThingTest_ParseArg(SITHTHING_ARG_COLLIDE, "collide", "2"));
     TEST_ASSERT_EQUAL_INT(2, sithThingTest_parseThing.collide.type);
 
-    // A negative value is rejected (it converts to a large unsigned value)
+    // Preserve atoi-style whitespace/sign/partial parsing while checking the signed enum range.
+    TEST_ASSERT_EQUAL_INT(SITHTHING_TEST_PARSEARG_PARSED, sithThingTest_ParseArg(SITHTHING_ARG_COLLIDE, "collide", " +2tail"));
+    TEST_ASSERT_EQUAL_INT(2, sithThingTest_parseThing.collide.type);
     TEST_ASSERT_EQUAL_INT(SITHTHING_TEST_PARSEARG_BADSYNTAX, sithThingTest_ParseArg(SITHTHING_ARG_COLLIDE, "collide", "-1"));
     TEST_ASSERT_EQUAL_INT(2, sithThingTest_parseThing.collide.type);
 }

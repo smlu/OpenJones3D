@@ -161,3 +161,13 @@ None.
 ```text
 b8ab41ecdd289a809fdbb3e99b55f858ffdaf8ce94aa063f2b6d8eb50bda8014  sithAIUtil.tv
 ```
+
+### Fixed-Behavior Side-Path Regression
+
+The separate `sithAIUtilFix.UntestedSidesKeepStartPosition` case exercises side
+searches whose first step already exceeds the maximum distance, both with and
+without a goal. It requires a blocked result, the complete start position as the
+output, and no side collision searches. With a goal, the two visibility checks
+use that same start position and their resulting direction/distance are checked.
+The expected position is stated
+directly; the original's undefined locals are not added to the vector corpus.
