@@ -29,6 +29,7 @@ default from now on; see [Running Tests](#running-tests).
 - [📦 Original-Engine I/O Test Vectors](#original-engine-io-test-vectors)
 - [▶️ Running Tests](#running-tests)
     - [🤖 CI Profiles](#ci-profiles)
+    - [🐧 Native CI Columns](#native-ci-columns)
     - [🔎 Intermittent Failures](#intermittent-failures)
     - [⏱️ Timeouts And Shared Devices](#timeouts-and-shared-devices)
 - [🖼️ Visual System Tests](#visual-system-tests)
@@ -763,6 +764,30 @@ skipped stage does not report a passing result. See
 These profiles check debug assertions, optimization-sensitive behavior, and
 opt-in guard rejection paths. System and disruptive tests remain outside CI
 because they require local devices or can disturb the desktop.
+
+<a name="native-ci-columns"></a>
+
+### 🐧 Native CI Columns
+
+`Game (native)` (`.github/workflows/game-native.yml`) builds the game natively and runs its
+tests on Linux and macOS in four Debug columns with Ninja and `fail-fast: false`: the Null
+column and the Babylon column (`-DJONES3D_PLATFORM_BABYLON=ON`) on `ubuntu-24.04` with Clang,
+and the same two on `macos-15-intel` with the system Apple clang. SDL3 is built from source in
+CI, so the Linux columns install the same dependency packages as `babylon.yml`; macOS needs
+only Ninja.
+
+- Unit suites run as `ctest -N -L unit` followed by `ctest --output-on-failure -L unit`, so the
+  discovery list is logged before the results.
+- The Babylon boundary checks (`babylon.check.boundary`, `babylon.check.selftest`) carry the
+  labels `babylon;check`, not `unit`, because they inspect the source tree instead of running
+  engine code. A second labelled call, `ctest -L check`, runs them in every column.
+- `python3 Scripts/checkboundary.py --check` (the Windows/DirectX include boundary) runs once per
+  push, in the `linux-null` column.
+- The address-pinned sith vector suites (`sith.DSS`, `sith.Multi`, `sith.ThingQuetz`,
+  `sith.AIInstinct`, `sith.AIInstinctFn`, `sith.AIMove`, `sith.AIUtil`) are not built on Apple
+  hosts: they need GNU ld's `-no-pie -Wl,-Ttext-segment=0x20000000` to put the synthetic arena in
+  the window that `sithVecTest_AssertArenaPlacement` requires, and ld64 offers no equivalent.
+  Both Linux columns still run them.
 
 <a name="intermittent-failures"></a>
 

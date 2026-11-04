@@ -48,16 +48,29 @@ if (J3D_PLATFORM_NULL)
     # repeated inside a GNU ld start/end group so the static-library cycles resolve.
     get_property(JONES3D_LIBS_INTERFACE TARGET Libs PROPERTY INTERFACE_LINK_LIBRARIES)
 
-    target_link_libraries(Jones3D-headless PRIVATE
-        -Wl,--start-group
-        Jones3DGame
-        ${JONES3D_LIBS_INTERFACE}
-        -Wl,--end-group
-    )
+    # Added: --start-group/--end-group are GNU ld and lld options; macOS's ld64 has no such options
+    # and rescans static libraries by itself, so the Apple branch links the same libraries without
+    # the group flags. Linux and Windows link lines are unchanged.
+    if (APPLE)
+        target_link_libraries(Jones3D-headless PRIVATE
+            Jones3DGame
+            ${JONES3D_LIBS_INTERFACE}
+        )
+    else()
+        target_link_libraries(Jones3D-headless PRIVATE
+            -Wl,--start-group
+            Jones3DGame
+            ${JONES3D_LIBS_INTERFACE}
+            -Wl,--end-group
+        )
+    endif()
 
     # Added: The Null platform links libm directly (the Windows CRT math functions come
-    # with the CRT shim wherever they are shimmed).
-    target_link_libraries(Jones3D-headless PRIVATE m)
+    # with the CRT shim wherever they are shimmed). macOS has no libm: its math functions are
+    # in libSystem, which the driver always links, so naming it there would fail to resolve.
+    if (NOT APPLE)
+        target_link_libraries(Jones3D-headless PRIVATE m)
+    endif()
 
     # Added: the windowed Jones3D of the Babylon column: the Platform/Babylon composition root
     # and run, plus the Platform/Null helpers except its main() and the headless runner. Linked
@@ -77,13 +90,23 @@ if (J3D_PLATFORM_NULL)
         target_include_directories(Jones3D PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..)
         set_target_properties(Jones3D PROPERTIES LINKER_LANGUAGE CXX)
 
-        target_link_libraries(Jones3D PRIVATE
-            -Wl,--start-group
-            Jones3DGame
-            ${JONES3D_LIBS_INTERFACE}
-            -Wl,--end-group
-        )
-        target_link_libraries(Jones3D PRIVATE m)
+        # Added: no group flags on macOS, as for Jones3D-headless above.
+        if (APPLE)
+            target_link_libraries(Jones3D PRIVATE
+                Jones3DGame
+                ${JONES3D_LIBS_INTERFACE}
+            )
+        else()
+            target_link_libraries(Jones3D PRIVATE
+                -Wl,--start-group
+                Jones3DGame
+                ${JONES3D_LIBS_INTERFACE}
+                -Wl,--end-group
+            )
+        endif()
+        if (NOT APPLE)
+            target_link_libraries(Jones3D PRIVATE m)
+        endif()
     endif()
     return()
 endif()
