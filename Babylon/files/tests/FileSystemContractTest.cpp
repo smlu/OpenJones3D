@@ -15,6 +15,7 @@
 #include <doctest.h>
 
 #include <algorithm>
+#include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
@@ -353,6 +354,25 @@ TEST_CASE("The SDL file system honors the FileSystem contract")
         CHECK(fs->exists(absolute));
         CHECK(fs->remove(absolute));
         CHECK_FALSE(fs->exists(absolute));
+
+        // A file just written has a real modification time in the listing:
+        // modifiedSeconds is within 120 s of the host clock. (SDL reports
+        // times; the Null tree keeps none, so this is checked on SDL only.)
+        const std::string timePath = babylon::files::joinPath(rootString, "mtiming");
+        REQUIRE(fs->createDirectory(timePath));
+        {
+            const std::unique_ptr<File> file =
+                fs->open(babylon::files::joinPath(timePath, "just-written.txt"), OpenMode::Write);
+            REQUIRE(file != nullptr);
+        }
+        const std::optional<std::vector<DirectoryEntry>> timeListing = fs->listDirectory(timePath);
+        REQUIRE(timeListing.has_value());
+        REQUIRE(timeListing->size() == 1);
+        CHECK(timeListing->front().name == "just-written.txt");
+        const std::int64_t nowSeconds = std::chrono::duration_cast<std::chrono::seconds>(
+            std::chrono::system_clock::now().time_since_epoch()).count();
+        CHECK(timeListing->front().modifiedSeconds <= nowSeconds + 120);
+        CHECK(timeListing->front().modifiedSeconds >= nowSeconds - 120);
 
         // The contract must not leave files open beyond the helper.
     }

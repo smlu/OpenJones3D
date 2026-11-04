@@ -198,3 +198,22 @@ TEST_CASE("The Null tree is separate from the host file system")
     CHECK(fs.exists("/nested/deep/dir"));
     CHECK_FALSE(std::filesystem::exists(std::filesystem::path("nested")));
 }
+
+TEST_CASE("Null directory entries keep no modification times")
+{
+    babylon::files::NullFileSystem fs;
+    babylon::log::CaptureSink sink;
+
+    REQUIRE(fs.addFile("timed/one.txt", toBytes("x")));
+    REQUIRE(fs.createDirectory("timed/sub/"));
+    const std::optional<std::vector<babylon::files::DirectoryEntry>> listing =
+        fs.listDirectory("timed");
+    REQUIRE(listing.has_value());
+    CHECK(sink.records().empty());
+    REQUIRE(listing->size() == 2);
+    for ( const babylon::files::DirectoryEntry& entry : *listing )
+    {
+        // The Null tree keeps no times: every entry reports 0.
+        CHECK(entry.modifiedSeconds == 0);
+    }
+}

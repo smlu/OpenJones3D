@@ -12,6 +12,7 @@
 #include <SDL3/SDL_filesystem.h>
 #include <SDL3/SDL_iostream.h>
 #include <SDL3/SDL_stdinc.h>
+#include <SDL3/SDL_timer.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -213,10 +214,11 @@ namespace
         OpenMode m_mode;
     };
 
-    // One enumerated entry: SDL hands the bare name, so the type comes
-    // from a stat of the full path. An entry that cannot be statted (a
-    // broken symbolic link, or one removed during the listing) is reported
-    // as a file rather than failing the whole listing.
+    // One enumerated entry: SDL hands the bare name, so the type and the
+    // modification time come from a stat of the full path. An entry that
+    // cannot be statted (a broken symbolic link, or one removed during the
+    // listing) is reported as a file with time 0 rather than failing the
+    // whole listing.
     SDL_EnumerationResult SDLCALL collectEntry(void* userdata, const char* dirname,
         const char* fname)
     {
@@ -229,13 +231,17 @@ namespace
         std::string full(dirname);   // dirname ends with the native separator
         full.append(fname);
         SDL_PathInfo info;
-        const bool isDirectory =
-            SDL_GetPathInfo(full.c_str(), &info) && info.type == SDL_PATHTYPE_DIRECTORY;
+        const bool bStatted = SDL_GetPathInfo(full.c_str(), &info);
+        const bool isDirectory = bStatted && info.type == SDL_PATHTYPE_DIRECTORY;
         if ( !isDirectory )
         {
             SDL_ClearError();
         }
-        entries->push_back({std::string(name), isDirectory});
+        DirectoryEntry entry;
+        entry.name             = std::string(name);
+        entry.isDirectory      = isDirectory;
+        entry.modifiedSeconds  = bStatted ? SDL_NS_TO_SECONDS(info.modify_time) : 0;
+        entries->push_back(std::move(entry));
         return SDL_ENUM_CONTINUE;
     }
 

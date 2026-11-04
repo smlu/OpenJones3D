@@ -41,6 +41,9 @@ namespace babylon::files
     {
         std::string name;
         bool isDirectory;
+        // Last modification, in seconds since the Unix epoch; 0 when the
+        // backend keeps no times.
+        std::int64_t modifiedSeconds = 0;
     };
 
     // An open file, created by FileSystem::open and closed when destroyed.

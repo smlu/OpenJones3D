@@ -24,7 +24,8 @@ namespace babylon::files
     // and userPath(organization, application) is
     // "/user/<organization>/<application>/"; both exist as directories from
     // the moment they are asked for. Case is passed through unchanged, so
-    // two spellings are two directories.
+    // two spellings are two directories. Directory entries report
+    // modifiedSeconds 0: the Null tree keeps no times.
     //
     // Handles opened for the same path share the stored contents: a write
     // through one is visible to the others once it returns, and the handles
