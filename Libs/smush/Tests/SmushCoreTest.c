@@ -1307,7 +1307,12 @@ TEST(SmushCore, Timer_Start_Stop_Reference_Counted)
     timer_Stop();
 
     int ticks = pTimer->GetTicks();
-    Sleep(100);
+    // A loaded machine may not schedule the timer thread within a fixed short sleep; poll for up to
+    // 2000 ms and stop as soon as the tick count advances. The bound keeps the test from hanging.
+    for ( int waited = 0; waited < 2000 && !(pTimer->GetTicks() > ticks); waited += 10 )
+    {
+        Sleep(10);
+    }
     TEST_ASSERT_TRUE(pTimer->GetTicks() > ticks);
 
     SmushCoreTest_ShutdownTimer();
