@@ -11,6 +11,7 @@
 
 #include <memory>
 
+#include <babylon/cvars/Registry.h>
 #include <babylon/platform/Event.h>
 #include <babylon/platform/Keys.h>
 #include <babylon/platform/NullPlatform.h>
@@ -35,6 +36,8 @@ namespace
     babylon::time::NullClock*        pVirtualClock = nullptr;
     babylon::platform::NullPlatform* pPlatform     = nullptr;
     std::unique_ptr<babylon::platform::Window> pWindow;
+    // The context contract wants a registry; wkernel reads no cvar, so this one stays empty.
+    babylon::cvars::Registry       cvars;
     StdBabylonContext                context;
     StdBabylonContext*               pSavedContext = nullptr;
 
@@ -71,6 +74,7 @@ TEST_SETUP(wkernelBabylon)
     context.pPlatform       = pPlatform;
     context.pScriptPlatform = nullptr;
     context.pWindow         = pWindow.get();
+    context.pCvars          = &cvars;
     stdBabylon_SetContext(&context);
 
     numActivateLog = 0;

@@ -8,6 +8,7 @@
 #include <cstdio>
 #include <span>
 
+#include <babylon/cvars/Registry.h>
 #include <babylon/platform/Keys.h>
 #include <babylon/platform/NullPlatform.h>
 #include <babylon/time/NullClock.h>
@@ -33,6 +34,8 @@ namespace
     babylon::time::NullClock*      pRealClock    = nullptr;
     babylon::time::NullClock*      pVirtualClock = nullptr;
     babylon::platform::NullPlatform* pPlatform   = nullptr;
+    // The context contract wants a registry; the device read uses no cvar, so this one stays empty.
+    babylon::cvars::Registry     cvars;
     StdBabylonContext              context;
 
     // Installs the context. With bScriptPlatform false, pScriptPlatform stays null: the platform
@@ -50,6 +53,7 @@ namespace
 
         // The device read is the headless one: no game window, so the pump records no window events.
         context.pWindow = nullptr;
+        context.pCvars  = &cvars;
 
         // The control adapter never touches files, so this suite leaves pFileSystem null.
         context.pFileSystem = nullptr;

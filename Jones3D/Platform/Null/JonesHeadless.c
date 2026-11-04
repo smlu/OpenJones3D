@@ -14,7 +14,9 @@
 //   --frames frame limit of the engine's own game-state frame counter (default 1000).
 //   --step   milliseconds of virtual time each JonesMain_Process call advances the clock by
 //            (default 33). 0 keeps the real clock and makes the run nondeterministic again.
-//   --state  writes the final state block, plus one line per active thing, to a file.
+//   --state  writes the final state block, plus one line per active thing, to a file. It starts
+//            with one "cvar <name> <value>" line per simulation cvar of the run (ADR-0020), so a
+//            trace says which profile produced it; everything after those lines is as it was.
 //   --input  runs a scripted-input file: "frame <n>: cmd <command>" lines run console commands
 //            and "frame <n>: key <name|number> down|up" lines press keys at engine frame <n>.
 //            A malformed script aborts the run before startup, so the same script keeps a run
@@ -36,6 +38,7 @@
 
 #include <std/General/stdPlatform.h>
 #include <std/Null/stdControlNull.h>
+#include <std/Null/stdCvarNull.h>
 #include <std/Null/stdPlatformNull.h>
 #include <std/Win95/stdControl.h>
 #include <std/Win95/stdKeys.h>
@@ -513,8 +516,8 @@ static void Headless_PrintRunState(size_t frameCount)
         Headless_CountActiveThings(pWorld));
 }
 
-// Writes the final comparison block: the state line values plus every active thing's
-// index, type and position, one per line.
+// Writes the final comparison block: the simulation cvars of the run, then the state line values
+// plus every active thing's index, type and position, one per line.
 static bool Headless_WriteStateFile(const char* pPath, size_t frameCount)
 {
     FILE* pFile = fopen(pPath, "w");
@@ -534,6 +537,23 @@ static bool Headless_WriteStateFile(const char* pPath, size_t frameCount)
     {
         playerPos     = pPlayer->pos;
         playerHealth  = pPlayer->thingInfo.actorInfo.health;
+    }
+
+    // Added: one line per simulation cvar, in the column's index order, so a trace says which
+    // profile produced it (ADR-0020). A cvar that does not fit fails the write like every other
+    // failure here: a state file with a missing setting would compare clean by accident.
+    for ( size_t i = 0; i < stdCvar_GetNumSimulation(); ++i )
+    {
+        char aName[64];
+        char aValue[1025];
+        if ( !stdCvar_GetSimulation(i, aName, sizeof(aName), aValue, sizeof(aValue)) )
+        {
+            fprintf(stderr, "ERROR: Jones3D-headless: simulation cvar %zu does not fit the state file!\n", i);
+            fclose(pFile);
+            return false;
+        }
+
+        fprintf(pFile, "cvar %s %s\n", aName, aValue);
     }
 
     fprintf(pFile, "frame %zu\n", frameCount);

@@ -18,6 +18,7 @@
 #include <string>
 #include <string_view>
 
+#include <babylon/cvars/Registry.h>
 #include <babylon/files/FileSystem.h>
 #include <babylon/files/NullFileSystem.h>
 #include <babylon/time/NullClock.h>
@@ -46,6 +47,8 @@ namespace
     babylon::time::NullClock*      pVirtualClock = nullptr;
     babylon::files::NullFileSystem* pFileSystem  = nullptr;
     babylon::platform::NullPlatform* pPlatform   = nullptr;
+    // The context contract wants a registry; the file adapters read no cvar, so this one stays empty.
+    babylon::cvars::Registry         cvars;
     StdBabylonContext              context;
 
     void InstallContext()
@@ -61,6 +64,7 @@ namespace
         context.pPlatform       = pPlatform;
         context.pScriptPlatform = pPlatform;
         context.pWindow         = nullptr;
+        context.pCvars          = &cvars;
         stdBabylon_SetContext(&context);
     }
 
@@ -708,6 +712,7 @@ static void runAllTests(void)
     RUN_TEST_GROUP(stdFileUtilBabylon);
     RUN_TEST_GROUP(stdControlBabylon);
     RUN_TEST_GROUP(stdBabylonEvents);
+    RUN_TEST_GROUP(stdCvarBabylon);
 }
 
 int main(int argc, const char* argv[])

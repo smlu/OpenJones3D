@@ -149,10 +149,13 @@ endif()
 
 # Added: The Null platform runs only the portable std/General suites. stdConsoleNull.c is not listed:
 # stdGeneralTest.c provides the stdConsole_WriteConsole stub the way it does on Windows.
+# stdCvarNull.c is the Null column's simulation cvar seam, covered by stdCvarNullTest.c below; the
+# Babylon column covers its replacement, stdCvarBabylon.cpp, in stdBabylonTests.
 set(STD_NULL_TESTED_SOURCES
     "${STD_SOURCE_DIR}/Null/stdFileUtilPosix.c"
     "${STD_SOURCE_DIR}/Null/stdPlatformNull.c"
     "${STD_SOURCE_DIR}/Null/stdPlatformTimeNull.c"
+    "${STD_SOURCE_DIR}/Null/stdCvarNull.c"
 )
 
 set(STD_TESTED_SOURCES
@@ -163,10 +166,14 @@ set(STD_TESTED_SOURCES
 if (J3D_PLATFORM_NULL)
     # Added: The std/General tests are portable except stdPlatformTest.c (Windows stack frames,
     # minidumps and a CreateProcessA death child) and stdBmpTest.c (GDI HBITMAP checks against the
-    # Win32 stdBmp backend, which the Null platform does not build).
+    # Win32 stdBmp backend, which the Null platform does not build). stdCvarNullTest.c is the other
+    # way round: it covers the Null column's simulation cvar seam, which only these columns build.
     list(REMOVE_ITEM STD_GENERAL_TEST_SOURCES
         "${STD_GENERAL_TEST_DIR}/stdPlatformTest.c"
         "${STD_GENERAL_TEST_DIR}/stdBmpTest.c"
+    )
+    list(APPEND STD_GENERAL_TEST_SOURCES
+        "${CMAKE_CURRENT_SOURCE_DIR}/stdCvarNullTest.c"
     )
     set(STD_WIN95_TEST_SOURCES "")
     set(STD_TESTED_SOURCES ${STD_GENERAL_TESTED_SOURCES} ${STD_NULL_TESTED_SOURCES})
@@ -276,6 +283,7 @@ if (J3D_PLATFORM_BABYLON)
     )
     list(APPEND STD_BABYLON_TESTED_SOURCES
         "${STD_BABYLON_SOURCE_DIR}/stdBabylon.cpp"
+        "${STD_BABYLON_SOURCE_DIR}/stdBabylonCvars.cpp"
         "${STD_BABYLON_SOURCE_DIR}/stdBabylonPath.cpp"
         "${STD_BABYLON_SOURCE_DIR}/stdFileBabylon.cpp"
         "${STD_BABYLON_SOURCE_DIR}/stdFileUtilBabylon.cpp"
@@ -313,6 +321,7 @@ if (J3D_PLATFORM_BABYLON)
         babylon::time
         babylon::files
         babylon::platform
+        babylon::cvars
     )
 
     set_target_properties(stdTestsBabylon PROPERTIES

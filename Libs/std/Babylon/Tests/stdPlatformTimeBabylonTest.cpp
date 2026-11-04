@@ -6,6 +6,7 @@
 
 #include <chrono>
 
+#include <babylon/cvars/Registry.h>
 #include <babylon/platform/NullPlatform.h>
 #include <babylon/time/Clock.h>
 #include <babylon/time/NullClock.h>
@@ -21,6 +22,8 @@ namespace
     babylon::time::NullClock* pRealClock    = nullptr;
     babylon::time::NullClock* pVirtualClock = nullptr;
     babylon::platform::NullPlatform* pPlatform = nullptr;
+    // The context contract wants a registry; the time adapter reads no cvar, so this one stays empty.
+    babylon::cvars::Registry    cvars;
     StdBabylonContext         context;
 
     uint64_t ClockMs(const babylon::time::Clock* pClock)
@@ -43,6 +46,7 @@ TEST_SETUP(stdPlatformTimeBabylon)
     context.pPlatform        = pPlatform;
     context.pScriptPlatform  = pPlatform;
     context.pWindow          = nullptr;
+    context.pCvars           = &cvars;
     stdBabylon_SetContext(&context);
 
     // The latch is file-static and never resets on its own; clear it so each test starts unlatched.

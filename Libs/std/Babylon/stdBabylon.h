@@ -4,9 +4,10 @@
 #ifndef STD_STDBABYLON_H
 #define STD_STDBABYLON_H
 #ifndef __cplusplus
-#error "stdBabylon.h is C++ only: it names babylon::time types and holds the adapter's one context pointer."
+#error "stdBabylon.h is C++ only: it names babylon::time and babylon::cvars types and holds the adapter's one context pointer."
 #endif
 
+#include <babylon/cvars/Registry.h>
 #include <babylon/files/FileSystem.h>
 #include <babylon/platform/NullPlatform.h>
 #include <babylon/platform/Platform.h>
@@ -21,6 +22,7 @@ struct StdBabylonContext
     babylon::platform::Platform* pPlatform;  // never null while installed
     babylon::platform::NullPlatform* pScriptPlatform; // the headless runner's queue, or nullptr
     babylon::platform::Window* pWindow;      // the game window, or nullptr (headless)
+    babylon::cvars::Registry* pCvars;        // never null while installed
 };
 
 // Installs the context (nullptr uninstalls). The pointer must stay valid until it is uninstalled.

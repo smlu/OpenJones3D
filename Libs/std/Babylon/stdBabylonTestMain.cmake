@@ -23,6 +23,8 @@ function(std_use_babylon_test_main target runner_source)
     target_sources(${target} PRIVATE "${STDBABYLON_TEST_MAIN_DIR}/Tests/stdBabylonTestMain.cpp")
     set_property(SOURCE "${runner_source}" APPEND PROPERTY COMPILE_DEFINITIONS
         "J3D_TEST_RUNNER_ENTRY=j3dTestRunner_Main")
-    target_link_libraries(${target} PRIVATE babylon::time babylon::files babylon::platform)
+    # Added: the test main registers the game's cvars into the context's registry (ADR-0020), so it
+    # needs the cvars module as well.
+    target_link_libraries(${target} PRIVATE babylon::time babylon::files babylon::platform babylon::cvars)
     set_target_properties(${target} PROPERTIES LINKER_LANGUAGE CXX)
 endfunction()
