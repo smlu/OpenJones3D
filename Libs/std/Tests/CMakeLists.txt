@@ -36,6 +36,7 @@ set(STD_GENERAL_TEST_SOURCES
     "${STD_GENERAL_TEST_DIR}/stdCircBufTest.c"
     "${STD_GENERAL_TEST_DIR}/stdConffileTest.c"
     "${STD_GENERAL_TEST_DIR}/stdConfigTest.c"
+    "${STD_GENERAL_TEST_DIR}/stdRenderCaptureTest.c"
     "${STD_GENERAL_TEST_DIR}/stdFileUtilTest.c"
     "${STD_GENERAL_TEST_DIR}/stdJSONTest.c"
     "${STD_GENERAL_TEST_DIR}/stdBmpTest.c"
@@ -119,6 +120,7 @@ set(STD_GENERAL_TESTED_SOURCES
     "${STD_GENERAL_SOURCE_DIR}/stdEffect.c"
     "${STD_GENERAL_SOURCE_DIR}/stdColor.c"
     "${STD_GENERAL_SOURCE_DIR}/stdCircBuf.c"
+    "${STD_GENERAL_SOURCE_DIR}/stdRenderCapture.c"
 )
 
 set(STD_WIN95_TESTED_SOURCES

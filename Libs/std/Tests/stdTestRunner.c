@@ -16,6 +16,7 @@ void TEST_stdColor_GROUP_RUNNER(void);
 void TEST_stdCircBuf_GROUP_RUNNER(void);
 void TEST_stdConffile_GROUP_RUNNER(void);
 void TEST_stdConfig_GROUP_RUNNER(void);
+void TEST_stdRenderCapture_GROUP_RUNNER(void);
 void TEST_stdFileUtil_GROUP_RUNNER(void);
 void TEST_stdJSON_GROUP_RUNNER(void);
 void TEST_stdStrTable_GROUP_RUNNER(void);
@@ -49,6 +50,7 @@ static void runAllTests(void)
     TEST_stdCircBuf_GROUP_RUNNER();
     TEST_stdConffile_GROUP_RUNNER();
     TEST_stdConfig_GROUP_RUNNER();
+    TEST_stdRenderCapture_GROUP_RUNNER();
     TEST_stdFileUtil_GROUP_RUNNER();
     TEST_stdJSON_GROUP_RUNNER();
 #if !defined(J3D_PLATFORM_NULL)
