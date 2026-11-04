@@ -30,6 +30,9 @@
 // original's rand at 0x004F7010 to the same stub). A macro instead of a seam rename because <stdlib.h> declares rand
 // as a DLL import in the Debug CRT.
 int __cdecl sithVec_rand(void);
+// <j3dcore/j3d.h> above pulls in j3dcrt.h, which on the Null platform already macros rand to j3dcrt_rand; drop that
+// first so this capture redirect wins (no-op on Windows, where j3dcrt.h compiles out and rand is not a macro).
+#undef rand
 #define rand sithVec_rand
 
 #endif // SITH_TESTS_VEC_SITHVECTESTADDRS_H

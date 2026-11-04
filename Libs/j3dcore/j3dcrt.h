@@ -11,6 +11,7 @@
 #include <math.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <wchar.h>
 #include <strings.h>
@@ -68,6 +69,34 @@ FILE* j3dcrt_fopen(const char* pName, const char* pMode);
 int sscanf_s(const char* pBuf, const char* pFormat, ...);
 
 int vsscanf_s(const char* pBuf, const char* pFormat, va_list args);
+
+// Added: Microsoft's rand and srand, the generator of the statically linked Microsoft C runtime
+// the original executable uses (see j3dcrt.c): seed = seed * 214013 + 2531011, result
+// (seed >> 16) & 0x7FFF. j3dcrt_rand returns the next value, 0..RAND_MAX; the state is 1 at
+// program start like the CRT's (the game never calls srand) and j3dcrt_srand sets it to the seed.
+// The simulation is single-threaded, so the shim keeps one process-wide state.
+int j3dcrt_rand(void);
+
+void j3dcrt_srand(unsigned int seed);
+
+// Added: Engine code keeps calling rand and srand; on this platform they get Microsoft's generator.
+// Defined only when the name is still free: a test harness that includes <j3dcore/j3d.h> through
+// its forced address headers redirects rand afterwards with #undef and #define (sithVecTestAddrs.h,
+// sithMultiTested.c); a redirect established before this header is processed must win over it.
+// The macros are placed after <stdlib.h> so the C runtime's own declarations are not affected.
+#ifndef rand
+#define rand j3dcrt_rand
+#endif
+#ifndef srand
+#define srand j3dcrt_srand
+#endif
+
+// Added: The engine scales rand results by RAND_MAX (SITH_RAND in sithMain.h, the multiplayer
+// spawn pick in sithMulti.c, the jeep bump chance in sithPhysics.c); keep Microsoft's 32767, not
+// the platform CRT's. <stdlib.h> is included at the top of this header, so undef first for a
+// clean redefinition.
+#undef RAND_MAX
+#define RAND_MAX 0x7FFF
 
 #endif // _WIN32
 
