@@ -395,11 +395,27 @@ static void j3dCrtTest_MakeTree(void)
     fclose(pFile);
 }
 
+// The resolver's job only exists on case-sensitive file systems; on a case-insensitive one the
+// host already does it. Call after j3dCrtTest_MakeTree(): the lowercase spelling of a file that
+// was created with another letter case is what tells the two apart.
+static int j3dCrtTest_IsCaseSensitive(void)
+{
+    struct stat st;
+
+    return stat(J3DCRTTEST_DIR "/sub/file.txt", &st) != 0;
+}
+
 TEST(j3dCrt, TestResolvePath)
 {
     char aPath[260];
 
     j3dCrtTest_MakeTree();
+
+    if ( !j3dCrtTest_IsCaseSensitive() )
+    {
+        j3dCrtTest_CleanTree();
+        TEST_IGNORE_MESSAGE("needs a case-sensitive file system (this volume ignores letter case)");
+    }
 
     // Backslashes become slashes, and components that exist in another letter case are rewritten.
     TEST_ASSERT_EQUAL_STRING(J3DCRTTEST_DIR "/Sub/File.TXT",
@@ -436,6 +452,12 @@ TEST(j3dCrt, TestFopenResolvePath)
     int         ch;
 
     j3dCrtTest_MakeTree();
+
+    if ( !j3dCrtTest_IsCaseSensitive() )
+    {
+        j3dCrtTest_CleanTree();
+        TEST_IGNORE_MESSAGE("needs a case-sensitive file system (this volume ignores letter case)");
+    }
 
     // The path does not exist with the case it is written in, and j3dcrt_fopen opens it anyway.
     TEST_ASSERT_EQUAL_INT(-1, stat(J3DCRTTEST_DIR "/sub/file.txt", &st));
