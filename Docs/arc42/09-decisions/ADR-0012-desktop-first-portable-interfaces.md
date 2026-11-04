@@ -18,5 +18,7 @@ Every interface has a null backend.
 ## Consequences
 
 - macOS is not a late milestone of its own; it is built and tested from M5.
+  Since 2026-11-04 the macOS CI columns are commented out because the macOS runners are flaky; macOS
+  stays a supported platform and the columns come back once the runners are reliable.
 - Null backends make the whole game run headless, which traces need ([ADR-0003](ADR-0003-fidelity-split.md)).
 - A console port later needs only new backends, kept in their own files ([ADR-0008](ADR-0008-babylon-license.md)).
