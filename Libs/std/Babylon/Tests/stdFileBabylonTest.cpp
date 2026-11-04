@@ -3,7 +3,8 @@
 // through a fresh StdBabylonContext whose pFileSystem is a babylon::files::NullFileSystem (current
 // path "/"), so every value is exact and deterministic. Files are prepared through the
 // NullFileSystem API. This file also carries the single main() for the stdBabylonTests executable,
-// running the time suite of stdPlatformTimeBabylonTest.cpp together with these groups.
+// running the time suite of stdPlatformTimeBabylonTest.cpp and the control suite of
+// stdControlBabylonTest.cpp together with these groups.
 #include <unity_fixture.h>
 
 #include <algorithm>
@@ -44,6 +45,7 @@ namespace
     babylon::time::NullClock*      pNullClock    = nullptr;
     babylon::time::NullClock*      pVirtualClock = nullptr;
     babylon::files::NullFileSystem* pFileSystem  = nullptr;
+    babylon::platform::NullPlatform* pPlatform   = nullptr;
     StdBabylonContext              context;
 
     void InstallContext()
@@ -51,19 +53,24 @@ namespace
         pNullClock    = new babylon::time::NullClock();
         pVirtualClock = new babylon::time::NullClock();
         pFileSystem   = new babylon::files::NullFileSystem();
+        pPlatform     = new babylon::platform::NullPlatform();
 
-        context.pClock        = pNullClock;
-        context.pVirtualClock = pVirtualClock;
-        context.pFileSystem   = pFileSystem;
+        context.pClock          = pNullClock;
+        context.pVirtualClock   = pVirtualClock;
+        context.pFileSystem     = pFileSystem;
+        context.pPlatform       = pPlatform;
+        context.pScriptPlatform = pPlatform;
         stdBabylon_SetContext(&context);
     }
 
     void RemoveContext()
     {
         stdBabylon_SetContext(nullptr);
+        delete pPlatform;
         delete pFileSystem;
         delete pVirtualClock;
         delete pNullClock;
+        pPlatform     = nullptr;
         pFileSystem   = nullptr;
         pVirtualClock = nullptr;
         pNullClock    = nullptr;
@@ -698,6 +705,7 @@ static void runAllTests(void)
     RUN_TEST_GROUP(stdBabylonPath);
     RUN_TEST_GROUP(stdFileBabylon);
     RUN_TEST_GROUP(stdFileUtilBabylon);
+    RUN_TEST_GROUP(stdControlBabylon);
 }
 
 int main(int argc, const char* argv[])

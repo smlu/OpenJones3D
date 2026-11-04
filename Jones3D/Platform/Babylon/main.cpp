@@ -1,10 +1,11 @@
-// Added: the Babylon column's composition root. It builds the Babylon clocks and file system,
-// installs them as the adapter's context, runs the shared headless loop, then uninstalls before
-// the objects die.
+// Added: the Babylon column's composition root. It builds the Babylon clocks, file system and
+// platform, installs them as the adapter's context, runs the shared headless loop, then uninstalls
+// before the objects die.
 #include <memory>
 
 #include <babylon/files/FileSystem.h>
 #include <babylon/files/SdlFileSystem.h>
+#include <babylon/platform/NullPlatform.h>
 #include <babylon/time/Clock.h>
 #include <babylon/time/NullClock.h>
 #include <babylon/time/SdlClock.h>
@@ -18,7 +19,11 @@ int main(int argc, char** argv)
     std::unique_ptr<babylon::files::FileSystem> pFileSystem = babylon::files::createSdlFileSystem();
     std::unique_ptr<babylon::time::Clock> pClock = babylon::time::createSdlClock();
     babylon::time::NullClock virtualClock;
-    StdBabylonContext context{ pClock.get(), &virtualClock, pFileSystem.get() };
+    // Added: the headless run has no OS input, so the platform is a NullPlatform whose queue the
+    // runner's --input script feeds; M5.12 brings the SDL platform. Both context pointers name it:
+    // stdControl_ReadDevices() pumps it and stdControl_QueueKeyEvent() pushes into it.
+    babylon::platform::NullPlatform platform;
+    StdBabylonContext context{ pClock.get(), &virtualClock, pFileSystem.get(), &platform, &platform };
     stdBabylon_SetContext(&context);
     int exitCode = JonesHeadless_Run(argc, argv);
     stdBabylon_SetContext(nullptr);

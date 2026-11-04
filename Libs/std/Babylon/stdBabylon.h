@@ -8,6 +8,8 @@
 #endif
 
 #include <babylon/files/FileSystem.h>
+#include <babylon/platform/NullPlatform.h>
+#include <babylon/platform/Platform.h>
 #include <babylon/time/Clock.h>
 #include <babylon/time/NullClock.h>
 
@@ -16,6 +18,8 @@ struct StdBabylonContext
     babylon::time::Clock*     pClock;        // real clock; never null while installed
     babylon::time::NullClock* pVirtualClock; // the headless run's virtual clock; never null while installed
     babylon::files::FileSystem* pFileSystem; // never null while installed
+    babylon::platform::Platform* pPlatform;  // never null while installed
+    babylon::platform::NullPlatform* pScriptPlatform; // the headless runner's queue, or nullptr
 };
 
 // Installs the context (nullptr uninstalls). The pointer must stay valid until it is uninstalled.

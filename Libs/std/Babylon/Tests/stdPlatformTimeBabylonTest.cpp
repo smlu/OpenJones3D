@@ -1,10 +1,12 @@
 // Added: Unity Fixture suite for the Babylon column's stdPlatform time adapter. It compiles
 // stdBabylon.cpp and stdPlatformTimeBabylon.cpp directly and drives them through a fresh
-// StdBabylonContext whose both clocks are NullClocks, so every value is exact and deterministic.
+// StdBabylonContext whose both clocks are NullClocks and whose platform is a NullPlatform, so
+// every value is exact and deterministic.
 #include <unity_fixture.h>
 
 #include <chrono>
 
+#include <babylon/platform/NullPlatform.h>
 #include <babylon/time/Clock.h>
 #include <babylon/time/NullClock.h>
 
@@ -18,6 +20,7 @@ namespace
 {
     babylon::time::NullClock* pRealClock    = nullptr;
     babylon::time::NullClock* pVirtualClock = nullptr;
+    babylon::platform::NullPlatform* pPlatform = nullptr;
     StdBabylonContext         context;
 
     uint64_t ClockMs(const babylon::time::Clock* pClock)
@@ -30,11 +33,15 @@ TEST_SETUP(stdPlatformTimeBabylon)
 {
     pRealClock    = new babylon::time::NullClock();
     pVirtualClock = new babylon::time::NullClock();
+    pPlatform     = new babylon::platform::NullPlatform();
     context.pClock        = pRealClock;
     context.pVirtualClock = pVirtualClock;
 
-    // The time adapter never touches files, so this suite leaves pFileSystem null.
-    context.pFileSystem = nullptr;
+    // The time adapter never touches files, so this suite leaves pFileSystem null. The context
+    // contract wants a platform, and a NullPlatform is the one with no operating system.
+    context.pFileSystem      = nullptr;
+    context.pPlatform        = pPlatform;
+    context.pScriptPlatform  = pPlatform;
     stdBabylon_SetContext(&context);
 
     // The latch is file-static and never resets on its own; clear it so each test starts unlatched.
@@ -44,8 +51,10 @@ TEST_SETUP(stdPlatformTimeBabylon)
 TEST_TEAR_DOWN(stdPlatformTimeBabylon)
 {
     stdBabylon_SetContext(nullptr);
+    delete pPlatform;
     delete pRealClock;
     delete pVirtualClock;
+    pPlatform     = nullptr;
     pRealClock    = nullptr;
     pVirtualClock = nullptr;
 }
