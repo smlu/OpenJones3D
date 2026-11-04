@@ -1,4 +1,4 @@
-project(std C)
+project(std C CXX)
 
 file(GLOB_RECURSE SOURCES *.c)
 file(GLOB_RECURSE HEADERS *.h)
@@ -22,6 +22,17 @@ else()
     # Windows builds never compile the Null backend sources.
     list(FILTER SOURCES EXCLUDE REGEX ".*/Null/.*")
     list(FILTER SOURCES EXCLUDE REGEX ".*Null\\.c$")
+endif()
+
+# Added: the Babylon column is the Null column with the stdPlatform time functions moved onto a
+# babylon::time::Clock. Drop the Null time file and compile the adapter in its place; the .cpp
+# files are never globbed (the GLOB above is .c only), so they are added explicitly.
+if (J3D_PLATFORM_BABYLON)
+    list(FILTER SOURCES EXCLUDE REGEX "stdPlatformTimeNull\\.c$")
+    list(APPEND SOURCES
+        "${CMAKE_CURRENT_SOURCE_DIR}/Babylon/stdBabylon.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Babylon/stdPlatformTimeBabylon.cpp"
+    )
 endif()
 
 # Remove DirectX 6/9 specific files based on the build option
@@ -67,6 +78,13 @@ endif()
 target_link_libraries(${PROJECT_NAME} PUBLIC
     j3dcore
 )
+
+# Added: the Babylon column's time adapter runs on the Babylon clock interface.
+if (J3D_PLATFORM_BABYLON)
+    target_link_libraries(${PROJECT_NAME} PUBLIC
+        babylon::time
+    )
+endif()
 
 # Added: Windows-only services; the Null platform has none of them (no DirectX, no winmm).
 if (NOT J3D_PLATFORM_NULL)
@@ -199,4 +217,9 @@ source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCES} ${HEADERS} ${SHAD
 
 if (JONES3D_BUILD_TESTS)
     add_subdirectory(Tests)
+endif()
+
+# Added: the Babylon column's adapter test suite lives next to the adapter it covers.
+if (JONES3D_BUILD_TESTS AND J3D_PLATFORM_BABYLON)
+    add_subdirectory(Babylon/Tests)
 endif()

@@ -61,6 +61,9 @@ if(NOT WIN32)
     set(JONES3D_BUILD_PROGRAMS OFF CACHE BOOL "" FORCE)
 endif()
 
+# Added: the Babylon column: the Null column with platform services moved onto the Babylon Engine one by one.
+option(JONES3D_PLATFORM_BABYLON "Build the Babylon platform column instead of the Null column (non-Windows)" OFF)
+
 if (JONES3D_QOL_IMPROVEMENTS)
     set(J3D_QOL_IMPROVEMENTS ON)
 else()
@@ -92,6 +95,20 @@ endif()
 
 # Babylon Engine: built before the game's compile options so it keeps its own flags.
 option(JONES3D_BUILD_BABYLON "Build the Babylon Engine" ON)
+
+# Added: the Babylon column replaces the Null column's stdPlatform time functions with Babylon ones,
+# so it needs the Babylon Engine and only exists where the Null column exists (non-Windows).
+# J3D_PLATFORM_BABYLON implies J3D_PLATFORM_NULL, which still means "the non-Windows columns".
+if (JONES3D_PLATFORM_BABYLON)
+    if (WIN32)
+        message(FATAL_ERROR "JONES3D_PLATFORM_BABYLON is only supported on non-Windows hosts.")
+    endif()
+    if (NOT JONES3D_BUILD_BABYLON)
+        message(FATAL_ERROR "JONES3D_PLATFORM_BABYLON needs the Babylon Engine: configure with -DJONES3D_BUILD_BABYLON=ON.")
+    endif()
+    set(J3D_PLATFORM_BABYLON ON)
+endif()
+
 if (JONES3D_BUILD_BABYLON)
     set(BABYLON_BUILD_TESTS ${JONES3D_BUILD_TESTS} CACHE BOOL "" FORCE)
     set(BABYLON_SANITIZE ${JONES3D_SANITIZE} CACHE BOOL "" FORCE)

@@ -24,8 +24,21 @@ if (J3D_PLATFORM_NULL)
     # Added: The Null headless runner: the application layer object library plus the
     # Platform/Null main(). Link groups/repeated libs resolve the static-library cycles.
     file(GLOB JONES3D_NULL_SOURCES Platform/Null/*.c)
-    add_executable(Jones3D-headless ${JONES3D_NULL_SOURCES})
+
+    # Added: the Babylon column swaps the Null main() for the Platform/Babylon composition root.
+    set(JONES3D_HEADLESS_SOURCES ${JONES3D_NULL_SOURCES})
+    if (J3D_PLATFORM_BABYLON)
+        enable_language(CXX)
+        list(REMOVE_ITEM JONES3D_HEADLESS_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Platform/Null/main.c")
+        list(APPEND JONES3D_HEADLESS_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Platform/Babylon/main.cpp")
+    endif()
+
+    add_executable(Jones3D-headless ${JONES3D_HEADLESS_SOURCES})
     target_include_directories(Jones3D-headless PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..)
+
+    if (J3D_PLATFORM_BABYLON)
+        set_target_properties(Jones3D-headless PROPERTIES LINKER_LANGUAGE CXX)
+    endif()
 
     # Added: The same "Libs" interface dependencies as the Windows Jones3D targets link,
     # repeated inside a GNU ld start/end group so the static-library cycles resolve.
