@@ -194,6 +194,45 @@ TEST(stdFileUtil, TestFindNextFindQuickAndCountMatches)
     stdFileUtil_DisposeFind(pFind);
 }
 
+TEST(stdFileUtil, TestFindNoMatchInExistingDirectory)
+{
+    FindFileData* pFind;
+    tFoundFileInfo info;
+    int numTxtFiles = 0;
+
+    TEST_ASSERT_TRUE(stdFileUtil_MkDir(stdFileUtilTest_pDir));
+
+    // An existing directory holds no entry matching the mask: the search reports nothing, and the
+    // list a match would have allocated was never allocated, so nothing may be released for it.
+    TEST_ASSERT_EQUAL_INT(0, stdFileUtil_CountMatches(stdFileUtilTest_pDir, 3, ".txt"));
+    STD_ZEROMEM(&info, sizeof(info));
+    TEST_ASSERT_FALSE(stdFileUtil_FindQuick(stdFileUtilTest_pDir, 3, ".txt", &info));
+
+    pFind = stdFileUtil_NewFind(stdFileUtilTest_pDir, 3, ".txt");
+    TEST_ASSERT_NOT_NULL(pFind);
+    TEST_ASSERT_EQUAL_INT(0, stdFileUtil_FindNext(pFind, &info));
+    TEST_ASSERT_EQUAL_INT(0, pFind->nFoundFiles);
+    while ( stdFileUtil_FindNext(pFind, &info) )
+    {
+        ++numTxtFiles;
+    }
+    TEST_ASSERT_EQUAL_INT(0, numTxtFiles);
+    TEST_ASSERT_EQUAL_INT(0, pFind->nFoundFiles);
+    stdFileUtil_DisposeFind(pFind);
+
+    // The same search over a directory that only holds non-matching names.
+    stdFileUtilTest_MakeFile("stdFileUtilTest_dir\\c.bin", "c");
+    TEST_ASSERT_EQUAL_INT(0, stdFileUtil_CountMatches(stdFileUtilTest_pDir, 3, ".txt"));
+    STD_ZEROMEM(&info, sizeof(info));
+    TEST_ASSERT_FALSE(stdFileUtil_FindQuick(stdFileUtilTest_pDir, 3, ".txt", &info));
+
+    pFind = stdFileUtil_NewFind(stdFileUtilTest_pDir, 3, ".txt");
+    TEST_ASSERT_NOT_NULL(pFind);
+    TEST_ASSERT_EQUAL_INT(0, stdFileUtil_FindNext(pFind, &info));
+    TEST_ASSERT_EQUAL_INT(0, pFind->nFoundFiles);
+    stdFileUtil_DisposeFind(pFind);
+}
+
 TEST(stdFileUtil, TestFindHelpersHandleAllocationFailure)
 {
     tFoundFileInfo info;
@@ -214,5 +253,6 @@ TEST_GROUP_RUNNER(stdFileUtil)
     RUN_TEST_CASE(stdFileUtil, TestNewFindBuildsFiltersForModes);
     RUN_TEST_CASE(stdFileUtil, TestDirectoryFileExistenceAndDeleteHelpers);
     RUN_TEST_CASE(stdFileUtil, TestFindNextFindQuickAndCountMatches);
+    RUN_TEST_CASE(stdFileUtil, TestFindNoMatchInExistingDirectory);
     RUN_TEST_CASE(stdFileUtil, TestFindHelpersHandleAllocationFailure);
 }
