@@ -25,12 +25,23 @@ The trace reference is **retail behavior**. OpenJones3D's QOL improvements are k
 default**. Those that change the simulation (for example player physics at 150 Hz instead of 50 Hz, larger
 thing and light collection distances, breadth-first visibility traversal) become individual runtime options
 instead of one compile-time profile, so a player or speedrunner can return to retail behavior. Pure bug and
-crash fixes stay on unconditionally. New simulation changes are opt-in. Traces run against the retail
-profile and against the default profile.
+crash fixes stay on unconditionally. New simulation changes are on by default too (amended 2026-11-04, see
+below). Traces run against the retail profile and against the default profile.
 
 ## Consequences
 
 - Traces only look at simulation state, never at pixels or sound, so the renderer and audio are free to change.
 - The simulation must stay deterministic: no wall-clock time, thread timing or uninitialized memory in it.
 - Every simulation change needs an option and must keep the retail trace identical when the option is off.
+  The Retail profile switches every such option off at once.
 - `JONES3D_QOL_IMPROVEMENTS` and `JONES3D_SPEEDRUN_BUILD` turn from compile-time profiles into runtime options.
+
+## Amendment (2026-11-04): enhancements on by default
+
+The owner decided that new simulation changes follow the QOL changes: **on by default**, each with its own
+option back to retail. A **Retail profile** turns every simulation option off at once, for players and
+speedrunners who want the original game and for the fidelity checks. Example: time slowing down while an
+item wheel is open is on by default and off in the Retail profile; the wheel itself is presentation.
+
+Consequences: the retail trace is checked with the Retail profile and must stay identical; the default
+profile is traced too, and its expected trace changes only by a reviewed decision.

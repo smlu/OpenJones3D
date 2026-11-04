@@ -78,7 +78,7 @@ against this codebase. This page records findings and their sources; decisions t
   retail, 150 by default with the QOL changes (`engine.physics.fixedTimestep`). See
   [Frame-Loop-And-Simulation.md](../arc42/06-runtime/Frame-Loop-And-Simulation.md).
 - **Verdict:** not a presentation-only change as in Doom. A fixed world step changes the simulation, so it
-  needs an option, off by default, with the retail trace unchanged. Not part of M5; an M9 investigation of
+  needs an option (on by default since 2026-11-04, off in the Retail profile, [ADR-0003](../arc42/09-decisions/ADR-0003-fidelity-split.md)), with the retail trace unchanged. Not part of M5; an M9 investigation of
   which systems depend on frame time.
 - **Recorded:** as a risk in [chapter 11](../arc42/11-risks-and-technical-debt.md).
 
