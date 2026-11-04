@@ -168,7 +168,8 @@ Jones3D EX separates the **simulation** (physics, collision, AI, COG, game time,
 - Presentation may improve freely. Offer a classic toggle where players would want one.
 - The simulation is measured against retail behavior by headless traces. The QOL changes inherited from
   OpenJones3D are on by default, each switchable back to retail.
-- A new simulation change needs an option, off by default. With the option off, the retail trace must stay
+- A new simulation change needs an option, on by default like the QOL changes, and the Retail profile turns
+  it off. With the Retail profile, the retail trace must stay
   identical.
 - Pure bug and crash fixes are always on. If a fix changes the retail trace, ask first: speedruns, savegames
   and scripts may depend on the bug.

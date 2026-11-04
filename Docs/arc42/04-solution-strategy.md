@@ -27,7 +27,7 @@ license check rejects non-permissive dependencies.
 | Goal | Approach | Details |
 |---|---|---|
 | Fidelity | The simulation keeps the original logic. Headless runs from savegames with scripted input write state traces, which are compared frame for frame against a reference build | [ADR-0003](09-decisions/ADR-0003-fidelity-split.md) |
-| Freedom where it doesn't hurt | Presentation (rendering, resolution, audio, UI) is enhanced by default. OpenJones3D's QOL changes are on by default, each a runtime option that returns to retail. New simulation changes are opt-in | [ADR-0003](09-decisions/ADR-0003-fidelity-split.md) |
+| Freedom where it doesn't hurt | Presentation (rendering, resolution, audio, UI) is enhanced by default. Enhancements are on by default, OpenJones3D's QOL changes and new simulation changes alike, each a runtime option that returns to retail; the Retail profile turns them all off | [ADR-0003](09-decisions/ADR-0003-fidelity-split.md) |
 | Separability | Babylon is a self-contained directory with its own tests, license and CI job | [ADR-0006](09-decisions/ADR-0006-babylon-engine-in-repo.md), [ADR-0008](09-decisions/ADR-0008-babylon-license.md) |
 | Unchanged game code | The game keeps calling the recovered functions it always called. Only their bodies change, into adapters | [ADR-0007](09-decisions/ADR-0007-adapter-between-game-and-babylon.md) |
 | Portability | SDL3 for the platform, the SDL3 GPU API for graphics, miniaudio for audio: one backend each reaches Windows, Linux and macOS | [ADR-0009](09-decisions/ADR-0009-sdl3-and-sdl3-gpu.md), [ADR-0010](09-decisions/ADR-0010-miniaudio.md) |
