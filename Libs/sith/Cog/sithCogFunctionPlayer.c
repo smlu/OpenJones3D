@@ -1,5 +1,4 @@
 #include "sithCogFunctionPlayer.h"
-#include <j3dcore/j3dhook.h>
 
 #include <sith/Cog/sithCog.h>
 #include <sith/Cog/sithCogExec.h>
@@ -9,7 +8,6 @@
 #include <sith/Gameplay/sithPlayer.h>
 #include <sith/Gameplay/sithPlayerActions.h>
 #include <sith/Gameplay/sithPlayerControls.h>
-#include <sith/RTI/symbols.h>
 #include <sith/World/sithMaterial.h>
 #include <sith/World/sithThing.h>
 #include <sith/World/sithWeapon.h>

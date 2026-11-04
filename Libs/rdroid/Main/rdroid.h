@@ -1,10 +1,8 @@
 #ifndef RDROID_RDROID_H
 #define RDROID_RDROID_H
 #include <j3dcore/j3d.h>
-#include <j3dcore/j3dhook.h>
 
 #include <rdroid/types.h>
-#include <rdroid/RTI/addresses.h>
 
 #include <std/types.h>
 #include <std/General/std.h>

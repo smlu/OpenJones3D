@@ -1,10 +1,7 @@
 #include "sithCogExec.h"
 
-#include <j3dcore/j3dhook.h>
-
 #include <sith/Cog/sithCogParse.h>
 #include <sith/Devices/sithConsole.h>
-#include <sith/RTI/symbols.h>
 #include <sith/World/sithSector.h>
 #include <sith/World/sithSurface.h>
 #include <sith/World/sithWorld.h>

@@ -1,6 +1,4 @@
 #include "jonesInventory.h"
-#include <j3dcore/j3dhook.h>
-#include <Jones3D/RTI/symbols.h>
 
 #include <sith/Cog/sithCog.h>
 #include <sith/Dss/sithGamesave.h>

@@ -1,8 +1,6 @@
 // LecShare.c: the LEC share table (module registry) and log (original 0x004EB210-0x004EBDE0).
 #include <smush/insane/Lec/LecShare.h>
 #include <j3dcore/j3d.h>
-#include <j3dcore/j3dhook.h>
-#include <smush/RTI/symbols.h>
 #include <ctype.h>
 #include <stdarg.h>
 #include <stddef.h>

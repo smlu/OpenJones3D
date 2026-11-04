@@ -7,6 +7,7 @@
 #include <std/General/stdMemory.h>
 #include <std/General/stdUtil.h>
 
+#include <stdio.h> // sscanf_s
 #include <string.h>
 
 #define STDCONFIG_VERSION "1.0.0"

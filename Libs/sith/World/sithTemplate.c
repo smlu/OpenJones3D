@@ -1,7 +1,5 @@
 #include "sithTemplate.h"
-#include <j3dcore/j3dhook.h>
 
-#include <sith/RTI/symbols.h>
 #include <sith/World/sithThing.h>
 #include <sith/World/sithWorld.h>
 

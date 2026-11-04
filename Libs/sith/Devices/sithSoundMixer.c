@@ -1,12 +1,10 @@
 #include "sithSoundMixer.h"
-#include <j3dcore/j3dhook.h>
 
 #include <rdroid/Math/rdVector.h>
 
 #include <sith/Engine/sithCamera.h>
 #include <sith/Gameplay/sithPlayer.h>
 #include <sith/Main/sithMain.h>
-#include <sith/RTI/symbols.h>
 #include <sith/World/sithThing.h>
 
 #include <sound/Sound.h>

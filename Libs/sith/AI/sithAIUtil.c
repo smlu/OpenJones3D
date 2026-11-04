@@ -1,6 +1,4 @@
 #include "sithAIUtil.h"
-#include <j3dcore/j3dhook.h>
-#include <sith/RTI/symbols.h>
 
 #include <sith/AI/sithAI.h>
 #include <sith/AI/sithAIMove.h>

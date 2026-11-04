@@ -1,8 +1,6 @@
 // Blit.c: C wrappers around the MASM blitters (original 0x004F0460-0x004F0590).
 #include <smush/insane/Bitmap/Blit.h>
 #include <j3dcore/j3d.h>
-#include <j3dcore/j3dhook.h>
-#include <smush/RTI/symbols.h>
 #include <smush/insane/Bitmap/BlitAsm.h>
 #include <smush/insane/Decode/Decode.h>
 #include <smush/insane/File/Framestream.h>

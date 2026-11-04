@@ -1,5 +1,4 @@
 #include "sithSprite.h"
-#include <j3dcore/j3dhook.h>
 
 #include <rdroid/Engine/rdThing.h>
 #include <rdroid/Math/rdMatrix.h>
@@ -7,7 +6,6 @@
 #include <rdroid/Primitives/rdModel3.h>
 #include <rdroid/Primitives/rdSprite.h>
 
-#include <sith/RTI/symbols.h>
 #include <sith/World/sithThing.h>
 #include <sith/World/sithWorld.h>
 

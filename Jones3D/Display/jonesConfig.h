@@ -1,7 +1,6 @@
 #ifndef JONES3D_JONESCONFIG_H
 #define JONES3D_JONESCONFIG_H
 #include <Jones3D/types.h>
-#include <Jones3D/RTI/addresses.h>
 #include <j3dcore/j3d.h>
 #include <rdroid/types.h>
 #include <sith/types.h>

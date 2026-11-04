@@ -2,15 +2,13 @@
 #define SMUSH_INSANE_FILE_ZFILIO_ZFILIO_H
 #include <assert.h>
 #include <j3dcore/j3d.h>
-#include <j3dcore/j3dhook.h>
-#include <smush/RTI/addresses.h>
 #include <smush/insane/lec.h>
 #include <smush/insane/filio.h>
 
 /*
  * Zfilio.c: the `FILIO=insane_zfilio` module: opens the files whose extension is in its list (".gz", plus what the host adds
- * with zfilio_Configure, e.g. ".snm"/".znm" from SmushPlay) with zlib's gz functions of the game executable (gzopen etc.,
- * RTI/addresses.h), tracking a logical position because gz streams seek lazily. It chains every other file to the module
+ * with zfilio_Configure, e.g. ".snm"/".znm" from SmushPlay) with zlib's gz functions of the game executable
+ * (gzopen etc.), tracking a logical position because gz streams seek lazily. It chains every other file to the module
  * published as `FILIO.chainto` and keeps that interface in the global zfilio_pFilio, which the executable's own gzio.c reads.
  */
 
@@ -24,7 +22,7 @@ J3D_EXTERN_C_START
 
 #define ZFILIO_Z_FINISH 4 /* zlib's Z_FINISH, the gzflush mode */
 
-/* The executable's zlib 1.0.9 gz functions are reached through RTI/addresses.h (gzopen_ADDR etc.); gzFile is an opaque handle. */
+/* The executable's zlib 1.0.9 gz functions are reached through the Zfilio_gz* wrappers in Zfilio.c; gzFile is an opaque handle. */
 typedef void* gzFile;
 
 typedef struct sZfileHandle

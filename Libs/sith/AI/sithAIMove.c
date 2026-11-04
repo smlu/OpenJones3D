@@ -1,5 +1,4 @@
 #include "sithAIMove.h"
-#include <j3dcore/j3dhook.h>
 
 #include <math.h>
 #include <stdlib.h>
@@ -18,7 +17,6 @@
 #include <sith/Gameplay/sithPlayerActions.h>
 #include <sith/Gameplay/sithPlayerControls.h>
 #include <sith/Gameplay/sithTime.h>
-#include <sith/RTI/symbols.h>
 #include <sith/World/sithActor.h>
 #include <sith/World/sithSoundClass.h>
 #include <sith/World/sithTemplate.h>

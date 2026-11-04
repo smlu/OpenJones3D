@@ -1,11 +1,9 @@
 #include "rdPuppet.h"
-#include <j3dcore/j3dhook.h>
 
 #include <rdroid/Engine/rdThing.h>
 #include <rdroid/Math/rdMatrix.h>
 #include <rdroid/Math/rdVector.h>
 #include <rdroid/Raster/rdCache.h>
-#include <rdroid/RTI/symbols.h>
 
 #include <std/General/stdMath.h>
 #include <std/General/stdMemory.h>

@@ -1,5 +1,4 @@
 #include "sithCollision.h"
-#include <j3dcore/j3dhook.h>
 
 #include <rdroid/Math/rdMath.h>
 #include <rdroid/Math/rdMatrix.h>
@@ -14,7 +13,6 @@
 #include <sith/Gameplay/sithPlayer.h>
 #include <sith/Gameplay/sithPlayerActions.h>
 #include <sith/Gameplay/sithTime.h>
-#include <sith/RTI/symbols.h>
 #include <sith/World/sithSector.h>
 #include <sith/World/sithActor.h>
 #include <sith/World/sithItem.h>

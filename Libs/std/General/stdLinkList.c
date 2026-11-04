@@ -1,9 +1,6 @@
 #include "std.h"
 #include "stdLinkList.h"
 
-#include <j3dcore/j3dhook.h>
-#include <std/RTI/symbols.h>
-
 void stdLinkList_ResetGlobals(void)
 {}
 

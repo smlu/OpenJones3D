@@ -1,5 +1,4 @@
 #include "sithCogParse.h"
-#include <j3dcore/j3dhook.h>
 
 #include <rdroid/Math/rdVector.h>
 #include <rdroid/types.h>
@@ -7,7 +6,6 @@
 #include <sith/Cog/sithCog.h>
 #include <sith/Cog/sithCogExec.h>
 #include <sith/Cog/sithCogYacc.h>
-#include <sith/RTI/symbols.h>
 #include <sith/World/sithThing.h>
 
 #include <std/General/stdConffile.h>

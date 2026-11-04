@@ -5,7 +5,6 @@
 #include <sith/types.h>
 #include <sith/Gameplay/sithTime.h>
 #include <sith/Main/sithMain.h>
-#include <sith/RTI/addresses.h>
 #include <std/types.h>
 
 J3D_EXTERN_C_START

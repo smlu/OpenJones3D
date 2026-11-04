@@ -1,8 +1,6 @@
 #include "rdCache.h"
-#include <j3dcore/j3dhook.h>
 
 #include <rdroid/Main/rdroid.h>
-#include <rdroid/RTI/symbols.h>
 
 #include <std/General/stdEffect.h>
 #include <std/General/stdMath.h>

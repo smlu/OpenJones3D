@@ -1,11 +1,9 @@
 #include <std/Win95/DX9/stdSysTypesDX9.h>
 #include "stdComm.h"
 
-#include <j3dcore/j3dhook.h>
 #include <std/General/std.h>
 #include <std/General/stdMemory.h>
 #include <std/General/stdUtil.h>
-#include <std/RTI/symbols.h>
 #include <std/Win95/stdWin95.h>
 
 static bool bGameHost            = false;

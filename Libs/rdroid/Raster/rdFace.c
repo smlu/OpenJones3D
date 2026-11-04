@@ -1,8 +1,6 @@
 #include "rdFace.h"
-#include <j3dcore/j3dhook.h>
 #include <rdroid/Main/rdroid.h>
 #include <rdroid/Math/rdVector.h>
-#include <rdroid/RTI/symbols.h>
 #include <std/General/stdMemory.h>
 
 void rdFace_ResetGlobals(void)

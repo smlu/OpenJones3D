@@ -1,13 +1,11 @@
 #include <std/Win95/std3D.h>
 #include <std/Win95/stdDisplay.h>
 
-#include <j3dcore/j3dhook.h>
 #include <std/General/std.h>
 #include <std/General/stdColor.h>
 #include <std/General/stdMath.h>
 #include <std/General/stdMemory.h>
 #include <std/General/stdUtil.h>
-#include <std/RTI/symbols.h>
 
 #include <math.h>
 

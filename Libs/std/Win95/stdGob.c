@@ -1,10 +1,8 @@
 #include "stdGob.h"
-#include <j3dcore/j3dhook.h>
 #include <std/General/std.h>
 #include <std/General/stdHashtbl.h>
 #include <std/General/stdMemory.h>
 #include <std/General/stdUtil.h>
-#include <std/RTI/symbols.h>
 
 #include <limits.h>
 #include <stdint.h>

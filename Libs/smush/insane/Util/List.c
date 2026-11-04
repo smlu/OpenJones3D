@@ -1,8 +1,6 @@
 // List.c: INSANE's doubly linked list (original 0x004F03E0-0x004F0460).
 #include <smush/insane/Util/List.h>
 #include <j3dcore/j3d.h>
-#include <j3dcore/j3dhook.h>
-#include <smush/RTI/symbols.h>
 #include <stddef.h>
 
 void J3DAPI LecList_Init(LecList* pList)

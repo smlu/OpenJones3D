@@ -1,11 +1,9 @@
 #include "sithSoundClass.h"
-#include <j3dcore/j3dhook.h>
 
 #include <sith/AI/sithAIAwareness.h>
 #include <sith/Devices/sithSound.h>
 #include <sith/Devices/sithSoundMixer.h>
 #include <sith/Gameplay/sithPlayer.h>
-#include <sith/RTI/symbols.h>
 #include <sith/World/sithVoice.h>
 
 #include <sound/Sound.h>

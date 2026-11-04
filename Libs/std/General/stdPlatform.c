@@ -8,9 +8,6 @@
 #include "stdPlatformSys.h"
 #include "stdUtil.h"
 
-#include <j3dcore/j3dhook.h>
-#include <std/RTI/symbols.h>
-
 static bool stdPlatform_bAssert = false;
 
 void stdPlatform_ResetGlobals(void)

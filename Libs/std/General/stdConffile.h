@@ -1,10 +1,8 @@
 #ifndef STD_STDCONFFILE_H
 #define STD_STDCONFFILE_H
 #include <j3dcore/j3d.h>
-#include <j3dcore/j3dhook.h>
 
 #include <std/types.h>
-#include <std/RTI/addresses.h>
 
 #include <stdarg.h>
 #include <stdio.h>

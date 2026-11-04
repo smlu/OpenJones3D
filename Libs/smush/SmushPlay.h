@@ -4,7 +4,6 @@
 #include <stdint.h>
 
 #include <j3dcore/j3d.h>
-#include <smush/RTI/addresses.h>
 #include <sound/Driver.h>
 #include <std/types.h>
 

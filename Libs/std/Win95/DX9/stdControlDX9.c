@@ -8,12 +8,10 @@
 #endif
 #include <dinput.h>
 
-#include <j3dcore/j3dhook.h>
 #include <std/General/std.h>
 #include <std/General/stdMath.h>
 #include <std/General/stdPlatform.h>
 #include <std/General/stdUtil.h>
-#include <std/RTI/symbols.h>
 
 #include <xinput.h>
 #pragma comment(lib,"Xinput.lib")

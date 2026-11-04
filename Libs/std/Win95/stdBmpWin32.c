@@ -5,12 +5,10 @@
 #include <std/General/stdMemory.h>
 #include <std/General/stdUtil.h>
 
-#include <j3dcore/j3dhook.h>
-
-#include <std/RTI/symbols.h>
 #include <std/Win95/stdDisplay.h>
 
 #include <stdint.h>
+#include <stdio.h> // SEEK_SET
 
 // The Windows BMP screenshot writer and loader, moved out of std/General/stdBmp.c.
 

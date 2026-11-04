@@ -1,10 +1,6 @@
 #include <Jones3D/types.h> // Note, don't move as it requires including windows.h without WIN32_LEAN_AND_MEAN  being defined
 
 #include "JonesFile.h"
-#include <j3dcore/j3dhook.h>
-
-#include <Jones3D/RTI/addresses.h>
-#include <Jones3D/RTI/symbols.h>
 
 #include <std/General/std.h>
 #include <std/General/stdFileUtil.h>

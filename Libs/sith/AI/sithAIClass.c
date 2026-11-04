@@ -1,9 +1,7 @@
 #include "sithAIClass.h"
-#include <j3dcore/j3dhook.h>
 
 #include <sith/AI/sithAI.h>
 #include <sith/Engine/sithPuppet.h>
-#include <sith/RTI/symbols.h>
 
 #include <std/General/stdConffile.h>
 #include <std/General/stdHashtbl.h>

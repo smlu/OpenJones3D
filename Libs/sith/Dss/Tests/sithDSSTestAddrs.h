@@ -1,9 +1,12 @@
 // Force-included into the sithDSS tests and the sources they test (see CMakeLists.txt).
 //
-// The reconstructed code reaches engine globals of the original executable through J3D_DECL_FAR_VAR at fixed
-// addresses. Those addresses are not available in the test process (and cannot be mapped under every host), so the
-// addresses of the globals that the DSS functions use are redirected to a static structure. The capture harness
-// does not use this header: it runs inside the executable and uses the real addresses.
+// The vector cases seed synthetic puppet tracks with the "vanilla" callbacks of the original executable through
+// the historical <function>_ADDR macros, and the reconstructed sithDSS.c save path recognizes those values; the
+// redirects below give the seven callbacks distinct static sentinel addresses, standing in for the retail
+// function addresses. They must differ from the address of the callback function itself: the load cases record
+// the change of the seeded value. The engine-global redirects at the end of this header are no longer read (the
+// cases and the tested sources use the module globals of the reconstruction directly) and are kept only until
+// they are removed in a separate cleanup.
 #ifndef SITHDSSTESTADDRS_H
 #define SITHDSSTESTADDRS_H
 
@@ -14,7 +17,6 @@
 
 #include <sith/types.h>
 #include <sith/Gameplay/sithPlayer.h>
-#include <sith/RTI/addresses.h>
 
 typedef struct
 {
@@ -59,6 +61,7 @@ typedef struct
     int lastChalkMarkNum;
     SithThing* aChalkMarks[10];
     SithCog* pMasterCog;
+    void* aPuppetCallbackSentinels[7];
 } SithDSSTestGlobals;
 
 extern SithDSSTestGlobals sithDSSTest_g;
@@ -146,5 +149,16 @@ extern SithDSSTestGlobals sithDSSTest_g;
 #define sithFX_g_lastChalkMarkNum_ADDR ((uintptr_t)&sithDSSTest_g.lastChalkMarkNum)
 #define sithFX_g_aChalkMarks_ADDR ((uintptr_t)&sithDSSTest_g.aChalkMarks)
 #define sithCog_g_pMasterCog_ADDR ((uintptr_t)&sithDSSTest_g.pMasterCog)
+
+// Sentinels for the seven puppet track callbacks the DSS and Multi vector cases seed and the reconstructed
+// sithDSS.c save path names by index (see the VANILLACB macro in sithDSS.c). Distinct from every function
+// address, so the seeded value and the reloaded function pointer produce the same record as before.
+#define sithPuppet_DefaultCallback_ADDR           ((uintptr_t)&sithDSSTest_g.aPuppetCallbackSentinels[0])
+#define sithPlayerControls_PuppetCallback_ADDR    ((uintptr_t)&sithDSSTest_g.aPuppetCallbackSentinels[1])
+#define sithVehicleControls_PuppetCallback_ADDR   ((uintptr_t)&sithDSSTest_g.aPuppetCallbackSentinels[2])
+#define sithAIMove_PuppetCallback_ADDR            ((uintptr_t)&sithDSSTest_g.aPuppetCallbackSentinels[3])
+#define sithWhip_WhipClimbPuppetCallback_ADDR     ((uintptr_t)&sithDSSTest_g.aPuppetCallbackSentinels[4])
+#define sithWhip_ClimbDismountPuppetCallback_ADDR ((uintptr_t)&sithDSSTest_g.aPuppetCallbackSentinels[5])
+#define sithWhip_WhipFirePuppetCallback_ADDR      ((uintptr_t)&sithDSSTest_g.aPuppetCallbackSentinels[6])
 
 #endif // SITHDSSTESTADDRS_H

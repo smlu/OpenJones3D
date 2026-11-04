@@ -1,5 +1,4 @@
 #include "sithPuppet.h"
-#include <j3dcore/j3dhook.h>
 
 #include <rdroid/Engine/rdKeyframe.h>
 #include <rdroid/Engine/rdPuppet.h>
@@ -21,7 +20,6 @@
 #include <sith/Gameplay/sithPlayerControls.h>
 #include <sith/Gameplay/sithTime.h>
 #include <sith/Gameplay/sithWhip.h>
-#include <sith/RTI/symbols.h>
 #include <sith/World/sithSoundClass.h>
 #include <sith/World/sithWeapon.h>
 #include <sith/World/sithWorld.h>

@@ -2,9 +2,7 @@
 
 #include "stdWin95.h"
 
-#include <j3dcore/j3dhook.h>
 #include <std/General/std.h>
-#include <std/RTI/symbols.h>
 
 static GUID stdWin95_guid;
 static HWND stdWin95_hwnd = NULL;

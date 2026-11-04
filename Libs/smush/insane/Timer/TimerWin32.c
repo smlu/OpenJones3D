@@ -6,7 +6,6 @@
 #include <smush/insane/Timer/Timer.h>
 #include <smush/insane/Timer/TimerSys.h>
 #include <j3dcore/j3d.h>
-#include <j3dcore/j3dhook.h>
 
 DWORD WINAPI timer_Thread(LPVOID pArg);
 

@@ -50,8 +50,6 @@
 #include <sith/Gameplay/sithVehicleControls.h>
 #include <sith/Gameplay/sithWhip.h>
 #include <sith/Main/sithMain.h>
-#include <sith/RTI/addresses.h>
-#include <sith/RTI/symbols.h>
 #include <sith/World/sithActor.h>
 #include <sith/World/sithItem.h>
 #include <sith/World/sithMaterial.h>

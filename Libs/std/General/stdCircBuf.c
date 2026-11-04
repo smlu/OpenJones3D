@@ -3,9 +3,6 @@
 #include "stdCircBuf.h"
 #include "stdUtil.h"
 
-#include <j3dcore/j3dhook.h>
-#include <std/RTI/symbols.h>
-
 #include <stdint.h>
 
 void stdCircBuf_ResetGlobals(void)

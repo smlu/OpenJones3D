@@ -1,12 +1,10 @@
 #include <std/Win95/stdControl.h>
 #include <std/Win95/stdWin95.h>
 
-#include <j3dcore/j3dhook.h>
 #include <std/General/std.h>
 #include <std/General/stdMath.h>
 #include <std/General/stdPlatform.h>
 #include <std/General/stdUtil.h>
-#include <std/RTI/symbols.h>
 
 
 typedef struct sStdInputDevice

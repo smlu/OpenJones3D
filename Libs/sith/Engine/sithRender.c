@@ -1,5 +1,4 @@
 #include "sithRender.h"
-#include <j3dcore/j3dhook.h>
 
 #include <rdroid/Engine/rdCamera.h>
 #include <rdroid/Engine/rdClip.h>
@@ -22,7 +21,6 @@
 #include <sith/Engine/sithRenderSky.h>
 #include <sith/Engine/sithShadow.h>
 #include <sith/Gameplay/sithTime.h>
-#include <sith/RTI/symbols.h>
 #include <sith/World/sithMaterial.h>
 #include <sith/World/sithModel.h>
 #include <sith/World/sithPVS.h>

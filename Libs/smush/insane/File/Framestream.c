@@ -1,8 +1,6 @@
 // Framestream.c: the chunked frame stream the animation player drives (original 0x004EBDE0-0x004EC560).
 #include <smush/insane/File/Framestream.h>
 #include <j3dcore/j3d.h>
-#include <j3dcore/j3dhook.h>
-#include <smush/RTI/symbols.h>
 
 #include <stddef.h>
 #include <smush/insane/File/Cdstream.h>

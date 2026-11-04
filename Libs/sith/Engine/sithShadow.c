@@ -1,9 +1,7 @@
 #include "sithShadow.h"
-#include <j3dcore/j3dhook.h>
 
 #include <sith/Engine/sithCollision.h>
 #include <sith/Engine/sithPhysics.h>
-#include <sith/RTI/symbols.h>
 #include <sith/World/sithMaterial.h>
 #include <sith/World/sithThing.h>
 #include <sith/World/sithWorld.h>

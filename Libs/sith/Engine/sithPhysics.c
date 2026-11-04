@@ -1,5 +1,4 @@
 #include "sithPhysics.h"
-#include <j3dcore/j3dhook.h>
 
 #include <float.h>
 #include <stdlib.h>
@@ -34,7 +33,6 @@
 #include <sith/World/sithTemplate.h>
 #include <sith/World/sithThing.h>
 #include <sith/World/sithWorld.h>
-#include <sith/RTI/symbols.h>
 
 #include <std/General/stdConfig.h>
 #include <std/General/stdMemory.h>

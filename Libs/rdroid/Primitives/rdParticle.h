@@ -2,7 +2,6 @@
 #define RDROID_RDPARTICLE_H
 #include <j3dcore/j3d.h>
 #include <rdroid/types.h>
-#include <rdroid/RTI/addresses.h>
 
 #define RDPARTICLE_MAXVERTS 256
 

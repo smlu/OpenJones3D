@@ -1,8 +1,6 @@
 // Decode.c: pixel-format conversion and RLE decoding (original 0x004EE6A0-0x004EF890).
 #include <smush/insane/Decode/Decode.h>
 #include <j3dcore/j3d.h>
-#include <j3dcore/j3dhook.h>
-#include <smush/RTI/symbols.h>
 
 #include <std/types.h>
 #include <smush/insane/Decode/DecodeAsm.h>

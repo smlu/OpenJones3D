@@ -2,13 +2,11 @@
 #include <Jones3D/Main/JonesMain.h>
 #include <Jones3D/Main/JonesMainSys.h>
 
-#include <j3dcore/j3dhook.h>
 #include <Jones3D/Platform/Win32/JonesDialog.h>
 #include <Jones3D/Display/JonesConsole.h>
 #include <Jones3D/Display/JonesHud.h>
 #include <Jones3D/Main/jonesString.h>
 #include <Jones3D/Play/jonesCog.h>
-#include <Jones3D/RTI/symbols.h>
 
 #include <sith/Dss/sithGamesave.h>
 #include <sith/Devices/sithSoundMixer.h>

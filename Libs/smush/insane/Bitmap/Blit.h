@@ -1,7 +1,6 @@
 #ifndef SMUSH_INSANE_BITMAP_BLIT_H
 #define SMUSH_INSANE_BITMAP_BLIT_H
 #include <j3dcore/j3d.h>
-#include <smush/RTI/addresses.h>
 #include <smush/insane/Bitmap/Bitmap.h>
 
 /*

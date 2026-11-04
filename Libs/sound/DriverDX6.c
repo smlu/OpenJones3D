@@ -1,9 +1,6 @@
 #include "Driver.h"
-#include <j3dcore/j3dhook.h>
 
 #include <rdroid/Math/rdVector.h>
-
-#include <sound/RTI/symbols.h>
 
 #include <sound/AudioLib.h>
 

@@ -1,7 +1,6 @@
 #ifndef SMUSH_INSANE_SOUND_MIXERASM_H
 #define SMUSH_INSANE_SOUND_MIXERASM_H
 #include <j3dcore/j3d.h>
-#include <smush/RTI/addresses.h>
 #include <stdint.h>
 
 /*

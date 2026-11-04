@@ -2,7 +2,6 @@
 #define SMUSH_INSANE_BITMAP_BITMAP_H
 #include <assert.h>
 #include <j3dcore/j3d.h>
-#include <smush/RTI/addresses.h>
 #include <smush/insane/lec.h>
 #include <std/types.h>
 

@@ -1,9 +1,6 @@
 #include "std.h"
 #include "stdColor.h"
 
-#include <j3dcore/j3dhook.h>
-#include <std/RTI/symbols.h>
-
 void stdColor_ResetGlobals(void)
 {}
 

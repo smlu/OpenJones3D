@@ -14,11 +14,7 @@
 #error "Unsuported system sound API. Please define J3D_DIRECTX6 or J3D_DIRECTX9 in your project."
 #endif
 
-#include <j3dcore/j3dhook.h>
-
 #include <rdroid/Math/rdVector.h>
-
-#include <sound/RTI/symbols.h>
 
 #include <sound/AudioLib.h>
 

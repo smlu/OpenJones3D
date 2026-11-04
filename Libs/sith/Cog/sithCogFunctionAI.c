@@ -1,5 +1,4 @@
 #include "sithCogFunctionAI.h"
-#include <j3dcore/j3dhook.h>
 
 #include <rdroid/Math/rdMatrix.h>
 #include <rdroid/Math/rdVector.h>
@@ -14,7 +13,6 @@
 #include <sith/Gameplay/sithInventory.h>
 #include <sith/Gameplay/sithPlayer.h>
 #include <sith/Gameplay/sithTime.h>
-#include <sith/RTI/symbols.h>
 #include <sith/World/sithSoundClass.h>
 
 #include <std/General/stdMath.h>

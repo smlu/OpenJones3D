@@ -1,8 +1,6 @@
 // DecodeAsm.c: C translation of INSANE's MASM source DecodeAsm.asm (the pixel converters) (original 0x004F0590-0x004F09BA).
 #include <smush/insane/Decode/DecodeAsm.h>
 #include <j3dcore/j3d.h>
-#include <j3dcore/j3dhook.h>
-#include <smush/RTI/symbols.h>
 
 #include <string.h>
 

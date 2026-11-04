@@ -1,8 +1,6 @@
 // Cdstream.c: the file ring-buffer streamer (`STREAMER=insane_streamer`) (original 0x004E4D50-0x004E5470).
 #include <smush/insane/File/Cdstream.h>
 #include <j3dcore/j3d.h>
-#include <j3dcore/j3dhook.h>
-#include <smush/RTI/symbols.h>
 
 #include <stddef.h>
 #include <stdio.h>

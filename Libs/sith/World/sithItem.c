@@ -1,5 +1,4 @@
 #include "sithItem.h"
-#include <j3dcore/j3dhook.h>
 
 #include <rdroid/Math/rdVector.h>
 
@@ -10,7 +9,6 @@
 #include <sith/Gameplay/sithPlayer.h>
 #include <sith/Gameplay/sithTime.h>
 #include <sith/World/sithThing.h>
-#include <sith/RTI/symbols.h>
 
 #include <std/Win95/stdComm.h>
 

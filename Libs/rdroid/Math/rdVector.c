@@ -1,9 +1,7 @@
 #include "rdMatrix.h"
 #include "rdVector.h"
 
-#include <j3dcore/j3dhook.h>
 #include <rdroid/Main/rdroid.h>
-#include <rdroid/RTI/symbols.h>
 
 const rdVector2 rdroid_zeroVector2 = { 0.0f,  0.0f };
 const rdVector2 rdroid_xVector2    = { 1.0f,  0.0f };

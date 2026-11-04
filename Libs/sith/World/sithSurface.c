@@ -1,14 +1,11 @@
 #include "sithSurface.h"
 #include "sithWorld.h"
 
-#include <j3dcore/j3dhook.h>
-
 #include <sith/Cog/sithCog.h>
 #include <sith/Devices/sithComm.h>
 #include <sith/Devices/sithSoundMixer.h>
 #include <sith/Dss/sithDSS.h>
 #include <sith/Engine/sithIntersect.h>
-#include <sith/RTI/symbols.h>
 
 #include <rdroid/Math/rdVector.h>
 #include <rdroid/Raster/rdCache.h>

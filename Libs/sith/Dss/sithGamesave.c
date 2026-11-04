@@ -1,5 +1,4 @@
 #include "sithGamesave.h"
-#include <j3dcore/j3dhook.h>
 
 #include <sith/AI/sithAI.h>
 #include <sith/AI/sithAIUtil.h>
@@ -22,7 +21,6 @@
 #include <sith/Gameplay/sithPlayer.h>
 #include <sith/Gameplay/sithWhip.h>
 #include <sith/Main/sithString.h>
-#include <sith/RTI/symbols.h>
 #include <sith/World/sithThing.h>
 #include <sith/World/sithVoice.h>
 #include <sith/World/sithWeapon.h>

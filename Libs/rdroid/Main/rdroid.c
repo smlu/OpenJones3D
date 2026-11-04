@@ -1,9 +1,7 @@
 #include "rdroid.h"
-#include <j3dcore/j3dhook.h>
 
 #include <rdroid/Primitives/rdFont.h>
 #include <rdroid/Raster/rdCache.h>
-#include <rdroid/RTI/symbols.h>
 
 #include <stdbool.h>
 

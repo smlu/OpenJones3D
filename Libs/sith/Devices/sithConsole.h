@@ -4,7 +4,6 @@
 #include <rdroid/types.h>
 #include <sith/types.h>
 #include <sith/Main/sithMain.h>
-#include <sith/RTI/addresses.h>
 
 #include <std/General/std.h>
 #include <std/General/stdUtil.h>

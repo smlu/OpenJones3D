@@ -1,7 +1,5 @@
 #include "sithCommand.h"
 
-#include <j3dcore/j3dhook.h>
-
 #include <sith/AI/sithAI.h>
 #include <sith/AI/sithAIUtil.h>
 #include <sith/Cog/sithCog.h>
@@ -19,7 +17,6 @@
 #include <sith/Gameplay/sithPlayerActions.h>
 #include <sith/Main/sithMain.h>
 #include <sith/Main/sithString.h>
-#include <sith/RTI/symbols.h>
 #include <sith/World/sithMaterial.h>
 #include <sith/World/sithSector.h>
 #include <sith/World/sithThing.h>

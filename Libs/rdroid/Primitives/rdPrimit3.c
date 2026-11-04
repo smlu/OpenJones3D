@@ -1,5 +1,4 @@
 #include "rdPrimit3.h"
-#include <j3dcore/j3dhook.h>
 
 #include <rdroid/Engine/rdCamera.h>
 #include <rdroid/Engine/rdClip.h>
@@ -7,7 +6,6 @@
 #include <rdroid/Math/rdMath.h>
 #include <rdroid/Math/rdMatrix.h>
 #include <rdroid/Math/rdVector.h>
-#include <rdroid/RTI/symbols.h>
 
 void rdPrimit3_ResetGlobals(void)
 {}

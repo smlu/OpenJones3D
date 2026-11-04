@@ -1,6 +1,4 @@
 #include "sithAIInstinct.h"
-#include <j3dcore/j3dhook.h>
-#include <sith/RTI/symbols.h>
 
 #include <rdroid/Math/rdMath.h>
 #include <rdroid/Math/rdMatrix.h>

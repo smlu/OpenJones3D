@@ -9,7 +9,6 @@
 #include <smush/insane/lec.h>
 
 #include <std/General/std.h>
-#include <smush/RTI/symbols.h>
 
 static LecShare* dsnd_pShare = NULL;
 static void* dsnd_pParam     = NULL;

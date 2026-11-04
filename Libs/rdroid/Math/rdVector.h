@@ -1,11 +1,9 @@
 #ifndef RDROID_RDVECTOR_H
 #define RDROID_RDVECTOR_H
 #include <j3dcore/j3d.h>
-#include <j3dcore/j3dhook.h>
 
 #include <rdroid/types.h>
 #include <rdroid/Main/rdroid.h>
-#include <rdroid/RTI/addresses.h>
 
 #include <std/General/stdMath.h>
 #include <std/General/stdUtil.h>

@@ -1,6 +1,5 @@
 #include "sithMain.h"
 #include "sithString.h"
-#include <j3dcore/j3dhook.h>
 
 #include <sith/AI/sithAI.h>
 #include <sith/AI/sithAIAwareness.h>
@@ -26,7 +25,6 @@
 #include <sith/Gameplay/sithPlayer.h>
 #include <sith/Gameplay/sithPlayerControls.h>
 #include <sith/Gameplay/sithTime.h>
-#include <sith/RTI/symbols.h>
 #include <sith/World/sithActor.h>
 #include <sith/World/sithMaterial.h>
 #include <sith/World/sithModel.h>

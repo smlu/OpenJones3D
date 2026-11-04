@@ -1,8 +1,6 @@
 // MemFill.c: C translation of INSANE's MASM source MemFill.asm (blit_MemCopyB) (original 0x004F04F8-0x004F054F).
 #include <smush/insane/Bitmap/MemFill.h>
 #include <j3dcore/j3d.h>
-#include <j3dcore/j3dhook.h>
-#include <smush/RTI/symbols.h>
 
 #include <string.h>
 

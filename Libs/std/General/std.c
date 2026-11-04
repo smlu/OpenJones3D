@@ -6,8 +6,6 @@
 #include "stdJSON.h"
 #include "stdUtil.h"
 
-#include <j3dcore/j3dhook.h>
-#include <std/RTI/symbols.h>
 #include <std/Win95/stdConsole.h>
 
 static char aPrintBuffer[2048]     = { 0 };

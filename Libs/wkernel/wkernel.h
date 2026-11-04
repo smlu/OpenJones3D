@@ -2,7 +2,6 @@
 #define WKERNEL_WKERNEL_H
 #include <j3dcore/j3d.h>
 #include <wkernel/types.h>
-#include <wkernel/RTI/addresses.h>
 
 // TODO: move module to std
 

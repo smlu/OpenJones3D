@@ -1,8 +1,6 @@
 // Zfilio.c: the `FILIO=insane_zfilio` module (gz-compressed files through the executable's zlib) (original 0x004E9B30-0x004EA020).
 #include <smush/insane/File/Zfilio/Zfilio.h>
 #include <j3dcore/j3d.h>
-#include <j3dcore/j3dhook.h>
-#include <smush/RTI/symbols.h>
 
 #include <stdarg.h>
 #include <stddef.h>

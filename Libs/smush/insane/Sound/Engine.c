@@ -1,8 +1,6 @@
 // Engine.c: the sound engine (`SOUND=insane`) (original 0x004E5470-0x004E74A0).
 #include <smush/insane/Sound/Engine.h>
 #include <j3dcore/j3d.h>
-#include <j3dcore/j3dhook.h>
-#include <smush/RTI/symbols.h>
 
 #include <stdarg.h>
 #include <stdbool.h>

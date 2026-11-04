@@ -2,7 +2,6 @@
 #define STD_STDSTRTABLE_H
 #include <j3dcore/j3d.h>
 #include <std/types.h>
-#include <std/RTI/addresses.h>
 
 #include <ctype.h>
 #include <stdlib.h>

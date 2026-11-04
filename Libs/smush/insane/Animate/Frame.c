@@ -1,8 +1,6 @@
 // Frame.c: the animation frame service (`ANIMFRAME=insane`): parses and decodes frames through the frame-object decoders (original 0x004E4230-0x004E4D50).
 #include <smush/insane/Animate/Frame.h>
 #include <j3dcore/j3d.h>
-#include <j3dcore/j3dhook.h>
-#include <smush/RTI/symbols.h>
 
 #include <stddef.h>
 #include <string.h>

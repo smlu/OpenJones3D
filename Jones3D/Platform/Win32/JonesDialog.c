@@ -1,9 +1,7 @@
 #include <std/Win95/stdSysTagsWin32.h>
 #include "JonesDialog.h"
-#include <j3dcore/j3dhook.h>
 
 #include <Jones3D/Main/JonesMain.h>
-#include <Jones3D/RTI/symbols.h>
 
 #include <std/General/std.h>
 #include <std/General/stdUtil.h>

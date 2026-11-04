@@ -1,8 +1,6 @@
 // Pcplay.c: the animation player (`ANIMPLAY=insane`) (original 0x004E3810-0x004E4230).
 #include <smush/insane/Animate/Pcplay.h>
 #include <j3dcore/j3d.h>
-#include <j3dcore/j3dhook.h>
-#include <smush/RTI/symbols.h>
 
 #include <stddef.h>
 

@@ -1,8 +1,6 @@
 // Bitmap.c: the bitmap service (`BITMAP=insane`) (original 0x004EA0F0-0x004EA7D0).
 #include <smush/insane/Bitmap/Bitmap.h>
 #include <j3dcore/j3d.h>
-#include <j3dcore/j3dhook.h>
-#include <smush/RTI/symbols.h>
 #include <smush/insane/Memory/Memory.h>
 #include <smush/insane/Lec/LecShare.h>
 #include <stddef.h>

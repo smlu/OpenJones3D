@@ -4,9 +4,6 @@
 #include "stdMemory.h"
 #include "stdUtil.h"
 
-#include <j3dcore/j3dhook.h>
-#include <std/RTI/symbols.h>
-
 void stdFileUtil_ResetGlobals(void)
 {}
 

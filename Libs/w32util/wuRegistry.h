@@ -4,7 +4,6 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <j3dcore/j3d.h>
-#include <w32util/RTI/addresses.h>
 
 J3D_EXTERN_C_START
 

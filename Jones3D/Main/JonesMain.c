@@ -1,6 +1,5 @@
 #include "JonesMain.h"
 #include <Jones3D/Main/JonesMainSys.h>
-#include <j3dcore/j3dhook.h>
 
 #include <Jones3D/Display/jonesConfig.h>
 #include <Jones3D/Display/JonesConsole.h>
@@ -11,7 +10,6 @@
 #include <Jones3D/Main/jonesString.h>
 #include <Jones3D/Play/jonesCog.h>
 #include <Jones3D/Play/JonesControl.h>
-#include <Jones3D/RTI/symbols.h>
 
 #include <rdroid/Engine/rdCamera.h>
 #include <rdroid/Main/rdroid.h>

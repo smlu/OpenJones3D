@@ -1,10 +1,8 @@
 #include "sithInventory.h"
-#include <j3dcore/j3dhook.h>
 
 #include <sith/Cog/sithCog.h>
 #include <sith/Devices/sithComm.h>
 #include <sith/Dss/sithDSSThing.h>
-#include <sith/RTI/symbols.h>
 #include <sith/World/sithTemplate.h>
 #include <sith/World/sithThing.h>
 

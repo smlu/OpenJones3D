@@ -1,13 +1,12 @@
 #ifndef SMUSH_INSANE_FILE_STDIO_H
 #define SMUSH_INSANE_FILE_STDIO_H
 #include <j3dcore/j3d.h>
-#include <smush/RTI/addresses.h>
 #include <smush/insane/lec.h>
 #include <smush/insane/filio.h>
 
 /*
  * Stdio.c: the `FILIO=insane_stdio` module (C stdio). The original's Startup/Shutdown and read/write/tell/seek bodies are
- * folded by the linker onto other functions (see RTI/addresses.h), so only Register, Unregister, open, close and flush have
+ * folded by the linker onto other functions, so only Register, Unregister, open, close and flush have
  * addresses of their own.
  */
 

@@ -1,8 +1,6 @@
 // Timer.c: the timer service (`TIMER=insane`) and its TIME_CRITICAL tick thread (original 0x004EA7D0-0x004EAE10).
 #include <smush/insane/Timer/Timer.h>
 #include <j3dcore/j3d.h>
-#include <j3dcore/j3dhook.h>
-#include <smush/RTI/symbols.h>
 #include <smush/insane/Timer/TimerSys.h>
 #include <string.h>
 #include <setjmp.h>

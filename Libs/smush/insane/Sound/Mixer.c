@@ -1,8 +1,6 @@
 // Mixer.c: the software mixer (original 0x004EC720-0x004EDEF0).
 #include <smush/insane/Sound/Mixer.h>
 #include <j3dcore/j3d.h>
-#include <j3dcore/j3dhook.h>
-#include <smush/RTI/symbols.h>
 
 #include <math.h>
 #include <stdint.h>

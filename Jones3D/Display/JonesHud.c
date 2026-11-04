@@ -2,7 +2,6 @@
 #include "JonesHudConstants.h"
 #include <Jones3D/Display/JonesHudSys.h>
 
-#include <j3dcore/j3dhook.h>
 
 #include <Jones3D/Display/jonesConfig.h>
 #include <Jones3D/Display/JonesReticle.h>
@@ -11,7 +10,6 @@
 #include <Jones3D/Main/jonesString.h>
 #include <Jones3D/Play/jonesCog.h>
 #include <Jones3D/Play/jonesInventory.h>
-#include <Jones3D/RTI/symbols.h>
 
 #include <rdroid/Math/rdMatrix.h>
 #include <rdroid/Math/rdVector.h>

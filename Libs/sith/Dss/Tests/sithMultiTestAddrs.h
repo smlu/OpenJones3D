@@ -1,15 +1,15 @@
 // Force-included into the sithMulti tests and sithMultiTested.c (see CMakeLists.txt).
 //
-// Redirects the engine globals of the original executable that sithMulti.c reaches through J3D_DECL_FAR_VAR to static
-// memory, in addition to the globals of the DSS tests (sithDSSTestAddrs.h, whose state builder the sithMulti cases
-// reuse). The capture harness does not use this header.
+// Defines the <global>_ADDR redirects used by the multiplayer vector cases, in addition to the redirects of the
+// DSS tests (sithDSSTestAddrs.h, whose state builder the sithMulti cases reuse). sithMulti.c itself reaches the
+// module globals of the reconstruction directly; the redirects are read only by the historical harness-era case
+// code and are kept until that is removed in a separate cleanup. The capture harness does not use this header.
 #ifndef SITHMULTITESTADDRS_H
 #define SITHMULTITESTADDRS_H
 
 #include "sithDSSTestAddrs.h"
 
 #include <sith/Devices/sithComm.h>
-#include <std/RTI/addresses.h>
 
 typedef struct
 {

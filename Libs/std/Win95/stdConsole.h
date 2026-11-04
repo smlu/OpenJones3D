@@ -2,7 +2,6 @@
 #define STD_STDCONSOLE_H
 #include <j3dcore/j3d.h>
 #include <std/types.h>
-#include <std/RTI/addresses.h>
 
 // Added: Console text attributes. Values equal the Windows console's, and a backend translates them.
 #define STDCONSOLE_COLOR_BLUE      0x1

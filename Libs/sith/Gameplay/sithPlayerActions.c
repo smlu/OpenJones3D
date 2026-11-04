@@ -1,7 +1,5 @@
 #include "sithPlayerActions.h"
 
-#include <j3dcore/j3dhook.h>
-
 #include <rdroid/Math/rdMath.h>
 #include <rdroid/Math/rdMatrix.h>
 #include <rdroid/Math/rdVector.h>
@@ -20,7 +18,6 @@
 #include <sith/Gameplay/sithTime.h>
 #include <sith/Gameplay/sithPlayerControls.h>
 #include <sith/Gameplay/sithVehicleControls.h>
-#include <sith/RTI/symbols.h>
 #include <sith/World/sithSoundClass.h>
 #include <sith/World/sithSurface.h>
 #include <sith/World/sithThing.h>

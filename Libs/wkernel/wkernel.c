@@ -1,9 +1,7 @@
 #include <std/Win95/DX9/stdSysTypesDX9.h>
 #include "wkernel.h"
 #include "wkernelWin32.h"
-#include "wkernel/RTI/symbols.h"
 
-#include <j3dcore/j3dhook.h>
 #include <std/Win95/stdWin95.h>
 
 #include <commctrl.h> // InitCommonControls

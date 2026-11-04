@@ -1,5 +1,4 @@
 #include "rdModel3.h"
-#include <j3dcore/j3dhook.h>
 
 #include <rdroid/Main/rdroid.h>
 #include <rdroid/Math/rdMath.h>
@@ -13,7 +12,6 @@
 #include <rdroid/Primitives/rdPrimit3.h>
 #include <rdroid/Raster/rdCache.h>
 #include <rdroid/Raster/rdFace.h>
-#include <rdroid/RTI/symbols.h>
 
 #include <std/General/stdConffile.h>
 #include <std/General/stdMemory.h>

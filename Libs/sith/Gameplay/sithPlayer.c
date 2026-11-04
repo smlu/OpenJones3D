@@ -1,5 +1,4 @@
 #include "sithPlayer.h"
-#include <j3dcore/j3dhook.h>
 
 #include <rdroid/Math/rdMatrix.h>
 #include <rdroid/Math/rdVector.h>
@@ -14,7 +13,6 @@
 #include <sith/Engine/sithPuppet.h>
 #include <sith/Gameplay/sithInventory.h>
 #include <sith/Gameplay/sithPlayerActions.h>
-#include <sith/RTI/symbols.h>
 #include <sith/World/sithActor.h>
 #include <sith/World/sithThing.h>
 #include <sith/World/sithWeapon.h>

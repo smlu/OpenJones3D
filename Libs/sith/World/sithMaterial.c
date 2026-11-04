@@ -1,9 +1,7 @@
 #include "sithMaterial.h"
-#include <j3dcore/j3dhook.h>
 
 #include <rdroid/Engine/rdMaterial.h>
 
-#include <sith/RTI/symbols.h>
 #include <sith/World/sithModel.h>
 #include <sith/World/sithWorld.h>
 

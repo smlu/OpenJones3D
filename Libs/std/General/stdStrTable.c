@@ -1,5 +1,3 @@
-#include <j3dcore/j3dhook.h>
-#include <std/RTI/symbols.h>
 
 #include "std.h"
 #include "stdHashtbl.h"
@@ -9,6 +7,7 @@
 
 #include <errno.h>
 #include <limits.h>
+#include <stdio.h> // sscanf_s
 
 static wchar_t stdStrTable_aBuffer[64] = { 0 };
 

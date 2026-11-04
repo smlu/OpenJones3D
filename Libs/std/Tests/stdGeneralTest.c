@@ -14,7 +14,6 @@
 #include <std/General/std.h>
 #include <std/General/stdMemory.h>
 #include <std/General/stdUtil.h>
-#include <std/RTI/addresses.h>
 #include <std/types.h>
 
 #define STDGENERALTEST_FAKE_FILE_HANDLE ((tFileHandle)(uintptr_t)1u)

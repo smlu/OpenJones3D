@@ -1,8 +1,6 @@
 // Readauto.c: the `READANIM=insane_auto` animation-file reader (original 0x004E33F0-0x004E3810).
 #include <smush/insane/Image/Readauto.h>
 #include <j3dcore/j3d.h>
-#include <j3dcore/j3dhook.h>
-#include <smush/RTI/symbols.h>
 
 #include <stddef.h>
 

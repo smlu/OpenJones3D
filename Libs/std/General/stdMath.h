@@ -2,7 +2,6 @@
 #define STD_STDMATH_H
 #include <j3dcore/j3d.h>
 #include <std/types.h>
-#include <std/RTI/addresses.h>
 
 #define _USE_MATH_DEFINES
 #include <math.h>

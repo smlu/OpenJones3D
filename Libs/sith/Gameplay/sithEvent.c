@@ -1,8 +1,6 @@
 #include "sithEvent.h"
-#include <j3dcore/j3dhook.h>
 
 #include <sith/Gameplay/sithTime.h>
-#include <sith/RTI/symbols.h>
 
 #include <std/General/stdUtil.h>
 

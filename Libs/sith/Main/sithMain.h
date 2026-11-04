@@ -1,12 +1,10 @@
 #ifndef SITH_SITHMAIN_H
 #define SITH_SITHMAIN_H
 #include <j3dcore/j3d.h>
-#include <j3dcore/j3dhook.h>
 
 #include <rdroid/types.h>
 #include <sith/types.h>
 #include <sith/Main/sithMain.h>
-#include <sith/RTI/addresses.h>
 
 #include <std/types.h>
 #include <std/General/std.h>

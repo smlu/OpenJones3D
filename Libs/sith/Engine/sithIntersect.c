@@ -1,5 +1,4 @@
 #include "sithIntersect.h"
-#include <j3dcore/j3dhook.h>
 
 #include <rdroid/Math/rdMath.h>
 #include <rdroid/Math/rdMatrix.h>
@@ -7,7 +6,6 @@
 
 #include <sith/Main/sithMain.h>
 #include <sith/World/sithSector.h>
-#include <sith/RTI/symbols.h>
 
 #include <std/General/stdMath.h>
 

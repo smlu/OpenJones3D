@@ -2,7 +2,6 @@
 #define SOUND_DRIVER_H
 #include <j3dcore/j3d.h>
 #include <sound/types.h>
-#include <sound/RTI/addresses.h>
 
 J3D_EXTERN_C_START
 

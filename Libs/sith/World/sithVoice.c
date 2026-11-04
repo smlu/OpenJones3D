@@ -1,5 +1,4 @@
 #include "sithVoice.h"
-#include <j3dcore/j3dhook.h>
 
 #include <sith/Cog/sithCog.h>
 #include <sith/Cog/sithCogExec.h>
@@ -8,7 +7,6 @@
 #include <sith/Dss/sithDSS.h>
 #include <sith/Gameplay/sithTime.h>
 #include <sith/Main/sithString.h>
-#include <sith/RTI/symbols.h>
 #include <sith/World/sithModel.h>
 #include <sith/World/sithThing.h>
 

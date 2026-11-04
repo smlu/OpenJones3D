@@ -1,9 +1,8 @@
 // Force-included into the sources of a sith vector test executable (see SithVecTest.cmake), before the suite's own
 // address header.
 //
-// The reconstructed code reaches engine globals of the original executable through J3D_DECL_FAR_VAR at fixed
-// addresses, which are not mapped in the test process. A suite redirects the globals its tested functions use to
-// static storage with:
+// The suite headers still name the engine globals of the original executable through the historical <global>_ADDR
+// macros; a suite redirects the ones its tested functions use to static storage with:
 //
 //     SITHVEC_REDIRECT_DECL(float, sithTime_g_fps);
 //     #undef sithTime_g_fps_ADDR
@@ -19,9 +18,9 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include <rdroid/RTI/addresses.h>
-#include <sith/RTI/addresses.h>
-#include <std/RTI/addresses.h>
+#include <rdroid/types.h>
+#include <sith/types.h>
+#include <std/types.h>
 
 #define SITHVEC_REDIRECT_DECL(type, name)   extern type sithVecTest_g_##name
 #define SITHVEC_REDIRECT_DEFINE(type, name) type sithVecTest_g_##name

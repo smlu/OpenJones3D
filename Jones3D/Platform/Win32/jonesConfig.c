@@ -1,6 +1,5 @@
 #include <std/Win95/stdSysTagsWin32.h>
 #include <Jones3D/Display/jonesConfig.h>
-#include <j3dcore/j3dhook.h>
 
 #include <Jones3D/Display/JonesDisplay.h>
 #include <Jones3D/Display/JonesHud.h>
@@ -13,7 +12,6 @@
 #include <Jones3D/Main/jonesString.h>
 #include <Jones3D/Play/JonesControl.h>
 #include <Jones3D/Play/jonesInventory.h>
-#include <Jones3D/RTI/symbols.h>
 
 #include <rdroid/Main/rdroid.h>
 #include <rdroid/Raster/rdCache.h>

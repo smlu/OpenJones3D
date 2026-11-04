@@ -1,8 +1,6 @@
 #include "JonesDisplay.h"
-#include <j3dcore/j3dhook.h>
 
 #include <Jones3D/Main/JonesMain.h>
-#include <Jones3D/RTI/symbols.h>
 
 #include <rdroid/Engine/rdCanvas.h>
 #include <rdroid/Main/rdroid.h>

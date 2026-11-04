@@ -4,8 +4,6 @@
 #define sSysSoundDevice IDirectSound8
 #include <std/Win95/stdSysTagsWin32.h>
 #include <j3dcore/j3d.h>
-#include <j3dcore/j3dhook.h>
-#include <smush/RTI/symbols.h>
 
 #include <stdarg.h>
 #include <stdbool.h>

@@ -1,5 +1,4 @@
 #include "sithFX.h"
-#include <j3dcore/j3dhook.h>
 
 #include <sith/Engine/sithAnimate.h>
 #include <sith/Engine/sithCollision.h>
@@ -7,7 +6,6 @@
 #include <sith/Engine/sithParticle.h>
 #include <sith/Gameplay/sithTime.h>
 #include <sith/Main/sithMain.h>
-#include <sith/RTI/symbols.h>
 #include <sith/World/sithMaterial.h>
 #include <sith/World/sithSprite.h>
 #include <sith/World/sithTemplate.h>

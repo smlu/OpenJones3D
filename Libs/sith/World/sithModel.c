@@ -1,9 +1,7 @@
 #include "sithModel.h"
-#include <j3dcore/j3dhook.h>
 
 #include <rdroid/Primitives/rdModel3.h>
 
-#include <sith/RTI/symbols.h>
 #include <sith/World/sithWorld.h>
 
 #include <std/General/stdConffile.h>

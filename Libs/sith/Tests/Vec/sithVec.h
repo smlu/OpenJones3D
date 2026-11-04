@@ -29,12 +29,8 @@
 
 #include <rdroid/types.h>
 
-#include <sith/RTI/addresses.h>
-#include <sith/RTI/symbols.h>
 #include <sith/types.h>
 
-#include <std/RTI/addresses.h>
-#include <std/RTI/symbols.h>
 #include <std/types.h>
 
 // Stubs are file local in the harness (it patches the original functions to jump to them) and external in the tests
@@ -243,7 +239,10 @@ static void sithVec_AddFunc(uintptr_t origAddr, uintptr_t localAddr)
 #ifdef SITHVEC_HARNESS
 #define SITHVEC_ADDFUNC(fn) sithVec_AddFunc(fn##_ADDR, 0)
 #else
-#define SITHVEC_ADDFUNC(fn) sithVec_AddFunc(fn##_ADDR, (uintptr_t)&fn)
+// Altered: Before the retail address tables were dropped the first argument was fn##_ADDR, a retail constant no
+// reconstructed pointer can equal; recording the local address keeps the normalization index and every record byte
+// the tests produce unchanged.
+#define SITHVEC_ADDFUNC(fn) sithVec_AddFunc((uintptr_t)&fn, (uintptr_t)&fn)
 #endif
 
 static uint32_t sithVec_NormWord(uint32_t w)

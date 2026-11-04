@@ -1,5 +1,4 @@
 #include "sithVehicleControls.h"
-#include <j3dcore/j3dhook.h>
 
 #include <rdroid/Math/rdMath.h>
 #include <rdroid/Math/rdVector.h>
@@ -23,7 +22,6 @@
 
 #include <sith/World/sithSoundClass.h>
 #include <sith/World/sithWorld.h>
-#include <sith/RTI/symbols.h>
 
 #include <std/General/stdMath.h>
 #include <std/General/stdUtil.h>

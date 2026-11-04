@@ -1,5 +1,4 @@
 #include "sithExplosion.h"
-#include <j3dcore/j3dhook.h>
 
 #include <rdroid/Math/rdMatrix.h>
 #include <rdroid/Math/rdVector.h>

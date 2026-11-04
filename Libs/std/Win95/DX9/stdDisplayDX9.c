@@ -3,14 +3,12 @@
 #include <std/Win95/stdDisplay.h>
 #include <std/Win95/stdWin95.h>
 
-#include <j3dcore/j3dhook.h>
 #include <std/General/std.h>
 #include <std/General/stdBmp.h>
 #include <std/General/stdConfig.h>
 #include <std/General/stdColor.h>
 #include <std/General/stdMemory.h>
 #include <std/General/stdUtil.h>
-#include <std/RTI/symbols.h>
 
 #define STDDISPLAY_MINFRAMERATE 30
 #define STDDISPLAY_MAXFRAMERATE 256

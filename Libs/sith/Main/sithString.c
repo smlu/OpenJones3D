@@ -1,9 +1,6 @@
 #include "sithMain.h"
 #include "sithString.h"
 
-#include <j3dcore/j3dhook.h>
-#include <sith/RTI/symbols.h>
-
 #include <std/General/stdMemory.h>
 #include <std/General/stdStrTable.h>
 

@@ -2,7 +2,6 @@
 #define SMUSH_INSANE_FLOBJECT_D_WAVE_H
 #include <assert.h>
 #include <j3dcore/j3d.h>
-#include <smush/RTI/addresses.h>
 #include <smush/insane/lec.h>
 #include <smush/insane/Memory/Memory.h>
 #include <smush/insane/Sound/Engine.h>
@@ -35,7 +34,7 @@ int dwave_GetFlags(void);
 void dwave_Reset(void);
 int J3DAPI dwave_Parse(const uint8_t* pData, int size);
 uint32_t J3DAPI dwave_Decode(void* pBitmap, intptr_t clip, int x, int y, void* pPalette, const uint8_t* pData, int size, int flags, int unused9, int unused10); // Altered: clip carries a MixerRect*
-int dwave_Query1(void); // Folded onto 0x004E8260 (shared with dbloc16_Query1, dwave_Query); never hook (see RTI/addresses.h)
+int dwave_Query1(void); // Folded onto 0x004E8260 (shared with dbloc16_Query1, dwave_Query); never hook
 int J3DAPI dwave_Query(const uint8_t* pData, int tag, int* pX, int* pY, int* pWidth, int* pHeight); // Folded onto 0x004E8260; no address of its own, never hook
 void J3DAPI dwave_DecodeVima(int16_t* pDst, const uint8_t* pSrc, uint32_t count, uint32_t channels);
 

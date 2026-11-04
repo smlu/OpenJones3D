@@ -1,12 +1,10 @@
 #include "Sound.h"
-#include <j3dcore/j3dhook.h>
 
 #include <rdroid/Math/rdVector.h>
 #include <rdroid/Math/rdMatrix.h>
 
 #include "AudioLib.h"
 #include "Driver.h"
-#include <sound/RTI/symbols.h>
 
 #include <std/General/stdMath.h>
 #include <std/General/stdUtil.h>

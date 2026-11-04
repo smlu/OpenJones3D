@@ -1,12 +1,10 @@
 #include "rdClip.h"
-#include <j3dcore/j3dhook.h>
 
 #include <rdroid/Engine/rdCamera.h>
 #include <rdroid/Engine/rdQClip.h>
 #include <rdroid/Math/rdMath.h>
 #include <rdroid/Math/rdVector.h>
 #include <rdroid/Main/rdroid.h>
-#include <rdroid/RTI/symbols.h>
 
 #include <std/General/stdUtil.h>
 #include <std/Win95/stdDisplay.h>

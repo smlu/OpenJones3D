@@ -1,5 +1,4 @@
 #include "sithDSS.h"
-#include <j3dcore/j3dhook.h>
 
 #include <rdroid/Engine/rdPuppet.h>
 
@@ -20,7 +19,6 @@
 #include <sith/Gameplay/sithTime.h>
 #include <sith/Gameplay/sithVehicleControls.h>
 #include <sith/Gameplay/sithWhip.h>
-#include <sith/RTI/symbols.h>
 #include <sith/World/sithMaterial.h>
 #include <sith/World/sithModel.h>
 #include <sith/World/sithSector.h>
@@ -32,7 +30,16 @@
 #include <std/General/stdMemory.h>
 #include <std/General/stdUtil.h>
 
+// Added: The second table column held the retail executable's own callbacks at their fixed v1.0 addresses, so a
+// save named the callback by index whichever implementation the track held. A standalone build has no retail
+// callbacks: the column is NULL and never matches (a stored callback is checked only when non-NULL), exactly as
+// the unreachable retail addresses did. The DSS vector tests force-include sithDSSTestAddrs.h, which redirects
+// the callback ADDR macros to the sentinels their state builder seeds.
+#ifdef sithPuppet_DefaultCallback_ADDR
 #define VANILLACB(callback) ((rdPuppetTrackCallback)(callback##_ADDR))
+#else
+#define VANILLACB(callback) NULL
+#endif
 
 static const rdPuppetTrackCallback sithDSS_aPuppetCallbacks[7][2] = {
     { &sithPuppet_DefaultCallback,           VANILLACB(sithPuppet_DefaultCallback)           },

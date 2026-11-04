@@ -1,5 +1,4 @@
 #include "rdThing.h"
-#include <j3dcore/j3dhook.h>
 
 #include <rdroid/Engine/rdPuppet.h>
 #include <rdroid/Main/rdroid.h>
@@ -9,7 +8,6 @@
 #include <rdroid/Primitives/rdParticle.h>
 #include <rdroid/Primitives/rdPolyline.h>
 #include <rdroid/Primitives/rdSprite.h>
-#include <rdroid/RTI/symbols.h>
 
 #include <std/General/stdMemory.h>
 #include <std/General/stdUtil.h>

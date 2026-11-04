@@ -1,8 +1,6 @@
 // Stdfile.c: the `FILE=insane_stdfile` service (FILIO plus size, gets, eof, printf, getc, putc) (original 0x004E9810-0x004E9B30).
 #include <smush/insane/File/Stdfile.h>
 #include <j3dcore/j3d.h>
-#include <j3dcore/j3dhook.h>
-#include <smush/RTI/symbols.h>
 
 #include <stdarg.h>
 #include <stddef.h>

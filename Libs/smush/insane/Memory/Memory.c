@@ -1,8 +1,6 @@
 // Memory.c: the memory services (`MEMORY=insane`, `MEMORY=insane_debug`) (original 0x004EAE10-0x004EB210).
 #include <smush/insane/Memory/Memory.h>
 #include <j3dcore/j3d.h>
-#include <j3dcore/j3dhook.h>
-#include <smush/RTI/symbols.h>
 #include <string.h>
 #include <stdint.h>
 #include <stdio.h>

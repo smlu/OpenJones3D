@@ -2,7 +2,6 @@
 #define STD_STDCONTROL_H
 #include <j3dcore/j3d.h>
 #include <std/types.h>
-#include <std/RTI/addresses.h>
 
 #include <std/Win95/stdKeys.h>
 

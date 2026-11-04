@@ -1,10 +1,8 @@
 #include "sithDSSCog.h"
-#include <j3dcore/j3dhook.h>
 
 #include <sith/Cog/sithCog.h>
 #include <sith/Dss/sithDSS.h>
 #include <sith/Dss/sithMulti.h>
-#include <sith/RTI/symbols.h>
 #include <sith/World/sithThing.h>
 #include <sith/World/sithWorld.h>
 

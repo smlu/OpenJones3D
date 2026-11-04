@@ -2,7 +2,6 @@
 #define SMUSH_INSANE_SOUND_ENGINE_H
 #include <assert.h>
 #include <j3dcore/j3d.h>
-#include <smush/RTI/addresses.h>
 #include <smush/insane/lec.h>
 #include <smush/insane/Sound/Dsnd.h>
 
@@ -163,7 +162,7 @@ void J3DAPI sound_Callback(int n, SoundFeed pfnFeed);
 void J3DAPI sound_Advance(double ticks);
 void J3DAPI sound_Copy(void* pDst, const void* pSrc, int n);
 void J3DAPI sound_Fill(void* pDst, int value, int n);
-int sound_Null(void); // Folded onto 0x004E74A0 (shared with other modules); never hook (see RTI/addresses.h)
+int sound_Null(void); // Folded onto 0x004E74A0 (shared with other modules); never hook
 
 void Engine_ResetGlobals(void);
 

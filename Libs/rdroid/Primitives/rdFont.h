@@ -4,7 +4,6 @@
 #include <rdroid/types.h>
 
 #include <rdroid/Math/rdVector.h>
-#include <rdroid/RTI/addresses.h>
 
 #include <std/types.h>
 

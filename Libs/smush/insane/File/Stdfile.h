@@ -2,7 +2,6 @@
 #define SMUSH_INSANE_FILE_STDFILE_H
 #include <assert.h>
 #include <j3dcore/j3d.h>
-#include <smush/RTI/addresses.h>
 #include <smush/insane/lec.h>
 #include <smush/insane/filio.h>
 

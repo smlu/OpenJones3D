@@ -1,11 +1,9 @@
 #include "rdFont.h"
-#include <j3dcore/j3dhook.h>
 
 #include <rdroid/Engine/rdMaterial.h>
 #include <rdroid/Main/rdroid.h>
 #include <rdroid/Math/rdVector.h>
 #include <rdroid/Raster/rdCache.h>
-#include <rdroid/RTI/symbols.h>
 
 #include <std/General/stdMemory.h>
 #include <std/General/stdUtil.h>

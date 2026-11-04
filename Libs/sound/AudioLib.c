@@ -1,7 +1,5 @@
 #include "AudioLib.h"
 #include <j3dcore/j3d.h>
-#include <j3dcore/j3dhook.h>
-#include <sound/RTI/symbols.h>
 #include <std/General/stdMath.h>
 #include <std/General/stdUtil.h>
 #include <limits.h>

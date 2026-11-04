@@ -1,12 +1,10 @@
 #include "jonesCog.h"
-#include <j3dcore/j3dhook.h>
 
 #include <Jones3D/Display/JonesConsole.h>
 #include <Jones3D/Display/JonesHud.h>
 #include <Jones3D/Main/JonesLevel.h>
 #include <Jones3D/Main/JonesMain.h>
 #include <Jones3D/Play/jonesInventory.h>
-#include <Jones3D/RTI/symbols.h>
 
 #include <sith/AI/sithAI.h>
 #include <sith/Cog/sithCog.h>

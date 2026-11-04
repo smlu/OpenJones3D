@@ -2,7 +2,6 @@
 #define RDROID_RDCACHE_H
 #include <j3dcore/j3d.h>
 #include <rdroid/types.h>
-#include <rdroid/RTI/addresses.h>
 #include <std/types.h>
 #include <std/Win95/std3D.h>    
 

@@ -1,8 +1,6 @@
 // D_bloc16.c: the blocky16 frame-object decoder (original 0x004E8510-0x004E9810).
 #include <smush/insane/Flobject/D_bloc16.h>
 #include <j3dcore/j3d.h>
-#include <j3dcore/j3dhook.h>
-#include <smush/RTI/symbols.h>
 
 #include <stdarg.h>
 #include <stddef.h>

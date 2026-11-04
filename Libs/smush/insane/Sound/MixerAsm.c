@@ -1,8 +1,6 @@
 // MixerAsm.c: C translation of INSANE's MASM source MixerAsm.asm (mixer buffer procedures) (original 0x004EC560-0x004EC71F).
 #include <smush/insane/Sound/MixerAsm.h>
 #include <j3dcore/j3d.h>
-#include <j3dcore/j3dhook.h>
-#include <smush/RTI/symbols.h>
 
 #include <string.h>
 

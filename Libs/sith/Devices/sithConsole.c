@@ -1,8 +1,6 @@
 #include "sithConsole.h"
-#include <j3dcore/j3dhook.h>
 
 #include <sith/Main/sithCommand.h>
-#include <sith/RTI/symbols.h>
 
 #include <std/General/stdHashtbl.h>
 #include <std/General/stdMemory.h>

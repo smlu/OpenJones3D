@@ -1,5 +1,4 @@
 #include "sithAnimate.h"
-#include <j3dcore/j3dhook.h>
 
 #include <sith/Cog/sithCog.h>
 #include <sith/Devices/sithComm.h>
@@ -8,7 +7,6 @@
 #include <sith/Engine/sithCamera.h>
 #include <sith/Gameplay/sithPlayer.h>
 #include <sith/Gameplay/sithTime.h>
-#include <sith/RTI/symbols.h>
 #include <sith/World/sithThing.h>
 #include <sith/World/sithWorld.h>
 

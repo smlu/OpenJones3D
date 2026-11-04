@@ -1,11 +1,10 @@
 #include "stdUtil.h"
-#include <j3dcore/j3dhook.h>
 #include <std/General/std.h>
 #include <std/General/stdMemory.h>
 #include <std/General/stdPlatform.h>
-#include <std/RTI/symbols.h>
 
 #include <stdarg.h>
+#include <stdio.h> // vsnprintf_s
 #include <string.h>
 #include <wchar.h>
 #include <ctype.h>

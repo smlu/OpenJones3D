@@ -3,7 +3,6 @@
 #include "std.h"
 #include <j3dcore/j3d.h>
 #include <std/types.h>
-#include <std/RTI/addresses.h>
 
 J3D_EXTERN_C_START
 

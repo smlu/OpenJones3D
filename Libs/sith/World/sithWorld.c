@@ -1,11 +1,9 @@
 #include "sithWorld.h"
-#include <j3dcore/j3dhook.h>
 #include <stddef.h>
 
 #include <rdroid/Engine/rdMaterial.h>
 #include <rdroid/Math/rdMath.h>
 
-#include <sith/RTI/symbols.h>
 #include <sith/AI/sithAIClass.h>
 #include <sith/Cog/sithCog.h>
 #include <sith/Cog/sithCogParse.h>
