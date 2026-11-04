@@ -119,6 +119,9 @@ list(FILTER JONES3D_HEADERS EXCLUDE REGEX ".*/Tests/.*")
 # Added: Windows builds never compile the Null platform backend sources.
 list(FILTER JONES3D_SOURCES EXCLUDE REGEX ".*/Platform/Null/.*")
 list(FILTER JONES3D_HEADERS EXCLUDE REGEX ".*/Platform/Null/.*")
+# Added: Windows builds never compile the Babylon column's platform sources either.
+list(FILTER JONES3D_SOURCES EXCLUDE REGEX ".*/Platform/Babylon/.*")
+list(FILTER JONES3D_HEADERS EXCLUDE REGEX ".*/Platform/Babylon/.*")
 list(REMOVE_ITEM JONES3D_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/sha256.h")
 
 # Added: One self-contained Jones3D.exe instead of a DLL plus an injector.

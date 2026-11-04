@@ -12,6 +12,8 @@ list(FILTER JONES3D_TEST_GAME_SOURCES EXCLUDE REGEX ".*/Tests/.*")
 list(FILTER JONES3D_TEST_GAME_SOURCES EXCLUDE REGEX ".*/WinMain\\.c$")
 # Added: Windows test builds never compile the Null platform backend sources.
 list(FILTER JONES3D_TEST_GAME_SOURCES EXCLUDE REGEX ".*/Platform/Null/.*")
+# Added: Windows test builds never compile the Babylon column's platform sources either.
+list(FILTER JONES3D_TEST_GAME_SOURCES EXCLUDE REGEX ".*/Platform/Babylon/.*")
 
 add_executable(jones3dTests
     ${JONES3D_TEST_SOURCES}
