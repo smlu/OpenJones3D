@@ -5,6 +5,7 @@
 // handlers' guards so idle behavior is the same as a machine with no input events attached.
 #include <j3dcore/j3d.h>
 
+#include <std/Null/stdControlNull.h>
 #include <std/Win95/stdControl.h>
 #include <std/Win95/stdWin95.h>
 
@@ -152,6 +153,10 @@ void stdControl_ReadControls(void)
 
     stdControl_UpdateReadTiming(stdPlatform_GetTimeMsec());
     memset(stdControl_aAxisStates, 0, sizeof(stdControl_aAxisStates));
+
+    // Added: The device read of this platform column, in the DX9 order: after the per-read state
+    // is cleared. The Null column reads its scripted key state here (stdControlDevicesNull.c).
+    stdControl_ReadDevices(stdControl_curReadTime, stdControl_bReadMouse);
 
     stdControl_lastReadTime = stdControl_curReadTime;
 }
