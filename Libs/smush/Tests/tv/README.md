@@ -7,6 +7,16 @@ translations of the same procedures on the same inputs and requires every byte
 of every buffer to match. The tests read only these files; they never launch or
 depend on `Indy3D.exe` or game assets.
 
+The bounded blocky16 motion-copy fix has a precise expectation adapter in
+`SmushAsmTest.c`. An independent replay first reproduces every original codec-2
+result, including stored bytes or the complete captured hash. It tracks only
+bytes derived from a source pixel outside the previous/delta image, including
+propagation through overlapping copies. Only those expected bytes become zero;
+all other original bytes remain checked. Frame height includes the allocated
+padding to a complete eight-row block. The captured `.tv` files are unchanged.
+Separate guard-page, readable-padding and explicit overlap tests check the new
+bounds and the original read/write order without relying on the replay adapter.
+
 ### Reference
 
 | Item | Value |

@@ -21,6 +21,29 @@
 #define SMUSHVEC_TEST_MAX_REPORTED 12
 
 void DBloc16_TestGetTables(const int16_t** ppOffsets, const Bl16Small** ppSmall, const Bl16Big** ppBig);
+typedef void (J3DAPI* DBloc16TestCodec2)(uint16_t* pDst, uint8_t* pSrc, int offset1, int offset2, int width, int16_t* pMotion, uint8_t* pParams, int height, int nextLine, Bl16Small* pSmall, Bl16Big* pBig, uint16_t* pPalette);
+void DBloc16_TestSetCodec2(DBloc16TestCodec2 pfn);
+void SmushAsmTest_ReplayCodec2(uint16_t* pDst, uint8_t* pSrc, int offset1, int offset2, int width, int16_t* pMotion, uint8_t* pParams, int height, int nextLine, Bl16Small* pSmall, Bl16Big* pBig, uint16_t* pPalette, int bounded, int (*pfnContains)(uintptr_t, size_t));
+static int smushvec_replayBounded;
+
+static int SmushVecTest_ContainsBitmap(uintptr_t at, size_t size)
+{
+    for ( unsigned i = 0; i < SMUSHVEC_MAXBITMAPS; ++i )
+    {
+        const SmushVecBitmap* p = &sv.aBitmaps[i];
+        if ( !p->pHeader || !p->pBlock ) continue;
+        uintptr_t base = (uintptr_t)p->pBlock;
+        size_t capacity = (size_t)p->size + 2u * SmushVec_BitmapMargin(p->pHeader->width);
+        if ( at >= base && size <= capacity && at - base <= capacity - size ) return 1;
+    }
+    return 0;
+}
+
+static void J3DAPI SmushVecTest_ReplayCodec2(uint16_t* pDst, uint8_t* pSrc, int offset1, int offset2, int width, int16_t* pMotion, uint8_t* pParams, int height, int nextLine, Bl16Small* pSmall, Bl16Big* pBig, uint16_t* pPalette)
+{
+    SmushAsmTest_ReplayCodec2(pDst, pSrc, offset1, offset2, width, pMotion, pParams, height, nextLine, pSmall, pBig, pPalette, smushvec_replayBounded, SmushVecTest_ContainsBitmap);
+}
+
 
 typedef struct sSmushVecTestRecord
 {
@@ -54,6 +77,8 @@ typedef struct sSmushVecTestChecker
     size_t numKnownPrefixes;
     const char* pKnownReason;
     FILE* pDump;
+    int bCapture;
+    uint8_t** aOwnedExpected;
 } SmushVecTestChecker;
 
 TEST_GROUP(SmushVec);
@@ -62,7 +87,9 @@ TEST_SETUP(SmushVec)
 {}
 
 TEST_TEAR_DOWN(SmushVec)
-{}
+{
+    DBloc16_TestSetCodec2(NULL);
+}
 
 // --- The ported functions ---
 static int smushvec_bAnimSaved;
@@ -326,6 +353,25 @@ static void SmushVecTest_Record(void* pUser, int kind, const char* pName, const 
     pChecker->numChecked++;
     int bMatch = pRec->size == size && (int)pRec->kind == kind;
     uint32_t diff = 0;
+    if ( bMatch && pChecker->bCapture )
+    {
+        // The original replay has already matched the untouched fixture. Capture
+        // the independent bounded replay, including every later frame and blit.
+        SmushVecTestRecord* pExpected = &pChecker->aRecords[pChecker->next - 1u];
+        if ( kind == SMUSHVEC_RAW )
+        {
+            uint8_t* pCopy = malloc(size ? size : 1u);
+            TEST_ASSERT_NOT_NULL(pCopy);
+            memcpy(pCopy, pData, size);
+            pChecker->aOwnedExpected[pChecker->next - 1u] = pCopy;
+            pExpected->pData = pCopy;
+        }
+        else
+        {
+            pExpected->hash = SmushVec_Hash(pData, size);
+        }
+        return;
+    }
     if ( bMatch && kind == SMUSHVEC_RAW )
     {
         while ( diff < size && ((const uint8_t*)pData)[diff] == pRec->pData[diff] )
@@ -407,6 +453,36 @@ static void SmushVecTest_Run(const char* pFileName, SmushVecTestArea area, const
     SmushVecApi api;
     SmushVecTest_InitApi(&api);
     SmushVecSink sink = { SmushVecTest_Record, &checker };
+    if ( area == SmushVec_RunBloc16 )
+    {
+        // First validate the independent original replay against every captured
+        // record/hash. Then derive bounded expectations across the same sequences.
+        // Production decoding is never used to construct its own expectations.
+        FILE* pDump = checker.pDump;
+        checker.pDump = NULL;
+        DBloc16_TestSetCodec2(SmushVecTest_ReplayCodec2);
+        smushvec_replayBounded = 0;
+        area(&api, &sink, SMUSHVEC_TEST_FILL);
+        SmushVec_Finish();
+        TEST_ASSERT_EQUAL_UINT32_MESSAGE(checker.numRecords, checker.next, aPath);
+        TEST_ASSERT_EQUAL_UINT32_MESSAGE(0, checker.numFailed, "independent original block replay");
+        TEST_ASSERT_EQUAL_UINT32(0, checker.numKnown);
+
+        checker.next = checker.numChecked = checker.numUnstable = 0;
+        checker.bCapture = 1;
+        checker.aOwnedExpected = calloc(checker.numRecords, sizeof(*checker.aOwnedExpected));
+        TEST_ASSERT_NOT_NULL(checker.aOwnedExpected);
+        smushvec_replayBounded = 1;
+        area(&api, &sink, SMUSHVEC_TEST_FILL);
+        SmushVec_Finish();
+        TEST_ASSERT_EQUAL_UINT32_MESSAGE(checker.numRecords, checker.next, aPath);
+        TEST_ASSERT_EQUAL_UINT32_MESSAGE(0, checker.numFailed, "independent bounded block replay");
+
+        checker.next = checker.numChecked = checker.numUnstable = 0;
+        checker.bCapture = 0;
+        checker.pDump = pDump;
+        DBloc16_TestSetCodec2(NULL);
+    }
     area(&api, &sink, SMUSHVEC_TEST_FILL);
     SmushVec_Finish();
 
@@ -422,6 +498,11 @@ static void SmushVecTest_Run(const char* pFileName, SmushVecTestArea area, const
         TEST_MESSAGE(aMessage);
     }
 
+    if ( checker.aOwnedExpected )
+    {
+        for ( uint32_t i = 0; i < checker.numRecords; ++i ) free(checker.aOwnedExpected[i]);
+        free(checker.aOwnedExpected);
+    }
     free(checker.aRecords);
     free(pData);
 

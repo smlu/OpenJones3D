@@ -15,6 +15,17 @@
 #include <smush/insane/Memory/Memory.h>
 #include <smush/insane/Sound/Mixer.h>
 
+#if defined(J3D_TEST)
+// Test-only replay seam; production builds always call the real block decoder.
+typedef void (J3DAPI* DBloc16TestCodec2)(uint16_t* pDst, uint8_t* pSrc, int offset1, int offset2, int width, int16_t* pMotion, uint8_t* pParams, int height, int nextLine, Bl16Small* pSmall, Bl16Big* pBig, uint16_t* pPalette);
+static DBloc16TestCodec2 dbloc16_pTestCodec2;
+void DBloc16_TestSetCodec2(DBloc16TestCodec2 pfn);
+void DBloc16_TestSetCodec2(DBloc16TestCodec2 pfn) { dbloc16_pTestCodec2 = pfn; }
+#define DBLOC16_DECODEBLOCKS (dbloc16_pTestCodec2 ? dbloc16_pTestCodec2 : dbloc16_Codec2)
+#else
+#define DBLOC16_DECODEBLOCKS dbloc16_Codec2
+#endif
+
 #define DBLOC16_MAX(a, b) ((a) > (b) ? (a) : (b))
 
 #define DBLOC16_NUMMOTIONS 255 // Codec 2's motion vectors
@@ -657,7 +668,7 @@ int J3DAPI dbloc16_DecodeFrame(LecBitmapHeader* pBitmap, MixerRect* pClip, int x
 
             if ( pHdr->seq == dbloc16_prevSeq + 1 )
             {
-                dbloc16_Codec2(dbloc16_pCur, pGfx, offset1, offset2, width, dbloc16_offsets, pHdr->params, height, nextLine + width, dbloc16_small, dbloc16_big, pHdr->palette);
+                DBLOC16_DECODEBLOCKS(dbloc16_pCur, pGfx, offset1, offset2, width, dbloc16_offsets, pHdr->params, height, nextLine + width, dbloc16_small, dbloc16_big, pHdr->palette);
                 dbloc16_pLast = dbloc16_pCur;
             }
             break;
