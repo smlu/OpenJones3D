@@ -1,0 +1,50 @@
+# Planned enhancements
+
+Enhancements the owner has asked for, with what each needs from the game code and from the Babylon Engine.
+The [roadmap](Roadmap.md) says when the milestones they depend on come; this page is the list to plan from.
+
+Rules that apply to all of them ([ADR-0003](arc42/09-decisions/ADR-0003-fidelity-split.md)):
+
+- Players choose between two profiles: **Enhanced** (the default, every enhancement on) and **Retail** (the
+  original game's behavior).
+- **Presentation** enhancements (rendering, UI, audio output) may change freely.
+- **Simulation** enhancements (anything that changes physics, timing, AI, COG or savegame state) are on in
+  Enhanced and off in Retail, each as its own simulation cvar ([ADR-0020](arc42/09-decisions/ADR-0020-cvar-flags.md)).
+  With the Retail profile the retail trace must stay identical.
+- Visual effects must not draw from the simulation's random numbers or change game state, or they become
+  simulation changes.
+
+## The list
+
+| # | Enhancement | Kind | Game side | Babylon needs | Earliest |
+|---|---|---|---|---|---|
+| E1 | **Weapon and item wheel**: hold a button, pick a weapon or item with the stick or the mouse | Presentation; time slowing down while the wheel is open would be simulation (Enhanced on, Retail off) | Selection goes through the existing weapon and inventory selection, the same actions as the number keys | Gamepad sticks and mouse motion in the input adapter (today's TODOs); a 2D overlay layer (sprites, text, simple shapes) drawn over the 3D view; input routing so the wheel takes the input while open | M7 for input, M9 for the overlay |
+| E2 | **Inventory screen**: one fast screen where players see all their items and weapons, equip or use them directly and assign them to the quick-access wheel (E1); it replaces wading through the slow escape-menu inventory (no new or modded items) | Presentation: equipping and using go through the existing inventory actions; the wheel slots are a UI setting, not game state | Reads the inventory and calls the existing select and use actions; opening it pauses the game like the escape menu (owner, 2026-11-04); the wheel slots are kept per savegame, because items arrive during the game, in a sidecar file next to the savegame so the `.nds` format stays unchanged; the wheel has at most 8 slots, and a slot whose item is gone becomes empty (owner, 2026-11-04) | The same 2D overlay layer and input routing as E1; UI navigation with keyboard, mouse and gamepad | M9, together with E1 |
+| E3 | **Texture upscaling in the installer** (Real-ESRGAN or similar). **Deferred** (owner, 2026-11-04): not planned for a milestone yet | Presentation, offline tooling | None: the game loads the upscaled textures instead of the originals | High-resolution texture overrides: loose-file or mod-folder overrides (M11 modding), 32-bit RGBA textures with mipmaps next to the 8-bit palettized originals, texture coordinates independent of the stored size; the installer (M8) runs the upscaler as an external tool and writes an override pack | deferred |
+| E4 | **Faster crouching and weapon holster and unholster animations** | Simulation: animation timing changes when actions finish (Enhanced on, Retail off) | Playback speed options in the puppet and key-frame code (`sithPuppet`), one cvar per action group | Simulation cvars (M5.8, in the game from M5.13) | After M5.13 |
+| E5 | **Overlay weather effects**, such as snow in outdoor levels | Presentation, as long as it neither changes game state nor uses the simulation's random numbers | Per-level settings saying where and what (outdoor sectors, density) | A particle or screen-space overlay pass in the renderer, its own random number source, per-level effect data | M9, after the renderer (M6) |
+| E6 | **Cheat menu** | Presentation for the menu itself; the cheats are the existing console commands (`devmode`, `invul`, `weapons`, ...) and change game state as they do today | Calls the existing console commands; may mark a savegame as cheated if speedrun or statistics rules need it | The 2D overlay layer and input routing (E1); the visible console (M11) shares the command plumbing | M9, or with the visible console |
+| E7 | **Linux packages that don't touch the system**: AppImage or Flatpak | Release tooling | None | Nothing beyond what the build already has: SDL3 and miniaudio are linked in; the game data stays outside the package, in the user directory (ADR-0019), and is never shipped | M8 release |
+
+## Shared needs
+
+E1, E2 and E6 need the same three Babylon pieces, so they are planned together:
+
+1. **A 2D overlay layer** drawn after the 3D view: textured quads, text with a font, simple shapes, scaled for
+   any resolution. It is also what the M7 in-game dialogs need.
+2. **Input routing**: an open overlay takes keyboard, mouse and gamepad input before the game does, and gives
+   it back when it closes.
+3. **Gamepad and mouse motion** in the input adapter (the TODOs in `stdControlDevicesBabylon.cpp`).
+
+## Open questions
+
+- E2: the sidecar file's name and format (for example `<save>.nds.ex.json`).
+- E3 (deferred): which upscaler and models: Real-ESRGAN's code is BSD-3-Clause, but model weights have their own
+  licenses; the installer would run it as a separate program, never bundled into Babylon. Where it runs
+  (CPU or GPU) decides how long installation takes.
+- E4: which actions exactly, and how much faster; whether the speed is one setting or one per action.
+- E5: which levels count as outdoor, and whether the effect follows the camera or the level geometry.
+- E6: whether using cheats marks a savegame or the statistics.
+- E7: AppImage (one file, no runtime, runs anywhere with a recent glibc) or Flatpak (sandboxed, updates
+  through Flathub, but the sandbox needs permission to read the player's game data and the installer must
+  work inside it); possibly both.
