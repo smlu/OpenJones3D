@@ -630,10 +630,18 @@ void J3DAPI mixer_MonoSwap16(int16_t* pSrc, uint32_t count, uint32_t n, int offs
             // Fixed: The original takes the mean with the sample two ahead (pSrc[2]) instead of the next one (pSrc[1]) and reads one past the end of the source. A mono stream has no interleaved channel (QOL: the mixed audio differs)
             while ( count-- )
             {
+#ifdef J3D_QOL_IMPROVEMENTS
+                // Fixed: Decode signed samples before averaging; averaging swapped words loses carries and the sign.
+                int sample = (int16_t)mixer_Swap16(pSrc[0]);
+                int next   = (int16_t)mixer_Swap16(pSrc[1]);
+                *pBuf++ += sample * left;
+                *pBuf++ += sample * right;
+                int s = (sample + next) >> 1;
+#else
                 *pBuf++ += mixer_Swap16(pSrc[0]) * left;
                 *pBuf++ += mixer_Swap16(pSrc[0]) * right;
-
-                int16_t s = (int16_t)mixer_Swap16((pSrc[J3D_QOL_VALUE(1, 2)] + pSrc[0]) >> 1);
+                int16_t s = (int16_t)mixer_Swap16((pSrc[2] + pSrc[0]) >> 1);
+#endif
                 *pBuf++ += s * left;
                 *pBuf++ += s * right;
                 pSrc++;

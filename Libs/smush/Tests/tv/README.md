@@ -304,6 +304,15 @@ records must match; the edge cases above revealed no new difference):
   the original (VC5's evaluation order) and after it in the port. The result is
   the same; only the order of the chained calls differs.
 
+With `J3D_QOL_IMPROVEMENTS`, mono 2x resampling uses the adjacent sample rather
+than the sample two ahead. `mixer_MonoSwap16` also decodes the signed PCM samples
+before averaging; averaging the byte-swapped words loses carries and can turn
+negative samples positive. `TestOriginalMixer` retains the original fixture and
+permits the affected records to differ. The independent
+`MonoSwap16DoublingUsesSignedAdjacentSamples` test checks the complete output for
+positive byte-boundary crossings, negative samples and a one-sample source. The
+legacy build keeps the original arithmetic and compares the original vectors.
+
 ### Mixer Tables And The CRT's `sin`
 
 `mixer_Setup` builds the volume/pan table with `sin` and the clip table with

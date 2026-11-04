@@ -438,15 +438,16 @@ TEST(SmushVec, TestOriginalMixer)
 {
 #ifdef J3D_QOL_IMPROVEMENTS
     // The QOL mono kernels take the mean of the 2x upsampling with the next sample (the original takes the sample two ahead); these
-    // sections use the 2x ratio with mono sources, the legacy build matches the original
+    // sections use the 2x ratio with mono sources. Swapped mono samples are also decoded as signed PCM before averaging.
+    // MonoSwap16DoublingUsesSignedAdjacentSamples checks those fixed outputs independently; the legacy build matches the original.
     static const SmushVecTestKnown aKnown[] = {
-        { "mixer_Feed format 0", "mixer mono 2x upsampling uses the next sample (QOL)" },
-        { "mixer_Feed format 2", "mixer mono 2x upsampling uses the next sample (QOL)" },
-        { "mixer_Feed format 4", "mixer mono 2x upsampling uses the next sample (QOL)" },
-        { "mixer_Add swapped", "mixer mono 2x upsampling uses the next sample (QOL)" },
-        { "edge mixer_Feed positions format 0", "mixer mono 2x upsampling uses the next sample (QOL)" },
-        { "edge mixer_Feed positions format 2", "mixer mono 2x upsampling uses the next sample (QOL)" },
-        { "edge mixer_Feed positions format 4", "mixer mono 2x upsampling uses the next sample (QOL)" },
+        { "mixer_Feed format 0", "mixer mono 2x interpolation fixes (QOL)" },
+        { "mixer_Feed format 2", "mixer mono 2x interpolation fixes (QOL)" },
+        { "mixer_Feed format 4", "mixer mono 2x interpolation fixes (QOL)" },
+        { "mixer_Add swapped", "mixer mono 2x interpolation fixes (QOL)" },
+        { "edge mixer_Feed positions format 0", "mixer mono 2x interpolation fixes (QOL)" },
+        { "edge mixer_Feed positions format 2", "mixer mono 2x interpolation fixes (QOL)" },
+        { "edge mixer_Feed positions format 4", "mixer mono 2x interpolation fixes (QOL)" },
     };
     SmushVecTest_Run("Sound/MixerVec.tv", SmushVec_RunMixer, aKnown, STD_ARRAYLEN(aKnown));
 #else
