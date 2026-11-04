@@ -27,3 +27,4 @@ context, decision, consequences. Decisions aren't edited after the fact; a new A
 | [ADR-0020](ADR-0020-cvar-flags.md) | Cvars carry flags, including a simulation flag | Accepted |
 | [ADR-0021](ADR-0021-detect-game-data.md) | Detect the installed game data at startup | Accepted |
 | [ADR-0022](ADR-0022-shaders-compiled-at-build-time.md) | Shaders are compiled at build time, with a local cache | Accepted |
+| [ADR-0023](ADR-0023-advanced-graphics-on-the-cpu-geometry-path.md) | Advanced graphics start on the CPU geometry path | Accepted |

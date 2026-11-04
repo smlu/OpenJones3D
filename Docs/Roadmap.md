@@ -12,7 +12,7 @@ Where Jones3D EX stands and what comes next. The reasons behind the order are in
 | M4. Null backends and native 64-bit | The game runs headless on 64-bit Linux, deterministic across 32-bit, 64-bit and sanitizer builds | Done |
 | Direction | Hard fork, Jones3D EX on the Babylon Engine, these docs | Done |
 | M5. Babylon foundation | `Babylon/` with tests, SDL3 window, input, timer and files, Null backends, cvars, adapters. CI on Windows, Linux and macOS | Done |
-| M6. Babylon renderer | SDL3 GPU renderer at parity with DirectX 9; then the Win32 and DirectX path is removed | |
+| M6. Babylon renderer | SDL3 GPU renderer at parity with DirectX 9, built to carry the later graphics: an extended vertex with position and normal, a light buffer, render passes and a post-processing chain ([ADR-0023](arc42/09-decisions/ADR-0023-advanced-graphics-on-the-cpu-geometry-path.md)). The Win32 and DirectX path is removed once the DX9 references are recorded, and Windows becomes 64-bit | |
 | M7. Playable | miniaudio sound, the original dialogs as in-game screens, playable on Windows, Linux and macOS | |
 | M8. Release | Packages, game data installation, macOS signing, first Jones3D EX release | |
 | M9. Presentation | Widescreen and high-resolution output; bloom and depth of field as post-processing; high frame rates, which first needs an answer to how much of the simulation depends on frame time | |
