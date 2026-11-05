@@ -253,7 +253,7 @@ static void ZlibTest_OpenWriter(const char* pPath)
 {
     // zfilio_open intentionally routes write modes to the chained FILIO. Construct
     // a valid gzip-backed handle to exercise the retained gzwrite/gzflush wrappers.
-    zlibTest_pFile = ZlibTest_Alloc(sizeof(*zlibTest_pFile), __FILE__, __LINE__);
+    zlibTest_pFile = ZlibTest_Alloc(sizeof(*zlibTest_pFile), J3D_FILE, __LINE__);
     TEST_ASSERT_NOT_NULL(zlibTest_pFile);
     memset(zlibTest_pFile, 0, sizeof(*zlibTest_pFile));
     zlibTest_pFile->isGz  = 1;
