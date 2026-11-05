@@ -261,7 +261,7 @@ uint32_t J3DAPI stdUtil_CalcChecksum(const uint8_t* pData, size_t dataSize, uint
  *
  * @return `true` on success, otherwise `false`.
  */
-inline bool J3DAPI stdUtil_StringCopy(char* pDest, size_t destSize, const char* pSrc)
+static inline bool J3DAPI stdUtil_StringCopy(char* pDest, size_t destSize, const char* pSrc)
 {
     // Added: Release-build guard before calculating destSize - 1.
     STD_GUARD(pDest && pSrc && destSize, false);
@@ -282,7 +282,7 @@ inline bool J3DAPI stdUtil_StringCopy(char* pDest, size_t destSize, const char* 
  *
  * @return `true` on success, otherwise `false`.
  */
-inline bool J3DAPI stdUtil_WStringCopy(wchar_t* pDest, size_t destSize, const wchar_t* pSrc)
+static inline bool J3DAPI stdUtil_WStringCopy(wchar_t* pDest, size_t destSize, const wchar_t* pSrc)
 {
     // Added: Release-build guard before calculating destSize - 1.
     STD_GUARD(pDest && pSrc && destSize, false);
@@ -304,7 +304,7 @@ inline bool J3DAPI stdUtil_WStringCopy(wchar_t* pDest, size_t destSize, const wc
  *
  * @return `true` on success, otherwise `false`.
  */
-inline bool J3DAPI stdUtil_StringNumCopy(char* pDest, size_t destSize, const char* pSrc, size_t num)
+static inline bool J3DAPI stdUtil_StringNumCopy(char* pDest, size_t destSize, const char* pSrc, size_t num)
 {
     // Added: Release-build guard before calculating destSize - 1.
     STD_GUARD(pDest && pSrc && destSize, false);
@@ -327,7 +327,7 @@ inline bool J3DAPI stdUtil_StringNumCopy(char* pDest, size_t destSize, const cha
  *
  * @return `true` on success, otherwise `false`.
  */
-inline bool J3DAPI stdUtil_WStringNumCopy(wchar_t* pDest, size_t destSize, const wchar_t* pSrc, size_t num)
+static inline bool J3DAPI stdUtil_WStringNumCopy(wchar_t* pDest, size_t destSize, const wchar_t* pSrc, size_t num)
 {
     // Added: Release-build guard before calculating destSize - 1.
     STD_GUARD(pDest && pSrc && destSize, false);
@@ -348,7 +348,7 @@ inline bool J3DAPI stdUtil_WStringNumCopy(wchar_t* pDest, size_t destSize, const
  *
  * @return `true` on success, otherwise `false`.
  */
-inline bool J3DAPI stdUtil_StringCat(char* pDst, size_t destSize, const char* pSrc)
+static inline bool J3DAPI stdUtil_StringCat(char* pDst, size_t destSize, const char* pSrc)
 {
     // Added: Release-build guard before calculating remaining capacity.
     STD_GUARD(pDst && pSrc && destSize, false);
@@ -375,7 +375,7 @@ inline bool J3DAPI stdUtil_StringCat(char* pDst, size_t destSize, const char* pS
  *
  * @return `true` on success, otherwise `false`.
  */
-inline bool J3DAPI stdUtil_StringNumCat(char* pDst, size_t destSize, const char* pSrc, size_t num)
+static inline bool J3DAPI stdUtil_StringNumCat(char* pDst, size_t destSize, const char* pSrc, size_t num)
 {
     // Added: Release-build guard before calculating remaining capacity.
     STD_GUARD(pDst && pSrc && destSize, false);

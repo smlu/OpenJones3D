@@ -18,8 +18,8 @@
 #include <rdroid/Primitives/rdFont.h>
 #include <rdroid/Raster/rdCache.h>
 
-#include <sith/DSS/sithDSS.h>
-#include <sith/DSS/sithGamesave.h>
+#include <sith/Dss/sithDSS.h>
+#include <sith/Dss/sithGamesave.h>
 #include <sith/Devices/sithComm.h>
 #include <sith/Devices/sithConsole.h>
 #include <sith/Devices/sithSound.h>

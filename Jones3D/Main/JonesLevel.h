@@ -309,7 +309,7 @@ static const JonesLevelInfo JonesMain_aNdyLevelLoadInfos[JONESLEVEL_NUMLEVELS] =
     }
 };
 
-inline bool J3DAPI JonesLevel_IsValidLevelNum(size_t levelNum)
+static inline bool J3DAPI JonesLevel_IsValidLevelNum(size_t levelNum)
 {
     if ( levelNum != JONESLEVEL_GENERICLEVELNUM && levelNum < JONESLEVEL_NUMLEVELS ) {
         return true;

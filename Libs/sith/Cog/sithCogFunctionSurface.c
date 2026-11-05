@@ -5,7 +5,7 @@
 #include <rdroid/Math/rdVector.h>
 
 #include <sith/Cog/sithCog.h>
-#include <sith/Cog/sithCogexec.h>
+#include <sith/Cog/sithCogExec.h>
 #include <sith/Engine/sithAnimate.h>
 #include <sith/World/sithSector.h>
 #include <sith/World/sithSurface.h>

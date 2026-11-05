@@ -50,7 +50,7 @@ int J3DAPI stdConffile_Read(void* pData, size_t size);
 int J3DAPI stdConffile_ReadArgsFromStr(char* pStr);
 int stdConffile_ReadArgs(void);
 int stdConffile_ReadLine(void);
-int stdConffile_ScanLine(const char* pFormat, ...); // Added
+static inline int stdConffile_ScanLine(const char* pFormat, ...); // Added
 
 tFileHandle stdConffile_GetFileHandle(void);
 tFileHandle stdConffile_GetWriteFileHandle(void); // Added
@@ -79,7 +79,7 @@ void stdConffile_ResetGlobals(void);
  *       a pointer to the data and the size of the receiving buffer (as an `rsize_t` type),
  *       where the size may be 1 when using `%c` to read a single character.
  */
-inline int stdConffile_ScanLine(const char* pFormat, ...)
+static inline int stdConffile_ScanLine(const char* pFormat, ...)
 {
     if ( !stdConffile_ReadLine() )
     {
