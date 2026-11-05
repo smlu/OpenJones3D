@@ -26,9 +26,15 @@ static const char* smushPlayTest_apFiles[] = { "SANM.snm", "SANM.san", "ZNM.znm"
 static char smushPlayTest_aDirectory[MAX_PATH];
 
 // These objects outlive every real mixer/timer callback until SysShutdown joins them.
-static IDirectSound smushPlayTest_device;
+#if defined(J3D_DIRECTX9)
+typedef IDirectSound8Vtbl SmushPlayTestDirectSoundVtbl;
+#else
+typedef IDirectSoundVtbl SmushPlayTestDirectSoundVtbl;
+#endif
+
+static tDirectSound smushPlayTest_device;
 static IDirectSoundBuffer smushPlayTest_buffer;
-static IDirectSoundVtbl smushPlayTest_deviceVtable;
+static SmushPlayTestDirectSoundVtbl smushPlayTest_deviceVtable;
 static IDirectSoundBufferVtbl smushPlayTest_bufferVtable;
 static uint8_t smushPlayTest_aSound[3 * DSND_BLOCKSIZE];
 static DWORD smushPlayTest_soundBytes;
@@ -43,7 +49,7 @@ static ULONG STDMETHODCALLTYPE SmushPlayTest_ReleaseBuffer(IDirectSoundBuffer* p
     return 0;
 }
 
-static ULONG STDMETHODCALLTYPE SmushPlayTest_ReleaseDevice(IDirectSound* pThis)
+static ULONG STDMETHODCALLTYPE SmushPlayTest_ReleaseDevice(tDirectSound* pThis)
 {
     J3D_UNUSED(pThis);
     InterlockedIncrement(&smushPlayTest_numDeviceReleases);
@@ -108,7 +114,7 @@ static HRESULT STDMETHODCALLTYPE SmushPlayTest_GetStatus(IDirectSoundBuffer* pTh
     return DS_OK;
 }
 
-static HRESULT STDMETHODCALLTYPE SmushPlayTest_CreateBuffer(IDirectSound* pThis, LPCDSBUFFERDESC pDesc,
+static HRESULT STDMETHODCALLTYPE SmushPlayTest_CreateBuffer(tDirectSound* pThis, LPCDSBUFFERDESC pDesc,
     LPDIRECTSOUNDBUFFER* ppBuffer, LPUNKNOWN pOuter)
 {
     J3D_UNUSED(pThis);
@@ -203,7 +209,7 @@ static int __cdecl SmushPlayTest_Blit(const SmushBitmap* pBitmap, int frame)
 static int SmushPlayTest_Start(void)
 {
     SmushPlayTest_ResetSound();
-    if ( !SmushPlayTest_Check(SmushPlay_SysStartup(NULL, (tDirectSound*)&smushPlayTest_device) == 1, "Player startup failed.") )
+    if ( !SmushPlayTest_Check(SmushPlay_SysStartup(NULL, &smushPlayTest_device) == 1, "Player startup failed.") )
     {
         return 0;
     }

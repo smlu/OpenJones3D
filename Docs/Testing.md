@@ -232,6 +232,7 @@ startup and a stable module-level CTest entry.
 | `stdDisruptiveSystemTests` | `std.DisruptiveSystem` | Opt-in fullscreen/device changes | Available |
 | `soundTests` | `sound` | Deterministic lip-sync generation and lookup, AudioLib codec and header vectors | Available |
 | `smushTests` | `smush` | INSANE movie player: core, bitmap, codec, sound, stream areas and original-engine assembly vectors | Available |
+| `smushSystemTests` | `smush.System` | Native configured DirectSound movie startup, synthetic frame playback and restart | Optional system suite |
 | `sithTests` | `sith` | World thing/template I/O and voice lip-sync | Available |
 | `sithEngineTests` | `sith.Engine` | Sphere/plane intersection, rotating paths and fixed-step player physics regressions | Available |
 | `jonesConfigTests` | `Jones3D.Config` | Control-scheme binding limits and load cleanup, keyboard-name success/failure | Available |
@@ -961,10 +962,20 @@ looping and repeated startup/shutdown. Each scenario runs in a bounded child pro
 device, so a stalled player cannot hang the suite. The fixtures contain no original movie assets; their generator
 and provenance are stored alongside them. These tests do not verify device presentation or audible output.
 
-The DirectSound fixture injects startup and callback failures, lost buffers and
-stopped playback. It checks bounded recovery attempts, replacement PCM, timer
-cleanup and retries, and preservation of borrowed device ownership and primary
-volume. These tests use an in-memory device and do not verify audible output.
+The DirectSound fixture uses the configured `tDirectSound` device type: `IDirectSound` in DX6 builds and
+`IDirectSound8` in DX9 builds. It injects startup and callback failures, lost buffers and stopped playback.
+The owned-device cases check factory failure/retry, cooperative level, primary and secondary buffer setup,
+mixer allocation and timer failure cleanup. Shared cases check bounded recovery attempts, replacement PCM,
+timer cleanup/retries, and preservation of borrowed device ownership and primary volume. These tests use
+in-memory devices and do not verify audible output.
+
+With `JONES3D_BUILD_SYSTEM_TESTS=ON`, `smush.System` uses the production player and the configured native
+DirectSound factory with a hidden owned window. It plays the authored plain and gzip clips across two
+startup/shutdown cycles, checks complete frame pixels and natural END, and requires a live secondary stream.
+Unavailable native audio services produce a capability ignore; after preflight succeeds, playback or cleanup
+failures remain failures. The suite runs serially with the `DirectSound` resource lock and a 20-second timeout.
+It requires no original executable or movie assets. The clips contain no audio packets, so this checks native
+device lifecycle and video decoding rather than audible output or display presentation.
 
 Wave packet tests poison allocations and reused headers, compare complete first
 and continuation packets, and run the real sound engine callback for all 256

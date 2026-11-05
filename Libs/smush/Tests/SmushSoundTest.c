@@ -16,6 +16,7 @@
 #include <dsound.h>
 #endif
 
+#include <smush/SmushPlay.h>
 #include <smush/insane/Memory/Memory.h>
 #include <smush/insane/Sound/Dsnd.h>
 #include <smush/insane/Sound/Engine.h>
@@ -23,7 +24,7 @@
 #include <smush/insane/Timer/Timer.h>
 
 // Unit tests of the smush Sound area (Engine, Mixer, Dsnd) with synthetic data and mocked services: the LEC share table,
-// the debug allocator, the timer, the sound driver and a pure C IDirectSound/IDirectSoundBuffer. MixerAsm is tested by its own lane.
+// the debug allocator, the timer, the sound driver and configured DirectSound device/base buffer mocks. MixerAsm has its own lane.
 
 // Test-only resets of the private statics (Engine.c, Dsnd.c under J3D_TEST)
 void Engine_TestReset(void);
@@ -1550,6 +1551,12 @@ TEST_GROUP(SmushSoundDsnd);
 
 #define SST_BLOCK 0x1800
 
+#if defined(J3D_DIRECTX9)
+typedef IDirectSound8Vtbl SstDirectSoundVtbl;
+#else
+typedef IDirectSoundVtbl SstDirectSoundVtbl;
+#endif
+
 typedef struct SstDsBuffer
 {
     IDirectSoundBuffer base;
@@ -1581,7 +1588,7 @@ typedef struct SstDsBuffer
 
 typedef struct SstDs
 {
-    IDirectSound base;
+    tDirectSound base;
     int numCreateBuffer;
     DWORD descFlags;
     DWORD descBytes;
@@ -1591,6 +1598,18 @@ typedef struct SstDs
     HRESULT createResult;
     int numPrimaryCreate, numPrimaryRelease;
     LONG sharedPrimaryVolume;
+    int numFactory, numCooperative, numPrimaryFormat, numPrimaryGetVolume, numPrimarySetVolume;
+    HRESULT factoryResult, cooperativeResult, primaryCreateResult;
+    HRESULT primaryFormatResult, primaryGetVolumeResult, primarySetVolumeResult;
+    LPCGUID pFactoryGuid;
+    LPUNKNOWN pFactoryOuter;
+    HWND cooperativeHwnd;
+    DWORD cooperativeLevel;
+    tDirectSound* pCreatedBufferDevice;
+    tDirectSound* pCooperativeDevice;
+    tDirectSound* pReleasedDevice;
+    DSBUFFERDESC primaryDesc;
+    WAVEFORMATEX primaryFormat;
 } SstDs;
 
 static SstDsBuffer SstBuf;
@@ -1681,8 +1700,9 @@ static HRESULT STDMETHODCALLTYPE SstBufSetVolume(IDirectSoundBuffer* This, LONG 
 {
     if ( This == &SstPrimary )
     {
-        SstDS.sharedPrimaryVolume = volume;
-        return DS_OK;
+        ++SstDS.numPrimarySetVolume;
+        if ( SstDS.primarySetVolumeResult == DS_OK ) SstDS.sharedPrimaryVolume = volume;
+        return SstDS.primarySetVolumeResult;
     }
     SstBuf.numSetVolume++;
     SstBuf.lastVolume = volume;
@@ -1691,14 +1711,22 @@ static HRESULT STDMETHODCALLTYPE SstBufSetVolume(IDirectSoundBuffer* This, LONG 
 
 static HRESULT STDMETHODCALLTYPE SstBufGetVolume(IDirectSoundBuffer* This, LPLONG pVolume)
 {
-    *pVolume = This == &SstPrimary ? SstDS.sharedPrimaryVolume : SstBuf.lastVolume;
+    if ( This == &SstPrimary )
+    {
+        ++SstDS.numPrimaryGetVolume;
+        if ( SstDS.primaryGetVolumeResult != DS_OK ) return SstDS.primaryGetVolumeResult;
+        *pVolume = SstDS.sharedPrimaryVolume;
+    }
+    else *pVolume = SstBuf.lastVolume;
     return DS_OK;
 }
 
 static HRESULT STDMETHODCALLTYPE SstBufSetFormat(IDirectSoundBuffer* This, LPCWAVEFORMATEX pFormat)
 {
-    J3D_UNUSED(This); J3D_UNUSED(pFormat);
-    return DS_OK;
+    J3D_UNUSED(This);
+    ++SstDS.numPrimaryFormat;
+    SstDS.primaryFormat = *pFormat;
+    return SstDS.primaryFormatResult;
 }
 
 static HRESULT STDMETHODCALLTYPE SstBufGetStatus(IDirectSoundBuffer* This, LPDWORD pStatus)
@@ -1731,18 +1759,43 @@ static HRESULT STDMETHODCALLTYPE SstBufSetCurrentPosition(IDirectSoundBuffer* Th
 
 static IDirectSoundBufferVtbl SstBufVtbl;
 
-static ULONG STDMETHODCALLTYPE SstDsRelease(IDirectSound* This)
+static ULONG STDMETHODCALLTYPE SstDsRelease(tDirectSound* This)
 {
-    J3D_UNUSED(This);
+    SstDS.pReleasedDevice = This;
     SstDS.numRelease++;
     return 0;
 }
 
-static HRESULT STDMETHODCALLTYPE SstDsCreateSoundBuffer(IDirectSound* This, LPCDSBUFFERDESC pDesc, LPDIRECTSOUNDBUFFER* ppBuffer, LPUNKNOWN pOuter)
+static HRESULT STDMETHODCALLTYPE SstDsSetCooperativeLevel(tDirectSound* This, HWND hwnd, DWORD level)
 {
-    J3D_UNUSED(This); J3D_UNUSED(pOuter);
+    ++SstDS.numCooperative;
+    SstDS.pCooperativeDevice = This;
+    SstDS.cooperativeHwnd = hwnd;
+    SstDS.cooperativeLevel = level;
+    return SstDS.cooperativeResult;
+}
+
+static HRESULT WINAPI SstDsCreateDevice(LPCGUID pGuid, tDirectSound** ppDevice, LPUNKNOWN pOuter)
+{
+    ++SstDS.numFactory;
+    SstDS.pFactoryGuid = pGuid;
+    SstDS.pFactoryOuter = pOuter;
+    *ppDevice = SstDS.factoryResult == DS_OK ? &SstDS.base : NULL;
+    return SstDS.factoryResult;
+}
+
+static HRESULT STDMETHODCALLTYPE SstDsCreateSoundBuffer(tDirectSound* This, LPCDSBUFFERDESC pDesc, LPDIRECTSOUNDBUFFER* ppBuffer, LPUNKNOWN pOuter)
+{
+    J3D_UNUSED(pOuter);
+    SstDS.pCreatedBufferDevice = This;
     SstDS.numCreateBuffer++;
-    if ( pDesc->dwFlags & DSBCAPS_PRIMARYBUFFER ) ++SstDS.numPrimaryCreate;
+    if ( pDesc->dwFlags & DSBCAPS_PRIMARYBUFFER )
+    {
+        ++SstDS.numPrimaryCreate;
+        SstDS.primaryDesc = *pDesc;
+        *ppBuffer = SstDS.primaryCreateResult == DS_OK ? &SstPrimary : NULL;
+        return SstDS.primaryCreateResult;
+    }
     if ( SstDS.createResult != DS_OK )
     {
         *ppBuffer = NULL;
@@ -1756,11 +1809,11 @@ static HRESULT STDMETHODCALLTYPE SstDsCreateSoundBuffer(IDirectSound* This, LPCD
     }
 
     memset(SstBuf.mem, 0xAA, sizeof(SstBuf.mem));
-    *ppBuffer = (pDesc->dwFlags & DSBCAPS_PRIMARYBUFFER) ? &SstPrimary : &SstBuf.base;
+    *ppBuffer = &SstBuf.base;
     return DS_OK;
 }
 
-static IDirectSoundVtbl SstDsVtbl;
+static SstDirectSoundVtbl SstDsVtbl;
 
 static void SstDsReset(void)
 {
@@ -1782,6 +1835,7 @@ static void SstDsReset(void)
     SstDS.sharedPrimaryVolume = -4200;
     SstDsVtbl.Release = SstDsRelease;
     SstDsVtbl.CreateSoundBuffer = SstDsCreateSoundBuffer;
+    SstDsVtbl.SetCooperativeLevel = SstDsSetCooperativeLevel;
     SstBuf.base.lpVtbl = &SstBufVtbl;
     SstPrimary.lpVtbl = &SstBufVtbl;
     SstDS.base.lpVtbl = &SstDsVtbl;
@@ -1812,6 +1866,7 @@ TEST_SETUP(SmushSoundDsnd)
     SstMemReset();
     SstTimerReset();
     SstDsReset();
+    Dsnd_TestSetCreateDevice(SstDsCreateDevice);
     SstSh.pTimerClk = &SstTim.iface;
     SstSh.pMixerMem = &SstMem.iface;
     SstFillCalls = 0;
@@ -1898,6 +1953,9 @@ TEST(SmushSoundDsnd, StartupReportsMissingServices)
 TEST(SmushSoundDsnd, StartCreatesLoopingSecondaryBufferOnGivenObject)
 {
     SstDsndStart();
+    TEST_ASSERT_EQUAL_INT(0, SstDS.numFactory);
+    TEST_ASSERT_EQUAL_INT(0, SstDS.numCooperative);
+    TEST_ASSERT_EQUAL_PTR(&SstDS.base, SstDS.pCreatedBufferDevice);
     TEST_ASSERT_EQUAL_INT(1, SstDS.numCreateBuffer);
     TEST_ASSERT_EQUAL_UINT32(DSBCAPS_GETCURRENTPOSITION2 | DSBCAPS_CTRLVOLUME, SstDS.descFlags);
     TEST_ASSERT_EQUAL_UINT32(3 * SST_BLOCK, SstDS.descBytes);
@@ -1933,6 +1991,166 @@ TEST(SmushSoundDsnd, StartCreatesLoopingSecondaryBufferOnGivenObject)
     TEST_ASSERT_EQUAL_INT(1193180 / 21, SstTim.allocInterval);
     TEST_ASSERT_EQUAL_UINT32(2, SstTim.allocFlags);
     TEST_ASSERT_EQUAL_INT(0, SstTim.allocParam);
+}
+
+// The configured factory returns the selected DX6/DX9 device type; buffers use the shared base interface.
+TEST(SmushSoundDsnd, StartCreatesOwnedDeviceAndRestoresPrimaryOnStop)
+{
+    TEST_ASSERT_EQUAL_INT(0, SstDsndModule->Startup());
+    int result = SstDsndDrv->Start(22050, 1, SstFillFn);
+    SstDsndStarted = result == 0;
+    TEST_ASSERT_EQUAL_INT(0, result);
+    TEST_ASSERT_EQUAL_INT(1, SstDS.numFactory);
+    TEST_ASSERT_NULL(SstDS.pFactoryGuid);
+    TEST_ASSERT_NULL(SstDS.pFactoryOuter);
+    TEST_ASSERT_EQUAL_INT(1, SstDS.numCooperative);
+    TEST_ASSERT_EQUAL_PTR(&SstDS.base, SstDS.pCooperativeDevice);
+    TEST_ASSERT_EQUAL_PTR(smushplay_GetHwnd(), SstDS.cooperativeHwnd);
+    TEST_ASSERT_EQUAL_UINT32(DSSCL_EXCLUSIVE, SstDS.cooperativeLevel);
+    TEST_ASSERT_EQUAL_PTR(&SstDS.base, SstDS.pCreatedBufferDevice);
+    TEST_ASSERT_EQUAL_INT(2, SstDS.numCreateBuffer);
+    TEST_ASSERT_EQUAL_INT(1, SstDS.numPrimaryCreate);
+    DSBUFFERDESC primaryDesc = { 0 };
+    primaryDesc.dwSize = sizeof(primaryDesc);
+    primaryDesc.dwFlags = DSBCAPS_PRIMARYBUFFER | DSBCAPS_CTRLVOLUME;
+    TEST_ASSERT_EQUAL_MEMORY(&primaryDesc, &SstDS.primaryDesc, sizeof(primaryDesc));
+    WAVEFORMATEX format = { WAVE_FORMAT_PCM, 2, 22050, 88200, 4, 16, 0 };
+    TEST_ASSERT_EQUAL_INT(1, SstDS.numPrimaryFormat);
+    TEST_ASSERT_EQUAL_MEMORY(&format, &SstDS.primaryFormat, sizeof(format));
+    TEST_ASSERT_EQUAL_MEMORY(&format, &SstDS.format, sizeof(format));
+    TEST_ASSERT_EQUAL_INT(1, SstDS.numPrimaryGetVolume);
+    TEST_ASSERT_EQUAL_INT(1, SstDS.numPrimarySetVolume);
+    TEST_ASSERT_EQUAL_INT32(0, SstDS.sharedPrimaryVolume);
+    TEST_ASSERT_EQUAL_INT(1, SstTim.numAllocs);
+    TEST_ASSERT_EQUAL_INT(1, SstBuf.numPlay);
+    TEST_ASSERT_EQUAL_UINT32(DSBPLAY_LOOPING, SstBuf.playFlags);
+    TEST_ASSERT_EACH_EQUAL_UINT8(0, SstBuf.mem, 3 * SST_BLOCK);
+
+    SstDsndDrv->Stop();
+    SstDsndStarted = 0;
+    TEST_ASSERT_EQUAL_INT(1, SstTim.numFrees);
+    TEST_ASSERT_EQUAL_INT(2, SstMem.numFrees);
+    TEST_ASSERT_EQUAL_INT(1, SstBuf.numRelease);
+    TEST_ASSERT_EQUAL_INT(1, SstDS.numPrimaryRelease);
+    TEST_ASSERT_EQUAL_INT(1, SstDS.numRelease);
+    TEST_ASSERT_EQUAL_PTR(&SstDS.base, SstDS.pReleasedDevice);
+    TEST_ASSERT_EQUAL_INT(2, SstDS.numPrimarySetVolume);
+    TEST_ASSERT_EQUAL_INT32(-4200, SstDS.sharedPrimaryVolume);
+    TEST_ASSERT_EQUAL_INT(-1, dsnd_GetPlayPos());
+    dsnd_Release();
+    TEST_ASSERT_EQUAL_INT(1, SstBuf.numRelease);
+    TEST_ASSERT_EQUAL_INT(1, SstDS.numPrimaryRelease);
+    TEST_ASSERT_EQUAL_INT(1, SstDS.numRelease);
+}
+
+TEST(SmushSoundDsnd, StartRejectsFactoryFailureAndCanRetry)
+{
+    TEST_ASSERT_EQUAL_INT(0, SstDsndModule->Startup());
+    SstDS.factoryResult = DSERR_NODRIVER;
+    int result = SstDsndDrv->Start(22050, 1, SstFillFn);
+    SstDsndStarted = result == 0;
+    TEST_ASSERT_EQUAL_INT(-1, result);
+    TEST_ASSERT_EQUAL_INT(1, SstDS.numFactory);
+    TEST_ASSERT_EQUAL_INT(0, SstDS.numCooperative);
+    TEST_ASSERT_EQUAL_INT(0, SstDS.numCreateBuffer);
+    TEST_ASSERT_EQUAL_INT(0, SstDS.numRelease);
+    TEST_ASSERT_EQUAL_INT(0, SstMem.numAllocs);
+    TEST_ASSERT_EQUAL_INT(0, SstTim.numAllocs);
+    TEST_ASSERT_EQUAL_INT(-1, dsnd_GetPlayPos());
+
+    SstDS.factoryResult = DS_OK;
+    result = SstDsndDrv->Start(22050, 1, SstFillFn);
+    SstDsndStarted = result == 0;
+    TEST_ASSERT_EQUAL_INT(0, result);
+    TEST_ASSERT_EQUAL_INT(2, SstDS.numFactory);
+    TEST_ASSERT_EQUAL_INT(1, SstDS.numPrimaryCreate);
+    TEST_ASSERT_EQUAL_INT(1, SstTim.numAllocs);
+    SstDsndDrv->Stop();
+    SstDsndStarted = 0;
+    TEST_ASSERT_EQUAL_INT(1, SstBuf.numRelease);
+    TEST_ASSERT_EQUAL_INT(1, SstDS.numPrimaryRelease);
+    TEST_ASSERT_EQUAL_INT(1, SstDS.numRelease);
+    TEST_ASSERT_EQUAL_INT32(-4200, SstDS.sharedPrimaryVolume);
+}
+
+// Every owned startup stage must unwind exactly the resources acquired before that failure.
+TEST(SmushSoundDsnd, StartUnwindsOwnedDeviceInitializationFailures)
+{
+    for ( int failure = 0; failure < 6; ++failure )
+    {
+        Dsnd_TestReset();
+        SstDsReset();
+        SstMemReset();
+        SstTimerReset();
+        Dsnd_TestSetCreateDevice(SstDsCreateDevice);
+        TEST_ASSERT_EQUAL_INT(0, SstDsndModule->Startup());
+        if ( failure == 0 ) SstDS.cooperativeResult = DSERR_GENERIC;
+        if ( failure == 1 ) SstDS.primaryCreateResult = DSERR_ALLOCATED;
+        if ( failure == 2 ) SstDS.primaryFormatResult = DSERR_BADFORMAT;
+        if ( failure == 3 ) SstDS.primaryGetVolumeResult = DSERR_CONTROLUNAVAIL;
+        if ( failure == 4 ) SstDS.primarySetVolumeResult = DSERR_CONTROLUNAVAIL;
+        if ( failure == 5 ) SstDS.createResult = DSERR_ALLOCATED;
+        int result = SstDsndDrv->Start(22050, 1, SstFillFn);
+        SstDsndStarted = result == 0;
+        TEST_ASSERT_EQUAL_INT(-1, result);
+        TEST_ASSERT_EQUAL_INT(1, SstDS.numFactory);
+        TEST_ASSERT_EQUAL_INT(1, SstDS.numCooperative);
+        TEST_ASSERT_EQUAL_INT(failure > 0, SstDS.numPrimaryCreate);
+        TEST_ASSERT_EQUAL_INT(failure > 1, SstDS.numPrimaryRelease);
+        TEST_ASSERT_EQUAL_INT(failure > 1, SstDS.numPrimaryFormat);
+        TEST_ASSERT_EQUAL_INT(failure > 2, SstDS.numPrimaryGetVolume);
+        TEST_ASSERT_EQUAL_INT(failure == 5 ? 2 : failure == 4 ? 1 : 0, SstDS.numPrimarySetVolume);
+        TEST_ASSERT_EQUAL_INT(1, SstDS.numRelease);
+        TEST_ASSERT_EQUAL_INT(0, SstBuf.numRelease);
+        TEST_ASSERT_EQUAL_INT32(-4200, SstDS.sharedPrimaryVolume);
+        TEST_ASSERT_EQUAL_INT(0, SstMem.numAllocs);
+        TEST_ASSERT_EQUAL_INT(0, SstTim.numAllocs);
+        TEST_ASSERT_EQUAL_INT(-1, dsnd_GetPlayPos());
+        dsnd_Release();
+        TEST_ASSERT_EQUAL_INT(1, SstDS.numRelease);
+        TEST_ASSERT_EQUAL_INT(failure > 1, SstDS.numPrimaryRelease);
+    }
+}
+
+TEST(SmushSoundDsnd, StartUnwindsOwnedMixerAndTimerFailuresThenRetries)
+{
+    for ( int failure = 0; failure < 3; ++failure )
+    {
+        Dsnd_TestReset();
+        SstDsReset();
+        SstMemReset();
+        SstTimerReset();
+        Dsnd_TestSetCreateDevice(SstDsCreateDevice);
+        TEST_ASSERT_EQUAL_INT(0, SstDsndModule->Startup());
+        if ( failure < 2 ) SstMem.failOnly = failure + 1;
+        else SstTim.bFailAlloc = 1;
+        int result = SstDsndDrv->Start(22050, 1, SstFillFn);
+        SstDsndStarted = result == 0;
+        TEST_ASSERT_EQUAL_INT(-1, result);
+        TEST_ASSERT_EQUAL_INT(1, SstDS.numFactory);
+        TEST_ASSERT_EQUAL_INT(1, SstBuf.numRelease);
+        TEST_ASSERT_EQUAL_INT(1, SstDS.numPrimaryRelease);
+        TEST_ASSERT_EQUAL_INT(1, SstDS.numRelease);
+        TEST_ASSERT_EQUAL_INT(failure < 2 ? failure : 2, SstMem.numFrees);
+        TEST_ASSERT_EQUAL_INT(failure == 2, SstTim.numAllocs);
+        TEST_ASSERT_EQUAL_INT(0, SstTim.numFrees);
+        TEST_ASSERT_EQUAL_INT32(-4200, SstDS.sharedPrimaryVolume);
+
+        SstMem.failOnly = SstTim.bFailAlloc = 0;
+        result = SstDsndDrv->Start(22050, 1, SstFillFn);
+        SstDsndStarted = result == 0;
+        TEST_ASSERT_EQUAL_INT(0, result);
+        TEST_ASSERT_EQUAL_INT(2, SstDS.numFactory);
+        TEST_ASSERT_EQUAL_INT(2, SstDS.numPrimaryCreate);
+        SstDsndDrv->Stop();
+        SstDsndStarted = 0;
+        TEST_ASSERT_EQUAL_INT(2, SstBuf.numRelease);
+        TEST_ASSERT_EQUAL_INT(2, SstDS.numPrimaryRelease);
+        TEST_ASSERT_EQUAL_INT(2, SstDS.numRelease);
+        TEST_ASSERT_EQUAL_INT((failure < 2 ? failure : 2) + 2, SstMem.numFrees);
+        TEST_ASSERT_EQUAL_INT(1, SstTim.numFrees);
+        TEST_ASSERT_EQUAL_INT32(-4200, SstDS.sharedPrimaryVolume);
+    }
 }
 
 TEST(SmushSoundDsnd, StartRaisesTooLowRate)
@@ -2442,6 +2660,10 @@ TEST(SmushSoundDsnd, StopDiscardsPendingRecoveryBeforeRestart)
 
 TEST_GROUP_RUNNER(SmushSoundDsnd)
 {
+    RUN_TEST_CASE(SmushSoundDsnd, StartCreatesOwnedDeviceAndRestoresPrimaryOnStop);
+    RUN_TEST_CASE(SmushSoundDsnd, StartRejectsFactoryFailureAndCanRetry);
+    RUN_TEST_CASE(SmushSoundDsnd, StartUnwindsOwnedDeviceInitializationFailures);
+    RUN_TEST_CASE(SmushSoundDsnd, StartUnwindsOwnedMixerAndTimerFailuresThenRetries);
     RUN_TEST_CASE(SmushSoundDsnd, StartupFocusLossDefersPlaybackUntilTimerCanRecover);
     RUN_TEST_CASE(SmushSoundDsnd, CallbackRetainsRecoveryUntilEveryRestoreStageSucceeds);
     RUN_TEST_CASE(SmushSoundDsnd, CallbackRetriesStatusFailureWithoutConsumingAudio);

@@ -4,12 +4,16 @@
 #include <j3dcore/j3d.h>
 #include <smush/RTI/addresses.h>
 #include <smush/insane/lec.h>
+#if defined(J3D_TEST)
+#include <sound/Driver.h>
+#endif
 
 /*
  * The `SNDDRIVER=insane_dsnd` interface Dsnd.c publishes (`dsnd_interface`) and the sound engine (Engine.c) subscribes to.
  * The driver's timer callback calls the engine's fill function once per block with the mixer's per-track feed
- * (`mixer_Feed`). Only the DirectSound object the game hands in (dsnd_Configure(5, pDSound)) is used; DirectSoundCreate and
- * a primary buffer only when none was given.
+ * (`mixer_Feed`). The game supplies a borrowed tDirectSound through dsnd_Configure(5, pDSound). When none is supplied,
+ * the driver creates a device for the configured DX6/DX9 backend and owns its primary buffer. PCM streaming and the
+ * base IDirectSoundBuffer interface are shared by both backends.
  */
 
 J3D_EXTERN_C_START
@@ -38,7 +42,7 @@ typedef enum eDsndConfig
     DSND_CONFIG_2      = 2, /* Stored, never read */
     DSND_CONFIG_3      = 3, /* Stored, never read */
     DSND_CONFIG_4      = 4, /* Stored, never read */
-    DSND_CONFIG_DSOUND = 5  /* The game's DirectSound object */
+    DSND_CONFIG_DSOUND = 5  /* Borrowed tDirectSound* from the configured backend */
 } DsndConfig;
 
 typedef void (*SoundFeed)(void* pSrc, int offset, int n, int bytes, int a5, int volume, int pan, int format);
@@ -73,6 +77,11 @@ int dsnd_GetPlayPos(void);
 
 void Dsnd_InstallHooks(void);
 void Dsnd_ResetGlobals(void);
+
+#if defined(J3D_TEST)
+typedef HRESULT (WINAPI* DsndCreateDeviceFunc)(LPCGUID, tDirectSound**, LPUNKNOWN);
+void Dsnd_TestSetCreateDevice(DsndCreateDeviceFunc pfnCreateDevice);
+#endif
 
 J3D_EXTERN_C_END
 

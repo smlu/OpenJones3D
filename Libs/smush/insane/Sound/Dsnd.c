@@ -12,13 +12,7 @@
 #include <Windows.h>
 #include <mmsystem.h>
 #include <Mmreg.h>
-#if defined (J3D_DIRECTX6)
-#include <DirectX6/dsound.h>
-#elif defined (J3D_DIRECTX9)
-#include <dsound.h>
-#else
-#error "Unsuported system sound API. Please define J3D_DIRECTX6 or J3D_DIRECTX9 in your project."
-#endif
+#include <sound/Driver.h>
 
 #include <smush/insane/Sound/Engine.h>
 #include <smush/insane/Sound/Mixer.h>
@@ -56,7 +50,8 @@ static int dsnd_cfg4 = 0;
 static void* dsnd_pParam = NULL;
 static char dsnd_scratch[DSND_BLOCKSIZE]; // One block of DSND_BLOCKFRAMES stereo 16-bit frames, the size the callback mixes into it
 static int dsnd_cfg2 = 0;
-static LPDIRECTSOUND dsnd_pDS = NULL;
+// Altered: Use the configured device interface; both backends share the PCM buffer API.
+static tDirectSound* dsnd_pDS = NULL;
 static LPDIRECTSOUNDBUFFER dsnd_pPrimary = NULL;
 static LPDIRECTSOUNDBUFFER dsnd_pSecondary = NULL;
 static bool dsnd_busy = false;
@@ -65,6 +60,22 @@ static int dsnd_hTimer = 0;
 static bool dsnd_tablesReady = false;
 static bool dsnd_restorePrimaryVolume = false;
 static bool dsnd_recoveryPending = false;
+
+#if defined(J3D_TEST)
+static DsndCreateDeviceFunc dsnd_pfnCreateDevice;
+#endif
+
+static HRESULT dsnd_CreateDevice(tDirectSound** ppDSound)
+{
+#if defined(J3D_TEST)
+    if ( dsnd_pfnCreateDevice ) return dsnd_pfnCreateDevice(NULL, ppDSound, NULL);
+#endif
+#if defined(J3D_DIRECTX9)
+    return DirectSoundCreate8(NULL, ppDSound, NULL);
+#else
+    return DirectSoundCreate(NULL, ppDSound, NULL);
+#endif
+}
 
 // Fixed: A restored buffer has no valid PCM. Clear it before resuming playback.
 static HRESULT dsnd_ClearSecondary(void)
@@ -140,7 +151,7 @@ int J3DAPI dsnd_Configure(int tag, ...)
                 break;
 
             case DSND_CONFIG_DSOUND:
-                dsnd_pDS = va_arg(args, LPDIRECTSOUND); // The DirectSound object of the game (IDirectSound8 in DX9 builds, the vtables share the used methods)
+                dsnd_pDS = va_arg(args, tDirectSound*);
                 dsnd_ownDS = false;
                 break;
 
@@ -195,7 +206,7 @@ int J3DAPI dsnd_Start(int rate, int a2, void (*pfnFill)(int, SoundFeed))
     }
 
     // Fixed: Do not report a running stream when device, mixer or timer setup fails.
-    LPDIRECTSOUND pBorrowed = dsnd_ownDS ? NULL : dsnd_pDS;
+    tDirectSound* pBorrowed = dsnd_ownDS ? NULL : dsnd_pDS;
     if ( dsnd_Init() ) goto error;
     if ( mixer_Init(dsnd_pMixerTable, DSND_MIXER_HEADROOM, DSND_MIXER_SIZE, 0, 1, 1) ) goto error;
 
@@ -351,7 +362,7 @@ int dsnd_Init(void)
         return dsnd_pSecondary ? 0 : -1;
     }
 
-    HRESULT hr = DirectSoundCreate(NULL, &dsnd_pDS, NULL);
+    HRESULT hr = dsnd_CreateDevice(&dsnd_pDS);
     if ( hr )
     {
         dsnd_pDS = NULL;
@@ -360,7 +371,7 @@ int dsnd_Init(void)
     }
 
     dsnd_ownDS = true; // Own it immediately so partial initialization is released on failure.
-    hr = IDirectSound_SetCooperativeLevel(dsnd_pDS, (HWND)smushplay_GetHwnd(), DSSCL_EXCLUSIVE);
+    hr = dsnd_pDS->lpVtbl->SetCooperativeLevel(dsnd_pDS, (HWND)smushplay_GetHwnd(), DSSCL_EXCLUSIVE);
     if ( hr )
     {
         dsnd_Print("DirectSound: Error %08X while setting cooperative level", hr);
@@ -374,7 +385,7 @@ int dsnd_Init(void)
     desc.dwBufferBytes = 0;
     desc.dwReserved = 0;
     desc.lpwfxFormat = NULL;
-    hr = IDirectSound_CreateSoundBuffer(dsnd_pDS, &desc, &dsnd_pPrimary, NULL);
+    hr = dsnd_pDS->lpVtbl->CreateSoundBuffer(dsnd_pDS, &desc, &dsnd_pPrimary, NULL);
     if ( hr )
     {
         dsnd_Print("DirectSound: Error %08X while creating primary buffer", hr);
@@ -431,7 +442,7 @@ void J3DAPI dsnd_OpenSecondary(int blocks)
     desc.lpwfxFormat = &dsnd_streamFormat;
     // Fixed: Check every setup result. A failed Play otherwise left a silent
     // buffer behind while dsnd_Start claimed success.
-    HRESULT hr = IDirectSound_CreateSoundBuffer(dsnd_pDS, &desc, &dsnd_pSecondary, NULL);
+    HRESULT hr = dsnd_pDS->lpVtbl->CreateSoundBuffer(dsnd_pDS, &desc, &dsnd_pSecondary, NULL);
     dsnd_lastBlock = -1;
     if ( hr == DS_OK ) hr = IDirectSoundBuffer_SetVolume(dsnd_pSecondary, 0);
     if ( hr == DS_OK )
@@ -472,7 +483,7 @@ void dsnd_Release(void)
 
     // Fixed: The original clears dsnd_ownDS in the block above, so the DirectSound object the driver created itself is never released. Clear it after the release
     if ( dsnd_pDS && dsnd_ownDS ) {
-        IDirectSound_Release(dsnd_pDS);
+        dsnd_pDS->lpVtbl->Release(dsnd_pDS);
         dsnd_ownDS = false;
     }
 
@@ -496,10 +507,16 @@ int dsnd_GetPlayPos(void)
 }
 
 #if defined(J3D_TEST)
+void Dsnd_TestSetCreateDevice(DsndCreateDeviceFunc pfnCreateDevice)
+{
+    dsnd_pfnCreateDevice = pfnCreateDevice;
+}
+
 // Added: Test-only reset of the driver's state.
 void Dsnd_TestReset(void);
 void Dsnd_TestReset(void)
 {
+    dsnd_pfnCreateDevice = NULL;
     dsnd_lastBlock = -1;
     dsnd_rate = 22050;
     dsnd_volume = 127;
