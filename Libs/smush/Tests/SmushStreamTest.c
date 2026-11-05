@@ -19,7 +19,7 @@
 
 // Unit tests of the smush Stream area (Cdstream, Framestream, Stdfile, Stdio, Zfilio, Readauto, Frame, Pcplay).
 // The INSANE services are mocked: a share table that publishes/subscribes by name, an in-memory FILIO file system and malloc
-// as the allocator. The executable's gz functions are replaced through the Zfilio test seam.
+// as the allocator. The linked gz functions are replaced through the Zfilio test seam.
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Mock share table
@@ -1097,7 +1097,7 @@ static unsigned int Test_gzLastReadLen;
 static int Test_gzFail;
 static int Test_gzFakeHandle;
 
-static gzFile J3DAPI Test_gzopen(const char* pPath, const char* pMode) { (void)pPath; (void)pMode; ++Test_gzOpenCount; return Test_gzFail ? NULL : &Test_gzFakeHandle; }
+static gzFile J3DAPI Test_gzopen(const char* pPath, const char* pMode) { (void)pPath; (void)pMode; ++Test_gzOpenCount; return Test_gzFail ? NULL : (gzFile)&Test_gzFakeHandle; }
 static int J3DAPI Test_gzclose(gzFile f) { (void)f; ++Test_gzCloseCount; return 0; }
 static int J3DAPI Test_gzread(gzFile f, void* pBuf, unsigned int len) { (void)f; Test_gzLastReadLen = len; memset(pBuf, 0x5A, len); return (int)len; }
 static int J3DAPI Test_gzwrite(gzFile f, const void* pBuf, unsigned int len) { (void)f; (void)pBuf; return (int)len; }

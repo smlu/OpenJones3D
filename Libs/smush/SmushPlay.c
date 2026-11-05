@@ -299,9 +299,4 @@ void Smush_ResetGlobals(void)
     MixerAsm_ResetGlobals();
     Timer_ResetGlobals();
     List_ResetGlobals();
-
-    // zfilio_pFilio is the only INSANE datum that lives in the executable (read by its zlib)
-#ifndef J3D_LOCAL_RTI
-    memset((char*)&zfilio_pFilio, 0, sizeof(zfilio_pFilio));
-#endif
 }

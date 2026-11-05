@@ -1,5 +1,8 @@
 ## Smush Assembly Routines: Original-Engine Test Vectors
 
+This page describes the assembly vectors below. The independently generated
+full-player clips have their own [provenance and generator](SmushPlay/README.md).
+
 These files hold inputs and the complete results of INSANE's MASM procedures,
 captured by executing them inside the retail `Indy3D.exe`. They are consumed by
 `TestOriginal*` in `Libs/smush/Tests/SmushAsmTest.c`, which runs the C

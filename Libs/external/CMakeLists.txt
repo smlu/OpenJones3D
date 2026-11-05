@@ -41,6 +41,18 @@ foreach(MODULE ${EXTERNAL_MODULES})
     set_target_properties(${MODULE} PROPERTIES FOLDER "Libs/external") # Group all lib modules under "Libs/external" in Visual Studio
 endforeach()
 
+set(ZLIB_BUILD_SHARED OFF)
+set(ZLIB_BUILD_STATIC ON)
+set(ZLIB_BUILD_TESTING OFF)
+set(ZLIB_INSTALL OFF)
+add_subdirectory(zlib)
+set_target_properties(zlibstatic PROPERTIES FOLDER "Libs/external")
+
+if (MSVC)
+    # zlib uses POSIX CRT names hidden by the inherited /Zc:__STDC__ option.
+    target_compile_definitions(zlibstatic PRIVATE _CRT_DECLARE_NONSTDC_NAMES=1)
+endif()
+
 # Disable the problematic warning for MSVC on Jansson target
 if(MSVC)
     target_compile_options(${JANSSON_LIBRARIES} PRIVATE 

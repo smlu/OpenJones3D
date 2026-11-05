@@ -938,12 +938,28 @@ and compressor state, including chained block calls.
 ### 🎞️ Smush Fixtures
 
 The `smush` suite (`smushTests`, CTest entry `smush`, labels `unit;smush;<backend>`) links the smush library and runs
-every area against the real functions of the other areas; the only mocks are the LEC services (share table, allocator,
-timer), an in-memory file system, the executable's zlib `gz*` functions (through the `Zfilio_TestSetGz` seam) and a pure C
-`IDirectSound`. Each area has its own test file and CMake list under `Libs/smush/Tests`: `SmushCoreTest.c` (SmushPlay,
-LecShare, Timer, Memory, List, Bitmap, Blit), `SmushSoundTest.c` (Engine, Mixer, Dsnd), `SmushCodecTest.c` (D_bloc16,
-D_wave, Decode), `SmushStreamTest.c` (Cdstream, Framestream, Stdfile, Stdio, Zfilio, Readauto, Frame, Pcplay) and
-`SmushAsmTest.c`.
+module fixtures against the real functions of the other areas. Fixtures replace LEC services (share table, allocator,
+timer), file I/O, the linked zlib `gz*` functions (through the `Zfilio_TestSetGz` seam) and `IDirectSound` as needed.
+Each area has its own test file and CMake list under `Libs/smush/Tests`: `SmushCoreTest.c` (LecShare, Timer, Memory,
+List, Bitmap), `SmushSoundTest.c` (Engine, Mixer, Dsnd), `SmushCodecTest.c` (D_bloc16, D_wave, Decode),
+`SmushStreamTest.c` (Cdstream, Framestream, Stdfile, Stdio, Zfilio, Readauto, Frame, Pcplay), `SmushPlayTest.c`
+(full player lifecycle) and `SmushAsmTest.c`.
+
+The `SmushZlib` group clears the gzip test seam and uses vendored zlib 1.4 with small physical files in a unique
+temporary directory. It checks plain SNM routing, compressed reads, lazy seeking, EOF and malformed streams,
+file and allocation failures, write/flush forwarding and cleanup. Expected payload bytes are independent of zlib;
+the tests require neither retail executable code nor game assets. Chained FILIO mocks continue to cover the routing
+contract separately. Production gzip I/O uses physical paths; arbitrary virtual FILIO gzip support requires an adapter.
+The plain SANM regression ends its fixture with four zero bytes and verifies its physical size and first header
+through Zfilio, Stdfile and Cdstream. The gzip opener must reject transparent input so ordinary files retain
+chained-file sizing; interpreting the final bytes of a plain movie as a gzip trailer can stall the player.
+
+The `SmushPlay` group plays the independently generated 8x8 SANM clips in
+`Libs/smush/Tests/tv/SmushPlay` through the real player, decoder, timer, file services and linked zlib.
+It compares every RGB565 pixel and callback index, requires normal end-of-stream, and checks abort, replay,
+looping and repeated startup/shutdown. Each scenario runs in a bounded child process with a fake DirectSound
+device, so a stalled player cannot hang the suite. The fixtures contain no original movie assets; their generator
+and provenance are stored alongside them. These tests do not verify device presentation or audible output.
 
 The DirectSound fixture injects startup and callback failures, lost buffers and
 stopped playback. It checks bounded recovery attempts, replacement PCM, timer

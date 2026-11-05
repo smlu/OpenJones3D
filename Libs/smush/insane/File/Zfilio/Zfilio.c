@@ -1,4 +1,4 @@
-// Zfilio.c: the `FILIO=insane_zfilio` module (gz-compressed files through the executable's zlib) (original 0x004E9B30-0x004EA020).
+// Zfilio.c: the `FILIO=insane_zfilio` module (gz-compressed files through linked zlib) (original 0x004E9B30-0x004EA020).
 #include <smush/insane/File/Zfilio/Zfilio.h>
 #include <j3dcore/j3d.h>
 #include <j3dcore/j3dhook.h>
@@ -17,16 +17,13 @@ static int zfilio_flags = ZFILIO_FLAG_REPORT;
 static LecModule zfilio_module = { zfilio_Register, zfilio_Unregister, zfilio_Startup, zfilio_Shutdown };
 static ZfilioInterface zfilio_interface = { zfilio_open, zfilio_close, zfilio_read, zfilio_write, zfilio_tell, zfilio_seek, zfilio_flush };
 
-#ifdef J3D_LOCAL_RTI
 FilioInterface* zfilio_pFilio = NULL;
-#endif
 static MemoryDebugInterface* zfilio_pMemory;
 static LecShare* zfilio_pServices;
 static LecDebug* zfilio_pDebug;
 static void* zfilio_pParam;
 
 #if defined(J3D_TEST)
-// Added: Test-only replacement of the executable's zlib gz functions (see Zfilio.h).
 static ZfilioTestGz zfilio_test_gz;
 
 void Zfilio_TestSetGz(const ZfilioTestGz* pGz)
@@ -42,7 +39,6 @@ void Zfilio_TestSetGz(const ZfilioTestGz* pGz)
 }
 #endif
 
-// The executable's zlib is reached through trampolines (the tests replace it)
 static gzFile Zfilio_gzopen(const char* pPath, const char* pMode)
 {
 #if defined(J3D_TEST)
@@ -52,7 +48,15 @@ static gzFile Zfilio_gzopen(const char* pPath, const char* pMode)
     }
 #endif
 
-    return J3D_TRAMPOLINE_CALL(gzopen, pPath, pMode);
+    gzFile file = gzopen(pPath, pMode);
+    // Fixed: The original opener rejects transparent input so plain files keep the chained size and seek behavior.
+    if ( file && gzdirect(file) )
+    {
+        gzclose(file);
+        return NULL;
+    }
+
+    return file;
 }
 
 static int Zfilio_gzclose(gzFile file)
@@ -64,7 +68,7 @@ static int Zfilio_gzclose(gzFile file)
     }
 #endif
 
-    return J3D_TRAMPOLINE_CALL(gzclose, file);
+    return gzclose(file);
 }
 
 static int Zfilio_gzread(gzFile file, void* pBuf, unsigned int len)
@@ -76,7 +80,7 @@ static int Zfilio_gzread(gzFile file, void* pBuf, unsigned int len)
     }
 #endif
 
-    return J3D_TRAMPOLINE_CALL(gzread, file, pBuf, len);
+    return gzread(file, pBuf, len);
 }
 
 static int Zfilio_gzwrite(gzFile file, const void* pBuf, unsigned int len)
@@ -88,7 +92,7 @@ static int Zfilio_gzwrite(gzFile file, const void* pBuf, unsigned int len)
     }
 #endif
 
-    return J3D_TRAMPOLINE_CALL(gzwrite, file, pBuf, len);
+    return gzwrite(file, pBuf, len);
 }
 
 static int Zfilio_gzflush(gzFile file, int flush)
@@ -100,7 +104,7 @@ static int Zfilio_gzflush(gzFile file, int flush)
     }
 #endif
 
-    return J3D_TRAMPOLINE_CALL(gzflush, file, flush);
+    return gzflush(file, flush);
 }
 
 static long Zfilio_gzseek(gzFile file, long offset, int whence)
@@ -112,7 +116,7 @@ static long Zfilio_gzseek(gzFile file, long offset, int whence)
     }
 #endif
 
-    return J3D_TRAMPOLINE_CALL(gzseek, file, offset, whence);
+    return gzseek(file, offset, whence);
 }
 
 void Zfilio_InstallHooks(void)
@@ -135,10 +139,7 @@ void Zfilio_InstallHooks(void)
 
 void Zfilio_ResetGlobals(void)
 {
-#ifdef J3D_LOCAL_RTI
     zfilio_pFilio = NULL;
-#endif
-    // Otherwise zfilio_pFilio lives in the executable and Smush_ResetGlobals clears it
     zfilio_extCount = 1;
     memset((void*)zfilio_extensions, 0, sizeof(zfilio_extensions));
     zfilio_extensions[0] = ".gz";
