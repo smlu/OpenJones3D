@@ -188,7 +188,6 @@
   - Fixed skipping expired/empty slots and clearing correct part of pending subtitle array in `sithVoice_PurgeDrawnSubtitles` (693cbcf)  
     This resolves issues with drawing pending subtitles when `sithVoice_curSubtitleDrawIndex` < `sithVoice_numSubtitleInfos`
   - Fixed removing subtitle when stopping currently played thing voice sound in `sithVoice_PlayVoice` (4d5f54a)
-  - [QOL] Changed physics fixed timestep to 150 fps and added option to configure timestep (0eaa4eb)
   - Fixed incorrect handling of default control set (4b3ea73)
   - Fixed assigning default control set when loading control set from `kfg` file fails (d6c774c)
   - Fixed not to sync MineCar engine animation to savegame file (a6c5978)  

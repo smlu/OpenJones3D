@@ -1056,8 +1056,12 @@ original executable or game data.
 
 Player-physics cases exercise the actual 50 Hz fixed-step integration with zero,
 negative and fractional accumulated time, remainder recovery and repeated thrust.
-A test seam observes integration steps and retains the real vector operation, so
-the old negative-to-unsigned loop fails immediately instead of hanging the suite.
+Startup cases supply stale rate settings through a controlled configuration boundary and verify that
+20 ms integration is retained and an absent setting is not recreated. Falling cases check complete velocity,
+displacement, gravity force and remainder with drag, partial/disabled gravity and local/sector thrust.
+They also check the velocity magnitude around the falling controller's `1.1` ledge-query gate; this is not
+an end-to-end ledge-collision test. Test seams observe integration operations while retaining the real vector
+calculations, so an unexpected step or the old negative-to-unsigned loop fails without hanging the suite.
 
 AI suites also have direct fixed-behavior tests alongside the original fixtures:
 handled returns and scan restart, berserk burst boundaries, QOL hunting loudness,

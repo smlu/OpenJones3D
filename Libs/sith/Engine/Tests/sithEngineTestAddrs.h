@@ -8,6 +8,8 @@
 #include <std/RTI/addresses.h>
 
 typedef struct sHostServices tHostServices;
+typedef struct sSithWorld SithWorld;
+extern SithWorld* sithEngineTest_pCurrentWorld;
 extern tHostServices* sithEngineTest_pSithHostServices;
 extern tHostServices* sithEngineTest_pStdHostServices;
 extern tHostServices* sithEngineTest_pRdroidHostServices;
@@ -20,5 +22,9 @@ extern tHostServices* sithEngineTest_pRdroidHostServices;
 #define std_g_pHS_ADDR ((uintptr_t)&sithEngineTest_pStdHostServices)
 #undef rdroid_g_pHS_ADDR
 #define rdroid_g_pHS_ADDR ((uintptr_t)&sithEngineTest_pRdroidHostServices)
+
+// Falling tests supply a complete synthetic world without occupying retail memory.
+#undef sithWorld_g_pCurrentWorld_ADDR
+#define sithWorld_g_pCurrentWorld_ADDR ((uintptr_t)&sithEngineTest_pCurrentWorld)
 
 #endif
