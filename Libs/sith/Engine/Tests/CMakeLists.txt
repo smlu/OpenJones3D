@@ -2,6 +2,7 @@ set(SITH_ENGINE_TEST_SOURCES
     sithEngineTest.c
     sithIntersectTest.c
     sithPathMoveTest.c
+    sithPhysicsTest.c
 )
 
 # Compile the real modules with controlled orientation/collision dependencies.
@@ -15,10 +16,16 @@ set_property(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/../sithPathMove.c" PROPERTY COM
     sithCollision_MoveThing=sithPathMoveTest_MoveThing
 )
 
+if (MSVC)
+    set_property(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/../sithPhysics.c" APPEND PROPERTY COMPILE_OPTIONS
+        "/FI${CMAKE_CURRENT_SOURCE_DIR}/sithPhysicsTestSeams.h")
+endif()
+
 add_executable(sithEngineTests
     ${SITH_ENGINE_TEST_SOURCES}
     ../sithIntersect.c
     ../sithPathMove.c
+    ../sithPhysics.c
 )
 target_compile_definitions(sithEngineTests PRIVATE J3D_TEST)
 target_link_libraries(sithEngineTests PRIVATE sith sound j3dTestSupport w32util)

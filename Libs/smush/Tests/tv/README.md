@@ -7,6 +7,16 @@ translations of the same procedures on the same inputs and requires every byte
 of every buffer to match. The tests read only these files; they never launch or
 depend on `Indy3D.exe` or game assets.
 
+The bounded blocky16 motion-copy fix has a precise expectation adapter in
+`SmushAsmTest.c`. An independent replay first reproduces every original codec-2
+result, including stored bytes or the complete captured hash. It tracks only
+bytes derived from a source pixel outside the previous/delta image, including
+propagation through overlapping copies. Only those expected bytes become zero;
+all other original bytes remain checked. Frame height includes the allocated
+padding to a complete eight-row block. The captured `.tv` files are unchanged.
+Separate guard-page, readable-padding and explicit overlap tests check the new
+bounds and the original read/write order without relying on the replay adapter.
+
 ### Reference
 
 | Item | Value |
@@ -303,6 +313,15 @@ records must match; the edge cases above revealed no new difference):
 - `stdfile_eof` (`tell >= size`) calls `stdfile_size` before `stdfile_tell` in
   the original (VC5's evaluation order) and after it in the port. The result is
   the same; only the order of the chained calls differs.
+
+With `J3D_QOL_IMPROVEMENTS`, mono 2x resampling uses the adjacent sample rather
+than the sample two ahead. `mixer_MonoSwap16` also decodes the signed PCM samples
+before averaging; averaging the byte-swapped words loses carries and can turn
+negative samples positive. `TestOriginalMixer` retains the original fixture and
+permits the affected records to differ. The independent
+`MonoSwap16DoublingUsesSignedAdjacentSamples` test checks the complete output for
+positive byte-boundary crossings, negative samples and a one-sample source. The
+legacy build keeps the original arithmetic and compares the original vectors.
 
 ### Mixer Tables And The CRT's `sin`
 

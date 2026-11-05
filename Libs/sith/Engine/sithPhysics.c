@@ -1177,7 +1177,9 @@ void J3DAPI sithPhysics_UpdateDetachedPlayerPhysics(SithThing* pThing, float sec
 
     // Player physics runs at 50 FPS - accumulate time and process in fixed timesteps
     float totalTime = secDeltaTime + pPhysics->physicsRolloverFrames;
-    size_t nFrames  = (uint32_t)(int32_t)floorf(totalTime * sithPhysics_fixedFramerate); // TODO: [BUG] Floored into an unsigned count like the original, so a negative accumulated time wraps to about 4 billion steps
+    // Fixed: A negative accumulated time (time went backwards) takes no steps, the original converts it to an unsigned count that wraps to about 4 billion steps.
+    float numSteps = floorf(totalTime * sithPhysics_fixedFramerate);
+    size_t nFrames = numSteps > 0.0f ? (size_t)numSteps : 0;
     pPhysics->physicsRolloverFrames = totalTime - (float)nFrames * sithPhysics_fixedTimestep;
 
     for ( size_t i = 0; i < nFrames; ++i )

@@ -44,6 +44,7 @@ static size_t Test_numSubscriptions;
 static char Test_lastError[128];
 static int Test_numErrors;
 static int Test_numUnsubscribed;
+static int Test_failDecoderSubscribe; // FLOBDEC.temp subscriptions fail
 
 static int Test_Publish(const char* pName, void* pInterface)
 {
@@ -66,6 +67,11 @@ static void Test_Unpublish(const char* pName)
 
 static void* Test_Subscribe(const char* pName, void* pParam)
 {
+    if ( strcmp(pName, "FLOBDEC.temp") == 0 && Test_failDecoderSubscribe )
+    {
+        return NULL;
+    }
+
     if ( strcmp(pName, "READANIM.chainto") == 0 || strcmp(pName, "FLOBDEC.temp") == 0 )
     {
         return pParam;
@@ -224,6 +230,7 @@ static int Test_FilioRead(int fh, void* pBuf, int size)
 {
     MockFile* pFile = &Test_files[fh - 1];
     int n           = size;
+    if ( pFile->pos < 0 ) { return 0; }
     if ( pFile->pos + n > pFile->size ) { n = pFile->size - pFile->pos; }
     if ( n < 0 ) { n = 0; }
     memcpy(pBuf, pFile->data + pFile->pos, n);
@@ -279,6 +286,7 @@ static void SmushStreamTest_Reset(void)
     Test_numPublished = Test_numSubscriptions = 0;
     Test_lastError[0]                         = 0;
     Test_numErrors = Test_numUnsubscribed = 0;
+    Test_failDecoderSubscribe = 0;
     Test_numAllocs = Test_numFrees = 0;
     Test_numFileOpens = Test_numFileCloses = Test_numFileFlushes = 0;
 }
@@ -393,6 +401,40 @@ TEST(SmushStream, stdfile_GetsStopsAtNewlineAndEof)
 
     // Nothing left: NULL
     TEST_ASSERT_NULL(stdfile_gets(fh, line, sizeof(line)));
+}
+
+TEST(SmushStream, stdfile_GetsFullBuffer_Fixed)
+{
+    const char text[] = "abcdefgh\nij";
+    Test_AddFile("t.txt", text, 11);
+    SmushStreamTest_StartStdfile();
+    int fh = stdfile_open("t.txt", "rb");
+
+    // A line longer than the buffer: the original reads size characters and leaves the string unterminated.
+    // Fix: at most size - 1 characters are read and the string is terminated
+    char line[6];
+    memset(line, 'x', sizeof(line));
+    TEST_ASSERT_EQUAL_PTR(line, stdfile_gets(fh, line, 4));
+    TEST_ASSERT_EQUAL_MEMORY("abc", line, 3);
+    TEST_ASSERT_EQUAL_UINT8(0, line[3]);
+    TEST_ASSERT_EQUAL_UINT8('x', line[4]);
+    TEST_ASSERT_EQUAL_INT(3, stdfile_tell(fh));
+
+    // The newline in the last slot: the original stores it without a terminator
+    stdfile_seek(fh, 5, 0);
+    memset(line, 'x', sizeof(line));
+    TEST_ASSERT_EQUAL_PTR(line, stdfile_gets(fh, line, 4));
+    TEST_ASSERT_EQUAL_MEMORY("fgh", line, 3);
+    TEST_ASSERT_EQUAL_UINT8(0, line[3]);
+
+    // A buffer of one character holds the empty string, an empty buffer is untouched
+    stdfile_seek(fh, 0, 0);
+    memset(line, 'x', sizeof(line));
+    TEST_ASSERT_EQUAL_PTR(line, stdfile_gets(fh, line, 0));
+    TEST_ASSERT_EQUAL_UINT8('x', line[0]);
+    TEST_ASSERT_EQUAL_PTR(line, stdfile_gets(fh, line, 1));
+    TEST_ASSERT_EQUAL_UINT8(0, line[0]);
+    TEST_ASSERT_EQUAL_UINT8('x', line[1]);
 }
 
 TEST(SmushStream, stdfile_PrintfWritesFormattedText)
@@ -1116,8 +1158,9 @@ TEST(SmushStream, zfilio_ConfigureLimitsExtensionCount)
     }
 
     // The table is full: the extension is dropped (the debug service, absent here, would print). The original does not consume
-    // the dropped argument, so the next tag read takes the string pointer: the call fails.
-    TEST_ASSERT_EQUAL_INT(-1, zfilio_Configure(1, ".snm", 0));
+    // the dropped argument, so the next tag read takes the string pointer and the call fails with -1.
+    // Fix: the dropped argument is consumed, the call ends at the terminating tag
+    TEST_ASSERT_EQUAL_INT(0, zfilio_Configure(1, ".snm", 1, ".znm", 0));
     uint8_t data[4] = { 0 };
     Test_AddFile("a.snm", data, 4);
     ZfileHandle* pFile = zfilio_open("a.snm", "rb");
@@ -1162,6 +1205,28 @@ TEST(SmushStream, zfilio_GzFileTracksLogicalPosition)
     zfilio_close(pFile);
     TEST_ASSERT_EQUAL_INT(1, Test_gzCloseCount);
     TEST_ASSERT_EQUAL_INT(Test_numAllocs, Test_numFrees);
+}
+
+TEST(SmushStream, zfilio_GzShortFileSizeAndSeekResult_Fixed)
+{
+    SmushStreamTest_StartZfilio();
+    uint8_t data[2] = { 0x11, 0x22 };
+    Test_AddFile("short.gz", data, 2);
+
+    // Fix: the uncompressed size is 0 if the probe of the last 4 bytes reads fewer bytes (the original leaves it uninitialized)
+    ZfileHandle* pFile = zfilio_open("short.gz", "rb");
+    TEST_ASSERT_NOT_NULL(pFile);
+    TEST_ASSERT_EQUAL_INT(1, pFile->isGz);
+    TEST_ASSERT_EQUAL_INT(0, pFile->gzSize);
+
+    // Fix: zfilio_seek of a gz file returns 0 (the original returns no value) and so does a seek on a closed handle
+    TEST_ASSERT_EQUAL_INT(0, zfilio_seek(pFile, 1, 0));
+    TEST_ASSERT_EQUAL_INT(1, zfilio_tell(pFile));
+    void* hFile  = pFile->hFile;
+    pFile->hFile = NULL;
+    TEST_ASSERT_EQUAL_INT(0, zfilio_seek(pFile, 1, 0));
+    pFile->hFile = hFile;
+    zfilio_close(pFile);
 }
 
 TEST(SmushStream, zfilio_PlainFilesPassThroughToChainedFilio)
@@ -1264,6 +1329,21 @@ TEST(SmushStream, animframe_StartupRequiresBitmapAndMemory)
     Test_Subscription("BITMAP.buffers", &Test_memory);
     TEST_ASSERT_EQUAL_INT(-1, animframe_Startup());
     TEST_ASSERT_EQUAL_STRING("AnimFrame Module: Cannot allocate memory services.", Test_lastError);
+}
+
+TEST(SmushStream, animframe_StartupFailedDecoderSubscription_Fixed)
+{
+    // Fix: the original dereferenced the failed (NULL) decoder subscription in the startup
+    Test_failDecoderSubscribe = 1;
+    SmushStreamTest_StartFrame();
+    Test_failDecoderSubscribe = 0;
+
+    // The decoder is not used: its chunks are skipped
+    uint8_t data[] = { 'D', 'E', 'C', '1', 0, 0, 0, 3, 1, 2, 3, 0 };
+    TEST_ASSERT_EQUAL_INT(0, animframe_Parse(data, sizeof(data)));
+    TEST_ASSERT_EQUAL_INT(0, Test_decoderParses);
+    animframe_ResetDecoders();
+    TEST_ASSERT_EQUAL_INT(0, Test_decoderResets);
 }
 
 TEST(SmushStream, animframe_ParseDispatchesChunksToDecoderByTag)
@@ -1598,6 +1678,7 @@ TEST_GROUP_RUNNER(SmushStream)
     RUN_TEST_CASE(SmushStream, stdfile_SizeKeepsPositionAndEofComparesToSize);
     RUN_TEST_CASE(SmushStream, stdfile_GetcPutc);
     RUN_TEST_CASE(SmushStream, stdfile_GetsStopsAtNewlineAndEof);
+    RUN_TEST_CASE(SmushStream, stdfile_GetsFullBuffer_Fixed);
     RUN_TEST_CASE(SmushStream, stdfile_PrintfWritesFormattedText);
     RUN_TEST_CASE(SmushStream, stdio_RegistersFilioModule);
     RUN_TEST_CASE(SmushStream, stdio_WritesReadsSeeksAndTellsRealFile);
@@ -1626,8 +1707,10 @@ TEST_GROUP_RUNNER(SmushStream)
     RUN_TEST_CASE(SmushStream, zfilio_ConfigureAddsExtensionsAndRejectsUnknownTags);
     RUN_TEST_CASE(SmushStream, zfilio_ConfigureLimitsExtensionCount);
     RUN_TEST_CASE(SmushStream, zfilio_GzFileTracksLogicalPosition);
+    RUN_TEST_CASE(SmushStream, zfilio_GzShortFileSizeAndSeekResult_Fixed);
     RUN_TEST_CASE(SmushStream, zfilio_PlainFilesPassThroughToChainedFilio);
     RUN_TEST_CASE(SmushStream, animframe_StartupRequiresBitmapAndMemory);
+    RUN_TEST_CASE(SmushStream, animframe_StartupFailedDecoderSubscription_Fixed);
     RUN_TEST_CASE(SmushStream, animframe_ParseDispatchesChunksToDecoderByTag);
     RUN_TEST_CASE(SmushStream, animframe_DecodeMapsDecoderResultToOutputFlags);
     RUN_TEST_CASE(SmushStream, animframe_DecodeRejectsBadChunkHeaders);

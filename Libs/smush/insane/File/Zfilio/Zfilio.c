@@ -171,12 +171,18 @@ int J3DAPI zfilio_Configure(int tag, ...)
                 {
                     zfilio_extensions[zfilio_extCount++] = va_arg(args, const char*);
                 }
-                else if ( zfilio_pDebug )
+                else
                 {
-                    zfilio_pDebug->Print("Too many zfilio extension set");
+                    if ( zfilio_pDebug )
+                    {
+                        zfilio_pDebug->Print("Too many zfilio extension set");
+                    }
+
+                    // Fixed: The original leaves the dropped extension argument unread when the table is full, so the next tag read takes it,
+                    //        which fails the call (and with it the remaining tags). Consume the argument
+                    (void)va_arg(args, const char*);
                 }
 
-                // TODO: [BUG] The extension argument is not consumed when the table is full, so the next tag read takes it
                 break;
 
             default:
@@ -259,8 +265,7 @@ ZfileHandle* J3DAPI zfilio_open(const char* pPath, const char* pMode)
                     pFile->pos   = 0;
 
                     // The uncompressed size is the last 4 bytes of a gz file
-                    // TODO: [BUG] The original leaves size uninitialized when the read returns fewer than 4 bytes
-                    int size = 0; // Fixed: Init to 0
+                    int size = 0; // Fixed: Init to 0, the original leaves size uninitialized when the read returns fewer than 4 bytes
                     int fh   = zfilio_pFilio->Open(pPath, pMode);
                     zfilio_pFilio->Seek(fh, -(int)sizeof(size), SEEK_END);
                     zfilio_pFilio->Read(fh, &size, sizeof(size));
@@ -391,7 +396,7 @@ int J3DAPI zfilio_seek(ZfileHandle* pFile, int offset, int whence)
         }
     }
 
-    // TODO: [BUG] Falls off the end: the original returns no value here (retail leaves pFile in eax) for gz files and for a closed handle; 0 is returned
+    // Fixed: The original falls off the end here without a return value (retail leaves pFile in eax) for gz files and for a closed handle. Return 0
     return 0;
 }
 

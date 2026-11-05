@@ -240,6 +240,36 @@ earlier cases are byte-identical in the regenerated files.
   replaces a value of zero or less with 1.0 (an intentional `Added:` change in
   `sithDSS_ProcessPuppetStatus`). `TestOriginalPuppetStatus` expects exactly these two
   cases to differ and is reported as ignored.
+- `ProcessSyncGameState_full`, `ProcessSyncGameState_empty`, `ProcessSyncGameState_tenchalkmarks`,
+  `ProcessSyncGameState_edge_cogIntMax`, `ProcessSyncGameState_edge_cogIntMin`, `ProcessSyncGameState_edge_cogMinus2`:
+  the synthetic state of the capture holds a last chalk mark number up to 99; the
+  original stores it as read, the reconstruction rejects numbers below -1 and above 9
+  (`Fixed:` in `sithDSS_ProcessSyncGameState`). `TestOriginalSyncGameState` expects
+  exactly these six reader cases to differ and is reported as ignored; the writer
+  cases still match, and `SyncGameStateRejectsBadLastChalkMark` covers the check.
+- `ProcessAIStatus_*` cases replacing old frames: the reconstruction releases the
+  old array before replacement, including an incoming zero-frame update. The
+  original retains/leaks the old array. `TestOriginalAIStatus` adds exactly the
+  expected FREE callback to the fixture record. For `ProcessAIStatus_noframes`,
+  it additionally changes only the old normalized frame pointer to NULL. For
+  `ProcessAIStatus_allocfail`, it corrects only `allowedSurfaceTypes`,
+  `savedMovePos`, `moveStartPos` and `maxHomeDist` from the final 32 input bytes:
+  the original reads these fields from frame coordinates after allocation fails.
+  The adapter rebuilds the seeded original prestate, applies the captured sparse
+  delta, updates only those fields, and serializes the exact resulting delta.
+  Every other original result, event and state byte remains compared; no fixture
+  is recaptured or wholly ignored.
+- Separate AI-status fixed-behavior cases check nonempty-to-empty and nonempty
+  replacement, allocation failure, and initially absent allocations. They assert
+  complete frame values, count/capacity, NULL ownership on empty/failure, the
+  exact FREE/MALLOC call order, and all four trailing fields even after OOM.
+  Malformed cases reject negative, INT_MAX and excessive frame/instinct counts,
+  truncated fixed/optional/instinct/frame/trailer data, and oversized lengths
+  before freeing or allocating frames. Boundary cases accept the 148-byte minimum,
+  all 16 instincts with every optional field, and 239 frames in 3064 bytes (also
+  padded to the 3072-byte buffer limit); the larger valid frame payload deliberately
+  exceeds the harness allocation pool and verifies its OOM trailer decoding.
+  One more frame without additional payload is rejected before frame ownership changes.
 - None for `sithDSSThing_MoveToPos` any more: the original evaluates
   `velocity * 0.25 + newPos - pos` in x87 extended precision and rounds once, and the
   reconstruction computes the direction in double and rounds once, which reproduces
@@ -254,7 +284,10 @@ earlier cases are byte-identical in the regenerated files.
   `sithDSS_ProcessPuppetStatus`, armed/move modes and track counts) have no original
   behavior to compare with and are not part of the corpus.
 - Counts that overflow fixed arrays (`sithDSS_ProcessSyncGameState` chalk marks,
-  `sithDSSThing_ProcessStateUpdate` backpack items, both preserved original bugs).
+  `sithDSSThing_ProcessStateUpdate` backpack items, both original bugs). The
+  reconstruction rejects both counts (`Fixed:`), so there is no original behavior to
+  compare with; the hand-written tests `SyncGameStateRejectsTooManyChalkMarks` and
+  `StateUpdateRejectsTooManyBackpackItems` of `sithDSSTest.c` cover them.
 - Edge values that change the amount of data a reader consumes (mode bits, flags or
   counts that add fields, a negative marker guid on a create-at-marker message, a
   `numFrames` that does not match the frames in the message) over-read the message

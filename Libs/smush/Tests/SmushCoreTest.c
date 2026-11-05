@@ -421,6 +421,23 @@ TEST(SmushCore, LecShare_Find)
     TEST_ASSERT_NULL(LecShare_Find("SVC=gamma"));
 }
 
+TEST(SmushCore, LecShare_Find_FreeSlot_Fixed)
+{
+    SmushCoreTest_InitModules();
+    LecShare* pShare = LecShare_Init(SmushCoreTest_ErrorFn, NULL, "", "");
+    TEST_ASSERT_EQUAL_INT(0, pShare->Publish("ONE=a", &g_svcAlpha));
+    TEST_ASSERT_EQUAL_INT(0, pShare->Publish("TWO=b", &g_svcBeta));
+    TEST_ASSERT_EQUAL_INT(0, pShare->Publish("THREE=c", &g_modA));
+
+    // Fix: the search runs from the last entry down, the original compared the NULL name of the freed middle entry and faulted
+    TEST_ASSERT_EQUAL_INT(0, LecShare_Unpublish("TWO=b"));
+    LecEntry* pEntry = LecShare_Find("ONE=a");
+    TEST_ASSERT_NOT_NULL(pEntry);
+    TEST_ASSERT_TRUE(pEntry->pInterface == &g_svcAlpha);
+    TEST_ASSERT_NULL(LecShare_Find("TWO=b"));
+    TEST_ASSERT_NOT_NULL(LecShare_Find("THREE=c"));
+}
+
 TEST(SmushCore, LecShare_BatchSubscribe)
 {
     SmushCoreTest_InitModules();
@@ -716,6 +733,25 @@ TEST(SmushCore, Memory_Debug_Realloc)
     LecShare_UnregisterAll();
 }
 
+TEST(SmushCore, Memory_Debug_ReallocNull_Fixed)
+{
+    MemoryDebugInterface* pMem = SmushCoreTest_InitDebugMemory();
+    TEST_ASSERT_NOT_NULL(pMem);
+
+    // Fix: the original dereferenced the NULL block; like realloc it is a plain allocation now
+    uint8_t* p = pMem->Realloc(NULL, 24, "file.c", 1);
+    TEST_ASSERT_NOT_NULL(p);
+    SmushCoreTest_TrackBlock(p);
+    char* pRaw = (char*)p - 4;
+    TEST_ASSERT_EQUAL_INT(24, *(int*)pRaw);
+    TEST_ASSERT_TRUE(*(char**)(pRaw + 24 + 4) == pRaw);
+
+    memset(p, 0, 24);
+    pMem->Free(p, "file.c", 2);
+    SmushCoreTest_UntrackBlock(p);
+    LecShare_UnregisterAll();
+}
+
 TEST(SmushCore, Memory_Debug_OverwrittenGuardStillFreed)
 {
     MemoryDebugInterface* pMem = SmushCoreTest_InitDebugMemory();
@@ -1001,6 +1037,39 @@ TEST(SmushCore, Bitmap_CreateEx)
     SmushCoreTest_ShutdownBitmap();
 }
 
+TEST(SmushCore, Bitmap_Create_UnsupportedType_Fixed)
+{
+    BitmapInterface* pBitmaps = SmushCoreTest_InitBitmap();
+    TEST_ASSERT_NOT_NULL(pBitmaps);
+
+    // Fix: the original logged the line number with "%s" and read an invalid string address (access violation) for an unsupported type
+    LecBitmapHeader* pBitmap = (LecBitmapHeader*)&g_alloc;
+    TEST_ASSERT_EQUAL_INT(-1, pBitmaps->Create(&pBitmap, 4, 3, 99));
+    TEST_ASSERT_TRUE(pBitmap == (LecBitmapHeader*)&g_alloc);
+    TEST_ASSERT_EQUAL_INT(0, g_alloc.nAllocs);
+
+    SmushCoreTest_ShutdownBitmap();
+}
+
+TEST(SmushCore, Bitmap_Destroy_Null_Fixed)
+{
+    BitmapInterface* pBitmaps = SmushCoreTest_InitBitmap();
+    TEST_ASSERT_NOT_NULL(pBitmaps);
+
+    // Fix: the original tested the pointer already moved to the block start, so a NULL bitmap freed address -8
+    LecBitmapHeader* pBitmap = NULL;
+    pBitmaps->Destroy(&pBitmap);
+    TEST_ASSERT_NULL(pBitmap);
+    TEST_ASSERT_EQUAL_INT(0, g_alloc.nFrees);
+
+    TEST_ASSERT_EQUAL_INT(0, pBitmaps->Create(&pBitmap, 4, 3, 3));
+    pBitmaps->Destroy(&pBitmap);
+    TEST_ASSERT_NULL(pBitmap);
+    TEST_ASSERT_EQUAL_INT(1, g_alloc.nFrees);
+
+    SmushCoreTest_ShutdownBitmap();
+}
+
 /* ---- Timer ---- */
 
 static volatile LONG g_timerCalls[TIMER_COUNT + 2];
@@ -1269,6 +1338,7 @@ TEST_GROUP_RUNNER(SmushCore)
     RUN_TEST_CASE(SmushCore, LecShare_Publish_TableFull);
     RUN_TEST_CASE(SmushCore, LecShare_Enumerate);
     RUN_TEST_CASE(SmushCore, LecShare_Find);
+    RUN_TEST_CASE(SmushCore, LecShare_Find_FreeSlot_Fixed);
     RUN_TEST_CASE(SmushCore, LecShare_BatchSubscribe);
     RUN_TEST_CASE(SmushCore, LecShare_BatchSubscribe_Failure);
     RUN_TEST_CASE(SmushCore, LecShare_Startup_Shutdown_Order);
@@ -1281,6 +1351,7 @@ TEST_GROUP_RUNNER(SmushCore)
     RUN_TEST_CASE(SmushCore, Memory_Register_PublishesServices);
     RUN_TEST_CASE(SmushCore, Memory_Debug_AllocFree);
     RUN_TEST_CASE(SmushCore, Memory_Debug_Realloc);
+    RUN_TEST_CASE(SmushCore, Memory_Debug_ReallocNull_Fixed);
     RUN_TEST_CASE(SmushCore, Memory_Debug_OverwrittenGuardStillFreed);
     RUN_TEST_CASE(SmushCore, Bitmap_Startup_NoMemory);
     RUN_TEST_CASE(SmushCore, Bitmap_Create_Rgb565);
@@ -1288,6 +1359,8 @@ TEST_GROUP_RUNNER(SmushCore)
     RUN_TEST_CASE(SmushCore, Bitmap_Create_Indexed);
     RUN_TEST_CASE(SmushCore, Bitmap_Create_AllocFailure);
     RUN_TEST_CASE(SmushCore, Bitmap_CreateEx);
+    RUN_TEST_CASE(SmushCore, Bitmap_Create_UnsupportedType_Fixed);
+    RUN_TEST_CASE(SmushCore, Bitmap_Destroy_Null_Fixed);
     RUN_TEST_CASE(SmushCore, Timer_Register_PublishesInterface);
     RUN_TEST_CASE(SmushCore, Timer_Alloc_Free);
     RUN_TEST_CASE(SmushCore, Timer_Startup_Shutdown);

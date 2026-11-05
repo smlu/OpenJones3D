@@ -1276,7 +1276,7 @@ int jonesConfig_InitKeySetsPath(void)
     }
     else
     {
-        STDLOG_ERROR("Couldn't find string %s in lookup table.\n", 0); // TODO: [BUG] zero passed as %s
+        STDLOG_ERROR("Couldn't find string %s in lookup table.\n", "SITHSTRING_KEYSETS"); // Fixed: The original passes 0 for %s
         stdMemory_Free(pwKeySets); // pwKeySets is null value but is allocated on heap in sithString_GetString
         return 0;
     }
@@ -1474,7 +1474,8 @@ void J3DAPI jonesConfig_ControlToString(size_t controlId, char* pDest)
             case DIK_M:
             case DIK_PERIOD:
             case DIK_SLASH:
-                // TODO: [BUG] Result is not checked, on failure aKeyName is uninitialized (as in the original)
+                // Fixed: GetKeyNameTextA leaves the buffer untouched on failure, start with an empty name instead of using the uninitialized buffer.
+                aKeyName[0] = 0;
                 GetKeyNameTextA(((controlId & 0x7F) | ((controlId & 0x80) << 1)) << 16, aKeyName, sizeof(aKeyName) - 1);
                 stdUtil_StringCopy(pDest, JONESCONFIG_CONTROLSTRING_MAXLEN, aKeyName);
                 stdUtil_ToUpper(pDest); // Note, original calls _strupr
@@ -2161,8 +2162,6 @@ int J3DAPI jonesConfig_LoadControlScheme(const char* pFilePath, JonesControlsSch
     {
         stdConffile_ReadArgs(); // Skip header line
 
-        size_t actionCount = 0;
-
         for ( size_t i = 0; i < STD_ARRAYLEN(pConfig->aActions); ++i )
         {
             size_t argNum = 0;
@@ -2195,7 +2194,11 @@ int J3DAPI jonesConfig_LoadControlScheme(const char* pFilePath, JonesControlsSch
                 uint8_t bKeyboard = 0;
 
                 int keyIdx = jonesConfig_ParseArgumentIndex(&argNum, &stdConffile_g_entry, jonesConfig_maxControlWords, jonesConfig_aControlKeyStrings, STD_ARRAYLEN(jonesConfig_aControlKeyStrings));
-                pConfig->aActions[actionIdx][bindNum] = keyIdx;
+                // Fixed: Store the binding only inside the action row, the original stores the 9th binding one entry past the row before the binding count is tested below.
+                if ( bindNum < STD_ARRAYLEN(pConfig->aActions[actionIdx]) )
+                {
+                    pConfig->aActions[actionIdx][bindNum] = keyIdx;
+                }
 
                 if ( keyIdx != -1 )
                 {
@@ -2206,7 +2209,10 @@ int J3DAPI jonesConfig_LoadControlScheme(const char* pFilePath, JonesControlsSch
                     // We couldn't find control key num, try searching by control mouse button num, gamepad & joystick button num
                     --argNum; // Has to be decremented as jonesConfig_ParseArgumentIndex increments it
                     int controllerKey = jonesConfig_ParseJoystickControlId(&argNum, &stdConffile_g_entry);
-                    pConfig->aActions[actionIdx][bindNum] = controllerKey;
+                    if ( bindNum < STD_ARRAYLEN(pConfig->aActions[actionIdx]) ) // Fixed: See above
+                    {
+                        pConfig->aActions[actionIdx][bindNum] = controllerKey;
+                    }
 
                     if ( controllerKey == -1 )
                     {
@@ -2220,7 +2226,6 @@ int J3DAPI jonesConfig_LoadControlScheme(const char* pFilePath, JonesControlsSch
                 bindNum++;
                 JONESCONTROL_ACTION_UPDATENUMBINDINGS(pConfig->aActions[actionIdx], bKeyboard, bController);
 
-                // TODO: [BUG] The binding at index bindNum is stored before this test, so the 9th binding is written one entry past the action row
                 if ( (uint8_t)(pConfig->aActions[actionIdx][0] & 0xFF) > JONESCONTROL_ACTION_MAXBINDS )
                 {
                     static_assert(STD_ARRAYLEN(pConfig->aActions[actionIdx]) == 9, "STD_ARRAYLEN(pConfig->aActions[actionIdx]) == 9");
@@ -2259,11 +2264,17 @@ int J3DAPI jonesConfig_LoadControlScheme(const char* pFilePath, JonesControlsSch
 
 error:
     memset(pConfig->aName, 0, sizeof(pConfig->aName));
-    for ( size_t i = 0; i < bindNum; ++i ) // TODO: Hmm is it ok using binNum here? Shouldn't it use actionCount, or just memset the whole array?
+#ifdef J3D_QOL_IMPROVEMENTS
+    // Fixed: An input row can name any action, so its binding count cannot identify
+    // the rows changed before an error. Clear every action after a failed load.
+    memset(pConfig->aActions, 0, sizeof(pConfig->aActions));
+#else
+    for ( size_t i = 0; i < bindNum; ++i )
     {
-        // The original tests the address of the action row here, which is never NULL, so every row is cleared
-        memset(pConfig->aActions[i], 0, STD_ARRAYLEN(pConfig->aActions[i])); // TODO: [BUG] Clears 9 bytes, not 9 entries, as the original
+        // Legacy: The original clears nine bytes in each of bindNum rows.
+        memset(pConfig->aActions[i], 0, STD_ARRAYLEN(pConfig->aActions[i]));
     }
+#endif
     // Old code
     /*if ( bindNum > 0 )
     {

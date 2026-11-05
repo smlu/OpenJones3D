@@ -195,25 +195,34 @@ J3D_EXTERN_C_START
 #define STD_EQUALMEM(dest, src, size) (memcmp((dest), (src), (size)) == 0)
 
 /**
-* Converts a string to float with strtof, resetting errno first so STD_ISRANGEERROR reports only this conversion.
+* Converts a string to float with strtof, resetting errno first.
 * @param str - String to convert
-* @return The converted value
+* @return The converted value; preserves CRT prefix and no-digit parsing
 */
 #define STD_STRTOF(str) (errno = 0, strtof((str), NULL))
 
 /**
-* Converts a string to unsigned long with strtoul, resetting errno first so STD_ISRANGEERROR reports only this conversion.
+* Converts a string to long with strtol, resetting errno first.
 * @param str  - String to convert
-* @param base - Number base
-* @return The converted value
+* @param base - Number base, or 0 to detect the base from the prefix
+* @return The converted value; preserves CRT prefix and no-digit parsing
+*/
+#define STD_STRTOL(str, base) (errno = 0, strtol((str), NULL, (base)))
+
+/**
+* Converts a string to unsigned long with strtoul, resetting errno first.
+* @param str  - String to convert
+* @param base - Number base, or 0 to detect the base from the prefix
+* @return The converted value; preserves CRT prefix and no-digit parsing
 */
 #define STD_STRTOUL(str, base) (errno = 0, strtoul((str), NULL, (base)))
 
 /**
-* Tests whether the last STD_STRTOF or STD_STRTOUL conversion was out of range.
+* Tests whether the current errno is ERANGE. Check immediately after STD_STRTOF,
+* STD_STRTOL or STD_STRTOUL, before another CRT call can change errno.
 * @return true if errno is ERANGE, false otherwise
 */
-#define STD_ISRANGEERROR() (errno == ERANGE)
+#define STD_STRCONV_RANGE_ERROR() (errno == ERANGE)
 
 
 char* J3DAPI stdUtil_StringDuplicate(const char* pSource, tHostServices* pHS); // Added: From debug version

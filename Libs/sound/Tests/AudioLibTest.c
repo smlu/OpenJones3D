@@ -1296,6 +1296,7 @@ TEST(AudioLib, TestOriginalCompressBlock)
     TEST_ASSERT_GREATER_THAN_UINT32(0, vec.numCases);
 
     tAudioCompressorState prevOut = { 0 };
+    int bPrevDiffers = 0;
     for ( uint32_t i = 0; i < vec.numCases; ++i )
     {
         char aName[AUDIOLIB_TEST_VECTOR_NAMESIZE];
@@ -1314,13 +1315,27 @@ TEST(AudioLib, TestOriginalCompressBlock)
         const uint8_t* pPcm = AudioLibTest_VectorBlob(&vec, &pcmSize);
         TEST_ASSERT_EQUAL_size_t_MESSAGE((size_t)numSamples * numChannels * sizeof(int16_t), pcmSize, aName);
 
+        // The QOL build sign extends byte swapped samples (the original does not), so a big-endian case with a negative sample
+        // (high byte of the sample, the first byte, has the sign bit set) codes differently: only the legacy build compares it
+        // to the original, the other cases still match. CompressBlockSwappedMatchesNative_Fixed covers the fix
+        int bDiffers = 0;
+#ifdef J3D_QOL_IMPROVEMENTS
+        if ( !bNative )
+        {
+            for ( size_t k = 0; k < pcmSize; k += 2 )
+            {
+                if ( pPcm[k] & 0x80 ) { bDiffers = 1; }
+            }
+        }
+#endif
+
         int expectedRet = (int)AudioLibTest_VectorU32(&vec);
         size_t outSize;
         const uint8_t* pExpected = AudioLibTest_VectorBlob(&vec, &outSize);
         TEST_ASSERT_EQUAL_size_t_MESSAGE((size_t)expectedRet, outSize, aName);
         AudioLibTest_VectorState(&vec, &expectedState);
 
-        if ( bChained )
+        if ( bChained && !bPrevDiffers )
         {
             AudioLibTest_AssertState(&state, &prevOut, aName);
             state = prevOut;
@@ -1331,16 +1346,59 @@ TEST(AudioLib, TestOriginalCompressBlock)
         uint8_t* pOutput = AudioLibTest_AllocOutput(capacity);
 
         int ret = AudioLib_CompressBlock(&state, pOutput, (int16_t*)pInput, (int)numSamples, numChannels, (int)bNative, (int)bStateInited);
-        TEST_ASSERT_EQUAL_INT_MESSAGE(expectedRet, ret, aName);
-        AudioLibTest_AssertOutput(pExpected, outSize, pOutput, capacity, aName);
-        AudioLibTest_AssertState(&expectedState, &state, aName);
-        prevOut = state;
+        if ( !bDiffers )
+        {
+            TEST_ASSERT_EQUAL_INT_MESSAGE(expectedRet, ret, aName);
+            AudioLibTest_AssertOutput(pExpected, outSize, pOutput, capacity, aName);
+            AudioLibTest_AssertState(&expectedState, &state, aName);
+        }
+
+        prevOut      = state;
+        bPrevDiffers = bDiffers;
 
         free(pInput);
         free(pOutput);
     }
 
     AudioLibTest_CloseVector(&vec);
+}
+
+TEST(AudioLib, CompressBlockSwappedMatchesNative_Fixed)
+{
+    // Fix: byte swapped input codes the same stream as the native samples. The original does not sign extend the swapped
+    // samples (negative samples are coded as large positive ones), so this holds only in the QOL build; the legacy build keeps
+    // the original, which TestOriginalCompressBlock compares to the retail vectors.
+    enum { NUM_SAMPLES = 64 };
+    for ( unsigned int numChannels = 1; numChannels <= 2; ++numChannels )
+    {
+        int16_t aNative[NUM_SAMPLES * 2];
+        uint16_t aSwapped[NUM_SAMPLES * 2];
+        for ( unsigned int i = 0; i < NUM_SAMPLES * numChannels; ++i )
+        {
+            aNative[i]  = (int16_t)(((i * 2749u) % 6000u) - 3000);
+            aSwapped[i] = (uint16_t)((((uint16_t)aNative[i]) << 8) | (((uint16_t)aNative[i]) >> 8));
+        }
+
+        uint8_t aNativeOut[NUM_SAMPLES * 2 * 3 + 64];
+        uint8_t aSwappedOut[NUM_SAMPLES * 2 * 3 + 64];
+        memset(aNativeOut, 0, sizeof(aNativeOut));
+        memset(aSwappedOut, 0, sizeof(aSwappedOut));
+
+        tAudioCompressorState nativeState, swappedState;
+        AudioLib_ResetCompressor(&nativeState);
+        AudioLib_ResetCompressor(&swappedState);
+        int nativeSize  = AudioLib_CompressBlock(&nativeState, aNativeOut, aNative, NUM_SAMPLES, numChannels, 1, 1);
+        int swappedSize = AudioLib_CompressBlock(&swappedState, aSwappedOut, (int16_t*)aSwapped, NUM_SAMPLES, numChannels, 0, 1);
+
+#ifdef J3D_QOL_IMPROVEMENTS
+        TEST_ASSERT_EQUAL_INT(nativeSize, swappedSize);
+        TEST_ASSERT_EQUAL_MEMORY(aNativeOut, aSwappedOut, (size_t)nativeSize);
+        TEST_ASSERT_EQUAL_MEMORY(&nativeState, &swappedState, sizeof(nativeState));
+#else
+        // The negative samples are coded as large positive ones: the streams differ
+        TEST_ASSERT_TRUE(nativeSize != swappedSize || memcmp(aNativeOut, aSwappedOut, (size_t)nativeSize) != 0);
+#endif
+    }
 }
 
 TEST(AudioLib, TestOriginalUncompressBlock)
@@ -1606,6 +1664,7 @@ TEST_GROUP_RUNNER(AudioLib)
     RUN_TEST_CASE(AudioLib, TestOriginalParseWaveFileHeader);
     RUN_TEST_CASE(AudioLib, TestOriginalResetCompressor);
     RUN_TEST_CASE(AudioLib, TestOriginalCompressBlock);
+    RUN_TEST_CASE(AudioLib, CompressBlockSwappedMatchesNative_Fixed);
     RUN_TEST_CASE(AudioLib, TestOriginalUncompressBlock);
     RUN_TEST_CASE(AudioLib, TestOriginalCompress);
     RUN_TEST_CASE(AudioLib, TestOriginalCompressWVSM);

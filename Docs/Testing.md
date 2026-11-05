@@ -233,7 +233,8 @@ startup and a stable module-level CTest entry.
 | `soundTests` | `sound` | Deterministic lip-sync generation and lookup, AudioLib codec and header vectors | Available |
 | `smushTests` | `smush` | INSANE movie player: core, bitmap, codec, sound, stream areas and original-engine assembly vectors | Available |
 | `sithTests` | `sith` | World thing/template I/O and voice lip-sync | Available |
-| `sithEngineTests` | `sith.Engine` | Sphere/plane intersection and rotating-path clamp/completion regressions | Available |
+| `sithEngineTests` | `sith.Engine` | Sphere/plane intersection, rotating paths and fixed-step player physics regressions | Available |
+| `jonesConfigTests` | `Jones3D.Config` | Control-scheme binding limits and load cleanup, keyboard-name success/failure | Available |
 | `sithThingQuetzVecTests` | `sith.ThingQuetz` | Original-engine vectors of the Quetz tail functions (world-state harness, `Libs/sith/Tests/Vec`) | Available |
 | `sithAIInstinctVecTests` | `sith.AIInstinct` | Original-engine vectors of the instinct registration (world-state harness) | Available |
 | `sithAIInstinctFnVecTests` | `sith.AIInstinctFn` | Original-engine vectors of the instinct functions (world-state harness) | Available |
@@ -291,10 +292,14 @@ Tests that need fixed-address RTI globals or host-service assertion capture shou
 
 For header and macro tests, prefer stable behavior checks over release-specific value checks. For example, `j3d.h` macro tests should verify string/memory helpers, runtime guard behavior, platform flags, logging/assertion macros, and compile-time shape, but should not pin exact `J3D_VERSION_STRING` or `J3D_VERSION_FULL` values because those change with release numbers and suffixes.
 
-The `stdUtil` group directly tests `STD_STRTOF`, `STD_STRTOUL` and
-`STD_ISRANGEERROR`: return types and values, bases, stale errors, overflow,
-underflow, special values and single argument evaluation. Range errors are
-captured immediately after conversion, before assertions or other CRT calls.
+The `stdUtil` group directly tests `STD_STRTOF`, `STD_STRTOL`, `STD_STRTOUL`
+and `STD_STRCONV_RANGE_ERROR()`: return types and values, bases, signed limits,
+CRT prefix and no-digit parsing, stale errors, overflow, underflow, special
+values and single argument evaluation. The range check reads the current
+`errno`; capture it immediately after conversion, before assertions or other
+CRT calls can change it. The `sithThingParseArg` COLLIDE cases retain permissive
+decimal prefix parsing while rejecting values outside 0..3 and conversion range
+errors, and compare the complete thing to verify that rejection changes nothing.
 
 <a name="test-scope"></a>
 
@@ -661,9 +666,9 @@ with the exact checked-out source revision and configuration. The reusable test
 workflow checks out that revision, restores the build at its original workspace
 path, discovers every registered CTest suite, and runs them all with finite
 timeouts, without a test-name filter. New suites registered in the CI build are
-included automatically. Discovery also requires the existing 14 suites:
+included automatically. Discovery also requires the existing 15 suites:
 
-- `j3dcore.Macros`, `rdroid.Math`, `std`, `sound`, and `smush`
+- `Jones3D.Config`, `j3dcore.Macros`, `rdroid.Math`, `std`, `sound`, and `smush`
 - `sith`, `sith.Engine`, `sith.DSS`, `sith.Multi`, and `sith.ThingQuetz`
 - `sith.AIInstinct`, `sith.AIInstinctFn`, `sith.AIMove`, and `sith.AIUtil`
 
@@ -940,6 +945,26 @@ LecShare, Timer, Memory, List, Bitmap, Blit), `SmushSoundTest.c` (Engine, Mixer,
 D_wave, Decode), `SmushStreamTest.c` (Cdstream, Framestream, Stdfile, Stdio, Zfilio, Readauto, Frame, Pcplay) and
 `SmushAsmTest.c`.
 
+The DirectSound fixture injects startup and callback failures, lost buffers and
+stopped playback. It checks bounded recovery attempts, replacement PCM, timer
+cleanup and retries, and preservation of borrowed device ownership and primary
+volume. These tests use an in-memory device and do not verify audible output.
+
+Wave packet tests poison allocations and reused headers, compare complete first
+and continuation packets, and run the real sound engine callback for all 256
+stale priority-byte values. Complete synthetic clip PCM must reach the feed
+callback; heap contents must not select an unsupported priority class.
+
+Blocky16 motion-copy tests protect both ends of the source image with inaccessible
+pages. They cover partial blocks, frame edges and overlapping copies, requiring
+zero for invalid source pixels and unchanged valid pixels and copy order. Original
+assembly vectors retain their captured bytes; only the independently identified
+invalid-read effects are adapted in expected output.
+The sequence fixtures first verify an independent original replay against every
+captured record or hash, then use its bounded replay to derive complete expected
+records through frame rotations, copies and blits. The real production decoder
+is compared against those expectations using a test-only call seam.
+
 `SmushAsmTest.c` covers the six assembly files that were translated to C (`Bloc16Asm`, `DecodeAsm`, `MixerAsm`,
 `BlitAsm`, `MemCopy`, `MemFill`) with original-engine vectors: inputs and complete results of every procedure captured by
 executing the retail v1.0 `Indy3D.exe`, stored in `Libs/smush/Tests/tv` (format, reference executable hash, procedure
@@ -1001,6 +1026,32 @@ retail v1.2 binary (`CheckSphereHit` at `0x004AFF20`, with rotation inlined in
 `Update` at `0x004AC470`). Assertion-service slots are redirected to local fixture
 memory and bound with the shared test support. The permanent tests need no
 original executable or game data.
+
+Player-physics cases exercise the actual 50 Hz fixed-step integration with zero,
+negative and fractional accumulated time, remainder recovery and repeated thrust.
+A test seam observes integration steps and retains the real vector operation, so
+the old negative-to-unsigned loop fails immediately instead of hanging the suite.
+
+AI suites also have direct fixed-behavior tests alongside the original fixtures:
+handled returns and scan restart, berserk burst boundaries, QOL hunting loudness,
+exact snake path flags, QOL mine-car state/angles/callbacks and untested side-path
+endpoints. DSS tests check frame ownership, complete replacement frame data and
+all trailing fields, including empty updates and allocation failure. Message
+lengths and frame counts are checked at valid boundaries and with malformed or
+truncated input. The original-vector adapter changes only the independently
+expected ownership events and corrected allocation-failure trailer; the `.tv`
+records remain unchanged.
+
+<a name="jonesconfig-regressions"></a>
+
+### 🎛️ Jones Configuration Regressions
+
+`Jones3D.Config` compiles the actual configuration module with controlled file,
+localization and keyboard-name services. Cases cover eight bindings, rejection
+of a ninth before it can overwrite a neighboring row or scheme name, failure
+after a reordered action row, open failure, and key-name success/failure. QOL
+builds require all action rows to be cleared on failed loads; legacy builds
+check the original nine-byte cleanup. No dialog or graphics device is opened.
 
 <a name="sithtemplate-fixtures"></a>
 

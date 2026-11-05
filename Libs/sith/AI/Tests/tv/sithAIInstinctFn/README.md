@@ -114,6 +114,27 @@ index and is never NULL) and the "no LOS to start point" error of `SnakeMungeTes
 position is a copy of the start position). Mutating thresholds, constants and conditions at more than 50 places of the source made
 the test of the mutated function fail every time (a mutation run is not part of the test).
 
+### Fixed-Behavior Regression Tests
+
+The separate `sithAIInstinctFix` group in `sithAIInstinctFnVecTest.c` checks the
+corrected contracts without changing the original captures:
+
+- RandomTurn's visible path must return 1 and pass the sight-tested point to the
+  eye-level look setter; non-searching and non-visible results are checked too.
+- Berserk PrimaryFire bursts 6 and -6 reach AIFire unchanged without division by
+  zero; neighboring authored counts 5 and -5 still randomize to 25 and -25.
+- QOL Listen hearing a valid source in HUNTING or INSTINCTUSEWPNTS mode uses its
+  transmitted noise level, retains a louder prior level, and performs the
+  expected sound/mode/waypoint callbacks in order.
+- QOL SnakeMungeTestCheck passes the complete, unmasked four-flag path mask and
+  the expected geometric arguments/output. Extra flag bits fail this assertion.
+
+The undefined Listen and snake paths are not executed by these fixed-behavior
+checks in legacy builds. Original fixture masking and exclusions below still
+apply solely to original-engine comparisons. The separate registry executable
+also tests the real `sithAI_InstinctUpdate` caller: a handled callback restarts
+its scan so an earlier, newly enabled instinct runs before later instincts.
+
 ### Inputs Kept Out Of The Corpus
 
 - `Listen`, `SOUND` event: the branch in which a hunting actor (mode HUNTING or INSTINCTUSEWPNTS) hears a source thing that

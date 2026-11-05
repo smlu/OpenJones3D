@@ -140,7 +140,14 @@ Thresholds on angles that the stub trigonometry produces (exactly 1, 40, 60 degr
 
 ### Known Differences
 
-None. The reconstruction reproduces every case of the corpus.
+- With `J3D_QOL_IMPROVEMENTS`, the fix of `sithAIMove_UpdateMineCar` queries `sithAIMove_AIGetMoveState` where the
+  original never assigns its `moveState` local. The resulting actor status and recorded state/calls can differ in the
+  cases listed in `sithAIMoveVecTest.c`. The legacy build matches the original in every case.
+- The separate QOL `sithAIMoveFix` group asserts the corrected behavior directly: free actors select left/right turn
+  statuses and become still on completion; animated/stationary actors retain their status. Both directions check
+  joint angles, turning-mode changes, unchanged owner orientation, and the complete external callback record.
+  Geometric yaw assertions allow 0.001 degree roundoff from separate sin/asin evaluation in the deterministic math
+  seams. These expectations are independent of the known-difference list and do not replace the original vectors.
 
 ### Provenance And Regeneration
 

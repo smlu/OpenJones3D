@@ -226,7 +226,13 @@ int J3DAPI sithMulti_ProcessWelcome(const SithMessage* pMsg)
 
     SITHLOG_STATUS("Processing welcome from player %d (id=%x).\n", playerNum, playerId);
 
-    // TODO: [BUG] playerNum is read from the message and used as an index into sithPlayer_g_aPlayers without a range check
+    // Fixed: Reject a player number outside of the player array, the original indexes sithPlayer_g_aPlayers with it unchecked.
+    if ( (unsigned int)playerNum >= SITHPLAYER_MAX_PLAYERS )
+    {
+        SITHLOG_ERROR("Got welcome from invalid player number %d, ignored.\n", playerNum);
+        return 0;
+    }
+
     wchar_t awName[SITHMULTI_PLAYERNAME_LEN];
     SITHDSS_POPWSTRING(awName, STD_ARRAYLEN(awName));
 
@@ -347,8 +353,15 @@ signed int J3DAPI sithMulti_ProcessSyncPlayers(const SithMessage* pMsg)
 
     sithMulti_g_serverId = SITHDSS_POPUINT32();
 
-    // TODO: [BUG] numPlayers is read from the message and not limited to SITHPLAYER_MAX_PLAYERS, the loop below can write past sithPlayer_g_aPlayers
-    sithPlayer_g_numPlayers = SITHDSS_POPUINT16();
+    // Fixed: Reject a player count that exceeds the player array, the original loops over sithPlayer_g_aPlayers with it unchecked.
+    uint16_t numPlayers = SITHDSS_POPUINT16();
+    if ( numPlayers > SITHPLAYER_MAX_PLAYERS )
+    {
+        SITHLOG_ERROR("Got sync players with invalid player count %d, ignored.\n", numPlayers);
+        return 0;
+    }
+
+    sithPlayer_g_numPlayers = numPlayers;
 
     for ( size_t i = 0; i < sithPlayer_g_numPlayers; ++i )
     {
@@ -531,13 +544,19 @@ int J3DAPI sithMulti_ProcessChat(const SithMessage* pMsg)
     size_t len = SITHDSS_POPUINT32();
     len = len < SITHMULTI_CHAT_MAXLEN ? len : SITHMULTI_CHAT_MAXLEN;
 
-    // TODO: [BUG] len can be 0: len - 1 wraps; the original strncpy then overruns aText (here the copy is clamped) and aText[len - 1] writes before aText
+    // Fixed: Reject an empty text, len - 1 wraps for len 0 and the original copies and terminates the text outside of aText.
+    if ( len == 0 )
+    {
+        SITHLOG_ERROR("Got chat message with empty text, ignored.\n");
+        return 0;
+    }
+
     char aText[SITHMULTI_CHAT_MAXLEN + 4];
     SITHDSS_POPSTRING(aText, len);
     aText[len + 1] = 0;
 
-    // TODO: [BUG] playerCount is only checked for being negative, not against sithPlayer_g_numPlayers
-    if ( playerCount >= 0 )
+    // Fixed: Only a sender inside the player array is named, the original indexes sithPlayer_g_aPlayers with any non-negative value.
+    if ( playerCount >= 0 && (size_t)playerCount < SITHPLAYER_MAX_PLAYERS )
     {
         SITHCONSOLE_PRINTF("%S says '%s'", sithPlayer_g_aPlayers[playerCount].awName, aText);
     }

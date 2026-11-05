@@ -852,7 +852,7 @@ int J3DAPI sithActor_ParseArg(const StdConffileArg* pArg, SithThing* pThing, int
         {
             float health = STD_STRTOF(pArg->argValue); // Changed: Use strtof instead atof
             // Only reject overflow, (float)atof of the original accepted underflowing values
-            if ( health < 0.0f || (STD_ISRANGEERROR() && fabsf(health) > 1.0f) ) // Added: Conversion range error check
+            if ( health < 0.0f || (STD_STRCONV_RANGE_ERROR() && fabsf(health) > 1.0f) ) // Added: Conversion range error check
             {
                 goto error;
             }
@@ -869,7 +869,7 @@ int J3DAPI sithActor_ParseArg(const StdConffileArg* pArg, SithThing* pThing, int
         {
             float maxthrust = STD_STRTOF(pArg->argValue); // Changed: Use strtof instead atof
             // Only reject overflow, (float)atof of the original accepted underflowing values
-            if ( maxthrust < 0.0f || (STD_ISRANGEERROR() && fabsf(maxthrust) > 1.0f) )    // Added: Conversion range error check
+            if ( maxthrust < 0.0f || (STD_STRCONV_RANGE_ERROR() && fabsf(maxthrust) > 1.0f) )    // Added: Conversion range error check
             {
                 goto error;
             }
@@ -881,7 +881,7 @@ int J3DAPI sithActor_ParseArg(const StdConffileArg* pArg, SithThing* pThing, int
         {
             float maxrotthrust = STD_STRTOF(pArg->argValue); // Changed: Use strtof instead atof
             // Only reject overflow, (float)atof of the original accepted underflowing values
-            if ( maxrotthrust < 0.0f || (STD_ISRANGEERROR() && fabsf(maxrotthrust) > 1.0f) )    // Added: Conversion range error check
+            if ( maxrotthrust < 0.0f || (STD_STRCONV_RANGE_ERROR() && fabsf(maxrotthrust) > 1.0f) )    // Added: Conversion range error check
             {
                 goto error;
             }
@@ -893,7 +893,7 @@ int J3DAPI sithActor_ParseArg(const StdConffileArg* pArg, SithThing* pThing, int
         {
             float maxheadvel = STD_STRTOF(pArg->argValue); // Changed: Use strtof instead atof
             // Only reject overflow, (float)atof of the original accepted underflowing values
-            if ( maxheadvel < 0.0f || (STD_ISRANGEERROR() && fabsf(maxheadvel) > 1.0f) )    // Added: Conversion range error check
+            if ( maxheadvel < 0.0f || (STD_STRCONV_RANGE_ERROR() && fabsf(maxheadvel) > 1.0f) )    // Added: Conversion range error check
             {
                 goto error;
             }
@@ -905,7 +905,7 @@ int J3DAPI sithActor_ParseArg(const StdConffileArg* pArg, SithThing* pThing, int
         {
             float maxheadyaw = STD_STRTOF(pArg->argValue); // Changed: Use strtof instead atof
             // Only reject overflow, (float)atof of the original accepted underflowing values
-            if ( maxheadyaw < 0.0f || (STD_ISRANGEERROR() && fabsf(maxheadyaw) > 1.0f) )    // Added: Conversion range error check
+            if ( maxheadyaw < 0.0f || (STD_STRCONV_RANGE_ERROR() && fabsf(maxheadyaw) > 1.0f) )    // Added: Conversion range error check
             {
                 goto error;
             }
@@ -917,7 +917,7 @@ int J3DAPI sithActor_ParseArg(const StdConffileArg* pArg, SithThing* pThing, int
         {
             float jumpspeed = STD_STRTOF(pArg->argValue); // Changed: Use strtof instead atof
             // Only reject overflow, (float)atof of the original accepted underflowing values
-            if ( jumpspeed < 0.0f || (STD_ISRANGEERROR() && fabsf(jumpspeed) > 1.0f) )    // Added: Conversion range error check
+            if ( jumpspeed < 0.0f || (STD_STRCONV_RANGE_ERROR() && fabsf(jumpspeed) > 1.0f) )    // Added: Conversion range error check
             {
                 goto error;
             }
@@ -939,7 +939,7 @@ int J3DAPI sithActor_ParseArg(const StdConffileArg* pArg, SithThing* pThing, int
         {
             float maxhealth = STD_STRTOF(pArg->argValue); // Changed: Use strtof instead atof
             // Only reject overflow, (float)atof of the original accepted underflowing values
-            if ( maxhealth < 0.0f || (STD_ISRANGEERROR() && fabsf(maxhealth) > 1.0f) )    // Added: Conversion range error check
+            if ( maxhealth < 0.0f || (STD_STRCONV_RANGE_ERROR() && fabsf(maxhealth) > 1.0f) )    // Added: Conversion range error check
             {
                 goto error;
             }
