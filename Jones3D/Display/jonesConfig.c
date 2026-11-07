@@ -884,6 +884,7 @@ void J3DAPI jonesConfig_BindJoystickControl(SithControlFunction functionId, size
 void J3DAPI jonesConfig_FreeControlScheme(JonesControlsScheme* pScheme);
 void J3DAPI jonesConfig_FreeControlConfigEntry(JonesControlsConfig* pConfig);
 
+static float jonesConfig_GetFullscreenDialogScale(HWND hWnd, uint32_t* pDesktopWidth, uint32_t* pDesktopHeight);
 HFONT J3DAPI jonesConfig_InitDialog(HWND hWnd, HFONT hFont, int dlgID);
 HFONT J3DAPI jonesConfig_CreateDialogFont(HWND hWnd, int bWindowMode, int dlgResNum, float* pFontScale);
 void J3DAPI jonesConfig_ResetDialogFont(HWND hWndParent, HFONT hFont);
@@ -900,6 +901,7 @@ int J3DAPI jonesConfig_ShowOverwriteSaveGameDlg(HWND hWnd, const char* aFilePath
 INT_PTR CALLBACK jonesConfig_SaveGameMsgBoxProc(HWND hWnd, UINT umsg, WPARAM wParam, LPARAM lParam);
 int J3DAPI jonesConfig_GameSaveSetData(HWND hDlg, int a2, GameSaveMsgBoxData* pData);
 
+static void jonesConfig_InitExitGameDialogImage(HWND hWnd);
 INT_PTR CALLBACK jonesConfig_ExitGameDlgProc(HWND hWnd, UINT uMsg, WPARAM wparam, LPARAM lparam);
 
 void* J3DAPI jonesConfig_GameFileDialog_HandleWM_COMMAND(HWND hWnd);
@@ -3005,6 +3007,39 @@ HFONT J3DAPI jonesConfig_InitDialog(HWND hWnd, HFONT hFont, int dlgID)
     return fontInfo.hFont;
 }
 
+static float jonesConfig_GetFullscreenDialogScale(HWND hWnd, uint32_t* pDesktopWidth, uint32_t* pDesktopHeight)
+{
+    uint32_t width, height;
+    stdDisplay_GetBackBufferSize(&width, &height);
+    *pDesktopWidth  = width;
+    *pDesktopHeight = height;
+
+    JonesDisplaySettings* pSettings = JonesMain_GetDisplaySettings();
+    if ( !hWnd || !JonesMain_HasStarted() || !pSettings || pSettings->bWindowMode || !width || !height )
+    {
+        return 1.0f;
+    }
+
+    MONITORINFOEXA monitorInfo = { .cbSize = sizeof(monitorInfo) };
+    DEVMODEA desktopMode = { .dmSize = sizeof(desktopMode) };
+    HMONITOR hMonitor = MonitorFromWindow(hWnd, MONITOR_DEFAULTTONEAREST);
+    // Fixed: Exclusive modes change the current monitor size. Use its saved
+    // desktop mode as the common baseline for fonts, controls and images.
+    if ( !hMonitor
+        || !GetMonitorInfoA(hMonitor, (MONITORINFO*)&monitorInfo)
+        || !EnumDisplaySettingsExA(monitorInfo.szDevice, ENUM_REGISTRY_SETTINGS, &desktopMode, 0)
+        || !desktopMode.dmPelsWidth || !desktopMode.dmPelsHeight )
+    {
+        return 1.0f;
+    }
+
+    *pDesktopWidth  = desktopMode.dmPelsWidth;
+    *pDesktopHeight = desktopMode.dmPelsHeight;
+    float scaleX = (float)width / (float)*pDesktopWidth;
+    float scaleY = (float)height / (float)*pDesktopHeight;
+    return fminf(scaleX, scaleY);
+}
+
 HFONT J3DAPI jonesConfig_CreateDialogFont(HWND hWnd, int bWindowMode, int dlgID, float* pFontScale)
 {
     // Function creates dialog font and calculates scale
@@ -3031,10 +3066,29 @@ HFONT J3DAPI jonesConfig_CreateDialogFont(HWND hWnd, int bWindowMode, int dlgID,
 
     // Get system DPI first
     // Added: This was added
-    UINT systemDPI = GetDpiForWindow(hWnd);
+    UINT dialogDPI = GetDpiForWindow(hWnd);
+    if ( !dialogDPI )
+    {
+        dialogDPI = USER_DEFAULT_SCREEN_DPI;
+    }
+    UINT systemDPI = dialogDPI;
+    float fullscreenDpiScale = 1.0f;
+    double dialogHeight = (double)rect.bottom;
+    if ( !bWindowMode && JonesMain_HasStarted() )
+    {
+        UINT desktopDPI = JonesDisplay_GetDesktopDpi();
+        if ( desktopDPI )
+        {
+            // Fixed: A dialog opened in a lower exclusive mode may have a
+            // different DPI from the desktop used to choose the native UI.
+            systemDPI = desktopDPI;
+            fullscreenDpiScale = (float)desktopDPI / (float)dialogDPI;
+            dialogHeight *= fullscreenDpiScale;
+        }
+    }
     float dpiScale = (float)systemDPI / USER_DEFAULT_SCREEN_DPI;
 
-    STDLOG_STATUS("height: %i, width:%i, dpi:%d dpiScale:%f\n", rect.bottom, rect.right, systemDPI, dpiScale);
+    STDLOG_STATUS("height: %i, width:%i, dpi:%u desktopDpi:%u dpiScale:%f\n", rect.bottom, rect.right, dialogDPI, systemDPI, dpiScale);
 
     double dialogRefHeight = 0;
     for ( size_t i = 0; i < STD_ARRAYLEN(jonesConfig_aDialogSizes); ++i )
@@ -3049,11 +3103,12 @@ HFONT J3DAPI jonesConfig_CreateDialogFont(HWND hWnd, int bWindowMode, int dlgID,
     double scale = 1.0f; // Added: Init to 1.0f
     if ( dialogRefHeight > 0 )
     {
-        scale = (dialogRefHeight / (double)rect.bottom) * dpiScale; // Added: scale by dpi
+        scale = (dialogRefHeight / dialogHeight) * dpiScale; // Added: scale by dpi
     }
 
     int cHeight;
     float cHeightf;
+    float fullscreenScale = 1.0f;
     uint32_t scrwidth, scrheight;
 
     int scaledRefHeight = (int)(RD_REF_HEIGHT * scale);
@@ -3093,7 +3148,7 @@ HFONT J3DAPI jonesConfig_CreateDialogFont(HWND hWnd, int bWindowMode, int dlgID,
     }
     else
     {
-        stdDisplay_GetBackBufferSize(&scrwidth, &scrheight);
+        fullscreenScale = jonesConfig_GetFullscreenDialogScale(hWnd, &scrwidth, &scrheight);
 
         // Calculate base font size considering DPI
         cHeight = -MulDiv(10, systemDPI, USER_DEFAULT_SCREEN_DPI); // Changed: to 10 from 8
@@ -3117,11 +3172,8 @@ HFONT J3DAPI jonesConfig_CreateDialogFont(HWND hWnd, int bWindowMode, int dlgID,
         }
     }
 
-    float cHeighRnd = floorf(cHeightf);
-    if ( fabsf(cHeighRnd - cHeightf) < 0.5f )
-    {
-        cHeightf = cHeighRnd;
-    }
+    // Fixed: Keep half-pixel font sizes consistent with final pixel rounding.
+    cHeightf = roundf(cHeightf);
 
     if ( cHeight > (int)cHeightf ) // Changed: Use cHeightf if smaller than cHeight; i.e.: bigger font size
     {
@@ -3146,6 +3198,19 @@ HFONT J3DAPI jonesConfig_CreateDialogFont(HWND hWnd, int bWindowMode, int dlgID,
     else
     {
         *pFontScale = (float)scale;
+    }
+
+    // Fixed: Apply the fullscreen presentation ratio once, after choosing the
+    // desktop font size. The DPI minimum must not prevent low-resolution UI
+    // from shrinking together with its controls and images.
+    if ( !bWindowMode && JonesMain_HasStarted() )
+    {
+        cHeight = -(int)floorf((float)-cHeight * fullscreenScale + 0.5f);
+        if ( cHeight > -1 )
+        {
+            cHeight = -1;
+        }
+        *pFontScale *= fullscreenScale * fullscreenDpiScale;
     }
 
     // Create DPI-aware font
@@ -8960,6 +9025,38 @@ void J3DAPI jonesConfig_StatisticProc_HandleWM_COMMAND(HWND hWnd, int16_t wParam
     }
 }
 
+static void jonesConfig_InitExitGameDialogImage(HWND hWnd)
+{
+    RECT rectWnd;
+    jonesConfig_GetWindowScreenRect(hWnd, &rectWnd);
+    HWND hIcon = GetDlgItem(hWnd, 1182);
+    SetWindowLongPtr(hIcon, GWL_STYLE, (GetWindowLongPtr(hIcon, GWL_STYLE) & ~SS_TYPEMASK) | SS_OWNERDRAW);
+
+    int iconSize = 96;
+    JonesDisplaySettings* pSettings = JonesMain_GetDisplaySettings();
+    if ( JonesMain_HasStarted() && pSettings && !pSettings->bWindowMode )
+    {
+        UINT desktopDPI = JonesDisplay_GetDesktopDpi();
+        UINT dialogDPI = GetDpiForWindow(hWnd);
+        if ( desktopDPI && dialogDPI )
+        {
+            // Fixed: Unlike template controls, this raw-pixel size has not
+            // followed the dialog DPI. Normalize it before common layout
+            // applies the desktop-to-dialog DPI ratio.
+            iconSize = MulDiv(iconSize, dialogDPI, desktopDPI);
+            if ( iconSize < 1 )
+            {
+                iconSize = 1;
+            }
+        }
+    }
+
+    RECT rectWndIcon;
+    GetWindowRect(hIcon, &rectWndIcon);
+    // Fixed: Keep X/Y offsets in client-coordinate order.
+    MoveWindow(hIcon, rectWndIcon.left - rectWnd.left, rectWndIcon.top - rectWnd.top, iconSize, iconSize, TRUE);
+}
+
 int J3DAPI jonesConfig_ShowExitGameDialog(HWND hWnd, char* pSaveGameFilePath)
 {
     GameSaveMsgBoxData data;
@@ -8974,18 +9071,7 @@ INT_PTR CALLBACK jonesConfig_ExitGameDlgProc(HWND hWnd, UINT uMsg, WPARAM wparam
     {
         case WM_INITDIALOG:
         {
-            RECT rectWnd;
-            GetClientRect(hWnd, &rectWnd);
-            jonesConfig_GetWindowScreenRect(hWnd, &rectWnd);
-
-            RECT rectWndIcon;
-            HWND hIcon = GetDlgItem(hWnd, 1182);
-
-            // Added: Make hPrevIcon to be drawn by hWnd -> WM_DRAWITEM
-            SetWindowLongPtr(hIcon, GWL_STYLE, GetWindowLongPtr(hIcon, GWL_STYLE) | SS_OWNERDRAW);
-
-            GetWindowRect(hIcon, &rectWndIcon);
-            MoveWindow(hIcon, rectWndIcon.top - rectWnd.top, rectWndIcon.left - rectWnd.left, 96, 96, TRUE); // Changed: Shange icon size to 96 from 64
+            jonesConfig_InitExitGameDialogImage(hWnd);
 
             GameSaveMsgBoxData* pGSData = (GameSaveMsgBoxData*)lparam;
             jonesConfig_hFontExitDlg = jonesConfig_InitDialog(hWnd, 0, pGSData->dialogID);
@@ -9365,19 +9451,10 @@ int J3DAPI jonesConfig_InitStoreDialog(HWND hDlg, int a2, tStoreCartState* pCart
     jonesConfig_StoreInitItemList(hCurrentList, pCart->apItemsState, 1199);
     jonesConfig_StoreInitItemList(hAvailableList, pCart->apItemsState, 1005);
 
-    if ( ListView_GetItemCount(hCurrentList) > ListView_GetCountPerPage(hCurrentList) )
-    {
-        int colWidth = ListView_GetColumnWidth(hCurrentList, 0);
-        int vscrlWidth = GetSystemMetrics(SM_CXVSCROLL);
-        ListView_SetColumnWidth(hCurrentList, 0, colWidth - vscrlWidth);
-    }
-
-    if ( ListView_GetItemCount(hAvailableList) > ListView_GetCountPerPage(hAvailableList) )
-    {
-        int colWidth   = ListView_GetColumnWidth(hAvailableList, 0);
-        int vscrlWidth = GetSystemMetrics(SM_CXVSCROLL);
-        ListView_SetColumnWidth(hAvailableList, 0, colWidth - vscrlWidth);
-    }
+    // Fixed: The client width already excludes a visible scrollbar. Refit
+    // after population instead of subtracting another system scrollbar width.
+    jonesConfig_StoreSetListColumns(hCurrentList, "JONES_STR_COUNT");
+    jonesConfig_StoreSetListColumns(hAvailableList, "JONES_STR_COST");
 
     pCart->total         = 0;
     pCart->cartListWidth = ListView_GetColumnWidth(hCartList, 0);
@@ -9389,7 +9466,16 @@ int J3DAPI jonesConfig_InitStoreDialog(HWND hDlg, int a2, tStoreCartState* pCart
 
 int J3DAPI jonesConfig_StoreInitItemIcons(HWND hWnd, tStoreCartState* pCart)
 {
-    pCart->hList = ImageList_Create(48, 48, ILC_MASK | ILC_COLOR8, STD_ARRAYLEN(JonesHud_aStoreItems), 0); // Changed icon size to 48 from 16
+    uint32_t desktopWidth, desktopHeight;
+    float scale = jonesConfig_GetFullscreenDialogScale(hWnd, &desktopWidth, &desktopHeight);
+    int iconSize = (int)floorf(48.0f * scale + 0.5f);
+    if ( iconSize < 1 )
+    {
+        iconSize = 1;
+    }
+    // Fixed: Image lists are created after dialog layout, so apply its
+    // fullscreen presentation ratio to their native-desktop 48-pixel cells.
+    pCart->hList = ImageList_Create(iconSize, iconSize, ILC_MASK | ILC_COLOR8, STD_ARRAYLEN(JonesHud_aStoreItems), 0);
     if ( !pCart->hList )
     {
         return 0;
@@ -9412,33 +9498,90 @@ void J3DAPI jonesConfig_StoreSetListColumns(HWND hList, const char* pColumnName)
     col.mask       = LVCF_SUBITEM | LVCF_TEXT | LVCF_WIDTH | LVCF_FMT;
     col.cchTextMax = 256;
 
-    uint32_t  height, width;
-    stdDisplay_GetBackBufferSize(&width, &height);
-
-    // Removed:
-  /*float scale = 1.0f;
-    if ( (float)height / RD_REF_HEIGHT <= 1.0f )
+    const char* pItemHeader = jonesString_GetString("JONES_STR_ITEMNAME");
+    const char* pValueHeader = pColumnName ? jonesString_GetString(pColumnName) : NULL;
+    if ( !pItemHeader )
     {
-        scale = (float)height / RD_REF_HEIGHT;
-    }*/
-    float scale = RD_REF_APECTRATIO / (width / height); // Added: Fixes scaling issue on 16:9 ...
-    int pad = (int)(50.0f * scale); // Changed: Change padding to 50 from 40 due to bigger font size
-    int colNum = 0;
+        pItemHeader = "";
+    }
+    if ( !pValueHeader )
+    {
+        pValueHeader = "";
+    }
 
-    RECT rect;
+    // Fixed: Measure the localized header and values using the list's actual
+    // font. Aspect-ratio padding neither follows DPI nor reserves their width.
+    int valueWidth = ListView_GetStringWidth(hList, pValueHeader);
+    if ( pColumnName && strcmp(pColumnName, "JONES_STR_COUNT") == 0 )
+    {
+        int numberWidth = ListView_GetStringWidth(hList, "4095"); // Inventory quantity uses 12 bits.
+        if ( numberWidth > valueWidth )
+        {
+            valueWidth = numberWidth;
+        }
+    }
+    else
+    {
+        for ( size_t i = 0; i < STD_ARRAYLEN(JonesHud_aStoreItems); ++i )
+        {
+            char aPrice[32];
+            STD_FORMAT(aPrice, "%d", JonesHud_aStoreItems[i].price);
+            int numberWidth = ListView_GetStringWidth(hList, aPrice);
+            if ( numberWidth > valueWidth )
+            {
+                valueWidth = numberWidth;
+            }
+        }
+    }
+
+    uint32_t desktopWidth, desktopHeight;
+    float scale = jonesConfig_GetFullscreenDialogScale(hList, &desktopWidth, &desktopHeight);
+    int padding = (int)floorf(12.0f * scale + 0.5f);
+    UINT controlDPI = GetDpiForWindow(hList);
+    int minimumPadding = MulDiv(12, controlDPI ? controlDPI : USER_DEFAULT_SCREEN_DPI, USER_DEFAULT_SCREEN_DPI);
+    // Fixed: Native header/item text insets follow the control DPI, not the
+    // game's presentation ratio. Keep those insets when content shrinks.
+    if ( padding < minimumPadding )
+    {
+        padding = minimumPadding;
+    }
+    if ( padding < 1 )
+    {
+        padding = 1;
+    }
+    RECT rect = { 0 };
     GetClientRect(hList, &rect);
+    int width = rect.right > rect.left ? rect.right - rect.left : 0;
+    if ( valueWidth < 0 )
+    {
+        valueWidth = 0;
+    }
+    if ( valueWidth > width || padding > width - valueWidth )
+    {
+        valueWidth = width;
+    }
+    else
+    {
+        valueWidth += padding;
+    }
 
     col.fmt      = LVCFMT_LEFT;
-    col.cx       = rect.right - rect.left - pad;
-    col.pszText  = (LPSTR)jonesString_GetString("JONES_STR_ITEMNAME");
-    col.iSubItem = colNum;
-    ListView_InsertColumn(hList, colNum++, &col);
+    col.cx       = width - valueWidth;
+    col.pszText  = (LPSTR)pItemHeader;
+    col.iSubItem = 0;
+    if ( !ListView_SetColumn(hList, 0, &col) )
+    {
+        ListView_InsertColumn(hList, 0, &col);
+    }
 
     col.fmt      = LVCFMT_RIGHT;
-    col.cx       = pad;
-    col.pszText  = (LPSTR)jonesString_GetString(pColumnName);
-    col.iSubItem = colNum;
-    ListView_InsertColumn(hList, colNum, &col);
+    col.cx       = valueWidth;
+    col.pszText  = (LPSTR)pValueHeader;
+    col.iSubItem = 1;
+    if ( !ListView_SetColumn(hList, 1, &col) )
+    {
+        ListView_InsertColumn(hList, 1, &col);
+    }
 }
 
 void J3DAPI jonesConfig_StoreInitItemList(HWND hWnd, int* apItemsState, int listID)
@@ -9580,11 +9723,7 @@ void J3DAPI jonesConfig_AddStoreCartItem(HWND hDlg, tStoreCartState* pCart)
                 int numItems = pCart->apItemsState[itemStateIdx];
                 pCart->apItemsState[itemStateIdx] = ((uint16_t)numItems + 1) | numItems & 0xFFFF0000;
 
-                if ( ListView_GetItemCount(hCartList) > ListView_GetCountPerPage(hCartList) )
-                {
-                    int vscrollWidth = GetSystemMetrics(SM_CXVSCROLL);
-                    ListView_SetColumnWidth(hCartList, 0, pCart->cartListWidth - vscrollWidth);
-                }
+                jonesConfig_StoreSetListColumns(hCartList, "JONES_STR_COST");
             }
 
             pCart->total   += total;
@@ -9641,11 +9780,7 @@ void J3DAPI jonesConfig_RemoveStoreCartItem(HWND hDlg, tStoreCartState* pCart)
             int numItems = pCart->apItemsState[HIWORD(lvitem.lParam)];
             pCart->apItemsState[HIWORD(lvitem.lParam)] = ((uint16_t)numItems - 1) | numItems & 0xFFFF0000;
 
-            int itemsCount = ListView_GetItemCount(hCartList);
-            if ( itemsCount <= ListView_GetCountPerPage(hCartList) )
-            {
-                ListView_SetColumnWidth(hCartList, 0, LOWORD(pCart->cartListWidth));
-            }
+            jonesConfig_StoreSetListColumns(hCartList, "JONES_STR_COST");
         }
 
         pCart->total   -= total;
@@ -9703,6 +9838,7 @@ void J3DAPI jonesConfig_ClearStoreCart(HWND hDlg, tStoreCartState* pCart)
     pCart->balance += pCart->total;
     pCart->total = 0;
     ListView_DeleteAllItems(hWnd);
+    jonesConfig_StoreSetListColumns(hWnd, "JONES_STR_COST");
     jonesConfig_UpdateBalances(hDlg, pCart);
 }
 

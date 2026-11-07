@@ -37,6 +37,9 @@ J3D_EXTERN_C_START
 int J3DAPI JonesDisplay_Startup(JonesDisplaySettings* pSettings);
 void JonesDisplay_Shutdown(void);
 
+// Desktop DPI captured before setting a game mode; zero when unavailable.
+UINT JonesDisplay_GetDesktopDpi(void);
+
 int J3DAPI JonesDisplay_Open(JonesDisplaySettings* pSettings);
 void JonesDisplay_Close(void);
 

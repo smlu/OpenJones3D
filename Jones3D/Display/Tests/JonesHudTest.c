@@ -10,6 +10,8 @@
 #include <sith/Gameplay/sithInventory.h>
 #include <sith/Gameplay/sithPlayer.h>
 #include <sith/Gameplay/sithPlayerControls.h>
+#include <rdroid/Math/rdMatrix.h>
+#include <rdroid/Primitives/rdModel3.h>
 #include <sound/Sound.h>
 #include <sound/Driver.h>
 #include <std/Win95/stdWin95.h>
@@ -44,6 +46,28 @@ static SithThing JonesHudTest_playerThing;
 static SithThing* JonesHudTest_pPlayerThing;
 static SithPlayer JonesHudTest_player;
 static SithInventoryType JonesHudTest_aInventoryTypes[SITHINVENTORY_MAXTYPES];
+
+static const rdMatrix34 JonesHudTest_identity =
+{
+    { 1.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f },
+    { 0.0f, 0.0f, 1.0f }, { 0.0f, 0.0f, 0.0f }
+};
+static rdModel3 JonesHudTest_renderModel;
+static rdThing JonesHudTest_renderThing;
+static rdVector4 JonesHudTest_modelColor;
+static rdVector4 JonesHudTest_drawColor;
+static rdVector4 JonesHudTest_aSetColors[2];
+static rdMatrix34 JonesHudTest_drawPlacement;
+static rdFaceFlags JonesHudTest_drawFlags;
+static unsigned JonesHudTest_numDraws;
+static unsigned JonesHudTest_numFlaggedDraws;
+static unsigned JonesHudTest_numColorSets;
+static int JonesHudTest_drawResult;
+static void J3DAPI JonesHudTest_GetThingColor(const rdThing* pThing, rdVector4* pColor);
+static void J3DAPI JonesHudTest_SetThingColor(rdThing* pThing, const rdVector4* pColor);
+static int J3DAPI JonesHudTest_Draw(rdThing* pThing, const rdMatrix34* pPlacement);
+static int J3DAPI JonesHudTest_DrawWithFlags(rdThing* pThing, const rdMatrix34* pPlacement, rdFaceFlags flags);
+
 
 static uint32_t JonesHudTest_GetTimeMsec(void);
 static int JonesHudTest_Use3DCaps(void);
@@ -86,6 +110,13 @@ static void J3DAPI JonesHudTest_SetFrequency(tSysSoundBuffer* pBuffer, float fre
 #define jonesCog_g_bEnableGamesave JonesHudTest_bEnableGamesave
 #define stdWin95_GetWindow JonesHudTest_GetWindow
 #define sithGamesave_CloseRestore JonesHudTest_CloseRestore
+// Keep model rendering observable without assets, a renderer, or executable RTIs.
+#undef rdroid_g_identMatrix34
+#define rdroid_g_identMatrix34 JonesHudTest_identity
+#define rdModel3_GetThingColor JonesHudTest_GetThingColor
+#define rdModel3_SetThingColor JonesHudTest_SetThingColor
+#define rdModel3_Draw JonesHudTest_Draw
+#define rdModel3_DrawWithFlags JonesHudTest_DrawWithFlags
 #ifndef JONESHUD_TEST_SOURCE
 #define JONESHUD_TEST_SOURCE "../JonesHud.c"
 #endif
@@ -96,6 +127,40 @@ static tSoundChannel JonesHudTest_aChannels[4];
 static SoundInfo JonesHudTest_soundInfo;
 static uint8_t JonesHudTest_aSoundData[32];
 static JonesHudMenuItem JonesHudTest_aItems[JONESHUD_MAX_MENU_ITEMS];
+
+static void J3DAPI JonesHudTest_GetThingColor(const rdThing* pThing, rdVector4* pColor)
+{
+    TEST_ASSERT_EQUAL_PTR(&JonesHudTest_renderThing, pThing);
+    *pColor = JonesHudTest_modelColor;
+}
+
+static void J3DAPI JonesHudTest_SetThingColor(rdThing* pThing, const rdVector4* pColor)
+{
+    TEST_ASSERT_EQUAL_PTR(&JonesHudTest_renderThing, pThing);
+    TEST_ASSERT_LESS_THAN_UINT(STD_ARRAYLEN(JonesHudTest_aSetColors), JonesHudTest_numColorSets);
+    JonesHudTest_aSetColors[JonesHudTest_numColorSets++] = *pColor;
+    JonesHudTest_modelColor = *pColor;
+}
+
+static int J3DAPI JonesHudTest_Draw(rdThing* pThing, const rdMatrix34* pPlacement)
+{
+    TEST_ASSERT_EQUAL_PTR(&JonesHudTest_renderThing, pThing);
+    JonesHudTest_drawPlacement = *pPlacement;
+    JonesHudTest_drawColor = JonesHudTest_modelColor;
+    ++JonesHudTest_numDraws;
+    return JonesHudTest_drawResult;
+}
+
+static int J3DAPI JonesHudTest_DrawWithFlags(rdThing* pThing, const rdMatrix34* pPlacement, rdFaceFlags flags)
+{
+    TEST_ASSERT_EQUAL_PTR(&JonesHudTest_renderThing, pThing);
+    TEST_ASSERT_EQUAL_UINT(1, JonesHudTest_numColorSets);
+    JonesHudTest_drawPlacement = *pPlacement;
+    JonesHudTest_drawColor = JonesHudTest_modelColor;
+    JonesHudTest_drawFlags = flags;
+    ++JonesHudTest_numFlaggedDraws;
+    return JonesHudTest_drawResult;
+}
 
 static uint32_t JonesHudTest_GetTimeMsec(void)
 {
@@ -540,6 +605,9 @@ TEST_SETUP(JonesHud)
     JonesHudTest_bEnableGamesave = 1;
     JonesHudTest_dialogResult = 2;
     JonesHudTest_playerNum = 0;
+    JonesHudTest_numDraws = JonesHudTest_numFlaggedDraws = JonesHudTest_numColorSets = 0;
+    JonesHudTest_drawResult = 1;
+    JonesHudTest_drawFlags = 0;
     JonesHudTest_pPlayerThing = &JonesHudTest_playerThing;
     JonesHudTest_playerThing.thingInfo.actorInfo.pPlayer = &JonesHudTest_player;
     memset(JonesHud_apMenuItems, 0, sizeof(JonesHud_apMenuItems));
@@ -724,6 +792,135 @@ TEST(JonesHud, ShutdownReleasesThemeAndClearsItsOwnership)
     TEST_ASSERT_EQUAL_UINT(1, JonesHudTest_numReleases);
 }
 
+// Use an ordinary registered inventory index so these cases exercise the fade
+// and draw policy independently of the system menu's invalid-inventory sentinel.
+static void JonesHudTest_RenderSyntheticItem(int flags, float remainingFade, int bDisabled, float expectedAlpha, rdFaceFlags expectedFlags)
+{
+    const int inventoryId = 1;
+    JonesHudMenuItem item = { 0 };
+    item.id = JONESHUD_MENU_IQ;
+    item.inventoryID = inventoryId;
+    item.flags = JONESHUD_MENUITEM_VISIBLE | flags;
+    item.prdIcon = &JonesHudTest_renderThing;
+    item.alpha = 0.01f; // A stale previous fade must not select the next draw flags.
+    item.startMovePos = (rdVector3){ 1.0f, 2.0f, 1.0f };
+    item.endMovePos = (rdVector3){ 0.0f, 2.0f, 0.0f };
+    float coordinate = (flags & (JONESHUD_MENUITEM_COLUMN_EXPANDING | JONESHUD_MENUITEM_MENU_OPENING)) != 0
+        ? 1.0f - remainingFade : remainingFade;
+    item.pos = (rdVector3){ coordinate, 2.0f, coordinate };
+    JonesHudTest_aInventoryTypes[inventoryId].flags = SITHINVENTORY_TYPE_REGISTERED;
+    JonesHudTest_player.aItems[inventoryId].status = bDisabled ? SITHINVENTORY_ITEM_DISABLED : 0;
+    JonesHud_pCurSelectedMenuItem = NULL;
+    JonesHud_itemAspectScaleSize = 1.0f;
+    memset(&JonesHudTest_renderModel, 0, sizeof(JonesHudTest_renderModel));
+    memset(&JonesHudTest_renderThing, 0, sizeof(JonesHudTest_renderThing));
+    JonesHudTest_renderModel.size = 2.0f;
+    JonesHudTest_renderThing.type = RD_THING_MODEL3;
+    JonesHudTest_renderThing.data.pModel3 = &JonesHudTest_renderModel;
+    const rdVector4 originalColor = { 0.15f, 0.35f, 0.65f, 0.8f };
+    JonesHudTest_modelColor = originalColor;
+    JonesHudTest_numDraws = JonesHudTest_numFlaggedDraws = JonesHudTest_numColorSets = 0;
+
+    JonesHud_RenderMenuItem(&item);
+
+    TEST_ASSERT_EQUAL_UINT(0, JonesHudTest_numDraws);
+    TEST_ASSERT_EQUAL_UINT(1, JonesHudTest_numFlaggedDraws);
+    TEST_ASSERT_EQUAL_HEX32(expectedFlags, JonesHudTest_drawFlags);
+    TEST_ASSERT_EQUAL_UINT(2, JonesHudTest_numColorSets);
+    TEST_ASSERT_EQUAL_FLOAT(expectedAlpha, JonesHudTest_drawColor.alpha);
+    TEST_ASSERT_EQUAL_FLOAT(expectedAlpha, item.alpha);
+    TEST_ASSERT_EQUAL_FLOAT_ARRAY((const float*)&originalColor, (const float*)&JonesHudTest_modelColor, 4);
+    TEST_ASSERT_EQUAL_FLOAT_ARRAY((const float*)&originalColor, (const float*)&JonesHudTest_aSetColors[1], 4);
+    TEST_ASSERT_EQUAL_FLOAT_ARRAY((const float*)&originalColor, (const float*)&JonesHudTest_drawColor, 3);
+    TEST_ASSERT_EQUAL_FLOAT(expectedAlpha, JonesHudTest_aSetColors[0].alpha);
+    float scale = JONESHUD_MENU_MODEL_RADIUS / 2.0f * JonesHud_aDfltMenuItemOrients[item.id].scale;
+    const float expectedPlacement[12] =
+    {
+        scale, 0.0f, 0.0f, 0.0f, scale, 0.0f, 0.0f, 0.0f, scale,
+        item.pos.x, item.pos.y, item.pos.z
+    };
+    TEST_ASSERT_EQUAL_FLOAT_ARRAY(expectedPlacement, (const float*)&JonesHudTest_drawPlacement, 12);
+}
+
+TEST(JonesHud, FadeAnimationsDisableDepthWritesBelowNormalOpacity)
+{
+    const int animations[] = { JONESHUD_MENUITEM_COLUMN_COLLAPSING, JONESHUD_MENUITEM_COLUMN_EXPANDING, JONESHUD_MENUITEM_MENU_OPENING, JONESHUD_MENUITEM_MENU_CLOSING };
+    for ( size_t i = 0; i < STD_ARRAYLEN(animations); ++i )
+    {
+        for ( int disabled = 0; disabled < 2; ++disabled )
+        {
+            JonesHudTest_RenderSyntheticItem(animations[i], 0.5f, disabled, 0.5f * JONESHUD_ITEM_FADE_SCALE, RD_FF_ZWRITE_DISABLED);
+        }
+    }
+}
+
+TEST(JonesHud, FadeAnimationsRetainDepthWritesAtNormalOpacity)
+{
+    const int animations[] = { JONESHUD_MENUITEM_COLUMN_COLLAPSING, JONESHUD_MENUITEM_COLUMN_EXPANDING, JONESHUD_MENUITEM_MENU_OPENING, JONESHUD_MENUITEM_MENU_CLOSING };
+    for ( size_t i = 0; i < STD_ARRAYLEN(animations); ++i )
+    {
+        JonesHudTest_RenderSyntheticItem(animations[i], 1.0f, 0, JONESHUD_ITEM_VISIBLE_ALPHA, 0);
+        JonesHudTest_RenderSyntheticItem(animations[i], 1.0f, 1, JONESHUD_ITEM_DISABLED_ALPHA, 0);
+    }
+}
+
+TEST(JonesHud, ZeroFadeRestoresModelColorEvenWhenDrawFails)
+{
+    const int animations[] = { JONESHUD_MENUITEM_COLUMN_COLLAPSING, JONESHUD_MENUITEM_COLUMN_EXPANDING, JONESHUD_MENUITEM_MENU_OPENING, JONESHUD_MENUITEM_MENU_CLOSING };
+    JonesHudTest_drawResult = 0;
+    for ( size_t i = 0; i < STD_ARRAYLEN(animations); ++i )
+    {
+        JonesHudTest_RenderSyntheticItem(animations[i], 0.0f, 0, 0.0f, RD_FF_ZWRITE_DISABLED);
+        JonesHudTest_RenderSyntheticItem(animations[i], 0.0f, 1, 0.0f, RD_FF_ZWRITE_DISABLED);
+    }
+}
+
+TEST(JonesHud, StationaryItemsUseNormalOpacityAndDepthWrites)
+{
+    JonesHudTest_RenderSyntheticItem(0, 0.2f, 0, JONESHUD_ITEM_VISIBLE_ALPHA, 0);
+    JonesHudTest_RenderSyntheticItem(0, 0.2f, 1, JONESHUD_ITEM_DISABLED_ALPHA, 0);
+}
+
+TEST(JonesHud, ScrollingExcludesEveryFadeAnimationFromDepthPolicy)
+{
+    const int animations[] = { 0, JONESHUD_MENUITEM_COLUMN_COLLAPSING, JONESHUD_MENUITEM_COLUMN_EXPANDING, JONESHUD_MENUITEM_MENU_OPENING, JONESHUD_MENUITEM_MENU_CLOSING };
+    for ( size_t i = 0; i < STD_ARRAYLEN(animations); ++i )
+    {
+        JonesHudTest_RenderSyntheticItem(JONESHUD_MENUITEM_SCROLLING | animations[i], 0.5f, 0, JONESHUD_ITEM_VISIBLE_ALPHA, 0);
+        JonesHudTest_RenderSyntheticItem(JONESHUD_MENUITEM_SCROLLING | animations[i], 0.5f, 1, JONESHUD_ITEM_DISABLED_ALPHA, 0);
+    }
+}
+
+TEST(JonesHud, FadeDispatchPreservesColumnSelectionAndUnknownBits)
+{
+    int flags = JONESHUD_MENUITEM_COLUMN_COLLAPSING | JONESHUD_MENUITEM_SELECTED | JONESHUD_MENUITEM_UNKNOWN_100
+        | JONESHUD_MENUITEM_UNKNOWN_200 | (2 << JONESHUD_MENUITEM_COLUMN_SHIFT);
+    JonesHudTest_RenderSyntheticItem(flags, 0.5f, 0, 0.5f * JONESHUD_ITEM_FADE_SCALE, RD_FF_ZWRITE_DISABLED);
+    JonesHudTest_RenderSyntheticItem(flags, 0.5f, 1, 0.5f * JONESHUD_ITEM_FADE_SCALE, RD_FF_ZWRITE_DISABLED);
+}
+
+TEST(JonesHud, ConflictingAnimationsRetainDefaultOpacityAndDepthWrites)
+{
+    const int animations[] =
+    {
+        JONESHUD_MENUITEM_COLUMN_COLLAPSING | JONESHUD_MENUITEM_COLUMN_EXPANDING,
+        JONESHUD_MENUITEM_MENU_OPENING | JONESHUD_MENUITEM_MENU_CLOSING
+    };
+    for ( size_t i = 0; i < STD_ARRAYLEN(animations); ++i )
+    {
+        JonesHudTest_RenderSyntheticItem(animations[i], 0.5f, 0, JONESHUD_ITEM_VISIBLE_ALPHA, 0);
+        JonesHudTest_RenderSyntheticItem(animations[i], 0.5f, 1, JONESHUD_ITEM_DISABLED_ALPHA, 0);
+    }
+}
+
+TEST(JonesHud, DisabledFadeComparesItsFinalAlphaWithDisabledOpacity)
+{
+    // The enabled item is still fading at this point; the disabled item has
+    // already reached its lower normal opacity and retains its usual writes.
+    JonesHudTest_RenderSyntheticItem(JONESHUD_MENUITEM_COLUMN_COLLAPSING, 0.8f, 0, 0.64f, RD_FF_ZWRITE_DISABLED);
+    JonesHudTest_RenderSyntheticItem(JONESHUD_MENUITEM_COLUMN_COLLAPSING, 0.8f, 1, JONESHUD_ITEM_DISABLED_ALPHA, 0);
+}
+
 TEST_GROUP_RUNNER(JonesHud)
 {
     RUN_TEST_CASE(JonesHud, LongDialogCancelThenCloseReleasesThemeBeforeClockResume);
@@ -737,6 +934,14 @@ TEST_GROUP_RUNNER(JonesHud)
     RUN_TEST_CASE(JonesHud, DisabledOrMissingThemeDoesNotAllocateAudio);
     RUN_TEST_CASE(JonesHud, HudCloseReleasesActiveAndClosingTheme);
     RUN_TEST_CASE(JonesHud, ShutdownReleasesThemeAndClearsItsOwnership);
+    RUN_TEST_CASE(JonesHud, FadeAnimationsDisableDepthWritesBelowNormalOpacity);
+    RUN_TEST_CASE(JonesHud, FadeAnimationsRetainDepthWritesAtNormalOpacity);
+    RUN_TEST_CASE(JonesHud, ZeroFadeRestoresModelColorEvenWhenDrawFails);
+    RUN_TEST_CASE(JonesHud, StationaryItemsUseNormalOpacityAndDepthWrites);
+    RUN_TEST_CASE(JonesHud, ScrollingExcludesEveryFadeAnimationFromDepthPolicy);
+    RUN_TEST_CASE(JonesHud, FadeDispatchPreservesColumnSelectionAndUnknownBits);
+    RUN_TEST_CASE(JonesHud, ConflictingAnimationsRetainDefaultOpacityAndDepthWrites);
+    RUN_TEST_CASE(JonesHud, DisabledFadeComparesItsFinalAlphaWithDisabledOpacity);
 }
 
 static void JonesHudTest_RunAllTests(void)

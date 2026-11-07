@@ -1,0 +1,510 @@
+#include <unity_fixture.h>
+#include <Jones3D/Display/jonesConfig.h>
+#include <std/General/std.h>
+#include <std/Win95/stdDisplay.h>
+#include <commctrl.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <string.h>
+
+static void J3DAPI jonesConfigSystem_GetBackBufferSize(uint32_t* pWidth, uint32_t* pHeight);
+static HICON WINAPI jonesConfigSystem_LoadIconA(HINSTANCE hInstance, LPCSTR pName);
+
+// The application supplies its render dimensions and localization. All window,
+// font, image-list and raster operations below use the real Win32 APIs. The icon
+// resource input is authored in memory, so no retail executable is required.
+#define stdDisplay_GetBackBufferSize jonesConfigSystem_GetBackBufferSize
+#define LoadIconA jonesConfigSystem_LoadIconA
+#undef STDLOG_STATUS
+#undef STDLOG_ERROR
+#define STDLOG_STATUS(...) ((void)0)
+#define STDLOG_ERROR(...) ((void)0)
+#include "../jonesConfig.c"
+#undef stdDisplay_GetBackBufferSize
+#undef LoadIconA
+
+static HWND jonesConfigSystem_hDialog;
+static HWND jonesConfigSystem_hList;
+static DPI_AWARENESS_CONTEXT jonesConfigSystem_previousDpi;
+static JonesDisplaySettings jonesConfigSystem_settings;
+static uint32_t jonesConfigSystem_desktopWidth;
+static uint32_t jonesConfigSystem_desktopHeight;
+static uint32_t jonesConfigSystem_renderWidth;
+static uint32_t jonesConfigSystem_renderHeight;
+static HFONT jonesConfigSystem_aFonts[2];
+static HICON jonesConfigSystem_hIcon;
+static HIMAGELIST jonesConfigSystem_hImages;
+static HDC jonesConfigSystem_hSourceDC;
+static HDC jonesConfigSystem_hDestDC;
+static HGDIOBJ jonesConfigSystem_hOldSource;
+static HGDIOBJ jonesConfigSystem_hOldDest;
+static HBITMAP jonesConfigSystem_hImage;
+static HBITMAP jonesConfigSystem_hMask;
+static HBITMAP jonesConfigSystem_hDestination;
+
+static void J3DAPI jonesConfigSystem_GetBackBufferSize(uint32_t* pWidth, uint32_t* pHeight)
+{
+    *pWidth = jonesConfigSystem_renderWidth;
+    *pHeight = jonesConfigSystem_renderHeight;
+}
+
+static HICON WINAPI jonesConfigSystem_LoadIconA(HINSTANCE hInstance, LPCSTR pName)
+{
+    J3D_UNUSED(hInstance);
+    J3D_UNUSED(pName);
+    return jonesConfigSystem_hIcon;
+}
+
+UINT JonesDisplay_GetDesktopDpi(void)
+{
+    // The hidden native fixture has not switched the monitor's display mode.
+    return GetDpiForWindow(jonesConfigSystem_hDialog);
+}
+
+int JonesMain_HasStarted(void)
+{
+    return 1;
+}
+
+JonesDisplaySettings* JonesMain_GetDisplaySettings(void)
+{
+    return &jonesConfigSystem_settings;
+}
+
+const char* J3DAPI jonesString_GetString(const char* pKey)
+{
+    if ( strcmp(pKey, "JONES_STR_FONT") == 0 ) return "Segoe UI";
+    if ( strcmp(pKey, "JONES_STR_ITEMNAME") == 0 ) return "Equipment";
+    if ( strcmp(pKey, "JONES_STR_COST") == 0 ) return "Cost";
+    if ( strcmp(pKey, "JONES_STR_COUNT") == 0 ) return "Quantity";
+    return NULL;
+}
+
+// The full module is included for its actual GUI code. Unrelated application
+// operations are link dependencies, and fail immediately if a fixture
+// accidentally enters gameplay, a modal dialog or an input setup path.
+int J3DAPI JonesDialog_ShowDialog(LPCSTR pTemplate, HWND hWnd, DLGPROC pfnDialog, LPARAM data)
+{
+    J3D_UNUSED(pTemplate); J3D_UNUSED(hWnd); J3D_UNUSED(pfnDialog); J3D_UNUSED(data);
+    TEST_FAIL_MESSAGE("Unexpected modal dialog");
+}
+
+
+void J3DAPI JonesHud_BindActivateControlKeys(const size_t* pKeys, size_t numKeys)
+{
+    J3D_UNUSED(pKeys); J3D_UNUSED(numKeys);
+    TEST_FAIL_MESSAGE("Unexpected HUD binding");
+}
+
+void J3DAPI JonesMain_BindToggleMenuControlKeys(const size_t* pKeys, size_t numKeys)
+{
+    J3D_UNUSED(pKeys); J3D_UNUSED(numKeys);
+    TEST_FAIL_MESSAGE("Unexpected menu binding");
+}
+
+void JonesControl_EnableJoystickAxes(void)
+{
+    TEST_FAIL_MESSAGE("Unexpected joystick setup");
+}
+
+void J3DAPI JonesReticle_Enable(bool bEnabled)
+{
+    J3D_UNUSED(bEnabled);
+    TEST_FAIL_MESSAGE("Unexpected reticle update");
+}
+
+bool JonesReticle_IsEnabled(void)
+{
+    TEST_FAIL_MESSAGE("Unexpected reticle query");
+}
+
+BOOL J3DAPI JonesDialog_ShowFileSelectDialog(LPOPENFILENAMEA pData, int bOpen)
+{
+    J3D_UNUSED(pData); J3D_UNUSED(bOpen);
+    TEST_FAIL_MESSAGE("Unexpected file dialog");
+}
+
+int JonesFile_GetCurrentCDNum(void)
+{
+    TEST_FAIL_MESSAGE("Unexpected CD query");
+}
+
+size_t JonesMain_GetCurrentLevelNum(void)
+{
+    TEST_FAIL_MESSAGE("Unexpected level query");
+}
+
+size_t jonesInventory_GetMaxDifficultyLevel(void)
+{
+    TEST_FAIL_MESSAGE("Unexpected difficulty query");
+}
+
+int jonesInventory_GetTotalIQPoints(void)
+{
+    TEST_FAIL_MESSAGE("Unexpected IQ query");
+}
+
+
+static HBITMAP jonesConfigSystem_CreateDIB(int width, int height, uint32_t** ppPixels)
+{
+    BITMAPINFO info = { 0 };
+    info.bmiHeader.biSize = sizeof(info.bmiHeader);
+    info.bmiHeader.biWidth = width;
+    info.bmiHeader.biHeight = -height;
+    info.bmiHeader.biPlanes = 1;
+    info.bmiHeader.biBitCount = 32;
+    info.bmiHeader.biCompression = BI_RGB;
+    return CreateDIBSection(NULL, &info, DIB_RGB_COLORS, (void**)ppPixels, NULL, 0);
+}
+
+static void jonesConfigSystem_SizeDialog(int width, int height)
+{
+    UINT dpi = GetDpiForWindow(jonesConfigSystem_hDialog);
+    TEST_ASSERT_TRUE(MoveWindow(jonesConfigSystem_hDialog, 0, 0,
+        MulDiv(width, dpi, USER_DEFAULT_SCREEN_DPI),
+        MulDiv(height, dpi, USER_DEFAULT_SCREEN_DPI), FALSE));
+}
+
+static HFONT jonesConfigSystem_CreateFont(int slot, int dialogID, float* pScale)
+{
+    jonesConfigSystem_aFonts[slot] = jonesConfig_CreateDialogFont(
+        jonesConfigSystem_hDialog, 0, dialogID, pScale);
+    TEST_ASSERT_NOT_NULL(jonesConfigSystem_aFonts[slot]);
+    return jonesConfigSystem_aFonts[slot];
+}
+
+static void jonesConfigSystem_AssertColumnsFit(const char* pValueHeader)
+{
+    RECT rect;
+    TEST_ASSERT_TRUE(GetClientRect(jonesConfigSystem_hList, &rect));
+    int scrollOrigin = GetScrollPos(jonesConfigSystem_hList, SB_HORZ);
+    TEST_ASSERT_EQUAL_INT(0, scrollOrigin);
+    int nameWidth = ListView_GetColumnWidth(jonesConfigSystem_hList, 0);
+    int valueWidth = ListView_GetColumnWidth(jonesConfigSystem_hList, 1);
+    TEST_ASSERT_GREATER_OR_EQUAL_INT(0, nameWidth);
+    TEST_ASSERT_GREATER_OR_EQUAL_INT(0, valueWidth);
+    TEST_ASSERT_EQUAL_INT(rect.right - rect.left, nameWidth + valueWidth);
+    TEST_ASSERT_GREATER_OR_EQUAL_INT(
+        ListView_GetStringWidth(jonesConfigSystem_hList, pValueHeader), valueWidth);
+    HWND hHeader = ListView_GetHeader(jonesConfigSystem_hList);
+    TEST_ASSERT_EQUAL_INT(2, Header_GetItemCount(hHeader));
+    RECT headerRect;
+    TEST_ASSERT_TRUE(Header_GetItemRect(hHeader, 1, &headerRect));
+    MapWindowPoints(hHeader, jonesConfigSystem_hList, (POINT*)&headerRect, 2);
+    RECT itemRect = { 0 };
+    if ( ListView_GetItemCount(jonesConfigSystem_hList) )
+    {
+        TEST_ASSERT_TRUE(ListView_GetSubItemRect(jonesConfigSystem_hList, 0, 1, LVIR_BOUNDS, &itemRect));
+    }
+    HFONT hHeaderFont = (HFONT)SendMessageA(hHeader, WM_GETFONT, 0, 0);
+    HDC hHeaderDC = GetDC(hHeader);
+    TEST_ASSERT_NOT_NULL(hHeaderDC);
+    HGDIOBJ hOldFont = SelectObject(hHeaderDC, hHeaderFont);
+    SIZE textSize;
+    BOOL measured = GetTextExtentPoint32A(hHeaderDC, pValueHeader, (int)strlen(pValueHeader), &textSize);
+    SelectObject(hHeaderDC, hOldFont);
+    ReleaseDC(hHeader, hHeaderDC);
+    TEST_ASSERT_TRUE(measured);
+    LOGFONTA headerFont = { 0 }, listFont = { 0 };
+    GetObjectA(hHeaderFont, sizeof(headerFont), &headerFont);
+    GetObjectA((HFONT)SendMessageA(jonesConfigSystem_hList, WM_GETFONT, 0, 0), sizeof(listFont), &listFont);
+    printf("native store: client=%ld columns=%d+%d header=%ld..%ld item=%ld..%ld hscroll=%d headerFont=%ld listFont=%ld headerText=%ld\n",
+        rect.right - rect.left, nameWidth, valueWidth, headerRect.left, headerRect.right,
+        itemRect.left, itemRect.right, GetScrollPos(jonesConfigSystem_hList, SB_HORZ),
+        headerFont.lfHeight, listFont.lfHeight, textSize.cx);
+    // A temporary trailing column prevents AUTOSIZE_USEHEADER from applying
+    // its special "last column fills the remaining viewport" behavior. Native
+    // autosizing includes control/theme text insets that glyph width omits.
+    LVCOLUMNA trailing = { 0 };
+    trailing.mask = LVCF_WIDTH;
+    trailing.cx = 0;
+    TEST_ASSERT_EQUAL_INT(2, ListView_InsertColumn(jonesConfigSystem_hList, 2, &trailing));
+    TEST_ASSERT_TRUE(ListView_SetColumnWidth(jonesConfigSystem_hList, 1, LVSCW_AUTOSIZE_USEHEADER));
+    int headerAutoWidth = ListView_GetColumnWidth(jonesConfigSystem_hList, 1);
+    int itemAutoWidth = 0;
+    if ( ListView_GetItemCount(jonesConfigSystem_hList) )
+    {
+        TEST_ASSERT_TRUE(ListView_SetColumnWidth(jonesConfigSystem_hList, 1, LVSCW_AUTOSIZE));
+        itemAutoWidth = ListView_GetColumnWidth(jonesConfigSystem_hList, 1);
+    }
+    TEST_ASSERT_TRUE(ListView_DeleteColumn(jonesConfigSystem_hList, 2));
+    TEST_ASSERT_TRUE(ListView_SetColumnWidth(jonesConfigSystem_hList, 1, valueWidth));
+    TEST_ASSERT_EQUAL_INT(scrollOrigin, GetScrollPos(jonesConfigSystem_hList, SB_HORZ));
+    printf("native value text insets: header autosize=%d item autosize=%d configured=%d DPI=%u\n",
+        headerAutoWidth, itemAutoWidth, valueWidth, GetDpiForWindow(jonesConfigSystem_hList));
+    TEST_ASSERT_GREATER_OR_EQUAL_INT(headerAutoWidth, valueWidth);
+    TEST_ASSERT_GREATER_OR_EQUAL_INT(itemAutoWidth, valueWidth);
+    TEST_ASSERT_GREATER_OR_EQUAL_INT(textSize.cx, valueWidth);
+    TEST_ASSERT_GREATER_OR_EQUAL_INT(rect.left, headerRect.left);
+    TEST_ASSERT_LESS_OR_EQUAL_INT(rect.right, headerRect.right);
+    if ( ListView_GetItemCount(jonesConfigSystem_hList) )
+    {
+        TEST_ASSERT_GREATER_OR_EQUAL_INT(rect.left, itemRect.left);
+        TEST_ASSERT_LESS_OR_EQUAL_INT(rect.right, itemRect.right);
+    }
+}
+
+TEST_GROUP(jonesConfigSystem);
+
+TEST_SETUP(jonesConfigSystem)
+{
+    memset(&jonesConfigSystem_settings, 0, sizeof(jonesConfigSystem_settings));
+    memset(jonesConfigSystem_aFonts, 0, sizeof(jonesConfigSystem_aFonts));
+    jonesConfigSystem_hDialog = jonesConfigSystem_hList = NULL;
+    jonesConfigSystem_hIcon = NULL;
+    jonesConfigSystem_hImages = NULL;
+    jonesConfigSystem_hSourceDC = jonesConfigSystem_hDestDC = NULL;
+    jonesConfigSystem_hOldSource = jonesConfigSystem_hOldDest = NULL;
+    jonesConfigSystem_hImage = jonesConfigSystem_hMask = jonesConfigSystem_hDestination = NULL;
+    jonesConfigSystem_previousDpi = SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
+    if ( !jonesConfigSystem_previousDpi ) TEST_IGNORE_MESSAGE("Per-monitor V2 thread DPI context is unavailable.");
+
+    INITCOMMONCONTROLSEX controls = { sizeof(controls), ICC_LISTVIEW_CLASSES };
+    if ( !InitCommonControlsEx(&controls) ) TEST_IGNORE_MESSAGE("Native list-view controls are unavailable.");
+    jonesConfigSystem_hDialog = CreateWindowExA(0, "STATIC", "OpenJones3D authored dialog test", WS_POPUP,
+        0, 0, 600, 400, NULL, NULL, GetModuleHandleA(NULL), NULL);
+    if ( !jonesConfigSystem_hDialog ) TEST_IGNORE_MESSAGE("A hidden Win32 window is unavailable.");
+    SendMessageA(jonesConfigSystem_hDialog, WM_SETFONT, (WPARAM)GetStockObject(DEFAULT_GUI_FONT), FALSE);
+    TEST_ASSERT_FALSE(IsWindowVisible(jonesConfigSystem_hDialog));
+
+    MONITORINFOEXA monitor = { .cbSize = sizeof(monitor) };
+    DEVMODEA desktop = { .dmSize = sizeof(desktop) };
+    HMONITOR hMonitor = MonitorFromWindow(jonesConfigSystem_hDialog, MONITOR_DEFAULTTONEAREST);
+    if ( !hMonitor || !GetMonitorInfoA(hMonitor, (MONITORINFO*)&monitor)
+        || !EnumDisplaySettingsExA(monitor.szDevice, ENUM_REGISTRY_SETTINGS, &desktop, 0)
+        || !desktop.dmPelsWidth || !desktop.dmPelsHeight )
+    {
+        TEST_IGNORE_MESSAGE("The monitor's saved desktop mode is unavailable.");
+    }
+    jonesConfigSystem_desktopWidth = jonesConfigSystem_renderWidth = desktop.dmPelsWidth;
+    jonesConfigSystem_desktopHeight = jonesConfigSystem_renderHeight = desktop.dmPelsHeight;
+    printf("jonesConfigSystem: DPI=%u, saved desktop=%lux%lu\n",
+        GetDpiForWindow(jonesConfigSystem_hDialog), (unsigned long)desktop.dmPelsWidth,
+        (unsigned long)desktop.dmPelsHeight);
+}
+
+TEST_TEAR_DOWN(jonesConfigSystem)
+{
+    if ( jonesConfigSystem_hDialog ) DestroyWindow(jonesConfigSystem_hDialog);
+    if ( jonesConfigSystem_hImages ) ImageList_Destroy(jonesConfigSystem_hImages);
+    if ( jonesConfigSystem_hIcon ) DestroyIcon(jonesConfigSystem_hIcon);
+    for ( size_t i = 0; i < STD_ARRAYLEN(jonesConfigSystem_aFonts); ++i )
+    {
+        if ( jonesConfigSystem_aFonts[i] ) DeleteObject(jonesConfigSystem_aFonts[i]);
+    }
+    if ( jonesConfigSystem_hSourceDC )
+    {
+        if ( jonesConfigSystem_hOldSource ) SelectObject(jonesConfigSystem_hSourceDC, jonesConfigSystem_hOldSource);
+        DeleteDC(jonesConfigSystem_hSourceDC);
+    }
+    if ( jonesConfigSystem_hDestDC )
+    {
+        if ( jonesConfigSystem_hOldDest ) SelectObject(jonesConfigSystem_hDestDC, jonesConfigSystem_hOldDest);
+        DeleteDC(jonesConfigSystem_hDestDC);
+    }
+    if ( jonesConfigSystem_hImage ) DeleteObject(jonesConfigSystem_hImage);
+    if ( jonesConfigSystem_hMask ) DeleteObject(jonesConfigSystem_hMask);
+    if ( jonesConfigSystem_hDestination ) DeleteObject(jonesConfigSystem_hDestination);
+    if ( jonesConfigSystem_previousDpi ) SetThreadDpiAwarenessContext(jonesConfigSystem_previousDpi);
+}
+
+TEST(jonesConfigSystem, NativeFontsFollowTheFullscreenPresentationScale)
+{
+    // Real font creation and host DPI must agree with the resolution policy;
+    // exact glyph pixels remain font/host dependent and are not golden images.
+    jonesConfigSystem_SizeDialog(266, 103);
+    float nativeScale = 0.0f;
+    HFONT hNative = jonesConfigSystem_CreateFont(0, 211, &nativeScale);
+    LOGFONTA nativeFont;
+    TEST_ASSERT_EQUAL_INT(sizeof(nativeFont), GetObjectA(hNative, sizeof(nativeFont), &nativeFont));
+    TEST_ASSERT_LESS_THAN_INT(0, nativeFont.lfHeight);
+    TEST_ASSERT_GREATER_THAN_FLOAT(0.0f, nativeScale);
+
+    jonesConfigSystem_renderWidth = jonesConfigSystem_desktopWidth / 2;
+    jonesConfigSystem_renderHeight = jonesConfigSystem_desktopHeight / 2;
+    TEST_ASSERT_GREATER_THAN_UINT32(0, jonesConfigSystem_renderWidth);
+    TEST_ASSERT_GREATER_THAN_UINT32(0, jonesConfigSystem_renderHeight);
+    float halfScale = 0.0f;
+    HFONT hHalf = jonesConfigSystem_CreateFont(1, 211, &halfScale);
+    LOGFONTA halfFont;
+    TEST_ASSERT_EQUAL_INT(sizeof(halfFont), GetObjectA(hHalf, sizeof(halfFont), &halfFont));
+    TEST_ASSERT_LESS_THAN_INT(0, halfFont.lfHeight);
+    TEST_ASSERT_GREATER_THAN_INT(nativeFont.lfHeight, halfFont.lfHeight);
+    TEST_ASSERT_FLOAT_WITHIN(0.002f, nativeScale * 0.5f, halfScale);
+    TEST_ASSERT_INT_WITHIN(1, (-nativeFont.lfHeight + 1) / 2, -halfFont.lfHeight);
+}
+
+TEST(jonesConfigSystem, NativeStoreColumnsFitAfterScrollbarChanges)
+{
+    jonesConfigSystem_SizeDialog(538, 297);
+    jonesConfigSystem_renderWidth = jonesConfigSystem_desktopWidth / 2;
+    jonesConfigSystem_renderHeight = jonesConfigSystem_desktopHeight / 2;
+    float scale;
+    HFONT hFont = jonesConfigSystem_CreateFont(0, 190, &scale);
+    // Reproduce the observed 1080p store's actual 12-pixel font independent of
+    // the host's template rounding; the separate font case covers that path.
+    LOGFONTA storeFont;
+    TEST_ASSERT_EQUAL_INT(sizeof(storeFont), GetObjectA(hFont, sizeof(storeFont), &storeFont));
+    storeFont.lfHeight = -12;
+    DeleteObject(hFont);
+    hFont = jonesConfigSystem_aFonts[0] = CreateFontIndirectA(&storeFont);
+    TEST_ASSERT_NOT_NULL(hFont);
+    jonesConfigSystem_hList = CreateWindowExA(0, WC_LISTVIEWA, "", WS_CHILD | LVS_REPORT | LVS_SHAREIMAGELISTS,
+        0, 0, 320, 120, jonesConfigSystem_hDialog, (HMENU)(INT_PTR)1005, GetModuleHandleA(NULL), NULL);
+    TEST_ASSERT_NOT_NULL(jonesConfigSystem_hList);
+    SendMessageA(jonesConfigSystem_hList, WM_SETFONT, (WPARAM)hFont, FALSE);
+
+    // An authored two-color icon exercises the real image-list copies while
+    // replacing only the retail-resource lookup used by the application.
+    const unsigned char aAndBits[8] = { 0 };
+    const unsigned char aXorBits[8] = { 0xAA, 0, 0x55, 0, 0xAA, 0, 0x55, 0 };
+    jonesConfigSystem_hIcon = CreateIcon(GetModuleHandleA(NULL), 4, 4, 1, 1, aAndBits, aXorBits);
+    TEST_ASSERT_NOT_NULL(jonesConfigSystem_hIcon);
+    tStoreCartState cart = { 0 };
+    int iconsReady = jonesConfig_StoreInitItemIcons(jonesConfigSystem_hDialog, &cart);
+    jonesConfigSystem_hImages = cart.hList;
+    TEST_ASSERT_TRUE(iconsReady);
+    int iconWidth, iconHeight;
+    TEST_ASSERT_TRUE(ImageList_GetIconSize(jonesConfigSystem_hImages, &iconWidth, &iconHeight));
+    TEST_ASSERT_INT_WITHIN(1, 24, iconWidth);
+    TEST_ASSERT_EQUAL_INT(iconWidth, iconHeight);
+    ListView_SetImageList(jonesConfigSystem_hList, jonesConfigSystem_hImages, LVSIL_SMALL);
+
+    jonesConfig_StoreSetListColumns(jonesConfigSystem_hList, "JONES_STR_COST");
+    for ( int i = 0; i < 64; ++i )
+    {
+        LVITEMA item = { 0 };
+        item.mask = LVIF_TEXT | LVIF_IMAGE;
+        item.iItem = i;
+        item.pszText = "Authored store item";
+        item.iImage = i % (int)STD_ARRAYLEN(JonesHud_aStoreItems);
+        TEST_ASSERT_EQUAL_INT(i, ListView_InsertItem(jonesConfigSystem_hList, &item));
+        char aPrice[32];
+        snprintf(aPrice, sizeof(aPrice), "%d", JonesHud_aStoreItems[item.iImage].price);
+        ListView_SetItemText(jonesConfigSystem_hList, i, 1, aPrice);
+    }
+    RECT rowRect;
+    TEST_ASSERT_TRUE(ListView_GetItemRect(jonesConfigSystem_hList, 0, &rowRect, LVIR_BOUNDS));
+    TEST_ASSERT_GREATER_OR_EQUAL_INT(iconHeight, rowRect.bottom - rowRect.top);
+    HDC hTextDC = GetDC(jonesConfigSystem_hList);
+    TEST_ASSERT_NOT_NULL(hTextDC);
+    HGDIOBJ hOldFont = SelectObject(hTextDC, hFont);
+    TEXTMETRICA metrics;
+    BOOL measured = GetTextMetricsA(hTextDC, &metrics);
+    SelectObject(hTextDC, hOldFont);
+    ReleaseDC(jonesConfigSystem_hList, hTextDC);
+    TEST_ASSERT_TRUE(measured);
+    TEST_ASSERT_GREATER_OR_EQUAL_INT(metrics.tmHeight, rowRect.bottom - rowRect.top);
+    TEST_ASSERT_GREATER_THAN_INT(ListView_GetCountPerPage(jonesConfigSystem_hList), ListView_GetItemCount(jonesConfigSystem_hList));
+    // A fully hidden control defers automatic scrollbar visibility updates.
+    // Give it a native vertical scrollbar while its parent remains hidden.
+    TEST_ASSERT_TRUE(ShowScrollBar(jonesConfigSystem_hList, SB_VERT, TRUE));
+    TEST_ASSERT_TRUE(GetWindowLongPtrA(jonesConfigSystem_hList, GWL_STYLE) & WS_VSCROLL);
+    ListView_SetItemState(jonesConfigSystem_hList, 3, LVIS_SELECTED, LVIS_SELECTED);
+    jonesConfig_StoreSetListColumns(jonesConfigSystem_hList, "JONES_STR_COST");
+    jonesConfigSystem_AssertColumnsFit("Cost");
+    TEST_ASSERT_EQUAL_INT(3, ListView_GetNextItem(jonesConfigSystem_hList, -1, LVNI_SELECTED));
+    for ( size_t i = 0; i < STD_ARRAYLEN(JonesHud_aStoreItems); ++i )
+    {
+        char aPrice[32];
+        snprintf(aPrice, sizeof(aPrice), "%d", JonesHud_aStoreItems[i].price);
+        TEST_ASSERT_GREATER_OR_EQUAL_INT(ListView_GetStringWidth(jonesConfigSystem_hList, aPrice),
+            ListView_GetColumnWidth(jonesConfigSystem_hList, 1));
+    }
+
+    // Match the narrow viewports seen in the fullscreen trading post. Inspect
+    // actual header/subitem bounds and the scroll origin, not only width sums.
+    const int aClientWidths[] = { 134, 160, 170 };
+    for ( size_t i = 0; i < STD_ARRAYLEN(aClientWidths); ++i )
+    {
+        RECT client, window;
+        TEST_ASSERT_TRUE(GetClientRect(jonesConfigSystem_hList, &client));
+        TEST_ASSERT_TRUE(GetWindowRect(jonesConfigSystem_hList, &window));
+        int nonClientWidth = window.right - window.left - (client.right - client.left);
+        TEST_ASSERT_TRUE(MoveWindow(jonesConfigSystem_hList, 0, 0,
+            aClientWidths[i] + nonClientWidth, 120, FALSE));
+        TEST_ASSERT_TRUE(ShowScrollBar(jonesConfigSystem_hList, SB_VERT, TRUE));
+        jonesConfig_StoreSetListColumns(jonesConfigSystem_hList, "JONES_STR_COST");
+        jonesConfigSystem_AssertColumnsFit("Cost");
+    }
+
+    jonesConfig_StoreSetListColumns(jonesConfigSystem_hList, "JONES_STR_COUNT");
+    jonesConfigSystem_AssertColumnsFit("Quantity");
+    TEST_ASSERT_GREATER_OR_EQUAL_INT(ListView_GetStringWidth(jonesConfigSystem_hList, "4095"),
+        ListView_GetColumnWidth(jonesConfigSystem_hList, 1));
+    TEST_ASSERT_TRUE(ListView_DeleteAllItems(jonesConfigSystem_hList));
+    TEST_ASSERT_TRUE(ShowScrollBar(jonesConfigSystem_hList, SB_VERT, FALSE));
+    jonesConfig_StoreSetListColumns(jonesConfigSystem_hList, "JONES_STR_COST");
+    jonesConfigSystem_AssertColumnsFit("Cost");
+    TEST_ASSERT_FALSE(IsWindowVisible(jonesConfigSystem_hDialog));
+}
+
+TEST(jonesConfigSystem, NativeBitmapDrawingPreservesMaskAndControlBounds)
+{
+    HWND hImageControl = CreateWindowExA(0, "STATIC", "", WS_CHILD, 0, 0, 4, 4,
+        jonesConfigSystem_hDialog, (HMENU)(INT_PTR)1182, GetModuleHandleA(NULL), NULL);
+    TEST_ASSERT_NOT_NULL(hImageControl);
+    uint32_t *pImage, *pMask, *pDestination;
+    jonesConfigSystem_hImage = jonesConfigSystem_CreateDIB(2, 2, &pImage);
+    jonesConfigSystem_hMask = jonesConfigSystem_CreateDIB(2, 2, &pMask);
+    jonesConfigSystem_hDestination = jonesConfigSystem_CreateDIB(8, 6, &pDestination);
+    TEST_ASSERT_NOT_NULL(jonesConfigSystem_hImage);
+    TEST_ASSERT_NOT_NULL(jonesConfigSystem_hMask);
+    TEST_ASSERT_NOT_NULL(jonesConfigSystem_hDestination);
+    const uint32_t aImage[4] = { 0x00FF0000, 0, 0x000000FF, 0 };
+    memcpy(pImage, aImage, sizeof(aImage));
+    pMask[0] = pMask[2] = 0;
+    pMask[1] = pMask[3] = 0x00FFFFFF;
+    jonesConfigSystem_hSourceDC = CreateCompatibleDC(NULL);
+    jonesConfigSystem_hDestDC = CreateCompatibleDC(NULL);
+    TEST_ASSERT_NOT_NULL(jonesConfigSystem_hSourceDC);
+    TEST_ASSERT_NOT_NULL(jonesConfigSystem_hDestDC);
+    jonesConfigSystem_hOldSource = SelectObject(jonesConfigSystem_hSourceDC, jonesConfigSystem_hImage);
+    jonesConfigSystem_hOldDest = SelectObject(jonesConfigSystem_hDestDC, jonesConfigSystem_hDestination);
+    TEST_ASSERT_NOT_NULL(jonesConfigSystem_hOldSource);
+    TEST_ASSERT_NOT_NULL(jonesConfigSystem_hOldDest);
+    TEST_ASSERT_NOT_EQUAL_INT(0, SetStretchBltMode(jonesConfigSystem_hDestDC, COLORONCOLOR));
+
+    // The transparent source pixels are black; SRCAND then SRCPAINT must
+    // retain the destination there. Both paths must leave every pixel outside
+    // the 4x4 control unchanged. BI_RGB's unused high byte is not an alpha value.
+    const uint32_t background = 0x00123456;
+    for ( int masked = 0; masked <= 1; ++masked )
+    {
+        for ( int i = 0; i < 8 * 6; ++i ) pDestination[i] = background;
+        TEST_ASSERT_TRUE(jonesConfig_DrawImageOnDialogItem(jonesConfigSystem_hDialog,
+            jonesConfigSystem_hSourceDC, jonesConfigSystem_hDestDC, 1182,
+            jonesConfigSystem_hImage, masked ? jonesConfigSystem_hMask : NULL));
+        TEST_ASSERT_TRUE(GdiFlush());
+        for ( int y = 0; y < 6; ++y )
+        {
+            for ( int x = 0; x < 8; ++x )
+            {
+                uint32_t expected = background;
+                if ( x < 4 && y < 4 )
+                {
+                    int source = (y / 2) * 2 + x / 2;
+                    if ( !masked || aImage[source] ) expected = aImage[source];
+                }
+                TEST_ASSERT_EQUAL_HEX32(expected, pDestination[y * 8 + x] & 0x00FFFFFF);
+            }
+        }
+    }
+}
+
+TEST_GROUP_RUNNER(jonesConfigSystem)
+{
+    RUN_TEST_CASE(jonesConfigSystem, NativeFontsFollowTheFullscreenPresentationScale);
+    RUN_TEST_CASE(jonesConfigSystem, NativeStoreColumnsFitAfterScrollbarChanges);
+    RUN_TEST_CASE(jonesConfigSystem, NativeBitmapDrawingPreservesMaskAndControlBounds);
+}
+
+static void jonesConfigSystem_RunAll(void)
+{
+    RUN_TEST_GROUP(jonesConfigSystem);
+}
+
+int main(int argc, const char* argv[])
+{
+    return UnityMain(argc, argv, jonesConfigSystem_RunAll);
+}
