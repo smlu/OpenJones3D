@@ -3340,6 +3340,7 @@ void J3DAPI JonesHud_RenderMenuItem(JonesHudMenuItem* pItem)
         rdModel3_GetThingColor(pItem->prdIcon, &color);
         float oalpha = color.alpha;
         color.alpha  = pItem->alpha;
+        rdFaceFlags faceFlags = 0;
 
         if ( (pItem->flags & JONESHUD_MENUITEM_SCROLLING) == 0
             && ((pItem->flags & JONESHUD_MENUITEM_COLUMN_COLLAPSING) != 0
@@ -3415,6 +3416,12 @@ void J3DAPI JonesHud_RenderMenuItem(JonesHudMenuItem* pItem)
                 }
             }
 
+            // Fixed: Fading icons must not occlude overlapping icons through depth writes.
+            const float visibleAlpha = bDisabled ? JONESHUD_ITEM_DISABLED_ALPHA : JONESHUD_ITEM_VISIBLE_ALPHA;
+            if ( color.alpha < visibleAlpha )
+            {
+                faceFlags |= RD_FF_ZWRITE_DISABLED;
+            }
         }
         else
         {
@@ -3435,7 +3442,7 @@ void J3DAPI JonesHud_RenderMenuItem(JonesHudMenuItem* pItem)
         }
 
         rdModel3_SetThingColor(pItem->prdIcon, &color);
-        rdModel3_Draw(pItem->prdIcon, &placement);
+        rdModel3_DrawWithFlags(pItem->prdIcon, &placement, faceFlags);
 
         pItem->alpha = color.alpha;
         color.alpha  = oalpha;
