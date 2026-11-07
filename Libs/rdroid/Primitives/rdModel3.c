@@ -51,8 +51,10 @@ static rdLight* apMeshLights[RDCAMERA_MAX_LIGHTS] = { 0 };
 rdVector3 aLocalLightPos[RDCAMERA_MAX_LIGHTS]     = { 0 };
 
 static rdFaceFlags extraFaceFlags = 0;
+static rdFaceFlags drawFaceFlags = 0;
 
 void J3DAPI rdModel3_LoadPostProcess(rdModel3* pModel3); // Added
+static int J3DAPI rdModel3_DrawModel(rdThing* pThing, const rdMatrix34* pPlacement);
 
 void rdModel3_InstallHooks(void)
 {
@@ -1636,6 +1638,21 @@ void J3DAPI rdModel3_SetNodeColorForNonAmputatedJoints(const rdThing* prdThing, 
 
 int J3DAPI rdModel3_Draw(rdThing* pThing, const rdMatrix34* pPlacement)
 {
+    return rdModel3_DrawWithFlags(pThing, pPlacement, 0);
+}
+
+int J3DAPI rdModel3_DrawWithFlags(rdThing* pThing, const rdMatrix34* pPlacement, rdFaceFlags flags)
+{
+    // Added: Copy per-draw flags into deferred faces without changing shared assets.
+    rdFaceFlags previousFlags = drawFaceFlags;
+    drawFaceFlags = flags;
+    int result = rdModel3_DrawModel(pThing, pPlacement);
+    drawFaceFlags = previousFlags;
+    return result;
+}
+
+static int J3DAPI rdModel3_DrawModel(rdThing* pThing, const rdMatrix34* pPlacement)
+{
     RD_ASSERTREL(rdCamera_g_pCurCamera != NULL);
     RD_ASSERTREL(pThing != NULL);
     RD_ASSERTREL(pThing->data.pModel3 != NULL);
@@ -1910,7 +1927,7 @@ void J3DAPI rdModel3_DrawFace(const rdFace* pFace, const rdVector3* aTransformed
         }
     }
 
-    pPoly->flags     = pFace->flags | extraFaceFlags;
+    pPoly->flags     = pFace->flags | extraFaceFlags | drawFaceFlags;
     pPoly->matCelNum = pFace->matCelNum;
     pPoly->pMaterial = pFace->pMaterial;
 
