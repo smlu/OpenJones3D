@@ -4,6 +4,44 @@
 #include <rdroid/types.h>
 #include <std/General/stdColor.h>
 
+// Added: Name HUD-owned categories without changing the stored int fields.
+typedef enum eJonesHudSoundSlot
+{
+    JONESHUD_SOUND_MENU_THEME         = 0,
+    JONESHUD_SOUND_MENU_CLOSE         = 1,
+    JONESHUD_SOUND_MENU_MOVE          = 2,
+    JONESHUD_SOUND_MENU_EXPAND        = 3,
+    JONESHUD_SOUND_UNASSIGNED_4       = 4,
+    JONESHUD_SOUND_ITEM_FOUND         = 5,
+    JONESHUD_SOUND_ITEM_SLIDE         = 6,
+    JONESHUD_SOUND_CANNOT_USE_VOICE_1 = 7,
+    JONESHUD_SOUND_CANNOT_USE_VOICE_2 = 8,
+    JONESHUD_SOUND_CANNOT_USE_VOICE_3 = 9,
+    JONESHUD_SOUND_CANNOT_USE_VOICE_4 = 10,
+    JONESHUD_SOUND_PLAYER_DIED        = 11,
+    JONESHUD_SOUND_TREASURE_FOUND     = 12,
+    JONESHUD_SOUND_COUNT              = 13
+} JonesHudSoundSlot;
+
+typedef enum eJonesHudCreditType
+{
+    JONESHUD_CREDIT_ASCII_TEXT   = 0x01,
+    JONESHUD_CREDIT_COLORED_TEXT = 0x02,
+    JONESHUD_CREDIT_IMAGE        = 0x04,
+    JONESHUD_CREDIT_WHITE_TEXT   = 0x10
+} JonesHudCreditType;
+
+typedef enum eJonesHudCreditFlag
+{
+    JONESHUD_CREDIT_ANIMATED = 0x08
+} JonesHudCreditFlag;
+
+#define JONESHUD_STATIC_SOUND_UNASSIGNED (-1)
+#define JONESHUD_STORE_ITEM_COUNT 14
+#define JONESHUD_CREDIT_COUNT     327
+#define JONESHUD_CREDIT_FONT_COLOR_COUNT 12
+#define JONESHUD_COLOR_BYTE_MAX_F 255.0f
+
 // HUD constants
 static const size_t JonesHud_msecGameOverWait = 5000; // 5 sec
 
@@ -23,7 +61,7 @@ static const rdVector3 JonesHud_camViewPyr = { -17.700001f , 0.0f ,  0.0f };
 // Store constants
 
 // TODO: Sync this constant with the one in jonesConfig
-static const tStoreItem JonesHud_aStoreItems[14] = {
+static const tStoreItem JonesHud_aStoreItems[JONESHUD_STORE_ITEM_COUNT] = {
 // icon ID |    item store name       |    item ammunition name    |            menu ID              | price | units per bought item 
     { 204, "JONES_STR_STORE_MAUSER"   , "JONES_STR_CLIP_MAUSER"    , JONESHUD_MENU_WEAP_MAUSER       ,   50,  5 },
     { 198, "JONES_STR_STORE_PPSH41"   , "JONES_STR_CLIP_PPSH41"    , JONESHUD_MENU_WEAP_SUBMACHINE   ,  100, 20 },
@@ -43,9 +81,24 @@ static const tStoreItem JonesHud_aStoreItems[14] = {
 
 
 // Sound fx indices to jones3Dstatic sound list
-// TODO: Replace indices in the list with some constants
-// Note, from index 7 to the end are indy voice lines for the item that can't be activated (e.g. whoops)
-static const int JonesHud_aSoundFxIdxs[13] = { -1, 52, 54, 53, -1, 57, 56, 59, 60, 61, 62, 136, 137 };
+// Static-world indices are authored data; named slots describe their HUD roles.
+// Slots 7-10 are cannot-use voice lines; 11 is death music and 12 is treasure audio.
+static const int JonesHud_aSoundFxIdxs[JONESHUD_SOUND_COUNT] =
+{
+    [JONESHUD_SOUND_MENU_THEME]         = JONESHUD_STATIC_SOUND_UNASSIGNED,
+    [JONESHUD_SOUND_MENU_CLOSE]         = 52,
+    [JONESHUD_SOUND_MENU_MOVE]          = 54,
+    [JONESHUD_SOUND_MENU_EXPAND]        = 53,
+    [JONESHUD_SOUND_UNASSIGNED_4]       = JONESHUD_STATIC_SOUND_UNASSIGNED,
+    [JONESHUD_SOUND_ITEM_FOUND]         = 57,
+    [JONESHUD_SOUND_ITEM_SLIDE]         = 56,
+    [JONESHUD_SOUND_CANNOT_USE_VOICE_1] = 59,
+    [JONESHUD_SOUND_CANNOT_USE_VOICE_2] = 60,
+    [JONESHUD_SOUND_CANNOT_USE_VOICE_3] = 61,
+    [JONESHUD_SOUND_CANNOT_USE_VOICE_4] = 62,
+    [JONESHUD_SOUND_PLAYER_DIED]        = 136,
+    [JONESHUD_SOUND_TREASURE_FOUND]     = 137,
+};
 
 
 // Inventory menu item constants
@@ -487,7 +540,7 @@ static char* JonesHud_apItemNames[JONESHUD_MAX_MENU_ITEMS] =
 
 // End credits constants
 
-static const rdVector4 JonesHud_aCreditFontColors[12] =
+static const rdVector4 JonesHud_aCreditFontColors[JONESHUD_CREDIT_FONT_COLOR_COUNT] =
 {
     { { 1.0f }, { 1.0f }, { 1.0f }, { 1.0f } },
     { { 0.95599997f }, { 0.043000001f }, { 0.88999999f }, { 1.0f } },
@@ -503,9 +556,9 @@ static const rdVector4 JonesHud_aCreditFontColors[12] =
     { { 0.94499999f }, { 0.70899999f }, { 0.086000003f }, { 1.0f } }
 };
 
-// TODO: Update flags to be represented as hex numbers
+// Authored row kinds use JonesHudCreditType; only the two final images animate.
 // Fixed: [v1.2] Increased count from 325 to 327 for the two added records
-static tJonesCreditEntry JonesHud_aCredits[327] =
+static tJonesCreditEntry JonesHud_aCredits[JONESHUD_CREDIT_COUNT] =
 {
     { "gen_4_pyramid.mat", 4, 1 },
     { "JONES_STR_HGAME", 2, 1 },
@@ -830,8 +883,8 @@ static tJonesCreditEntry JonesHud_aCredits[327] =
     { "gen_4_r2d2.mat", 4, 1 },
     { "JONES_STR_HSPTHXS", 2, 1 },
     { "GEORGE LUCAS", 1, 0 },
-    { "mat\\gg_a.mat", 0x0C, 11 },
-    { "mat\\gg_b.mat", 0x0C, 11 },
+    { "mat\\gg_a.mat", (int)JONESHUD_CREDIT_IMAGE | (int)JONESHUD_CREDIT_ANIMATED, 11 },
+    { "mat\\gg_b.mat", (int)JONESHUD_CREDIT_IMAGE | (int)JONESHUD_CREDIT_ANIMATED, 11 },
     { "\xA9 LUCASARTS ENTERTAINMENT COMPANY LLC", 2, 0 },
     { "JONES_STR_HCOPY", 2, 0 }
 };
@@ -845,10 +898,10 @@ static tJonesCreditEntry JonesHud_aCredits[327] =
 static inline tStdColor JonesHud_RdVector4ToStdColor(const rdVector4* pColor)
 {
     return STD_RGBA(
-        (uint8_t)(pColor->x * 255.0f),
-        (uint8_t)(pColor->y * 255.0f),
-        (uint8_t)(pColor->z * 255.0f),
-        (uint8_t)(pColor->w * 255.0f)
+        (uint8_t)(pColor->x * JONESHUD_COLOR_BYTE_MAX_F),
+        (uint8_t)(pColor->y * JONESHUD_COLOR_BYTE_MAX_F),
+        (uint8_t)(pColor->z * JONESHUD_COLOR_BYTE_MAX_F),
+        (uint8_t)(pColor->w * JONESHUD_COLOR_BYTE_MAX_F)
     );
 }
 
@@ -860,10 +913,10 @@ static inline tStdColor JonesHud_RdVector4ToStdColor(const rdVector4* pColor)
  */
 static inline void JonesHud_StdColorToRdVector4(tStdColor color, rdVector4* pOutColor)
 {
-    pOutColor->x = STD_GETRED(color) / 255.0f;
-    pOutColor->y = STD_GETGREEN(color) / 255.0f;
-    pOutColor->z = STD_GETBLUE(color) / 255.0f;
-    pOutColor->w = STD_GETALPHA(color) / 255.0f;
+    pOutColor->x = STD_GETRED(color) / JONESHUD_COLOR_BYTE_MAX_F;
+    pOutColor->y = STD_GETGREEN(color) / JONESHUD_COLOR_BYTE_MAX_F;
+    pOutColor->z = STD_GETBLUE(color) / JONESHUD_COLOR_BYTE_MAX_F;
+    pOutColor->w = STD_GETALPHA(color) / JONESHUD_COLOR_BYTE_MAX_F;
 }
 
 #endif // JONESHUDCONSTANTS_H
