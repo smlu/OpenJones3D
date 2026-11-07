@@ -84,8 +84,11 @@ jobs:
         $actual = @(($listing | ConvertFrom-Json).tests | ForEach-Object { $_.name })
         $requiredSuites = @(
           'Jones3D.Config',
+          'Jones3D.Hud',
           'j3dcore.Macros',
           'rdroid.Math',
+          'rdroid.Model3',
+          'rdroid.Cache',
           'std',
           'sound',
           'sith',
