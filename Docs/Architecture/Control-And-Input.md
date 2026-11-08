@@ -19,7 +19,7 @@ Primary source files:
 
 ## Architectural Split
 
-The engine does not let gameplay code talk to DirectInput or raw key codes directly.
+The engine does not let gameplay code talk to the platform input API or raw key codes directly.
 
 Instead it uses:
 
@@ -81,6 +81,10 @@ The two backends follow the same architecture:
 - open acquires the runtime control state
 - per-frame reads update raw key/button/axis arrays
 - helper functions expose normalized axis and key state to `sithControl`
+
+The DX9 backend uses DirectInput8 for the keyboard, mouse, and joysticks, and XInput for gamepads. DirectInput devices are enumerated at startup. XInput pads are scanned at startup and rescanned every two seconds while the game runs; a connected pad is appended to the joystick list after the DirectInput joysticks. A pad registers six axes: X and Y on the left stick, RX and RY on the right stick, and Z and RZ on the left and right triggers. Its A/B/X/Y, left/right shoulder, Back, Start, and stick-click buttons map to joystick buttons 0 through 9, and the d-pad drives POV 0. Trigger values below 30 (out of 255) read as zero.
+
+The device readers copy the raw state into shared arrays. Keyboard state is the DirectInput key array. Joysticks are polled and their `DIJOYSTATE` axes (X, Y, Z, RX, RY, RZ), buttons, and POV hats are copied into the axis and key state. Mouse X, Y, and Z are deltas since the previous read; Z is the wheel delta in DirectInput units (a wheel notch is 120), and Y is positive down. When two reads are less than 25 ms apart, X and Y are averaged with the previous delta. With mouse sensitivity enabled, the deltas are instead accumulated and clamped to the registered axis range. The DX6 backend has the same shape but uses the older DirectInput interfaces and has no XInput path.
 
 Important entry points in the DX9 path are:
 
@@ -212,3 +216,15 @@ That separation is one of the cleaner parts of the engine architecture. Even tho
 - hardware details do not leak into player movement code
 - gameplay code does not need to know which device produced an action
 - camera idling and control policies can sit above the raw device layer without contaminating it
+
+## Control Scheme Files
+
+The hardcoded defaults above are not the only source of bindings. The game also supports the original `.kfg` control schemes, implemented in [`jonesConfig.c`](../../Jones3D/Display/jonesConfig.c).
+
+The active scheme is named by the `controls.configFile` key in `Jones.cfg`. [`jonesConfig_Startup()`](../../Jones3D/Display/jonesConfig.c#L1177) sets up the key-set path, loads the active scheme through [`jonesConfig_LoadActiveControlScheme()`](../../Jones3D/Display/jonesConfig.c#L2049), and applies it with [`jonesConfig_BindControls()`](../../Jones3D/Display/jonesConfig.c#L2582). Scheme files live in the key-sets directory: `<installPath>\<keysets>` when `installPath` is set, otherwise `..\<keysets>` relative to the working directory. The `<keysets>` name comes from the `SITHSTRING_KEYSETS` string.
+
+A scheme file starts with a localized heading, the enabled marker `1`, and the `Actions`/`Keys` column header, then one quoted action line for each of the 37 actions followed by its quoted bindings. The columns are padded and the file uses CRLF line endings. [`jonesConfig_LoadControlScheme()`](../../Jones3D/Display/jonesConfig.c#L2140) reads it and rejects a truncated or malformed file. The format can name keyboard keys, joystick buttons, POV directions, and the X, Y, Z, and RZ joystick axes. It cannot name mouse buttons or the right-stick RX/RY axes. Mouse bindings come from the hardcoded [`sithControl_RegisterMouseBindings()`](../../Libs/sith/Devices/sithControl.c#L842) defaults and the `controls.mouse` option instead.
+
+The default schemes are complete tables in `jonesConfig.c`, built by `jonesConfig_SetDefaultControlScheme()`. When a scheme is bound, its bindings replace the engine's for each action it covers: for example, activate uses Ctrl and the first joystick button instead of the grave key, and `I` toggles the HUD menu. For every scheme, `jonesConfig_BindControls()` skips joystick bindings while `controls.controller` is false, and applies `controls.mouse` through [`jonesConfig_EnableMouseControl()`](../../Jones3D/Display/jonesConfig.c#L4888).
+
+The scheme's interface action is also the HUD menu key. [`JonesMain_ProcessMenu()`](../../Jones3D/Main/JonesMain.c#L1324) checks the keys bound from that action and Escape, ignores them while Ctrl is held, and toggles the HUD menu or hides the console.
