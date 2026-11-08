@@ -61,6 +61,7 @@ static size_t std3D_numTextureFormats            = 0;
 static StdTextureFormat std3D_aTextureFormats[8] = { 0 };
 
 static const ColorInfo std3D_cfRGB565   = { STDCOLOR_RGB,  16, 5, 6, 5, 11,  5, 0, 3, 2, 3, 0, 0, 0 };
+static DDCOLORKEY std3D_textureColorKey = { 0, 0 }; // Added: Color key of textures with the color key format, the original stores the key value 0 in the texture format
 static const ColorInfo std3D_cfRGB5551  = { STDCOLOR_RGBA, 16, 5, 5, 5, 11,  6, 1, 3, 3, 3, 1, 0, 7 };
 static const ColorInfo std3D_cfRGB4444  = { STDCOLOR_RGBA, 16, 4, 4, 4, 12,  8, 4, 4, 4, 4, 4, 0, 4 };
 
@@ -521,14 +522,14 @@ int J3DAPI std3D_Open(size_t deviceNum)
         && std3D_pCurDevice->bColorkeyTextureSupported )
     {
         std3D_aTextureFormats[std3D_RGBAKeyTextureFormat].bColorKey = 1;
-        std3D_aTextureFormats[std3D_RGBAKeyTextureFormat].pColorKey = NULL;
+        std3D_aTextureFormats[std3D_RGBAKeyTextureFormat].pColorKey = &std3D_textureColorKey;
     }
 
     if ( std3D_aTextureFormats[std3D_RGBATextureFormat].ci.alphaBPP == 0
         && std3D_pCurDevice->bColorkeyTextureSupported )
     {
         std3D_aTextureFormats[std3D_RGBATextureFormat].bColorKey = 1;
-        std3D_aTextureFormats[std3D_RGBATextureFormat].pColorKey = NULL;
+        std3D_aTextureFormats[std3D_RGBATextureFormat].pColorKey = &std3D_textureColorKey;
     }
 
     std3D_mipmapFilter = -1; // Fixed: Reset mipmap filter to be able to set filter to newly created device in std3D_SetMipmapFilter
@@ -692,7 +693,7 @@ void J3DAPI std3D_DrawRenderList(tSysTexture* pTex, Std3DRenderState rdflags, LP
                 {
                     if ( depth >= 0.0 )
                     {
-                        pCurVert->specular = (int)((1.0 - depth) * 255.0) << 24;
+                        pCurVert->specular = lrintf((1.0f - depth) * 255.0f) << 24;
                     }
                     else
                     {
@@ -950,6 +951,7 @@ void J3DAPI std3D_AllocSystemTexture(tSystemTexture* pTexture, tVBuffer** apVBuf
 
     STD_ZEROMEM(pTexture, sizeof(tSystemTexture));
 
+    // Added: Also reject NULL mipmap arrays and a zero mip level count; the original only checked std3D_numTextureFormats.
     if ( !std3D_numTextureFormats || !apVBuffers || !numMipLevels )
     {
         return;
@@ -1032,10 +1034,12 @@ void J3DAPI std3D_AllocSystemTexture(tSystemTexture* pTexture, tVBuffer** apVBuf
         bSurfaceLocked = true;
 
         // Fixed: Copy only bytes available in both rows; a DirectDraw pitch can be wider than the source VBuffer row.
+        // The original copied dwWidth * 2 bytes per row (assumes 16 bpp) and did not clear the rest of the surface.
         tColorMode colorMode = apVBuffers[mmNum]->rasterInfo.colorInfo.colorMode;
         if ( colorMode > STDCOLOR_PAL && colorMode <= STDCOLOR_RGBA )
         {
             pLockedVBuffer = apVBuffers[mmNum];
+            // Added: Check the VBuffer lock result; the original ignored it.
             if ( !stdDisplay_VBufferLock(pLockedVBuffer) )
             {
                 STDLOG_ERROR("Error locking source VBuffer mip level %zu.\n", mmNum);
@@ -1211,6 +1215,7 @@ void J3DAPI std3D_AllocSystemTexture(tSystemTexture* pTexture, tVBuffer** apVBuf
     return;
 
 error:
+    // Fixed: Release every locked surface, texture and surface reference on failure; the original released only the source surface.
     if ( bVBufferLocked && pLockedVBuffer )
     {
         stdDisplay_VBufferUnlock(pLockedVBuffer);

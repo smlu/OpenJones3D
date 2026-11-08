@@ -34,8 +34,10 @@ typedef enum eDBloc16Op
 // fills on every call before it is read.
 typedef struct sBloc16Context
 {
-    int prevOffset;           // previous frame - current frame, in bytes
-    int deltaOffset;          // delta frame - current frame, in bytes
+    uintptr_t currentBase;   // image addresses stay integers until a source pixel is checked
+    uintptr_t prevBase;
+    uintptr_t deltaBase;
+    size_t frameSize;         // width * height rounded up to 8 rows, in bytes
     int lineSize;             // bytes per line (width * 2)
     const int16_t* pMotion;   // motion vectors (pixel offsets) for opcodes 0x00-0xF4
     const uint8_t* pColors;   // the four fill colours (words) for opcodes 0xF9-0xFC
@@ -59,6 +61,29 @@ static uint32_t dbloc16_Load32(const uint8_t* p)
     return value;
 }
 
+// Fixed: Authored motion vectors can cross a bitmap boundary. Preserve each
+// valid 16-bit pixel and make only an invalid pixel black; never form an invalid
+// source pointer, including when a dword contains one valid and one invalid word.
+static uint32_t dbloc16_LoadMotion32(const Bloc16Context* pCtx, const uint8_t* pBlock, uintptr_t sourceBase, int motionOffset)
+{
+    int64_t offset = (int64_t)(uintptr_t)pBlock - (int64_t)pCtx->currentBase + motionOffset;
+    if ( offset >= 0 && (uint64_t)offset + sizeof(uint32_t) <= pCtx->frameSize )
+    {
+        return dbloc16_Load32((const uint8_t*)(sourceBase + (uintptr_t)offset));
+    }
+
+    uint32_t value = 0;
+    for ( unsigned word = 0; word < 2; ++word, offset += sizeof(uint16_t) )
+    {
+        if ( offset >= 0 && (uint64_t)offset + sizeof(uint16_t) <= pCtx->frameSize )
+        {
+            uint16_t pixel = dbloc16_Load16((const uint8_t*)(sourceBase + (uintptr_t)offset));
+            value |= (uint32_t)pixel << (word * 16);
+        }
+    }
+    return value;
+}
+
 static void dbloc16_Store16(uint8_t* p, uint16_t value)
 {
     memcpy(p, &value, sizeof(value));
@@ -69,19 +94,21 @@ static void dbloc16_Store32(uint8_t* p, uint32_t value)
     memcpy(p, &value, sizeof(value));
 }
 
-// Copies a size x size block (8 or 4) from pBlock + offset. The original interleaves the top and bottom halves: for each
+// Copies a size x size block (8 or 4) from the source image at the block position plus its motion offset.
+// The original interleaves the top and bottom halves: for each
 // row pair (row, row + size / 2) it reads the bottom dword, then the top one, and stores them in that order. Keep that
 // order, the source may overlap the block (offset within the current frame).
-static void dbloc16_CopyBlock(uint8_t* pBlock, int offset, int lineSize, int size)
+static void dbloc16_CopyBlock(const Bloc16Context* pCtx, uint8_t* pBlock, uintptr_t sourceBase, int motionOffset, int size)
 {
+    int lineSize = pCtx->lineSize;
     uint8_t* pTop    = pBlock;
     uint8_t* pBottom = pBlock + lineSize * (size / 2);
     for ( int row = 0; row < size / 2; ++row )
     {
         for ( int x = 0; x < size * 2; x += 4 )
         {
-            uint32_t bottom = dbloc16_Load32(pBottom + x + offset);
-            uint32_t top    = dbloc16_Load32(pTop + x + offset);
+            uint32_t bottom = dbloc16_LoadMotion32(pCtx, pBottom + x, sourceBase, motionOffset);
+            uint32_t top    = dbloc16_LoadMotion32(pCtx, pTop + x, sourceBase, motionOffset);
             dbloc16_Store32(pBottom + x, bottom);
             dbloc16_Store32(pTop + x, top);
         }
@@ -124,7 +151,7 @@ static void dbloc16_DrawGlyph(uint8_t* pBlock, const uint16_t* pOff1, uint8_t n1
 }
 
 // The motion offset of a copy opcode (0x00-0xF4: from the motion table, 0xF5: a 16-bit vector in the stream), in bytes
-// from the block and including the previous frame's offset. Advances pSrc past the opcode.
+// from the same block position in the previous frame. Advances pSrc past the opcode.
 static int dbloc16_MotionOffset(const Bloc16Context* pCtx, const uint8_t** ppSrc)
 {
     const uint8_t* pSrc = *ppSrc;
@@ -140,7 +167,7 @@ static int dbloc16_MotionOffset(const Bloc16Context* pCtx, const uint8_t** ppSrc
         *ppSrc = pSrc + 1;
     }
 
-    return offset + pCtx->prevOffset;
+    return offset;
 }
 
 // The fill colour of opcodes 0xF9-0xFE, advancing pSrc past the opcode
@@ -192,8 +219,8 @@ static const uint8_t* dbloc16_Block2(const Bloc16Context* pCtx, const uint8_t* p
     if ( op <= DBLOC16_OP_MOTIONVECTOR )
     {
         int offset = dbloc16_MotionOffset(pCtx, &pSrc);
-        dbloc16_Store32(pBlock, dbloc16_Load32(pBlock + offset));
-        dbloc16_Store32(pBlock + lineSize, dbloc16_Load32(pBlock + lineSize + offset));
+        dbloc16_Store32(pBlock, dbloc16_LoadMotion32(pCtx, pBlock, pCtx->prevBase, offset));
+        dbloc16_Store32(pBlock + lineSize, dbloc16_LoadMotion32(pCtx, pBlock + lineSize, pCtx->prevBase, offset));
         return pSrc;
     }
 
@@ -213,8 +240,8 @@ static const uint8_t* dbloc16_Block2(const Bloc16Context* pCtx, const uint8_t* p
             return pSrc + 5;
 
         case DBLOC16_OP_DELTACOPY: // copy from the delta frame
-            dbloc16_Store32(pBlock, dbloc16_Load32(pBlock + pCtx->deltaOffset));
-            dbloc16_Store32(pBlock + lineSize, dbloc16_Load32(pBlock + lineSize + pCtx->deltaOffset));
+            dbloc16_Store32(pBlock, dbloc16_LoadMotion32(pCtx, pBlock, pCtx->deltaBase, 0));
+            dbloc16_Store32(pBlock + lineSize, dbloc16_LoadMotion32(pCtx, pBlock + lineSize, pCtx->deltaBase, 0));
             return pSrc + 1;
 
         default: // Fills
@@ -231,7 +258,7 @@ static const uint8_t* dbloc16_Block4(const Bloc16Context* pCtx, const uint8_t* p
     if ( op <= DBLOC16_OP_MOTIONVECTOR )
     {
         int offset = dbloc16_MotionOffset(pCtx, &pSrc);
-        dbloc16_CopyBlock(pBlock, offset, lineSize, 4);
+        dbloc16_CopyBlock(pCtx, pBlock, pCtx->prevBase, offset, 4);
         return pSrc;
     }
 
@@ -253,7 +280,7 @@ static const uint8_t* dbloc16_Block4(const Bloc16Context* pCtx, const uint8_t* p
         }
 
         case DBLOC16_OP_DELTACOPY: // copy from the delta frame
-            dbloc16_CopyBlock(pBlock, pCtx->deltaOffset, lineSize, 4);
+            dbloc16_CopyBlock(pCtx, pBlock, pCtx->deltaBase, 0, 4);
             return pSrc + 1;
 
         default: // Fills
@@ -270,7 +297,7 @@ static const uint8_t* dbloc16_Block8(const Bloc16Context* pCtx, const uint8_t* p
     if ( op <= DBLOC16_OP_MOTIONVECTOR )
     {
         int offset = dbloc16_MotionOffset(pCtx, &pSrc);
-        dbloc16_CopyBlock(pBlock, offset, lineSize, 8);
+        dbloc16_CopyBlock(pCtx, pBlock, pCtx->prevBase, offset, 8);
         return pSrc;
     }
 
@@ -292,7 +319,7 @@ static const uint8_t* dbloc16_Block8(const Bloc16Context* pCtx, const uint8_t* p
         }
 
         case DBLOC16_OP_DELTACOPY: // copy from the delta frame
-            dbloc16_CopyBlock(pBlock, pCtx->deltaOffset, lineSize, 8);
+            dbloc16_CopyBlock(pCtx, pBlock, pCtx->deltaBase, 0, 8);
             return pSrc + 1;
 
         default: // Fills
@@ -360,8 +387,11 @@ void J3DAPI dbloc16_Codec2(uint16_t* pDst, uint8_t* pSrc, int offset1, int offse
     J3D_UNUSED(nextLine); // Not read by the assembly
 
     Bloc16Context ctx;
-    ctx.prevOffset  = (int)((uint32_t)offset1 * 2);
-    ctx.deltaOffset = (int)((uint32_t)offset2 * 2);
+    ctx.currentBase = (uintptr_t)pDst;
+    ctx.prevBase    = ctx.currentBase + (intptr_t)(int32_t)((uint32_t)offset1 * 2u);
+    ctx.deltaBase   = ctx.currentBase + (intptr_t)(int32_t)((uint32_t)offset2 * 2u);
+    // D_bloc16 allocates the bitmap height rounded up to a complete 8-row block.
+    ctx.frameSize   = (size_t)(uint32_t)width * (((uint32_t)height + 7u) & ~7u) * sizeof(uint16_t);
     ctx.lineSize    = (int)((uint32_t)width * 2);
     ctx.pMotion     = pMotion;
     ctx.pColors     = pParams;

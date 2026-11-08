@@ -50,7 +50,7 @@ static_assert(sizeof(LecModule) == 0x10, "sizeof(LecModule) == 0x10");
  * The original passes its `__FILE__` (E:\smush\INSANE\SOURCE\...) to the debug allocator and to assertions.
  * It only ends up in the allocator's records (printed by memory_Track, which has no console in the game).
  */
-#define INSANE_FILE __FILE__
+#define INSANE_FILE J3D_FILE
 
 J3D_EXTERN_C_END
 

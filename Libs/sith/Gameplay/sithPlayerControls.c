@@ -420,7 +420,7 @@ void J3DAPI sithPlayerControls_PuppetCallback(SithThing* pThing, int track, rdKe
                     tSoundHandle hSnd = Sound_GetSoundHandle(SITHWORLD_STATICINDEX(24u)); // 0x8018 - fol_in_lrunhard.wav
                     sithCamera_RestoreExtCamera();
 
-                #ifdef J3D_QOL_IMPROVEMENTS
+                #if defined J3D_QOL_IMPROVEMENTS && !defined J3D_SPEEDRUN_BUILD
                     // Added
                     // Player has landed after whip swing, check if height distance to solid floor is more than 0.2m.
                     // And in this case stop animation and make player fall
@@ -826,7 +826,7 @@ int J3DAPI sithPlayerControls_ProcessPlayerDebugControls(SithThing* pThing, floa
         }
     }
 
-    return 1;
+    return 0;
 }
 
 void J3DAPI sithPlayerControls_ProcessLookControls(SithThing* pThing, float secDeltaTime)
@@ -855,7 +855,7 @@ void J3DAPI sithPlayerControls_ProcessLookControls(SithThing* pThing, float secD
 
     if ( yawDelta != 0.0f )
     {
-        yawDelta *= 90.0f * secDeltaTime;
+        yawDelta = (yawDelta * 90.0f) * secDeltaTime;
     }
 
     if ( sithControl_GetKey(SITHCONTROL_FORWARD, NULL) )
@@ -870,7 +870,7 @@ void J3DAPI sithPlayerControls_ProcessLookControls(SithThing* pThing, float secD
     if ( pitchDelta != 0.0f )
     {
         bInputReceived = true;
-        pitchDelta *= 90.0f * secDeltaTime;
+        pitchDelta = (pitchDelta * 90.0f) * secDeltaTime;
     }
 
     if ( bInputReceived )
@@ -990,7 +990,7 @@ void J3DAPI sithPlayerControls_ProcessGeneralMove(SithThing* pThing, float secDe
 // New function
 static void J3DAPI sithPlayerControls_UpdateClimbingSpeed(SithThing* pThing, bool bFastClimb)
 {
-#ifdef J3D_QOL_IMPROVEMENTS
+#if defined J3D_QOL_IMPROVEMENTS && !defined J3D_SPEEDRUN_BUILD
     switch ( pThing->moveStatus )
     {
         case SITHPLAYERMOVE_MOUNTING_WALL:
@@ -1065,7 +1065,7 @@ void J3DAPI sithPlayerControls_ProcessClimbMove(SithThing* pThing, float secDelt
         || pThing->thingInfo.actorInfo.bForceMovePlay == 1
         || (pThing->type != SITH_THING_ACTOR && pThing->type != SITH_THING_PLAYER) )
     {
-    #ifdef J3D_QOL_IMPROVEMENTS
+    #if defined J3D_QOL_IMPROVEMENTS && !defined J3D_SPEEDRUN_BUILD
         // Added: Update climbing animation playback speed
         sithPlayerControls_UpdateClimbingSpeed(pThing, bFastClimb);
 
@@ -1109,11 +1109,12 @@ void J3DAPI sithPlayerControls_ProcessClimbMove(SithThing* pThing, float secDelt
 
                 sithPlayerActions_ClimbPullUp(pThing);
                 sithPlayerControls_UpdateClimbingSpeed(pThing, bFastClimb); // Added: Speedup play if runmode is enabled
+                return;
             }
         }
     }
     // Handle Jump-off key
-    else if ( sithControl_GetKey(SITHCONTROL_JUMP, NULL)
+    if ( sithControl_GetKey(SITHCONTROL_JUMP, NULL)
         && !sithPlayerControls_bJumpKeyActive
         && !pThing->thingInfo.actorInfo.bForceMovePlay )
     {
@@ -1317,6 +1318,12 @@ void J3DAPI sithPlayerControls_ProcessJewelFlyMove(SithThing* pThing, float secD
     {
         pPhysics->thrust.z = 0.0f;
         if ( !bCanMoveUp )
+        {
+            pPhysics->velocity.z = 0.0f;
+            sithPhysics_ResetThingMovement(pThing);
+        }
+
+        if ( !bCanMoveDown )
         {
             pPhysics->velocity.z = 0.0f;
             sithPhysics_ResetThingMovement(pThing);
@@ -1931,6 +1938,7 @@ void J3DAPI sithPlayerControls_ProcessSwimMove(SithThing* pThing, float secDelta
     J3D_UNUSED(secDeltaTime);
     SithPhysicsInfo* pPhysics = &pThing->moveInfo.physics;
     SithActorInfo* pActor     = &pThing->thingInfo.actorInfo;
+    bool bFlying              = false; // TODO: Never set in the original, so the thrust is never rotated by the head angles (see the end of the function)
 
     sithPlayerControls_curJumpDirection = 0;
 
@@ -2060,6 +2068,8 @@ void J3DAPI sithPlayerControls_ProcessSwimMove(SithThing* pThing, float secDelta
         {
             float directionFactor = 2.0f; // Default
 
+        #if defined(J3D_QOL_IMPROVEMENTS) && !defined(J3D_SPEEDRUN_BUILD)
+
             // Added: Swim boost logic
             //        When swim boost key is pressed swim faster for 3 sec at expense of endurance penalty
             if ( sithPlayerControls_secSwimBoostTimer == 0.0f && bBoostJustPrezzed )
@@ -2110,6 +2120,7 @@ void J3DAPI sithPlayerControls_ProcessSwimMove(SithThing* pThing, float secDelta
                     // no current
                     directionFactor *= 1.8f;
                 }
+            #endif // QOL & !SPEEDRUN_BUILD
 
                 // Apply underwater endurance penalty
                 pThing->thingInfo.actorInfo.endurance.msecUnderwater += (tStdTime)(enduranceRate * secDeltaTime * 1000.0f);
@@ -2176,8 +2187,6 @@ void J3DAPI sithPlayerControls_ProcessSwimMove(SithThing* pThing, float secDelta
             sithFX_CreateWaterRipple(pThing);
             return;
         }
-
-        pPhysics->thrust.z = 0.0f;
     }
     else
     {
@@ -2277,9 +2286,11 @@ void J3DAPI sithPlayerControls_ProcessSwimMove(SithThing* pThing, float secDelta
 
     //
     // Transform thrust based on head rotation
+    // Retail compiles this block out because bFlying is always false; the debug build keeps it.
     //
     if ( !rdVector_IsZero3(&pPhysics->thrust)
         && !rdVector_IsZero3(&pActor->headPYR)
+        && bFlying
         && (pPhysics->flags & SITH_PF_ONWATERSURFACE) == 0 )
     {
         rdMatrix34 mat;
@@ -2381,16 +2392,18 @@ void J3DAPI sithPlayerControls_ProcessHangMove(SithThing* pThing, float secDelta
 
             pThing->forceMoveStartPos = pThing->pos;
             pThing->collide.movesize = 0.0f;
-            sithPuppet_PlayForceMoveMode(pThing, SITHPUPPETSUBMODE_HANGSHIMLEFT, NULL);
-            sithSoundClass_PlayModeFirst(pThing, SITHSOUNDCLASS_CLIMBHANDLEFT);
 
             if ( pLedgeSurf )
             {
+                sithPuppet_PlayForceMoveMode(pThing, SITHPUPPETSUBMODE_HANGSHIMLEFT, NULL);
                 sithThing_AttachThingToClimbSurface(pThing, pLedgeSurf);
+                sithSoundClass_PlayModeFirst(pThing, SITHSOUNDCLASS_CLIMBHANDLEFT);
                 sithPlayerActions_g_pCurHitLedgeSurface = pLedgeSurf;
             }
             else
             {
+                sithSoundClass_PlayModeFirst(pThing, SITHSOUNDCLASS_CLIMBHANDLEFT);
+                sithPuppet_PlayForceMoveMode(pThing, SITHPUPPETSUBMODE_HANGSHIMLEFT, NULL);
                 sithThing_AttachThingToThingFace(pThing, pLedgeThing, pLedgeFace, pLedgeMesh->apVertices, 1);
                 sithPlayerActions_g_pCurHitLedgeModelFace = pLedgeFace;
                 sithPlayerActions_g_pCurHitLedgeModel     = pLedgeModel;
@@ -3949,7 +3962,7 @@ bool J3DAPI sithPlayerControls_CanStrafeMove(SithThing* pThing, int bMoveRight)
             rdVector3* apVertices = pMeshCollided->apVertices;
 
             rdVector3 worldVert;
-            rdMatrix_TransformPoint34(&worldVert, &apVertices[*pFaceCollided->aVertices], &pCollision->pThingCollided->orient);
+            rdMatrix_TransformVector34(&worldVert, &apVertices[*pFaceCollided->aVertices], &pCollision->pThingCollided->orient);
             rdVector_Add3Acc(&worldVert, &pCollision->pThingCollided->pos);
 
             // Calculate distance from start pos to face plane
@@ -3970,7 +3983,7 @@ bool J3DAPI sithPlayerControls_CanStrafeMove(SithThing* pThing, int bMoveRight)
 
 bool sithPlayerControls_CanClimbOn1m(SithThing* pThing)
 {
-#ifdef J3D_QOL_IMPROVEMENTS
+#if defined J3D_QOL_IMPROVEMENTS && !defined J3D_SPEEDRUN_BUILD
     // Added: Alow climbing on 1m when having weapon mounted
     bool bCanClimb = sithInventory_GetCurrentWeapon(pThing) <= SITHWEAPON_IMP5;
 #else
@@ -3982,7 +3995,7 @@ bool sithPlayerControls_CanClimbOn1m(SithThing* pThing)
 
 bool sithPlayerControls_CanClimbOn2m(SithThing* pThing)
 {
-#ifdef J3D_QOL_IMPROVEMENTS
+#if defined J3D_QOL_IMPROVEMENTS && !defined J3D_SPEEDRUN_BUILD
     // Added: Alow climbing on 1m when having weapon mounted
     int curWeapon = sithInventory_GetCurrentWeapon(pThing);
 
@@ -4650,7 +4663,7 @@ void J3DAPI sithPlayerControls_ProcessWalkMove(SithThing* pThing, float secDelta
             return;
         }
 
-    #ifdef J3D_QOL_IMPROVEMENTS
+    #if defined J3D_QOL_IMPROVEMENTS && !defined J3D_SPEEDRUN_BUILD
         // Added: Try mounting wall for climbing
         //        OG no option to walk and mount wall
         if ( sithPlayerControls_TryMountClimbWall(pThing, /*bQuickMount*/true) )
@@ -4880,7 +4893,7 @@ void J3DAPI sithPlayerControls_ProcessRunMove(SithThing* pThing, float secDeltaT
             return;
         }
 
-    #ifdef J3D_QOL_IMPROVEMENTS
+    #if defined J3D_QOL_IMPROVEMENTS && !defined J3D_SPEEDRUN_BUILD
         // Added: Try mounting wall for climbing
         //        OG no option to walk and mount wall
         if ( sithPlayerControls_TryMountClimbWall(pThing, /*bQuickMount*/true) )
@@ -5173,7 +5186,8 @@ void J3DAPI sithPlayerControls_ProcessPushPullMove(SithThing* pThing, float secD
     //
     // Handle pull object move
     //
-    if ( sithControl_GetKey(SITHCONTROL_BACK, NULL) )
+    // Pull when the forward key is not pressed; the earlier check ensures the back key is. Forward (push) has priority when both are pressed, like in the original
+    if ( !sithControl_GetKey(SITHCONTROL_FORWARD, NULL) )
     {
         // Check height difference for pull - can't pull objects that are higher
         if ( searchRadius > 0.05f && pThing->pos.z > sithPlayerControls_pMovableThing->pos.z )

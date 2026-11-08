@@ -48,3 +48,21 @@ set_tests_properties(smush PROPERTIES
     LABELS "unit;smush;${SMUSH_TEST_BACKEND_LABEL}"
     TIMEOUT 60
 )
+
+if (JONES3D_BUILD_SYSTEM_TESTS)
+    add_executable(smushSystemTests SmushSystemTest.c)
+    target_link_libraries(smushSystemTests PRIVATE smush unity)
+    target_compile_definitions(smushSystemTests PRIVATE
+        SMUSH_PLAY_TV_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tv/SmushPlay"
+    )
+    set_target_properties(smushSystemTests PROPERTIES FOLDER "Tests/Libs/smush")
+    source_group("System Tests" FILES SmushSystemTest.c)
+
+    add_test(NAME smush.System COMMAND smushSystemTests)
+    set_tests_properties(smush.System PROPERTIES
+        LABELS "system;audio;device;smush;${SMUSH_TEST_BACKEND_LABEL}"
+        TIMEOUT 20
+        RESOURCE_LOCK DirectSound
+        RUN_SERIAL TRUE
+    )
+endif()

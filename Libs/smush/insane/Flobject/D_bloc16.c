@@ -15,6 +15,17 @@
 #include <smush/insane/Memory/Memory.h>
 #include <smush/insane/Sound/Mixer.h>
 
+#if defined(J3D_TEST)
+// Test-only replay seam; production builds always call the real block decoder.
+typedef void (J3DAPI* DBloc16TestCodec2)(uint16_t* pDst, uint8_t* pSrc, int offset1, int offset2, int width, int16_t* pMotion, uint8_t* pParams, int height, int nextLine, Bl16Small* pSmall, Bl16Big* pBig, uint16_t* pPalette);
+static DBloc16TestCodec2 dbloc16_pTestCodec2;
+void DBloc16_TestSetCodec2(DBloc16TestCodec2 pfn);
+void DBloc16_TestSetCodec2(DBloc16TestCodec2 pfn) { dbloc16_pTestCodec2 = pfn; }
+#define DBLOC16_DECODEBLOCKS (dbloc16_pTestCodec2 ? dbloc16_pTestCodec2 : dbloc16_Codec2)
+#else
+#define DBLOC16_DECODEBLOCKS dbloc16_Codec2
+#endif
+
 #define DBLOC16_MAX(a, b) ((a) > (b) ? (a) : (b))
 
 #define DBLOC16_NUMMOTIONS 255 // Codec 2's motion vectors
@@ -317,6 +328,8 @@ void dbloc16_Free(void)
         dbloc16_pLut = NULL;
     }
 
+    // Fixed: The original keeps the pointer to the freed pixels of the last decoded frame, which a later frame can match with the pixels of a new bitmap
+    dbloc16_pLast  = NULL;
     dbloc16_pShown = NULL;
     dbloc16_size   = 0;
 }
@@ -547,7 +560,7 @@ void J3DAPI dbloc16_MakeGlyphs(int size)
 
 int J3DAPI dbloc16_DecodeFrame(LecBitmapHeader* pBitmap, MixerRect* pClip, int x, int y, void* pPalette, Bl16Header* pHdr, int flags)
 {
-    int rc = 0; // Fixed: Init to 0 (see the TODO at the return)
+    int rc = 0; // Fixed: Init to 0, the original returns an uninitialized rc when no frame was blitted (pBitmap is NULL, nothing decoded yet, or the blit callback was not given a known bitmap)
 
     int width      = pHdr->width;
     int height     = pHdr->height;
@@ -555,7 +568,12 @@ int J3DAPI dbloc16_DecodeFrame(LecBitmapHeader* pBitmap, MixerRect* pClip, int x
     if ( dbloc16_pBitmap0 == NULL || width != dbloc16_pBitmap0->width || ((height + 7) & ~7) != dbloc16_pBitmap0->height )
     {
         dbloc16_Free();
-        dbloc16_Alloc(width, (height + 7) & ~7, pHdr->depth ? pHdr->depth : 8);
+
+        // Fixed: The original ignores a failed allocation and uses the bitmaps that were not created below (NULL access). Nothing is decoded then
+        if ( dbloc16_Alloc(width, (height + 7) & ~7, pHdr->depth ? pHdr->depth : 8) != 0 )
+        {
+            return 0;
+        }
     }
 
     int offset1 = (int)(dbloc16_pBuf1 - dbloc16_pCur);
@@ -650,7 +668,7 @@ int J3DAPI dbloc16_DecodeFrame(LecBitmapHeader* pBitmap, MixerRect* pClip, int x
 
             if ( pHdr->seq == dbloc16_prevSeq + 1 )
             {
-                dbloc16_Codec2(dbloc16_pCur, pGfx, offset1, offset2, width, dbloc16_offsets, pHdr->params, height, nextLine + width, dbloc16_small, dbloc16_big, pHdr->palette);
+                DBLOC16_DECODEBLOCKS(dbloc16_pCur, pGfx, offset1, offset2, width, dbloc16_offsets, pHdr->params, height, nextLine + width, dbloc16_small, dbloc16_big, pHdr->palette);
                 dbloc16_pLast = dbloc16_pCur;
             }
             break;
@@ -717,7 +735,7 @@ int J3DAPI dbloc16_DecodeFrame(LecBitmapHeader* pBitmap, MixerRect* pClip, int x
     }
 
     dbloc16_prevSeq = pHdr->seq;
-    return rc; // TODO: [BUG] rc is uninitialized when no frame was blitted (pBitmap is NULL, nothing decoded yet, or the blit callback was not given a known bitmap)
+    return rc;
 }
 
 void J3DAPI dbloc16_BuildLut(LecBitmapHeader* pBitmap)

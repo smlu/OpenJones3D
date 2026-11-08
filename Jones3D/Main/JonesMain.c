@@ -728,6 +728,7 @@ int J3DAPI JonesMain_GameWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPa
             // on F10 and ALT press and eat player's input.
             if ( JonesMain_bWndMsgProcessed )
             {
+                *pReturnVal = 0; // Fixed: Set the window procedure result, wkernel returns it when the message is handled and it was left uninitialized
                 return wParam;
             }
             return 0;
@@ -912,6 +913,7 @@ void J3DAPI JonesMain_HandleWMKeydown(HWND hWnd, WPARAM vk, int a3, uint16_t rep
                                 char aErrorText[128] = { 0 };
                                 STD_FORMAT(aErrorText, pErrorFormat, aPath);
                                 JonesMain_LogErrorToFile(aErrorText);
+                                jonesCog_g_bEnableGamesave = 1;
                             }
                             return;
                         }
@@ -939,6 +941,10 @@ void J3DAPI JonesMain_HandleWMKeydown(HWND hWnd, WPARAM vk, int a3, uint16_t rep
 
                     // Success
                     JonesHud_RestoreGameStatistics();
+                }
+                else
+                {
+                    jonesCog_g_bEnableGamesave = 1;
                 }
             }
         } break;

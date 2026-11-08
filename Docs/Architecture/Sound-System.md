@@ -370,6 +370,33 @@ Window deactivation is another possible desynchronization path. `JonesMain_OnApp
 
 Subtitles are therefore a voice-layer feature, not a generic HUD text system.
 
+## Movie Audio And Display
+
+SMUSH movies use their own PCM mixer, streaming buffers and timer in
+[`Libs/smush/insane/Sound/Dsnd.c`](../../Libs/smush/insane/Sound/Dsnd.c).
+The driver shares one implementation across both configured DirectX backends:
+`J3D_DIRECTX6` uses `IDirectSound` and `DirectSoundCreate`, while `J3D_DIRECTX9`
+uses `IDirectSound8` and `DirectSoundCreate8`. The existing `tDirectSound` type
+selects the device interface; no separate DX6/DX9 movie-player files are needed.
+
+When the game supplies a device, SMUSH borrows it and owns only its secondary
+streaming buffer. It does not release that device or change its primary volume.
+When no device is supplied, SMUSH creates one with the configured factory, owns
+its primary and secondary buffers, and releases them after timer callbacks stop.
+The PCM mixing, lost-buffer recovery and cleanup paths are shared.
+
+Both backends use the `IDirectSoundBuffer` interface returned by
+`CreateSoundBuffer`. This is also the return type of the DirectSound 8 method;
+the primary buffer does not support `IDirectSoundBuffer8`. SMUSH needs none of
+the secondary buffer's additional version-8 methods. See Microsoft's
+[buffer creation contract](https://learn.microsoft.com/en-us/previous-versions/windows/desktop/ee418039(v=vs.85)).
+
+The movie decoder produces RGB565 CPU bitmaps through the `SmushPlay` callback.
+`JonesMain_IntroMovieBlt565`, `JonesMain_IntroMovieBlt555` and
+`JonesMain_IntroMovieBlt32` upload them through `stdDisplay` lock, unlock and
+update operations. Graphics backend selection therefore remains in `stdDisplay`;
+SMUSH does not create a second Direct3D device or retain display surfaces.
+
 ## Original Design And OpenJones3D Extensions
 
 The sound architecture itself remains close to the original:

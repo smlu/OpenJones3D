@@ -243,7 +243,7 @@ int J3DAPI sithCogExec_PopInt(SithCog* pCog)
     value = *sithCogExec_GetSymbolValue(&retVal, pCog, &value);
     if ( value.type == SITHCOG_VALUE_FLOAT )
     {
-        return (int)value.val.floatValue;
+        return (int)floorf(value.val.floatValue);
     }
 
     if ( value.type == SITHCOG_VALUE_INT )

@@ -24,12 +24,14 @@
 #include <std/Win95/std3D.h>
 #include <std/Win95/stdControl.h>
 #include <std/Win95/stdDisplay.h>
+#include <std/Win95/stdWin95.h>
 
 #include <wkernel/wkernel.h>
 
 static size_t JonesDisplay_primaryDisplayNum  = 1;
 static uint32_t JonesDisplay_backBufferWidth  = 0; // Added: init to 0
 static uint32_t JonesDisplay_backBufferHeight = 0;
+static UINT JonesDisplay_desktopDpi           = 0;
 static rdCanvas* JonesDisplay_pCanvas         = NULL;
 static bool JonesDisplay_bDualMonitor         = false; // Added: init to false
 
@@ -67,7 +69,14 @@ void JonesDisplay_InstallHooks(void)
 }
 
 void JonesDisplay_ResetGlobals(void)
-{}
+{
+    JonesDisplay_desktopDpi = 0;
+}
+
+UINT JonesDisplay_GetDesktopDpi(void)
+{
+    return JonesDisplay_desktopDpi;
+}
 
 int J3DAPI JonesDisplay_Startup(JonesDisplaySettings* pSettings)
 {
@@ -101,6 +110,12 @@ int J3DAPI JonesDisplay_Startup(JonesDisplaySettings* pSettings)
 
     JonesDisplay_primaryDisplayNum = pSettings->displayDeviceNum;
     stdDisplay_SetDefaultResolution(pSettings->width, pSettings->height);
+
+    // Sample the desktop DPI before an exclusive mode can change it.
+    // Restart closes the old display mode before returning through Startup.
+    // Zero leaves dialog code free to use its own DPI when no HWND is ready.
+    JonesDisplay_desktopDpi = GetDpiForWindow(stdWin95_GetWindow());
+    STDLOG_STATUS("Desktop DPI before mode switch: %u.\n", JonesDisplay_desktopDpi);
 
     if ( stdDisplay_SetMode(pSettings->videoModeNum, pSettings->bWindowMode == 0, /*numBackBuffers*/pSettings->bBuffering ? 2u : 1u) )
     {
@@ -175,6 +190,7 @@ void JonesDisplay_Shutdown(void)
     std3D_Shutdown();
     stdDisplay_Shutdown();
 
+    JonesDisplay_desktopDpi = 0;
     JonesDisplay_pCanvas = NULL;
 }
 

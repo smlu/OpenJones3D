@@ -421,6 +421,15 @@ int J3DAPI sithDSS_ProcessAIStatus(const SithMessage* pMsg)
     SithWorld* pWorld = sithWorld_g_pCurrentWorld;
     SITH_ASSERTREL(pWorld && pMsg);
 
+    // Fixed: Bound the fixed fields and the backing buffer before reading a malformed update.
+    // Four 16-bit indexes, eleven 32-bit scalars and eight vectors include the trailing state.
+    const size_t fixedMessageSize = 4 * sizeof(uint16_t) + 11 * sizeof(uint32_t) + 8 * sizeof(rdVector3);
+    if ( pMsg->length < fixedMessageSize || pMsg->length > sizeof(pMsg->data) )
+    {
+        SITHLOG_ERROR("DSS::AiStatus - Bad message length %u.\n", (unsigned int)pMsg->length);
+        return 0;
+    }
+
     SITHDSS_STARTIN(pMsg);
 
     size_t thingIdx = SITHDSS_POPUINT16();
@@ -447,9 +456,37 @@ int J3DAPI sithDSS_ProcessAIStatus(const SithMessage* pMsg)
         return 0;
     }
 
-    pLocal->pClass         = &pWorld->aAIClasses[classIdx];
-    pLocal->numInstincts   = pLocal->pClass->numInstincts;
-    pLocal->mode           = SITHDSS_POPINT32();
+    SithAIClass* pClass = &pWorld->aAIClasses[classIdx];
+    if ( pClass->numInstincts > STD_ARRAYLEN(pLocal->aInstinctStates) )
+    {
+        SITHLOG_ERROR("DSS::AiStatus - Too many instincts in AI class.\n");
+        return 0;
+    }
+
+    SithAIMode mode = SITHDSS_POPINT32();
+    size_t requiredSize = fixedMessageSize
+        + pClass->numInstincts * (2 * sizeof(uint32_t) + sizeof(pLocal->aInstinctStates[0].aParams));
+    if ( (mode & SITHAI_MODE_MOVING) != 0 )
+    {
+        requiredSize += sizeof(rdVector3);
+    }
+    if ( (mode & SITHAI_MODE_TURNING) != 0 )
+    {
+        requiredSize += sizeof(rdVector3);
+    }
+    if ( (mode & SITHAI_MODE_FLEEING) != 0 )
+    {
+        requiredSize += sizeof(uint16_t);
+    }
+    if ( pMsg->length < requiredSize )
+    {
+        SITHLOG_ERROR("DSS::AiStatus - Truncated AI state.\n");
+        return 0;
+    }
+
+    pLocal->pClass         = pClass;
+    pLocal->numInstincts   = pClass->numInstincts;
+    pLocal->mode           = mode;
     pLocal->submode        = SITHDSS_POPINT32();
     pLocal->msecNextUpdate = SITHDSS_POPINT32();
 
@@ -499,9 +536,25 @@ int J3DAPI sithDSS_ProcessAIStatus(const SithMessage* pMsg)
 
     pLocal->msecFireWaitTime   = SITHDSS_POPINT32();
     pLocal->msecPauseMoveUntil = SITHDSS_POPINT32();
-    pLocal->numFrames          = SITHDSS_POPINT32();
+    int numFrames = SITHDSS_POPINT32();
+    const size_t trailingSize = sizeof(uint32_t) + 2 * sizeof(rdVector3) + sizeof(float);
+    size_t remainingSize = pMsg->length - SITHDSS_CURPOS();
+    // Fixed: Validate the frame payload before freeing old frames or sizing an allocation.
+    if ( numFrames < 0 || remainingSize < trailingSize
+         || (size_t)numFrames > (remainingSize - trailingSize) / sizeof(rdVector3) )
+    {
+        SITHLOG_ERROR("DSS::AiStatus - Bad frame count %d.\n", numFrames);
+        return 0;
+    }
+    pLocal->numFrames = (size_t)numFrames;
 
-    // TODO: [BUG] Previously allocated aFrames is not freed, it leaks
+    // Fixed: Release the old frames even when the incoming update has no frames.
+    if ( pLocal->aFrames )
+    {
+        STDFREE(pLocal->aFrames);
+        pLocal->aFrames = NULL;
+    }
+
     if ( pLocal->numFrames && (pLocal->aFrames = (rdVector3*)STDMALLOC(sizeof(rdVector3) * pLocal->numFrames)) != NULL )
     {
         pLocal->sizeFrames = pLocal->numFrames;
@@ -514,6 +567,9 @@ int J3DAPI sithDSS_ProcessAIStatus(const SithMessage* pMsg)
     {
         pLocal->sizeFrames = 0;
         pLocal->numFrames  = 0;
+        // Fixed: A failed allocation still consumes the validated frame payload,
+        // otherwise the fields below are read from frame coordinates.
+        pCurDSSMsgData_ += (size_t)numFrames * sizeof(rdVector3);
     }
 
     pLocal->allowedSurfaceTypes = SITHDSS_POPINT32();
@@ -1050,11 +1106,11 @@ int J3DAPI sithDSS_ProcessPuppetStatus(const SithMessage* pMsg)
             /*pPuppet->aTracks[i].unknown0 = *(int32_t*)pCurIn;
             pCurIn += 4;*/
 
-            pPuppet->aTracks[i].lowPriority = SITHDSS_POPINT16();
+            pPuppet->aTracks[i].lowPriority = SITHDSS_POPUINT16();
             /*pPuppet->aTracks[i].lowPriority = *(int16_t*)pCurIn;
             pCurIn += 2;*/
 
-            pPuppet->aTracks[i].highPriority = SITHDSS_POPINT16();
+            pPuppet->aTracks[i].highPriority = SITHDSS_POPUINT16();
             /* pPuppet->aTracks[i].highPriority = *(int16_t*)pCurIn;
              pCurIn += 2;*/
 
@@ -1340,7 +1396,7 @@ int J3DAPI sithDSS_SyncGameState(DPID idTo, unsigned int outstream)
 
     SITHDSS_PUSHINT32(sithFX_g_numChalkMarks);
     SITHDSS_PUSHINT32(sithFX_g_lastChalkMarkNum);
-    for ( int n = 0; n < (int)sithFX_g_numChalkMarks; ++n )
+    for ( int n = 0; n < sithFX_g_numChalkMarks; ++n )
     {
         SITHDSS_PUSHINT32(sithThing_GetThingIndex(sithFX_g_aChalkMarks[n]));
     }
@@ -1432,17 +1488,33 @@ int J3DAPI sithDSS_ProcessSyncGameState(const SithMessage* pMsg)
     thingIdx = SITHDSS_POPINT32();
     sithPlayerActions_g_pPlasma = sithThing_GetThingByIndex(thingIdx);
 
-    sithPlayerActions_g_jewelFlyingPuppetTrackNum = SITHDSS_POPUINT16();
+    // Fixed: Read the track number sign extended, it is written as int16 and the original loads -1 (no track) as 65535.
+    sithPlayerActions_g_jewelFlyingPuppetTrackNum = SITHDSS_POPINT16();
     sithPlayerActions_g_bJewelFlying              = SITHDSS_POPUINT8();
     sithPlayerActions_g_bPlayerInvisible          = SITHDSS_POPUINT8();
     sithPlayerControls_g_bCutsceneMode            = SITHDSS_POPUINT8();
     sithPuppet_g_bPlayerLeapForward               = SITHDSS_POPUINT8();
 
-    sithFX_g_numChalkMarks    = SITHDSS_POPINT32();
-    sithFX_g_lastChalkMarkNum = SITHDSS_POPINT32();
+    // Fixed: Reject a chalk mark count outside of aChalkMarks, the original reads it unchecked and writes past the array.
+    int numChalkMarks = SITHDSS_POPINT32();
+    if ( (unsigned int)numChalkMarks > STD_ARRAYLEN(sithFX_g_aChalkMarks) )
+    {
+        SITHLOG_ERROR("Bad chalk mark count %d in DSS::SyncGameState.\n", numChalkMarks);
+        return 0;
+    }
 
-    // TODO: [BUG] Number of chalk marks read from the stream is not checked against the size of aChalkMarks
-    for ( int i = 0; i < (int)sithFX_g_numChalkMarks; ++i )
+    // Fixed: Reject a last chalk mark number outside of -1 (none) and the array, sithFX_CreateChalkMark continues after it and the original indexes aChalkMarks with it unchecked.
+    int lastChalkMarkNum = SITHDSS_POPINT32();
+    if ( lastChalkMarkNum < -1 || lastChalkMarkNum >= (int)STD_ARRAYLEN(sithFX_g_aChalkMarks) )
+    {
+        SITHLOG_ERROR("Bad last chalk mark number %d in DSS::SyncGameState.\n", lastChalkMarkNum);
+        return 0;
+    }
+
+    sithFX_g_numChalkMarks    = numChalkMarks;
+    sithFX_g_lastChalkMarkNum = lastChalkMarkNum;
+
+    for ( int i = 0; i < sithFX_g_numChalkMarks; ++i )
     {
         thingIdx = SITHDSS_POPINT32();
         if ( thingIdx >= 0 && thingIdx < (int)sithWorld_g_pCurrentWorld->numThings )

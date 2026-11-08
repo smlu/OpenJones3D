@@ -1,5 +1,6 @@
 #include <unity_fixture.h>
 
+#include <errno.h>
 #include <limits.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -1388,7 +1389,7 @@ static void sithThingTest_AssertRoundTripThing(const SithThing* pExpected, const
     }
 }
 
-TEST_SETUP(sithThingBinary)
+static void sithThingTest_SetUpFixture(void)
 {
     // Reset the in-memory file, counted allocator, resource loaders, and local RTI state for each case.
 #if defined(_DEBUG)
@@ -1432,7 +1433,7 @@ TEST_SETUP(sithThingBinary)
     TEST_ASSERT_EQUAL_INT(1, sithThing_Startup());
 }
 
-TEST_TEAR_DOWN(sithThingBinary)
+static void sithThingTest_TearDownFixture(void)
 {
     // Release nested test data, shut down the module, and require a leak-free fixture boundary.
     sithThingTest_failAllocCall     = SITHTHING_TEST_NO_FAILURE;
@@ -1448,6 +1449,16 @@ TEST_TEAR_DOWN(sithThingBinary)
 #if defined(_DEBUG)
     _CrtSetDebugFillThreshold(sithThingTest_previousDebugFillThreshold);
 #endif
+}
+
+TEST_SETUP(sithThingBinary)
+{
+    sithThingTest_SetUpFixture();
+}
+
+TEST_TEAR_DOWN(sithThingBinary)
+{
+    sithThingTest_TearDownFixture();
 }
 
 TEST(sithThingBinary, TestWritesAllThingData)
@@ -2222,6 +2233,64 @@ TEST(sithThingBinary, TestStaticListPerformanceAndSkip)
     TEST_ASSERT_EQUAL_INT(SITH_THING_FREE, sithThingTest_staticWorld.aThings[3].type);
 }
 
+int J3DAPI sithThing_ParseThingArg(const StdConffileArg* pArg, SithWorld* pWorld, SithThing* pThing, int adjNum);
+
+TEST(sithThingBinary, TestParseArgFloatRange)
+{
+    // Underflowing values (ERANGE with a tiny result) are accepted like the original (float)atof, overflow is rejected.
+    static SithThing thing;
+    memset(&thing, 0, sizeof(thing));
+
+    StdConffileArg arg = { "userval", "1e-50" };
+    TEST_ASSERT_EQUAL_INT(0, sithThing_ParseThingArg(&arg, &sithThingTest_staticWorld, &thing, SITHTHING_ARG_USERVAL));
+    TEST_ASSERT_EQUAL_FLOAT(0.0f, thing.userval);
+
+    arg.argValue = "1e-42";
+    TEST_ASSERT_EQUAL_INT(0, sithThing_ParseThingArg(&arg, &sithThingTest_staticWorld, &thing, SITHTHING_ARG_USERVAL));
+    TEST_ASSERT_TRUE(thing.userval >= 0.0f && thing.userval < 1e-30f);
+
+    arg.argValue = "2.5";
+    TEST_ASSERT_EQUAL_INT(0, sithThing_ParseThingArg(&arg, &sithThingTest_staticWorld, &thing, SITHTHING_ARG_USERVAL));
+    TEST_ASSERT_EQUAL_FLOAT(2.5f, thing.userval);
+
+    thing.userval = 7.0f;
+    arg.argValue = "1e50";
+    TEST_ASSERT_NOT_EQUAL(0, sithThing_ParseThingArg(&arg, &sithThingTest_staticWorld, &thing, SITHTHING_ARG_USERVAL));
+    TEST_ASSERT_EQUAL_FLOAT(7.0f, thing.userval);
+}
+
+TEST(sithThingBinary, TestParseArgCollideRange)
+{
+    // A checked signed conversion rejects negative types, including magnitudes strtoul would wrap into 1..3.
+    static SithThing thing;
+    memset(&thing, 0, sizeof(thing));
+
+    StdConffileArg arg = { "collide", "1" };
+    TEST_ASSERT_EQUAL_INT(0, sithThing_ParseThingArg(&arg, &sithThingTest_staticWorld, &thing, SITHTHING_ARG_COLLIDE));
+    TEST_ASSERT_EQUAL_INT(SITH_COLLIDE_SPHERE, thing.collide.type);
+
+    arg.argValue = "3";
+    TEST_ASSERT_EQUAL_INT(0, sithThing_ParseThingArg(&arg, &sithThingTest_staticWorld, &thing, SITHTHING_ARG_COLLIDE));
+    TEST_ASSERT_EQUAL_INT(SITH_COLLIDE_FACE, thing.collide.type);
+
+    arg.argValue = "0";
+    TEST_ASSERT_EQUAL_INT(0, sithThing_ParseThingArg(&arg, &sithThingTest_staticWorld, &thing, SITHTHING_ARG_COLLIDE));
+    TEST_ASSERT_EQUAL_INT(SITH_COLLIDE_NONE, thing.collide.type);
+
+    // strtoul accepts the three wide negative inputs as 1, 2 and 3 on Win32 without ERANGE.
+    static const char* const aInvalid[] = {
+        "4", "-1", "-2", "-2147483648", "2147483648", "4294967295", "99999999999",
+        "-4294967295", "-4294967294", "-4294967293", "  -4294967295", "-99999999999"
+    };
+    for ( size_t i = 0; i < sizeof(aInvalid) / sizeof(aInvalid[0]); ++i )
+    {
+        thing.collide.type = SITH_COLLIDE_SPHERE;
+        arg.argValue = (char*)aInvalid[i];
+        TEST_ASSERT_NOT_EQUAL_MESSAGE(0, sithThing_ParseThingArg(&arg, &sithThingTest_staticWorld, &thing, SITHTHING_ARG_COLLIDE), aInvalid[i]);
+        TEST_ASSERT_EQUAL_INT_MESSAGE(SITH_COLLIDE_SPHERE, thing.collide.type, aInvalid[i]);
+    }
+}
+
 TEST(sithThingBinary, TestStaticListFailures)
 {
     // Covers malformed text, allocation failures, skipped placements, and binary wrapper failures.
@@ -2302,4 +2371,574 @@ TEST_GROUP_RUNNER(sithThingBinary)
     RUN_TEST_CASE(sithThingBinary, TestReadsAndReserializesStaticBinary);
     RUN_TEST_CASE(sithThingBinary, TestStaticListPerformanceAndSkip);
     RUN_TEST_CASE(sithThingBinary, TestStaticListFailures);
+    RUN_TEST_CASE(sithThingBinary, TestParseArgFloatRange);
+    RUN_TEST_CASE(sithThingBinary, TestParseArgCollideRange);
+}
+
+//
+// sithThing_ParseThingArg: every argument the function handles, with valid, invalid and edge values
+//
+
+#define SITHTHING_TEST_PARSEARG_PARSED    0
+#define SITHTHING_TEST_PARSEARG_NOTPARSED 1
+#define SITHTHING_TEST_PARSEARG_BADSYNTAX 19
+
+static SithThing sithThingTest_parseThing;
+
+static int sithThingTest_ParseArg(int adjNum, const char* pName, const char* pValue)
+{
+    StdConffileArg arg = { (char*)pName, (char*)pValue };
+    return sithThing_ParseThingArg(&arg, &sithThingTest_staticWorld, &sithThingTest_parseThing, adjNum);
+}
+
+TEST_GROUP(sithThingParseArg);
+
+TEST_SETUP(sithThingParseArg)
+{
+    sithThingTest_SetUpFixture();
+    sithThingTest_InitResources();
+    STD_ZEROMEM(&sithThingTest_parseThing, sizeof(sithThingTest_parseThing));
+}
+
+TEST_TEAR_DOWN(sithThingParseArg)
+{
+    sithThingTest_TearDownFixture();
+}
+
+TEST(sithThingParseArg, TestType)
+{
+    // Every type name maps to its index, and the control type follows the type; other types keep the control type
+    static const struct
+    {
+        const char* pName;
+        SithThingType type;
+        SithControlType controlType;
+    } aCases[] = {
+        { "free",      SITH_THING_FREE,      (SithControlType)99 },
+        { "camera",    SITH_THING_CAMERA,    (SithControlType)99 },
+        { "actor",     SITH_THING_ACTOR,     SITH_CT_AI },
+        { "weapon",    SITH_THING_WEAPON,    (SithControlType)99 },
+        { "debris",    SITH_THING_DEBRIS,    (SithControlType)99 },
+        { "item",      SITH_THING_ITEM,      (SithControlType)99 },
+        { "explosion", SITH_THING_EXPLOSION, SITH_CT_EXPLOSION },
+        { "cog",       SITH_THING_COG,       (SithControlType)99 },
+        { "ghost",     SITH_THING_GHOST,     (SithControlType)99 },
+        { "corpse",    SITH_THING_CORPSE,    (SithControlType)99 },
+        { "player",    SITH_THING_PLAYER,    SITH_CT_PLAYER },
+        { "particle",  SITH_THING_PARTICLE,  SITH_CT_PARTICLE },
+        { "hint",      SITH_THING_HINT,      (SithControlType)99 },
+        { "sprite",    SITH_THING_SPRITE,    SITH_CT_PLOT },
+        { "polyline",  SITH_THING_POLYLINE,  SITH_CT_PLOT },
+        { "Actor",     SITH_THING_FREE,      (SithControlType)99 }, // Case sensitive
+        { "unknown",   SITH_THING_FREE,      (SithControlType)99 },
+        { "",          SITH_THING_FREE,      (SithControlType)99 },
+    };
+
+    for ( size_t i = 0; i < STD_ARRAYLEN(aCases); ++i )
+    {
+        sithThingTest_parseThing.type        = SITH_THING_ITEM;
+        sithThingTest_parseThing.controlType = (SithControlType)99;
+        TEST_ASSERT_EQUAL_INT_MESSAGE(SITHTHING_TEST_PARSEARG_PARSED, sithThingTest_ParseArg(SITHTHING_ARG_TYPE, "type", aCases[i].pName), aCases[i].pName);
+        TEST_ASSERT_EQUAL_INT_MESSAGE(aCases[i].type, sithThingTest_parseThing.type, aCases[i].pName);
+        TEST_ASSERT_EQUAL_INT_MESSAGE(aCases[i].controlType, sithThingTest_parseThing.controlType, aCases[i].pName);
+    }
+}
+
+static void sithThingTest_CheckCollideArg(const char* pValue, int expectedResult, SithCollideType expectedType, int initialErrno)
+{
+    // Compare the full object: accepted values change only the type, rejected values change nothing.
+    STD_ZEROMEM(&sithThingTest_parseThing, sizeof(sithThingTest_parseThing));
+    sithThingTest_parseThing.idx           = 27;
+    sithThingTest_parseThing.guid          = 41;
+    sithThingTest_parseThing.type          = SITH_THING_ITEM;
+    sithThingTest_parseThing.moveType      = SITH_MT_PHYSICS;
+    sithThingTest_parseThing.msecLifeLeft  = 12345u;
+    sithThingTest_parseThing.collide.type  = SITH_COLLIDE_SPHERE;
+    sithThingTest_parseThing.collide.size  = 0.75f;
+    sithThingTest_parseThing.pos.x         = 1.25f;
+    sithThingTest_parseThing.pos.y         = -2.5f;
+    sithThingTest_parseThing.userval       = 9.0f;
+    STD_STRCPY(sithThingTest_parseThing.aName, "collide_contract");
+    SithThing expected;
+    memcpy(&expected, &sithThingTest_parseThing, sizeof(expected));
+    if ( expectedResult == SITHTHING_TEST_PARSEARG_PARSED )
+    {
+        expected.collide.type = expectedType;
+    }
+
+    int savedErrno = errno;
+    errno = initialErrno;
+    int result          = sithThingTest_ParseArg(SITHTHING_ARG_COLLIDE, "collide", pValue);
+    int conversionErrno = errno;
+    errno = savedErrno;
+    TEST_ASSERT_EQUAL_INT_MESSAGE(expectedResult, result, pValue);
+    TEST_ASSERT_EQUAL_MEMORY_MESSAGE(&expected, &sithThingTest_parseThing, sizeof(expected), pValue);
+    if ( expectedResult == SITHTHING_TEST_PARSEARG_PARSED )
+    {
+        TEST_ASSERT_EQUAL_INT_MESSAGE(0, conversionErrno, pValue);
+    }
+}
+
+TEST(sithThingParseArg, TestCollide)
+{
+    // Preserve atoi-style decimal prefix parsing, including signs, negative zero and no digits.
+    static const struct { const char* pValue; SithCollideType expected; } aCases[] = {
+        { "0", SITH_COLLIDE_NONE }, { "1", SITH_COLLIDE_SPHERE },
+        { "2", (SithCollideType)2 }, { "3", SITH_COLLIDE_FACE },
+        { "+0", SITH_COLLIDE_NONE }, { "+1", SITH_COLLIDE_SPHERE },
+        { "+2", (SithCollideType)2 }, { "+3", SITH_COLLIDE_FACE },
+        { " \t\r\n+3", SITH_COLLIDE_FACE }, { "-0", SITH_COLLIDE_NONE },
+        { " \t-0000tail", SITH_COLLIDE_NONE }, { "01", SITH_COLLIDE_SPHERE },
+        { "003", SITH_COLLIDE_FACE }, { "1suffix", SITH_COLLIDE_SPHERE },
+        { " +2tail", (SithCollideType)2 }, { "3.9", SITH_COLLIDE_FACE },
+        { "-0.9", SITH_COLLIDE_NONE }, { "1e3", SITH_COLLIDE_SPHERE },
+        { "0x3", SITH_COLLIDE_NONE }, { "", SITH_COLLIDE_NONE },
+        { "abc", SITH_COLLIDE_NONE }, { " \t\r\n", SITH_COLLIDE_NONE },
+        { "+", SITH_COLLIDE_NONE }, { "-", SITH_COLLIDE_NONE },
+        { "+ 2", SITH_COLLIDE_NONE }, { "--1", SITH_COLLIDE_NONE }
+    };
+    static const int aInitialErrnos[] = { 0, ERANGE, EDOM };
+    for ( size_t i = 0; i < STD_ARRAYLEN(aCases); ++i )
+    {
+        for ( size_t j = 0; j < STD_ARRAYLEN(aInitialErrnos); ++j )
+        {
+            sithThingTest_CheckCollideArg(aCases[i].pValue, SITHTHING_TEST_PARSEARG_PARSED, aCases[i].expected, aInitialErrnos[j]);
+        }
+    }
+}
+
+TEST(sithThingParseArg, TestCollideRejectsOutOfRangeWithoutChanges)
+{
+    char aMin[sizeof(long) * CHAR_BIT + 3u];
+    char aMax[sizeof(aMin)];
+    char aBelowMin[sizeof(aMin)];
+    char aAboveMax[sizeof(aMin)];
+    snprintf(aMin, sizeof(aMin), "%ld", LONG_MIN);
+    snprintf(aMax, sizeof(aMax), "%ld", LONG_MAX);
+    snprintf(aBelowMin, sizeof(aBelowMin), "-%lu", (unsigned long)(-(LONG_MIN + 1l)) + 2ul);
+    snprintf(aAboveMax, sizeof(aAboveMax), "%lu", (unsigned long)LONG_MAX + 1ul);
+    const char* const aInvalid[] = {
+        "-1", "4", "-1tail", "+4tail", "-0001suffix", "  +0004.0",
+        aMin, aMax, aBelowMin, aAboveMax,
+        "2147483648", "4294967295", "4294967296", "4294967297", "4294967298", "4294967299",
+        // strtoul wraps these negative magnitudes to valid collide types on Win32.
+        "-4294967295", "-4294967294", "-4294967293", "  -4294967295tail",
+        "99999999999999999999999999999999999999999999999999tail",
+        "-99999999999999999999999999999999999999999999999999tail"
+    };
+    for ( size_t i = 0; i < STD_ARRAYLEN(aInvalid); ++i )
+    {
+        sithThingTest_CheckCollideArg(aInvalid[i], SITHTHING_TEST_PARSEARG_BADSYNTAX, SITH_COLLIDE_SPHERE, ERANGE);
+        sithThingTest_CheckCollideArg(aInvalid[i], SITHTHING_TEST_PARSEARG_BADSYNTAX, SITH_COLLIDE_SPHERE, EDOM);
+    }
+}
+
+TEST(sithThingParseArg, TestCollideLongPrefixesAndMalformedInputs)
+{
+    char aValue[4096];
+    // A long prefix of zeroes has no magnitude overflow; the valid decimal prefix is still accepted.
+    memset(aValue, '0', sizeof(aValue));
+    memcpy(aValue + sizeof(aValue) - sizeof("3tail"), "3tail", sizeof("3tail"));
+    sithThingTest_CheckCollideArg(aValue, SITHTHING_TEST_PARSEARG_PARSED, SITH_COLLIDE_FACE, ERANGE);
+
+    memset(aValue, ' ', sizeof(aValue));
+    memcpy(aValue + sizeof(aValue) - sizeof("+2x"), "+2x", sizeof("+2x"));
+    sithThingTest_CheckCollideArg(aValue, SITHTHING_TEST_PARSEARG_PARSED, (SithCollideType)2, EDOM);
+
+    // No digits still means zero even when the malformed input is much longer than a normal token.
+    memset(aValue, 'x', sizeof(aValue) - 1u);
+    aValue[sizeof(aValue) - 1u] = '\0';
+    sithThingTest_CheckCollideArg(aValue, SITHTHING_TEST_PARSEARG_PARSED, SITH_COLLIDE_NONE, ERANGE);
+
+    memset(aValue, '9', sizeof(aValue) - 1u);
+    aValue[sizeof(aValue) - 1u] = '\0';
+    sithThingTest_CheckCollideArg(aValue, SITHTHING_TEST_PARSEARG_BADSYNTAX, SITH_COLLIDE_SPHERE, 0);
+    aValue[0] = '-';
+    sithThingTest_CheckCollideArg(aValue, SITHTHING_TEST_PARSEARG_BADSYNTAX, SITH_COLLIDE_SPHERE, 0);
+}
+
+TEST(sithThingParseArg, TestMove)
+{
+    TEST_ASSERT_EQUAL_INT(SITHTHING_TEST_PARSEARG_PARSED, sithThingTest_ParseArg(SITHTHING_ARG_MOVE, "move", "physics"));
+    TEST_ASSERT_EQUAL_INT(SITH_MT_PHYSICS, sithThingTest_parseThing.moveType);
+    TEST_ASSERT_EQUAL_INT(SITHTHING_TEST_PARSEARG_PARSED, sithThingTest_ParseArg(SITHTHING_ARG_MOVE, "move", "path"));
+    TEST_ASSERT_EQUAL_INT(SITH_MT_PATH, sithThingTest_parseThing.moveType);
+    TEST_ASSERT_EQUAL_INT(SITHTHING_TEST_PARSEARG_PARSED, sithThingTest_ParseArg(SITHTHING_ARG_MOVE, "move", "none"));
+    TEST_ASSERT_EQUAL_INT(SITH_MT_NONE, sithThingTest_parseThing.moveType);
+
+    // Unknown and differently cased names are rejected, the move type is unchanged
+    sithThingTest_parseThing.moveType = SITH_MT_PATH;
+    TEST_ASSERT_EQUAL_INT(SITHTHING_TEST_PARSEARG_BADSYNTAX, sithThingTest_ParseArg(SITHTHING_ARG_MOVE, "move", "Physics"));
+    TEST_ASSERT_EQUAL_INT(SITHTHING_TEST_PARSEARG_BADSYNTAX, sithThingTest_ParseArg(SITHTHING_ARG_MOVE, "move", "fly"));
+    TEST_ASSERT_EQUAL_INT(SITHTHING_TEST_PARSEARG_BADSYNTAX, sithThingTest_ParseArg(SITHTHING_ARG_MOVE, "move", ""));
+    TEST_ASSERT_EQUAL_INT(SITH_MT_PATH, sithThingTest_parseThing.moveType);
+}
+
+// Float arguments: the value, negative values, overflow, underflow and a stale ERANGE
+TEST(sithThingParseArg, TestFloatArgs)
+{
+    static const struct
+    {
+        int adjNum;
+        const char* pName;
+    } aArgs[] = {
+        { SITHTHING_ARG_SIZE,       "size" },
+        { SITHTHING_ARG_TIMER,      "timer" },
+        { SITHTHING_ARG_MOVESIZE,   "movesize" },
+        { SITHTHING_ARG_USERVAL,    "userval" },
+        { SITHTHING_ARG_COLLHEIGHT, "collheight" },
+        { SITHTHING_ARG_COLLWIDTH,  "collwidth" },
+    };
+
+    for ( size_t i = 0; i < STD_ARRAYLEN(aArgs); ++i )
+    {
+        const char* pName = aArgs[i].pName;
+        SithThing* pThing = &sithThingTest_parseThing;
+        STD_ZEROMEM(pThing, sizeof(*pThing));
+        pThing->type = SITH_THING_ITEM;
+
+        TEST_ASSERT_EQUAL_INT_MESSAGE(SITHTHING_TEST_PARSEARG_PARSED, sithThingTest_ParseArg(aArgs[i].adjNum, pName, "2.5"), pName);
+        switch ( aArgs[i].adjNum )
+        {
+            case SITHTHING_ARG_SIZE:
+            {
+                TEST_ASSERT_EQUAL_FLOAT_MESSAGE(2.5f, pThing->collide.size, pName);
+                TEST_ASSERT_EQUAL_FLOAT_MESSAGE(2.5f, pThing->collide.movesize, pName);
+                break;
+            }
+            case SITHTHING_ARG_TIMER:
+            {
+                TEST_ASSERT_EQUAL_UINT32_MESSAGE(2500u, pThing->msecLifeLeft, pName);
+                break;
+            }
+            case SITHTHING_ARG_MOVESIZE:
+            {
+                TEST_ASSERT_EQUAL_FLOAT_MESSAGE(2.5f, pThing->collide.movesize, pName);
+                TEST_ASSERT_EQUAL_FLOAT_MESSAGE(0.0f, pThing->collide.size, pName);
+                break;
+            }
+            case SITHTHING_ARG_USERVAL:
+            {
+                TEST_ASSERT_EQUAL_FLOAT_MESSAGE(2.5f, pThing->userval, pName);
+                break;
+            }
+            case SITHTHING_ARG_COLLHEIGHT:
+            {
+                TEST_ASSERT_EQUAL_FLOAT_MESSAGE(2.5f, pThing->collide.height, pName);
+                TEST_ASSERT_EQUAL_FLOAT_MESSAGE(2.5f, pThing->collide.unkHeight, pName);
+                break;
+            }
+            case SITHTHING_ARG_COLLWIDTH:
+            {
+                TEST_ASSERT_EQUAL_FLOAT_MESSAGE(2.5f, pThing->collide.width, pName);
+                TEST_ASSERT_EQUAL_FLOAT_MESSAGE(2.5f, pThing->collide.unkWidth, pName);
+                break;
+            }
+        }
+
+        // Zero and a value without digits (converts to 0) are accepted
+        TEST_ASSERT_EQUAL_INT_MESSAGE(SITHTHING_TEST_PARSEARG_PARSED, sithThingTest_ParseArg(aArgs[i].adjNum, pName, "0"), pName);
+        TEST_ASSERT_EQUAL_INT_MESSAGE(SITHTHING_TEST_PARSEARG_PARSED, sithThingTest_ParseArg(aArgs[i].adjNum, pName, "abc"), pName);
+
+        // An underflowing value is accepted like the original's (float)atof
+        TEST_ASSERT_EQUAL_INT_MESSAGE(SITHTHING_TEST_PARSEARG_PARSED, sithThingTest_ParseArg(aArgs[i].adjNum, pName, "1e-50"), pName);
+
+        // A stale ERANGE does not reject a valid value
+        errno = ERANGE;
+        TEST_ASSERT_EQUAL_INT_MESSAGE(SITHTHING_TEST_PARSEARG_PARSED, sithThingTest_ParseArg(aArgs[i].adjNum, pName, "1.5"), pName);
+
+        // Negative values and overflow are rejected and leave the thing unchanged
+        SithThing before = *pThing;
+        TEST_ASSERT_EQUAL_INT_MESSAGE(SITHTHING_TEST_PARSEARG_BADSYNTAX, sithThingTest_ParseArg(aArgs[i].adjNum, pName, "-1"), pName);
+        TEST_ASSERT_EQUAL_INT_MESSAGE(SITHTHING_TEST_PARSEARG_BADSYNTAX, sithThingTest_ParseArg(aArgs[i].adjNum, pName, "-0.001"), pName);
+        TEST_ASSERT_EQUAL_INT_MESSAGE(SITHTHING_TEST_PARSEARG_BADSYNTAX, sithThingTest_ParseArg(aArgs[i].adjNum, pName, "1e50"), pName);
+        TEST_ASSERT_EQUAL_INT_MESSAGE(SITHTHING_TEST_PARSEARG_BADSYNTAX, sithThingTest_ParseArg(aArgs[i].adjNum, pName, "-1e50"), pName);
+        TEST_ASSERT_EQUAL_MEMORY_MESSAGE(&before, pThing, sizeof(before), pName);
+    }
+}
+
+TEST(sithThingParseArg, TestTimerConversion)
+{
+    // The life time is truncated to whole milliseconds
+    TEST_ASSERT_EQUAL_INT(SITHTHING_TEST_PARSEARG_PARSED, sithThingTest_ParseArg(SITHTHING_ARG_TIMER, "timer", "0.0019"));
+    TEST_ASSERT_EQUAL_UINT32(1u, sithThingTest_parseThing.msecLifeLeft);
+    TEST_ASSERT_EQUAL_INT(SITHTHING_TEST_PARSEARG_PARSED, sithThingTest_ParseArg(SITHTHING_ARG_TIMER, "timer", "100"));
+    TEST_ASSERT_EQUAL_UINT32(100000u, sithThingTest_parseThing.msecLifeLeft);
+}
+
+TEST(sithThingParseArg, TestMoveSizeIgnoredForActors)
+{
+    // Actors and players keep their move size
+    const SithThingType aTypes[] = { SITH_THING_ACTOR, SITH_THING_PLAYER };
+    for ( size_t i = 0; i < STD_ARRAYLEN(aTypes); ++i )
+    {
+        sithThingTest_parseThing.type             = aTypes[i];
+        sithThingTest_parseThing.collide.movesize = 0.25f;
+        TEST_ASSERT_EQUAL_INT(SITHTHING_TEST_PARSEARG_PARSED, sithThingTest_ParseArg(SITHTHING_ARG_MOVESIZE, "movesize", "3.0"));
+        TEST_ASSERT_EQUAL_FLOAT(0.25f, sithThingTest_parseThing.collide.movesize);
+
+        // Even an invalid value is ignored
+        TEST_ASSERT_EQUAL_INT(SITHTHING_TEST_PARSEARG_PARSED, sithThingTest_ParseArg(SITHTHING_ARG_MOVESIZE, "movesize", "-1"));
+        TEST_ASSERT_EQUAL_FLOAT(0.25f, sithThingTest_parseThing.collide.movesize);
+    }
+}
+
+TEST(sithThingParseArg, TestThingFlags)
+{
+    TEST_ASSERT_EQUAL_INT(SITHTHING_TEST_PARSEARG_PARSED, sithThingTest_ParseArg(SITHTHING_ARG_THINGFLAGS, "thingflags", "0x404"));
+    TEST_ASSERT_EQUAL_HEX32(0x404u, sithThingTest_parseThing.flags);
+    TEST_ASSERT_EQUAL_INT(SITHTHING_TEST_PARSEARG_PARSED, sithThingTest_ParseArg(SITHTHING_ARG_THINGFLAGS, "thingflags", "ffffffff"));
+    TEST_ASSERT_EQUAL_HEX32(0xFFFFFFFFu, sithThingTest_parseThing.flags);
+    TEST_ASSERT_EQUAL_INT(SITHTHING_TEST_PARSEARG_PARSED, sithThingTest_ParseArg(SITHTHING_ARG_THINGFLAGS, "thingflags", "0"));
+    TEST_ASSERT_EQUAL_HEX32(0u, sithThingTest_parseThing.flags);
+
+    // A value that is not hexadecimal is rejected, the flags are unchanged
+    sithThingTest_parseThing.flags = SITH_TF_COGLINKED;
+    TEST_ASSERT_EQUAL_INT(SITHTHING_TEST_PARSEARG_BADSYNTAX, sithThingTest_ParseArg(SITHTHING_ARG_THINGFLAGS, "thingflags", "zz"));
+    TEST_ASSERT_EQUAL_INT(SITHTHING_TEST_PARSEARG_BADSYNTAX, sithThingTest_ParseArg(SITHTHING_ARG_THINGFLAGS, "thingflags", ""));
+    TEST_ASSERT_EQUAL_HEX32(SITH_TF_COGLINKED, sithThingTest_parseThing.flags);
+}
+
+TEST(sithThingParseArg, TestLight)
+{
+    // With a range: color, emit color and both radii, and the thing emits light
+    sithThingTest_parseThing.flags = SITH_TF_COGLINKED;
+    TEST_ASSERT_EQUAL_INT(SITHTHING_TEST_PARSEARG_PARSED, sithThingTest_ParseArg(SITHTHING_ARG_LIGHT, "light", "(0.25/0.5/0.75/2.0)"));
+    const SithThingLight* pLight = &sithThingTest_parseThing.light;
+    TEST_ASSERT_EQUAL_FLOAT(0.25f, pLight->color.red);
+    TEST_ASSERT_EQUAL_FLOAT(0.5f, pLight->color.green);
+    TEST_ASSERT_EQUAL_FLOAT(0.75f, pLight->color.blue);
+    TEST_ASSERT_EQUAL_FLOAT(2.0f, pLight->color.alpha);
+    TEST_ASSERT_EQUAL_MEMORY(&pLight->color, &pLight->emitColor, sizeof(pLight->color));
+    TEST_ASSERT_EQUAL_FLOAT(2.0f, pLight->minRadius);
+    TEST_ASSERT_EQUAL_FLOAT(2.0f, pLight->maxRadius);
+    TEST_ASSERT_EQUAL_HEX32(SITH_TF_COGLINKED | SITH_TF_EMITLIGHT, sithThingTest_parseThing.flags);
+
+    // Without a range the range is 0; negative components are kept
+    TEST_ASSERT_EQUAL_INT(SITHTHING_TEST_PARSEARG_PARSED, sithThingTest_ParseArg(SITHTHING_ARG_LIGHT, "light", "(-1/0/1)"));
+    TEST_ASSERT_EQUAL_FLOAT(-1.0f, pLight->color.red);
+    TEST_ASSERT_EQUAL_FLOAT(0.0f, pLight->color.green);
+    TEST_ASSERT_EQUAL_FLOAT(1.0f, pLight->color.blue);
+    TEST_ASSERT_EQUAL_FLOAT(0.0f, pLight->color.alpha);
+    TEST_ASSERT_EQUAL_FLOAT(0.0f, pLight->minRadius);
+    TEST_ASSERT_EQUAL_FLOAT(0.0f, pLight->maxRadius);
+
+    // Malformed values are rejected and leave the light unchanged
+    sithThingTest_parseThing.flags = 0;
+    const SithThingLight before = *pLight;
+    const char* aBad[] = { "", "0.25/0.5/0.75", "(0.25/0.5)", "(a/b/c)", "[1/1/1]" };
+    for ( size_t i = 0; i < STD_ARRAYLEN(aBad); ++i )
+    {
+        TEST_ASSERT_EQUAL_INT_MESSAGE(SITHTHING_TEST_PARSEARG_BADSYNTAX, sithThingTest_ParseArg(SITHTHING_ARG_LIGHT, "light", aBad[i]), aBad[i]);
+    }
+
+    TEST_ASSERT_EQUAL_MEMORY(&before, pLight, sizeof(before));
+    TEST_ASSERT_EQUAL_HEX32(0u, sithThingTest_parseThing.flags);
+}
+
+TEST(sithThingParseArg, TestSoundClass)
+{
+    TEST_ASSERT_EQUAL_INT(SITHTHING_TEST_PARSEARG_PARSED, sithThingTest_ParseArg(SITHTHING_ARG_SOUNDCLASS, "soundclass", "test_sound.snd"));
+    TEST_ASSERT_EQUAL_PTR(&sithThingTest_soundClass, sithThingTest_parseThing.pSoundClass);
+
+    // A missing sound class is logged, not a syntax error, and clears the sound class
+    TEST_ASSERT_EQUAL_INT(SITHTHING_TEST_PARSEARG_PARSED, sithThingTest_ParseArg(SITHTHING_ARG_SOUNDCLASS, "soundclass", "missing.snd"));
+    TEST_ASSERT_NULL(sithThingTest_parseThing.pSoundClass);
+}
+
+TEST(sithThingParseArg, TestModel3)
+{
+    // The collide sizes default to the model radius when they are 0
+    sithThingTest_model.radius = 0.75f;
+    TEST_ASSERT_EQUAL_INT(SITHTHING_TEST_PARSEARG_PARSED, sithThingTest_ParseArg(SITHTHING_ARG_MODEL3D, "model3d", "different_model.3do"));
+    SithThing* pThing = &sithThingTest_parseThing;
+    TEST_ASSERT_EQUAL_INT(RD_THING_MODEL3, pThing->renderData.type);
+    TEST_ASSERT_EQUAL_PTR(&sithThingTest_model, pThing->renderData.data.pModel3);
+    TEST_ASSERT_EQUAL_FLOAT(0.75f, pThing->collide.size);
+    TEST_ASSERT_EQUAL_FLOAT(0.75f, pThing->collide.movesize);
+    TEST_ASSERT_EQUAL_FLOAT(0.75f, pThing->collide.width);
+    TEST_ASSERT_EQUAL_FLOAT(0.75f, pThing->collide.unkWidth);
+    TEST_ASSERT_EQUAL_FLOAT(0.75f, pThing->collide.height);
+    TEST_ASSERT_EQUAL_FLOAT(0.75f, pThing->collide.unkHeight);
+
+    // Sizes set before keep their values; width and height follow the move size only when not set
+    STD_ZEROMEM(pThing, sizeof(*pThing));
+    pThing->collide.size      = 0.1f;
+    pThing->collide.movesize  = 0.2f;
+    pThing->collide.unkHeight = 0.3f;
+    pThing->collide.height    = 0.3f;
+    TEST_ASSERT_EQUAL_INT(SITHTHING_TEST_PARSEARG_PARSED, sithThingTest_ParseArg(SITHTHING_ARG_MODEL3D, "model3d", "different_model.3do"));
+    TEST_ASSERT_EQUAL_FLOAT(0.1f, pThing->collide.size);
+    TEST_ASSERT_EQUAL_FLOAT(0.2f, pThing->collide.movesize);
+    TEST_ASSERT_EQUAL_FLOAT(0.2f, pThing->collide.width);
+    TEST_ASSERT_EQUAL_FLOAT(0.2f, pThing->collide.unkWidth);
+    TEST_ASSERT_EQUAL_FLOAT(0.3f, pThing->collide.height);
+    TEST_ASSERT_EQUAL_FLOAT(0.3f, pThing->collide.unkHeight);
+
+    // A missing model is a syntax error, after the old render data was freed
+    TEST_ASSERT_EQUAL_INT(SITHTHING_TEST_PARSEARG_BADSYNTAX, sithThingTest_ParseArg(SITHTHING_ARG_MODEL3D, "model3d", "missing.3do"));
+    TEST_ASSERT_EQUAL_INT(RD_THING_MODEL3, pThing->renderData.type);
+}
+
+TEST(sithThingParseArg, TestSprite)
+{
+    TEST_ASSERT_EQUAL_INT(SITHTHING_TEST_PARSEARG_PARSED, sithThingTest_ParseArg(SITHTHING_ARG_SPRITE, "sprite", "test_sprite.spr"));
+    TEST_ASSERT_EQUAL_INT(RD_THING_SPRITE3, sithThingTest_parseThing.renderData.type);
+    TEST_ASSERT_EQUAL_PTR(&sithThingTest_sprite, sithThingTest_parseThing.renderData.data.pSprite3);
+
+    TEST_ASSERT_EQUAL_INT(SITHTHING_TEST_PARSEARG_BADSYNTAX, sithThingTest_ParseArg(SITHTHING_ARG_SPRITE, "sprite", "missing.spr"));
+}
+
+TEST(sithThingParseArg, TestPuppet)
+{
+    // A loaded puppet class creates the render puppet once
+    TEST_ASSERT_EQUAL_INT(SITHTHING_TEST_PARSEARG_PARSED, sithThingTest_ParseArg(SITHTHING_ARG_PUPPET, "puppet", "test_puppet.pup"));
+    TEST_ASSERT_EQUAL_PTR(&sithThingTest_puppetClass, sithThingTest_parseThing.pPuppetClass);
+    TEST_ASSERT_EQUAL_PTR(&sithThingTest_rdPuppet, sithThingTest_parseThing.renderData.pPuppet);
+
+    rdPuppet otherPuppet;
+    sithThingTest_parseThing.renderData.pPuppet = &otherPuppet;
+    TEST_ASSERT_EQUAL_INT(SITHTHING_TEST_PARSEARG_PARSED, sithThingTest_ParseArg(SITHTHING_ARG_PUPPET, "puppet", "test_puppet.pup"));
+    TEST_ASSERT_EQUAL_PTR(&otherPuppet, sithThingTest_parseThing.renderData.pPuppet);
+
+    // A missing puppet class clears it, keeps the render puppet and is not a syntax error
+    TEST_ASSERT_EQUAL_INT(SITHTHING_TEST_PARSEARG_PARSED, sithThingTest_ParseArg(SITHTHING_ARG_PUPPET, "puppet", "missing.pup"));
+    TEST_ASSERT_NULL(sithThingTest_parseThing.pPuppetClass);
+    TEST_ASSERT_EQUAL_PTR(&otherPuppet, sithThingTest_parseThing.renderData.pPuppet);
+
+    sithThingTest_parseThing.renderData.pPuppet = NULL;
+    TEST_ASSERT_EQUAL_INT(SITHTHING_TEST_PARSEARG_PARSED, sithThingTest_ParseArg(SITHTHING_ARG_PUPPET, "puppet", "missing.pup"));
+    TEST_ASSERT_NULL(sithThingTest_parseThing.renderData.pPuppet);
+}
+
+TEST(sithThingParseArg, TestAIClass)
+{
+    sithThingTest_aiClass.numInstincts = 5;
+
+    // Without an AI control block only the class is set
+    TEST_ASSERT_EQUAL_INT(SITHTHING_TEST_PARSEARG_PARSED, sithThingTest_ParseArg(SITHTHING_ARG_AICLASS, "aiclass", "test_ai.ai"));
+    TEST_ASSERT_EQUAL_INT(SITH_CT_AI, sithThingTest_parseThing.controlType);
+    TEST_ASSERT_EQUAL_PTR(&sithThingTest_aiClass, sithThingTest_parseThing.controlInfo.aiControl.pClass);
+
+    // With a control block the class and its instinct count are copied to it
+    static SithAIControlBlock local;
+    STD_ZEROMEM(&local, sizeof(local));
+    sithThingTest_parseThing.controlInfo.aiControl.pLocal = &local;
+    TEST_ASSERT_EQUAL_INT(SITHTHING_TEST_PARSEARG_PARSED, sithThingTest_ParseArg(SITHTHING_ARG_AICLASS, "aiclass", "test_ai.ai"));
+    TEST_ASSERT_EQUAL_PTR(&sithThingTest_aiClass, local.pClass);
+    TEST_ASSERT_EQUAL_size_t(5u, local.numInstincts);
+
+    // A missing class clears the class of the thing but not the control block's, and sets the AI control type anyway
+    sithThingTest_parseThing.controlType = SITH_CT_PLOT;
+    TEST_ASSERT_EQUAL_INT(SITHTHING_TEST_PARSEARG_PARSED, sithThingTest_ParseArg(SITHTHING_ARG_AICLASS, "aiclass", "missing.ai"));
+    TEST_ASSERT_EQUAL_INT(SITH_CT_AI, sithThingTest_parseThing.controlType);
+    TEST_ASSERT_NULL(sithThingTest_parseThing.controlInfo.aiControl.pClass);
+    TEST_ASSERT_EQUAL_PTR(&sithThingTest_aiClass, local.pClass);
+}
+
+TEST(sithThingParseArg, TestCog)
+{
+    sithThingTest_cog.flags = 0;
+    TEST_ASSERT_EQUAL_INT(SITHTHING_TEST_PARSEARG_PARSED, sithThingTest_ParseArg(SITHTHING_ARG_COG, "cog", "test_logic.cog"));
+    TEST_ASSERT_EQUAL_PTR(&sithThingTest_cog, sithThingTest_parseThing.pCog);
+    TEST_ASSERT_EQUAL_HEX32(SITHCOG_LOCAL | SITHCOG_CLASS, sithThingTest_cog.flags);
+    TEST_ASSERT_EQUAL_HEX32(SITH_TF_COGLINKED, sithThingTest_parseThing.flags);
+
+    // A missing cog clears the cog and keeps the flags; not a syntax error
+    sithThingTest_parseThing.flags = 0;
+    TEST_ASSERT_EQUAL_INT(SITHTHING_TEST_PARSEARG_PARSED, sithThingTest_ParseArg(SITHTHING_ARG_COG, "cog", "missing.cog"));
+    TEST_ASSERT_NULL(sithThingTest_parseThing.pCog);
+    TEST_ASSERT_EQUAL_HEX32(0u, sithThingTest_parseThing.flags);
+}
+
+TEST(sithThingParseArg, TestParticle)
+{
+    TEST_ASSERT_EQUAL_INT(SITHTHING_TEST_PARSEARG_PARSED, sithThingTest_ParseArg(SITHTHING_ARG_PARTICLE, "particle", "test_particle.par"));
+    TEST_ASSERT_EQUAL_INT(RD_THING_PARTICLE, sithThingTest_parseThing.renderData.type);
+    TEST_ASSERT_EQUAL_PTR(&sithThingTest_particle, sithThingTest_parseThing.renderData.data.pParticle);
+
+    // A missing particle keeps the render data and is not a syntax error
+    sithThingTest_parseThing.renderData.type          = RD_THING_SPRITE3;
+    sithThingTest_parseThing.renderData.data.pSprite3 = &sithThingTest_sprite;
+    TEST_ASSERT_EQUAL_INT(SITHTHING_TEST_PARSEARG_PARSED, sithThingTest_ParseArg(SITHTHING_ARG_PARTICLE, "particle", "missing.par"));
+    TEST_ASSERT_EQUAL_INT(RD_THING_SPRITE3, sithThingTest_parseThing.renderData.type);
+    TEST_ASSERT_EQUAL_PTR(&sithThingTest_sprite, sithThingTest_parseThing.renderData.data.pSprite3);
+}
+
+TEST(sithThingParseArg, TestCreateThing)
+{
+    TEST_ASSERT_EQUAL_INT(SITHTHING_TEST_PARSEARG_PARSED, sithThingTest_ParseArg(SITHTHING_ARG_CREATETHING, "creatething", "base_template"));
+    TEST_ASSERT_EQUAL_PTR(&sithThingTest_baseTemplate, sithThingTest_parseThing.pCreateThingTemplate);
+
+    // A missing template clears it and is not a syntax error
+    TEST_ASSERT_EQUAL_INT(SITHTHING_TEST_PARSEARG_PARSED, sithThingTest_ParseArg(SITHTHING_ARG_CREATETHING, "creatething", "missing_template"));
+    TEST_ASSERT_NULL(sithThingTest_parseThing.pCreateThingTemplate);
+}
+
+TEST(sithThingParseArg, TestOrient)
+{
+    rdVector3 pyr = { 10.0f, -90.0f, 45.0f };
+    rdMatrix34 expected;
+    rdMatrix_BuildRotate34(&expected, &pyr);
+    TEST_ASSERT_EQUAL_INT(SITHTHING_TEST_PARSEARG_PARSED, sithThingTest_ParseArg(SITHTHING_ARG_ORIENT, "orient", "(10/-90/45)"));
+    TEST_ASSERT_EQUAL_MEMORY(&expected, &sithThingTest_parseThing.orient, sizeof(expected));
+
+    // Malformed values are rejected and leave the orientation unchanged
+    const char* aBad[] = { "", "10/-90/45", "(10/-90)", "(a/b/c)" };
+    for ( size_t i = 0; i < STD_ARRAYLEN(aBad); ++i )
+    {
+        TEST_ASSERT_EQUAL_INT_MESSAGE(SITHTHING_TEST_PARSEARG_BADSYNTAX, sithThingTest_ParseArg(SITHTHING_ARG_ORIENT, "orient", aBad[i]), aBad[i]);
+    }
+
+    TEST_ASSERT_EQUAL_MEMORY(&expected, &sithThingTest_parseThing.orient, sizeof(expected));
+}
+
+TEST(sithThingParseArg, TestPerfLevel)
+{
+    TEST_ASSERT_EQUAL_INT(SITHTHING_TEST_PARSEARG_PARSED, sithThingTest_ParseArg(SITHTHING_ARG_PERFLEVEL, "perflevel", "2"));
+    TEST_ASSERT_EQUAL_INT(2, sithThingTest_parseThing.perfLevel);
+    TEST_ASSERT_EQUAL_INT(SITHTHING_TEST_PARSEARG_PARSED, sithThingTest_ParseArg(SITHTHING_ARG_PERFLEVEL, "perflevel", "-3"));
+    TEST_ASSERT_EQUAL_INT(-3, sithThingTest_parseThing.perfLevel);
+
+    TEST_ASSERT_EQUAL_INT(SITHTHING_TEST_PARSEARG_BADSYNTAX, sithThingTest_ParseArg(SITHTHING_ARG_PERFLEVEL, "perflevel", "x"));
+    TEST_ASSERT_EQUAL_INT(SITHTHING_TEST_PARSEARG_BADSYNTAX, sithThingTest_ParseArg(SITHTHING_ARG_PERFLEVEL, "perflevel", ""));
+    TEST_ASSERT_EQUAL_INT(-3, sithThingTest_parseThing.perfLevel);
+}
+
+TEST(sithThingParseArg, TestNotParsed)
+{
+    // Arguments of the other parsers (and unknown numbers) are not parsed here and leave the thing unchanged
+    const int aArgs[] = { 0, SITHTHING_ARG_ATTACH, SITHTHING_ARG_MASS, SITHTHING_ARG_HEALTH, SITHTHING_ARG_DAMAGE, SITHTHING_ARG_RESPAWN, 9999 };
+    const SithThing before = sithThingTest_parseThing;
+    for ( size_t i = 0; i < STD_ARRAYLEN(aArgs); ++i )
+    {
+        TEST_ASSERT_EQUAL_INT(SITHTHING_TEST_PARSEARG_NOTPARSED, sithThingTest_ParseArg(aArgs[i], "arg", "1"));
+    }
+
+    TEST_ASSERT_EQUAL_MEMORY(&before, &sithThingTest_parseThing, sizeof(before));
+}
+
+TEST_GROUP_RUNNER(sithThingParseArg)
+{
+    RUN_TEST_CASE(sithThingParseArg, TestType);
+    RUN_TEST_CASE(sithThingParseArg, TestCollide);
+    RUN_TEST_CASE(sithThingParseArg, TestCollideRejectsOutOfRangeWithoutChanges);
+    RUN_TEST_CASE(sithThingParseArg, TestCollideLongPrefixesAndMalformedInputs);
+    RUN_TEST_CASE(sithThingParseArg, TestMove);
+    RUN_TEST_CASE(sithThingParseArg, TestFloatArgs);
+    RUN_TEST_CASE(sithThingParseArg, TestTimerConversion);
+    RUN_TEST_CASE(sithThingParseArg, TestMoveSizeIgnoredForActors);
+    RUN_TEST_CASE(sithThingParseArg, TestThingFlags);
+    RUN_TEST_CASE(sithThingParseArg, TestLight);
+    RUN_TEST_CASE(sithThingParseArg, TestSoundClass);
+    RUN_TEST_CASE(sithThingParseArg, TestModel3);
+    RUN_TEST_CASE(sithThingParseArg, TestSprite);
+    RUN_TEST_CASE(sithThingParseArg, TestPuppet);
+    RUN_TEST_CASE(sithThingParseArg, TestAIClass);
+    RUN_TEST_CASE(sithThingParseArg, TestCog);
+    RUN_TEST_CASE(sithThingParseArg, TestParticle);
+    RUN_TEST_CASE(sithThingParseArg, TestCreateThing);
+    RUN_TEST_CASE(sithThingParseArg, TestOrient);
+    RUN_TEST_CASE(sithThingParseArg, TestPerfLevel);
+    RUN_TEST_CASE(sithThingParseArg, TestNotParsed);
 }

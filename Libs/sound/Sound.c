@@ -350,6 +350,11 @@ void Sound_TestSetSoundBank(size_t bankNum, SoundInfo* pSoundInfos, size_t numSo
     soundbank_aUsedCacheSizes[bankNum] = cacheSize;
 }
 
+void Sound_TestSetOpen(int bOpen)
+{
+    Sound_state = bOpen ? SOUNDSTATE_OPEN : SOUNDSTATE_INITIALIZED;
+}
+
 void Sound_TestSetNoLipSync(int bNoLipSync)
 {
     Sound_bNoLipSync = bNoLipSync != 0;
@@ -1128,11 +1133,13 @@ tSoundHandle J3DAPI Sound_Load(const char* pFilepath, uint32_t* sndIdx)
     // Extract filename from file path
     size_t curPathPos     = strlen(pFilepath);
     const char* pFilename = &pFilepath[curPathPos];
-    do
+    while ( (--pFilename, curPathPos-- != 0) )
     {
-        --pFilename;
-        --curPathPos;
-    } while ( curPathPos && *pFilename != '/' && *pFilename != '\\' );
+        if ( *pFilename == '/' || *pFilename == '\\' )
+        {
+            break;
+        }
+    }
 
     // Skip '/' or '\'
     ++pFilename;
@@ -1503,6 +1510,12 @@ tSoundHandle J3DAPI Sound_GetSoundHandle(uint32_t idx)
 
 size_t J3DAPI Sound_GetSoundIndex(tSoundHandle hSnd)
 {
+    // The original performs this check inside the bank loop, before scanning each bank; the result is the same
+    if ( hSnd == SOUND_INVALIDHANDLE )
+    {
+        return SOUND_INVALISOUNDINFOINDEX;
+    }
+
     for ( size_t bankNum = 0; bankNum < SOUNDBANK_NUMBANKS; ++bankNum )
     {
         size_t numInfos = soundbank_aNumSounds[bankNum];
@@ -1694,6 +1707,7 @@ tSoundChannelHandle J3DAPI Sound_Play(tSoundHandle hSnd, float volume, float pan
     // First scan for a free channel while tracking lowest priority
     tSoundChannel* pChannel       = Sound_apChannels;
     tSoundChannel* pLowPriChannel = NULL;
+    bool bFoundFree               = false; // New: The original jumps over the reuse code below when it finds a free channel
     for ( size_t i = 0; i < Sound_numChannels; ++i )
     {
          // Track lowest priority channel seen so far
@@ -1705,6 +1719,7 @@ tSoundChannelHandle J3DAPI Sound_Play(tSoundHandle hSnd, float volume, float pan
         // Found a free channel - use it immediately
         if ( pChannel->handle == SOUND_INVALIDHANDLE )
         {
+            bFoundFree = true;
             break;
         }
 
@@ -1712,7 +1727,7 @@ tSoundChannelHandle J3DAPI Sound_Play(tSoundHandle hSnd, float volume, float pan
     }
 
     // If we couldn't find a free channel, try to reuse lowest priority one
-    if ( pChannel->handle != SOUND_INVALIDHANDLE )
+    if ( !bFoundFree )
     {
         // No free channel found, check if we have a lower priority one to reuse
         if ( !pLowPriChannel )
@@ -2067,7 +2082,7 @@ void J3DAPI Sound_FadeVolume(tSoundChannelHandle hChannel, float volume, float s
 
     // No free fades, so find the one with the longest time remaining
     SoundFade* pFade = NULL;
-    uint32_t nRemaining = 999999999;
+    int32_t nRemaining = 999999999;
     for ( size_t i = STD_ARRAYLEN(Sound_aFades); i > 0; i-- )
     {
         SoundFade* pCurFade = &Sound_aFades[i - 1];
@@ -2077,9 +2092,9 @@ void J3DAPI Sound_FadeVolume(tSoundChannelHandle hChannel, float volume, float s
             break;
         }
 
-        if ( (pCurFade->msecEndTime - curTime) > nRemaining )
+        if ( (int32_t)(pCurFade->msecEndTime - curTime) > nRemaining )
         {
-            nRemaining = pCurFade->msecEndTime - curTime;
+            nRemaining = (int32_t)(pCurFade->msecEndTime - curTime);
             pFade = pCurFade;
         }
     }
@@ -2263,7 +2278,7 @@ void J3DAPI Sound_FadePitch(tSoundChannelHandle hChannel, float pitch, float sec
 
     // No free fades, so find the one with the longest time remaining
     SoundFade* pFade = NULL;
-    uint32_t nRemaining = 999999999;
+    int32_t nRemaining = 999999999;
     for ( size_t i = STD_ARRAYLEN(Sound_aFades); i > 0; i-- )
     {
         SoundFade* pCurFade = &Sound_aFades[i - 1];
@@ -2273,9 +2288,9 @@ void J3DAPI Sound_FadePitch(tSoundChannelHandle hChannel, float pitch, float sec
             break;
         }
 
-        if ( (pCurFade->msecEndTime - curTime) > nRemaining )
+        if ( (int32_t)(pCurFade->msecEndTime - curTime) > nRemaining )
         {
-            nRemaining = pCurFade->msecEndTime - curTime;
+            nRemaining = (int32_t)(pCurFade->msecEndTime - curTime);
             pFade = pCurFade;
         }
     }
@@ -2424,8 +2439,8 @@ static void Sound_UpdateFades(void) // Added
             if ( dtime < (int)pFade->msecEndTime )
             {
                 double newValue = (pFade->endValue - pFade->startValue)
-                    * (double)(dtime - pFade->msecStartTime)
-                    / (double)(pFade->msecEndTime - pFade->msecStartTime)
+                    * (double)(dtime - (int)pFade->msecStartTime) // The original evaluates the fade times signed
+                    / (double)((int)pFade->msecEndTime - (int)pFade->msecStartTime)
                     + pFade->startValue;
 
                 if ( newValue != 0.0 )

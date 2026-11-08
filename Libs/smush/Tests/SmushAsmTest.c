@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <windows.h>
 
 #include <smush/insane/Bitmap/BlitAsm.h>
 #include <smush/insane/Bitmap/MemCopy.h>
@@ -69,11 +70,21 @@ typedef struct sSmushAsmTestBuffer
 
 TEST_GROUP(SmushAsm);
 
+static void* SmushAsmTest_pGuardAllocation;
+
 TEST_SETUP(SmushAsm)
-{}
+{
+    SmushAsmTest_pGuardAllocation = NULL;
+}
 
 TEST_TEAR_DOWN(SmushAsm)
-{}
+{
+    if ( SmushAsmTest_pGuardAllocation )
+    {
+        VirtualFree(SmushAsmTest_pGuardAllocation, 0, MEM_RELEASE);
+        SmushAsmTest_pGuardAllocation = NULL;
+    }
+}
 
 static const uint8_t* SmushAsmTest_Read(SmushAsmTestReader* pReader, size_t size)
 {
@@ -383,6 +394,324 @@ static int SmushAsmTest_CheckBuffer(const SmushAsmTestBuffer* pBuf)
     return memcmp(pBuf->pData, pBuf->pExpected, pBuf->size) == 0;
 }
 
+// The unchanged corpus also deliberately exercises motion outside the logical
+// image inside a larger scratch allocation. Replay the original byte operations
+// independently, verify them against the captured bytes/hash, then track only
+// bytes descended from an invalid pixel read. Those bytes alone become zero in
+// the bounded expectation, including propagation through later overlap copies.
+typedef struct sSmushAsmTestMotionReplay
+{
+    uint8_t* pOriginal;
+    uint8_t* pInvalid;
+    size_t size;
+    int64_t current, previous, delta;
+    size_t imageSize;
+    int lineSize;
+    const int16_t* pMotion;
+    const uint8_t* pParams;
+    const Bl16Small* pSmall;
+    const Bl16Big* pBig;
+    const uint16_t* pPalette;
+    int bounded;
+    int (*pfnContains)(uintptr_t address, size_t size); // sequence harness: mapped bitmap allocations
+} SmushAsmTestMotionReplay;
+
+static uint16_t SmushAsmTest_LoadWord(const uint8_t* p)
+{
+    uint16_t value;
+    memcpy(&value, p, sizeof(value));
+    return value;
+}
+
+static void SmushAsmTest_ReplayStore(SmushAsmTestMotionReplay* p, int64_t at, uint16_t value)
+{
+    if ( p->pfnContains )
+    {
+        TEST_ASSERT_TRUE(at >= 0 && (uint64_t)at <= UINTPTR_MAX);
+        TEST_ASSERT_TRUE(p->pfnContains((uintptr_t)at, sizeof(value)));
+        memcpy((void*)(uintptr_t)at, &value, sizeof(value));
+        return;
+    }
+    TEST_ASSERT_TRUE(at >= 0 && (uint64_t)at + 2u <= p->size);
+    memcpy(p->pOriginal + (size_t)at, &value, sizeof(value));
+    memset(p->pInvalid + (size_t)at, 0, sizeof(value));
+}
+
+static void SmushAsmTest_ReplayRead(SmushAsmTestMotionReplay* p, int64_t at, int64_t image, uint8_t value[4], uint8_t invalid[4])
+{
+    if ( p->pfnContains )
+    {
+        TEST_ASSERT_TRUE(at >= 0 && (uint64_t)at <= UINTPTR_MAX);
+        TEST_ASSERT_TRUE(p->pfnContains((uintptr_t)at, 4u));
+        memcpy(value, (const void*)(uintptr_t)at, 4u);
+        memset(invalid, 0, 4u);
+        if ( p->bounded )
+        {
+            for ( unsigned word = 0; word < 2u; ++word )
+            {
+                int64_t pixel = at + word * 2u - image;
+                if ( pixel < 0 || (uint64_t)pixel + 2u > p->imageSize )
+                {
+                    memset(value + word * 2u, 0, 2u);
+                }
+            }
+        }
+        return;
+    }
+    TEST_ASSERT_TRUE(at >= 0 && (uint64_t)at + 4u <= p->size);
+    memcpy(value, p->pOriginal + (size_t)at, 4u);
+    for ( unsigned k = 0; k < 4u; k += 2u )
+    {
+        int64_t pixel = at + k - image;
+        int outside = pixel < 0 || (uint64_t)pixel + 2u > p->imageSize;
+        invalid[k] = (uint8_t)(outside || p->pInvalid[(size_t)at + k]);
+        invalid[k + 1u] = (uint8_t)(outside || p->pInvalid[(size_t)at + k + 1u]);
+    }
+}
+
+static void SmushAsmTest_ReplayPairStore(SmushAsmTestMotionReplay* p, int64_t at, const uint8_t value[4], const uint8_t invalid[4])
+{
+    if ( p->pfnContains )
+    {
+        TEST_ASSERT_TRUE(at >= 0 && (uint64_t)at <= UINTPTR_MAX);
+        TEST_ASSERT_TRUE(p->pfnContains((uintptr_t)at, 4u));
+        memcpy((void*)(uintptr_t)at, value, 4u);
+        return;
+    }
+    TEST_ASSERT_TRUE(at >= 0 && (uint64_t)at + 4u <= p->size);
+    memcpy(p->pOriginal + (size_t)at, value, 4u);
+    memcpy(p->pInvalid + (size_t)at, invalid, 4u);
+}
+
+static const uint8_t* SmushAsmTest_ReplayBlock(SmushAsmTestMotionReplay* p, const uint8_t* in, int64_t block, int size)
+{
+    unsigned op = *in++;
+    if ( op <= 0xF6u )
+    {
+        int64_t image = op == 0xF6u ? p->delta : p->previous;
+        int motion = 0;
+        if ( op == 0xF5u )
+        {
+            motion = (int16_t)SmushAsmTest_LoadWord(in) * 2;
+            in += 2;
+        }
+        else if ( op < 0xF5u )
+        {
+            motion = p->pMotion[op] * 2;
+        }
+        int64_t displacement = image - p->current + motion;
+        if ( size == 2 )
+        {
+            for ( unsigned row = 0; row < 2u; ++row )
+            {
+                uint8_t value[4], invalid[4];
+                int64_t at = block + row * p->lineSize;
+                SmushAsmTest_ReplayRead(p, at + displacement, image, value, invalid);
+                SmushAsmTest_ReplayPairStore(p, at, value, invalid);
+            }
+        }
+        else
+        {
+            for ( int row = 0; row < size / 2; ++row )
+            {
+                for ( int x = 0; x < size * 2; x += 4 )
+                {
+                    uint8_t top[4], bottom[4], topInvalid[4], bottomInvalid[4];
+                    int64_t upper = block + row * p->lineSize + x;
+                    int64_t lower = upper + (size / 2) * p->lineSize;
+                    SmushAsmTest_ReplayRead(p, lower + displacement, image, bottom, bottomInvalid);
+                    SmushAsmTest_ReplayRead(p, upper + displacement, image, top, topInvalid);
+                    SmushAsmTest_ReplayPairStore(p, lower, bottom, bottomInvalid);
+                    SmushAsmTest_ReplayPairStore(p, upper, top, topInvalid);
+                }
+            }
+        }
+        return in;
+    }
+    if ( op == 0xFFu && size > 2 )
+    {
+        in = SmushAsmTest_ReplayBlock(p, in, block, size / 2);
+        in = SmushAsmTest_ReplayBlock(p, in, block + size, size / 2);
+        in = SmushAsmTest_ReplayBlock(p, in, block + (size / 2) * p->lineSize, size / 2);
+        return SmushAsmTest_ReplayBlock(p, in, block + (size / 2) * p->lineSize + size, size / 2);
+    }
+    if ( size == 2 && (op == 0xFFu || op == 0xF8u || op == 0xF7u) )
+    {
+        for ( unsigned pixel = 0; pixel < 4u; ++pixel )
+        {
+            uint16_t color = op == 0xF7u ? p->pPalette[*in++] : SmushAsmTest_LoadWord(in);
+            if ( op != 0xF7u )
+            {
+                in += 2;
+            }
+            SmushAsmTest_ReplayStore(p, block + (pixel / 2u) * p->lineSize + (pixel % 2u) * 2u, color);
+        }
+        return in;
+    }
+    if ( op == 0xF7u || op == 0xF8u )
+    {
+        unsigned glyph = *in++;
+        uint16_t colors[2];
+        if ( op == 0xF7u )
+        {
+            colors[0] = p->pPalette[*in++];
+            colors[1] = p->pPalette[*in++];
+        }
+        else
+        {
+            colors[0] = SmushAsmTest_LoadWord(in);
+            colors[1] = SmushAsmTest_LoadWord(in + 2);
+            in += 4;
+        }
+        const uint16_t* offsets[2] = { size == 4 ? p->pSmall[glyph].off1 : p->pBig[glyph].off1,
+                                      size == 4 ? p->pSmall[glyph].off2 : p->pBig[glyph].off2 };
+        unsigned counts[2] = { size == 4 ? p->pSmall[glyph].n1 : p->pBig[glyph].n1,
+                               size == 4 ? p->pSmall[glyph].n2 : p->pBig[glyph].n2 };
+        for ( unsigned color = 0; color < 2u; ++color )
+        {
+            unsigned count = counts[color] ? counts[color] : 1u;
+            for ( unsigned k = 0; k < count; ++k )
+            {
+                SmushAsmTest_ReplayStore(p, block + offsets[color][k] * 2u, colors[color]);
+            }
+        }
+        return in;
+    }
+    uint16_t color;
+    if ( op == 0xFEu )
+    {
+        color = SmushAsmTest_LoadWord(in);
+        in += 2;
+    }
+    else if ( op == 0xFDu )
+    {
+        color = p->pPalette[*in++];
+    }
+    else
+    {
+        color = SmushAsmTest_LoadWord(p->pParams + (op - 0xF9u) * 2u);
+    }
+    for ( int row = 0; row < size; ++row )
+    {
+        for ( int x = 0; x < size; ++x )
+        {
+            SmushAsmTest_ReplayStore(p, block + row * p->lineSize + x * 2, color);
+        }
+    }
+    return in;
+}
+
+// Shared only by the original-vector tests. The Contains callback proves each
+// address belongs to a harness allocation, including its intentional margins.
+// The sequence test first verifies the unbounded reference against the original
+// corpus, then uses bounded reference output as its exact adapted expectation.
+void SmushAsmTest_ReplayCodec2(uint16_t* pDst, uint8_t* pSrc, int offset1, int offset2, int width, int16_t* pMotion, uint8_t* pParams, int height, int nextLine, Bl16Small* pSmall, Bl16Big* pBig, uint16_t* pPalette, int bounded, int (*pfnContains)(uintptr_t, size_t))
+{
+    J3D_UNUSED(nextLine);
+    TEST_ASSERT_NOT_NULL(pfnContains);
+    SmushAsmTestMotionReplay replay = { 0 };
+    replay.current = (uintptr_t)pDst;
+    replay.previous = (uintptr_t)pDst + (intptr_t)(int32_t)((uint32_t)offset1 * 2u);
+    replay.delta = (uintptr_t)pDst + (intptr_t)(int32_t)((uint32_t)offset2 * 2u);
+    replay.lineSize = (int32_t)((uint32_t)width * 2u);
+    replay.imageSize = (size_t)(uint32_t)width * (((uint32_t)height + 7u) & ~7u) * 2u;
+    replay.pMotion = pMotion;
+    replay.pParams = pParams;
+    replay.pSmall = pSmall;
+    replay.pBig = pBig;
+    replay.pPalette = pPalette;
+    replay.bounded = bounded;
+    replay.pfnContains = pfnContains;
+    unsigned rows = (uint8_t)(((uint32_t)height + 7u) / 8u);
+    unsigned cols = (uint8_t)(((uint32_t)width + 7u) / 8u);
+    if ( !rows )
+    {
+        rows = 256u;
+    }
+    if ( !cols )
+    {
+        cols = 256u;
+    }
+    const uint8_t* in = pSrc;
+    int64_t block = replay.current;
+    for ( unsigned row = 0; row < rows; ++row )
+    {
+        for ( unsigned col = 0; col < cols; ++col, block += 16 )
+        {
+            in = SmushAsmTest_ReplayBlock(&replay, in, block, 8);
+        }
+        block += (uint32_t)replay.lineSize * 7u;
+    }
+}
+
+static void SmushAsmTest_AdaptBoundedMotion(const uintptr_t a[12], SmushAsmTestBuffer* aBuffers, unsigned numBuffers, const char* pName)
+{
+    SmushAsmTestBuffer* pImage = NULL;
+    for ( unsigned i = 0; i < numBuffers; ++i )
+    {
+        uintptr_t base = (uintptr_t)aBuffers[i].pData;
+        if ( a[0] >= base && a[0] - base < aBuffers[i].size )
+        {
+            pImage = &aBuffers[i];
+        }
+    }
+    TEST_ASSERT_NOT_NULL_MESSAGE(pImage, pName);
+    SmushAsmTestMotionReplay replay = { 0 };
+    replay.size = pImage->size + 2u * SMUSHASM_TEST_GUARD_SIZE;
+    replay.pOriginal = malloc(replay.size);
+    replay.pInvalid = calloc(replay.size, 1u);
+    TEST_ASSERT_NOT_NULL(replay.pOriginal);
+    TEST_ASSERT_NOT_NULL(replay.pInvalid);
+    memcpy(replay.pOriginal, pImage->pAlloc, replay.size);
+    replay.current = (int64_t)(a[0] - (uintptr_t)pImage->pAlloc);
+    replay.previous = replay.current + (int32_t)((uint32_t)a[2] * 2u);
+    replay.delta = replay.current + (int32_t)((uint32_t)a[3] * 2u);
+    replay.lineSize = (int32_t)((uint32_t)a[4] * 2u);
+    replay.imageSize = (size_t)(uint32_t)a[4] * (((uint32_t)a[7] + 7u) & ~7u) * 2u;
+    replay.pMotion = (const int16_t*)a[5];
+    replay.pParams = (const uint8_t*)a[6];
+    replay.pSmall = (const Bl16Small*)a[9];
+    replay.pBig = (const Bl16Big*)a[10];
+    replay.pPalette = (const uint16_t*)a[11];
+    unsigned rows = (uint8_t)(((uint32_t)a[7] + 7u) / 8u);
+    unsigned cols = (uint8_t)(((uint32_t)a[4] + 7u) / 8u);
+    if ( !rows )
+    {
+        rows = 256u;
+    }
+    if ( !cols )
+    {
+        cols = 256u;
+    }
+    const uint8_t* in = (const uint8_t*)a[1];
+    int64_t block = replay.current;
+    for ( unsigned row = 0; row < rows; ++row )
+    {
+        for ( unsigned col = 0; col < cols; ++col, block += 16 )
+        {
+            in = SmushAsmTest_ReplayBlock(&replay, in, block, 8);
+        }
+        block += (uint32_t)replay.lineSize * 7u;
+    }
+    uint8_t* pOriginal = replay.pOriginal + SMUSHASM_TEST_GUARD_SIZE;
+    if ( pImage->outKind == 2 )
+    {
+        uint64_t hash = SmushAsmTest_Hash(pOriginal, pImage->size);
+        TEST_ASSERT_TRUE_MESSAGE(hash == pImage->hash, pName);
+    }
+    else
+    {
+        TEST_ASSERT_EQUAL_MEMORY_MESSAGE(pImage->pExpected, pOriginal, pImage->size, pName);
+    }
+    for ( unsigned i = 0; i < pImage->size; ++i )
+    {
+        pImage->pExpected[i] = replay.pInvalid[SMUSHASM_TEST_GUARD_SIZE + i] ? 0 : pOriginal[i];
+    }
+    pImage->outKind = 1; // Full bytes remain checked, including formerly hashed cases.
+    free(replay.pOriginal);
+    free(replay.pInvalid);
+}
+
 // Replays every case of a vector file; returns the number of cases
 static uint32_t SmushAsmTest_RunVectors(const char* pFileName, const uint32_t* aProcs, size_t numProcs)
 {
@@ -455,6 +784,10 @@ static uint32_t SmushAsmTest_RunVectors(const char* pFileName, const uint32_t* a
         }
         TEST_ASSERT_FALSE_MESSAGE(reader.bError, aName);
 
+        if ( proc == SMUSHASM_PROC_CODEC2 )
+        {
+            SmushAsmTest_AdaptBoundedMotion(aArgs, aBuffers, numBuffers, aName);
+        }
         SmushAsmTest_Call(proc, aArgs);
 
         int bMatch = 1;
@@ -490,6 +823,156 @@ static uint32_t SmushAsmTest_RunVectors(const char* pFileName, const uint32_t* a
     return numCases;
 }
 
+static uint8_t* SmushAsmTest_BuildMotionStream(uint8_t* pOut, int size, int x, int y, int targetSize, int targetX, int targetY, uint8_t op, int16_t motion)
+{
+    if ( x == targetX && y == targetY && size == targetSize )
+    {
+        *pOut++ = op;
+        if ( op == 0xF5u )
+        {
+            memcpy(pOut, &motion, sizeof(motion));
+            pOut += sizeof(motion);
+        }
+        return pOut;
+    }
+    if ( targetX >= x && targetX < x + size && targetY >= y && targetY < y + size )
+    {
+        *pOut++ = 0xFFu;
+        pOut = SmushAsmTest_BuildMotionStream(pOut, size / 2, x, y, targetSize, targetX, targetY, op, motion);
+        pOut = SmushAsmTest_BuildMotionStream(pOut, size / 2, x + size / 2, y, targetSize, targetX, targetY, op, motion);
+        pOut = SmushAsmTest_BuildMotionStream(pOut, size / 2, x, y + size / 2, targetSize, targetX, targetY, op, motion);
+        return SmushAsmTest_BuildMotionStream(pOut, size / 2, x + size / 2, y + size / 2, targetSize, targetX, targetY, op, motion);
+    }
+    *pOut++ = 0xFEu;
+    *pOut++ = 0x77u;
+    *pOut++ = 0x77u;
+    return pOut;
+}
+
+static uint16_t* SmushAsmTest_GuardedImage(int guardAfter)
+{
+    SYSTEM_INFO info;
+    GetSystemInfo(&info);
+    size_t pageSize = info.dwPageSize;
+    SmushAsmTest_pGuardAllocation = VirtualAlloc(NULL, pageSize * 3u, MEM_RESERVE, PAGE_NOACCESS);
+    TEST_ASSERT_NOT_NULL(SmushAsmTest_pGuardAllocation);
+    uint8_t* pPage = (uint8_t*)SmushAsmTest_pGuardAllocation + pageSize;
+    TEST_ASSERT_EQUAL_PTR(pPage, VirtualAlloc(pPage, pageSize, MEM_COMMIT, PAGE_READWRITE));
+    return (uint16_t*)(pPage + (guardAfter ? pageSize - 128u : 0u));
+}
+
+static void SmushAsmTest_CheckMotionBoundary(uint16_t* pSource, int blockSize, int guardAfter, uint8_t op, int height)
+{
+    uint16_t aOutput[64], aExpected[64];
+    int16_t aMotion[245] = { 0 };
+    uint8_t aStream[128];
+    int x = guardAfter ? 8 - blockSize : 0;
+    int y = x;
+    int16_t motion = op == 0xF6u ? 0 : (int16_t)(guardAfter ? 63 - (y * 8 + x) : -1);
+    aMotion[0] = motion;
+    for ( unsigned i = 0; i < 64u; ++i )
+    {
+        pSource[i] = (uint16_t)(0x100u + i);
+        aOutput[i] = 0xAAAAu;
+        aExpected[i] = 0x7777u;
+    }
+    for ( int row = 0; row < blockSize; ++row )
+    {
+        for ( int col = 0; col < blockSize; ++col )
+        {
+            int at = (y + row) * 8 + x + col;
+            int source = at + motion;
+            aExpected[at] = source >= 0 && source < 64 ? (uint16_t)(0x100 + source) : 0;
+        }
+    }
+    SmushAsmTest_BuildMotionStream(aStream, 8, 0, 0, blockSize, x, y, op, motion);
+    int sourceOffset = (int)(((int64_t)(uintptr_t)pSource - (int64_t)(uintptr_t)aOutput) / 2);
+    dbloc16_Codec2(aOutput, aStream, sourceOffset, sourceOffset, 8, aMotion, NULL, height, 0, NULL, NULL, NULL);
+    TEST_ASSERT_EQUAL_MEMORY(aExpected, aOutput, sizeof(aExpected));
+    for ( unsigned i = 0; i < 64u; ++i )
+    {
+        TEST_ASSERT_EQUAL_UINT16((uint16_t)(0x100u + i), pSource[i]);
+    }
+}
+
+TEST(SmushAsm, Codec2MotionReadsStayInsideGuardedImages)
+{
+    static const uint8_t aOps[] = { 0u, 0xF5u };
+    for ( int blockSize = 2; blockSize <= 8; blockSize *= 2 )
+    {
+        for ( unsigned op = 0; op < sizeof(aOps); ++op )
+        {
+            for ( int guardAfter = 0; guardAfter < 2; ++guardAfter )
+            {
+                uint16_t* pSource = SmushAsmTest_GuardedImage(guardAfter);
+                // Negative motion crosses the leading guard; positive motion
+                // leaves only the final 16-bit source pixel valid in its dword.
+                SmushAsmTest_CheckMotionBoundary(pSource, blockSize, guardAfter, aOps[op], 8);
+                TEST_ASSERT_TRUE(VirtualFree(SmushAsmTest_pGuardAllocation, 0, MEM_RELEASE));
+                SmushAsmTest_pGuardAllocation = NULL;
+            }
+        }
+    }
+}
+
+TEST(SmushAsm, Codec2MotionIgnoresReadableBytesOutsideImage)
+{
+    uint16_t aPadded[192];
+    for ( unsigned i = 0; i < sizeof(aPadded) / sizeof(aPadded[0]); ++i )
+    {
+        aPadded[i] = 0xBAD5u;
+    }
+    for ( int blockSize = 2; blockSize <= 8; blockSize *= 2 )
+    {
+        for ( int after = 0; after < 2; ++after )
+        {
+            SmushAsmTest_CheckMotionBoundary(aPadded + 64, blockSize, after, 0xF5u, 8);
+        }
+    }
+}
+
+TEST(SmushAsm, Codec2DeltaReadsIncludeRoundedRowsAtGuardedBoundaries)
+{
+    for ( int blockSize = 2; blockSize <= 8; blockSize *= 2 )
+    {
+        for ( int guardAfter = 0; guardAfter < 2; ++guardAfter )
+        {
+            uint16_t* pSource = SmushAsmTest_GuardedImage(guardAfter);
+            // The visible height is 1, but the allocated frame includes 8 rows.
+            SmushAsmTest_CheckMotionBoundary(pSource, blockSize, guardAfter, 0xF6u, 1);
+            TEST_ASSERT_TRUE(VirtualFree(SmushAsmTest_pGuardAllocation, 0, MEM_RELEASE));
+            SmushAsmTest_pGuardAllocation = NULL;
+        }
+    }
+}
+
+TEST(SmushAsm, Codec2OverlappingMotionKeepsOriginalDwordOrdering)
+{
+    static const uint16_t aExpectedBlocks[2][16] = {
+        { 9, 10, 11, 12, 25, 26, 27, 28, 25, 26, 27, 28, 33, 34, 35, 36 },
+        { 17, 18, 19, 20, 25, 26, 27, 28, 33, 34, 35, 36, 41, 42, 43, 44 }
+    };
+    for ( unsigned variant = 0; variant < 2u; ++variant )
+    {
+        uint16_t aOutput[64], aExpected[64];
+        uint8_t aStream[128];
+        for ( unsigned i = 0; i < 64u; ++i )
+        {
+            aOutput[i] = (uint16_t)(i + 1u);
+            aExpected[i] = 0x7777u;
+        }
+        for ( unsigned row = 0; row < 4u; ++row )
+        {
+            memcpy(aExpected + row * 8u, aExpectedBlocks[variant] + row * 4u, 4u * sizeof(uint16_t));
+        }
+        SmushAsmTest_BuildMotionStream(aStream, 8, 0, 0, 4, 0, 0, 0xF5u, (int16_t)(variant ? 16 : 8));
+        // +8 catches later row pairs observing prior stores; +16 catches
+        // the top dword being read before the paired bottom store.
+        dbloc16_Codec2(aOutput, aStream, 0, 0, 8, NULL, NULL, 8, 0, NULL, NULL, NULL);
+        TEST_ASSERT_EQUAL_MEMORY(aExpected, aOutput, sizeof(aExpected));
+    }
+}
+
 TEST(SmushAsm, TestOriginalBloc16Asm)
 {
     static const uint32_t aProcs[] = { SMUSHASM_PROC_INTERPOLATE, SMUSHASM_PROC_CODEC2 };
@@ -522,6 +1005,10 @@ TEST(SmushAsm, TestOriginalBitmapAsm)
 
 TEST_GROUP_RUNNER(SmushAsm)
 {
+    RUN_TEST_CASE(SmushAsm, Codec2MotionReadsStayInsideGuardedImages);
+    RUN_TEST_CASE(SmushAsm, Codec2MotionIgnoresReadableBytesOutsideImage);
+    RUN_TEST_CASE(SmushAsm, Codec2DeltaReadsIncludeRoundedRowsAtGuardedBoundaries);
+    RUN_TEST_CASE(SmushAsm, Codec2OverlappingMotionKeepsOriginalDwordOrdering);
     RUN_TEST_CASE(SmushAsm, TestOriginalBloc16Asm);
     RUN_TEST_CASE(SmushAsm, TestOriginalDecodeAsm);
     RUN_TEST_CASE(SmushAsm, TestOriginalMixerAsm);

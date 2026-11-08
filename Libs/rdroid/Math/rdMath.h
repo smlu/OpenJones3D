@@ -37,11 +37,13 @@ static inline void J3DAPI rdMath_ProjectPointOntoPlaneNormalized(rdVector3* dest
 
 bool J3DAPI rdMath_PointsCollinear(const rdVector3* p1, const rdVector3* p2, const rdVector3* p3); // Added
 
+// Keeps a component only when |x| > minVal like the inlined clipping of the retail physics code. The debug build's
+// rdMath_ClipVector3Acc keeps it when |x| >= minVal; retail has no out-of-line rdMath_ClipVector3Acc.
 void J3DAPI rdMath_ClipVector3(rdVector3* out, const rdVector3* vect, float minVal)
 {
-    out->x = (fabsf(vect->x) >= minVal) ? vect->x : 0.0f;
-    out->y = (fabsf(vect->y) >= minVal) ? vect->y : 0.0f;
-    out->z = (fabsf(vect->z) >= minVal) ? vect->z : 0.0f;
+    out->x = (fabsf(vect->x) > minVal) ? vect->x : 0.0f;
+    out->y = (fabsf(vect->y) > minVal) ? vect->y : 0.0f;
+    out->z = (fabsf(vect->z) > minVal) ? vect->z : 0.0f;
 }
 
 void J3DAPI rdMath_ClipVector3Acc(rdVector3* vect, float minVal)

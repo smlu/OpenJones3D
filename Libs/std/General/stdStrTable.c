@@ -134,7 +134,7 @@ int J3DAPI stdStrTable_Load(tStringTable* pStrTable, const char* pFilename)
                     errno = 0;
                     char* pNumberEnd;
                     long numericValue = strtol(aBuf, &pNumberEnd, 10);
-                    // Fixed: Reject malformed or overflowing decimal numeric fields instead of silently accepting them as zero.
+                    // Fixed: Reject malformed or overflowing decimal numeric fields instead of silently accepting them as zero (the original used atoi).
                     if ( errno == ERANGE || pNumberEnd == aBuf || *pNumberEnd || numericValue < INT_MIN || numericValue > INT_MAX )
                     {
                         bSuccess = 0;
@@ -147,7 +147,7 @@ int J3DAPI stdStrTable_Load(tStringTable* pStrTable, const char* pFilename)
                     char* pValBegin;
                     char* pValEnd;
                     stdStrTable_ParseLiteral(pCur, &pValBegin, &pValEnd);
-                    // Fixed: Require valid quoted value bounds before copying to the temp buffer and assigning aData[i].value.
+                    // Fixed: Require valid quoted value bounds before copying to the temp buffer and assigning aData[i].value (the original did not check them).
                     if ( pValBegin && pValEnd )
                     {
                         memset(aBuf, 0, sizeof(aBuf));
@@ -162,7 +162,7 @@ int J3DAPI stdStrTable_Load(tStringTable* pStrTable, const char* pFilename)
 
                         if ( !stdHashtbl_Add(pStrTable->pHashtbl, aData[i].pKey, &aData[i]) )
                         {
-                            // Fixed: A duplicate key or hash-node allocation failure makes the table incomplete.
+                            // Fixed: A duplicate key or hash-node allocation failure makes the table incomplete. The original logged a duplicate key and kept loading.
                             bSuccess = 0;
                             if ( stdHashtbl_Find(pStrTable->pHashtbl, aData[i].pKey) )
                             {
@@ -182,14 +182,14 @@ int J3DAPI stdStrTable_Load(tStringTable* pStrTable, const char* pFilename)
                 }
                 else
                 {
-                    // Fixed: Treat malformed entry lines as load failures, not logged successes.
+                    // Fixed: Treat malformed entry lines as load failures, not logged successes. The original logged and kept loading, so tables it accepted may now be rejected.
                     bSuccess = 0;
                     STDLOG_ERROR("Cannot understand this line in string table '%s'.\n   >>> %s\n", pFilename, aLine);
                 }
             }
             else
             {
-                // Fixed: Treat malformed entry lines as load failures, not logged successes.
+                // Fixed: Treat malformed entry lines as load failures, not logged successes. The original logged and kept loading, so tables it accepted may now be rejected.
                 bSuccess = 0;
                 STDLOG_ERROR("Cannot understand this line in string table '%s'.\n   >>> %s\n", pFilename, aLine);
             }
@@ -209,6 +209,7 @@ int J3DAPI stdStrTable_Load(tStringTable* pStrTable, const char* pFilename)
         }
     }
 
+    // Altered: The table is marked valid only on success; the original always set the magic, even after a failed load.
     if ( bSuccess )
     {
         pStrTable->magic = 'sTbl';

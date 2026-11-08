@@ -1,6 +1,10 @@
 #include <unity_fixture.h>
 
+#include <errno.h>
+#include <limits.h>
+#include <math.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <wchar.h>
@@ -11,16 +15,261 @@
 
 #include "stdGeneralTest.h"
 
+static_assert(_Generic(STD_STRTOF("1"), float: 1, default: 0), "STD_STRTOF returns float");
+static_assert(_Generic(STD_STRTOL("1", 10), long: 1, default: 0), "STD_STRTOL returns long");
+static_assert(_Generic(STD_STRTOUL("1", 10), unsigned long: 1, default: 0), "STD_STRTOUL returns unsigned long");
+
 TEST_GROUP(stdUtil);
+
+static int stdUtilTest_savedErrno;
 
 TEST_SETUP(stdUtil)
 {
+    stdUtilTest_savedErrno = errno;
     StdGeneralTest_Startup();
 }
 
 TEST_TEAR_DOWN(stdUtil)
 {
     StdGeneralTest_Shutdown();
+    errno = stdUtilTest_savedErrno;
+}
+
+TEST(stdUtil, TestFloatConversionValuesAndErrno)
+{
+    static const struct { const char* text; float expected; } aCases[] = {
+        { "2.5", 2.5f }, { "-3.25", -3.25f }, { "0", 0.0f },
+        { "  1.5", 1.5f }, { "1.5suffix", 1.5f }, { "abc", 0.0f }, { "", 0.0f }
+    };
+    // Preserve strtof's partial/nonnumeric conversion behavior and discard a stale range error.
+    for ( size_t i = 0; i < STD_ARRAYLEN(aCases); ++i )
+    {
+        errno = ERANGE;
+        float value = STD_STRTOF(aCases[i].text);
+        int rangeError = STD_STRCONV_RANGE_ERROR();
+        int conversionErrno = errno;
+        TEST_ASSERT_EQUAL_FLOAT_MESSAGE(aCases[i].expected, value, aCases[i].text);
+        TEST_ASSERT_FALSE_MESSAGE(rangeError, aCases[i].text);
+        TEST_ASSERT_EQUAL_INT_MESSAGE(0, conversionErrno, aCases[i].text);
+    }
+
+    // The comma expression must return the converted value when used inside a larger expression.
+    float value = (STD_STRTOF("2.5") + 1.0f) * 2.0f;
+    TEST_ASSERT_EQUAL_FLOAT(7.0f, value);
+}
+
+TEST(stdUtil, TestFloatConversionRangeErrors)
+{
+    float value = STD_STRTOF("1e50");
+    int rangeError = STD_STRCONV_RANGE_ERROR();
+    TEST_ASSERT_TRUE(isinf(value) && value > 0.0f);
+    TEST_ASSERT_TRUE(rangeError);
+
+    value = STD_STRTOF("-1e50");
+    rangeError = STD_STRCONV_RANGE_ERROR();
+    TEST_ASSERT_TRUE(isinf(value) && value < 0.0f);
+    TEST_ASSERT_TRUE(rangeError);
+
+    // Underflow still reports ERANGE; it is the parser's job to accept this tiny result.
+    value = STD_STRTOF("1e-50");
+    rangeError = STD_STRCONV_RANGE_ERROR();
+    TEST_ASSERT_EQUAL_FLOAT(0.0f, value);
+    TEST_ASSERT_TRUE(rangeError);
+
+    // A successful conversion after either failure must clear the error.
+    value = STD_STRTOF("1.25");
+    rangeError = STD_STRCONV_RANGE_ERROR();
+    TEST_ASSERT_EQUAL_FLOAT(1.25f, value);
+    TEST_ASSERT_FALSE(rangeError);
+}
+
+TEST(stdUtil, TestFloatConversionSpecialValues)
+{
+    errno = EDOM;
+    float value = STD_STRTOF("-0");
+    int rangeError = STD_STRCONV_RANGE_ERROR();
+    int conversionErrno = errno;
+    TEST_ASSERT_EQUAL_FLOAT(0.0f, value);
+    TEST_ASSERT_TRUE(signbit(value));
+    TEST_ASSERT_FALSE(rangeError);
+    TEST_ASSERT_EQUAL_INT(0, conversionErrno);
+
+    value = STD_STRTOF("nan");
+    rangeError = STD_STRCONV_RANGE_ERROR();
+    TEST_ASSERT_TRUE(isnan(value));
+    TEST_ASSERT_FALSE(rangeError);
+
+    value = STD_STRTOF("inf");
+    rangeError = STD_STRCONV_RANGE_ERROR();
+    TEST_ASSERT_TRUE(isinf(value) && value > 0.0f);
+    TEST_ASSERT_FALSE(rangeError);
+}
+
+TEST(stdUtil, TestUnsignedConversionValuesAndErrno)
+{
+    static const struct { const char* text; int base; unsigned long expected; } aCases[] = {
+        { "42", 10, 42ul }, { "0", 10, 0ul }, { "ff", 16, 255ul },
+        { "0x10", 0, 16ul }, { "010", 0, 8ul },
+        { "4294967295", 10, 0xFFFFFFFFul },
+        { "-1", 10, ULONG_MAX }, // strtoul accepts a sign; enum validation belongs to the caller.
+        { "abc", 10, 0ul }, { "", 10, 0ul }, { "42suffix", 10, 42ul }
+    };
+    for ( size_t i = 0; i < STD_ARRAYLEN(aCases); ++i )
+    {
+        errno = ERANGE;
+        unsigned long value = STD_STRTOUL(aCases[i].text, aCases[i].base);
+        int rangeError = STD_STRCONV_RANGE_ERROR();
+        int conversionErrno = errno;
+        TEST_ASSERT_EQUAL_UINT32_MESSAGE(aCases[i].expected, value, aCases[i].text);
+        TEST_ASSERT_FALSE_MESSAGE(rangeError, aCases[i].text);
+        TEST_ASSERT_EQUAL_INT_MESSAGE(0, conversionErrno, aCases[i].text);
+    }
+}
+
+TEST(stdUtil, TestUnsignedConversionRangeErrors)
+{
+    unsigned long value = STD_STRTOUL("999999999999999999999999999999", 10);
+    int rangeError = STD_STRCONV_RANGE_ERROR();
+    TEST_ASSERT_EQUAL_UINT32(ULONG_MAX, value);
+    TEST_ASSERT_TRUE(rangeError);
+
+    value = STD_STRTOUL("2", 10);
+    rangeError = STD_STRCONV_RANGE_ERROR();
+    TEST_ASSERT_EQUAL_UINT32(2ul, value);
+    TEST_ASSERT_FALSE(rangeError);
+}
+
+TEST(stdUtil, TestSignedConversionValuesAndErrno)
+{
+    static const struct { const char* text; int base; long expected; } aCases[] = {
+        { "42", 10, 42l }, { "-42", 10, -42l }, { "+42", 10, 42l },
+        { "0", 10, 0l }, { "-0", 10, 0l }, { " \t-17", 10, -17l },
+        { "42", 0, 42l }, { "010", 0, 8l }, { "-010", 0, -8l },
+        { "0x2a", 0, 42l }, { "-0X2A", 0, -42l },
+        { "101010", 2, 42l }, { "-101010", 2, -42l },
+        { "2a", 16, 42l }, { "-0x2a", 16, -42l },
+        { "z", 36, 35l }, { "-Z", 36, -35l }, { "10", 36, 36l }
+    };
+    for ( size_t i = 0; i < STD_ARRAYLEN(aCases); ++i )
+    {
+        // Each conversion clears either a stale range error or a different CRT error.
+        errno = i % 2u ? EDOM : ERANGE;
+        long value          = STD_STRTOL(aCases[i].text, aCases[i].base);
+        int rangeError      = STD_STRCONV_RANGE_ERROR();
+        int conversionErrno = errno;
+        TEST_ASSERT_EQUAL_INT32_MESSAGE(aCases[i].expected, value, aCases[i].text);
+        TEST_ASSERT_FALSE_MESSAGE(rangeError, aCases[i].text);
+        TEST_ASSERT_EQUAL_INT_MESSAGE(0, conversionErrno, aCases[i].text);
+    }
+}
+
+TEST(stdUtil, TestSignedConversionPrefixAndNoDigits)
+{
+    // The macro retains strtol's prefix parsing; it does not require the whole string to be a number.
+    static const struct { const char* text; int base; long expected; } aCases[] = {
+        { "12suffix", 10, 12l }, { "-12.75", 10, -12l }, { "1e3", 10, 1l },
+        { "0x3", 10, 0l }, { "0x10suffix", 0, 16l }, { "09", 0, 0l },
+        { "102", 2, 2l }, { "ffg", 16, 255l }, { "z!", 36, 35l },
+        { "", 10, 0l }, { "abc", 10, 0l }, { " \t\r\n", 10, 0l },
+        { "+", 10, 0l }, { "-", 10, 0l }, { "+ 2", 10, 0l }, { "--1", 10, 0l }
+    };
+    for ( size_t i = 0; i < STD_ARRAYLEN(aCases); ++i )
+    {
+        errno = ERANGE;
+        long value          = STD_STRTOL(aCases[i].text, aCases[i].base);
+        int rangeError      = STD_STRCONV_RANGE_ERROR();
+        int conversionErrno = errno;
+        TEST_ASSERT_EQUAL_INT32_MESSAGE(aCases[i].expected, value, aCases[i].text);
+        TEST_ASSERT_FALSE_MESSAGE(rangeError, aCases[i].text);
+        TEST_ASSERT_EQUAL_INT_MESSAGE(0, conversionErrno, aCases[i].text);
+    }
+}
+
+TEST(stdUtil, TestSignedConversionLimitsAndRangeErrors)
+{
+    char aMin[sizeof(long) * CHAR_BIT + 3u];
+    char aMax[sizeof(aMin)];
+    char aBelowMin[sizeof(aMin)];
+    char aAboveMax[sizeof(aMin)];
+    snprintf(aMin, sizeof(aMin), "%ld", LONG_MIN);
+    snprintf(aMax, sizeof(aMax), "%ld", LONG_MAX);
+    // Form the adjacent values in unsigned arithmetic; do not overflow a signed long in the test.
+    snprintf(aBelowMin, sizeof(aBelowMin), "-%lu", (unsigned long)(-(LONG_MIN + 1l)) + 2ul);
+    snprintf(aAboveMax, sizeof(aAboveMax), "%lu", (unsigned long)LONG_MAX + 1ul);
+    const struct { const char* text; long expected; int expectedErrno; } aCases[] = {
+        { aMin, LONG_MIN, 0 }, { aMax, LONG_MAX, 0 },
+        { aBelowMin, LONG_MIN, ERANGE }, { aAboveMax, LONG_MAX, ERANGE },
+        { "-99999999999999999999999999999999999999999999999999", LONG_MIN, ERANGE },
+        { "99999999999999999999999999999999999999999999999999tail", LONG_MAX, ERANGE },
+        { "-2", -2l, 0 } // A success following overflow must clear ERANGE again.
+    };
+    for ( size_t i = 0; i < STD_ARRAYLEN(aCases); ++i )
+    {
+        errno = ERANGE;
+        long value          = STD_STRTOL(aCases[i].text, 10);
+        int rangeError      = STD_STRCONV_RANGE_ERROR();
+        int conversionErrno = errno;
+        TEST_ASSERT_EQUAL_INT32_MESSAGE(aCases[i].expected, value, aCases[i].text);
+        TEST_ASSERT_EQUAL_INT_MESSAGE(aCases[i].expectedErrno == ERANGE, rangeError, aCases[i].text);
+        TEST_ASSERT_EQUAL_INT_MESSAGE(aCases[i].expectedErrno, conversionErrno, aCases[i].text);
+    }
+}
+
+TEST(stdUtil, TestConversionRangeErrorReadsCurrentErrno)
+{
+    errno = ERANGE;
+    int rangeError     = STD_STRCONV_RANGE_ERROR();
+    int unchangedErrno = errno;
+    TEST_ASSERT_TRUE(rangeError);
+    TEST_ASSERT_EQUAL_INT(ERANGE, unchangedErrno);
+
+    errno = EDOM;
+    rangeError = STD_STRCONV_RANGE_ERROR();
+    unchangedErrno = errno;
+    TEST_ASSERT_FALSE(rangeError);
+    TEST_ASSERT_EQUAL_INT(EDOM, unchangedErrno);
+
+    errno = 0;
+    rangeError = STD_STRCONV_RANGE_ERROR();
+    unchangedErrno = errno;
+    TEST_ASSERT_FALSE(rangeError);
+    TEST_ASSERT_EQUAL_INT(0, unchangedErrno);
+}
+
+TEST(stdUtil, TestConversionArgumentsEvaluatedOnce)
+{
+    const char* aFloats[] = { "2.5", "9" };
+    size_t index = 0;
+    float floatValue = STD_STRTOF(aFloats[index++]);
+    TEST_ASSERT_EQUAL_FLOAT(2.5f, floatValue);
+    TEST_ASSERT_EQUAL_size_t(1u, index);
+
+    const char* aIntegers[] = { "42", "ff" };
+    int aBases[] = { 10, 16 };
+    size_t baseIndex = 0;
+    index = 0;
+    unsigned long intValue = STD_STRTOUL(aIntegers[index++], aBases[baseIndex++]);
+    TEST_ASSERT_EQUAL_UINT32(42ul, intValue);
+    TEST_ASSERT_EQUAL_size_t(1u, index);
+    TEST_ASSERT_EQUAL_size_t(1u, baseIndex);
+
+    const char* aSignedIntegers[] = { "-1010", "77" };
+    int aSignedBases[]            = { 2, 8 };
+    index = 0;
+    baseIndex = 0;
+    errno = ERANGE;
+    long signedValue    = STD_STRTOL(aSignedIntegers[index++], aSignedBases[baseIndex++]);
+    int rangeError      = STD_STRCONV_RANGE_ERROR();
+    int conversionErrno = errno;
+    TEST_ASSERT_EQUAL_INT32(-10l, signedValue);
+    TEST_ASSERT_EQUAL_size_t(1u, index);
+    TEST_ASSERT_EQUAL_size_t(1u, baseIndex);
+    TEST_ASSERT_FALSE(rangeError);
+    TEST_ASSERT_EQUAL_INT(0, conversionErrno);
+
+    // Parentheses preserve the long result and operator precedence inside a larger expression.
+    signedValue = 2l * STD_STRTOL("-17", 10) + 5l;
+    TEST_ASSERT_EQUAL_INT32(-29l, signedValue);
 }
 
 TEST(stdUtil, TestArrayAndMemoryMacros)
@@ -440,6 +689,16 @@ TEST(stdUtil, TestConversionCapacityAndHighBytes)
 
 TEST_GROUP_RUNNER(stdUtil)
 {
+    RUN_TEST_CASE(stdUtil, TestFloatConversionValuesAndErrno);
+    RUN_TEST_CASE(stdUtil, TestFloatConversionRangeErrors);
+    RUN_TEST_CASE(stdUtil, TestFloatConversionSpecialValues);
+    RUN_TEST_CASE(stdUtil, TestUnsignedConversionValuesAndErrno);
+    RUN_TEST_CASE(stdUtil, TestUnsignedConversionRangeErrors);
+    RUN_TEST_CASE(stdUtil, TestSignedConversionValuesAndErrno);
+    RUN_TEST_CASE(stdUtil, TestSignedConversionPrefixAndNoDigits);
+    RUN_TEST_CASE(stdUtil, TestSignedConversionLimitsAndRangeErrors);
+    RUN_TEST_CASE(stdUtil, TestConversionRangeErrorReadsCurrentErrno);
+    RUN_TEST_CASE(stdUtil, TestConversionArgumentsEvaluatedOnce);
     RUN_TEST_CASE(stdUtil, TestConversionCapacityAndHighBytes);
     RUN_TEST_CASE(stdUtil, TestStringCapacitiesTruncationAndUnterminatedDestination);
     RUN_TEST_CASE(stdUtil, TestArrayAndMemoryMacros);

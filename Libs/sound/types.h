@@ -1,5 +1,6 @@
 #ifndef SOUND_TYPES_H
 #define SOUND_TYPES_H
+#include <stddef.h>
 #include <stdint.h>
 #include <Mmreg.h>
 #include <j3dcore/j3d.h>
@@ -133,6 +134,8 @@ typedef struct sSoundFade
     uint32_t msecEndTime;
 } SoundFade;
 static_assert(sizeof(SoundFade) == 24, "sizeof(SoundFade) == 24");
+static_assert(offsetof(SoundFade, msecStartTime) == 16, "offsetof(SoundFade, msecStartTime) == 16");
+static_assert(offsetof(SoundFade, msecEndTime) == 20, "offsetof(SoundFade, msecEndTime) == 20");
 
 struct sSoundThingInfo
 {

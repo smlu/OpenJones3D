@@ -426,7 +426,7 @@ void J3DAPI sithCogFunction_SetTimerEx(SithCog* pCog)
     params.param2 = sithCogExec_PopInt(pCog);
     params.param1 = sithCogExec_PopInt(pCog);
     params.idx = pCog->idx;
-    int msWhen = (int)(sithCogExec_PopFlex(pCog) * 1000.0f);
+    int msWhen = (int)floorf(sithCogExec_PopFlex(pCog) * 1000.0f);
 
     if ( msWhen >= 0 )
     {
@@ -866,10 +866,10 @@ void J3DAPI sithCogFunction_GetMaterialCel(SithCog* pCog)
 void J3DAPI sithCogFunction_SetInvFlags(SithCog* pCog)
 {
     int flags  = sithCogExec_PopInt(pCog);
-    size_t bin = sithCogExec_PopInt(pCog);
+    size_t bin = sithCogExec_PopInt(pCog); // Fixed: Unsigned id, so a negative id fails the bounds check below. The original used a signed int and checked only the upper bound.
     SithThing* pThing = sithCogExec_PopThing(pCog);
 
-    if ( !pThing || pThing->type != SITH_THING_PLAYER || !pThing->thingInfo.itemInfo.aBackpackItems[14].typeId )
+    if ( !pThing || pThing->type != SITH_THING_PLAYER || !pThing->thingInfo.actorInfo.pPlayer )
     {
         SITHLOG_ERROR("Cog %s: Invalid thing in SetInvFlags.\n", pCog->aName);
         return;
@@ -1928,6 +1928,7 @@ void J3DAPI sithCogFunction_FindNewSectorFromThing(SithCog* pCog)
     if ( !pThing || !pThing->pInSector )
     {
         SITHLOG_ERROR("BAD THING REF IN FindNewSectorFromThing\n");
+        sithCogExec_PushInt(pCog, -1);
         return;
     }
 

@@ -263,6 +263,9 @@ uint32_t J3DAPI dwave_Decode(void* pBitmap, int clip, int x, int y, void* pPalet
     if ( dwave_pSound )
     {
         uint8_t* pPacket = dwave_pPacket;
+        // Fixed: The original leaves the priority word at bytes 14-15 uninitialized.
+        // A stale class bit (0x80) combines with music (0x40) into an unsupported class and mutes the entire stream.
+        memset(pPacket, 0, dwave_state.packets == 0 ? DWAVE_PACKET_FIRSTDATA : DWAVE_PACKET_DATA);
         memcpy(pPacket, "PSAD", 4);
 
         if ( dwave_state.packets == 0 )

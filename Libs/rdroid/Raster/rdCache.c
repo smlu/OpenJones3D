@@ -9,6 +9,7 @@
 #include <std/General/stdUtil.h>
 #include <std/Win95/std3D.h>
 
+#include <math.h>
 #include <stdlib.h>
 
 #define RDCACHE_VERTBUFFERSIZE RDCACHE_MAXVERTICES * RDCACHE_MAXFACEVERTICES
@@ -20,9 +21,9 @@ static size_t rdCache_numUsedVertices = 0;
 static D3DTLVERTEX rdCache_aVertices[RDCACHE_VERTBUFFERSIZE]      = { 0 };
 static rdVector4 rdCache_aVertIntensities[RDCACHE_VERTBUFFERSIZE] = { 0 }; // Fixed: Changed to match size of rdCache_aVertices, was 8192
 
-
-static size_t rdCache_numAlphaProcFaces               = 0;
-static rdCacheProcEntry rdCache_aAlphaProcFaces[4096] = { 0 };
+static size_t rdCache_numAlphaProcFaces                                    = 0;
+// Altered: QOL builds hold 4096 alpha faces, the original 2048; a larger list means fewer early flushes, so alpha face batches (and their sort order) differ from the original.
+static rdCacheProcEntry rdCache_aAlphaProcFaces[J3D_QOL_VALUE(4096, 2048)] = { 0 };
 
 static size_t rdCache_numUsedAlphaVertices = 0;
 static D3DTLVERTEX rdCache_aAlphaVertices[RDCACHE_VERTBUFFERSIZE]      = { 0 };
@@ -64,7 +65,7 @@ void rdCache_ResetGlobals(void)
 
 void rdCache_Startup(void)
 {
-    memset(rdCache_aHWVertices, 0, sizeof(rdCache_aHWVertices)); // Fixed: num bytes to the bytes size of rdCache_aHWVertices. Was STD_ARRAYLEN(rdCache_aHWVertices)
+    STD_ZEROMEM(rdCache_aHWVertices, sizeof(rdCache_aHWVertices)); // Fixed: num bytes to the bytes size of rdCache_aHWVertices. Was STD_ARRAYLEN(rdCache_aHWVertices)
     rdCache_frameNum = 0;
 }
 
@@ -218,6 +219,8 @@ void J3DAPI rdCache_SendFaceListToHardware(size_t numPolys, rdCacheProcEntry* pC
 {
     size_t polyNum   = 0;
     int curMatCelNum = -1;
+    // Fixed: Bound WORD-indexed batches, including devices limited to 65,535 unique vertices.
+    const size_t maxBatchVertices = J3DMIN((size_t)UINT16_MAX, std3D_g_maxVertices);
     const tStdFadeFactor* pFadeFactor = stdEffect_GetFadeFactor();
 
     if ( pfSort == rdCache_ProcFaceDistanceCompare )
@@ -275,39 +278,14 @@ LABEL_4:
             curMatCelNum = pCurPoly->matCelNum;
             if ( curMatCelNum == -1 )
             {
-                if ( pCurPoly->pMaterial->curCelNum < 0 )
-                {
-                    curMatCelNum = 0;
-                }
-                else if ( pCurPoly->pMaterial->curCelNum > pCurPoly->pMaterial->numCels - 1 )
-                {
-                    curMatCelNum = pCurPoly->pMaterial->numCels - 1;
-                }
-                else
-                {
-                    curMatCelNum = pCurPoly->pMaterial->curCelNum;
-                }
-
-                pTex = &pCurPoly->pMaterial->aTextures[curMatCelNum];
+                int texCelNum = STDMATH_CLAMP((int)pCurPoly->pMaterial->curCelNum, 0, (int)pCurPoly->pMaterial->numCels - 1);
+                pTex = &pCurPoly->pMaterial->aTextures[texCelNum];
                 rdCache_AddToTextureCache(pTex, pCurMat->formatType);
             }
             else
             {
-                if ( curMatCelNum < 0 )
-                {
-                    curMatCelNum = 0;
-                }
-
-                else if ( curMatCelNum > pCurPoly->pMaterial->numCels - 1 )
-                {
-                    curMatCelNum = pCurPoly->pMaterial->numCels - 1;
-                }
-                else
-                {
-                    curMatCelNum = pCurPoly->matCelNum;
-                }
-
-                pTex = &pCurPoly->pMaterial->aTextures[curMatCelNum];
+                int texCelNum = STDMATH_CLAMP(curMatCelNum, 0, (int)pCurPoly->pMaterial->numCels - 1);
+                pTex = &pCurPoly->pMaterial->aTextures[texCelNum];
                 rdCache_AddToTextureCache(pTex, pCurMat->formatType);
             }
 
@@ -329,7 +307,7 @@ LABEL_4:
             rdCache_pCurCacheVertex = &rdCache_aHWVertices[rdCache_totalVerts];
             for ( size_t i = 0; i < pCurPoly->numVertices; ++i )
             {
-                memcpy(rdCache_pCurCacheVertex, rdCache_pCurInVert++, sizeof(D3DTLVERTEX));
+                STD_COPYMEM(rdCache_pCurCacheVertex, rdCache_pCurInVert++, sizeof(D3DTLVERTEX));
 
                 float blue  = 1.0f;
                 float green = 1.0f;
@@ -419,6 +397,8 @@ LABEL_4:
 
             // Fixed: Check polyNum first; after the last poly, pCurPoly points past the end of the list
             if ( polyNum >= numPolys
+                || pCurPoly->numVertices + rdCache_totalVerts > maxBatchVertices
+                || 3 * (pCurPoly->numVertices - 2) + totalIndices > STD_ARRAYLEN(rdCache_aVertIndices)
                 || 3 * (pCurPoly->numVertices - 2) + totalIndices >= std3D_g_maxVertices // i.e. totalIndices + num required triangle indices for next poly >= std3D_g_maxVertices
                 || pCurMat != pCurPoly->pMaterial
                 || curMatCelNum != pCurPoly->matCelNum
@@ -452,8 +432,8 @@ void J3DAPI rdCache_SendWireframeFaceListToHardware(size_t numPolys, rdCacheProc
             std3D_DrawLineStrip(pCurPoly->aVertices, pCurPoly->numVertices);
 
             D3DTLVERTEX aVerts[2]; // Draw end vert twice to complete the line
-            memcpy(aVerts, &pCurPoly->aVertices[pCurPoly->numVertices - 1], sizeof(D3DTLVERTEX));
-            memcpy(&aVerts[1], pCurPoly->aVertices, sizeof(D3DTLVERTEX));
+            STD_COPYMEM(aVerts, &pCurPoly->aVertices[pCurPoly->numVertices - 1], sizeof(D3DTLVERTEX));
+            STD_COPYMEM(&aVerts[1], pCurPoly->aVertices, sizeof(D3DTLVERTEX));
             std3D_DrawLineStrip(aVerts, 2u);
         }
 
@@ -475,11 +455,16 @@ void J3DAPI rdCache_AddToTextureCache(tSystemTexture* pTexture, StdColorFormatTy
 
 int J3DAPI rdCache_ProcFaceDistanceCompare(const rdCacheProcEntry* pEntry1, const rdCacheProcEntry* pEntry2)
 {
-    if ( (double)pEntry2->distance <= (double)pEntry1->distance )
+    // Fixed: Compare equal depths equally and sort NaN keys last.
+    if ( isnan(pEntry1->distance) )
+    {
+        return isnan(pEntry2->distance) ? 0 : 1;
+    }
+    if ( isnan(pEntry2->distance) )
     {
         return -1;
     }
-    return 1;
+    return (pEntry1->distance < pEntry2->distance) - (pEntry1->distance > pEntry2->distance);
 }
 
 int J3DAPI rdCache_ProcFaceCompare(const rdCacheProcEntry* pEntry1, const rdCacheProcEntry* pEntry2)
