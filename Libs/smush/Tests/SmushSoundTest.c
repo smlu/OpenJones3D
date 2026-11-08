@@ -7,9 +7,9 @@
 #include <string.h>
 
 #include <j3dcore/j3d.h>
-#include <Windows.h>
+#include <windows.h>
 #include <mmsystem.h>
-#include <Mmreg.h>
+#include <mmreg.h>
 #if defined (J3D_DIRECTX6)
 #include <DirectX6/dsound.h>
 #elif defined (J3D_DIRECTX9)

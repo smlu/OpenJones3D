@@ -9,9 +9,9 @@
 #include <stddef.h>
 #include <string.h>
 
-#include <Windows.h>
+#include <windows.h>
 #include <mmsystem.h>
-#include <Mmreg.h>
+#include <mmreg.h>
 #include <sound/Driver.h>
 
 #include <smush/insane/Sound/Engine.h>

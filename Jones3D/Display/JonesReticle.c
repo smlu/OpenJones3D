@@ -123,7 +123,7 @@ JonesAimReticle JonesReticle_reticle = { 0 };
 
 
 // Add to stdColor.h or a utility header
-inline rdVector4 JonesReticle_ColorToVector4(tStdColor color)
+static inline rdVector4 JonesReticle_ColorToVector4(tStdColor color)
 {
     rdVector4 result;
     result.red   = STD_GETRED(color) / 255.0f;
@@ -133,7 +133,7 @@ inline rdVector4 JonesReticle_ColorToVector4(tStdColor color)
     return result;
 }
 
-inline tStdColor JonesReticle_ColorFromVector4(const rdVector4* pVector)
+static inline tStdColor JonesReticle_ColorFromVector4(const rdVector4* pVector)
 {
     return STD_RGBA(
         (uint8_t)(pVector->red * 255.0f),
@@ -275,7 +275,7 @@ bool JonesReticle_IsEnabled(void)
 /**
 * Calculate easing function for smooth animation(ease - out)
 */
-inline float J3DAPI JonesReticle_EaseOut(float t)
+static inline float J3DAPI JonesReticle_EaseOut(float t)
 {
     // Ease out cubic: 1 - (1-t)^3
     float oneMinusT = 1.0f - t;

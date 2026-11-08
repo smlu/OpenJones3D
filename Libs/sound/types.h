@@ -2,7 +2,7 @@
 #define SOUND_TYPES_H
 #include <stddef.h>
 #include <stdint.h>
-#include <Mmreg.h>
+#include <mmreg.h>
 #include <j3dcore/j3d.h>
 #include <rdroid/types.h>
 

@@ -1,7 +1,8 @@
 #ifndef J3D_COMMON_HLSL
 #define J3D_COMMON_HLSL
 
-#define MERGE_TOKENS(a, b) a##b
+#define MERGE_TOKENS_(a, b) a##b
+#define MERGE_TOKENS(a, b) MERGE_TOKENS_(a, b)
 
 // ===== VERTEX SHADER CONSTANTS (c24-c255) =====
 #define VS_VIEWPORT_REGISTER c0

@@ -1,6 +1,7 @@
 
 #ifndef J3DCORE_H
 #define J3DCORE_H
+#include <assert.h> // static_assert on GCC/MinGW
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
@@ -51,7 +52,7 @@
 #       define STRICT
 #   endif
 #   define WIN32_LEAN_AND_MEAN
-#   include <Windows.h>
+#   include <windows.h>
 #   define strcmpi _strcmpi
 #   define strncmpi _strnicmp
 #   define wstrcmpi _wcsicmp
