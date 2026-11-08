@@ -538,11 +538,12 @@ int J3DAPI Sound_Save(tFileHandle fh)
 
     while ( 1 )
     {
-        --pCurChannel;
         if ( !channelNum-- )
         {
             break;
         }
+
+        --pCurChannel; // Fixed: decrement after the count check so the pointer is never moved before the start of Sound_apChannels
 
         // TODO: Save also 2D sounds
         if ( pCurChannel->handle != SOUND_INVALIDHANDLE
@@ -2516,11 +2517,12 @@ void J3DAPI Sound_Update(const rdVector3* pPos, const rdVector3* pVelocity, cons
 
     while ( 1 )
     {
-        --pCurChannel;
         if ( !count-- )
         {
             break;
         }
+
+        --pCurChannel; // Fixed: decrement after the count check so the pointer is never moved before the start of Sound_apChannels
 
         if ( pCurChannel->handle != SOUND_INVALIDHANDLE && (pCurChannel->flags & SOUND_CHANNEL_3DSOUND) != 0 )
         {
@@ -2857,11 +2859,12 @@ size_t J3DAPI Sound_GetAllInstanceInfo(SoundInstanceInfo* pCurInstance, size_t s
     tSoundChannel* pCurChannel = &Sound_apChannels[Sound_numChannels];
     while ( 1 )
     {
-        --pCurChannel;
         if ( !numChannels-- )
         {
             break;
         }
+
+        --pCurChannel; // Fixed: decrement after the count check so the pointer is never moved before the start of Sound_apChannels
 
         if ( pCurChannel->handle != SOUND_INVALIDHANDLE )
         {

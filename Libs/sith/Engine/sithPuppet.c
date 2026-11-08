@@ -2834,7 +2834,10 @@ int J3DAPI sithPuppet_AllocWorldPuppets(SithWorld* pWorld, size_t size)
 
     pWorld->sizePuppetClasses = size;
     pWorld->numPuppetClasses  = 0;
-    STD_ZEROMEM(pWorld->aPuppetClasses, sizeof(SithPuppetClass) * pWorld->sizePuppetClasses);
+    if ( pWorld->aPuppetClasses ) // Fixed: memset with a NULL pointer is UB when size is 0 and the allocation was skipped
+    {
+        STD_ZEROMEM(pWorld->aPuppetClasses, sizeof(SithPuppetClass) * pWorld->sizePuppetClasses);
+    }
     return 0;
 }
 

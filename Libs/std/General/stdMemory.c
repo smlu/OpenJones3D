@@ -199,7 +199,8 @@ void* J3DAPI stdMemory_Malloc(size_t size, const char* pFilename, size_t line)
     memset(&pHeap->pMemory, STDMEMORY_UNINIT_PATTERN, size);
 
     pHeap->header.magic = STDMEMORY_HEADERMAGIC;
-    *(void**)((char*)&pHeap->pMemory + size) = (void*)STDMEMORY_HEADERMAGIC; // Set end marker
+    uint32_t endMarker = STDMEMORY_HEADERMAGIC; // Fixed: store the end marker through memcpy; its address can be unaligned, so a void* dereference is UB (same bytes on 32-bit)
+    memcpy((char*)&pHeap->pMemory + size, &endMarker, sizeof(endMarker)); // Set end marker
 
     stdMemory_g_curState.totalBytes += size;
 
@@ -223,7 +224,9 @@ void J3DAPI stdMemory_Free(void* pBytes)
 
     STD_ASSERTREL((pHeader != NULL) && ((uint32_t)pHeader == pHeader->id));
     STD_ASSERTREL(pHeader->magic == STDMEMORY_HEADERMAGIC);
-    STD_ASSERTREL(*(uint32_t*)((uint8_t*)pBytes + pHeader->size) == STDMEMORY_HEADERMAGIC);
+    uint32_t endMarker; // Fixed: read the end marker through memcpy; its address can be unaligned, so a uint32_t dereference is UB
+    memcpy(&endMarker, (uint8_t*)pBytes + pHeader->size, sizeof(endMarker));
+    STD_ASSERTREL(endMarker == STDMEMORY_HEADERMAGIC);
 
     // Set freed memory to a free pattern
     memset(pBytes, STDMEMORY_FREE_PATTERN, pHeader->size);
@@ -293,7 +296,8 @@ void* J3DAPI stdMemory_Realloc(void* pBytes, size_t size, const char* pFilename,
     // TODO: If new size is larger set the unused memory to uninitialized pattern
 
     pHeap->header.magic = STDMEMORY_HEADERMAGIC;
-    *(void**)((char*)&pHeap->pMemory + size) = (void*)STDMEMORY_HEADERMAGIC; // Set end marker
+    uint32_t endMarker = STDMEMORY_HEADERMAGIC; // Fixed: store the end marker through memcpy; its address can be unaligned, so a void* dereference is UB (same bytes on 32-bit)
+    memcpy((char*)&pHeap->pMemory + size, &endMarker, sizeof(endMarker)); // Set end marker
 
     if ( size >= curSize )
     {
