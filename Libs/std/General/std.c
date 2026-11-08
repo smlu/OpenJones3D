@@ -98,7 +98,11 @@ void stdShutdown(void)
     if ( bStdStartup )
     {
         short tmp = word_183962C;
+#ifdef _MSC_VER
         __asm fldcw word ptr[tmp];
+#else
+        __asm__ __volatile__("fldcw %0" : : "m"(tmp)); // Altered: GCC/MinGW inline assembler syntax for the same instruction
+#endif
 
         stdJSON_Shutdown();
         stdMemory_Close();
