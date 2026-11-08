@@ -49,8 +49,9 @@
 #define SITHPHYSICS_CROUCH_THRUST_SCALE 0.80000001f
 
 // Added
-static float sithPhysics_fixedFramerate = SITHPHYSICS_FIXED_FRAMERATE_DFLT;
-static float sithPhysics_fixedTimestep  = SITHPHYSICS_FIXED_TIMESTEP_DFLT;
+// Note, made it const until we have proper implementation for var fall timestep
+static const float sithPhysics_fixedFramerate = SITHPHYSICS_FIXED_FRAMERATE_DFLT;
+static const float sithPhysics_fixedTimestep  = SITHPHYSICS_FIXED_TIMESTEP_DFLT;
 
 //
 // MineCar fx vars
@@ -348,20 +349,20 @@ void sithPhysics_InstallHooks(void)
 }
 
 void sithPhysics_ResetGlobals(void)
-{
-}
+{}
 
 void J3DAPI sithPhysics_Startup(void)
 {
 #ifdef J3D_QOL_IMPROVEMENTS
     // Fixed timestap
-    sithPhysics_fixedFramerate = stdConfig_GetFloat(SITHPHYSICS_CFG_PHYSICS_FIXEDTIMESTEP, SITHPHYSICS_FIXED_FRAMERATE_UNCAP);
+    // Removed due to issues with fall velocity which might variate at different timesteps potentially causing different fall speed and breaking code that relies on a specific fall speed (e.g. sithPlayerAction grab ledge)
+    /*sithPhysics_fixedFramerate = stdConfig_GetFloat(SITHPHYSICS_CFG_PHYSICS_FIXEDTIMESTEP, SITHPHYSICS_FIXED_FRAMERATE_UNCAP);
     sithPhysics_fixedTimestep  = 1.0f / sithPhysics_fixedFramerate;
 
     if ( !stdConfig_Contains(SITHPHYSICS_CFG_PHYSICS_FIXEDTIMESTEP) )
     {
         stdConfig_SetFloat(SITHPHYSICS_CFG_PHYSICS_FIXEDTIMESTEP, SITHPHYSICS_FIXED_FRAMERATE_UNCAP);
-    }
+    }*/
 
     // Jeep exhaust
     sithPhysics_bJeepExhaust = true;
@@ -1177,7 +1178,9 @@ void J3DAPI sithPhysics_UpdateDetachedPlayerPhysics(SithThing* pThing, float sec
 
     // Player physics runs at 50 FPS - accumulate time and process in fixed timesteps
     float totalTime = secDeltaTime + pPhysics->physicsRolloverFrames;
-    size_t nFrames  = (size_t)truncf(totalTime * sithPhysics_fixedFramerate);
+    // Fixed: A negative accumulated time (time went backwards) takes no steps, the original converts it to an unsigned count that wraps to about 4 billion steps.
+    float numSteps = floorf(totalTime * sithPhysics_fixedFramerate);
+    size_t nFrames = numSteps > 0.0f ? (size_t)numSteps : 0;
     pPhysics->physicsRolloverFrames = totalTime - (float)nFrames * sithPhysics_fixedTimestep;
 
     for ( size_t i = 0; i < nFrames; ++i )
@@ -2181,7 +2184,7 @@ void J3DAPI sithPhysics_UpdateMineCarPhysics(SithThing* pThing, float secDeltaTi
             if ( pPhysics->thrust.y < 0.0f ) // Backward thrust
             {
                 // Backward thrust while moving forward - brake
-                thrustDelta = -pPhysics->thrust.y * scaledDeltaTime;
+                thrustDelta = pPhysics->thrust.y * scaledDeltaTime;
                 if ( fabsf(thrustDelta) > speed )
                 {
                     rdVector_Zero3(&pPhysics->velocity);
@@ -2719,17 +2722,21 @@ void J3DAPI sithPhysics_UpdateExhaustFx(SithThing* pThing, const SithVehicleExha
         rdVector3 smokeVel = { 0 };
 
         float scatterX = (float)((SITH_RAND() - 0.5f) * pExhaustInfo->scatterX) + pExhaustInfo->dirX;
-        rdVector_Scale3(&smokeVel, &pThing->orient.rvec, scatterX * speed);
+        scatterX = scatterX * speed;
+        rdVector_Scale3(&smokeVel, &pThing->orient.rvec, scatterX);
 
         float scatterZ = (float)(SITH_RAND() * (pExhaustInfo->scatterZ - pExhaustInfo->dirZ)) + pExhaustInfo->dirZ;
-        rdVector_MultAcc3(&smokeVel, &pThing->orient.uvec, scatterZ * speed);
+        scatterZ = scatterZ * speed;
+        rdVector_MultAcc3(&smokeVel, &pThing->orient.uvec, scatterZ);
 
         // Move exhaust position back along exhaust direction
         rdVector_MultAcc3(&exhaustPos, &exhaustDir, -pExhaustInfo->spacing);
 
         rdVector3 smokePos = exhaustPos;
-        rdVector_MultAcc3(&smokePos, &pThing->orient.rvec, scatterX * smokeTime);
-        rdVector_MultAcc3(&smokePos, &pThing->orient.uvec, scatterZ * smokeTime);
+        scatterX = scatterX * smokeTime;
+        rdVector_MultAcc3(&smokePos, &pThing->orient.rvec, scatterX);
+        scatterZ = scatterZ * smokeTime;
+        rdVector_MultAcc3(&smokePos, &pThing->orient.uvec, scatterZ);
 
         // Create exhaust sprite
         SithThing* pSmoke = sithThing_CreateThingAtPos(pSmokeTmpl, &smokePos, &pThing->orient, pThing->pInSector, NULL);
@@ -2739,25 +2746,33 @@ void J3DAPI sithPhysics_UpdateExhaustFx(SithThing* pThing, const SithVehicleExha
         }
 
         // Calculate lifetime
-        float life = pExhaustInfo->lifeFactor * speed + pExhaustInfo->life - smokeTime;
-        life += (SITH_RANDF() - 0.5f) * pExhaustInfo->lifeRandFactor * life;
-        pSmoke->msecLifeLeft = (uint32_t)(life * 1000.0f);
+        float life = pExhaustInfo->lifeFactor * speed + pExhaustInfo->life;
+        life = life - smokeTime;
+
+        float lifeScatter = pExhaustInfo->lifeRandFactor * life;
+        lifeScatter = (SITH_RANDF() - 0.5f) * lifeScatter;
+        life = life + lifeScatter;
+        pSmoke->msecLifeLeft = (uint32_t)(int64_t)((double)life * 1000.0); // Like the original: the unrounded product is truncated to a 64-bit int, so a negative life wraps
 
         // Calculate sprite sizes
-        float animProgress = smokeTime / maxLifeTime;
+        float sizeRate  = (pExhaustInfo->sizeEnd - pExhaustInfo->sizeStart) / maxLifeTime;
+        float alphaRate = (pExhaustInfo->alphaEnd - pExhaustInfo->alphaStart) / maxLifeTime;
 
-        float startMinSize = pExhaustInfo->sizeStart + (pExhaustInfo->sizeEnd - pExhaustInfo->sizeStart) * animProgress;
-        float startAlpha   = pExhaustInfo->alphaStart + (pExhaustInfo->alphaEnd - pExhaustInfo->alphaStart) * animProgress;
+        float startSizeX = sizeRate * smokeTime + pExhaustInfo->sizeStart;
+        float startSizeY = sizeRate * smokeTime + pExhaustInfo->sizeStart;
+        float startAlpha = alphaRate * smokeTime + pExhaustInfo->alphaStart;
 
+        // Note: The random values are drawn in the order of the original, start x, start y, end x, end y and start alpha
         rdVector3 startSize;
-        startSize.x = startMinSize + (float)((SITH_RAND() - 0.5f) * pExhaustInfo->sizeRandFactor);
-        startSize.y = startMinSize + (float)((SITH_RAND() - 0.5f) * pExhaustInfo->sizeRandFactor);
-        startSize.z = startAlpha + (float)((SITH_RAND() - 0.5f) * pExhaustInfo->alphaRandFactor);
+        startSize.x = (float)((SITH_RAND() - 0.5f) * pExhaustInfo->sizeRandFactor) + startSizeX;
+        startSize.y = (float)((SITH_RAND() - 0.5f) * pExhaustInfo->sizeRandFactor) + startSizeY;
 
         rdVector3 endSize;
-        endSize.x = pExhaustInfo->sizeEnd + (float)((SITH_RAND() - 0.5f) * pExhaustInfo->sizeRandFactor);
-        endSize.y = pExhaustInfo->sizeEnd + (float)((SITH_RAND() - 0.5f) * pExhaustInfo->sizeRandFactor);
+        endSize.x = (float)((SITH_RAND() - 0.5f) * pExhaustInfo->sizeRandFactor) + pExhaustInfo->sizeEnd;
+        endSize.y = (float)((SITH_RAND() - 0.5f) * pExhaustInfo->sizeRandFactor) + pExhaustInfo->sizeEnd;
         endSize.z = pExhaustInfo->alphaEnd;
+
+        startSize.z = (float)((SITH_RAND() - 0.5f) * pExhaustInfo->alphaRandFactor) + startAlpha;
 
         sithAnimate_StartAnimateSpriteSize(pSmoke, &startSize, &endSize, life);
         pSmoke->moveInfo.physics.velocity = smokeVel;
@@ -2848,7 +2863,7 @@ void J3DAPI sithPhysics_PowerOffMineCar(SithThing* pThing)
         }
 
         // Added: Falowing is new code
-        pThing->flags &= SITH_TF_EMITLIGHT; // Added: Turn on rear red light
+        pThing->flags &= ~SITH_TF_EMITLIGHT; // Added: Turn off rear red light
         pThing->thingInfo.actorInfo.flags &= ~SITH_AF_HEADLIGHT;
         sithPhysics_SetVehicleLights(&pCarState->lights, /*bOn=*/ false);
         pCarState->bEngineRunning = false;

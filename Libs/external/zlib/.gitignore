@@ -1,0 +1,2 @@
+# The parent ignores linker maps, but this is an upstream source input.
+!zlib.map

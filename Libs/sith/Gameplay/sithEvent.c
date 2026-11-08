@@ -160,9 +160,10 @@ void sithEvent_Process(void)
 
         size_t taskNum = sithEvent_g_pFirstQueuedEvent->taskNum;
         SITH_ASSERTREL(aTasks[taskNum].pfProcess); // TODO: Would make much more sense to make this check when event is created
-        aTasks[taskNum].pfProcess(0, &pEvent->params);
 
         sithEvent_g_pFirstQueuedEvent = pEvent->pNextEvent;
+        aTasks[taskNum].pfProcess(0, &pEvent->params);
+
         sithEvent_FreeEvent(pEvent);
     }
 }

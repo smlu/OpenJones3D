@@ -283,6 +283,8 @@ int stdDisplay_Startup(void)
         return 1;
     }
 
+    // Altered: stdDisplay_bStartup is set only after the DDraw enumeration succeeded (below).
+    // The original set it before enumerating, so a failed enumeration made later calls return 1 without retrying.
     memset(&stdDisplay_g_frontBuffer, 0u, sizeof(stdDisplay_g_frontBuffer));
     memset(&stdDisplay_g_backBuffer, 0u, sizeof(stdDisplay_g_backBuffer));
     memset(&stdDisplay_zBuffer, 0u, sizeof(stdDisplay_zBuffer));
@@ -470,6 +472,7 @@ void stdDisplay_ClearMode(void)
     }
 
     // Fixed: Clearing a fullscreen mode must also restore the desktop and normal cooperative level.
+    // The original only released the buffers, the font and cleared bModeSet. Resetting pCurVideoMode and bFullscreen below is also new.
     if ( bWasFullscreen && stdDisplay_lpDD )
     {
         stdDisplay_RestoreDesktopMode(stdWin95_GetWindow());
@@ -1279,6 +1282,7 @@ HRESULT PASCAL stdDisplay_EnumVideoModesCallback(LPDDSURFACEDESC2 lpDDSurfaceDes
     pMode->rasterInfo.rowSize = lpDDSurfaceDesc->lPitch;
     stdDisplay_SetAspectRatio(pMode);
 
+    // Added: Store the mode refresh rate; the original did not record it.
     // TODO: dwRefreshRate might not return refresh rate
     pMode->refreshRate = lpDDSurfaceDesc->dwRefreshRate;
 
@@ -1342,6 +1346,7 @@ HRESULT PASCAL stdDisplay_EnumVideoModesCallback(LPDDSURFACEDESC2 lpDDSurfaceDes
         return 1;
     }
 
+    // Altered: The VRAM-shortage exception applies to <= 640x480 32 bpp modes; the original allows <= 640x480 at 16 bpp.
     if ( pMode->rasterInfo.width <= 640 && pMode->rasterInfo.height <= 480 && pMode->rasterInfo.colorInfo.bpp == 32 )
     {
         if ( totalTexMem < 0x200000 )
@@ -1398,6 +1403,7 @@ int J3DAPI stdDisplay_SetWindowMode(HWND hWnd, StdVideoMode* pDisplayMode)
         return 0;
     }
 
+    // Altered: stdDisplay_coopLevelFlags is updated only after SetCooperativeLevel succeeds; the original assigned it before the call.
     HRESULT ddres = IDirectDraw4_SetCooperativeLevel(stdDisplay_lpDD, hWnd, DDSCL_NORMAL);
     if ( ddres != DD_OK )
     {

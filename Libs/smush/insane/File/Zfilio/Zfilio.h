@@ -1,6 +1,7 @@
 #ifndef SMUSH_INSANE_FILE_ZFILIO_ZFILIO_H
 #define SMUSH_INSANE_FILE_ZFILIO_ZFILIO_H
 #include <assert.h>
+#include <zlib.h>
 #include <j3dcore/j3d.h>
 #include <j3dcore/j3dhook.h>
 #include <smush/RTI/addresses.h>
@@ -9,9 +10,10 @@
 
 /*
  * Zfilio.c: the `FILIO=insane_zfilio` module: opens the files whose extension is in its list (".gz", plus what the host adds
- * with zfilio_Configure, e.g. ".snm"/".znm" from SmushPlay) with zlib's gz functions of the game executable (gzopen etc.,
- * RTI/addresses.h), tracking a logical position because gz streams seek lazily. It chains every other file to the module
- * published as `FILIO.chainto` and keeps that interface in the global zfilio_pFilio, which the executable's own gzio.c reads.
+ * with zfilio_Configure, e.g. ".snm"/".znm" from SmushPlay) with linked zlib's gz functions, tracking a logical position
+ * because gz streams seek lazily. The gzip backend reads compressed physical files directly. Plain input is rejected
+ * by the gzip opener so it uses the chained file interface. Other files and gzip-size probes also use the module
+ * published as `FILIO.chainto`, kept in the global zfilio_pFilio.
  */
 
 J3D_EXTERN_C_START
@@ -22,10 +24,7 @@ J3D_EXTERN_C_START
 
 #define ZFILIO_FLAG_REPORT 1 /* print allocation failures through the debug service */
 
-#define ZFILIO_Z_FINISH 4 /* zlib's Z_FINISH, the gzflush mode */
-
-/* The executable's zlib 1.0.9 gz functions are reached through RTI/addresses.h (gzopen_ADDR etc.); gzFile is an opaque handle. */
-typedef void* gzFile;
+#define ZFILIO_Z_FINISH Z_FINISH /* zlib's gzflush mode */
 
 typedef struct sZfileHandle
 {
@@ -49,15 +48,7 @@ typedef struct sZfilioInterface
 } ZfilioInterface;
 static_assert(sizeof(ZfilioInterface) == 0x1C, "sizeof(ZfilioInterface) == 0x1C");
 
-/*
- * zfilio_pFilio lives in the executable (.bss 0x0183E220, COMMON) because the executable's gzio.c reads it. It is the only INSANE
- * datum that stays at its original address; Smush_ResetGlobals clears it.
- */
-#ifdef J3D_LOCAL_RTI
 extern FilioInterface* zfilio_pFilio;
-#else
-#   define zfilio_pFilio J3D_DECL_FAR_VAR(zfilio_pFilio, FilioInterface*)
-#endif
 
 int J3DAPI zfilio_Register(LecShare* pShare, void* pParam);
 int J3DAPI zfilio_Configure(int tag, ...);
@@ -73,7 +64,7 @@ int J3DAPI zfilio_seek(ZfileHandle* pFile, int offset, int whence);
 void J3DAPI zfilio_flush(ZfileHandle* pFile);
 
 #if defined(J3D_TEST)
-// Added: Test seam, replaces the executable's zlib gz functions (unset members fall back to the executable's).
+// Unset callbacks use linked zlib.
 typedef struct sZfilioTestGz
 {
     gzFile (J3DAPI* gzopen)(const char*, const char*);

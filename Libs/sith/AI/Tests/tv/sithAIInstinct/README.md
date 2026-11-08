@@ -57,16 +57,6 @@ executing them inside the retail `Indy3D.exe` with the world-state vector harnes
 - A NULL name for `sithAI_RegisterInstinct` (the original asserts and then copies from NULL).
 - Lookups in a registry whose count exceeds its 32 entries (the lookup compares names in the garbage past the end).
 
-### Known Differences
-
-- `RegisterInstinct_edge_name63`, `RegisterInstinct_edge_name64`, `RegisterInstinct_edge_name199`: the name field
-  `SithAIRegisteredInstinct::aName` has 64 bytes in the original (`strncpy(aName, pName, 63)`, then `aName[63] = 0`
-  at `0x0042AD40`) and 63 bytes in the reconstruction's `sith/types.h` (`STD_STRCPY`, 62 characters). A name of 63
-  or more characters keeps 63 characters in the original and is found by `sithAI_FindInstinct` under its first 63
-  characters; the reconstruction keeps 62 and does not find it. No instinct name of the game is that long.
-  `TestOriginalRegisterInstinct` expects exactly these cases to differ and is reported as ignored. The
-  implementation is unchanged.
-
 ### Provenance And Regeneration
 
 - Capture harness: the generic world-state capture DLL (kept outside the repository, SHA-256 of the source used:

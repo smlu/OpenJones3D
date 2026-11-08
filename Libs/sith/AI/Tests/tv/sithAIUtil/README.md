@@ -123,8 +123,9 @@ things-in-view state (`0x00585478` to `0x00585728`). Engine globals: `sithMain_g
   `CheckPathToPos` (straight and sides), `SweepMoveToPathPos`, `MakeRoamPos`, `MakePathPos`.
 - `GetThingsInView` and `GetNextThingsInView`: field of view, size limit, type mask, distance limit, adjoin
   flags, face kinds, visited sectors, search limits.
-- Seeds: cases that expose the random numbers as floats use seeds whose numbers are exact in both
-  `SITH_RAND` forms (see Known Differences); the sweeps only record decisions.
+- Seeds: the cases with a seed use seeds whose numbers are also exact in the double precision form of `SITH_RAND`
+  (`edge_rand_ulp` cases use the seed that exposed the one-ulp difference of that macro); the sweeps only record
+  decisions.
 
 ### Inputs Kept Out Of The Corpus
 
@@ -141,15 +142,7 @@ things-in-view state (`0x00585478` to `0x00585728`). Engine globals: `sithMain_g
 
 ### Known Differences
 
-- `MakeRandPoint_edge_rand_ulp`, `MakeRoamPos_edge_rand_ulp`: `SITH_RAND()` (`Libs/sith/Main/sithMain.h`) is
-  `(double)rand() * (1.0 / RAND_MAX)` in the reconstruction and `(float)rand() * (1.0f / RAND_MAX)` in the original
-  (`fild`, `fmul dword ptr [0x005079E8]`, for example at `0x0049FB0F`), so a random number that is used as a float
-  differs by one unit in the last place for some `rand()` values (rand = 1658 gives 0.050599687 in the original and
-  0.05059969 in the reconstruction, times 60 degrees 3.0359812 against 3.0359814). Comparisons with a random number
-  are unaffected except in the last bit. The two cases use the seed that exposes it (a raw seed) and
-  `TestOriginalMakeRandPoint` and `TestOriginalMakeRoamPos` expect exactly these cases to differ (reported as
-  ignored); all other cases use seeds whose numbers are exact in both forms. The implementation and the macro are
-  unchanged.
+None.
 
 ### Provenance And Regeneration
 
@@ -160,7 +153,7 @@ things-in-view state (`0x00585478` to `0x00585728`). Engine globals: `sithMain_g
   `sithAIUtilVecSeams.def` and `rand`; no other function of the executable is modified.
 - Capture log: 1700 cases, 0 unstable, 0 lookup mismatches. Two complete captures in fresh processes produced
   byte-identical files.
-- The reconstruction reproduces every case except the known differences, in Debug and Release for DirectX 6 and
+- The reconstruction reproduces every case, in Debug and Release for DirectX 6 and
   DirectX 9.
 
 ### SHA-256
@@ -168,3 +161,13 @@ things-in-view state (`0x00585478` to `0x00585728`). Engine globals: `sithMain_g
 ```text
 b8ab41ecdd289a809fdbb3e99b55f858ffdaf8ce94aa063f2b6d8eb50bda8014  sithAIUtil.tv
 ```
+
+### Fixed-Behavior Side-Path Regression
+
+The separate `sithAIUtilFix.UntestedSidesKeepStartPosition` case exercises side
+searches whose first step already exceeds the maximum distance, both with and
+without a goal. It requires a blocked result, the complete start position as the
+output, and no side collision searches. With a goal, the two visibility checks
+use that same start position and their resulting direction/distance are checked.
+The expected position is stated
+directly; the original's undefined locals are not added to the vector corpus.

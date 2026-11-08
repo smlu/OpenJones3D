@@ -12,6 +12,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..
 target_link_libraries(${PROJECT_NAME} PUBLIC j3dcore)
 target_link_libraries(${PROJECT_NAME} PUBLIC rdroid)
 target_link_libraries(${PROJECT_NAME} PUBLIC std)
+target_link_libraries(${PROJECT_NAME} PUBLIC ZLIB::ZLIBSTATIC)
 target_link_libraries(${PROJECT_NAME} PUBLIC dsound)
 target_link_libraries(${PROJECT_NAME} PUBLIC Winmm) # timeGetTime
 set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE C)

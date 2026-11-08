@@ -1602,7 +1602,7 @@ static_assert(sizeof(SithEventParams) == 16, "sizeof(SithEventParams) == 16");
 
 typedef struct sSithAIRegisteredInstinct
 {
-    char aName[63];
+    char aName[64];
     SithAIInstinctFunc pfInstinct;
     SithAIMode updateModes;
     SithAIMode updateBlockModes;
@@ -2200,7 +2200,7 @@ typedef struct sSithActorInfo
     SithActorVoiceInfo voiceInfo;
     SithActorStateChange stateChange;
 } SithActorInfo;
-static_assert(sizeof(SithActorInfo) == 300, "sizeof(SithActorInfo) == 292");
+static_assert(sizeof(SithActorInfo) == 300, "sizeof(SithActorInfo) == 300");
 
 typedef struct sSithSpriteInfo
 {
@@ -2256,7 +2256,7 @@ typedef struct sSithSpriteInfo
 
 typedef struct sSithBackpackItem
 {
-    int typeId;
+    int16_t typeId;
     union
     {
         SithInventoryItem* pItem; // Note: The original stores the item amount in this field (float amount), see sithDSSThing_ProcessStateUpdate
@@ -2274,6 +2274,9 @@ typedef struct sSithItemInfo
     size_t numItems; // Note, DSS serializes only 16 bits of the value
     SithBackpackItem aBackpackItems[32];
 } SithItemInfo;
+static_assert(sizeof(SithBackpackItem) == 8, "sizeof(SithBackpackItem) == 8");
+static_assert(offsetof(SithBackpackItem, amount) == 4, "offsetof(SithBackpackItem, amount) == 4");
+static_assert(offsetof(SithItemInfo, aBackpackItems) == 32, "offsetof(SithItemInfo, aBackpackItems) == 32");
 static_assert(sizeof(SithItemInfo) == 288, "sizeof(SithItemInfo) == 288");
 
 typedef union sSithThingInfo
@@ -2443,10 +2446,10 @@ typedef struct sSithPathMoveInfo
     rdVector3 goalPYR;
     rdVector3 rotateToPYR;
     float rotDelta;
-    size_t numBlockedMoves; // serialized as uint16_t
+    size_t numBlockedMoves; // serialized as int16_t
     int currentFrame; // can be -1, serialized as int16_t
-    size_t nextFrame; // serialized as uint16_t
-    size_t goalFrame; // serialized as uint16_t
+    size_t nextFrame; // serialized as int16_t
+    size_t goalFrame; // serialized as int16_t
 } SithPathMoveInfo;
 static_assert(sizeof(SithPathMoveInfo) == 144, "sizeof(SithPathMoveInfo) == 144");
 

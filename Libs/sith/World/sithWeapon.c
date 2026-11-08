@@ -465,6 +465,8 @@ void J3DAPI sithWeapon_HandleImpact(SithThing* pWeapon)
                 // Generate bloodsplort and destroy projectile or explode projectile
                 if ( (pWeaponInfo->flags & SITH_WF_BLOODSPLATTER) != 0
                     && (pVictim->thingInfo.actorInfo.flags & SITH_AF_DROID) == 0
+                // Altered: With J3D_QOL_IMPROVEMENTS the dead-victim and non-player conditions are dropped, so non-killing hits and hits on the player
+                //          also splatter and destroy the projectile. The original did so only for a killing hit on a non-player.
                 #ifndef J3D_QOL_IMPROVEMENTS
                     && pVictim->thingInfo.actorInfo.health == 0.0f
                     && pVictim->type != SITH_THING_PLAYER
@@ -528,8 +530,9 @@ int J3DAPI sithWeapon_ParseArg(const StdConffileArg* pArg, SithThing* pThing, in
         }
         case SITHTHING_ARG_DAMAGE:
         {
-            float damage = strtof(pArg->argValue, NULL); // Changed: Use strtof instead atof
-            if ( errno == ERANGE )
+            float damage = STD_STRTOF(pArg->argValue); // Changed: Use strtof instead atof
+            // Only reject overflow, (float)atof of the original accepted underflowing values
+            if ( STD_STRCONV_RANGE_ERROR() && fabsf(damage) > 1.0f )
             { // Added
                 goto syntax_error;
             }
@@ -538,8 +541,9 @@ int J3DAPI sithWeapon_ParseArg(const StdConffileArg* pArg, SithThing* pThing, in
         }
         case SITHTHING_ARG_MINDAMAGE:
         {
-            float minDamage = strtof(pArg->argValue, NULL); // Changed: Use strtof instead atof
-            if ( errno == ERANGE )
+            float minDamage = STD_STRTOF(pArg->argValue); // Changed: Use strtof instead atof
+            // Only reject overflow, (float)atof of the original accepted underflowing values
+            if ( STD_STRCONV_RANGE_ERROR() && fabsf(minDamage) > 1.0f )
             { // Added
                 goto syntax_error;
             }
@@ -561,8 +565,9 @@ int J3DAPI sithWeapon_ParseArg(const StdConffileArg* pArg, SithThing* pThing, in
         }
         case SITHTHING_ARG_FORCE:
         {
-            float force = strtof(pArg->argValue, NULL); // Changed: Use strtof instead atof
-            if ( errno == ERANGE )
+            float force = STD_STRTOF(pArg->argValue); // Changed: Use strtof instead atof
+            // Only reject overflow, (float)atof of the original accepted underflowing values
+            if ( STD_STRCONV_RANGE_ERROR() && fabsf(force) > 1.0f )
             { // Added
                 goto syntax_error;
             }
@@ -571,8 +576,9 @@ int J3DAPI sithWeapon_ParseArg(const StdConffileArg* pArg, SithThing* pThing, in
         }
         case SITHTHING_ARG_RANGE:
         {
-            float range = strtof(pArg->argValue, NULL); // Changed: Use strtof instead atof
-            if ( errno == ERANGE )
+            float range = STD_STRTOF(pArg->argValue); // Changed: Use strtof instead atof
+            // Only reject overflow, (float)atof of the original accepted underflowing values
+            if ( STD_STRCONV_RANGE_ERROR() && fabsf(range) > 1.0f )
             { // Added
                 goto syntax_error;
             }
@@ -581,8 +587,9 @@ int J3DAPI sithWeapon_ParseArg(const StdConffileArg* pArg, SithThing* pThing, in
         }
         case SITHTHING_ARG_RATE:
         {
-            float rate = strtof(pArg->argValue, NULL); // Changed: Use strtof instead atof
-            if ( errno == ERANGE )
+            float rate = STD_STRTOF(pArg->argValue); // Changed: Use strtof instead atof
+            // Only reject overflow, (float)atof of the original accepted underflowing values
+            if ( STD_STRCONV_RANGE_ERROR() && fabsf(rate) > 1.0f )
             { // Added
                 goto syntax_error;
             }
@@ -964,6 +971,8 @@ int J3DAPI sithWeapon_ThingCollisionHandler(SithThing* pWeapon, SithThing* pThin
         {
             if ( (pWeapon->thingInfo.weaponInfo.flags & SITH_WF_BLOODSPLATTER) != 0
                 && (pThing->thingInfo.actorInfo.flags & SITH_AF_DROID) == 0
+            // Altered: With J3D_QOL_IMPROVEMENTS the dead-victim and non-player conditions are dropped, so non-killing hits and hits on the player
+            //          also splatter and destroy the projectile. The original did so only for a killing hit on a non-player.
             #ifndef J3D_QOL_IMPROVEMENTS
                 && pThing->thingInfo.actorInfo.health == 0.0f
                 && pThing->type != SITH_THING_PLAYER
@@ -2134,6 +2143,8 @@ static bool J3DAPI sithWeapon_GenBloodSplatterEx(SithThing* pHitThing)
             {
                 // We have either vehicle that has no human exposed to outside of vehicle
                 // or some other (non-human) actor
+                // Destroy the sprite created above, which is not attached here
+                sithThing_DestroyThing(pSprite);
                 return false;
             }
         #endif
@@ -2164,7 +2175,7 @@ static bool J3DAPI sithWeapon_GenBloodSplatterEx(SithThing* pHitThing)
     size = size * 2.0f;
     end.x = size;
     end.y = size;
-    end.z = 0.8f;
+    end.z = J3D_QOL_VALUE(0.8f, 1.0f); // Altered: End alpha is 0.8, the original uses 1.0
     sithAnimate_StartAnimateSpriteSize(pSprite, &start, &end, 0.5f);
 
     return true;

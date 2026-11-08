@@ -198,13 +198,13 @@ void J3DAPI jonesInventory_UpdateIQPoints(size_t difficulty)
     {
         if ( jonesInventory_pGameStatistics->aLevelStatistic[jonesInventory_pGameStatistics->curLevelNum].numIQUpdates < 20 )
         {
-            if ( difficulty > 5 )
+            if ( difficulty > SITH_GAME_DIFFICULTY_MAX )
             {
-                difficulty = 5;
+                difficulty = SITH_GAME_DIFFICULTY_MAX;
             }
 
-            int penalty = 5 - difficulty;
-            if ( (int)(5 - difficulty + jonesInventory_pGameStatistics->aLevelStatistic[jonesInventory_pGameStatistics->curLevelNum].numIQUpdates) <= 20 )
+            int penalty = SITH_GAME_DIFFICULTY_MAX - difficulty;
+            if ( (int)(SITH_GAME_DIFFICULTY_MAX - difficulty + jonesInventory_pGameStatistics->aLevelStatistic[jonesInventory_pGameStatistics->curLevelNum].numIQUpdates) <= 20 )
             {
                 jonesInventory_pGameStatistics->aLevelStatistic[jonesInventory_pGameStatistics->curLevelNum].numIQUpdates += penalty;
             }
@@ -346,19 +346,19 @@ void J3DAPI jonesInventory_UpdateLevelStatisticTime(uint32_t elapsedSec, SithLev
 
     // Extract old hours and minutes from elapsedTime.
     uint8_t oldMinutes = pLevelStats->elapsedTime & 0xFF; // lower 8 bits
-    uint8_t oldHours   = pLevelStats->elapsedTime >> 8;   // upper 8 bits
+    uint32_t oldHours  = pLevelStats->elapsedTime >> 8;   // upper bits.
 
     // Calculate new time components from msecNewElapsed.
     uint8_t newMinutes = (msecNewElapsed / 60000) % 60;  // minutes portion
-    uint8_t newHours   = msecNewElapsed / 3600000;       // hours portion
+    uint32_t newHours  = msecNewElapsed / 3600000;       // hours portion
 
     // Sum the minutes and compute carry for hours.
     uint16_t totalMinutes = oldMinutes + newMinutes;
-    uint8_t carryHours = totalMinutes / 60;
+    uint32_t carryHours = totalMinutes / 60;
     totalMinutes %= 60;
 
     // Calculate total hours.
-    uint8_t totalHours = oldHours + newHours + carryHours;
+    uint32_t totalHours = oldHours + newHours + carryHours;
 
     // Pack the hours and minutes back into a single integer.
     pLevelStats->elapsedTime = (totalHours << 8) | totalMinutes;

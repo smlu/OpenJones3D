@@ -287,8 +287,13 @@ void J3DAPI sound_Play(uint8_t* pData, int id, int volume, int pan, int priority
         case 'Crea':
         {
             int offset = pData[0x14] + (pData[0x15] << 8);
-            // TODO: [BUG] The VOC block's 24-bit length is built from byte offset + 1 three times instead of offset + 1..3.
-            sound_StartVoc(pData + offset + 6, (((pData[offset + 1] << 8) + pData[offset + 1]) << 8) + pData[offset + 1], id, volume, pan, priority);
+            // Fixed: Read all three length bytes and exclude the rate/codec bytes already skipped by the sample pointer.
+            int blockLength = pData[offset + 1] | (pData[offset + 2] << 8) | (pData[offset + 3] << 16);
+            if ( blockLength < 2 ) {
+                return;
+            }
+
+            sound_StartVoc(pData + offset + 6, blockLength - 2, id, volume, pan, priority);
         } break;
 
         case 'PSAD':

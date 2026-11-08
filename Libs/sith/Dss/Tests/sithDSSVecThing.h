@@ -230,7 +230,7 @@ static void dssv_SetBackpack(unsigned thingIdx, unsigned numItems)
     p->numItems = numItems;
     for ( unsigned k = 0; k < 32; ++k )
     {
-        p->aBackpackItems[k].typeId = (int)(10 + k * 3);
+        p->aBackpackItems[k].typeId = (int16_t)(10 + k * 3);
         p->aBackpackItems[k].amount = dssv_RndF();
     }
 }

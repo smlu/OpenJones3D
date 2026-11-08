@@ -34,3 +34,6 @@ set_tests_properties(rdroid.Math PROPERTIES
     LABELS "unit;rdroid;math"
     TIMEOUT 60
 )
+
+add_subdirectory(../Raster/Tests Raster)
+add_subdirectory(../Primitives/Tests Primitives)

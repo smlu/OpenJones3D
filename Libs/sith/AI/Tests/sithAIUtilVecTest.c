@@ -3,6 +3,7 @@
 #include "sithAIUtilVec.h"
 
 #include "sithVecTest.h"
+#include "sithAIFixTest.h"
 
 // Original-engine test vectors for the sithAIUtil functions: waypoint tables, sight and distance, firing, path checks and
 // point creation, and the things-in-view search. The fixture in tv/sithAIUtil holds, for every case of
@@ -399,14 +400,11 @@ TEST(sithAIUtil, TestOriginalGetNextThingsInView)
 }
 
 
-// Known difference: the SITH_RAND macro computes in double precision, the original in single precision (one ulp)
 TEST(sithAIUtil, TestOriginalMakeRandPoint)
 {
-    static const char* const aKnown[] = { "MakeRandPoint_edge_rand_ulp" };
     unsigned int numFailed = sithVecTest_RunCases(&sithAIUtilVec_suite, &sithAIUtilVecTest_fixture, "MakeRandPoint_",
         sithAIUtilVecTest_aFailText, sizeof(sithAIUtilVecTest_aFailText));
-    sithVecTest_ExpectKnownDifferences(numFailed, sithAIUtilVecTest_aFailText, aKnown, (unsigned int)SITHVEC_ARRAYLEN(aKnown),
-        "SITH_RAND of the reconstruction differs from the original by one ulp for some random numbers; see tv/sithAIUtil/README.md.");
+    TEST_ASSERT_EQUAL_UINT_MESSAGE(0, numFailed, sithAIUtilVecTest_aFailText);
 }
 
 
@@ -434,14 +432,11 @@ TEST(sithAIUtil, TestOriginalSweepMoveToPathPos)
 }
 
 
-// Known difference: the SITH_RAND macro computes in double precision, the original in single precision (one ulp)
 TEST(sithAIUtil, TestOriginalMakeRoamPos)
 {
-    static const char* const aKnown[] = { "MakeRoamPos_edge_rand_ulp" };
     unsigned int numFailed = sithVecTest_RunCases(&sithAIUtilVec_suite, &sithAIUtilVecTest_fixture, "MakeRoamPos_",
         sithAIUtilVecTest_aFailText, sizeof(sithAIUtilVecTest_aFailText));
-    sithVecTest_ExpectKnownDifferences(numFailed, sithAIUtilVecTest_aFailText, aKnown, (unsigned int)SITHVEC_ARRAYLEN(aKnown),
-        "SITH_RAND of the reconstruction differs from the original by one ulp for some random numbers; see tv/sithAIUtil/README.md.");
+    TEST_ASSERT_EQUAL_UINT_MESSAGE(0, numFailed, sithAIUtilVecTest_aFailText);
 }
 
 
@@ -517,7 +512,63 @@ TEST_GROUP_RUNNER(sithAIUtil)
     RUN_TEST_CASE(sithAIUtil, TestOriginalAIResetWaypoints);
 }
 
+TEST_GROUP(sithAIUtilFix);
+
+TEST_SETUP(sithAIUtilFix)
+{
+    sithVecTest_AssertArenaPlacement();
+    sith_g_pHS = sithVec_InitHostServices();
+}
+
+TEST_TEAR_DOWN(sithAIUtilFix)
+{
+    sithAIFixTest_Shutdown();
+}
+
+TEST(sithAIUtilFix, UntestedSidesKeepStartPosition)
+{
+    // A side step adds 0.03 to minMoveDist before checking moveDist. Neither
+    // side is reached for these distances; output and goal scoring must use the
+    // original start position, never uninitialized side-position locals.
+    static const float aMaxDistance[] = { 0.25f, 0.26f };
+    for ( size_t i = 0; i < SITHVEC_ARRAYLEN(aMaxDistance); ++i )
+    {
+        for ( int withGoal = 0; withGoal <= 1; ++withGoal )
+        {
+            SithVecCase testCase = { "untested path sides", NULL, 0, NULL };
+            sithAIFixTest_Prepare(&sithAIUtilVec_suite, &testCase);
+            SithAIControlBlock* pLocal = UV_LOCAL;
+            pLocal->goalThing = withGoal ? UV_GOAL : NULL;
+            rdVector3 start = { 1.0f, 2.0f, 3.0f };
+            rdVector3 direction = { 0.0f, 1.0f, 0.0f };
+            rdVector3 output = { -100.0f, -200.0f, -300.0f };
+            SithAIUtilPathFlags flags = SITHAIUTIL_PATHFLAG_SIDES;
+            if ( withGoal ) flags |= SITHAIUTIL_PATHFLAG_PREFERGOAL;
+            TEST_ASSERT_EQUAL_INT(SITHAIUTIL_PATH_BLOCKED, sithAIUtil_CheckPathToPos(pLocal, UV_SECTOR(0), &start, flags, 0.25f, aMaxDistance[i], 0.125f, &direction, &output));
+            TEST_ASSERT_EQUAL_MEMORY(&start, &output, sizeof(output));
+            TEST_ASSERT_EQUAL_UINT(0, sithAIUtilVec_cfg.numSearches);
+            TEST_ASSERT_EQUAL_UINT(withGoal ? 2 : 0, sithVec_numFindSectorCalls);
+            TEST_ASSERT_EQUAL_UINT(withGoal ? 2 : 0, sithAIUtilVec_cfg.numLos);
+            if ( withGoal )
+            {
+                // Both goal-visibility checks consume the initialized start
+                // position. Goal is (-4,3,0), so the displacement is (5,-1,3).
+                TEST_ASSERT_FLOAT_WITHIN(0.00001f, sqrtf(35.0f), pLocal->targetDistance);
+                TEST_ASSERT_FLOAT_WITHIN(0.00001f, 5.0f / sqrtf(35.0f), pLocal->toGoal.x);
+                TEST_ASSERT_FLOAT_WITHIN(0.00001f, -1.0f / sqrtf(35.0f), pLocal->toGoal.y);
+                TEST_ASSERT_FLOAT_WITHIN(0.00001f, 3.0f / sqrtf(35.0f), pLocal->toGoal.z);
+            }
+        }
+    }
+}
+
+TEST_GROUP_RUNNER(sithAIUtilFix)
+{
+    RUN_TEST_CASE(sithAIUtilFix, UntestedSidesKeepStartPosition);
+}
+
 void SithVecTest_RunAllTests(void)
 {
     RUN_TEST_GROUP(sithAIUtil);
+    RUN_TEST_GROUP(sithAIUtilFix);
 }

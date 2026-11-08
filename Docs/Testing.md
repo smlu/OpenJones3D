@@ -227,12 +227,19 @@ startup and a stable module-level CTest entry.
 | --- | --- | --- | --- |
 | `j3dcoreTests` | `j3dcore.Macros` | Core macros | Available |
 | `rdroidTests` | `rdroid.Math` | Vector and matrix debug-source numerical fidelity | Available |
+| `rdModel3Tests` | `rdroid.Model3` | Per-draw face-flag scoping and deferred face flags | Available |
+| `rdCacheTests` | `rdroid.Cache` | Alpha comparator ordering and 16-bit batch boundaries with recorded source-face coverage | Available |
 | `stdTests` | `std` | General and deterministic Win95 services | Available |
 | `stdSystemTests` | `std.System` | Win95 windows and DirectX devices | Available |
 | `stdDisruptiveSystemTests` | `std.DisruptiveSystem` | Opt-in fullscreen/device changes | Available |
 | `soundTests` | `sound` | Deterministic lip-sync generation and lookup, AudioLib codec and header vectors | Available |
 | `smushTests` | `smush` | INSANE movie player: core, bitmap, codec, sound, stream areas and original-engine assembly vectors | Available |
-| `sithTests` | `sith` | World thing/template I/O, voice lip-sync and the cogstatus console command bounds | Available |
+| `smushSystemTests` | `smush.System` | Native configured DirectSound movie startup, synthetic frame playback and restart | Optional system suite |
+| `sithTests` | `sith` | World thing/template I/O and voice lip-sync | Available |
+| `sithEngineTests` | `sith.Engine` | Sphere/plane intersection, rotating paths and fixed-step player physics regressions | Available |
+| `jonesConfigTests` | `Jones3D.Config` | Control-scheme and keyboard-name regressions, fullscreen dialog font/icon scaling and store column layout | Available |
+| `jonesHudTests` | `Jones3D.Hud` | Inventory theme ownership, paused sound clock and fading-icon depth policy | Available |
+| `jonesConfigSystemTests` | `Jones3D.ConfigSystem` | Hidden native GDI windows, font/image-list layout, measured ListView columns and authored bitmap pixels | Optional system suite |
 | `sithThingQuetzVecTests` | `sith.ThingQuetz` | Original-engine vectors of the Quetz tail functions (world-state harness, `Libs/sith/Tests/Vec`) | Available |
 | `sithAIInstinctVecTests` | `sith.AIInstinct` | Original-engine vectors of the instinct registration (world-state harness) | Available |
 | `sithAIInstinctFnVecTests` | `sith.AIInstinctFn` | Original-engine vectors of the instinct functions (world-state harness) | Available |
@@ -289,6 +296,15 @@ See [Google's test isolation guidance](https://testing.googleblog.com/2010/12/te
 Tests that need fixed-address RTI globals or host-service assertion capture should link `j3dTestSupport` and include `#include <j3dcore/Tests/j3dTest.h>`. Use `J3DTest_Startup()` and `J3DTest_BindHostServicesGlobal(<module>_g_pHS_ADDR)` in `TEST_SETUP`, then `J3DTest_Shutdown()` in `TEST_TEAR_DOWN`, instead of duplicating OS-specific memory mapping in each test file.
 
 For header and macro tests, prefer stable behavior checks over release-specific value checks. For example, `j3d.h` macro tests should verify string/memory helpers, runtime guard behavior, platform flags, logging/assertion macros, and compile-time shape, but should not pin exact `J3D_VERSION_STRING` or `J3D_VERSION_FULL` values because those change with release numbers and suffixes.
+
+The `stdUtil` group directly tests `STD_STRTOF`, `STD_STRTOL`, `STD_STRTOUL`
+and `STD_STRCONV_RANGE_ERROR()`: return types and values, bases, signed limits,
+CRT prefix and no-digit parsing, stale errors, overflow, underflow, special
+values and single argument evaluation. The range check reads the current
+`errno`; capture it immediately after conversion, before assertions or other
+CRT calls can change it. The `sithThingParseArg` COLLIDE cases retain permissive
+decimal prefix parsing while rejecting values outside 0..3 and conversion range
+errors, and compare the complete thing to verify that rejection changes nothing.
 
 <a name="test-scope"></a>
 
@@ -655,10 +671,10 @@ with the exact checked-out source revision and configuration. The reusable test
 workflow checks out that revision, restores the build at its original workspace
 path, discovers every registered CTest suite, and runs them all with finite
 timeouts, without a test-name filter. New suites registered in the CI build are
-included automatically. Discovery also requires the existing 13 suites:
+included automatically. Discovery also requires the existing 18 suites:
 
-- `j3dcore.Macros`, `rdroid.Math`, `std`, `sound`, and `smush`
-- `sith`, `sith.DSS`, `sith.Multi`, and `sith.ThingQuetz`
+- `Jones3D.Config`, `Jones3D.Hud`, `j3dcore.Macros`, `rdroid.Math`, `rdroid.Model3`, `rdroid.Cache`, `std`, `sound`, and `smush`
+- `sith`, `sith.Engine`, `sith.DSS`, `sith.Multi`, and `sith.ThingQuetz`
 - `sith.AIInstinct`, `sith.AIInstinctFn`, `sith.AIMove`, and `sith.AIUtil`
 
 Test failures, missing required suites, and empty discovery fail the job.
@@ -885,6 +901,21 @@ existing near-axis guards. These oracles validate debug-source reconstruction,
 not execution of the original x87 binary or bitwise parity with optimized retail
 builds. They do not require game assets or invoke the original executable.
 
+The `rdroid.Model3` suite calls the actual mesh draw function with a synthetic
+closed mesh and a queued-face recorder. It verifies that per-draw flags are
+copied to queued faces without changing shared assets, rejected or clipped draws
+do not leak flags, authored and fog flags compose, and nested ordinary draws
+preserve the outer flag scope. These tests use no game assets or graphics device;
+they do not establish that a particular bad GPU frame has been reproduced in the
+running game.
+
+The `rdroid.Cache` suite compiles the actual cache source with a draw recorder.
+It checks equal and signed-zero depths, infinity/NaN ordering, full vertex and
+triangle coverage across the 65,535-vertex batch limit, ordinary face sizes, the
+existing backend index budget, and alpha-queue ordering across a split. Source
+face identities are recorded so wrapped indices cannot pass merely by remaining
+inside the submitted vertex range.
+
 The `stdMath` group inside `stdTests` checks all sine/tangent table entries
 against standalone binary fixtures, third-quadrant tangent interpolation,
 finite-angle normalization across exponent ranges, inverse-trig polynomial
@@ -927,12 +958,58 @@ and compressor state, including chained block calls.
 ### 🎞️ Smush Fixtures
 
 The `smush` suite (`smushTests`, CTest entry `smush`, labels `unit;smush;<backend>`) links the smush library and runs
-every area against the real functions of the other areas; the only mocks are the LEC services (share table, allocator,
-timer), an in-memory file system, the executable's zlib `gz*` functions (through the `Zfilio_TestSetGz` seam) and a pure C
-`IDirectSound`. Each area has its own test file and CMake list under `Libs/smush/Tests`: `SmushCoreTest.c` (SmushPlay,
-LecShare, Timer, Memory, List, Bitmap, Blit), `SmushSoundTest.c` (Engine, Mixer, Dsnd), `SmushCodecTest.c` (D_bloc16,
-D_wave, Decode), `SmushStreamTest.c` (Cdstream, Framestream, Stdfile, Stdio, Zfilio, Readauto, Frame, Pcplay) and
-`SmushAsmTest.c`.
+module fixtures against the real functions of the other areas. Fixtures replace LEC services (share table, allocator,
+timer), file I/O, the linked zlib `gz*` functions (through the `Zfilio_TestSetGz` seam) and `IDirectSound` as needed.
+Each area has its own test file and CMake list under `Libs/smush/Tests`: `SmushCoreTest.c` (LecShare, Timer, Memory,
+List, Bitmap), `SmushSoundTest.c` (Engine, Mixer, Dsnd), `SmushCodecTest.c` (D_bloc16, D_wave, Decode),
+`SmushStreamTest.c` (Cdstream, Framestream, Stdfile, Stdio, Zfilio, Readauto, Frame, Pcplay), `SmushPlayTest.c`
+(full player lifecycle) and `SmushAsmTest.c`.
+
+The `SmushZlib` group clears the gzip test seam and uses vendored zlib 1.4 with small physical files in a unique
+temporary directory. It checks plain SNM routing, compressed reads, lazy seeking, EOF and malformed streams,
+file and allocation failures, write/flush forwarding and cleanup. Expected payload bytes are independent of zlib;
+the tests require neither retail executable code nor game assets. Chained FILIO mocks continue to cover the routing
+contract separately. Production gzip I/O uses physical paths; arbitrary virtual FILIO gzip support requires an adapter.
+The plain SANM regression ends its fixture with four zero bytes and verifies its physical size and first header
+through Zfilio, Stdfile and Cdstream. The gzip opener must reject transparent input so ordinary files retain
+chained-file sizing; interpreting the final bytes of a plain movie as a gzip trailer can stall the player.
+
+The `SmushPlay` group plays the independently generated 8x8 SANM clips in
+`Libs/smush/Tests/tv/SmushPlay` through the real player, decoder, timer, file services and linked zlib.
+It compares every RGB565 pixel and callback index, requires normal end-of-stream, and checks abort, replay,
+looping and repeated startup/shutdown. Each scenario runs in a bounded child process with a fake DirectSound
+device, so a stalled player cannot hang the suite. The fixtures contain no original movie assets; their generator
+and provenance are stored alongside them. These tests do not verify device presentation or audible output.
+
+The DirectSound fixture uses the configured `tDirectSound` device type: `IDirectSound` in DX6 builds and
+`IDirectSound8` in DX9 builds. It injects startup and callback failures, lost buffers and stopped playback.
+The owned-device cases check factory failure/retry, cooperative level, primary and secondary buffer setup,
+mixer allocation and timer failure cleanup. Shared cases check bounded recovery attempts, replacement PCM,
+timer cleanup/retries, and preservation of borrowed device ownership and primary volume. These tests use
+in-memory devices and do not verify audible output.
+
+With `JONES3D_BUILD_SYSTEM_TESTS=ON`, `smush.System` uses the production player and the configured native
+DirectSound factory with a hidden owned window. It plays the authored plain and gzip clips across two
+startup/shutdown cycles, checks complete frame pixels and natural END, and requires a live secondary stream.
+Unavailable native audio services produce a capability ignore; after preflight succeeds, playback or cleanup
+failures remain failures. The suite runs serially with the `DirectSound` resource lock and a 20-second timeout.
+It requires no original executable or movie assets. The clips contain no audio packets, so this checks native
+device lifecycle and video decoding rather than audible output or display presentation.
+
+Wave packet tests poison allocations and reused headers, compare complete first
+and continuation packets, and run the real sound engine callback for all 256
+stale priority-byte values. Complete synthetic clip PCM must reach the feed
+callback; heap contents must not select an unsupported priority class.
+
+Blocky16 motion-copy tests protect both ends of the source image with inaccessible
+pages. They cover partial blocks, frame edges and overlapping copies, requiring
+zero for invalid source pixels and unchanged valid pixels and copy order. Original
+assembly vectors retain their captured bytes; only the independently identified
+invalid-read effects are adapted in expected output.
+The sequence fixtures first verify an independent original replay against every
+captured record or hash, then use its bounded replay to derive complete expected
+records through frame rotations, copies and blits. The real production decoder
+is compared against those expectations using a test-only call seam.
 
 `SmushAsmTest.c` covers the six assembly files that were translated to C (`Bloc16Asm`, `DecodeAsm`, `MixerAsm`,
 `BlitAsm`, `MemCopy`, `MemFill`) with original-engine vectors: inputs and complete results of every procedure captured by
@@ -973,6 +1050,88 @@ assignment, and wrapper failure propagation without loading game assets.
 Recalculated Euler angles use an absolute tolerance of `0.00001` degrees;
 all other serialized fields remain byte-exact against the unchanged vectors.
 The math suites separately validate the numerical evaluation and constants.
+
+The `sithThingParseArg` group covers `sithThing_ParseThingArg` argument by
+argument: every type name and its control type, collide and move types, the
+float arguments (negative values, overflow, underflow, a stale `ERANGE`), thing
+flags, lights with and without a range, resource arguments with found and
+missing resources, orientations, performance levels, and arguments the function
+leaves to the other parsers.
+
+<a name="sithengine-regressions"></a>
+
+### 🧭 Sith Engine Regressions
+
+The `sith.Engine` suite calls the reconstructed sphere/plane intersection and
+rotating-path helper directly. It covers finite contacts and misses, overlap
+flags, unordered dot/reach comparisons, NaN rotation clamping, completion flags
+and orientation callbacks. Path tests control the matrix/collision dependencies
+to isolate state and call ordering; they do not validate full moving geometry.
+Expected non-finite branches were independently verified against the original
+retail v1.2 binary (`CheckSphereHit` at `0x004AFF20`, with rotation inlined in
+`Update` at `0x004AC470`). Assertion-service slots are redirected to local fixture
+memory and bound with the shared test support. The permanent tests need no
+original executable or game data.
+
+Player-physics cases exercise the actual 50 Hz fixed-step integration with zero,
+negative and fractional accumulated time, remainder recovery and repeated thrust.
+Startup cases supply stale rate settings through a controlled configuration boundary and verify that
+20 ms integration is retained and an absent setting is not recreated. Falling cases check complete velocity,
+displacement, gravity force and remainder with drag, partial/disabled gravity and local/sector thrust.
+They also check the velocity magnitude around the falling controller's `1.1` ledge-query gate; this is not
+an end-to-end ledge-collision test. Test seams observe integration operations while retaining the real vector
+calculations, so an unexpected step or the old negative-to-unsigned loop fails without hanging the suite.
+
+AI suites also have direct fixed-behavior tests alongside the original fixtures:
+handled returns and scan restart, berserk burst boundaries, QOL hunting loudness,
+exact snake path flags, QOL mine-car state/angles/callbacks and untested side-path
+endpoints. DSS tests check frame ownership, complete replacement frame data and
+all trailing fields, including empty updates and allocation failure. Message
+lengths and frame counts are checked at valid boundaries and with malformed or
+truncated input. The original-vector adapter changes only the independently
+expected ownership events and corrected allocation-failure trailer; the `.tv`
+records remain unchanged.
+
+<a name="jonesconfig-regressions"></a>
+
+### 🎛️ Jones Configuration Regressions
+
+`Jones3D.Config` compiles the actual configuration module with controlled file,
+localization and keyboard-name services. Cases cover eight bindings, rejection
+of a ninth before it can overwrite a neighboring row or scheme name, failure
+after a reordered action row, open failure, and key-name success/failure. QOL
+builds require all action rows to be cleared on failed loads; legacy builds
+check the original nine-byte cleanup. No dialog or graphics device is opened.
+
+Dialog-layout cases replace Win32 queries with controlled window, font and
+monitor services. They cover 96, 144 and 192 DPI, native 4K and lower fullscreen
+resolutions, saved-desktop lookup failures, windowed/startup behavior, store
+image-list dimensions, measured localized columns, narrow viewports and repeated
+column updates. Desktop/dialog DPI mismatches exercise the observed 144/96-DPI
+case independently of the presentation ratio. Masked and unmasked bitmap tests
+check the complete source and destination bounds. These fixtures contain no
+retail dialog resources or images.
+
+The optional `Jones3D.ConfigSystem` suite creates hidden native Win32 controls,
+uses the host DPI and real GDI font/image-list operations, refits ListView columns
+after scrollbar changes, compares column widths against native header/item
+autosizing, and compares complete authored bitmap pixels. It does
+not switch display modes or request input focus. Its three cases run serially
+with a 30-second process timeout. Exclusive-fullscreen presentation and visual
+sharpness still require a separate interactive check.
+
+`Jones3D.Hud` uses the actual HUD menu lifecycle, sound pause/resume clock and
+channel fades with a deterministic buffer backend. Cases cover long dialog
+cancellation, repeated menus, reopening during the close animation, completed
+fades, playback failure/retry, disabled or missing themes, and HUD close/shutdown.
+The observable contract is that the menu owns its theme until stopping it before
+gameplay sound resumes; no original audio or live sound device is required.
+
+The same HUD suite exercises actual menu-item rendering with synthetic models
+and a draw recorder. It checks all four opacity animations, enabled/disabled
+alpha thresholds, stationary and scrolling exclusions, combined flags, zero
+opacity, and restoration of the original model color. Fading draws request
+disabled depth writes; the other draws carry no additional face flags.
 
 <a name="sithtemplate-fixtures"></a>
 

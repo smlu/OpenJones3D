@@ -25,7 +25,7 @@ The top-level gameplay entry point is [`sithSound_Startup()`](../../Libs/sith/De
 
 That function:
 
-1. opens the low-level sound layer through [`Sound_Open()`](../../Libs/sound/Sound.c#L314)
+1. opens the low-level sound layer through [`Sound_Open()`](../../Libs/sound/Sound.c#L434)
 2. installs the listener/thing callback bridge
 3. sets 3D globals
 4. enables runtime sound loading
@@ -55,9 +55,9 @@ The low-level runtime lives in [`Sound.c`](../../Libs/sound/Sound.c#L1).
 
 The core state machine is:
 
-- initialized by [`Sound_Initialize()`](../../Libs/sound/Sound.c#L252)
-- moved into startup by [`Sound_Startup()`](../../Libs/sound/Sound.c#L284)
-- moved into open/live state by [`Sound_Open()`](../../Libs/sound/Sound.c#L314)
+- initialized by [`Sound_Initialize()`](../../Libs/sound/Sound.c#L375)
+- moved into startup by [`Sound_Startup()`](../../Libs/sound/Sound.c#L404)
+- moved into open/live state by [`Sound_Open()`](../../Libs/sound/Sound.c#L434)
 
 `Sound_Open()` installs:
 
@@ -86,7 +86,7 @@ The core sound layer stores audio in banks and can reset either:
 - all banks
 - or only the non-static world bank
 
-That behavior is implemented in [`Sound_Reset()`](../../Libs/sound/Sound.c#L1255).
+That behavior is implemented in [`Sound_Reset()`](../../Libs/sound/Sound.c#L1376).
 
 This split mirrors the world system:
 
@@ -95,7 +95,7 @@ This split mirrors the world system:
 
 ### File Loading
 
-The low-level loader is [`Sound_Load()`](../../Libs/sound/Sound.c#L1003).
+The low-level loader is [`Sound_Load()`](../../Libs/sound/Sound.c#L1123).
 
 It is responsible for:
 
@@ -113,7 +113,7 @@ This is why gameplay and format code usually talk to `sithSound`, not directly t
 
 ### Generic Playback
 
-[`Sound_Play()`](../../Libs/sound/Sound.c#L1537) is the generic channel allocator.
+[`Sound_Play()`](../../Libs/sound/Sound.c#L1664) is the generic channel allocator.
 
 Its algorithm is:
 
@@ -132,8 +132,8 @@ This is a classic fixed-budget voice allocator. The sound system is willing to s
 
 The 3D entry points are:
 
-- [`Sound_PlayPos()`](../../Libs/sound/Sound.c#L1706)
-- [`Sound_PlayThing()`](../../Libs/sound/Sound.c#L1757)
+- [`Sound_PlayPos()`](../../Libs/sound/Sound.c#L1835)
+- [`Sound_PlayThing()`](../../Libs/sound/Sound.c#L1886)
 
 Both perform an important extra step before channel allocation:
 
@@ -147,16 +147,37 @@ That "start far, restart when near again" behavior is a major part of how Jones3
 
 Volume and pitch fades are handled by:
 
-- [`Sound_FadeVolume()`](../../Libs/sound/Sound.c#L1927)
-- [`Sound_FadePitch()`](../../Libs/sound/Sound.c#L2123)
+- [`Sound_FadeVolume()`](../../Libs/sound/Sound.c#L2056)
+- [`Sound_FadePitch()`](../../Libs/sound/Sound.c#L2252)
 
-Both use a fixed fade array and are advanced each frame by the internal fade pass at the start of [`Sound_Update()`](../../Libs/sound/Sound.c#L2357).
+Both use a fixed fade array and are advanced each frame by the internal fade pass at the start of [`Sound_Update()`](../../Libs/sound/Sound.c#L2486).
 
 Again, the engine prefers fixed runtime structures over ad-hoc allocation.
 
+### Inventory Menu Theme Ownership
+
+[`JonesHud.c`](../../Jones3D/Display/JonesHud.c) owns the inventory theme channel.
+The menu starts it after gameplay audio is paused and repeats one-shots while
+open, because the sound allocator rejects looping playback during a pause.
+Opening a GDI dialog from the menu preserves that existing gameplay pause.
+
+Closing the menu fades the theme during its closing animation, retains its
+channel handle, and releases the channel before `JonesMain_ResumeGame()`.
+`Sound_Resume()` removes the pause interval from the sound clock; a fade created
+while paused must therefore finish or be stopped before that clock resumes.
+Discarding a live theme handle at fade start can leave a fade with a future
+start time after resume, increasing its volume and allowing the theme to
+continue during gameplay. Starting a new menu session releases any stale owned
+theme; HUD close and HUD shutdown also release it. An open request during the
+current closing animation is ignored. Playback is never restarted while closing.
+
+The deterministic `Jones3D.Hud` suite runs the actual HUD lifecycle and sound
+pause/fade code against synthetic backend buffers and time, including a long
+dialog dwell followed by cancellation and repeated menu sessions.
+
 ## Per-Frame Audio Update
 
-The master update loop is [`Sound_Update()`](../../Libs/sound/Sound.c#L2357).
+The master update loop is [`Sound_Update()`](../../Libs/sound/Sound.c#L2486).
 
 Its responsibilities are:
 
@@ -171,20 +192,20 @@ Its responsibilities are:
 
 ### Listener Update
 
-The listener transform comes from the gameplay mixer, not from the sound core itself. [`Sound_Update()`](../../Libs/sound/Sound.c#L2357) simply consumes the listener vectors it is given and commits them to the backend.
+The listener transform comes from the gameplay mixer, not from the sound core itself. [`Sound_Update()`](../../Libs/sound/Sound.c#L2486) simply consumes the listener vectors it is given and commits them to the backend.
 
 ### Thing-Attached Channel Refresh
 
-For channels flagged as thing-attached, [`Sound_Update()`](../../Libs/sound/Sound.c#L2357) asks the gameplay side for current position, velocity, and environment flags through the callback installed at [`Sound_Open()`](../../Libs/sound/Sound.c#L314).
+For channels flagged as thing-attached, [`Sound_Update()`](../../Libs/sound/Sound.c#L2486) asks the gameplay side for current position, velocity, and environment flags through the callback installed at [`Sound_Open()`](../../Libs/sound/Sound.c#L434).
 
 That is how a low-level channel can follow a world thing without `Sound.c` knowing what a `SithThing` is.
 
 ### Distant Loop Restart
 
-If a far looping sound becomes audible again, [`Sound_Update()`](../../Libs/sound/Sound.c#L2357) reconstructs it by replaying either:
+If a far looping sound becomes audible again, [`Sound_Update()`](../../Libs/sound/Sound.c#L2486) reconstructs it by replaying either:
 
-- [`Sound_PlayThing()`](../../Libs/sound/Sound.c#L1757)
-- or [`Sound_PlayPos()`](../../Libs/sound/Sound.c#L1706)
+- [`Sound_PlayThing()`](../../Libs/sound/Sound.c#L1886)
+- or [`Sound_PlayPos()`](../../Libs/sound/Sound.c#L1835)
 
 and then restores the original logical handle.
 
@@ -227,7 +248,7 @@ Its responsibilities are:
 - fade out the previous sector's ambient sound
 - fade in the new sector's ambient sound
 - derive forward/up vectors from the current camera
-- pass the listener transform to [`Sound_Update()`](../../Libs/sound/Sound.c#L2357)
+- pass the listener transform to [`Sound_Update()`](../../Libs/sound/Sound.c#L2486)
 
 This is why ambient audio in Jones3D is sector-owned rather than globally zoned. The sound mixer treats sector transitions as first-class listener events.
 
@@ -369,6 +390,33 @@ Window deactivation is another possible desynchronization path. `JonesMain_OnApp
 [`sithVoice_AddSubtitle()`](../../Libs/sith/World/sithVoice.c) creates wrapped subtitle entries with start/end/display timing, while [`sithVoice_Draw()`](../../Libs/sith/World/sithVoice.c) renders the currently valid lines each frame.
 
 Subtitles are therefore a voice-layer feature, not a generic HUD text system.
+
+## Movie Audio And Display
+
+SMUSH movies use their own PCM mixer, streaming buffers and timer in
+[`Libs/smush/insane/Sound/Dsnd.c`](../../Libs/smush/insane/Sound/Dsnd.c).
+The driver shares one implementation across both configured DirectX backends:
+`J3D_DIRECTX6` uses `IDirectSound` and `DirectSoundCreate`, while `J3D_DIRECTX9`
+uses `IDirectSound8` and `DirectSoundCreate8`. The existing `tDirectSound` type
+selects the device interface; no separate DX6/DX9 movie-player files are needed.
+
+When the game supplies a device, SMUSH borrows it and owns only its secondary
+streaming buffer. It does not release that device or change its primary volume.
+When no device is supplied, SMUSH creates one with the configured factory, owns
+its primary and secondary buffers, and releases them after timer callbacks stop.
+The PCM mixing, lost-buffer recovery and cleanup paths are shared.
+
+Both backends use the `IDirectSoundBuffer` interface returned by
+`CreateSoundBuffer`. This is also the return type of the DirectSound 8 method;
+the primary buffer does not support `IDirectSoundBuffer8`. SMUSH needs none of
+the secondary buffer's additional version-8 methods. See Microsoft's
+[buffer creation contract](https://learn.microsoft.com/en-us/previous-versions/windows/desktop/ee418039(v=vs.85)).
+
+The movie decoder produces RGB565 CPU bitmaps through the `SmushPlay` callback.
+`JonesMain_IntroMovieBlt565`, `JonesMain_IntroMovieBlt555` and
+`JonesMain_IntroMovieBlt32` upload them through `stdDisplay` lock, unlock and
+update operations. Graphics backend selection therefore remains in `stdDisplay`;
+SMUSH does not create a second Direct3D device or retain display surfaces.
 
 ## Original Design And OpenJones3D Extensions
 

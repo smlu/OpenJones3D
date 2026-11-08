@@ -16,6 +16,7 @@
 #include <sith/Gameplay/sithOverlayMap.h>
 #include <sith/Gameplay/sithPlayerControls.h>
 #include <sith/Gameplay/sithPlayer.h>
+#include <sith/Main/sithMain.h>
 #include <sith/World/sithThing.h>
 #include <sith/World/sithWorld.h>
 
@@ -289,8 +290,8 @@ void J3DAPI jonesCog_EndCutscene(SithCog* pCog)
 void J3DAPI jonesCog_UpdateDifficulty(SithCog* pCog)
 {
     unsigned int difficulty = sithCogExec_PopInt(pCog);
-    if ( difficulty > 5 ) {
-        difficulty = 5;
+    if ( difficulty > SITH_GAME_DIFFICULTY_MAX ) {
+        difficulty = SITH_GAME_DIFFICULTY_MAX;
     }
 
     jonesInventory_UpdateIQPoints(difficulty);

@@ -337,7 +337,7 @@ int J3DAPI sithDSSThing_UpdateState(const SithThing* pThing, DPID toID, SithMess
                 SITHDSS_PUSHINT16(numItems);
                 for ( int16_t i = 0; i < numItems; ++i )
                 {
-                    SITHDSS_PUSHINT16((int16_t)pThing->thingInfo.itemInfo.aBackpackItems[i].typeId);
+                    SITHDSS_PUSHINT16(pThing->thingInfo.itemInfo.aBackpackItems[i].typeId);
                     SITHDSS_PUSHFLOAT(pThing->thingInfo.itemInfo.aBackpackItems[i].amount);
                 }
             }
@@ -455,10 +455,16 @@ int J3DAPI sithDSSThing_ProcessStateUpdate(const SithMessage* pMsg)
             pThing->thingInfo.itemInfo.flags = SITHDSS_POPUINT32();
             if ( (pThing->thingInfo.itemInfo.flags & SITH_ITEM_BACKPACK) != 0 )
             {
+                // Fixed: Reject a backpack item count outside of aBackpackItems, the original reads it unchecked and writes past the array.
                 // Note: numItems is serialized as 16 bits
-                pThing->thingInfo.itemInfo.numItems = SITHDSS_POPUINT16();
+                size_t numItems = SITHDSS_POPUINT16();
+                if ( numItems > STD_ARRAYLEN(pThing->thingInfo.itemInfo.aBackpackItems) )
+                {
+                    SITHLOG_ERROR("Bad backpack item count %zu in DSS::StateUpdate.\n", numItems);
+                    return 0;
+                }
 
-                // TODO: [BUG] numItems is not validated against the size of aBackpackItems and can overflow it with a malformed message
+                pThing->thingInfo.itemInfo.numItems = numItems;
                 for ( size_t i = 0; i < pThing->thingInfo.itemInfo.numItems; ++i )
                 {
                     pThing->thingInfo.itemInfo.aBackpackItems[i].typeId = SITHDSS_POPINT16();
@@ -1629,7 +1635,7 @@ int J3DAPI sithDSSThing_ProcessThingFullDescription(const SithMessage* pMsg)
     {
         SithPathMoveInfo* pPath = &pThing->moveInfo.pathMovement;
 
-        pPath->mode = SITHDSS_POPUINT16();
+        pPath->mode = SITHDSS_POPINT16();
 
         SITHDSS_POPVEC3(&pPath->vecDeltaPos);
         pPath->moveTimeRemaining = SITHDSS_POPFLOAT();
@@ -1640,10 +1646,10 @@ int J3DAPI sithDSSThing_ProcessThingFullDescription(const SithMessage* pMsg)
         SITHDSS_POPVEC3(&pPath->goalPYR);
         pPath->rotDelta = SITHDSS_POPFLOAT();
 
-        pPath->numBlockedMoves = SITHDSS_POPUINT16();
+        pPath->numBlockedMoves = SITHDSS_POPINT16();
         pPath->currentFrame    = SITHDSS_POPINT16();
-        pPath->nextFrame       = SITHDSS_POPUINT16();
-        pPath->goalFrame       = SITHDSS_POPUINT16();
+        pPath->nextFrame       = SITHDSS_POPINT16();
+        pPath->goalFrame       = SITHDSS_POPINT16();
 
         SITHDSS_POPVEC3(&pPath->curOrient.rvec);
         SITHDSS_POPVEC3(&pPath->curOrient.lvec);
@@ -1651,7 +1657,7 @@ int J3DAPI sithDSSThing_ProcessThingFullDescription(const SithMessage* pMsg)
         SITHDSS_POPVEC3(&pPath->curOrient.dvec);
         SITHDSS_POPVEC3(&pPath->rotateToPYR);
 
-        pPath->numFrames  = SITHDSS_POPUINT16();
+        pPath->numFrames  = SITHDSS_POPUINT16(); // Note: The original reads numFrames sign extended. It is kept zero extended as the frame count validation below would wrap with a negative count.
         if ( pPath->numFrames > 0 )
         {
             // Fixed: Reject corrupt path frame counts before reading past the DSS payload.

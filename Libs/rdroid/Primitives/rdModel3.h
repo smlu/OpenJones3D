@@ -50,6 +50,8 @@ void J3DAPI rdModel3_SetNodeColor(const rdModel3* pModel, rdModel3GeoSet* pGeoSe
 void J3DAPI rdModel3_SetNodeColorForNonAmputatedJoints(const rdThing* prdThing, rdModel3GeoSet* pGeoSet, const rdModel3HNode* pNode, const rdVector4* pColor);
 
 int J3DAPI rdModel3_Draw(rdThing* pThing, const rdMatrix34* pPlacement);
+// Added: Append render flags to queued faces for this draw; authored faces and callbacks remain unchanged.
+int J3DAPI rdModel3_DrawWithFlags(rdThing* pThing, const rdMatrix34* pPlacement, rdFaceFlags flags);
 void J3DAPI rdModel3_DrawHNode(const rdModel3GeoSet* prdGeo, const rdModel3HNode* pNode);
 void J3DAPI rdModel3_DrawMesh(const rdModel3Mesh* pMesh, const rdMatrix34* pOrient);
 void J3DAPI rdModel3_DrawFace(const rdFace* pFace, const rdVector3* aTransformedVertices, int bIsBackFace, const rdVector4* pMeshColor);

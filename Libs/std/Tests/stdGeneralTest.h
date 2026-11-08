@@ -26,6 +26,8 @@ void StdGeneralTest_ClearFileFailures(void);
 
 void StdGeneralTest_ResetDebugOutput(void);
 const char* StdGeneralTest_GetDebugOutput(void);
+// Asserts that the debug output is "<pExpectedFile>(<any line>): <pExpectedMessage>", i.e. ignores the source line number of the log call
+void StdGeneralTest_AssertDebugOutputMessage(const char* pExpectedFile, const char* pExpectedMessage);
 uint32_t StdGeneralTest_GetConsoleAttributes(void);
 size_t StdGeneralTest_GetConsoleWriteCount(void);
 

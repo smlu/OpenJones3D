@@ -1,4 +1,4 @@
-// Zfilio.c: the `FILIO=insane_zfilio` module (gz-compressed files through the executable's zlib) (original 0x004E9B30-0x004EA020).
+// Zfilio.c: the `FILIO=insane_zfilio` module (gz-compressed files through linked zlib) (original 0x004E9B30-0x004EA020).
 #include <smush/insane/File/Zfilio/Zfilio.h>
 #include <j3dcore/j3d.h>
 #include <j3dcore/j3dhook.h>
@@ -17,16 +17,13 @@ static int zfilio_flags = ZFILIO_FLAG_REPORT;
 static LecModule zfilio_module = { zfilio_Register, zfilio_Unregister, zfilio_Startup, zfilio_Shutdown };
 static ZfilioInterface zfilio_interface = { zfilio_open, zfilio_close, zfilio_read, zfilio_write, zfilio_tell, zfilio_seek, zfilio_flush };
 
-#ifdef J3D_LOCAL_RTI
 FilioInterface* zfilio_pFilio = NULL;
-#endif
 static MemoryDebugInterface* zfilio_pMemory;
 static LecShare* zfilio_pServices;
 static LecDebug* zfilio_pDebug;
 static void* zfilio_pParam;
 
 #if defined(J3D_TEST)
-// Added: Test-only replacement of the executable's zlib gz functions (see Zfilio.h).
 static ZfilioTestGz zfilio_test_gz;
 
 void Zfilio_TestSetGz(const ZfilioTestGz* pGz)
@@ -42,7 +39,6 @@ void Zfilio_TestSetGz(const ZfilioTestGz* pGz)
 }
 #endif
 
-// The executable's zlib is reached through trampolines (the tests replace it)
 static gzFile Zfilio_gzopen(const char* pPath, const char* pMode)
 {
 #if defined(J3D_TEST)
@@ -52,7 +48,15 @@ static gzFile Zfilio_gzopen(const char* pPath, const char* pMode)
     }
 #endif
 
-    return J3D_TRAMPOLINE_CALL(gzopen, pPath, pMode);
+    gzFile file = gzopen(pPath, pMode);
+    // Fixed: The original opener rejects transparent input so plain files keep the chained size and seek behavior.
+    if ( file && gzdirect(file) )
+    {
+        gzclose(file);
+        return NULL;
+    }
+
+    return file;
 }
 
 static int Zfilio_gzclose(gzFile file)
@@ -64,7 +68,7 @@ static int Zfilio_gzclose(gzFile file)
     }
 #endif
 
-    return J3D_TRAMPOLINE_CALL(gzclose, file);
+    return gzclose(file);
 }
 
 static int Zfilio_gzread(gzFile file, void* pBuf, unsigned int len)
@@ -76,7 +80,7 @@ static int Zfilio_gzread(gzFile file, void* pBuf, unsigned int len)
     }
 #endif
 
-    return J3D_TRAMPOLINE_CALL(gzread, file, pBuf, len);
+    return gzread(file, pBuf, len);
 }
 
 static int Zfilio_gzwrite(gzFile file, const void* pBuf, unsigned int len)
@@ -88,7 +92,7 @@ static int Zfilio_gzwrite(gzFile file, const void* pBuf, unsigned int len)
     }
 #endif
 
-    return J3D_TRAMPOLINE_CALL(gzwrite, file, pBuf, len);
+    return gzwrite(file, pBuf, len);
 }
 
 static int Zfilio_gzflush(gzFile file, int flush)
@@ -100,7 +104,7 @@ static int Zfilio_gzflush(gzFile file, int flush)
     }
 #endif
 
-    return J3D_TRAMPOLINE_CALL(gzflush, file, flush);
+    return gzflush(file, flush);
 }
 
 static long Zfilio_gzseek(gzFile file, long offset, int whence)
@@ -112,7 +116,7 @@ static long Zfilio_gzseek(gzFile file, long offset, int whence)
     }
 #endif
 
-    return J3D_TRAMPOLINE_CALL(gzseek, file, offset, whence);
+    return gzseek(file, offset, whence);
 }
 
 void Zfilio_InstallHooks(void)
@@ -135,10 +139,7 @@ void Zfilio_InstallHooks(void)
 
 void Zfilio_ResetGlobals(void)
 {
-#ifdef J3D_LOCAL_RTI
     zfilio_pFilio = NULL;
-#endif
-    // Otherwise zfilio_pFilio lives in the executable and Smush_ResetGlobals clears it
     zfilio_extCount = 1;
     memset((void*)zfilio_extensions, 0, sizeof(zfilio_extensions));
     zfilio_extensions[0] = ".gz";
@@ -171,12 +172,18 @@ int J3DAPI zfilio_Configure(int tag, ...)
                 {
                     zfilio_extensions[zfilio_extCount++] = va_arg(args, const char*);
                 }
-                else if ( zfilio_pDebug )
+                else
                 {
-                    zfilio_pDebug->Print("Too many zfilio extension set");
+                    if ( zfilio_pDebug )
+                    {
+                        zfilio_pDebug->Print("Too many zfilio extension set");
+                    }
+
+                    // Fixed: The original leaves the dropped extension argument unread when the table is full, so the next tag read takes it,
+                    //        which fails the call (and with it the remaining tags). Consume the argument
+                    (void)va_arg(args, const char*);
                 }
 
-                // TODO: [BUG] The extension argument is not consumed when the table is full, so the next tag read takes it
                 break;
 
             default:
@@ -259,8 +266,7 @@ ZfileHandle* J3DAPI zfilio_open(const char* pPath, const char* pMode)
                     pFile->pos   = 0;
 
                     // The uncompressed size is the last 4 bytes of a gz file
-                    // TODO: [BUG] The original leaves size uninitialized when the read returns fewer than 4 bytes
-                    int size = 0; // Fixed: Init to 0
+                    int size = 0; // Fixed: Init to 0, the original leaves size uninitialized when the read returns fewer than 4 bytes
                     int fh   = zfilio_pFilio->Open(pPath, pMode);
                     zfilio_pFilio->Seek(fh, -(int)sizeof(size), SEEK_END);
                     zfilio_pFilio->Read(fh, &size, sizeof(size));
@@ -391,7 +397,7 @@ int J3DAPI zfilio_seek(ZfileHandle* pFile, int offset, int whence)
         }
     }
 
-    // TODO: [BUG] Falls off the end: the original returns no value here (retail leaves pFile in eax) for gz files and for a closed handle; 0 is returned
+    // Fixed: The original falls off the end here without a return value (retail leaves pFile in eax) for gz files and for a closed handle. Return 0
     return 0;
 }
 

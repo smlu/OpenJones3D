@@ -1,5 +1,7 @@
 #ifndef STD_STDUTIL_H
 #define STD_STDUTIL_H
+#include <errno.h>
+#include <stdlib.h>
 #include <string.h>
 #include <j3dcore/j3d.h>
 #include <std/types.h>
@@ -191,6 +193,36 @@ J3D_EXTERN_C_START
 * @return true if equal, false otherwise
 */
 #define STD_EQUALMEM(dest, src, size) (memcmp((dest), (src), (size)) == 0)
+
+/**
+* Converts a string to float with strtof, resetting errno first.
+* @param str - String to convert
+* @return The converted value; preserves CRT prefix and no-digit parsing
+*/
+#define STD_STRTOF(str) (errno = 0, strtof((str), NULL))
+
+/**
+* Converts a string to long with strtol, resetting errno first.
+* @param str  - String to convert
+* @param base - Number base, or 0 to detect the base from the prefix
+* @return The converted value; preserves CRT prefix and no-digit parsing
+*/
+#define STD_STRTOL(str, base) (errno = 0, strtol((str), NULL, (base)))
+
+/**
+* Converts a string to unsigned long with strtoul, resetting errno first.
+* @param str  - String to convert
+* @param base - Number base, or 0 to detect the base from the prefix
+* @return The converted value; preserves CRT prefix and no-digit parsing
+*/
+#define STD_STRTOUL(str, base) (errno = 0, strtoul((str), NULL, (base)))
+
+/**
+* Tests whether the current errno is ERANGE. Check immediately after STD_STRTOF,
+* STD_STRTOL or STD_STRTOUL, before another CRT call can change errno.
+* @return true if errno is ERANGE, false otherwise
+*/
+#define STD_STRCONV_RANGE_ERROR() (errno == ERANGE)
 
 
 char* J3DAPI stdUtil_StringDuplicate(const char* pSource, tHostServices* pHS); // Added: From debug version

@@ -83,11 +83,16 @@ jobs:
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
         $actual = @(($listing | ConvertFrom-Json).tests | ForEach-Object { $_.name })
         $requiredSuites = @(
+          'Jones3D.Config',
+          'Jones3D.Hud',
           'j3dcore.Macros',
           'rdroid.Math',
+          'rdroid.Model3',
+          'rdroid.Cache',
           'std',
           'sound',
           'sith',
+          'sith.Engine',
           'sith.DSS',
           'sith.Multi',
           'sith.ThingQuetz',

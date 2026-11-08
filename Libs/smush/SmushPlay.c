@@ -6,6 +6,9 @@
 #include <string.h>
 
 #include <smush/insane/animplay.h>
+
+#include <std/General/stdUtil.h>
+
 #include <smush/insane/Animate/Frame.h>
 #include <smush/insane/Animate/Pcplay.h>
 #include <smush/insane/Bitmap/Bitmap.h>
@@ -91,7 +94,8 @@ int J3DAPI SmushPlay_SysStartup(HWND hwnd, tDirectSound* pDSound)
     {
         zfilio_Configure(1, ".snm", 0);
         zfilio_Configure(1, ".znm", 0);
-        dsnd_Configure(5, pDSound);
+        // Fixed: Terminate the tag list instead of reading past the supplied arguments.
+        dsnd_Configure(DSND_CONFIG_DSOUND, pDSound, DSND_CONFIG_END);
         if ( LecShare_Startup() == 0 )
         {
             if ( ((int (*)(LecBatch*, const char*))smushplay_pShare->pfn10)(smushplay_aServices, NULL) == 0 )
@@ -116,8 +120,8 @@ int J3DAPI SmushPlay_PlayMovie(const char* pFilename, int rate, int flags, int a
     char aPath[SMUSHPLAY_MAX_PATH];
     uint8_t aPalette[ANIMPLAY_PALETTE_SIZE]; // Persists between frames
 
-    // TODO: [BUG] Unbounded copy of the file name into the 260 byte buffer.
-    memcpy(aPath, pFilename, strlen(pFilename) + 1);
+    // Fixed: The original copies the whole file name into the 260 byte buffer without a bound. Truncate the name to the buffer
+    STD_STRCPY(aPath, pFilename);
 
     if ( rate == 0 )
     {
@@ -139,7 +143,8 @@ int J3DAPI SmushPlay_PlayMovie(const char* pFilename, int rate, int flags, int a
     smushplay_pSound->SetVolume(SOUND_NOTRACK, smushplay_volume);
     smushplay_pfBlit = pBlit;
     smushplay_bAbort = 0;
-    dbloc16_Configure(1, smushplay_Blit);
+    // Fixed: The decoder configuration also requires a terminating zero tag.
+    dbloc16_Configure(1, smushplay_Blit, 0);
 
     // TODO: [BUG] The original returns an uninitialized rc if the loop doesn't run (loops is -1 if 0 is passed in), here it is 0.
     int rc = 0; // Fixed: Init to 0
@@ -294,9 +299,4 @@ void Smush_ResetGlobals(void)
     MixerAsm_ResetGlobals();
     Timer_ResetGlobals();
     List_ResetGlobals();
-
-    // zfilio_pFilio is the only INSANE datum that lives in the executable (read by its zlib)
-#ifndef J3D_LOCAL_RTI
-    memset((char*)&zfilio_pFilio, 0, sizeof(zfilio_pFilio));
-#endif
 }
