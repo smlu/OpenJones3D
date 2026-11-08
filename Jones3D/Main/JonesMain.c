@@ -63,7 +63,7 @@
 #include <windowsx.h> // helper macros for win32 controls (combo-box, list-view ...)
 
 #define JONES_QUICKSAVE_TEXTSHOWTIME    1000u // 1 sec
-#define JONES_QUICKSAVE_TEXTSHOWTIMERID 1u 
+#define JONES_QUICKSAVE_TEXTSHOWTIMERID 1u
 
 #define JONES_FPSPRINT_INTERVAL  2000u // 2 sec
 
@@ -175,7 +175,6 @@ void J3DAPI JonesMain_DevDialogHandleCommand(HWND hWnd, int controlId, LPARAM lP
 void J3DAPI JonesMain_DevDialogInitDisplayDevices(HWND hDlg, JonesState* pConfig);
 void J3DAPI JonesMain_DevDialogUpdateRadioButtons(HWND hDlg, const JonesState* pState);
 bool J3DAPI JonesMain_CurDisplaySupportsBPP(const JonesDisplaySettings* pSettings, size_t bpp);
-
 
 void JonesMain_InstallHooks(void)
 {
@@ -368,7 +367,6 @@ int J3DAPI JonesMain_Startup(const char* lpCmdLine)
 
             STD_STRCPY(JonesMain_state.aCurLevelFilename, JonesMain_aCndLevelLoadInfos[JonesMain_curLevelNum].pFilename);
             bSuccess = 1;
-
         } break; // start game
 
         case JONES_STARTMODE_LOADGAME:
@@ -380,7 +378,6 @@ int J3DAPI JonesMain_Startup(const char* lpCmdLine)
 
             // Skip intro video
             bPlayIntro = false;
-
         } break; // Start game
 
         case JONES_STARTMODE_SOUNDSETTINGS:
@@ -437,7 +434,6 @@ int J3DAPI JonesMain_Startup(const char* lpCmdLine)
 
             // Startup console
             stdConsole_Startup("Debug", FOREGROUND_RED | FOREGROUND_BLUE | FOREGROUND_GREEN, /*bShowMinimized=*/0); // White text
-
         } break;
 
         case JONES_OUTPUTMODE_LOGFILE:
@@ -507,7 +503,6 @@ int J3DAPI JonesMain_Startup(const char* lpCmdLine)
         JonesMain_CloseWindow();
         return 1;
     }
-
 
     // Init save game callbacks
     sithSetOpenCallback(JonesMain_InitializeHUD);
@@ -1415,7 +1410,7 @@ void JonesMain_TogglePrintFramerate(void)
 
 int JonesMain_Open(void)
 {
-    // Changed: Look for both versions of level formats (cnd and ndy). This make sure that level progress can find ndy level file 
+    // Changed: Look for both versions of level formats (cnd and ndy). This make sure that level progress can find ndy level file
     if ( JonesMain_EnsureLevelFileEx(JonesMain_state.aCurLevelFilename, /*bFindAll=*/true, JonesMain_state.aCurLevelFilename, STD_ARRAYLEN(JonesMain_state.aCurLevelFilename)) )
     {
         return 1;
@@ -1519,7 +1514,7 @@ int J3DAPI JonesMain_EnsureLevelFile(const char* pFilename)
 int J3DAPI JonesMain_EnsureLevelFileEx(const char* pFilename, bool bFindAll, char* pFoundFilename, size_t filenameSize)
 {
     // Added overload function which searches for both cnd and ndy file in case one is not found.
-    // 
+    //
     // TODO: there is an issue when loading level from different CD*.gob file than current
     //       the insert CD dialog can be shown even if file exists on disk
 
@@ -2592,7 +2587,7 @@ void J3DAPI JonesMain_LogErrorToFile(const char* pErrorText)
     if ( pFilename )
     {
         // Changed: Use cwd path instead of install path from registry.
-        //          This subsequently fixes also fatal error where there was registry startup error 
+        //          This subsequently fixes also fatal error where there was registry startup error
         //          and accidentally trying to access shutdown registry system here to retrieve install path, which would result in assert.
         const char* pCwdPath = JonesFile_GetWorkingDirPath();
         size_t pathLen = strlen(pCwdPath);
@@ -2643,7 +2638,7 @@ void J3DAPI JonesMain_LoadSettings(StdDisplayEnvironment* pDisplayEnv, JonesStat
         STD_TOWSTR(pConfig->waPlayerName, "NoName");
     }
 
-    // Removed: rdModel3K module not supported 
+    // Removed: rdModel3K module not supported
     //if ( stdConfig_GetIntEx("graphics.katmai", 1) && rdModel3K_sub_4E2ED0() )
     //{
     //    rdModel3K_sub_4E2F00(1);
@@ -3209,7 +3204,7 @@ void J3DAPI JonesMain_DevDialogInitDisplayDevices(HWND hDlg, JonesState* pConfig
         ComboBox_SetCurSel(hCB3DDriver, 0);
     }
 
-    // Populate display mode combo box list (resolutions) and select 
+    // Populate display mode combo box list (resolutions) and select
 
     // JonesMain_curVideoMode.rasterInfo.colorInfo.bpp = 16; // Removed: This prevents getting stored 32 BPP resolution from config
 
@@ -3222,7 +3217,7 @@ void J3DAPI JonesMain_DevDialogInitDisplayDevices(HWND hDlg, JonesState* pConfig
         {
             if ( JonesMain_CurDisplaySupportsBPP(&pConfig->displaySettings, pDisplay->aModes[modeNum].rasterInfo.colorInfo.bpp) )
             {
-                 // Changed: Moved in this scope
+                 // Altered: Moved in this scope
                 if ( pDisplay->aModes[modeNum].refreshRate )
                 {
                     STD_FORMAT(std_g_genBuffer, "%dx%d %dbpp (%d Hz)", pDisplay->aModes[modeNum].rasterInfo.width, pDisplay->aModes[modeNum].rasterInfo.height, pDisplay->aModes[modeNum].rasterInfo.colorInfo.bpp, pDisplay->aModes[modeNum].refreshRate);  // Added: refresh rate fromat
@@ -3234,6 +3229,7 @@ void J3DAPI JonesMain_DevDialogInitDisplayDevices(HWND hDlg, JonesState* pConfig
 
                 int itemIdx = ComboBox_AddString(hCBDisplayMode, std_g_genBuffer);
                 ComboBox_SetItemData(hCBDisplayMode, itemIdx, modeNum);
+
                 // Select mode
                 if ( pDisplay->aModes[modeNum].rasterInfo.width == JonesMain_curVideoMode.rasterInfo.width
                     && pDisplay->aModes[modeNum].rasterInfo.height == JonesMain_curVideoMode.rasterInfo.height
@@ -3310,6 +3306,9 @@ void J3DAPI JonesMain_DevDialogUpdateRadioButtons(HWND hDlg, const JonesState* p
 
 size_t J3DAPI JonesMain_FindClosestVideoMode(const StdDisplayEnvironment* pList, const StdVideoMode* pVideoMode, size_t deviceNum)
 {
+    // Altered: Added refresh rate matching and fallback to the closest available rate when the requested rate is absent. T
+    //          This prevents the game from silently running at the first listed mode when the requested rate is unavailable.
+
     size_t   otherSizeAnyRateMode      = 0; // last matching-bpp mode; 0 when no mode has the requested bit depth
     size_t   otherSizeMatchRateMode    = 0;
     bool     bOtherSizeMatchRateFound  = false;
@@ -3339,7 +3338,7 @@ size_t J3DAPI JonesMain_FindClosestVideoMode(const StdDisplayEnvironment* pList,
                     return i; // exact
                 }
 
-                // Fixed: Fall back to the same size at the closest available rate. Nothing matched before when the
+                // Fixed: Fallback to the same size at the closest available rate. Nothing matched before when the
                 // requested rate was absent, so the game silently ran at the first listed mode.
                 const uint32_t rateDistance = pDisplay->aModes[i].refreshRate > pVideoMode->refreshRate ? pDisplay->aModes[i].refreshRate - pVideoMode->refreshRate : pVideoMode->refreshRate - pDisplay->aModes[i].refreshRate;
                 if ( !bSameSizeOtherRateFound || rateDistance < sameSizeOtherRateDistance )
@@ -3352,11 +3351,13 @@ size_t J3DAPI JonesMain_FindClosestVideoMode(const StdDisplayEnvironment* pList,
         }
     }
 
+    // Added: Return the closest matching mode if no exact match was found.
     if ( bSameSizeOtherRateFound )
     {
         return sameSizeOtherRateMode;
     }
 
+    // Added: Return the closest matching mode if no exact match was found.
     if ( bOtherSizeMatchRateFound )
     {
         return otherSizeMatchRateMode;
@@ -3383,7 +3384,7 @@ bool J3DAPI JonesMain_CurDisplaySupportsBPP(const JonesDisplaySettings* pSetting
 #elif defined(J3D_DIRECTX9)
     J3D_UNUSED(pSettings);
     if ( bpp == 24 || bpp == 32 ) return 1;
-#else 
+#else
 #error "Unsupported 3D API"
 #endif
 
