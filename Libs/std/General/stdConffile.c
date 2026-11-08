@@ -6,6 +6,8 @@
 #include <j3dcore/j3dhook.h>
 #include <std/RTI/symbols.h>
 
+#include <stdarg.h>
+
 #define STDCONFFILE_STACKSIZE 20
 #define STDCONFFILE_FILENAMESIZE 128
 
@@ -370,6 +372,36 @@ int stdConffile_ReadLine(void)
     }
 
     return 1;
+}
+
+/**
+ * @brief Reads a line and parses data based on the provided format.
+ *
+ * This function attempts to scan a line from a string and extract data according to the format specified.
+ * If an error occurs while reading the line, it returns -1; otherwise, it returns the number of successfully
+ * read arguments.
+ *
+ * @param pFormat Format string specifying how to parse the input data.
+ * @param ... Additional arguments specifying where to store parsed data.
+ *
+ * @return -1 if a read error occurs, or the number of arguments successfully parsed.
+ *
+ * @note For the `%c`, `%s`, and `%[` conversion specifiers, two arguments are expected:
+ *       a pointer to the data and the size of the receiving buffer (as an `rsize_t` type),
+ *       where the size may be 1 when using `%c` to read a single character.
+ */
+int stdConffile_ScanLine(const char* pFormat, ...)
+{
+    if ( !stdConffile_ReadLine() )
+    {
+        return -1;
+    }
+
+    va_list args;
+    va_start(args, pFormat);
+    int result = vsscanf_s(stdConffile_g_aLine, pFormat, args);
+    va_end(args);
+    return result;
 }
 
 tFileHandle stdConffile_GetFileHandle(void)
