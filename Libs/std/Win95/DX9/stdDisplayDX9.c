@@ -53,7 +53,12 @@ static LPDIRECT3DSURFACE9 stdDisplay_pFrontLockSurf = NULL; // temp lockable fro
 // Z buffer local vars
 static tVSurface stdDisplay_zBuffer;
 
-static const D3DFORMAT stdDisplay_aSupportedFormats[] = { D3DFMT_R5G6B5, D3DFMT_X8R8G8B8 };
+#ifdef J3D_QOL_IMPROVEMENTS
+static const D3DFORMAT stdDisplay_aSupportedFormats[] = { D3DFMT_X8R8G8B8 }; // Only 32 bpp
+#else
+static const D3DFORMAT stdDisplay_aSupportedFormats[] = { D3DFMT_X8R8G8B8, D3DFMT_R5G6B5 }; // Don't change order as we want to prefer 32-bit formats over 16-bit formats when available
+#endif
+
 static const D3DFORMAT stdDisplay_aDepthFormats[]     = { D3DFMT_D24S8, D3DFMT_D24X4S4, D3DFMT_D24X8, D3DFMT_D32, D3DFMT_D15S1, D3DFMT_D16 };
 static StdVideoMode* stdDisplay_pCurVideoMode         = NULL;
 static StdVideoMode stdDisplay_primaryVideoMode       = { 0 };
@@ -97,18 +102,18 @@ static D3DMULTISAMPLE_TYPE stdDisplay_msaaSampleType = D3DMULTISAMPLE_NONE;
 // DirectX 9 status table - simplified version of common errors
 static const DXStatus stdDisplay_aD3DStatusTbl[] =
 {
-    { D3D_OK,                                      "D3D_OK"                                    },
-    { D3DERR_DEVICELOST,                           "D3DERR_DEVICELOST"                         },
-    { D3DERR_DEVICENOTRESET,                       "D3DERR_DEVICENOTRESET"                     },
-    { D3DERR_NOTAVAILABLE,                         "D3DERR_NOTAVAILABLE"                       },
-    { D3DERR_OUTOFVIDEOMEMORY,                     "D3DERR_OUTOFVIDEOMEMORY"                   },
-    { D3DERR_INVALIDDEVICE,                        "D3DERR_INVALIDDEVICE"                      },
-    { D3DERR_INVALIDCALL,                          "D3DERR_INVALIDCALL"                        },
-    { D3DERR_DRIVERINVALIDCALL,                    "D3DERR_DRIVERINVALIDCALL"                  },
-    { D3DERR_WASSTILLDRAWING,                      "D3DERR_WASSTILLDRAWING"                    },
-    { E_OUTOFMEMORY,                               "E_OUTOFMEMORY"                             },
-    { E_INVALIDARG,                                "E_INVALIDARG"                              },
-    { E_FAIL,                                      "E_FAIL"                                    }
+    { D3D_OK,                                      "D3D_OK" },
+    { D3DERR_DEVICELOST,                           "D3DERR_DEVICELOST" },
+    { D3DERR_DEVICENOTRESET,                       "D3DERR_DEVICENOTRESET" },
+    { D3DERR_NOTAVAILABLE,                         "D3DERR_NOTAVAILABLE" },
+    { D3DERR_OUTOFVIDEOMEMORY,                     "D3DERR_OUTOFVIDEOMEMORY" },
+    { D3DERR_INVALIDDEVICE,                        "D3DERR_INVALIDDEVICE" },
+    { D3DERR_INVALIDCALL,                          "D3DERR_INVALIDCALL" },
+    { D3DERR_DRIVERINVALIDCALL,                    "D3DERR_DRIVERINVALIDCALL" },
+    { D3DERR_WASSTILLDRAWING,                      "D3DERR_WASSTILLDRAWING" },
+    { E_OUTOFMEMORY,                               "E_OUTOFMEMORY" },
+    { E_INVALIDARG,                                "E_INVALIDARG" },
+    { E_FAIL,                                      "E_FAIL" }
 };
 
 // Helper functions

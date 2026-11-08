@@ -31,7 +31,7 @@ static StdVideoMode* stdDisplay_pCurVideoMode   = NULL;
 static StdVideoMode stdDisplay_primaryVideoMode = { 0 };
 
 static size_t stdDisplay_numVideoModes          = 0;
-static StdVideoMode stdDisplay_aVideoModes[64]  = { 0 };
+static StdVideoMode stdDisplay_aVideoModes[J3D_QOL_VALUE(256, 64)] = { 0 };
 
 static size_t stdDisplay_curDevice;
 static StdDisplayDevice* stdDisplay_pCurDevice = NULL;
