@@ -6,6 +6,7 @@
 #include <std/General/stdUtil.h>
 #include <unity_fixture.h>
 
+#include <float.h>
 #include <math.h>
 #include <stdlib.h>
 
