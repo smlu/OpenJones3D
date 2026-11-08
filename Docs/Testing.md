@@ -227,6 +227,8 @@ startup and a stable module-level CTest entry.
 | --- | --- | --- | --- |
 | `j3dcoreTests` | `j3dcore.Macros` | Core macros | Available |
 | `rdroidTests` | `rdroid.Math` | Vector and matrix debug-source numerical fidelity | Available |
+| `rdModel3Tests` | `rdroid.Model3` | Per-draw face-flag scoping and deferred face flags | Available |
+| `rdCacheTests` | `rdroid.Cache` | Alpha comparator ordering and 16-bit batch boundaries with recorded source-face coverage | Available |
 | `stdTests` | `std` | General and deterministic Win95 services | Available |
 | `stdSystemTests` | `std.System` | Win95 windows and DirectX devices | Available |
 | `stdDisruptiveSystemTests` | `std.DisruptiveSystem` | Opt-in fullscreen/device changes | Available |
@@ -235,7 +237,9 @@ startup and a stable module-level CTest entry.
 | `smushSystemTests` | `smush.System` | Native configured DirectSound movie startup, synthetic frame playback and restart | Optional system suite |
 | `sithTests` | `sith` | World thing/template I/O and voice lip-sync | Available |
 | `sithEngineTests` | `sith.Engine` | Sphere/plane intersection, rotating paths and fixed-step player physics regressions | Available |
-| `jonesConfigTests` | `Jones3D.Config` | Control-scheme binding limits and load cleanup, keyboard-name success/failure | Available |
+| `jonesConfigTests` | `Jones3D.Config` | Control-scheme and keyboard-name regressions, fullscreen dialog font/icon scaling and store column layout | Available |
+| `jonesHudTests` | `Jones3D.Hud` | Inventory theme ownership, paused sound clock and fading-icon depth policy | Available |
+| `jonesConfigSystemTests` | `Jones3D.ConfigSystem` | Hidden native GDI windows, font/image-list layout, measured ListView columns and authored bitmap pixels | Optional system suite |
 | `sithThingQuetzVecTests` | `sith.ThingQuetz` | Original-engine vectors of the Quetz tail functions (world-state harness, `Libs/sith/Tests/Vec`) | Available |
 | `sithAIInstinctVecTests` | `sith.AIInstinct` | Original-engine vectors of the instinct registration (world-state harness) | Available |
 | `sithAIInstinctFnVecTests` | `sith.AIInstinctFn` | Original-engine vectors of the instinct functions (world-state harness) | Available |
@@ -667,9 +671,9 @@ with the exact checked-out source revision and configuration. The reusable test
 workflow checks out that revision, restores the build at its original workspace
 path, discovers every registered CTest suite, and runs them all with finite
 timeouts, without a test-name filter. New suites registered in the CI build are
-included automatically. Discovery also requires the existing 15 suites:
+included automatically. Discovery also requires the existing 18 suites:
 
-- `Jones3D.Config`, `j3dcore.Macros`, `rdroid.Math`, `std`, `sound`, and `smush`
+- `Jones3D.Config`, `Jones3D.Hud`, `j3dcore.Macros`, `rdroid.Math`, `rdroid.Model3`, `rdroid.Cache`, `std`, `sound`, and `smush`
 - `sith`, `sith.Engine`, `sith.DSS`, `sith.Multi`, and `sith.ThingQuetz`
 - `sith.AIInstinct`, `sith.AIInstinctFn`, `sith.AIMove`, and `sith.AIUtil`
 
@@ -897,6 +901,21 @@ existing near-axis guards. These oracles validate debug-source reconstruction,
 not execution of the original x87 binary or bitwise parity with optimized retail
 builds. They do not require game assets or invoke the original executable.
 
+The `rdroid.Model3` suite calls the actual mesh draw function with a synthetic
+closed mesh and a queued-face recorder. It verifies that per-draw flags are
+copied to queued faces without changing shared assets, rejected or clipped draws
+do not leak flags, authored and fog flags compose, and nested ordinary draws
+preserve the outer flag scope. These tests use no game assets or graphics device;
+they do not establish that a particular bad GPU frame has been reproduced in the
+running game.
+
+The `rdroid.Cache` suite compiles the actual cache source with a draw recorder.
+It checks equal and signed-zero depths, infinity/NaN ordering, full vertex and
+triangle coverage across the 65,535-vertex batch limit, ordinary face sizes, the
+existing backend index budget, and alpha-queue ordering across a split. Source
+face identities are recorded so wrapped indices cannot pass merely by remaining
+inside the submitted vertex range.
+
 The `stdMath` group inside `stdTests` checks all sine/tangent table entries
 against standalone binary fixtures, third-quadrant tangent interpolation,
 finite-angle normalization across exponent ranges, inverse-trig polynomial
@@ -1083,6 +1102,36 @@ of a ninth before it can overwrite a neighboring row or scheme name, failure
 after a reordered action row, open failure, and key-name success/failure. QOL
 builds require all action rows to be cleared on failed loads; legacy builds
 check the original nine-byte cleanup. No dialog or graphics device is opened.
+
+Dialog-layout cases replace Win32 queries with controlled window, font and
+monitor services. They cover 96, 144 and 192 DPI, native 4K and lower fullscreen
+resolutions, saved-desktop lookup failures, windowed/startup behavior, store
+image-list dimensions, measured localized columns, narrow viewports and repeated
+column updates. Desktop/dialog DPI mismatches exercise the observed 144/96-DPI
+case independently of the presentation ratio. Masked and unmasked bitmap tests
+check the complete source and destination bounds. These fixtures contain no
+retail dialog resources or images.
+
+The optional `Jones3D.ConfigSystem` suite creates hidden native Win32 controls,
+uses the host DPI and real GDI font/image-list operations, refits ListView columns
+after scrollbar changes, compares column widths against native header/item
+autosizing, and compares complete authored bitmap pixels. It does
+not switch display modes or request input focus. Its three cases run serially
+with a 30-second process timeout. Exclusive-fullscreen presentation and visual
+sharpness still require a separate interactive check.
+
+`Jones3D.Hud` uses the actual HUD menu lifecycle, sound pause/resume clock and
+channel fades with a deterministic buffer backend. Cases cover long dialog
+cancellation, repeated menus, reopening during the close animation, completed
+fades, playback failure/retry, disabled or missing themes, and HUD close/shutdown.
+The observable contract is that the menu owns its theme until stopping it before
+gameplay sound resumes; no original audio or live sound device is required.
+
+The same HUD suite exercises actual menu-item rendering with synthetic models
+and a draw recorder. It checks all four opacity animations, enabled/disabled
+alpha thresholds, stationary and scrolling exclusions, combined flags, zero
+opacity, and restoration of the original model color. Fading draws request
+disabled depth writes; the other draws carry no additional face flags.
 
 <a name="sithtemplate-fixtures"></a>
 

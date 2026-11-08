@@ -203,7 +203,6 @@ Controls how software-mixed positional sounds lose volume between their minimum 
 | `engine.renderer.culling.culledSectorTraversal.maxLightCollectDistance` | float | `18.0` | Default build value. Legacy/QOL-off builds use `8.0`. |
 | `engine.renderer.vfx.weapon.fireFlash.enabled` | bool | `true` | Default build value. Legacy/QOL-off builds use `false`. |
 | `engine.renderer.vfx.weapon.fireFlash.ambientThreshold` | float | `0.65` | Ambient-light threshold for projectile fire flash effects. |
-| `engine.physics.fixedTimestep` | float | `150.0` | QOL builds only. Expressed as FPS. |
 | `engine.world.static.materials.extraCapacity` | int | `32` | Extra buffer space for static world materials. |
 | `engine.world.cnd.materials.loadExternal` | bool | `true` | If enabled, the engine first tries to load a matching external material from `mat\\<name>` instead of using the material data embedded in the CND. Falls back to the CND copy if no external file is found or loading fails. |
 | `engine.world.cnd.keyframes.loadExternal` | bool | `true` | If enabled, the engine first tries to load a matching external keyframe from `3do\\key\\<name>` instead of using the keyframe data embedded in the CND. Falls back to the CND copy if no external file is found or loading fails. |
