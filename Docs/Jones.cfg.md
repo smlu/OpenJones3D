@@ -181,7 +181,7 @@ Controls how software-mixed positional sounds lose volume between their minimum 
 | `graphics.width` | int | `640` | Requested render width. |
 | `graphics.height` | int | `480` | Requested render height. |
 | `graphics.bpp` | int | `32` | Requested color depth. |
-| `graphics.refreshRate` | int | `60` | Requested refresh rate. |
+| `graphics.refreshRate` | int | `60` | Requested refresh rate. If the display doesn't offer that rate, the closest available rate at the configured size and bit depth is used. |
 | `graphics.performanceLevel` | int | `4` | Performance preset used by the display dialog. |
 | `graphics.mipmapAutoGen` | bool | `true` | DirectX 9 only. Disabled automatically if unsupported by the device. |
 | `graphics.anisotropicFilter` | bool | `true` | DirectX 9 only. Disabled automatically if unsupported by the device. |
