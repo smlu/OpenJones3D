@@ -2120,7 +2120,6 @@ void J3DAPI sithPlayerControls_ProcessSwimMove(SithThing* pThing, float secDelta
                     // no current
                     directionFactor *= 1.8f;
                 }
-            #endif // QOL & !SPEEDRUN_BUILD
 
                 // Apply underwater endurance penalty
                 pThing->thingInfo.actorInfo.endurance.msecUnderwater += (tStdTime)(enduranceRate * secDeltaTime * 1000.0f);
@@ -2131,6 +2130,8 @@ void J3DAPI sithPlayerControls_ProcessSwimMove(SithThing* pThing, float secDelta
                     sithFX_CreateBubble(pThing);
                 }
             }
+
+        #endif // QOL & !SPEEDRUN_BUILD
 
             // Calculate new swim thrust
             pPhysics->thrust.y = sithPlayerControls_CalculateThrust(pActor, directionFactor, sithPlayerControls_moveFactorNormal);
