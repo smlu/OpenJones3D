@@ -248,9 +248,9 @@ another suite would collide with it. Rename the calls instead, with a macro
 seam in the test translation unit before it includes the tested source, for
 example `#define jonesConfig_ShowMessageDialog JonesHudTest_jonesConfig_ShowMessageDialog`
 in `JonesHudTest.c`. A test that compiles a production source a second time
-renames that copy's external symbols: `jonesConfigSystemTest.c` force-includes
-`jonesConfigSystemRenames.h`, which `Jones3D/Tests/CMakeLists.txt` generates
-from `jonesConfig.c`.
+renames that copy's external symbols with `jones3d_isolate_test_sources`
+(`J3DTestSuites.cmake`): `jonesConfigSystemTest.c` force-includes
+`jonesConfigSystemCopyRenames.h`, generated from `jonesConfig.c`.
 
 | Executable | CTest entry | Coverage | Integration |
 | --- | --- | --- | --- |
