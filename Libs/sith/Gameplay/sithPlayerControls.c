@@ -887,7 +887,7 @@ void J3DAPI sithPlayerControls_ProcessLookControls(SithThing* pThing, float secD
     }
     else if ( (sithMain_g_sith_mode.debugModeFlags & SITHDEBUG_INEDITOR) != 0 )
     {
-        pPhysics->angularVelocity.yaw += sithPlayerControls_CalculateAngularVelocity(
+        pPhysics->angularVelocity.yaw += sithPlayerControls_CalculateMouseAngularVelocity(
             pActor,
             sithControl_GetAxis(SITHCONTROL_MOUSETURN),
             sithControl_GetKeyAsAxis(SITHCONTROL_MOUSETURN),
@@ -1288,13 +1288,13 @@ void J3DAPI sithPlayerControls_ProcessJewelFlyMove(SithThing* pThing, float secD
     sithCollision_DecreaseStackLevel();
 
     // Process Up/Down movement keys
-    const float thrustIncrement = 0.00019999999f;
+    const float thrustStep = sithPlayerControls_CalculateJewelFlyThrustStep(secDeltaTime);
     int bPressed;
     if ( sithControl_GetKey(SITHCONTROL_FORWARD, &bPressed) )
     {
         if ( bCanMoveUp )
         {
-            pPhysics->thrust.z = STDMATH_CLAMP(pPhysics->thrust.z + thrustIncrement * sithTime_g_fps, -1.0f, 1.0f);
+            pPhysics->thrust.z = STDMATH_CLAMP(pPhysics->thrust.z + thrustStep, -1.0f, 1.0f);
         }
         else
         {
@@ -1306,7 +1306,7 @@ void J3DAPI sithPlayerControls_ProcessJewelFlyMove(SithThing* pThing, float secD
     {
         if ( bCanMoveDown )
         {
-            pPhysics->thrust.z = STDMATH_CLAMP(pPhysics->thrust.z - thrustIncrement * sithTime_g_fps, -1.0f, 1.0f);
+            pPhysics->thrust.z = STDMATH_CLAMP(pPhysics->thrust.z - thrustStep, -1.0f, 1.0f);
         }
         else
         {
@@ -1442,11 +1442,11 @@ void J3DAPI sithPlayerControls_ProcessFlyMove(SithThing* pThing, float secDeltaT
 
         if ( sithControl_GetKey(SITHCONTROL_FORWARD, NULL) )
         {
-            pPhysics->angularVelocity.pitch = -1.0f * sithTime_g_fps;
+            pPhysics->angularVelocity.pitch = -1.0f * SITHPLAYERCONTROLS_CONTROLFPS; // Fixed: Fixed control frame rate, so pitch speed doesn't grow with FPS
         }
         else if ( sithControl_GetKey(SITHCONTROL_BACK, NULL) )
         {
-            pPhysics->angularVelocity.pitch = 1.0f * sithTime_g_fps;
+            pPhysics->angularVelocity.pitch = 1.0f * SITHPLAYERCONTROLS_CONTROLFPS; // Fixed: Fixed control frame rate, so pitch speed doesn't grow with FPS
         }
         else
         {
@@ -1535,7 +1535,7 @@ void J3DAPI sithPlayerControls_ProcessFlyMove(SithThing* pThing, float secDeltaT
             if ( (sithMain_g_sith_mode.debugModeFlags & SITHDEBUG_INEDITOR) != 0
                 && pPhysics->angularVelocity.yaw == 0.0f )
             {
-                pPhysics->angularVelocity.yaw = sithPlayerControls_CalculateAngularVelocity(
+                pPhysics->angularVelocity.yaw = sithPlayerControls_CalculateMouseAngularVelocity(
                     pActor,
                     sithControl_GetAxis(SITHCONTROL_MOUSETURN),
                     sithControl_GetKeyAsAxis(SITHCONTROL_MOUSETURN),
@@ -1901,7 +1901,7 @@ void J3DAPI sithPlayerControls_ProcessFallingMove(SithThing* pThing, float secDe
 
         if ( (sithMain_g_sith_mode.debugModeFlags & SITHDEBUG_INEDITOR) != 0 )
         {
-            pPhysics->angularVelocity.yaw += sithPlayerControls_CalculateAngularVelocity(
+            pPhysics->angularVelocity.yaw += sithPlayerControls_CalculateMouseAngularVelocity(
                 pActor,
                 sithControl_GetAxis(SITHCONTROL_MOUSETURN),
                 sithControl_GetKeyAsAxis(SITHCONTROL_MOUSETURN),
@@ -4458,7 +4458,7 @@ void J3DAPI sithPlayerControls_ProcessStillMove(SithThing* pThing, float secDelt
     //
     if ( (sithMain_g_sith_mode.debugModeFlags & SITHDEBUG_INEDITOR) != 0 )
     {
-        pPhysics->angularVelocity.yaw += sithPlayerControls_CalculateAngularVelocity(
+        pPhysics->angularVelocity.yaw += sithPlayerControls_CalculateMouseAngularVelocity(
             pActor,
             sithControl_GetAxis(SITHCONTROL_MOUSETURN),
             sithControl_GetKeyAsAxis(SITHCONTROL_MOUSETURN),
@@ -4806,7 +4806,7 @@ void J3DAPI sithPlayerControls_ProcessWalkMove(SithThing* pThing, float secDelta
     //
     if ( (sithMain_g_sith_mode.debugModeFlags & SITHDEBUG_INEDITOR) != 0 )
     {
-        pPhysics->angularVelocity.yaw += sithPlayerControls_CalculateAngularVelocity(
+        pPhysics->angularVelocity.yaw += sithPlayerControls_CalculateMouseAngularVelocity(
             pActor,
             sithControl_GetAxis(SITHCONTROL_MOUSETURN),
             sithControl_GetKeyAsAxis(SITHCONTROL_MOUSETURN),
@@ -4990,7 +4990,7 @@ void J3DAPI sithPlayerControls_ProcessRunMove(SithThing* pThing, float secDeltaT
 
     if ( (sithMain_g_sith_mode.debugModeFlags & SITHDEBUG_INEDITOR) != 0 )
     {
-        pPhysics->angularVelocity.yaw += sithPlayerControls_CalculateAngularVelocity(
+        pPhysics->angularVelocity.yaw += sithPlayerControls_CalculateMouseAngularVelocity(
             pActor,
             sithControl_GetAxis(SITHCONTROL_MOUSETURN),
             sithControl_GetKeyAsAxis(SITHCONTROL_MOUSETURN),
@@ -5130,7 +5130,7 @@ void J3DAPI sithPlayerControls_ProcessCrawlMove(SithThing* pThing, float secDelt
     //
     if ( (sithMain_g_sith_mode.debugModeFlags & SITHDEBUG_INEDITOR) != 0 )
     {
-        pPhysics->angularVelocity.yaw += sithPlayerControls_CalculateAngularVelocity(
+        pPhysics->angularVelocity.yaw += sithPlayerControls_CalculateMouseAngularVelocity(
             pActor,
             sithControl_GetAxis(SITHCONTROL_MOUSETURN),
             sithControl_GetKeyAsAxis(SITHCONTROL_MOUSETURN),

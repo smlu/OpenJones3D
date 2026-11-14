@@ -10,6 +10,19 @@
 
 J3D_EXTERN_C_START
 
+#ifdef J3D_QOL_IMPROVEMENTS
+/**
+ * Fixed frame rate used by the key turn, fly pitch and jewel fly thrust controls.
+ * The original engine scaled these controls by the current frame rate, so they got faster as FPS went up (issue #10).
+ * The controls behave as at this frame rate at any FPS; change this value to tune their speed.
+ * Also used in the speedrun build, so the control speed doesn't depend on FPS there either.
+ */
+#  define SITHPLAYERCONTROLS_FIXEDFPS   60.0f
+#  define SITHPLAYERCONTROLS_CONTROLFPS SITHPLAYERCONTROLS_FIXEDFPS
+#else
+#  define SITHPLAYERCONTROLS_CONTROLFPS sithTime_g_fps
+#endif
+
 #define sithPlayerControls_g_bCutsceneMode J3D_DECL_FAR_VAR(sithPlayerControls_g_bCutsceneMode, int)
 // extern int sithPlayerControls_g_bCutsceneMode;
 
@@ -66,7 +79,7 @@ static inline float sithPlayerControls_CalculateAcceleratedThrust(SithActorInfo*
 }
 
 /*
-* Calculates angular velocity based on actor max rotation velocity
+* Calculates key turn angular velocity based on actor max rotation velocity
 * @param pActor        - Actor info
 * @param axisDirection - Axis direction. Should be negative for right turn
 * @param keyDirection  - Key direction. Should be negative for right turn
@@ -75,9 +88,40 @@ static inline float sithPlayerControls_CalculateAcceleratedThrust(SithActorInfo*
 static inline float sithPlayerControls_CalculateAngularVelocity(SithActorInfo* pActor, float axisDirection, float keyDirection, float speedFactor)
 {
     speedFactor = J3DMIN(speedFactor, 1.0f);
-    // TODO: Replace sithTime_g_fps with fixed step, e.g. 25.0f
-    //       Would probably make sense to remove left part of the formula altogether and rely only on right part.
-    return (axisDirection * sithTime_g_fps) + (pActor->maxRotVelocity * keyDirection * speedFactor);
+    // TODO: Would probably make sense to remove left part of the formula altogether and rely only on right part.
+    // Fixed: Use the fixed control frame rate, so the key turn speed doesn't grow with FPS
+    return (axisDirection * SITHPLAYERCONTROLS_CONTROLFPS) + (pActor->maxRotVelocity * keyDirection * speedFactor);
+}
+
+/*
+* Calculates mouse turn angular velocity based on actor max rotation velocity
+* @param pActor      - Actor info
+* @param axisValue   - Mouse turn axis value read this frame. Should be negative for right turn
+* @param keyValue    - Mouse turn key axis value. Should be negative for right turn
+* @param speedFactor - Extra speed factor. Should be <= 1.0f
+* @note Keeps the original current frame rate scale, which converts the per-frame axis value to a rate.
+*/
+static inline float sithPlayerControls_CalculateMouseAngularVelocity(SithActorInfo* pActor, float axisValue, float keyValue, float speedFactor)
+{
+    speedFactor = J3DMIN(speedFactor, 1.0f);
+    return (axisValue * sithTime_g_fps) + (pActor->maxRotVelocity * keyValue * speedFactor);
+}
+
+/*
+* Calculates the jewel fly up/down thrust step, which is added to the thrust every frame while the key is held
+* @param secDeltaTime - Frame time delta
+*/
+static inline float sithPlayerControls_CalculateJewelFlyThrustStep(float secDeltaTime)
+{
+    const float thrustIncrement = 0.00019999999f;
+#ifdef SITHPLAYERCONTROLS_FIXEDFPS
+    // Fixed: Scale the step by frame time at the fixed control frame rate. The original step grew with FPS
+    //        and was added every frame, so full thrust was reached much sooner at high FPS.
+    return thrustIncrement * SITHPLAYERCONTROLS_FIXEDFPS * SITHPLAYERCONTROLS_FIXEDFPS * secDeltaTime;
+#else
+    J3D_UNUSED(secDeltaTime);
+    return thrustIncrement * sithTime_g_fps;
+#endif
 }
 
 // Helper hooking functions

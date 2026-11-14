@@ -1297,7 +1297,7 @@ void J3DAPI sithVehicleControls_ProcessJeepMove(SithThing* pThing, float secDelt
         if ( (sithMain_g_sith_mode.debugModeFlags & SITHDEBUG_INEDITOR) != 0
             && !rdVector_IsZero3(&pPhysics->velocity) )
         {
-            pPhysics->angularVelocity.yaw += sithPlayerControls_CalculateAngularVelocity(
+            pPhysics->angularVelocity.yaw += sithPlayerControls_CalculateMouseAngularVelocity(
                 &pThing->thingInfo.actorInfo,
                 sithControl_GetAxis(SITHCONTROL_MOUSETURN),
                 sithControl_GetKeyAsAxis(SITHCONTROL_MOUSETURN),
