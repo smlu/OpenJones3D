@@ -312,6 +312,7 @@ void J3DAPI rdPolyline_DrawFace(const rdThing* pLine, const rdFace* pFace, const
         pPoly->aVertIntensities[i] = pFace->extraLight;
     }
 
+    pPoly->extraLight = pFace->extraLight; // Fixed: Copy extra light to poly; OG forgot to copy extra light to poly
     if ( (rdroid_g_curRenderOptions & RDROID_USE_AMBIENT_CAMERA_LIGHT) != 0 )
     {
         rdVector_Add4Acc(&pPoly->extraLight, &rdCamera_g_pCurCamera->ambientLight);
