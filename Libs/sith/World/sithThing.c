@@ -2109,7 +2109,8 @@ SithThing* J3DAPI sithThing_GetThingParent(const SithThing* pThing)
 
 SithThing* J3DAPI sithThing_GetThingByIndex(int idx)
 {
-    if ( idx >= 0 && idx < sithWorld_g_pCurrentWorld->numThings && sithWorld_g_pCurrentWorld->aThings[idx].type )
+    if ( idx >= 0 && idx < sithWorld_g_pCurrentWorld->numThings
+        && sithWorld_g_pCurrentWorld->aThings[idx].type != SITH_THING_FREE )
     {
         return &sithWorld_g_pCurrentWorld->aThings[idx];
     }
