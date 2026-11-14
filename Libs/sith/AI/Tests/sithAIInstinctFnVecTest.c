@@ -344,9 +344,3 @@ TEST_GROUP_RUNNER(sithAIInstinctFix)
     RUN_TEST_CASE(sithAIInstinctFix, SnakeMungePassesOnlyIntendedPathFlags);
 #endif
 }
-
-void SithVecTest_RunAllTests(void)
-{
-    RUN_TEST_GROUP(sithAIInstinctFn);
-    RUN_TEST_GROUP(sithAIInstinctFix);
-}

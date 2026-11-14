@@ -1,4 +1,4 @@
-// Force-included into the sources of sithAIInstinctVecTests after Libs/sith/Tests/Vec/sithVecTestAddrs.h: redirects
+// Force-included into the sources of the sithAIInstinct suite (sithTests) after Libs/sith/Tests/Vec/sithVecTestAddrs.h: redirects
 // the engine globals the tested functions use to static storage (defined in sithAIInstinctVecTest.c).
 // The scan-restart regression exercises the real instinct-update caller.
 #ifndef SITH_AI_TESTS_SITHAIINSTINCTVECADDRS_H

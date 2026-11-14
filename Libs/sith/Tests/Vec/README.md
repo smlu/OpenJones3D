@@ -9,11 +9,11 @@ Suites:
 
 | Suite | Executable / CTest entry | Cases | Fixture and provenance |
 | --- | --- | --- | --- |
-| sithThing Quetz (`sithThing_CreateQuetzUserBlock`, `sithThing_UpdateQuetzUserBlock`) | `sithThingQuetzVecTests` / `sith.ThingQuetz` | `World/Tests/sithThingVecQuetz.h` | [World/Tests/tv/sithThingQuetz](../../World/Tests/tv/sithThingQuetz/README.md) |
-| sithAIInstinct (`sithAIInstinct_InitInstincts`, `sithAI_RegisterInstinct`, `sithAI_FindInstinct`) | `sithAIInstinctVecTests` / `sith.AIInstinct` | `AI/Tests/sithAIInstinctVec.h` | [AI/Tests/tv/sithAIInstinct](../../AI/Tests/tv/sithAIInstinct/README.md) |
-| sithAIInstinct functions (`sithAIInstinct_Listen` ... `sithAIInstinct_SnakePlaySlitherSound`, all but `InitInstincts`) | `sithAIInstinctFnVecTests` / `sith.AIInstinctFn` | `AI/Tests/sithAIInstinctFnVec.h`, `AI/Tests/sithAIInstinctFnVecCases.inc` | [AI/Tests/tv/sithAIInstinctFn](../../AI/Tests/tv/sithAIInstinctFn/README.md) |
-| sithAIMove (all functions of `sithAIMove.c`: update, turn, move, look/move positions, special moves, head tracking, Quetzalcoatl strike) | `sithAIMoveVecTests` / `sith.AIMove` | `AI/Tests/sithAIMoveVec.h`, `AI/Tests/sithAIMoveVecCases.h` | [AI/Tests/tv/sithAIMove](../../AI/Tests/tv/sithAIMove/README.md) |
-| sithAIUtil (waypoints, sight and distance, `AIFire`, path checks and point creation, things in view) | `sithAIUtilVecTests` / `sith.AIUtil` | `AI/Tests/sithAIUtilVec.h` | [AI/Tests/tv/sithAIUtil](../../AI/Tests/tv/sithAIUtil/README.md) |
+| sithThing Quetz (`sithThing_CreateQuetzUserBlock`, `sithThing_UpdateQuetzUserBlock`) | `sithTests` / `sith.ThingQuetz` | `World/Tests/sithThingVecQuetz.h` | [World/Tests/tv/sithThingQuetz](../../World/Tests/tv/sithThingQuetz/README.md) |
+| sithAIInstinct (`sithAIInstinct_InitInstincts`, `sithAI_RegisterInstinct`, `sithAI_FindInstinct`) | `sithTests` / `sith.AIInstinct` | `AI/Tests/sithAIInstinctVec.h` | [AI/Tests/tv/sithAIInstinct](../../AI/Tests/tv/sithAIInstinct/README.md) |
+| sithAIInstinct functions (`sithAIInstinct_Listen` ... `sithAIInstinct_SnakePlaySlitherSound`, all but `InitInstincts`) | `sithTests` / `sith.AIInstinctFn` | `AI/Tests/sithAIInstinctFnVec.h`, `AI/Tests/sithAIInstinctFnVecCases.inc` | [AI/Tests/tv/sithAIInstinctFn](../../AI/Tests/tv/sithAIInstinctFn/README.md) |
+| sithAIMove (all functions of `sithAIMove.c`: update, turn, move, look/move positions, special moves, head tracking, Quetzalcoatl strike) | `sithTests` / `sith.AIMove` | `AI/Tests/sithAIMoveVec.h`, `AI/Tests/sithAIMoveVecCases.h` | [AI/Tests/tv/sithAIMove](../../AI/Tests/tv/sithAIMove/README.md) |
+| sithAIUtil (waypoints, sight and distance, `AIFire`, path checks and point creation, things in view) | `sithTests` / `sith.AIUtil` | `AI/Tests/sithAIUtilVec.h` | [AI/Tests/tv/sithAIUtil](../../AI/Tests/tv/sithAIUtil/README.md) |
 
 ### How It Works
 
@@ -22,7 +22,7 @@ The case header of a suite and the headers of this directory are compiled twice 
 - by a temporary capture harness (`SITHVEC_HARNESS` defined): a DLL injected into the suspended retail v1.0
   `Indy3D.exe` that calls the original functions at their v1.0 addresses (`SITHVEC_FN(fn)` is
   `((fn##_TYPE)fn##_ADDR)`) and writes the fixture, and
-- by the suite's test executable (`SITHVEC_FN(fn)` is `fn`), which runs the reconstructed functions and compares
+- by the suite in `sithTests` (`SITHVEC_FN(fn)` is `fn`), which runs the reconstructed functions and compares
   their records with the fixture. Normal test runs never start `Indy3D.exe`.
 
 | File | Contents |
@@ -31,8 +31,7 @@ The case header of a suite and the headers of this directory are compiled twice 
 | `sithVecWorld.h` | The arena (`SithVecArena`: world, sectors, things, templates, AI classes and control blocks, AI frames, puppets, instinct registry, allocation pool, suite scratch), its builder, the lookup stubs and their verification, the shared stubs (`stdMemory_Malloc`/`Free`, `rand`, `sithCollision_FindSectorInRadius`, `sithCollision_MoveThing`, math helpers) and the case runner |
 | `sithVecTest.h` | Test side: fixture loading, record comparison, failure description, `SITHVEC_VERBOSE=1` record dump, known differences |
 | `sithVecTestAddrs.h` | Force-included into the test sources: redirect helpers for far engine globals, `rand` replaced by the stub |
-| `sithVecTestRunner.c` | Shared `main` |
-| `CMakeLists.txt` | `sith_add_vec_test()` and the suite registrations |
+| `sith_vec.cmake` | `sith_add_vec_suite()` and the suite registrations, included by `Libs/sith/Tests/CMakeLists.txt` |
 
 A case function sets up its inputs, calls `sithVec_Begin` (reference image of the watched memory), calls the tested
 function and, when it calls it several times (frames), `sithVec_Checkpoint` after every call. A record holds the
@@ -85,10 +84,12 @@ engine logic seams them to the shared math stubs, which both sides compute ident
    - `<suite>VecAddrs.h`: `SITHVEC_REDIRECT_DECL` and `#define <global>_ADDR SITHVEC_REDIRECT_ADDR(<global>)` for
      each far global the tested code touches; define the storage in the test source with `SITHVEC_REDIRECT_DEFINE`.
    - `<module>VecTested.c`: `#include "../<module>.c"` plus accessors for the file statics the cases need (unless an
-     existing wrapper of the same executable already compiles that source).
+     existing wrapper of the same suite already compiles that source).
    - `<suite>VecTest.c`: a Unity group per suite with `TestFixtureCoversAllCases` and one `TestOriginal<Function>`
-     per function prefix (`sithVecTest_RunCases`), and `SithVecTest_RunAllTests`.
-   - Register it in `CMakeLists.txt` with `sith_add_vec_test()` (own executable and CTest entry `sith.<Area>`).
+     per function prefix (`sithVecTest_RunCases`).
+   - Register it in `sith_vec.cmake` with `sith_add_vec_suite()` and add its CTest entry `sith.<Area>` in
+     `Libs/sith/Tests/CMakeLists.txt`. The suite runs in `sithTests`; its sources get their own names, so it can
+     compile the same production sources as other suites with its own seams.
 3. Capture: the harness source is kept outside the repository (see the fixture READMEs for its hash). It includes the
    suite header and seams file named on its command line, patches the seams and `rand`, verifies the lookups, runs
    every case with both fills and writes `out\<suite>.tv` next to the DLL:

@@ -1,7 +1,7 @@
 // Shared core of the sithMulti original-engine test vectors.
 //
 // Like the DSS vectors (sithDSSVec.h) this header is compiled by the capture harness (DSSV_HARNESS defined, injected
-// into the retail v1.0 Indy3D.exe, runs the ORIGINAL functions at their v1.0 addresses) and by sithMultiTests (runs
+// into the retail v1.0 Indy3D.exe, runs the ORIGINAL functions at their v1.0 addresses) and by the sithMulti suite of sithTests (runs
 // the reconstructed functions). It reuses the synthetic world, the record format and the message stub of the DSS
 // vectors and adds the players, the module state of sithMulti and the stubs of the engine functions sithMulti calls
 // (sithMultiSeams.def).

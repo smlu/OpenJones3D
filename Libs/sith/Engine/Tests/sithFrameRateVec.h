@@ -338,6 +338,10 @@ void J3DAPI sithFrameRateVec_Execute(SithCog* pCog)
 
 #ifdef sithWeapon_UpdateActorWeapon
 #  undef sithWeapon_UpdateActorWeapon // sithFrameRateTestSeams.h stubs it for sithPlayer.c; the weapon cases run the real one
+#  ifdef sithEngineSuite_RENAMES_H
+     // In sithTests the engine tests' copy of sithWeapon.c is renamed (sithEngineSuiteRenames.h)
+#    define sithWeapon_UpdateActorWeapon sithEngineSuite_sithWeapon_UpdateActorWeapon
+#  endif
 void J3DAPI sithWeapon_UpdateActorWeapon(SithThing* pThing); // sithWeapon.h declared it under the stub's name
 #endif
 

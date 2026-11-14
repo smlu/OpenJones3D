@@ -569,9 +569,3 @@ TEST_GROUP_RUNNER(sithAIUtilFix)
 {
     RUN_TEST_CASE(sithAIUtilFix, UntestedSidesKeepStartPosition);
 }
-
-void SithVecTest_RunAllTests(void)
-{
-    RUN_TEST_GROUP(sithAIUtil);
-    RUN_TEST_GROUP(sithAIUtilFix);
-}

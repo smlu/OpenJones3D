@@ -3,7 +3,7 @@
 // This header is compiled twice from the same source:
 //  * by the capture harness (DSSV_HARNESS defined), which is injected into the retail v1.0 Indy3D.exe and runs the
 //    ORIGINAL functions at their v1.0 addresses, and
-//  * by sithDSSTests (Libs/sith/Dss/Tests), which runs the reconstructed functions.
+//  * by the DSS suites of sithTests (Libs/sith/Dss/Tests), which runs the reconstructed functions.
 // Both build the same synthetic engine state, route the engine calls the DSS functions make through the same stubs
 // and produce a byte record per case. The harness stores the records in the .tv fixtures, the tests compare them.
 //

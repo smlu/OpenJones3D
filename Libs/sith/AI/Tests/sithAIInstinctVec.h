@@ -1,4 +1,4 @@
-// Cases of the sithAIInstinct vectors, shared by the capture harness and sithAIInstinctVecTests. See
+// Cases of the sithAIInstinct vectors, shared by the capture harness and the sithAIInstinct suite of sithTests. See
 // tv/sithAIInstinct/README.md.
 //
 // sithAIInstinct_InitInstincts registers the engine's instincts through sithAI_RegisterInstinct into the instinct

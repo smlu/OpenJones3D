@@ -1,4 +1,4 @@
-// Force-included into the sources of sithAIInstinctFnVecTests after Libs/sith/Tests/Vec/sithVecTestAddrs.h: redirects
+// Force-included into the sources of the sithAIInstinctFn suite (sithTests) after Libs/sith/Tests/Vec/sithVecTestAddrs.h: redirects
 // the engine globals the instinct functions use to static storage (defined in sithAIInstinctFnVecTest.c).
 #ifndef SITH_AI_TESTS_SITHAIINSTINCTFNVECADDRS_H
 #define SITH_AI_TESTS_SITHAIINSTINCTFNVECADDRS_H

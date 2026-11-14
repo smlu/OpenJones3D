@@ -1,4 +1,4 @@
-// Force-included into the sources of sithThingQuetzVecTests after Libs/sith/Tests/Vec/sithVecTestAddrs.h: redirects
+// Force-included into the sources of the sithThingQuetz suite (sithTests) after Libs/sith/Tests/Vec/sithVecTestAddrs.h: redirects
 // the engine globals the Quetz functions use to static storage (defined in sithThingQuetzVecTest.c).
 #ifndef SITH_WORLD_TESTS_SITHTHINGQUETZVECADDRS_H
 #define SITH_WORLD_TESTS_SITHTHINGQUETZVECADDRS_H

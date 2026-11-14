@@ -1,4 +1,4 @@
-// Force-included into the sources of sithAIUtilVecTests after Libs/sith/Tests/Vec/sithVecTestAddrs.h: redirects the
+// Force-included into the sources of the sithAIUtil suite (sithTests) after Libs/sith/Tests/Vec/sithVecTestAddrs.h: redirects the
 // engine globals the tested sithAIUtil functions use to static storage (defined in sithAIUtilVecTest.c).
 #ifndef SITH_AI_TESTS_SITHAIUTILVECADDRS_H
 #define SITH_AI_TESTS_SITHAIUTILVECADDRS_H

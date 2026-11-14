@@ -1,4 +1,4 @@
-// Cases of the sithAIMove vectors, shared by the capture harness and sithAIMoveVecTests. See
+// Cases of the sithAIMove vectors, shared by the capture harness and the sithAIMove suite of sithTests. See
 // tv/sithAIMove/README.md.
 //
 // A case builds a small AI world (an AI actor with its control block, a target, a goal thing, sectors, a puppet class

@@ -1,4 +1,4 @@
-// Cases of the sithAIUtil vectors, shared by the capture harness and sithAIUtilVecTests. See
+// Cases of the sithAIUtil vectors, shared by the capture harness and the sithAIUtil suite of sithTests. See
 // tv/sithAIUtil/README.md.
 //
 // The cases build an AI actor (thing 0) with its control block and class, a target, a goal and a flee-from thing,

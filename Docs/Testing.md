@@ -250,7 +250,10 @@ example `#define jonesConfig_ShowMessageDialog JonesHudTest_jonesConfig_ShowMess
 in `JonesHudTest.c`. A test that compiles a production source a second time
 renames that copy's external symbols with `jones3d_isolate_test_sources`
 (`J3DTestSuites.cmake`): `jonesConfigSystemTest.c` force-includes
-`jonesConfigSystemCopyRenames.h`, generated from `jonesConfig.c`.
+`jonesConfigSystemCopyRenames.h`, generated from `jonesConfig.c`. The sith
+suites, which compile the same sources with different seams, each rename
+everything their own sources define the same way (see
+`Libs/sith/Tests/CMakeLists.txt`).
 
 | Executable | CTest entry | Coverage | Integration |
 | --- | --- | --- | --- |
@@ -259,16 +262,8 @@ renames that copy's external symbols with `jones3d_isolate_test_sources`
 | `stdTests` | `std`, `std.System`, `std.DisruptiveSystem` | General and deterministic Win95 services; system suites: Win95 windows and DirectX devices; disruptive suites: opt-in fullscreen/device changes | Available |
 | `soundTests` | `sound` | Deterministic lip-sync generation and lookup, AudioLib codec and header vectors | Available |
 | `smushTests` | `smush`, `smush.System` | INSANE movie player: core, bitmap, codec, sound, stream areas and original-engine assembly vectors; system suite: native configured DirectSound movie startup, synthetic frame playback and restart | Available |
-| `sithTests` | `sith` | World thing/template I/O and voice lip-sync | Available |
-| `sithEngineTests` | `sith.Engine` | Sphere/plane intersection, rotating paths, fixed-step player physics and frame-rate regressions (with original-engine vectors of the COG timing and per-frame damage) | Available |
+| `sithTests` | `sith`, `sith.Engine`, `sith.ThingQuetz`, `sith.AIInstinct`, `sith.AIInstinctFn`, `sith.AIMove`, `sith.AIUtil`, `sith.DSS`, `sith.Multi` | World thing/template I/O and voice lip-sync; Sphere/plane intersection, rotating paths, fixed-step player physics and frame-rate regressions (with original-engine vectors of the COG timing and per-frame damage); Original-engine vectors of the Quetz tail functions (world-state harness, `Libs/sith/Tests/Vec`); Original-engine vectors of the instinct registration (world-state harness); Original-engine vectors of the instinct functions (world-state harness); Original-engine vectors of AI movement and turning (world-state harness); Original-engine vectors of the AI utility functions: waypoints, sight, firing, path checks (world-state harness); Original-engine vectors of the DSS and DSS thing save/network serialization functions; Original-engine vectors of multiplayer state and synchronization | Available |
 | `jones3dTests` | `Jones3D.Main`, `Jones3D.Config`, `Jones3D.Hud`, `Jones3D.ConfigSystem` | Closest video mode lookup; control-scheme and keyboard-name regressions, fullscreen dialog font/icon scaling and store column layout; inventory theme ownership, paused sound clock and fading-icon depth policy; system suite: hidden native GDI windows, font/image-list layout, measured ListView columns and authored bitmap pixels | Available |
-| `sithThingQuetzVecTests` | `sith.ThingQuetz` | Original-engine vectors of the Quetz tail functions (world-state harness, `Libs/sith/Tests/Vec`) | Available |
-| `sithAIInstinctVecTests` | `sith.AIInstinct` | Original-engine vectors of the instinct registration (world-state harness) | Available |
-| `sithAIInstinctFnVecTests` | `sith.AIInstinctFn` | Original-engine vectors of the instinct functions (world-state harness) | Available |
-| `sithAIMoveVecTests` | `sith.AIMove` | Original-engine vectors of AI movement and turning (world-state harness) | Available |
-| `sithAIUtilVecTests` | `sith.AIUtil` | Original-engine vectors of the AI utility functions: waypoints, sight, firing, path checks (world-state harness) | Available |
-| `sithDSSTests` | `sith.DSS` | Original-engine vectors of the DSS and DSS thing save/network serialization functions | Available |
-| `sithMultiTests` | `sith.Multi` | Original-engine vectors of multiplayer state and synchronization | Available |
 
 Name CTest entries after the owning module when the executable covers that whole module, such as `std`. When an executable covers only a subarea, use the owning module first and a short area name second, separated by a dot, such as `j3dcore.Macros`. Use labels that match the owning module, such as `j3dcore`, `std`, `rdroid`, `sith`, `sound`, or `Jones3D`.
 
@@ -899,7 +894,7 @@ build. See [Microsoft's AddressSanitizer guidance](https://learn.microsoft.com/e
 
 ### 🧩 Additional Module Commands
 
-The `rdroidTests`, `soundTests`, `smushTests`, `sithTests`, and `sithDSSTests` targets are available and
+The `rdroidTests`, `soundTests`, `smushTests` and `sithTests` targets are available and
 included in a full build. Use the matching target and CTest entry for a focused rebuild and run:
 
 ```bat
@@ -911,7 +906,6 @@ cmake --build build\codex\dx9-win32 --config Debug --target smushTests
 ctest --test-dir build\codex\dx9-win32 -C Debug --output-on-failure -R "^smush$"
 cmake --build build\codex\dx9-win32 --config Debug --target sithTests
 ctest --test-dir build\codex\dx9-win32 -C Debug --output-on-failure -R "^sith$"
-cmake --build build\codex\dx9-win32 --config Debug --target sithDSSTests
 ctest --test-dir build\codex\dx9-win32 -C Debug --output-on-failure -R "^sith\.DSS$"
 ```
 
@@ -964,8 +958,8 @@ and that small per-frame rotation steps add up. Reference provenance belongs in 
 not in test names or binary-address comments. Normal runs do not require the
 original executable.
 
-The fixture descriptions below cover the available `soundTests`, `smushTests`,
-`sithTests`, and `sithDSSTests` targets.
+The fixture descriptions below cover the available `soundTests`, `smushTests` and
+`sithTests` targets.
 
 <a name="audiolib-fixtures"></a>
 

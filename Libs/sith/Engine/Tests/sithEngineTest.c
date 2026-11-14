@@ -37,22 +37,3 @@ void SithEngineTest_Shutdown(void)
     J3DTest_Shutdown();
     TEST_ASSERT_EQUAL_INT_MESSAGE(0, assertCount, "Unexpected engine assertion");
 }
-
-void TEST_sithFrameRate_GROUP_RUNNER(void);
-void TEST_sithIntersect_GROUP_RUNNER(void);
-void TEST_sithPathMove_GROUP_RUNNER(void);
-void TEST_sithPhysics_GROUP_RUNNER(void);
-
-static void SithEngineTest_RunAllTests(void)
-{
-    TEST_sithFrameRate_GROUP_RUNNER();
-    TEST_sithIntersect_GROUP_RUNNER();
-    TEST_sithPathMove_GROUP_RUNNER();
-    TEST_sithPhysics_GROUP_RUNNER();
-}
-
-int main(int argc, const char* argv[])
-{
-    setvbuf(stdout, NULL, _IONBF, 0);
-    return UnityMain(argc, argv, SithEngineTest_RunAllTests);
-}

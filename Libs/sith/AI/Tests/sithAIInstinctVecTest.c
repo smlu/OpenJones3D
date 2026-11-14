@@ -132,8 +132,3 @@ TEST_GROUP_RUNNER(sithAIInstinct)
     RUN_TEST_CASE(sithAIInstinct, TestOriginalFindInstinct);
     RUN_TEST_CASE(sithAIInstinct, HandledInstinctRestartsScan);
 }
-
-void SithVecTest_RunAllTests(void)
-{
-    RUN_TEST_GROUP(sithAIInstinct);
-}

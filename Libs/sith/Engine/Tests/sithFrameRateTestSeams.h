@@ -26,6 +26,7 @@ void J3DAPI sithFrameRateVec_UpdateLipSync(SithThing* pThing);
 #define sithVoice_UpdateLipSync sithFrameRateVec_UpdateLipSync
 
 void J3DAPI sithFrameRateVec_UpdateActorWeapon(SithThing* pThing);
+#undef sithWeapon_UpdateActorWeapon // The test executable renames the engine tests' copy of sithWeapon.c
 #define sithWeapon_UpdateActorWeapon sithFrameRateVec_UpdateActorWeapon
 
 #endif

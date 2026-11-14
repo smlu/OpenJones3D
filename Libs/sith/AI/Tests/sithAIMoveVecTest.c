@@ -198,11 +198,3 @@ TEST_GROUP_RUNNER(sithAIMoveFix)
     RUN_TEST_CASE(sithAIMoveFix, MineCarPreservesBusyActorStatus);
 }
 #endif
-
-void SithVecTest_RunAllTests(void)
-{
-    RUN_TEST_GROUP(sithAIMove);
-#ifdef J3D_QOL_IMPROVEMENTS
-    RUN_TEST_GROUP(sithAIMoveFix);
-#endif
-}

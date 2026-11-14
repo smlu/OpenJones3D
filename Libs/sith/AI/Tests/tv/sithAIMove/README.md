@@ -5,7 +5,7 @@
 values, the engine calls they made and every byte they changed in a synthetic AI world, call by call. It was captured
 by executing the functions inside the retail `Indy3D.exe` with the world-state vector harness
 ([Libs/sith/Tests/Vec](../../../Tests/Vec/README.md)). The fixture is consumed by `sithAIMoveVecTest.c`
-(`sithAIMoveVecTests`, CTest `sith.AIMove`), which never launches `Indy3D.exe`.
+(`sithTests`, CTest `sith.AIMove`), which never launches `Indy3D.exe`.
 
 ### Reference
 

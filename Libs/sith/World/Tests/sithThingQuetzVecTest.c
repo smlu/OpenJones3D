@@ -59,8 +59,3 @@ TEST_GROUP_RUNNER(sithThingQuetz)
     RUN_TEST_CASE(sithThingQuetz, TestOriginalCreateQuetzUserBlock);
     RUN_TEST_CASE(sithThingQuetz, TestOriginalUpdateQuetzUserBlock);
 }
-
-void SithVecTest_RunAllTests(void)
-{
-    RUN_TEST_GROUP(sithThingQuetz);
-}

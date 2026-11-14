@@ -16,8 +16,5 @@ target_link_libraries(${PROJECT_NAME} PUBLIC rdroid)
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCES} ${HEADERS})
 
 if (JONES3D_BUILD_TESTS)
-    add_subdirectory(Tests)
-    add_subdirectory(Engine/Tests)
-    add_subdirectory(Dss/Tests)
-    add_subdirectory(Tests/Vec)
+    add_subdirectory(Tests) # All sith test suites, see Tests/CMakeLists.txt
 endif()

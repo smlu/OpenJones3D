@@ -1,4 +1,4 @@
-// Cases of the sithAIInstinct function vectors, shared by the capture harness and sithAIInstinctFnVecTests. See
+// Cases of the sithAIInstinct function vectors, shared by the capture harness and the sithAIInstinctFn suite of sithTests. See
 // tv/sithAIInstinctFn/README.md.
 //
 // A case builds an AI control block (thing 0 is the AI actor, things 1.. are the player, the target, the goal, the thing

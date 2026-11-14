@@ -1,5 +1,5 @@
 // Cases of the sithThing Quetz tail vectors (sithThing_CreateQuetzUserBlock, sithThing_UpdateQuetzUserBlock),
-// shared by the capture harness and sithThingQuetzVecTests. See tv/sithThingQuetz/README.md.
+// shared by the capture harness and the sithThingQuetz suite of sithTests. See tv/sithThingQuetz/README.md.
 //
 // A case builds a Quetz head (thing 0) with a chain of attached things (tail segments and other attachments) and
 // either calls sithThing_CreateQuetzUserBlock once or runs a script of frames: before every frame the head is turned
