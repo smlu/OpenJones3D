@@ -1,8 +1,10 @@
 #ifndef SITH_SITHTHING_H
 #define SITH_SITHTHING_H
+#include <math.h>
 #include <j3dcore/j3d.h>
 #include <rdroid/types.h>
 #include <sith/types.h>
+#include <sith/Gameplay/sithTime.h>
 #include <sith/Main/sithMain.h>
 #include <sith/RTI/addresses.h>
 
@@ -69,6 +71,27 @@ void J3DAPI sithThing_DestroyThing(SithThing* pThing);
 
 float J3DAPI sithThing_DamageThing(SithThing* pThing, const SithThing* pPurpetrator, float damage, SithDamageType hitType);
 float J3DAPI sithThing_ScaleCombatDamage(const SithThing* pThing, SithThing* pHitThing);
+
+/**
+ * Damages thing with continuous damage at damagePerSec, like drowning or IMP overheat.
+ * Deals the whole damage points that fall into the current frame on the game clock: floor(damagePerSec x game time)
+ * minus floor(damagePerSec x game time at the start of the frame). The damage adds up to damagePerSec x time (+-1 point)
+ * at any frame rate without keeping any state, while per-frame damage would lose the fraction sithThing_DamageThing drops.
+ * Call it once per frame from a per-frame update, as it deals the damage of the whole current frame.
+ * @param pThing       - Thing to damage
+ * @param pPurpetrator - Thing that deals the damage
+ * @param damagePerSec - Damage per second
+ * @param hitType      - Damage type
+ * @return Damage dealt, as returned by sithThing_DamageThing
+ * @note new function
+ */
+static inline float sithThing_DamageThingAtRate(SithThing* pThing, const SithThing* pPurpetrator, float damagePerSec, SithDamageType hitType)
+{
+    const double msecNow  = (double)sithTime_g_msecGameTime;
+    const double msecPrev = msecNow - (double)sithTime_g_frameTime;
+    const float damage    = (float)(floor((double)damagePerSec * msecNow / 1000.0) - floor((double)damagePerSec * msecPrev / 1000.0));
+    return sithThing_DamageThing(pThing, pPurpetrator, damage, hitType);
+}
 
 int J3DAPI sithThing_AllocWorldThings(SithWorld* pWorld, size_t numThings);
 void J3DAPI sithThing_FreeWorldThings(SithWorld* pWorld);

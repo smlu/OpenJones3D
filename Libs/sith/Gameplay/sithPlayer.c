@@ -303,12 +303,16 @@ void J3DAPI sithPlayer_Update(SithPlayer* pPlayer, float secDetaTime)
                 if ( sithPlayer_g_impState > 180.0f )
                 {
                     sithPlayer_g_impState = 180.0f;
-                    float damage = sithGetIMPDamageScalar() * secDetaTime * 40.0f;
-                    // Fixed: Set min damage to 1.0f as sithThing_DamageThing cuts off damages lower than 1.0f. ( >40 fps)
                 #ifndef J3D_SPEEDRUN_BUILD
-                    damage = J3DMAX(damage, 1.0f);
-                #endif
+                    // Fixed: Deal the overheat damage at its rate on the game clock. The original dealt rate x frame time every
+                    //        frame and sithThing_DamageThing dropped the fraction, so it did no damage when a frame's damage was
+                    //        below 1 (above 40 FPS on the hardest difficulty), and the previous fix of at least 1 damage per frame
+                    //        made the damage grow with FPS (issue #48).
+                    sithThing_DamageThingAtRate(pThing, pThing, sithGetIMPDamageScalar() * 40.0f, SITH_DAMAGE_IMP_BLAST);
+                #else
+                    float damage = sithGetIMPDamageScalar() * secDetaTime * 40.0f;
                     sithThing_DamageThing(pThing, pThing, damage, SITH_DAMAGE_IMP_BLAST);
+                #endif
                 }
 
             } break;
@@ -325,8 +329,14 @@ void J3DAPI sithPlayer_Update(SithPlayer* pPlayer, float secDetaTime)
         if ( sithPlayer_g_impState >= 180.0f )
         {
             sithPlayer_g_impState = 180.0f;
-            float damage = sithGetIMPDamageScalar() * secDetaTime * 180.0f;;
+        #ifndef J3D_SPEEDRUN_BUILD
+            // Fixed: Deal the Aetherium damage at its rate on the game clock, as sithThing_DamageThing drops the fraction
+            //        of per-frame damage (issue #48)
+            sithThing_DamageThingAtRate(pThing, pThing, sithGetIMPDamageScalar() * 180.0f, SITH_DAMAGE_IMP_BLAST);
+        #else
+            float damage = sithGetIMPDamageScalar() * secDetaTime * 180.0f;
             sithThing_DamageThing(pThing, pThing, damage, SITH_DAMAGE_IMP_BLAST);
+        #endif
         }
     }
     else if ( sithPlayer_g_impState != 0.0f && (pThing->flags & (SITH_TF_DYING | SITH_TF_DESTROYED)) == 0 )

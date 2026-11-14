@@ -132,8 +132,15 @@ void J3DAPI sithActor_Update(SithThing* pThing, unsigned int msecDeltaTime)
             pThing->thingInfo.actorInfo.endurance.msecUnderwater += msecDeltaTime;
             if ( pThing->thingInfo.actorInfo.endurance.msecUnderwater >= SITHACTOR_MAX_UNDERWATER_MSEC )
             {
-                float damage = (float)msecDeltaTime / 5.0f;
+            #ifndef J3D_SPEEDRUN_BUILD
+                // Fixed: Deal the drowning damage at its rate on the game clock, 1 point per SITHACTOR_DROWN_MSEC_PER_DAMAGE msec.
+                //        The original dealt msecDeltaTime / 5 every frame and sithThing_DamageThing dropped the fraction,
+                //        so drowning got slower as FPS went up and did no damage at 250 FPS and above (issue #48).
+                sithThing_DamageThingAtRate(pThing, pThing, 1000.0f / (float)SITHACTOR_DROWN_MSEC_PER_DAMAGE, SITH_DAMAGE_DROWN);
+            #else
+                float damage = (float)msecDeltaTime / (float)SITHACTOR_DROWN_MSEC_PER_DAMAGE;
                 sithThing_DamageThing(pThing, pThing, damage, SITH_DAMAGE_DROWN);
+            #endif
                 pThing->thingInfo.actorInfo.endurance.msecUnderwater = SITHACTOR_MAX_UNDERWATER_MSEC;
             }
         }
@@ -174,8 +181,15 @@ void J3DAPI sithActor_Update(SithThing* pThing, unsigned int msecDeltaTime)
 
             float rate   = (sithActor_raftLeakDamageDivHard - sithActor_raftLeakDamageDivEasy) / (float)SITH_GAME_DIFFICULTY_MAX;
             float damage = (float)sithGetGameDifficulty() * rate + sithActor_raftLeakDamageDivEasy;
+        #ifndef J3D_SPEEDRUN_BUILD
+            // Fixed: Deal the raft leak damage at its rate on the game clock, 1000 / divisor per sec. The original dealt
+            //        msecDeltaTime / divisor every frame and sithThing_DamageThing dropped the fraction, so the raft leaked
+            //        slower as FPS went up (issue #48).
+            sithThing_DamageThingAtRate(pThing, pThing, 1000.0f / damage, SITH_DAMAGE_RAFT_LEAK);
+        #else
             damage = (float)msecDeltaTime / damage;
             sithThing_DamageThing(pThing, pThing, damage, SITH_DAMAGE_RAFT_LEAK);
+        #endif
         }
 
         if ( pThing->thingInfo.actorInfo.pThingMeshAttached )

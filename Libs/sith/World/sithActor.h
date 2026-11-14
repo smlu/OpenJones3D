@@ -11,9 +11,9 @@
 
 J3D_EXTERN_C_START
 
-#define SITHACTOR_MAX_UNDERWATER_MSEC 60000
-#define SITHACTOR_MAX_RAFT_DAMAGE     100000
-
+#define SITHACTOR_MAX_UNDERWATER_MSEC   60000
+#define SITHACTOR_DROWN_MSEC_PER_DAMAGE 5u // Drowning deals 1 damage point per 5 msec past the breath limit
+#define SITHACTOR_MAX_RAFT_DAMAGE       100000
 
 void J3DAPI sithActor_SetDifficulty(SithThing* pActor);
 void J3DAPI sithActor_Update(SithThing* pThing, unsigned int msecDeltaTime);

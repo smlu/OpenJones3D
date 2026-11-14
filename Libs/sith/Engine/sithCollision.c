@@ -1676,7 +1676,13 @@ int J3DAPI sithCollision_ThingCollisionHandler(SithThing* pSrcThing, SithThing* 
             if ( (pThing->flags & SITH_TF_NOCRUSH) == 0 )
             {
                 float crushDamge = (moveDist - distMoved) * 100.0f;
+            #ifndef J3D_SPEEDRUN_BUILD
+                // Fixed: Deal the crush damage at its rate on the game clock. The original dealt the frame's crush depth x 100 and
+                //        sithThing_DamageThing dropped the fraction, so slow movers stopped hurting at high FPS (issue #48).
+                sithThing_DamageThingAtRate(pHitThing, pThing, crushDamge / sithTime_g_frameTimeFlex, SITH_DAMAGE_IMPACT);
+            #else
                 sithThing_DamageThing(pHitThing, pThing, crushDamge, SITH_DAMAGE_IMPACT);
+            #endif
             }
 
             rdVector_Zero3(&pThing->moveDir);
