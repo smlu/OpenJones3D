@@ -236,7 +236,7 @@ startup and a stable module-level CTest entry.
 | `smushTests` | `smush` | INSANE movie player: core, bitmap, codec, sound, stream areas and original-engine assembly vectors | Available |
 | `smushSystemTests` | `smush.System` | Native configured DirectSound movie startup, synthetic frame playback and restart | Optional system suite |
 | `sithTests` | `sith` | World thing/template I/O and voice lip-sync | Available |
-| `sithEngineTests` | `sith.Engine` | Sphere/plane intersection, rotating paths and fixed-step player physics regressions | Available |
+| `sithEngineTests` | `sith.Engine` | Sphere/plane intersection, rotating paths, fixed-step player physics and frame-rate regressions (with original-engine vectors of the COG timing and per-frame damage) | Available |
 | `jonesConfigTests` | `Jones3D.Config` | Control-scheme and keyboard-name regressions, fullscreen dialog font/icon scaling and store column layout | Available |
 | `jonesHudTests` | `Jones3D.Hud` | Inventory theme ownership, paused sound clock and fading-icon depth policy | Available |
 | `jonesConfigSystemTests` | `Jones3D.ConfigSystem` | Hidden native GDI windows, font/image-list layout, measured ListView columns and authored bitmap pixels | Optional system suite |
@@ -294,6 +294,10 @@ See [Google's test isolation guidance](https://testing.googleblog.com/2010/12/te
 ### 🔧 Shared Test Support And Macro Assertions
 
 Tests that need fixed-address RTI globals or host-service assertion capture should link `j3dTestSupport` and include `#include <j3dcore/Tests/j3dTest.h>`. Use `J3DTest_Startup()` and `J3DTest_BindHostServicesGlobal(<module>_g_pHS_ADDR)` in `TEST_SETUP`, then `J3DTest_Shutdown()` in `TEST_TEAR_DOWN`, instead of duplicating OS-specific memory mapping in each test file.
+
+Every other fixed-address global that tested code reads must be redirected to local storage in a header force-included for the test target (`#undef <name>_ADDR` and `#define <name>_ADDR ((uintptr_t)&local)`, see `Libs/sith/Engine/Tests/sithEngineTestAddrs.h`), otherwise the code reads whatever the test process has at the retail address. This includes constants such as `rdroid_g_identMatrix34`, which `rdMatrix_Identity34` copies, and engine clock state such as `sithTime_g_msecGameTime`, `sithTime_g_frameTime` and `sithMain_g_frameNumber`.
+
+The world-state vector harness (`Libs/sith/Tests/Vec`) replaces the rotation and trigonometry functions with its own accurate math, so the same arithmetic runs in the capture harness and the tests. Its suites therefore can't detect errors in the engine's table math; test that math directly and through its users, like the `stdMath`, `rdMatrix` and `sith.Engine` frame-rate tests below.
 
 For header and macro tests, prefer stable behavior checks over release-specific value checks. For example, `j3d.h` macro tests should verify string/memory helpers, runtime guard behavior, platform flags, logging/assertion macros, and compile-time shape, but should not pin exact `J3D_VERSION_STRING` or `J3D_VERSION_FULL` values because those change with release numbers and suffixes.
 
@@ -1096,6 +1100,53 @@ displacement, gravity force and remainder with drag, partial/disabled gravity an
 They also check the velocity magnitude around the falling controller's `1.1` ledge-query gate; this is not
 an end-to-end ledge-collision test. Test seams observe integration operations while retaining the real vector
 calculations, so an unexpected step or the old negative-to-unsigned loop fails without hanging the suite.
+
+Frame-rate cases (`sithFrameRate` group) simulate the same 3 seconds at
+different frame rates with whole-millisecond frames, like `sithTime_Advance`, and
+compare the totals. They cover:
+
+- key turn, fly pitch and jewel fly thrust at the fixed control rate;
+- small rotation steps, the AI body turn and AI head tracking;
+- the time-based effect cycle (`SITHTIME_ISFRAMECYCLE`);
+- COG sleeps, pulses, thing pulses and re-armed timers, re-armed events, AI instinct
+  ticks, weapon refire and waits, item touches, the surfacing breath and gasp
+  sounds, the drowning sound, weapon awareness events, exhaust smoke and the blocked
+  messages of path movers;
+- drowning, raft leak, IMP overheat (IMP2, IMP3, IMP5), Aetherium and POR damage
+  and state.
+
+The suite compiles `sithActor.c`, `sithPlayer.c`, `sithAIMove.c`, `sithAI.c`,
+`sithEvent.c`, `sithCog.c`, `sithCogFunction.c`, `sithCogFunctionThing.c`,
+`sithWeapon.c`, `sithItem.c`, `sithPathMove.c` and `sithPhysics.c` unchanged. Seams replace only the damage,
+difficulty, sound, lip-sync, weapon-update (for the player cases), inventory-type,
+line-of-sight and COG script calls, so the real per-frame code, scheduling and
+rotation math run.
+The scheduling fix itself is the deadline API of `sithTime.h`
+(`sithTime_CalcDeadline`, `sithTime_CalcDeadlineAfter`,
+`sithTime_IsDeadlineReached`, `sithTime_IsDeadlinePassed` and their seconds and
+float-msec variants), used wherever the engine computes or checks a game-time
+deadline. The AI vector suites redirect `sithTime_g_frameTime` to a 30 FPS frame,
+so those deadlines stay the original `now + interval` their vectors were captured
+with.
+
+The timing (COG, event, AI), surfacing and damage cases share
+`sithFrameRateVec.h` with the harness that captured their original-engine
+vectors from retail v1.0 at 14 frame rates from 20 to 1000 FPS, covering the 60–75 Hz
+and 144–165 Hz monitor ranges and 240 Hz (`tv/sithFrameRate/README.md`). Path mover
+moves and rotations have vectors too; they were never frame-rate dependent and the
+tests assert their arrival time at every rate. Every
+case that runs the original code in the build profile must reproduce its vector
+exactly. That is all of them in legacy builds, the timing cases at 30 FPS and
+below in QOL builds, and the damage cases in speedrun builds. The fixes are
+checked against the vectors as well:
+
+- Timing and surfacing sounds above 30 FPS must be within one tick of the
+  original at 30 FPS.
+- Damage must be at its designed rate and at least the original's, with the
+  original breath and IMP state.
+
+The other fixed behaviors have an original-behavior counterpart for the build
+profile that keeps them: legacy, or speedrun for the damage changes.
 
 AI suites also have direct fixed-behavior tests alongside the original fixtures:
 handled returns and scan restart, berserk burst boundaries, QOL hunting loudness,

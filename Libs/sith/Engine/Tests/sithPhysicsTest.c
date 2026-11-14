@@ -22,6 +22,13 @@ static size_t sithPhysicsTest_maxSteps;
 void J3DAPI sithPhysicsTest_MultAcc3(rdVector3* pAcc, const rdVector3* pVector, float scale)
 {
     SithPhysicsInfo* pPhysics = &sithPhysicsTest_thing.moveInfo.physics;
+    // Other code under test (the exhaust smoke of the frame-rate tests) adds vectors too; only the integration steps are observed
+    if ( pAcc != &pPhysics->deltaVelocity && pAcc != &pPhysics->velocity && pVector != &sithPhysicsTest_sector.thrust )
+    {
+        rdVector_MultAcc3(pAcc, pVector, scale);
+        return;
+    }
+
     if ( pAcc == &pPhysics->deltaVelocity )
     {
         TEST_ASSERT_EQUAL_PTR(&pPhysics->velocity, pVector);

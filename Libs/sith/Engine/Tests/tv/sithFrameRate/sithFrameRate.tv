@@ -1,0 +1,1571 @@
+# sithFrameRate original-engine test vectors, see README.md
+# Original functions of the retail v1.0 Indy3D.exe, x87 precision 24 bits, 3000 msec game time per case
+# case fps total detail state
+CogPulse_0.001              20     59      1 3001
+CogPulse_0.001              30     89      1 3001
+CogPulse_0.001              34    101      1 3001
+CogPulse_0.001              45    134      1 3001
+CogPulse_0.001              60    179      1 3001
+CogPulse_0.001              72    215      1 3001
+CogPulse_0.001              75    224      1 3001
+CogPulse_0.001             100    299      1 3001
+CogPulse_0.001             120    359      1 3001
+CogPulse_0.001             144    431      1 3001
+CogPulse_0.001             165    494      1 3001
+CogPulse_0.001             240    719      1 3001
+CogPulse_0.001             300    899      1 3001
+CogPulse_0.001            1000   2999      1 3001
+CogPulse_0.010              20     59     10 3010
+CogPulse_0.010              30     89     10 3010
+CogPulse_0.010              34    101     10 3010
+CogPulse_0.010              45    134     10 3010
+CogPulse_0.010              60    179     10 3010
+CogPulse_0.010              72    215     10 3010
+CogPulse_0.010              75    224     10 3010
+CogPulse_0.010             100    299     10 3010
+CogPulse_0.010             120    179     10 3001
+CogPulse_0.010             144    215     10 3003
+CogPulse_0.010             165    247     10 3010
+CogPulse_0.010             240    239     10 3001
+CogPulse_0.010             300    299     10 3003
+CogPulse_0.010            1000    299     10 3001
+CogPulse_0.025              20     59     25 3025
+CogPulse_0.025              30     89     25 3025
+CogPulse_0.025              34    101     25 3025
+CogPulse_0.025              45     67     25 3025
+CogPulse_0.025              60     89     25 3008
+CogPulse_0.025              72    107     25 3011
+CogPulse_0.025              75    112     25 3025
+CogPulse_0.025             100     99     25 3005
+CogPulse_0.025             120    119     25 3008
+CogPulse_0.025             144    107     25 3004
+CogPulse_0.025             165    104     25 3006
+CogPulse_0.025             240    119     25 3004
+CogPulse_0.025             300    112     25 3015
+CogPulse_0.025            1000    119     25 3001
+CogPulse_0.034              20     59     34 3034
+CogPulse_0.034              30     59     34 3034
+CogPulse_0.034              34     50     34 3004
+CogPulse_0.034              45     67     34 3034
+CogPulse_0.034              60     60     34 3034
+CogPulse_0.034              72     71     34 3006
+CogPulse_0.034              75     74     34 3007
+CogPulse_0.034             100     74     34 3004
+CogPulse_0.034             120     79     34 3009
+CogPulse_0.034             144     86     34 3027
+CogPulse_0.034             165     82     34 3021
+CogPulse_0.034             240     80     34 3034
+CogPulse_0.034             300     85     34 3014
+CogPulse_0.034            1000     88     34 3027
+CogPulse_0.040              20     59     40 3040
+CogPulse_0.040              30     44     40 3006
+CogPulse_0.040              34     50     40 3010
+CogPulse_0.040              45     67     40 3040
+CogPulse_0.040              60     59     40 3006
+CogPulse_0.040              72     71     40 3012
+CogPulse_0.040              75     74     40 3013
+CogPulse_0.040             100     74     40 3010
+CogPulse_0.040             120     71     40 3006
+CogPulse_0.040             144     71     40 3005
+CogPulse_0.040             165     70     40 3015
+CogPulse_0.040             240     71     40 3002
+CogPulse_0.040             300     74     40 3003
+CogPulse_0.040            1000     74     40 3001
+CogPulse_0.050              20     59     50 3050
+CogPulse_0.050              30     44     50 3016
+CogPulse_0.050              34     50     50 3020
+CogPulse_0.050              45     44     50 3005
+CogPulse_0.050              60     59     50 3016
+CogPulse_0.050              72     53     50 3008
+CogPulse_0.050              75     56     50 3050
+CogPulse_0.050             100     59     50 3010
+CogPulse_0.050             120     59     50 3008
+CogPulse_0.050             144     53     50 3001
+CogPulse_0.050             165     54     50 3001
+CogPulse_0.050             240     59     50 3004
+CogPulse_0.050             300     59     50 3003
+CogPulse_0.050            1000     59     50 3001
+CogPulse_0.100              20     29    100 3050
+CogPulse_0.100              30     29    100 3033
+CogPulse_0.100              34     25    100 3070
+CogPulse_0.100              45     26    100 3011
+CogPulse_0.100              60     29    100 3016
+CogPulse_0.100              72     26    100 3002
+CogPulse_0.100              75     28    100 3100
+CogPulse_0.100             100     29    100 3010
+CogPulse_0.100             120     29    100 3008
+CogPulse_0.100             144     28    100 3023
+CogPulse_0.100             165     29    100 3093
+CogPulse_0.100             240     29    100 3004
+CogPulse_0.100             300     29    100 3003
+CogPulse_0.100            1000     29    100 3001
+CogPulse_0.200              20     14    200 3050
+CogPulse_0.200              30     14    200 3033
+CogPulse_0.200              34     14    200 3111
+CogPulse_0.200              45     14    200 3022
+CogPulse_0.200              60     14    200 3016
+CogPulse_0.200              72     14    200 3130
+CogPulse_0.200              75     14    200 3013
+CogPulse_0.200             100     14    200 3010
+CogPulse_0.200             120     14    200 3008
+CogPulse_0.200             144     14    200 3026
+CogPulse_0.200             165     14    200 3006
+CogPulse_0.200             240     14    200 3004
+CogPulse_0.200             300     14    200 3003
+CogPulse_0.200            1000     14    200 3001
+CogPulse_0.500              20      5    500 3050
+CogPulse_0.500              30      5    500 3033
+CogPulse_0.500              34      5    500 3029
+CogPulse_0.500              45      5    500 3077
+CogPulse_0.500              60      5    500 3016
+CogPulse_0.500              72      5    500 3013
+CogPulse_0.500              75      5    500 3046
+CogPulse_0.500             100      5    500 3010
+CogPulse_0.500             120      5    500 3008
+CogPulse_0.500             144      5    500 3006
+CogPulse_0.500             165      5    500 3021
+CogPulse_0.500             240      5    500 3004
+CogPulse_0.500             300      5    500 3003
+CogPulse_0.500            1000      5    500 3001
+CogPulse_0.700              20      4    700 3550
+CogPulse_0.700              30      4    700 3533
+CogPulse_0.700              34      4    700 3552
+CogPulse_0.700              45      4    700 3566
+CogPulse_0.700              60      4    700 3516
+CogPulse_0.700              72      4    700 3547
+CogPulse_0.700              75      4    700 3540
+CogPulse_0.700             100      4    700 3510
+CogPulse_0.700             120      4    700 3508
+CogPulse_0.700             144      4    700 3512
+CogPulse_0.700             165      4    700 3518
+CogPulse_0.700             240      4    700 3504
+CogPulse_0.700             300      4    700 3503
+CogPulse_0.700            1000      4    700 3501
+CogPulse_1.000              20      2   1000 3050
+CogPulse_1.000              30      2   1000 3033
+CogPulse_1.000              34      2   1000 3029
+CogPulse_1.000              45      2   1000 3022
+CogPulse_1.000              60      2   1000 3016
+CogPulse_1.000              72      2   1000 3013
+CogPulse_1.000              75      2   1000 3013
+CogPulse_1.000             100      2   1000 3010
+CogPulse_1.000             120      2   1000 3008
+CogPulse_1.000             144      2   1000 3006
+CogPulse_1.000             165      2   1000 3006
+CogPulse_1.000             240      2   1000 3004
+CogPulse_1.000             300      2   1000 3003
+CogPulse_1.000            1000      2   1000 3001
+CogSleep_0.001              20     59      1 3001
+CogSleep_0.001              30     89      1 3001
+CogSleep_0.001              34    101      1 3001
+CogSleep_0.001              45    134      1 3001
+CogSleep_0.001              60    179      1 3001
+CogSleep_0.001              72    215      1 3001
+CogSleep_0.001              75    224      1 3001
+CogSleep_0.001             100    299      1 3001
+CogSleep_0.001             120    359      1 3001
+CogSleep_0.001             144    431      1 3001
+CogSleep_0.001             165    494      1 3001
+CogSleep_0.001             240    719      1 3001
+CogSleep_0.001             300    899      1 3001
+CogSleep_0.001            1000   1499      1 3000
+CogSleep_0.010              20     59     10 3010
+CogSleep_0.010              30     89     10 3010
+CogSleep_0.010              34    101     10 3010
+CogSleep_0.010              45    134     10 3010
+CogSleep_0.010              60    179     10 3010
+CogSleep_0.010              72    215     10 3010
+CogSleep_0.010              75    224     10 3010
+CogSleep_0.010             100    149     10 3000
+CogSleep_0.010             120    179     10 3001
+CogSleep_0.010             144    215     10 3003
+CogSleep_0.010             165    247     10 3010
+CogSleep_0.010             240    239     10 3001
+CogSleep_0.010             300    224     10 3000
+CogSleep_0.010            1000    272     10 3003
+CogSleep_0.025              20     59     25 3025
+CogSleep_0.025              30     89     25 3025
+CogSleep_0.025              34    101     25 3025
+CogSleep_0.025              45     67     25 3025
+CogSleep_0.025              60     89     25 3008
+CogSleep_0.025              72    107     25 3011
+CogSleep_0.025              75    112     25 3025
+CogSleep_0.025             100     99     25 3005
+CogSleep_0.025             120     89     25 3000
+CogSleep_0.025             144    107     25 3004
+CogSleep_0.025             165     98     25 3000
+CogSleep_0.025             240    102     25 3004
+CogSleep_0.025             300    112     25 3015
+CogSleep_0.025            1000    115     25 3016
+CogSleep_0.034              20     59     34 3034
+CogSleep_0.034              30     44     34 3000
+CogSleep_0.034              34     50     34 3004
+CogSleep_0.034              45     67     34 3034
+CogSleep_0.034              60     59     34 3000
+CogSleep_0.034              72     71     34 3006
+CogSleep_0.034              75     74     34 3007
+CogSleep_0.034             100     74     34 3004
+CogSleep_0.034             120     71     34 3000
+CogSleep_0.034             144     81     34 3013
+CogSleep_0.034             165     82     34 3021
+CogSleep_0.034             240     79     34 3000
+CogSleep_0.034             300     81     34 3007
+CogSleep_0.034            1000     85     34 3010
+CogSleep_0.040              20     59     40 3040
+CogSleep_0.040              30     44     40 3006
+CogSleep_0.040              34     50     40 3010
+CogSleep_0.040              45     67     40 3040
+CogSleep_0.040              60     59     40 3006
+CogSleep_0.040              72     71     40 3012
+CogSleep_0.040              75     56     40 3040
+CogSleep_0.040             100     59     40 3000
+CogSleep_0.040             120     71     40 3006
+CogSleep_0.040             144     71     40 3005
+CogSleep_0.040             165     70     40 3015
+CogSleep_0.040             240     71     40 3002
+CogSleep_0.040             300     69     40 3033
+CogSleep_0.040            1000     73     40 3034
+CogSleep_0.050              20     29     50 3000
+CogSleep_0.050              30     44     50 3016
+CogSleep_0.050              34     50     50 3020
+CogSleep_0.050              45     44     50 3005
+CogSleep_0.050              60     44     50 3000
+CogSleep_0.050              72     53     50 3008
+CogSleep_0.050              75     56     50 3050
+CogSleep_0.050             100     49     50 3000
+CogSleep_0.050             120     51     50 3033
+CogSleep_0.050             144     53     50 3001
+CogSleep_0.050             165     54     50 3001
+CogSleep_0.050             240     55     50 3033
+CogSleep_0.050             300     56     50 3040
+CogSleep_0.050            1000     58     50 3009
+CogSleep_0.100              20     19    100 3000
+CogSleep_0.100              30     22    100 3066
+CogSleep_0.100              34     25    100 3070
+CogSleep_0.100              45     26    100 3011
+CogSleep_0.100              60     25    100 3033
+CogSleep_0.100              72     26    100 3002
+CogSleep_0.100              75     28    100 3100
+CogSleep_0.100             100     27    100 3080
+CogSleep_0.100             120     27    100 3033
+CogSleep_0.100             144     28    100 3023
+CogSleep_0.100             165     29    100 3093
+CogSleep_0.100             240     28    100 3020
+CogSleep_0.100             300     29    100 3100
+CogSleep_0.100            1000     29    100 3030
+CogSleep_0.200              20     11    200 3000
+CogSleep_0.200              30     12    200 3033
+CogSleep_0.200              34     14    200 3111
+CogSleep_0.200              45     13    200 3111
+CogSleep_0.200              60     13    200 3033
+CogSleep_0.200              72     14    200 3130
+CogSleep_0.200              75     14    200 3200
+CogSleep_0.200             100     14    200 3150
+CogSleep_0.200             120     14    200 3125
+CogSleep_0.200             144     14    200 3026
+CogSleep_0.200             165     14    200 3090
+CogSleep_0.200             240     14    200 3062
+CogSleep_0.200             300     14    200 3050
+CogSleep_0.200            1000     14    200 3015
+CogSleep_0.500              20      5    500 3300
+CogSleep_0.500              30      5    500 3200
+CogSleep_0.500              34      5    500 3176
+CogSleep_0.500              45      5    500 3077
+CogSleep_0.500              60      5    500 3100
+CogSleep_0.500              72      5    500 3083
+CogSleep_0.500              75      5    500 3046
+CogSleep_0.500             100      5    500 3060
+CogSleep_0.500             120      5    500 3050
+CogSleep_0.500             144      5    500 3041
+CogSleep_0.500             165      5    500 3021
+CogSleep_0.500             240      5    500 3025
+CogSleep_0.500             300      5    500 3020
+CogSleep_0.500            1000      5    500 3006
+CogSleep_0.700              20      3    700 3000
+CogSleep_0.700              30      4    700 3666
+CogSleep_0.700              34      4    700 3552
+CogSleep_0.700              45      4    700 3566
+CogSleep_0.700              60      4    700 3583
+CogSleep_0.700              72      4    700 3547
+CogSleep_0.700              75      4    700 3540
+CogSleep_0.700             100      4    700 3550
+CogSleep_0.700             120      4    700 3541
+CogSleep_0.700             144      4    700 3512
+CogSleep_0.700             165      4    700 3518
+CogSleep_0.700             240      4    700 3520
+CogSleep_0.700             300      4    700 3516
+CogSleep_0.700            1000      4    700 3505
+CogSleep_1.000              20      2   1000 3150
+CogSleep_1.000              30      2   1000 3100
+CogSleep_1.000              34      2   1000 3088
+CogSleep_1.000              45      2   1000 3066
+CogSleep_1.000              60      2   1000 3050
+CogSleep_1.000              72      2   1000 3041
+CogSleep_1.000              75      2   1000 3040
+CogSleep_1.000             100      2   1000 3030
+CogSleep_1.000             120      2   1000 3025
+CogSleep_1.000             144      2   1000 3020
+CogSleep_1.000             165      2   1000 3018
+CogSleep_1.000             240      2   1000 3012
+CogSleep_1.000             300      2   1000 3010
+CogSleep_1.000            1000      2   1000 3003
+CogThingPulse_0.001         20     59      1 3001
+CogThingPulse_0.001         30     89      1 3001
+CogThingPulse_0.001         34    101      1 3001
+CogThingPulse_0.001         45    134      1 3001
+CogThingPulse_0.001         60    179      1 3001
+CogThingPulse_0.001         72    215      1 3001
+CogThingPulse_0.001         75    224      1 3001
+CogThingPulse_0.001        100    299      1 3001
+CogThingPulse_0.001        120    359      1 3001
+CogThingPulse_0.001        144    431      1 3001
+CogThingPulse_0.001        165    494      1 3001
+CogThingPulse_0.001        240    719      1 3001
+CogThingPulse_0.001        300    899      1 3001
+CogThingPulse_0.001       1000   2999      1 3001
+CogThingPulse_0.010         20     59     10 3010
+CogThingPulse_0.010         30     89     10 3010
+CogThingPulse_0.010         34    101     10 3010
+CogThingPulse_0.010         45    134     10 3010
+CogThingPulse_0.010         60    179     10 3010
+CogThingPulse_0.010         72    215     10 3010
+CogThingPulse_0.010         75    224     10 3010
+CogThingPulse_0.010        100    299     10 3010
+CogThingPulse_0.010        120    179     10 3001
+CogThingPulse_0.010        144    215     10 3003
+CogThingPulse_0.010        165    247     10 3010
+CogThingPulse_0.010        240    239     10 3001
+CogThingPulse_0.010        300    299     10 3003
+CogThingPulse_0.010       1000    299     10 3001
+CogThingPulse_0.025         20     59     25 3025
+CogThingPulse_0.025         30     89     25 3025
+CogThingPulse_0.025         34    101     25 3025
+CogThingPulse_0.025         45     67     25 3025
+CogThingPulse_0.025         60     89     25 3008
+CogThingPulse_0.025         72    107     25 3011
+CogThingPulse_0.025         75    112     25 3025
+CogThingPulse_0.025        100     99     25 3005
+CogThingPulse_0.025        120    119     25 3008
+CogThingPulse_0.025        144    107     25 3004
+CogThingPulse_0.025        165    104     25 3006
+CogThingPulse_0.025        240    119     25 3004
+CogThingPulse_0.025        300    112     25 3015
+CogThingPulse_0.025       1000    119     25 3001
+CogThingPulse_0.034         20     59     34 3034
+CogThingPulse_0.034         30     59     34 3034
+CogThingPulse_0.034         34     50     34 3004
+CogThingPulse_0.034         45     67     34 3034
+CogThingPulse_0.034         60     60     34 3034
+CogThingPulse_0.034         72     71     34 3006
+CogThingPulse_0.034         75     74     34 3007
+CogThingPulse_0.034        100     74     34 3004
+CogThingPulse_0.034        120     79     34 3009
+CogThingPulse_0.034        144     86     34 3027
+CogThingPulse_0.034        165     82     34 3021
+CogThingPulse_0.034        240     80     34 3034
+CogThingPulse_0.034        300     85     34 3014
+CogThingPulse_0.034       1000     88     34 3027
+CogThingPulse_0.040         20     59     40 3040
+CogThingPulse_0.040         30     44     40 3006
+CogThingPulse_0.040         34     50     40 3010
+CogThingPulse_0.040         45     67     40 3040
+CogThingPulse_0.040         60     59     40 3006
+CogThingPulse_0.040         72     71     40 3012
+CogThingPulse_0.040         75     74     40 3013
+CogThingPulse_0.040        100     74     40 3010
+CogThingPulse_0.040        120     71     40 3006
+CogThingPulse_0.040        144     71     40 3005
+CogThingPulse_0.040        165     70     40 3015
+CogThingPulse_0.040        240     71     40 3002
+CogThingPulse_0.040        300     74     40 3003
+CogThingPulse_0.040       1000     74     40 3001
+CogThingPulse_0.050         20     59     50 3050
+CogThingPulse_0.050         30     44     50 3016
+CogThingPulse_0.050         34     50     50 3020
+CogThingPulse_0.050         45     44     50 3005
+CogThingPulse_0.050         60     59     50 3016
+CogThingPulse_0.050         72     53     50 3008
+CogThingPulse_0.050         75     56     50 3050
+CogThingPulse_0.050        100     59     50 3010
+CogThingPulse_0.050        120     59     50 3008
+CogThingPulse_0.050        144     53     50 3001
+CogThingPulse_0.050        165     54     50 3001
+CogThingPulse_0.050        240     59     50 3004
+CogThingPulse_0.050        300     59     50 3003
+CogThingPulse_0.050       1000     59     50 3001
+CogThingPulse_0.100         20     29    100 3050
+CogThingPulse_0.100         30     29    100 3033
+CogThingPulse_0.100         34     25    100 3070
+CogThingPulse_0.100         45     26    100 3011
+CogThingPulse_0.100         60     29    100 3016
+CogThingPulse_0.100         72     26    100 3002
+CogThingPulse_0.100         75     28    100 3100
+CogThingPulse_0.100        100     29    100 3010
+CogThingPulse_0.100        120     29    100 3008
+CogThingPulse_0.100        144     28    100 3023
+CogThingPulse_0.100        165     29    100 3093
+CogThingPulse_0.100        240     29    100 3004
+CogThingPulse_0.100        300     29    100 3003
+CogThingPulse_0.100       1000     29    100 3001
+CogThingPulse_0.200         20     14    200 3050
+CogThingPulse_0.200         30     14    200 3033
+CogThingPulse_0.200         34     14    200 3111
+CogThingPulse_0.200         45     14    200 3022
+CogThingPulse_0.200         60     14    200 3016
+CogThingPulse_0.200         72     14    200 3130
+CogThingPulse_0.200         75     14    200 3013
+CogThingPulse_0.200        100     14    200 3010
+CogThingPulse_0.200        120     14    200 3008
+CogThingPulse_0.200        144     14    200 3026
+CogThingPulse_0.200        165     14    200 3006
+CogThingPulse_0.200        240     14    200 3004
+CogThingPulse_0.200        300     14    200 3003
+CogThingPulse_0.200       1000     14    200 3001
+CogThingPulse_0.500         20      5    500 3050
+CogThingPulse_0.500         30      5    500 3033
+CogThingPulse_0.500         34      5    500 3029
+CogThingPulse_0.500         45      5    500 3077
+CogThingPulse_0.500         60      5    500 3016
+CogThingPulse_0.500         72      5    500 3013
+CogThingPulse_0.500         75      5    500 3046
+CogThingPulse_0.500        100      5    500 3010
+CogThingPulse_0.500        120      5    500 3008
+CogThingPulse_0.500        144      5    500 3006
+CogThingPulse_0.500        165      5    500 3021
+CogThingPulse_0.500        240      5    500 3004
+CogThingPulse_0.500        300      5    500 3003
+CogThingPulse_0.500       1000      5    500 3001
+CogThingPulse_0.700         20      4    700 3550
+CogThingPulse_0.700         30      4    700 3533
+CogThingPulse_0.700         34      4    700 3552
+CogThingPulse_0.700         45      4    700 3566
+CogThingPulse_0.700         60      4    700 3516
+CogThingPulse_0.700         72      4    700 3547
+CogThingPulse_0.700         75      4    700 3540
+CogThingPulse_0.700        100      4    700 3510
+CogThingPulse_0.700        120      4    700 3508
+CogThingPulse_0.700        144      4    700 3512
+CogThingPulse_0.700        165      4    700 3518
+CogThingPulse_0.700        240      4    700 3504
+CogThingPulse_0.700        300      4    700 3503
+CogThingPulse_0.700       1000      4    700 3501
+CogThingPulse_1.000         20      2   1000 3050
+CogThingPulse_1.000         30      2   1000 3033
+CogThingPulse_1.000         34      2   1000 3029
+CogThingPulse_1.000         45      2   1000 3022
+CogThingPulse_1.000         60      2   1000 3016
+CogThingPulse_1.000         72      2   1000 3013
+CogThingPulse_1.000         75      2   1000 3013
+CogThingPulse_1.000        100      2   1000 3010
+CogThingPulse_1.000        120      2   1000 3008
+CogThingPulse_1.000        144      2   1000 3006
+CogThingPulse_1.000        165      2   1000 3006
+CogThingPulse_1.000        240      2   1000 3004
+CogThingPulse_1.000        300      2   1000 3003
+CogThingPulse_1.000       1000      2   1000 3001
+CogTimer_0.001              20     59      1 3001
+CogTimer_0.001              30     89      1 3001
+CogTimer_0.001              34    101      1 3001
+CogTimer_0.001              45    134      1 3001
+CogTimer_0.001              60    179      1 3001
+CogTimer_0.001              72    215      1 3001
+CogTimer_0.001              75    224      1 3001
+CogTimer_0.001             100    299      1 3001
+CogTimer_0.001             120    359      1 3001
+CogTimer_0.001             144    431      1 3001
+CogTimer_0.001             165    494      1 3001
+CogTimer_0.001             240    719      1 3001
+CogTimer_0.001             300    899      1 3001
+CogTimer_0.001            1000   2999      1 3001
+CogTimer_0.010              20     59     10 3010
+CogTimer_0.010              30     89     10 3010
+CogTimer_0.010              34    101     10 3010
+CogTimer_0.010              45    134     10 3010
+CogTimer_0.010              60    179     10 3010
+CogTimer_0.010              72    215     10 3010
+CogTimer_0.010              75    224     10 3010
+CogTimer_0.010             100    299     10 3010
+CogTimer_0.010             120    179     10 3001
+CogTimer_0.010             144    215     10 3003
+CogTimer_0.010             165    247     10 3010
+CogTimer_0.010             240    239     10 3001
+CogTimer_0.010             300    299     10 3003
+CogTimer_0.010            1000    299     10 3001
+CogTimer_0.025              20     59     25 3025
+CogTimer_0.025              30     89     25 3025
+CogTimer_0.025              34    101     25 3025
+CogTimer_0.025              45     67     25 3025
+CogTimer_0.025              60     89     25 3008
+CogTimer_0.025              72    107     25 3011
+CogTimer_0.025              75    112     25 3025
+CogTimer_0.025             100     99     25 3005
+CogTimer_0.025             120    119     25 3008
+CogTimer_0.025             144    107     25 3004
+CogTimer_0.025             165    104     25 3006
+CogTimer_0.025             240    119     25 3004
+CogTimer_0.025             300    112     25 3015
+CogTimer_0.025            1000    119     25 3001
+CogTimer_0.034              20     59     34 3034
+CogTimer_0.034              30     59     34 3034
+CogTimer_0.034              34     50     34 3004
+CogTimer_0.034              45     67     34 3034
+CogTimer_0.034              60     60     34 3034
+CogTimer_0.034              72     71     34 3006
+CogTimer_0.034              75     74     34 3007
+CogTimer_0.034             100     74     34 3004
+CogTimer_0.034             120     79     34 3009
+CogTimer_0.034             144     86     34 3027
+CogTimer_0.034             165     82     34 3021
+CogTimer_0.034             240     80     34 3034
+CogTimer_0.034             300     85     34 3014
+CogTimer_0.034            1000     88     34 3027
+CogTimer_0.040              20     59     40 3040
+CogTimer_0.040              30     44     40 3006
+CogTimer_0.040              34     50     40 3010
+CogTimer_0.040              45     67     40 3040
+CogTimer_0.040              60     59     40 3006
+CogTimer_0.040              72     71     40 3012
+CogTimer_0.040              75     74     40 3013
+CogTimer_0.040             100     74     40 3010
+CogTimer_0.040             120     71     40 3006
+CogTimer_0.040             144     71     40 3005
+CogTimer_0.040             165     70     40 3015
+CogTimer_0.040             240     71     40 3002
+CogTimer_0.040             300     74     40 3003
+CogTimer_0.040            1000     74     40 3001
+CogTimer_0.050              20     59     50 3050
+CogTimer_0.050              30     44     50 3016
+CogTimer_0.050              34     50     50 3020
+CogTimer_0.050              45     44     50 3005
+CogTimer_0.050              60     59     50 3016
+CogTimer_0.050              72     53     50 3008
+CogTimer_0.050              75     56     50 3050
+CogTimer_0.050             100     59     50 3010
+CogTimer_0.050             120     59     50 3008
+CogTimer_0.050             144     53     50 3001
+CogTimer_0.050             165     54     50 3001
+CogTimer_0.050             240     59     50 3004
+CogTimer_0.050             300     59     50 3003
+CogTimer_0.050            1000     59     50 3001
+CogTimer_0.100              20     29    100 3050
+CogTimer_0.100              30     29    100 3033
+CogTimer_0.100              34     25    100 3070
+CogTimer_0.100              45     26    100 3011
+CogTimer_0.100              60     29    100 3016
+CogTimer_0.100              72     26    100 3002
+CogTimer_0.100              75     28    100 3100
+CogTimer_0.100             100     29    100 3010
+CogTimer_0.100             120     29    100 3008
+CogTimer_0.100             144     28    100 3023
+CogTimer_0.100             165     29    100 3093
+CogTimer_0.100             240     29    100 3004
+CogTimer_0.100             300     29    100 3003
+CogTimer_0.100            1000     29    100 3001
+CogTimer_0.200              20     14    200 3050
+CogTimer_0.200              30     14    200 3033
+CogTimer_0.200              34     14    200 3111
+CogTimer_0.200              45     14    200 3022
+CogTimer_0.200              60     14    200 3016
+CogTimer_0.200              72     14    200 3130
+CogTimer_0.200              75     14    200 3013
+CogTimer_0.200             100     14    200 3010
+CogTimer_0.200             120     14    200 3008
+CogTimer_0.200             144     14    200 3026
+CogTimer_0.200             165     14    200 3006
+CogTimer_0.200             240     14    200 3004
+CogTimer_0.200             300     14    200 3003
+CogTimer_0.200            1000     14    200 3001
+CogTimer_0.500              20      5    500 3050
+CogTimer_0.500              30      5    500 3033
+CogTimer_0.500              34      5    500 3029
+CogTimer_0.500              45      5    500 3077
+CogTimer_0.500              60      5    500 3016
+CogTimer_0.500              72      5    500 3013
+CogTimer_0.500              75      5    500 3046
+CogTimer_0.500             100      5    500 3010
+CogTimer_0.500             120      5    500 3008
+CogTimer_0.500             144      5    500 3006
+CogTimer_0.500             165      5    500 3021
+CogTimer_0.500             240      5    500 3004
+CogTimer_0.500             300      5    500 3003
+CogTimer_0.500            1000      5    500 3001
+CogTimer_0.700              20      4    700 3550
+CogTimer_0.700              30      4    700 3533
+CogTimer_0.700              34      4    700 3552
+CogTimer_0.700              45      4    700 3566
+CogTimer_0.700              60      4    700 3516
+CogTimer_0.700              72      4    700 3547
+CogTimer_0.700              75      4    700 3540
+CogTimer_0.700             100      4    700 3510
+CogTimer_0.700             120      4    700 3508
+CogTimer_0.700             144      4    700 3512
+CogTimer_0.700             165      4    700 3518
+CogTimer_0.700             240      4    700 3504
+CogTimer_0.700             300      4    700 3503
+CogTimer_0.700            1000      4    700 3501
+CogTimer_1.000              20      2   1000 3050
+CogTimer_1.000              30      2   1000 3033
+CogTimer_1.000              34      2   1000 3029
+CogTimer_1.000              45      2   1000 3022
+CogTimer_1.000              60      2   1000 3016
+CogTimer_1.000              72      2   1000 3013
+CogTimer_1.000              75      2   1000 3013
+CogTimer_1.000             100      2   1000 3010
+CogTimer_1.000             120      2   1000 3008
+CogTimer_1.000             144      2   1000 3006
+CogTimer_1.000             165      2   1000 3006
+CogTimer_1.000             240      2   1000 3004
+CogTimer_1.000             300      2   1000 3003
+CogTimer_1.000            1000      2   1000 3001
+CogThingTimer_0.001         20     59      1 3001
+CogThingTimer_0.001         30     89      1 3001
+CogThingTimer_0.001         34    101      1 3001
+CogThingTimer_0.001         45    134      1 3001
+CogThingTimer_0.001         60    179      1 3001
+CogThingTimer_0.001         72    215      1 3001
+CogThingTimer_0.001         75    224      1 3001
+CogThingTimer_0.001        100    299      1 3001
+CogThingTimer_0.001        120    359      1 3001
+CogThingTimer_0.001        144    431      1 3001
+CogThingTimer_0.001        165    494      1 3001
+CogThingTimer_0.001        240    719      1 3001
+CogThingTimer_0.001        300    899      1 3001
+CogThingTimer_0.001       1000   2999      1 3001
+CogThingTimer_0.010         20     59     10 3010
+CogThingTimer_0.010         30     89     10 3010
+CogThingTimer_0.010         34    101     10 3010
+CogThingTimer_0.010         45    134     10 3010
+CogThingTimer_0.010         60    179     10 3010
+CogThingTimer_0.010         72    215     10 3010
+CogThingTimer_0.010         75    224     10 3010
+CogThingTimer_0.010        100    299     10 3010
+CogThingTimer_0.010        120    179     10 3001
+CogThingTimer_0.010        144    215     10 3003
+CogThingTimer_0.010        165    247     10 3010
+CogThingTimer_0.010        240    239     10 3001
+CogThingTimer_0.010        300    299     10 3003
+CogThingTimer_0.010       1000    299     10 3001
+CogThingTimer_0.025         20     59     25 3025
+CogThingTimer_0.025         30     89     25 3025
+CogThingTimer_0.025         34    101     25 3025
+CogThingTimer_0.025         45     67     25 3025
+CogThingTimer_0.025         60     89     25 3008
+CogThingTimer_0.025         72    107     25 3011
+CogThingTimer_0.025         75    112     25 3025
+CogThingTimer_0.025        100     99     25 3005
+CogThingTimer_0.025        120    119     25 3008
+CogThingTimer_0.025        144    107     25 3004
+CogThingTimer_0.025        165    104     25 3006
+CogThingTimer_0.025        240    119     25 3004
+CogThingTimer_0.025        300    112     25 3015
+CogThingTimer_0.025       1000    119     25 3001
+CogThingTimer_0.034         20     59     34 3034
+CogThingTimer_0.034         30     59     34 3034
+CogThingTimer_0.034         34     50     34 3004
+CogThingTimer_0.034         45     67     34 3034
+CogThingTimer_0.034         60     60     34 3034
+CogThingTimer_0.034         72     71     34 3006
+CogThingTimer_0.034         75     74     34 3007
+CogThingTimer_0.034        100     74     34 3004
+CogThingTimer_0.034        120     79     34 3009
+CogThingTimer_0.034        144     86     34 3027
+CogThingTimer_0.034        165     82     34 3021
+CogThingTimer_0.034        240     80     34 3034
+CogThingTimer_0.034        300     85     34 3014
+CogThingTimer_0.034       1000     88     34 3027
+CogThingTimer_0.040         20     59     40 3040
+CogThingTimer_0.040         30     44     40 3006
+CogThingTimer_0.040         34     50     40 3010
+CogThingTimer_0.040         45     67     40 3040
+CogThingTimer_0.040         60     59     40 3006
+CogThingTimer_0.040         72     71     40 3012
+CogThingTimer_0.040         75     74     40 3013
+CogThingTimer_0.040        100     74     40 3010
+CogThingTimer_0.040        120     71     40 3006
+CogThingTimer_0.040        144     71     40 3005
+CogThingTimer_0.040        165     70     40 3015
+CogThingTimer_0.040        240     71     40 3002
+CogThingTimer_0.040        300     74     40 3003
+CogThingTimer_0.040       1000     74     40 3001
+CogThingTimer_0.050         20     59     50 3050
+CogThingTimer_0.050         30     44     50 3016
+CogThingTimer_0.050         34     50     50 3020
+CogThingTimer_0.050         45     44     50 3005
+CogThingTimer_0.050         60     59     50 3016
+CogThingTimer_0.050         72     53     50 3008
+CogThingTimer_0.050         75     56     50 3050
+CogThingTimer_0.050        100     59     50 3010
+CogThingTimer_0.050        120     59     50 3008
+CogThingTimer_0.050        144     53     50 3001
+CogThingTimer_0.050        165     54     50 3001
+CogThingTimer_0.050        240     59     50 3004
+CogThingTimer_0.050        300     59     50 3003
+CogThingTimer_0.050       1000     59     50 3001
+CogThingTimer_0.100         20     29    100 3050
+CogThingTimer_0.100         30     29    100 3033
+CogThingTimer_0.100         34     25    100 3070
+CogThingTimer_0.100         45     26    100 3011
+CogThingTimer_0.100         60     29    100 3016
+CogThingTimer_0.100         72     26    100 3002
+CogThingTimer_0.100         75     28    100 3100
+CogThingTimer_0.100        100     29    100 3010
+CogThingTimer_0.100        120     29    100 3008
+CogThingTimer_0.100        144     28    100 3023
+CogThingTimer_0.100        165     29    100 3093
+CogThingTimer_0.100        240     29    100 3004
+CogThingTimer_0.100        300     29    100 3003
+CogThingTimer_0.100       1000     29    100 3001
+CogThingTimer_0.200         20     14    200 3050
+CogThingTimer_0.200         30     14    200 3033
+CogThingTimer_0.200         34     14    200 3111
+CogThingTimer_0.200         45     14    200 3022
+CogThingTimer_0.200         60     14    200 3016
+CogThingTimer_0.200         72     14    200 3130
+CogThingTimer_0.200         75     14    200 3013
+CogThingTimer_0.200        100     14    200 3010
+CogThingTimer_0.200        120     14    200 3008
+CogThingTimer_0.200        144     14    200 3026
+CogThingTimer_0.200        165     14    200 3006
+CogThingTimer_0.200        240     14    200 3004
+CogThingTimer_0.200        300     14    200 3003
+CogThingTimer_0.200       1000     14    200 3001
+CogThingTimer_0.500         20      5    500 3050
+CogThingTimer_0.500         30      5    500 3033
+CogThingTimer_0.500         34      5    500 3029
+CogThingTimer_0.500         45      5    500 3077
+CogThingTimer_0.500         60      5    500 3016
+CogThingTimer_0.500         72      5    500 3013
+CogThingTimer_0.500         75      5    500 3046
+CogThingTimer_0.500        100      5    500 3010
+CogThingTimer_0.500        120      5    500 3008
+CogThingTimer_0.500        144      5    500 3006
+CogThingTimer_0.500        165      5    500 3021
+CogThingTimer_0.500        240      5    500 3004
+CogThingTimer_0.500        300      5    500 3003
+CogThingTimer_0.500       1000      5    500 3001
+CogThingTimer_0.700         20      4    700 3550
+CogThingTimer_0.700         30      4    700 3533
+CogThingTimer_0.700         34      4    700 3552
+CogThingTimer_0.700         45      4    700 3566
+CogThingTimer_0.700         60      4    700 3516
+CogThingTimer_0.700         72      4    700 3547
+CogThingTimer_0.700         75      4    700 3540
+CogThingTimer_0.700        100      4    700 3510
+CogThingTimer_0.700        120      4    700 3508
+CogThingTimer_0.700        144      4    700 3512
+CogThingTimer_0.700        165      4    700 3518
+CogThingTimer_0.700        240      4    700 3504
+CogThingTimer_0.700        300      4    700 3503
+CogThingTimer_0.700       1000      4    700 3501
+CogThingTimer_1.000         20      2   1000 3050
+CogThingTimer_1.000         30      2   1000 3033
+CogThingTimer_1.000         34      2   1000 3029
+CogThingTimer_1.000         45      2   1000 3022
+CogThingTimer_1.000         60      2   1000 3016
+CogThingTimer_1.000         72      2   1000 3013
+CogThingTimer_1.000         75      2   1000 3013
+CogThingTimer_1.000        100      2   1000 3010
+CogThingTimer_1.000        120      2   1000 3008
+CogThingTimer_1.000        144      2   1000 3006
+CogThingTimer_1.000        165      2   1000 3006
+CogThingTimer_1.000        240      2   1000 3004
+CogThingTimer_1.000        300      2   1000 3003
+CogThingTimer_1.000       1000      2   1000 3001
+Event_0.001                 20     59      1 3001
+Event_0.001                 30     89      1 3001
+Event_0.001                 34    101      1 3001
+Event_0.001                 45    134      1 3001
+Event_0.001                 60    179      1 3001
+Event_0.001                 72    215      1 3001
+Event_0.001                 75    224      1 3001
+Event_0.001                100    299      1 3001
+Event_0.001                120    359      1 3001
+Event_0.001                144    431      1 3001
+Event_0.001                165    494      1 3001
+Event_0.001                240    719      1 3001
+Event_0.001                300    899      1 3001
+Event_0.001               1000   1499      1 3000
+Event_0.010                 20     59     10 3010
+Event_0.010                 30     89     10 3010
+Event_0.010                 34    101     10 3010
+Event_0.010                 45    134     10 3010
+Event_0.010                 60    179     10 3010
+Event_0.010                 72    215     10 3010
+Event_0.010                 75    224     10 3010
+Event_0.010                100    149     10 3000
+Event_0.010                120    179     10 3001
+Event_0.010                144    215     10 3003
+Event_0.010                165    247     10 3010
+Event_0.010                240    239     10 3001
+Event_0.010                300    224     10 3000
+Event_0.010               1000    272     10 3003
+Event_0.025                 20     59     25 3025
+Event_0.025                 30     89     25 3025
+Event_0.025                 34    101     25 3025
+Event_0.025                 45     67     25 3025
+Event_0.025                 60     89     25 3008
+Event_0.025                 72    107     25 3011
+Event_0.025                 75    112     25 3025
+Event_0.025                100     99     25 3005
+Event_0.025                120     89     25 3000
+Event_0.025                144    107     25 3004
+Event_0.025                165     98     25 3000
+Event_0.025                240    102     25 3004
+Event_0.025                300    112     25 3015
+Event_0.025               1000    115     25 3016
+Event_0.034                 20     59     34 3034
+Event_0.034                 30     44     34 3000
+Event_0.034                 34     50     34 3004
+Event_0.034                 45     67     34 3034
+Event_0.034                 60     59     34 3000
+Event_0.034                 72     71     34 3006
+Event_0.034                 75     74     34 3007
+Event_0.034                100     74     34 3004
+Event_0.034                120     71     34 3000
+Event_0.034                144     81     34 3013
+Event_0.034                165     82     34 3021
+Event_0.034                240     79     34 3000
+Event_0.034                300     81     34 3007
+Event_0.034               1000     85     34 3010
+Event_0.040                 20     59     40 3040
+Event_0.040                 30     44     40 3006
+Event_0.040                 34     50     40 3010
+Event_0.040                 45     67     40 3040
+Event_0.040                 60     59     40 3006
+Event_0.040                 72     71     40 3012
+Event_0.040                 75     56     40 3040
+Event_0.040                100     59     40 3000
+Event_0.040                120     71     40 3006
+Event_0.040                144     71     40 3005
+Event_0.040                165     70     40 3015
+Event_0.040                240     71     40 3002
+Event_0.040                300     69     40 3033
+Event_0.040               1000     73     40 3034
+Event_0.050                 20     29     50 3000
+Event_0.050                 30     44     50 3016
+Event_0.050                 34     50     50 3020
+Event_0.050                 45     44     50 3005
+Event_0.050                 60     44     50 3000
+Event_0.050                 72     53     50 3008
+Event_0.050                 75     56     50 3050
+Event_0.050                100     49     50 3000
+Event_0.050                120     51     50 3033
+Event_0.050                144     53     50 3001
+Event_0.050                165     54     50 3001
+Event_0.050                240     55     50 3033
+Event_0.050                300     56     50 3040
+Event_0.050               1000     58     50 3009
+Event_0.100                 20     19    100 3000
+Event_0.100                 30     22    100 3066
+Event_0.100                 34     25    100 3070
+Event_0.100                 45     26    100 3011
+Event_0.100                 60     25    100 3033
+Event_0.100                 72     26    100 3002
+Event_0.100                 75     28    100 3100
+Event_0.100                100     27    100 3080
+Event_0.100                120     27    100 3033
+Event_0.100                144     28    100 3023
+Event_0.100                165     29    100 3093
+Event_0.100                240     28    100 3020
+Event_0.100                300     29    100 3100
+Event_0.100               1000     29    100 3030
+Event_0.200                 20     11    200 3000
+Event_0.200                 30     12    200 3033
+Event_0.200                 34     14    200 3111
+Event_0.200                 45     13    200 3111
+Event_0.200                 60     13    200 3033
+Event_0.200                 72     14    200 3130
+Event_0.200                 75     14    200 3200
+Event_0.200                100     14    200 3150
+Event_0.200                120     14    200 3125
+Event_0.200                144     14    200 3026
+Event_0.200                165     14    200 3090
+Event_0.200                240     14    200 3062
+Event_0.200                300     14    200 3050
+Event_0.200               1000     14    200 3015
+Event_0.500                 20      5    500 3300
+Event_0.500                 30      5    500 3200
+Event_0.500                 34      5    500 3176
+Event_0.500                 45      5    500 3077
+Event_0.500                 60      5    500 3100
+Event_0.500                 72      5    500 3083
+Event_0.500                 75      5    500 3046
+Event_0.500                100      5    500 3060
+Event_0.500                120      5    500 3050
+Event_0.500                144      5    500 3041
+Event_0.500                165      5    500 3021
+Event_0.500                240      5    500 3025
+Event_0.500                300      5    500 3020
+Event_0.500               1000      5    500 3006
+Event_0.700                 20      3    700 3000
+Event_0.700                 30      4    700 3666
+Event_0.700                 34      4    700 3552
+Event_0.700                 45      4    700 3566
+Event_0.700                 60      4    700 3583
+Event_0.700                 72      4    700 3547
+Event_0.700                 75      4    700 3540
+Event_0.700                100      4    700 3550
+Event_0.700                120      4    700 3541
+Event_0.700                144      4    700 3512
+Event_0.700                165      4    700 3518
+Event_0.700                240      4    700 3520
+Event_0.700                300      4    700 3516
+Event_0.700               1000      4    700 3505
+Event_1.000                 20      2   1000 3150
+Event_1.000                 30      2   1000 3100
+Event_1.000                 34      2   1000 3088
+Event_1.000                 45      2   1000 3066
+Event_1.000                 60      2   1000 3050
+Event_1.000                 72      2   1000 3041
+Event_1.000                 75      2   1000 3040
+Event_1.000                100      2   1000 3030
+Event_1.000                120      2   1000 3025
+Event_1.000                144      2   1000 3020
+Event_1.000                165      2   1000 3018
+Event_1.000                240      2   1000 3012
+Event_1.000                300      2   1000 3010
+Event_1.000               1000      2   1000 3003
+AITick_default              20      3   1000 3050
+AITick_default              30      3   1000 3033
+AITick_default              34      3   1000 3029
+AITick_default              45      3   1000 3022
+AITick_default              60      3   1000 3016
+AITick_default              72      3   1000 3013
+AITick_default              75      3   1000 3013
+AITick_default             100      3   1000 3010
+AITick_default             120      3   1000 3008
+AITick_default             144      3   1000 3006
+AITick_default             165      3   1000 3006
+AITick_default             240      3   1000 3004
+AITick_default             300      3   1000 3003
+AITick_default            1000      3   1000 3001
+AITick_0.150                20     20    150 3050
+AITick_0.150                30     18    150 3016
+AITick_0.150                34     17    150 3002
+AITick_0.150                45     20    150 3127
+AITick_0.150                60     20    150 3016
+AITick_0.150                72     20    150 3066
+AITick_0.150                75     19    150 3043
+AITick_0.150               100     20    150 3010
+AITick_0.150               120     20    150 3008
+AITick_0.150               144     20    150 3059
+AITick_0.150               165     20    150 3034
+AITick_0.150               240     20    150 3004
+AITick_0.150               300     20    150 3003
+AITick_0.150              1000     20    150 3001
+AITick_0.250                20     12    250 3050
+AITick_0.250                30     12    250 3216
+AITick_0.250                34     12    250 3191
+AITick_0.250                45     12    250 3205
+AITick_0.250                60     12    250 3016
+AITick_0.250                72     12    250 3013
+AITick_0.250                75     12    250 3050
+AITick_0.250               100     12    250 3010
+AITick_0.250               120     12    250 3008
+AITick_0.250               144     12    250 3006
+AITick_0.250               165     12    250 3056
+AITick_0.250               240     12    250 3004
+AITick_0.250               300     12    250 3003
+AITick_0.250              1000     12    250 3001
+AITick_0.500                20      6    500 3050
+AITick_0.500                30      6    500 3033
+AITick_0.500                34      6    500 3029
+AITick_0.500                45      6    500 3077
+AITick_0.500                60      6    500 3016
+AITick_0.500                72      6    500 3013
+AITick_0.500                75      6    500 3046
+AITick_0.500               100      6    500 3010
+AITick_0.500               120      6    500 3008
+AITick_0.500               144      6    500 3006
+AITick_0.500               165      6    500 3021
+AITick_0.500               240      6    500 3004
+AITick_0.500               300      6    500 3003
+AITick_0.500              1000      6    500 3001
+AITick_0.750                20      4    750 3050
+AITick_0.750                30      4    750 3083
+AITick_0.750                34      4    750 3073
+AITick_0.750                45      4    750 3038
+AITick_0.750                60      4    750 3016
+AITick_0.750                72      4    750 3013
+AITick_0.750                75      4    750 3043
+AITick_0.750               100      4    750 3010
+AITick_0.750               120      4    750 3008
+AITick_0.750               144      4    750 3006
+AITick_0.750               165      4    750 3010
+AITick_0.750               240      4    750 3004
+AITick_0.750               300      4    750 3003
+AITick_0.750              1000      4    750 3001
+WeaponRefire_0.050          20     58     50 0x40433334 # 3.050000
+WeaponRefire_0.050          30     45     50 0x40410625 # 3.016000
+WeaponRefire_0.050          34     51     50 0x404147AE # 3.020000
+WeaponRefire_0.050          45     45     50 0x404051EC # 3.005000
+WeaponRefire_0.050          60     59     50 0x40421CAC # 3.033000
+WeaponRefire_0.050          72     54     50 0x40408313 # 3.008000
+WeaponRefire_0.050          75     57     50 0x40433334 # 3.050000
+WeaponRefire_0.050         100     59     50 0x40428F5D # 3.040000
+WeaponRefire_0.050         120     60     50 0x40429FBF # 3.041000
+WeaponRefire_0.050         144     54     50 0x40401063 # 3.001000
+WeaponRefire_0.050         165     55     50 0x40401063 # 3.001000
+WeaponRefire_0.050         240     60     50 0x4040C49C # 3.012000
+WeaponRefire_0.050         300     60     50 0x404178D5 # 3.023000
+WeaponRefire_0.050        1000     60     50 0x40408313 # 3.008000
+WeaponRefire_0.100          20     29    100 0x40466667 # 3.100000
+WeaponRefire_0.100          30     29    100 0x40443958 # 3.066000
+WeaponRefire_0.100          34     26    100 0x40447AE1 # 3.070000
+WeaponRefire_0.100          45     27    100 0x4040B43A # 3.011000
+WeaponRefire_0.100          60     30    100 0x40466667 # 3.100000
+WeaponRefire_0.100          72     27    100 0x404020C5 # 3.002000
+WeaponRefire_0.100          75     29    100 0x40466667 # 3.100000
+WeaponRefire_0.100         100     30    100 0x4043D70A # 3.060000
+WeaponRefire_0.100         120     30    100 0x40421CAC # 3.033000
+WeaponRefire_0.100         144     29    100 0x404178D5 # 3.023000
+WeaponRefire_0.100         165     30    100 0x4045F3B6 # 3.093000
+WeaponRefire_0.100         240     30    100 0x40410625 # 3.016000
+WeaponRefire_0.100         300     30    100 0x4040D4FE # 3.013000
+WeaponRefire_0.100        1000     30    100 0x404051EC # 3.005000
+WeaponRefire_0.150          20     19    150 0x40466667 # 3.100000
+WeaponRefire_0.150          30     18    150 0x40410626 # 3.016000
+WeaponRefire_0.150          34     17    150 0x404020C6 # 3.002000
+WeaponRefire_0.150          45     20    150 0x404820C6 # 3.127000
+WeaponRefire_0.150          60     20    150 0x40443959 # 3.066000
+WeaponRefire_0.150          72     20    150 0x40443959 # 3.066000
+WeaponRefire_0.150          75     19    150 0x4042C084 # 3.043000
+WeaponRefire_0.150         100     20    150 0x40433334 # 3.050000
+WeaponRefire_0.150         120     20    150 0x4041999B # 3.025000
+WeaponRefire_0.150         144     20    150 0x4043C6A9 # 3.059000
+WeaponRefire_0.150         165     20    150 0x40422D0F # 3.034000
+WeaponRefire_0.150         240     20    150 0x4040C49D # 3.012000
+WeaponRefire_0.150         300     20    150 0x404147AF # 3.020000
+WeaponRefire_0.150        1000     20    150 0x404072B1 # 3.007000
+WeaponRefire_0.250          20     12    250 0x40433334 # 3.050000
+WeaponRefire_0.250          30     12    250 0x404DD2F2 # 3.216000
+WeaponRefire_0.250          34     12    250 0x404C3959 # 3.191000
+WeaponRefire_0.250          45     12    250 0x404D1EB9 # 3.205000
+WeaponRefire_0.250          60     12    250 0x40410625 # 3.016000
+WeaponRefire_0.250          72     12    250 0x4040D4FF # 3.013000
+WeaponRefire_0.250          75     12    250 0x40433334 # 3.050000
+WeaponRefire_0.250         100     12    250 0x404147AF # 3.020000
+WeaponRefire_0.250         120     12    250 0x40408313 # 3.008000
+WeaponRefire_0.250         144     12    250 0x4040624E # 3.006000
+WeaponRefire_0.250         165     12    250 0x40439582 # 3.056000
+WeaponRefire_0.250         240     12    250 0x4040418A # 3.004000
+WeaponRefire_0.250         300     12    250 0x4040624E # 3.006000
+WeaponRefire_0.250        1000     12    250 0x40401063 # 3.001000
+WeaponRefire_0.500          20      6    500 0x40433334 # 3.050000
+WeaponRefire_0.500          30      6    500 0x40421CAD # 3.033000
+WeaponRefire_0.500          34      6    500 0x4041DB23 # 3.029000
+WeaponRefire_0.500          45      6    500 0x4044ED92 # 3.077000
+WeaponRefire_0.500          60      6    500 0x40410625 # 3.016000
+WeaponRefire_0.500          72      6    500 0x4040D4FE # 3.013000
+WeaponRefire_0.500          75      6    500 0x4042F1AA # 3.046000
+WeaponRefire_0.500         100      6    500 0x404147AF # 3.020000
+WeaponRefire_0.500         120      6    500 0x40408313 # 3.008000
+WeaponRefire_0.500         144      6    500 0x4040624E # 3.006000
+WeaponRefire_0.500         165      6    500 0x40415811 # 3.021000
+WeaponRefire_0.500         240      6    500 0x4040418A # 3.004000
+WeaponRefire_0.500         300      6    500 0x40403127 # 3.003000
+WeaponRefire_0.500        1000      6    500 0x40401063 # 3.001000
+WeaponFireWait_0.150        20    200    150 0x3E4CCCCD # 0.200000
+WeaponFireWait_0.150        30    200    150 0x3E3B645A # 0.183000
+WeaponFireWait_0.150        34    205    150 0x3E374BC7 # 0.179000
+WeaponFireWait_0.150        45    177    150 0x3E3020C5 # 0.172000
+WeaponFireWait_0.150        60    166    150 0x3E29FBE8 # 0.166000
+WeaponFireWait_0.150        72    166    150 0x3E26E979 # 0.163000
+WeaponFireWait_0.150        75    173    150 0x3E26E979 # 0.163000
+WeaponFireWait_0.150       100    160    150 0x3E23D70B # 0.160000
+WeaponFireWait_0.150       120    158    150 0x3E21CAC1 # 0.158000
+WeaponFireWait_0.150       144    159    150 0x3E1FBE77 # 0.156000
+WeaponFireWait_0.150       165    157    150 0x3E1FBE77 # 0.156000
+WeaponFireWait_0.150       240    154    150 0x3E1DB22D # 0.154000
+WeaponFireWait_0.150       300    153    150 0x3E1CAC09 # 0.153000
+WeaponFireWait_0.150      1000    151    150 0x3E1A9FBF # 0.151000
+WeaponFireWait_0.500        20    550    500 0x3F0CCCCD # 0.550000
+WeaponFireWait_0.500        30    533    500 0x3F0872B0 # 0.533000
+WeaponFireWait_0.500        34    529    500 0x3F076C8B # 0.529000
+WeaponFireWait_0.500        45    533    500 0x3F05A1CB # 0.522000
+WeaponFireWait_0.500        60    516    500 0x3F041893 # 0.516000
+WeaponFireWait_0.500        72    513    500 0x3F0353F8 # 0.513000
+WeaponFireWait_0.500        75    520    500 0x3F0353F8 # 0.513000
+WeaponFireWait_0.500       100    510    500 0x3F028F5C # 0.510000
+WeaponFireWait_0.500       120    508    500 0x3F020C4A # 0.508000
+WeaponFireWait_0.500       144    506    500 0x3F018937 # 0.506000
+WeaponFireWait_0.500       165    509    500 0x3F018937 # 0.506000
+WeaponFireWait_0.500       240    504    500 0x3F010625 # 0.504000
+WeaponFireWait_0.500       300    503    500 0x3F00C49C # 0.503000
+WeaponFireWait_0.500      1000    501    500 0x3F004189 # 0.501000
+WeaponAimWait_0.150         20    200    150 0x3E4CCCCD # 0.200000
+WeaponAimWait_0.150         30    200    150 0x3E3B645A # 0.183000
+WeaponAimWait_0.150         34    205    150 0x3E374BC7 # 0.179000
+WeaponAimWait_0.150         45    177    150 0x3E3020C5 # 0.172000
+WeaponAimWait_0.150         60    166    150 0x3E29FBE8 # 0.166000
+WeaponAimWait_0.150         72    166    150 0x3E26E979 # 0.163000
+WeaponAimWait_0.150         75    173    150 0x3E26E979 # 0.163000
+WeaponAimWait_0.150        100    160    150 0x3E23D70B # 0.160000
+WeaponAimWait_0.150        120    158    150 0x3E21CAC1 # 0.158000
+WeaponAimWait_0.150        144    159    150 0x3E1FBE77 # 0.156000
+WeaponAimWait_0.150        165    157    150 0x3E1FBE77 # 0.156000
+WeaponAimWait_0.150        240    154    150 0x3E1DB22D # 0.154000
+WeaponAimWait_0.150        300    153    150 0x3E1CAC09 # 0.153000
+WeaponAimWait_0.150       1000    151    150 0x3E1A9FBF # 0.151000
+WeaponMountWait_0.150       20    200    150 0x3E4CCCCD # 0.200000
+WeaponMountWait_0.150       30    200    150 0x3E3B645A # 0.183000
+WeaponMountWait_0.150       34    205    150 0x3E374BC7 # 0.179000
+WeaponMountWait_0.150       45    177    150 0x3E3020C5 # 0.172000
+WeaponMountWait_0.150       60    166    150 0x3E29FBE8 # 0.166000
+WeaponMountWait_0.150       72    166    150 0x3E26E979 # 0.163000
+WeaponMountWait_0.150       75    173    150 0x3E26E979 # 0.163000
+WeaponMountWait_0.150      100    160    150 0x3E23D70B # 0.160000
+WeaponMountWait_0.150      120    158    150 0x3E21CAC1 # 0.158000
+WeaponMountWait_0.150      144    159    150 0x3E1FBE77 # 0.156000
+WeaponMountWait_0.150      165    157    150 0x3E1FBE77 # 0.156000
+WeaponMountWait_0.150      240    154    150 0x3E1DB22D # 0.154000
+WeaponMountWait_0.150      300    153    150 0x3E1CAC09 # 0.153000
+WeaponMountWait_0.150     1000    151    150 0x3E1A9FBF # 0.151000
+WeaponActivate_0.150        20    200    150 0x3E4CCCCD # 0.200000
+WeaponActivate_0.150        30    200    150 0x3E3B645A # 0.183000
+WeaponActivate_0.150        34    205    150 0x3E374BC7 # 0.179000
+WeaponActivate_0.150        45    177    150 0x3E3020C5 # 0.172000
+WeaponActivate_0.150        60    166    150 0x3E29FBE8 # 0.166000
+WeaponActivate_0.150        72    166    150 0x3E26E979 # 0.163000
+WeaponActivate_0.150        75    173    150 0x3E26E979 # 0.163000
+WeaponActivate_0.150       100    160    150 0x3E23D70B # 0.160000
+WeaponActivate_0.150       120    158    150 0x3E21CAC1 # 0.158000
+WeaponActivate_0.150       144    159    150 0x3E1FBE77 # 0.156000
+WeaponActivate_0.150       165    157    150 0x3E1FBE77 # 0.156000
+WeaponActivate_0.150       240    154    150 0x3E1DB22D # 0.154000
+WeaponActivate_0.150       300    153    150 0x3E1CAC09 # 0.153000
+WeaponActivate_0.150      1000    151    150 0x3E1A9FBF # 0.151000
+WeaponActivate_1.000        20   1050   1000 0x3F866666 # 1.050000
+WeaponActivate_1.000        30   1033   1000 0x3F843958 # 1.033000
+WeaponActivate_1.000        34   1029   1000 0x3F83B646 # 1.029000
+WeaponActivate_1.000        45   1022   1000 0x3F82D0E5 # 1.022000
+WeaponActivate_1.000        60   1016   1000 0x3F820C4A # 1.016000
+WeaponActivate_1.000        72   1013   1000 0x3F81A9FC # 1.013000
+WeaponActivate_1.000        75   1013   1000 0x3F81A9FC # 1.013000
+WeaponActivate_1.000       100   1010   1000 0x3F8147AE # 1.010000
+WeaponActivate_1.000       120   1008   1000 0x3F810625 # 1.008000
+WeaponActivate_1.000       144   1006   1000 0x3F80C49C # 1.006000
+WeaponActivate_1.000       165   1006   1000 0x3F80C49C # 1.006000
+WeaponActivate_1.000       240   1004   1000 0x3F808312 # 1.004000
+WeaponActivate_1.000       300   1003   1000 0x3F80624E # 1.003000
+WeaponActivate_1.000      1000   1001   1000 0x3F8020C5 # 1.001000
+ItemTouch                   20      6    500 3300
+ItemTouch                   30      6    500 3200
+ItemTouch                   34      6    500 3176
+ItemTouch                   45      6    500 3077
+ItemTouch                   60      6    500 3100
+ItemTouch                   72      6    500 3083
+ItemTouch                   75      6    500 3046
+ItemTouch                  100      6    500 3060
+ItemTouch                  120      6    500 3050
+ItemTouch                  144      6    500 3041
+ItemTouch                  165      6    500 3021
+ItemTouch                  240      6    500 3025
+ItemTouch                  300      6    500 3020
+ItemTouch                 1000      6    500 3006
+Surfacing                   20      2      2 36000
+Surfacing                   30      3      2 36000
+Surfacing                   34      3      3 36000
+Surfacing                   45      4      4 36000
+Surfacing                   60      5      5 36000
+Surfacing                   72      6      6 36000
+Surfacing                   75      6      6 36000
+Surfacing                  100      8      8 36000
+Surfacing                  120     10      9 36000
+Surfacing                  144     12     11 36000
+Surfacing                  165     13     13 36000
+Surfacing                  240     19     19 36000
+Surfacing                  300     24     23 36000
+Surfacing                 1000     79     78 36000
+Surfacing_idx5              20      1      2 36000
+Surfacing_idx5              30      2      3 36000
+Surfacing_idx5              34      2      3 36000
+Surfacing_idx5              45      3      4 36000
+Surfacing_idx5              60      4      5 36000
+Surfacing_idx5              72      5      6 36000
+Surfacing_idx5              75      6      6 36000
+Surfacing_idx5             100      8      8 36000
+Surfacing_idx5             120      9     10 36000
+Surfacing_idx5             144     11     12 36000
+Surfacing_idx5             165     13     13 36000
+Surfacing_idx5             240     19     19 36000
+Surfacing_idx5             300     23     24 36000
+Surfacing_idx5            1000     78     78 36000
+DrownGurgle                 20      4      0 0
+DrownGurgle                 30      6      0 0
+DrownGurgle                 34      7      0 0
+DrownGurgle                 45      9      0 0
+DrownGurgle                 60     12      0 0
+DrownGurgle                 72     14      0 0
+DrownGurgle                 75     15      0 0
+DrownGurgle                100     19      0 0
+DrownGurgle                120     23      0 0
+DrownGurgle                144     27      0 0
+DrownGurgle                165     31      0 0
+DrownGurgle                240     45      0 0
+DrownGurgle                300     57      0 0
+DrownGurgle               1000    188      0 0
+WeaponNoise                 20      8      0 0
+WeaponNoise                 30     12      0 0
+WeaponNoise                 34     13      0 0
+WeaponNoise                 45     17      0 0
+WeaponNoise                 60     23      0 0
+WeaponNoise                 72     27      0 0
+WeaponNoise                 75     29      0 0
+WeaponNoise                100     38      0 0
+WeaponNoise                120     45      0 0
+WeaponNoise                144     54      0 0
+WeaponNoise                165     62      0 0
+WeaponNoise                240     90      0 0
+WeaponNoise                300    113      0 0
+WeaponNoise               1000    375      0 0
+PathBlocked                 20     58    150 60
+PathBlocked                 30     88    100 90
+PathBlocked                 34    100     88 102
+PathBlocked                 45    133     66 135
+PathBlocked                 60    178     50 180
+PathBlocked                 72    214     41 216
+PathBlocked                 75    223     40 225
+PathBlocked                100    298     30 300
+PathBlocked                120    358     25 360
+PathBlocked                144    430     20 432
+PathBlocked                165    493     18 495
+PathBlocked                240    718     12 720
+PathBlocked                300    898     10 900
+PathBlocked               1000   2998      3 3000
+Exhaust                     20     60      0 0
+Exhaust                     30     90      0 0
+Exhaust                     34    102      0 0
+Exhaust                     45    135      0 0
+Exhaust                     60    180      0 0
+Exhaust                     72    216      0 0
+Exhaust                     75    225      0 0
+Exhaust                    100    300      0 0
+Exhaust                    120    360      0 0
+Exhaust                    144    432      0 0
+Exhaust                    165    495      0 0
+Exhaust                    240    720      0 0
+Exhaust                    300    900      0 0
+Exhaust                   1000   3000      0 0
+PathMove_2.000              20   2000     40 0
+PathMove_2.000              30   2000     60 0
+PathMove_2.000              34   2000     68 0
+PathMove_2.000              45   2000     90 0
+PathMove_2.000              60   2000    120 0
+PathMove_2.000              72   2000    144 0
+PathMove_2.000              75   2000    150 0
+PathMove_2.000             100   2000    200 0
+PathMove_2.000             120   2000    240 0
+PathMove_2.000             144   2000    288 0
+PathMove_2.000             165   2000    330 0
+PathMove_2.000             240   2000    480 0
+PathMove_2.000             300   2000    600 0
+PathMove_2.000            1000   2000   2000 0
+PathMove_0.500              20    500     10 0
+PathMove_0.500              30    500     15 0
+PathMove_0.500              34    500     17 0
+PathMove_0.500              45    511     23 0
+PathMove_0.500              60    500     30 0
+PathMove_0.500              72    500     36 0
+PathMove_0.500              75    506     38 0
+PathMove_0.500             100    500     50 0
+PathMove_0.500             120    500     60 0
+PathMove_0.500             144    500     72 0
+PathMove_0.500             165    503     83 0
+PathMove_0.500             240    500    120 0
+PathMove_0.500             300    500    150 0
+PathMove_0.500            1000    500    500 0
+PathRotate_1.000            20   1000     20 0x3F800000 # 1.000000
+PathRotate_1.000            30   1033     31 0x3F800000 # 1.000000
+PathRotate_1.000            34   1000     34 0x3F800000 # 1.000000
+PathRotate_1.000            45   1000     45 0x3F800000 # 1.000000
+PathRotate_1.000            60   1000     60 0x3F800000 # 1.000000
+PathRotate_1.000            72   1013     73 0x3F800000 # 1.000000
+PathRotate_1.000            75   1000     75 0x3F800000 # 1.000000
+PathRotate_1.000           100   1010    101 0x3F800000 # 1.000000
+PathRotate_1.000           120   1000    120 0x3F800000 # 1.000000
+PathRotate_1.000           144   1000    144 0x3F800000 # 1.000000
+PathRotate_1.000           165   1006    166 0x3F800000 # 1.000000
+PathRotate_1.000           240   1000    240 0x3F800000 # 1.000000
+PathRotate_1.000           300   1000    300 0x3F800000 # 1.000000
+PathRotate_1.000          1000   1001   1001 0x3F800000 # 1.000000
+PathRotate_0.250            20    250      5 0x3F800000 # 1.000000
+PathRotate_0.250            30    266      8 0x3F800000 # 1.000000
+PathRotate_0.250            34    264      9 0x3F800000 # 1.000000
+PathRotate_0.250            45    266     12 0x3F800000 # 1.000000
+PathRotate_0.250            60    250     15 0x3F800000 # 1.000000
+PathRotate_0.250            72    263     19 0x3F800000 # 1.000000
+PathRotate_0.250            75    253     19 0x3F800000 # 1.000000
+PathRotate_0.250           100    250     25 0x3F800000 # 1.000000
+PathRotate_0.250           120    250     30 0x3F800000 # 1.000000
+PathRotate_0.250           144    256     37 0x3F800000 # 1.000000
+PathRotate_0.250           165    254     42 0x3F800000 # 1.000000
+PathRotate_0.250           240    254     61 0x3F800000 # 1.000000
+PathRotate_0.250           300    250     75 0x3F800000 # 1.000000
+PathRotate_0.250          1000    250    250 0x3F800000 # 1.000000
+Drowning                    20    600     60 60000
+Drowning                    30    540     90 60000
+Drowning                    34    552    102 60000
+Drowning                    45    540    135 60000
+Drowning                    60    540    180 60000
+Drowning                    72    432    216 60000
+Drowning                    75    450    225 60000
+Drowning                   100    600    300 60000
+Drowning                   120    360    360 60000
+Drowning                   144    432    432 60000
+Drowning                   165    495    495 60000
+Drowning                   240    120    120 60000
+Drowning                   300      0      0 60000
+Drowning                  1000      0      0 60000
+RaftLeak_easy               20   2460     60 1
+RaftLeak_easy               30   2460     90 1
+RaftLeak_easy               34   2448    102 1
+RaftLeak_easy               45   2460    135 1
+RaftLeak_easy               60   2460    180 1
+RaftLeak_easy               72   2352    216 1
+RaftLeak_easy               75   2325    225 1
+RaftLeak_easy              100   2400    300 1
+RaftLeak_easy              120   2280    360 1
+RaftLeak_easy              144   2160    432 1
+RaftLeak_easy              165   2475    495 1
+RaftLeak_easy              240   2280    720 1
+RaftLeak_easy              300   2100    900 1
+RaftLeak_easy             1000      0      0 1
+RaftLeak_hard               20   4980     60 1
+RaftLeak_hard               30   4920     90 1
+RaftLeak_hard               34   4938    102 1
+RaftLeak_hard               45   4920    135 1
+RaftLeak_hard               60   4920    180 1
+RaftLeak_hard               72   4920    216 1
+RaftLeak_hard               75   4875    225 1
+RaftLeak_hard              100   4800    300 1
+RaftLeak_hard              120   4800    360 1
+RaftLeak_hard              144   4728    432 1
+RaftLeak_hard              165   4980    495 1
+RaftLeak_hard              240   4560    720 1
+RaftLeak_hard              300   4800    900 1
+RaftLeak_hard             1000   3000   3000 1
+ImpOverheated_imp2          20    120     60 0x43340000 # 180.000000
+ImpOverheated_imp2          30     90     90 0x43340000 # 180.000000
+ImpOverheated_imp2          34    102    102 0x43340000 # 180.000000
+ImpOverheated_imp2          45      0      0 0x43340000 # 180.000000
+ImpOverheated_imp2          60      0      0 0x43340000 # 180.000000
+ImpOverheated_imp2          72      0      0 0x43340000 # 180.000000
+ImpOverheated_imp2          75      0      0 0x43340000 # 180.000000
+ImpOverheated_imp2         100      0      0 0x43340000 # 180.000000
+ImpOverheated_imp2         120      0      0 0x43340000 # 180.000000
+ImpOverheated_imp2         144      0      0 0x43340000 # 180.000000
+ImpOverheated_imp2         165      0      0 0x43340000 # 180.000000
+ImpOverheated_imp2         240      0      0 0x43340000 # 180.000000
+ImpOverheated_imp2         300      0      0 0x43340000 # 180.000000
+ImpOverheated_imp2        1000      0      0 0x43340000 # 180.000000
+ImpOverheated_imp3          20    120     60 0x43340000 # 180.000000
+ImpOverheated_imp3          30     90     90 0x43340000 # 180.000000
+ImpOverheated_imp3          34    102    102 0x43340000 # 180.000000
+ImpOverheated_imp3          45      0      0 0x43340000 # 180.000000
+ImpOverheated_imp3          60      0      0 0x43340000 # 180.000000
+ImpOverheated_imp3          72      0      0 0x43340000 # 180.000000
+ImpOverheated_imp3          75      0      0 0x43340000 # 180.000000
+ImpOverheated_imp3         100      0      0 0x43340000 # 180.000000
+ImpOverheated_imp3         120      0      0 0x43340000 # 180.000000
+ImpOverheated_imp3         144      0      0 0x43340000 # 180.000000
+ImpOverheated_imp3         165      0      0 0x43340000 # 180.000000
+ImpOverheated_imp3         240      0      0 0x43340000 # 180.000000
+ImpOverheated_imp3         300      0      0 0x43340000 # 180.000000
+ImpOverheated_imp3        1000      0      0 0x43340000 # 180.000000
+ImpOverheated_imp5          20    120     60 0x43340000 # 180.000000
+ImpOverheated_imp5          30     90     90 0x43340000 # 180.000000
+ImpOverheated_imp5          34    102    102 0x43340000 # 180.000000
+ImpOverheated_imp5          45      0      0 0x43340000 # 180.000000
+ImpOverheated_imp5          60      0      0 0x43340000 # 180.000000
+ImpOverheated_imp5          72      0      0 0x43340000 # 180.000000
+ImpOverheated_imp5          75      0      0 0x43340000 # 180.000000
+ImpOverheated_imp5         100      0      0 0x43340000 # 180.000000
+ImpOverheated_imp5         120      0      0 0x43340000 # 180.000000
+ImpOverheated_imp5         144      0      0 0x43340000 # 180.000000
+ImpOverheated_imp5         165      0      0 0x43340000 # 180.000000
+ImpOverheated_imp5         240      0      0 0x43340000 # 180.000000
+ImpOverheated_imp5         300      0      0 0x43340000 # 180.000000
+ImpOverheated_imp5        1000      0      0 0x43340000 # 180.000000
+ImpOverheated_imp2_half     20     60     60 0x43340000 # 180.000000
+ImpOverheated_imp2_half     30      0      0 0x43340000 # 180.000000
+ImpOverheated_imp2_half     34      0      0 0x43340000 # 180.000000
+ImpOverheated_imp2_half     45      0      0 0x43340000 # 180.000000
+ImpOverheated_imp2_half     60      0      0 0x43340000 # 180.000000
+ImpOverheated_imp2_half     72      0      0 0x43340000 # 180.000000
+ImpOverheated_imp2_half     75      0      0 0x43340000 # 180.000000
+ImpOverheated_imp2_half    100      0      0 0x43340000 # 180.000000
+ImpOverheated_imp2_half    120      0      0 0x43340000 # 180.000000
+ImpOverheated_imp2_half    144      0      0 0x43340000 # 180.000000
+ImpOverheated_imp2_half    165      0      0 0x43340000 # 180.000000
+ImpOverheated_imp2_half    240      0      0 0x43340000 # 180.000000
+ImpOverheated_imp2_half    300      0      0 0x43340000 # 180.000000
+ImpOverheated_imp2_half   1000      0      0 0x43340000 # 180.000000
+ImpOverheated_imp5_half     20     60     60 0x43340000 # 180.000000
+ImpOverheated_imp5_half     30      0      0 0x43340000 # 180.000000
+ImpOverheated_imp5_half     34      0      0 0x43340000 # 180.000000
+ImpOverheated_imp5_half     45      0      0 0x43340000 # 180.000000
+ImpOverheated_imp5_half     60      0      0 0x43340000 # 180.000000
+ImpOverheated_imp5_half     72      0      0 0x43340000 # 180.000000
+ImpOverheated_imp5_half     75      0      0 0x43340000 # 180.000000
+ImpOverheated_imp5_half    100      0      0 0x43340000 # 180.000000
+ImpOverheated_imp5_half    120      0      0 0x43340000 # 180.000000
+ImpOverheated_imp5_half    144      0      0 0x43340000 # 180.000000
+ImpOverheated_imp5_half    165      0      0 0x43340000 # 180.000000
+ImpOverheated_imp5_half    240      0      0 0x43340000 # 180.000000
+ImpOverheated_imp5_half    300      0      0 0x43340000 # 180.000000
+ImpOverheated_imp5_half   1000      0      0 0x43340000 # 180.000000
+ImpOverheats_imp5           20     80     40 0x43340000 # 180.000000
+ImpOverheats_imp5           30     60     60 0x43340000 # 180.000000
+ImpOverheats_imp5           34     68     68 0x43340000 # 180.000000
+ImpOverheats_imp5           45      0      0 0x43340000 # 180.000000
+ImpOverheats_imp5           60      0      0 0x43340000 # 180.000000
+ImpOverheats_imp5           72      0      0 0x43340000 # 180.000000
+ImpOverheats_imp5           75      0      0 0x43340000 # 180.000000
+ImpOverheats_imp5          100      0      0 0x43340000 # 180.000000
+ImpOverheats_imp5          120      0      0 0x43340000 # 180.000000
+ImpOverheats_imp5          144      0      0 0x43340000 # 180.000000
+ImpOverheats_imp5          165      0      0 0x43340000 # 180.000000
+ImpOverheats_imp5          240      0      0 0x43340000 # 180.000000
+ImpOverheats_imp5          300      0      0 0x43340000 # 180.000000
+ImpOverheats_imp5         1000      0      0 0x43340000 # 180.000000
+ImpOverheats_imp5_half      20     20     20 0x43340000 # 180.000000
+ImpOverheats_imp5_half      30      0      0 0x43340000 # 180.000000
+ImpOverheats_imp5_half      34      0      0 0x43340000 # 180.000000
+ImpOverheats_imp5_half      45      0      0 0x43340000 # 180.000000
+ImpOverheats_imp5_half      60      0      0 0x43340000 # 180.000000
+ImpOverheats_imp5_half      72      0      0 0x43340000 # 180.000000
+ImpOverheats_imp5_half      75      0      0 0x43340000 # 180.000000
+ImpOverheats_imp5_half     100      0      0 0x43340000 # 180.000000
+ImpOverheats_imp5_half     120      0      0 0x43340000 # 180.000000
+ImpOverheats_imp5_half     144      0      0 0x43340000 # 180.000000
+ImpOverheats_imp5_half     165      0      0 0x43340000 # 180.000000
+ImpOverheats_imp5_half     240      0      0 0x43340000 # 180.000000
+ImpOverheats_imp5_half     300      0      0 0x43340000 # 180.000000
+ImpOverheats_imp5_half    1000      0      0 0x43340000 # 180.000000
+AetheriumOut                20    540     60 0x43340000 # 180.000000
+AetheriumOut                30    480     90 0x43340000 # 180.000000
+AetheriumOut                34    510    102 0x43340000 # 180.000000
+AetheriumOut                45    435    135 0x43340000 # 180.000000
+AetheriumOut                60    480    180 0x43340000 # 180.000000
+AetheriumOut                72    432    216 0x43340000 # 180.000000
+AetheriumOut                75    450    225 0x43340000 # 180.000000
+AetheriumOut               100    300    300 0x43340000 # 180.000000
+AetheriumOut               120    360    360 0x43340000 # 180.000000
+AetheriumOut               144    432    432 0x43340000 # 180.000000
+AetheriumOut               165    495    495 0x43340000 # 180.000000
+AetheriumOut               240      0      0 0x43340000 # 180.000000
+AetheriumOut               300      0      0 0x43340000 # 180.000000
+AetheriumOut              1000      0      0 0x43340000 # 180.000000
+AetheriumOut_half           20    240     60 0x43340000 # 180.000000
+AetheriumOut_half           30    210     90 0x43340000 # 180.000000
+AetheriumOut_half           34    204    102 0x43340000 # 180.000000
+AetheriumOut_half           45    165    135 0x43340000 # 180.000000
+AetheriumOut_half           60    180    180 0x43340000 # 180.000000
+AetheriumOut_half           72    216    216 0x43340000 # 180.000000
+AetheriumOut_half           75    225    225 0x43340000 # 180.000000
+AetheriumOut_half          100      0      0 0x43340000 # 180.000000
+AetheriumOut_half          120      0      0 0x43340000 # 180.000000
+AetheriumOut_half          144      0      0 0x43340000 # 180.000000
+AetheriumOut_half          165      0      0 0x43340000 # 180.000000
+AetheriumOut_half          240      0      0 0x43340000 # 180.000000
+AetheriumOut_half          300      0      0 0x43340000 # 180.000000
+AetheriumOut_half         1000      0      0 0x43340000 # 180.000000
+AetheriumRunsOut            20    369     41 0x43340000 # 180.000000
+AetheriumRunsOut            30    326     61 0x43340000 # 180.000000
+AetheriumRunsOut            34    345     69 0x43340000 # 180.000000
+AetheriumRunsOut            45    294     91 0x43340000 # 180.000000
+AetheriumRunsOut            60    323    121 0x43340000 # 180.000000
+AetheriumRunsOut            72    290    145 0x43340000 # 180.000000
+AetheriumRunsOut            75    302    151 0x43340000 # 180.000000
+AetheriumRunsOut           100    200    200 0x43340000 # 180.000000
+AetheriumRunsOut           120    240    240 0x43340000 # 180.000000
+AetheriumRunsOut           144    289    289 0x43340000 # 180.000000
+AetheriumRunsOut           165    330    330 0x43340000 # 180.000000
+AetheriumRunsOut           240      0      0 0x43340000 # 180.000000
+AetheriumRunsOut           300      0      0 0x43340000 # 180.000000
+AetheriumRunsOut          1000      0      0 0x43340000 # 180.000000
+AetheriumRunsOut_half       20     80     20 0x43340000 # 180.000000
+AetheriumRunsOut_half       30     70     30 0x43340000 # 180.000000
+AetheriumRunsOut_half       34     68     34 0x43340000 # 180.000000
+AetheriumRunsOut_half       45     57     46 0x43340000 # 180.000000
+AetheriumRunsOut_half       60     60     60 0x43340000 # 180.000000
+AetheriumRunsOut_half       72     73     73 0x43340000 # 180.000000
+AetheriumRunsOut_half       75     76     76 0x43340000 # 180.000000
+AetheriumRunsOut_half      100      0      0 0x43340000 # 180.000000
+AetheriumRunsOut_half      120      0      0 0x43340000 # 180.000000
+AetheriumRunsOut_half      144      0      0 0x43340000 # 180.000000
+AetheriumRunsOut_half      165      0      0 0x43340000 # 180.000000
+AetheriumRunsOut_half      240      0      0 0x43340000 # 180.000000
+AetheriumRunsOut_half      300      0      0 0x43340000 # 180.000000
+AetheriumRunsOut_half     1000      0      0 0x43340000 # 180.000000
+AetheriumRunsOut_inPor      20    369     41 0x43340000 # 180.000000
+AetheriumRunsOut_inPor      30    326     61 0x43340000 # 180.000000
+AetheriumRunsOut_inPor      34    345     69 0x43340000 # 180.000000
+AetheriumRunsOut_inPor      45    294     91 0x43340000 # 180.000000
+AetheriumRunsOut_inPor      60    323    121 0x43340000 # 180.000000
+AetheriumRunsOut_inPor      72    290    145 0x43340000 # 180.000000
+AetheriumRunsOut_inPor      75    302    151 0x43340000 # 180.000000
+AetheriumRunsOut_inPor     100    200    200 0x43340000 # 180.000000
+AetheriumRunsOut_inPor     120    240    240 0x43340000 # 180.000000
+AetheriumRunsOut_inPor     144    289    289 0x43340000 # 180.000000
+AetheriumRunsOut_inPor     165    330    330 0x43340000 # 180.000000
+AetheriumRunsOut_inPor     240      0      0 0x43340000 # 180.000000
+AetheriumRunsOut_inPor     300      0      0 0x43340000 # 180.000000
+AetheriumRunsOut_inPor    1000      0      0 0x43340000 # 180.000000
+PorRecovers                 20      0      0 0x4297FFF4 # 75.999908
+PorRecovers                 30      0      0 0x4297FFF4 # 75.999908
+PorRecovers                 34      0      0 0x4297FFFA # 75.999954
+PorRecovers                 45      0      0 0x4297FFE5 # 75.999794
+PorRecovers                 60      0      0 0x4297FFF4 # 75.999908
+PorRecovers                 72      0      0 0x42980018 # 76.000183
+PorRecovers                 75      0      0 0x4298004E # 76.000595
+PorRecovers                100      0      0 0x4297FFB8 # 75.999451
+PorRecovers                120      0      0 0x4297FFB8 # 75.999451
+PorRecovers                144      0      0 0x42980018 # 76.000183
+PorRecovers                165      0      0 0x429800D5 # 76.001625
+PorRecovers                240      0      0 0x429800A8 # 76.001282
+PorRecovers                300      0      0 0x4297FFB8 # 75.999451
+PorRecovers               1000      0      0 0x4297FB08 # 75.990295
+PorRecoversToZero           20      0      0 0x00000000 # 0.000000
+PorRecoversToZero           30      0      0 0x00000000 # 0.000000
+PorRecoversToZero           34      0      0 0x00000000 # 0.000000
+PorRecoversToZero           45      0      0 0x00000000 # 0.000000
+PorRecoversToZero           60      0      0 0x00000000 # 0.000000
+PorRecoversToZero           72      0      0 0x00000000 # 0.000000
+PorRecoversToZero           75      0      0 0x00000000 # 0.000000
+PorRecoversToZero          100      0      0 0x00000000 # 0.000000
+PorRecoversToZero          120      0      0 0x00000000 # 0.000000
+PorRecoversToZero          144      0      0 0x00000000 # 0.000000
+PorRecoversToZero          165      0      0 0x00000000 # 0.000000
+PorRecoversToZero          240      0      0 0x00000000 # 0.000000
+PorRecoversToZero          300      0      0 0x00000000 # 0.000000
+PorRecoversToZero         1000      0      0 0x00000000 # 0.000000
+PorImp2Firing               20      0      0 0x43020000 # 130.000000
+PorImp2Firing               30      0      0 0x43020000 # 130.000000
+PorImp2Firing               34      0      0 0x4302000A # 130.000153
+PorImp2Firing               45      0      0 0x4302000E # 130.000214
+PorImp2Firing               60      0      0 0x43020000 # 130.000000
+PorImp2Firing               72      0      0 0x4301FFF5 # 129.999832
+PorImp2Firing               75      0      0 0x4301FFE7 # 129.999619
+PorImp2Firing              100      0      0 0x4301FFEC # 129.999695
+PorImp2Firing              120      0      0 0x43020000 # 130.000000
+PorImp2Firing              144      0      0 0x43020002 # 130.000031
+PorImp2Firing              165      0      0 0x4301FFB6 # 129.998871
+PorImp2Firing              240      0      0 0x43020028 # 130.000610
+PorImp2Firing              300      0      0 0x4301FFD8 # 129.999390
+PorImp2Firing             1000      0      0 0x43020140 # 130.004883
+PorImp5Overheated           20    120     60 0x43340000 # 180.000000
+PorImp5Overheated           30     90     90 0x43340000 # 180.000000
+PorImp5Overheated           34    102    102 0x43340000 # 180.000000
+PorImp5Overheated           45      0      0 0x43340000 # 180.000000
+PorImp5Overheated           60      0      0 0x43340000 # 180.000000
+PorImp5Overheated           72      0      0 0x43340000 # 180.000000
+PorImp5Overheated           75      0      0 0x43340000 # 180.000000
+PorImp5Overheated          100      0      0 0x43340000 # 180.000000
+PorImp5Overheated          120      0      0 0x43340000 # 180.000000
+PorImp5Overheated          144      0      0 0x43340000 # 180.000000
+PorImp5Overheated          165      0      0 0x43340000 # 180.000000
+PorImp5Overheated          240      0      0 0x43340000 # 180.000000
+PorImp5Overheated          300      0      0 0x43340000 # 180.000000
+PorImp5Overheated         1000      0      0 0x43340000 # 180.000000

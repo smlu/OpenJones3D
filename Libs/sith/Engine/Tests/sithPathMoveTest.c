@@ -54,13 +54,15 @@ void J3DAPI sithPathMoveTest_ApplyThingOrient(SithThing* pThing, rdMatrix34* pMa
     pThing->orient = *pMatrix;
 }
 
+float sithPathMoveTest_moveReturnScale = 1.0f; // 0 blocks the mover (the frame-rate tests)
+
 float J3DAPI sithPathMoveTest_MoveThing(SithThing* pThing, const rdVector3* pDirection, float distance, int flags)
 {
     (void)pThing;
     (void)pDirection;
     (void)flags;
     ++sithPathMoveTest_numMoves;
-    return distance;
+    return distance * sithPathMoveTest_moveReturnScale;
 }
 
 float J3DAPI sithPathMoveTest_Normalize3Acc(rdVector3* pVector)

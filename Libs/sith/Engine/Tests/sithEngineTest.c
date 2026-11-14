@@ -4,6 +4,7 @@
 #include <stdio.h>
 
 #include <j3dcore/Tests/j3dTest.h>
+#include <rdroid/types.h>
 #include <rdroid/RTI/addresses.h>
 #include <sith/RTI/addresses.h>
 #include <std/RTI/addresses.h>
@@ -11,6 +12,14 @@
 tHostServices* sithEngineTest_pSithHostServices;
 tHostServices* sithEngineTest_pStdHostServices;
 tHostServices* sithEngineTest_pRdroidHostServices;
+
+// Identity matrix redirected in sithEngineTestAddrs.h
+const rdMatrix34 sithEngineTest_identMatrix34 = {
+    .rvec = { .x = 1.0f, .y = 0.0f, .z = 0.0f },
+    .lvec = { .x = 0.0f, .y = 1.0f, .z = 0.0f },
+    .uvec = { .x = 0.0f, .y = 0.0f, .z = 1.0f },
+    .dvec = { .x = 0.0f, .y = 0.0f, .z = 0.0f },
+};
 
 void SithEngineTest_Startup(void)
 {
@@ -29,12 +38,14 @@ void SithEngineTest_Shutdown(void)
     TEST_ASSERT_EQUAL_INT_MESSAGE(0, assertCount, "Unexpected engine assertion");
 }
 
+void TEST_sithFrameRate_GROUP_RUNNER(void);
 void TEST_sithIntersect_GROUP_RUNNER(void);
 void TEST_sithPathMove_GROUP_RUNNER(void);
 void TEST_sithPhysics_GROUP_RUNNER(void);
 
 static void SithEngineTest_RunAllTests(void)
 {
+    TEST_sithFrameRate_GROUP_RUNNER();
     TEST_sithIntersect_GROUP_RUNNER();
     TEST_sithPathMove_GROUP_RUNNER();
     TEST_sithPhysics_GROUP_RUNNER();
