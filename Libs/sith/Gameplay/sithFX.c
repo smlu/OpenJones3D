@@ -461,7 +461,7 @@ void J3DAPI sithFX_CreateWaterRipple(SithThing* pThing)
             end.z = 0.0f;
 
             // Fixed: Added search for water surface position.
-            //        This fixes potential wrong ripple position when e.g.: climbing out of water where ripple 
+            //        This fixes potential wrong ripple position when e.g.: climbing out of water where ripple
             //        could be created at position some distance above the water surface.
             ripplePos = pThing->pos;
             ripplePos.z += pThing->attach.distToWaterSurface + sithFX_surfaceOffsetZ; // Altered: Replaced 0.001 constant with sithFX_surfaceOffsetZ
@@ -486,7 +486,7 @@ void J3DAPI sithFX_CreateWaterRipple(SithThing* pThing)
             end.z = 0.0f;
 
             // Fixed: Added search for water surface position.
-            //        Since OG did fixed position at thing.z - movesize*2 depending on 
+            //        Since OG did fixed position at thing.z - movesize*2 depending on
             //        the water height the ripple could be crated under the water or above the water.
             //        The position is now placed directly on the water surface by searching for the exact position of water surface below thing.
             ripplePos = pThing->pos;
@@ -652,7 +652,7 @@ void J3DAPI sithFX_CreateRaftSplatterFX(SithThing* pThing, int bCreateSplash)
 
 void J3DAPI sithFX_CreateRaftWakeFX(SithThing* pThing)
 {
-    // Added: Added check for water surface 
+    // Added: Added check for water surface
     if ( (pThing->attach.flags & SITH_ATTACH_SURFACE) == 0
         || (pThing->attach.attachedToStructure.pSurfaceAttached->flags & (SITH_SURFACE_WATER | SITH_SURFACE_SHALLOWWATER)) == 0 )
     {
@@ -698,11 +698,16 @@ void J3DAPI sithFX_CreateRaftWakeFX(SithThing* pThing)
         // Rotate to match movement direction
         sithFX_RotateSpriteToMovement(pRipple, &pThing->moveInfo.physics.velocity);
 
-
         // Try replace sprite with wake ripple sprite
         if ( !sithFX_bWakeRippleLoaded )
         {
             sithFX_pWakeRippleSprite = sithSprite_Load(sithWorld_g_pStaticWorld, "wake_ripple.spr");
+            if ( streqi(sithFX_pWakeRippleSprite->aName, "default.spr") )
+            {
+                SITHLOG_WARNING("Failed to load wake ripple sprite!\n");
+                sithFX_pWakeRippleSprite = NULL;
+            }
+
             sithFX_bWakeRippleLoaded = true;
         }
 
@@ -832,7 +837,6 @@ void J3DAPI sithFX_CreateRaftPaddleWaterFX(SithThing* pThing, float secTime)
 
     ripplePos.z += sithFX_surfaceOffsetZ; // Altered: Replaced constant 0.001 with sithFX_surfaceOffsetZ
 
-
     SithSector* pRippleSec = pThing->pInSector;
     rdVector3 rippleUpDir  = pThing->orient.uvec;
 
@@ -925,7 +929,6 @@ void J3DAPI sithFX_CreateRaftInflateWaterFX(SithThing* pThing, float size)
     SithThing* pRippleTpl = sithTemplate_GetTemplate("+ripples");
     if ( pRippleTpl && pThing->attach.flags )
     {
-
         rdVector3 start;
         start.x = size;
         start.y = size;
@@ -1170,7 +1173,7 @@ void J3DAPI sithFX_UpdatePolyline(SithThing* pThing)
         else if ( streq(pThing->aName, "+plcogend") )
         {
             // Fixed: Added parent null check.
-            //        There might be issue in savegame system. Spoted this issue 
+            //        There might be issue in savegame system. Spoted this issue
             //        while loading nub game at robot scene, and indy was hit by robo laser.
             if ( !pThing->pParent ) // unlikely
             {
