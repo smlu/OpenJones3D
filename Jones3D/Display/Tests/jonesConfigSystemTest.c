@@ -31,6 +31,40 @@ static bool J3DAPI jonesConfigSystem_GetConfigBool(const char* pKey, bool defaul
 #undef STDFREE
 #define STDMALLOC(size) malloc(size)
 #define STDFREE(pData) free(pData)
+// The game functions jonesConfig.c calls are fixtures of this test (defined below). They are renamed seams,
+// so the module test executable can also link the real functions.
+#define JonesDisplay_GetDesktopDpi           jonesConfigSystem_JonesDisplay_GetDesktopDpi
+#define JonesMain_HasStarted                 jonesConfigSystem_JonesMain_HasStarted
+#define JonesMain_GetDisplaySettings         jonesConfigSystem_JonesMain_GetDisplaySettings
+#define jonesString_GetString                jonesConfigSystem_jonesString_GetString
+#define JonesDialog_ShowDialog               jonesConfigSystem_JonesDialog_ShowDialog
+#define JonesHud_BindActivateControlKeys     jonesConfigSystem_JonesHud_BindActivateControlKeys
+#define JonesMain_BindToggleMenuControlKeys  jonesConfigSystem_JonesMain_BindToggleMenuControlKeys
+#define JonesControl_EnableJoystickAxes      jonesConfigSystem_JonesControl_EnableJoystickAxes
+#define JonesReticle_Enable                  jonesConfigSystem_JonesReticle_Enable
+#define JonesReticle_IsEnabled               jonesConfigSystem_JonesReticle_IsEnabled
+#define JonesDialog_ShowFileSelectDialog     jonesConfigSystem_JonesDialog_ShowFileSelectDialog
+#define JonesFile_GetCurrentCDNum            jonesConfigSystem_JonesFile_GetCurrentCDNum
+#define JonesMain_GetCurrentLevelNum         jonesConfigSystem_JonesMain_GetCurrentLevelNum
+#define jonesInventory_GetMaxDifficultyLevel jonesConfigSystem_jonesInventory_GetMaxDifficultyLevel
+#define jonesInventory_GetTotalIQPoints      jonesConfigSystem_jonesInventory_GetTotalIQPoints
+
+UINT JonesDisplay_GetDesktopDpi(void);
+int JonesMain_HasStarted(void);
+JonesDisplaySettings* JonesMain_GetDisplaySettings(void);
+const char* J3DAPI jonesString_GetString(const char* pKey);
+int J3DAPI JonesDialog_ShowDialog(LPCSTR pTemplate, HWND hWnd, DLGPROC pfnDialog, LPARAM data);
+void J3DAPI JonesHud_BindActivateControlKeys(const size_t* pKeys, size_t numKeys);
+void J3DAPI JonesMain_BindToggleMenuControlKeys(const size_t* pKeys, size_t numKeys);
+void JonesControl_EnableJoystickAxes(void);
+void J3DAPI JonesReticle_Enable(bool bEnabled);
+bool JonesReticle_IsEnabled(void);
+BOOL J3DAPI JonesDialog_ShowFileSelectDialog(LPOPENFILENAMEA pData, int bOpen);
+int JonesFile_GetCurrentCDNum(void);
+size_t JonesMain_GetCurrentLevelNum(void);
+size_t jonesInventory_GetMaxDifficultyLevel(void);
+int jonesInventory_GetTotalIQPoints(void);
+
 #include "../jonesConfig.c"
 #undef stdDisplay_GetBackBufferSize
 #undef LoadIconA

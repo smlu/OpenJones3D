@@ -117,6 +117,96 @@ static void J3DAPI JonesHudTest_SetFrequency(tSysSoundBuffer* pBuffer, float fre
 #define rdModel3_SetThingColor JonesHudTest_SetThingColor
 #define rdModel3_Draw JonesHudTest_Draw
 #define rdModel3_DrawWithFlags JonesHudTest_DrawWithFlags
+// The game functions JonesHud.c calls are fixtures of this test (defined below). They are renamed seams, so the
+// module test executable can also link the real functions.
+#define JonesMain_ResumeGame                           JonesHudTest_JonesMain_ResumeGame
+#define JonesReticle_Resume                            JonesHudTest_JonesReticle_Resume
+#define JonesReticle_Close                             JonesHudTest_JonesReticle_Close
+#define jonesConfig_Shutdown                           JonesHudTest_jonesConfig_Shutdown
+#define jonesInventory_Close                           JonesHudTest_jonesInventory_Close
+#define jonesConfig_Startup                            JonesHudTest_jonesConfig_Startup
+#define jonesConfig_ShowMessageDialog                  JonesHudTest_jonesConfig_ShowMessageDialog
+#define jonesConfig_GetSaveGameFilePath                JonesHudTest_jonesConfig_GetSaveGameFilePath
+#define jonesConfig_GetLoadGameFilePath                JonesHudTest_jonesConfig_GetLoadGameFilePath
+#define jonesConfig_ShowGamePlayOptions                JonesHudTest_jonesConfig_ShowGamePlayOptions
+#define jonesConfig_ShowControlOptions                 JonesHudTest_jonesConfig_ShowControlOptions
+#define jonesConfig_ShowDisplaySettingsDialog          JonesHudTest_jonesConfig_ShowDisplaySettingsDialog
+#define jonesConfig_ShowSoundSettingsDialog            JonesHudTest_jonesConfig_ShowSoundSettingsDialog
+#define jonesConfig_ShowGameOverDialog                 JonesHudTest_jonesConfig_ShowGameOverDialog
+#define jonesConfig_ShowStatisticsDialog               JonesHudTest_jonesConfig_ShowStatisticsDialog
+#define jonesConfig_ShowLevelCompletedDialog           JonesHudTest_jonesConfig_ShowLevelCompletedDialog
+#define jonesConfig_ShowExitGameDialog                 JonesHudTest_jonesConfig_ShowExitGameDialog
+#define jonesConfig_UpdateCurrentLevelNum              JonesHudTest_jonesConfig_UpdateCurrentLevelNum
+#define JonesReticle_Open                              JonesHudTest_JonesReticle_Open
+#define JonesReticle_Update                            JonesHudTest_JonesReticle_Update
+#define JonesReticle_Render                            JonesHudTest_JonesReticle_Render
+#define JonesReticle_Pause                             JonesHudTest_JonesReticle_Pause
+#define JonesMain_HasStarted                           JonesHudTest_JonesMain_HasStarted
+#define JonesMain_PauseGame                            JonesHudTest_JonesMain_PauseGame
+#define JonesMain_ProcessGamesaveState                 JonesHudTest_JonesMain_ProcessGamesaveState
+#define JonesMain_GetCurrentLevelNum                   JonesHudTest_JonesMain_GetCurrentLevelNum
+#define JonesMain_GetDisplayEnvironment                JonesHudTest_JonesMain_GetDisplayEnvironment
+#define JonesMain_GetDisplaySettings                   JonesHudTest_JonesMain_GetDisplaySettings
+#define JonesMain_CloseWindow                          JonesHudTest_JonesMain_CloseWindow
+#define JonesMain_RefreshDisplayDevice                 JonesHudTest_JonesMain_RefreshDisplayDevice
+#define JonesMain_LogErrorToFile                       JonesHudTest_JonesMain_LogErrorToFile
+#define jonesCog_StartCutscene                         JonesHudTest_jonesCog_StartCutscene
+#define jonesCog_ToggleInterface                       JonesHudTest_jonesCog_ToggleInterface
+#define jonesInventory_Open                            JonesHudTest_jonesInventory_Open
+#define jonesInventory_ActivateItem                    JonesHudTest_jonesInventory_ActivateItem
+#define jonesInventory_UseItem                         JonesHudTest_jonesInventory_UseItem
+#define jonesInventory_ResetGameStatistics             JonesHudTest_jonesInventory_ResetGameStatistics
+#define jonesInventory_UpdateSolvedHintsStatistics     JonesHudTest_jonesInventory_UpdateSolvedHintsStatistics
+#define jonesInventory_GetTotalIQPoints                JonesHudTest_jonesInventory_GetTotalIQPoints
+#define jonesInventory_AdvanceFoundTreasuresStatistics JonesHudTest_jonesInventory_AdvanceFoundTreasuresStatistics
+#define jonesInventory_UpdateGameTimeStatistics        JonesHudTest_jonesInventory_UpdateGameTimeStatistics
+#define jonesInventory_ResetStatisticsGameTime         JonesHudTest_jonesInventory_ResetStatisticsGameTime
+#define jonesString_GetString                          JonesHudTest_jonesString_GetString
+
+void JonesMain_ResumeGame(void);
+void JonesReticle_Resume(void);
+void JonesReticle_Close(void);
+void jonesConfig_Shutdown(void);
+void jonesInventory_Close(void);
+int jonesConfig_Startup(void);
+int J3DAPI jonesConfig_ShowMessageDialog(HWND h, const char* a, const char* b, int c);
+int J3DAPI jonesConfig_GetSaveGameFilePath(HWND h, char* p);
+int J3DAPI jonesConfig_GetLoadGameFilePath(HWND h, char* p);
+int J3DAPI jonesConfig_ShowGamePlayOptions(HWND h);
+int J3DAPI jonesConfig_ShowControlOptions(HWND h);
+int J3DAPI jonesConfig_ShowDisplaySettingsDialog(HWND h, StdDisplayEnvironment* e, JonesDisplaySettings* s);
+int J3DAPI jonesConfig_ShowSoundSettingsDialog(HWND h, JonesSoundSettings* s);
+int J3DAPI jonesConfig_ShowGameOverDialog(HWND h, char* p, tSoundHandle s, tSoundChannelHandle* c);
+int J3DAPI jonesConfig_ShowStatisticsDialog(HWND h, SithGameStatistics* p);
+int J3DAPI jonesConfig_ShowLevelCompletedDialog(HWND h, int* a, int* b, int c, int d, int e, int f, int g, int i);
+int J3DAPI jonesConfig_ShowExitGameDialog(HWND h, char* p);
+void jonesConfig_UpdateCurrentLevelNum(void);
+void JonesReticle_Open(void);
+void J3DAPI JonesReticle_Update(float deltaTime);
+void JonesReticle_Render(void);
+void JonesReticle_Pause(void);
+int JonesMain_HasStarted(void);
+void JonesMain_PauseGame(void);
+int JonesMain_ProcessGamesaveState(void);
+size_t JonesMain_GetCurrentLevelNum(void);
+StdDisplayEnvironment* JonesMain_GetDisplayEnvironment(void);
+JonesDisplaySettings* JonesMain_GetDisplaySettings(void);
+int JonesMain_CloseWindow(void);
+void JonesMain_RefreshDisplayDevice(void);
+void J3DAPI JonesMain_LogErrorToFile(const char* p);
+void J3DAPI jonesCog_StartCutscene(SithCog* c);
+void J3DAPI jonesCog_ToggleInterface(SithCog* c);
+int jonesInventory_Open(void);
+int J3DAPI jonesInventory_ActivateItem(SithThing* p, int i);
+int J3DAPI jonesInventory_UseItem(SithThing* p, unsigned i);
+int jonesInventory_ResetGameStatistics(void);
+void jonesInventory_UpdateSolvedHintsStatistics(void);
+int jonesInventory_GetTotalIQPoints(void);
+void jonesInventory_AdvanceFoundTreasuresStatistics(void);
+void J3DAPI jonesInventory_UpdateGameTimeStatistics(uint32_t t);
+void jonesInventory_ResetStatisticsGameTime(void);
+const char* J3DAPI jonesString_GetString(const char* p);
+
 #ifndef JONESHUD_TEST_SOURCE
 #define JONESHUD_TEST_SOURCE "../JonesHud.c"
 #endif
