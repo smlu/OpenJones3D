@@ -9,6 +9,7 @@ endif()
 set(EXTERNAL_MODULES
     ${EXTERNAL_MODULES}
     jansson
+    xBRZ
 )
 
 if (JONES3D_BUILD_TESTS)
