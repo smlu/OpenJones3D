@@ -77,34 +77,24 @@ jobs:
       shell: pwsh
       run: |
         $buildDir = "$env:GITHUB_WORKSPACE/build"
-        # Discover and run every registered suite, including future additions.
+        # Discover and run every registered module test, including future additions.
         $listing = ctest --test-dir $buildDir -C ${{ matrix.build_type }} `
           --show-only=json-v1
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
         $actual = @(($listing | ConvertFrom-Json).tests | ForEach-Object { $_.name })
-        $requiredSuites = @(
-          'Jones3D.Config',
-          'Jones3D.Hud',
-          'j3dcore.Macros',
-          'rdroid.Math',
-          'rdroid.Model3',
-          'rdroid.Cache',
+        # One unit test entry per module; the module executable runs all of its suites.
+        $requiredModules = @(
+          'j3dcore',
+          'rdroid',
           'std',
           'sound',
+          'smush',
           'sith',
-          'sith.Engine',
-          'sith.DSS',
-          'sith.Multi',
-          'sith.ThingQuetz',
-          'sith.AIInstinct',
-          'sith.AIInstinctFn',
-          'sith.AIMove',
-          'sith.AIUtil',
-          'smush'
+          'Jones3D'
         )
-        foreach ($expected in $requiredSuites) {
+        foreach ($expected in $requiredModules) {
           if ($actual -notcontains $expected) {
-            throw "Required CTest suite '$expected' was not discovered."
+            throw "Required CTest module '$expected' was not discovered."
           }
         }
         ctest --test-dir $buildDir -C ${{ matrix.build_type }} `

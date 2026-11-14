@@ -123,24 +123,9 @@ set_target_properties(sithTests PROPERTIES
 
 source_group("Tests" FILES ${SITH_TESTS_SOURCES})
 
-# One CTest entry per area, selecting its suites
-function(sith_add_ctest NAME TIMEOUT)
-    string(REPLACE ";" "," SUITES "${ARGN}")
-    add_test(NAME ${NAME} COMMAND sithTests --suite ${SUITES})
-    set_tests_properties(${NAME} PROPERTIES
-        LABELS "unit;sith;${SITH_TEST_BACKEND_LABEL}"
-        TIMEOUT ${TIMEOUT}
-    )
-endfunction()
-
-# The local fixtures perform bounded in-memory I/O; allow slower hosts and file reads.
-sith_add_ctest(sith 60 ${SITH_WORLD_SUITES})
-sith_add_ctest(sith.Engine 60 ${SITH_ENGINE_SUITES})
-sith_add_ctest(sith.DSS 60 ${SITH_DSS_SUITES})
-sith_add_ctest(sith.Multi 60 ${SITH_MULTI_SUITES})
-sith_add_ctest(sith.ThingQuetz 60 ${SITH_VEC_THINGQUETZ_SUITES})
-sith_add_ctest(sith.AIInstinct 60 ${SITH_VEC_AIINSTINCT_SUITES})
-# Many cases (the fixture has more than a thousand): allow slow runners
-sith_add_ctest(sith.AIInstinctFn 180 ${SITH_VEC_AIINSTINCTFN_SUITES})
-sith_add_ctest(sith.AIMove 60 ${SITH_VEC_AIMOVE_SUITES})
-sith_add_ctest(sith.AIUtil 60 ${SITH_VEC_AIUTIL_SUITES})
+# The vector suites have many cases (AIInstinctFn more than a thousand): allow slow runners
+add_test(NAME sith COMMAND sithTests --kind unit)
+set_tests_properties(sith PROPERTIES
+    LABELS "unit;sith;${SITH_TEST_BACKEND_LABEL}"
+    TIMEOUT 600
+)

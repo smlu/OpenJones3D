@@ -134,8 +134,8 @@ cmake --build build --config Release
 
 ### 🧪 Tests
 
-Tests use Unity Fixture with CTest. The deterministic `j3dcore.Macros` and `std`
-suites use the `unit` label. Run them after building with:
+Tests use Unity Fixture with CTest. The deterministic `j3dcore` and `std`
+module tests use the `unit` label. Run them after building with:
 
 ```bat
 ctest --test-dir <build-dir> -C <configuration> --output-on-failure -L unit

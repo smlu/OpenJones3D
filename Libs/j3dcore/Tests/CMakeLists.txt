@@ -16,7 +16,7 @@ set_target_properties(j3dcoreTests PROPERTIES
     FOLDER "Tests/Libs/j3dcore"
 )
 
-add_test(NAME j3dcore.Macros COMMAND j3dcoreTests)
-set_tests_properties(j3dcore.Macros PROPERTIES
+add_test(NAME j3dcore COMMAND j3dcoreTests --kind unit)
+set_tests_properties(j3dcore PROPERTIES
     LABELS "unit;j3dcore"
 )

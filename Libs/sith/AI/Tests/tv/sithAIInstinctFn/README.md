@@ -7,7 +7,7 @@ included by `sithAIInstinctFnVec.h`), the complete observable result of the orig
 arguments, every change of the AI state, and the counts of asserts, error prints and warning prints. It was captured by
 executing the functions inside the retail `Indy3D.exe` with the world-state vector harness
 ([Libs/sith/Tests/Vec](../../../Tests/Vec/README.md)). The fixture is consumed by `sithAIInstinctFnVecTest.c`
-(`sithTests`, CTest `sith.AIInstinctFn`), which never launches `Indy3D.exe`.
+(suite `sithAIInstinctFn` of `sithTests`), which never launches `Indy3D.exe`.
 
 ### Reference
 

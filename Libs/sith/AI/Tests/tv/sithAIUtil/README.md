@@ -6,7 +6,7 @@ statics of `sithAIUtil.c` (waypoint tables, point creation state, things-in-view
 of the arena things and sectors, and every engine call the function made (collision searches, line of sight, weapon,
 cog, AI move and sound calls). It was captured by executing the functions inside the retail `Indy3D.exe` with the
 world-state vector harness ([Libs/sith/Tests/Vec](../../../Tests/Vec/README.md)). The fixture is consumed by
-`sithAIUtilVecTest.c` (`sithTests`, CTest `sith.AIUtil`), which never launches `Indy3D.exe`.
+`sithAIUtilVecTest.c` (suite `sithAIUtil` of `sithTests`), which never launches `Indy3D.exe`.
 
 ### Reference
 

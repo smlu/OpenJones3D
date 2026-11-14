@@ -257,15 +257,15 @@ everything their own sources define the same way (see
 
 | Executable | CTest entry | Coverage | Integration |
 | --- | --- | --- | --- |
-| `j3dcoreTests` | `j3dcore.Macros` | Core macros | Available |
-| `rdroidTests` | `rdroid.Math`, `rdroid.Model3`, `rdroid.Cache` | Vector and matrix debug-source numerical fidelity, rotation matrices against the C library; per-draw face-flag scoping and deferred face flags; alpha comparator ordering and 16-bit batch boundaries with recorded source-face coverage | Available |
+| `j3dcoreTests` | `j3dcore` | Core macros | Available |
+| `rdroidTests` | `rdroid` | Vector and matrix debug-source numerical fidelity, rotation matrices against the C library; per-draw face-flag scoping and deferred face flags; alpha comparator ordering and 16-bit batch boundaries with recorded source-face coverage | Available |
 | `stdTests` | `std`, `std.System`, `std.DisruptiveSystem` | General and deterministic Win95 services; system suites: Win95 windows and DirectX devices; disruptive suites: opt-in fullscreen/device changes | Available |
 | `soundTests` | `sound` | Deterministic lip-sync generation and lookup, AudioLib codec and header vectors | Available |
 | `smushTests` | `smush`, `smush.System` | INSANE movie player: core, bitmap, codec, sound, stream areas and original-engine assembly vectors; system suite: native configured DirectSound movie startup, synthetic frame playback and restart | Available |
-| `sithTests` | `sith`, `sith.Engine`, `sith.ThingQuetz`, `sith.AIInstinct`, `sith.AIInstinctFn`, `sith.AIMove`, `sith.AIUtil`, `sith.DSS`, `sith.Multi` | World thing/template I/O and voice lip-sync; Sphere/plane intersection, rotating paths, fixed-step player physics and frame-rate regressions (with original-engine vectors of the COG timing and per-frame damage); Original-engine vectors of the Quetz tail functions (world-state harness, `Libs/sith/Tests/Vec`); Original-engine vectors of the instinct registration (world-state harness); Original-engine vectors of the instinct functions (world-state harness); Original-engine vectors of AI movement and turning (world-state harness); Original-engine vectors of the AI utility functions: waypoints, sight, firing, path checks (world-state harness); Original-engine vectors of the DSS and DSS thing save/network serialization functions; Original-engine vectors of multiplayer state and synchronization | Available |
-| `jones3dTests` | `Jones3D.Main`, `Jones3D.Config`, `Jones3D.Hud`, `Jones3D.ConfigSystem` | Closest video mode lookup; control-scheme and keyboard-name regressions, fullscreen dialog font/icon scaling and store column layout; inventory theme ownership, paused sound clock and fading-icon depth policy; system suite: hidden native GDI windows, font/image-list layout, measured ListView columns and authored bitmap pixels | Available |
+| `sithTests` | `sith` | World thing/template I/O and voice lip-sync; Sphere/plane intersection, rotating paths, fixed-step player physics and frame-rate regressions (with original-engine vectors of the COG timing and per-frame damage); Original-engine vectors of the Quetz tail functions (world-state harness, `Libs/sith/Tests/Vec`); Original-engine vectors of the instinct registration (world-state harness); Original-engine vectors of the instinct functions (world-state harness); Original-engine vectors of AI movement and turning (world-state harness); Original-engine vectors of the AI utility functions: waypoints, sight, firing, path checks (world-state harness); Original-engine vectors of the DSS and DSS thing save/network serialization functions; Original-engine vectors of multiplayer state and synchronization | Available |
+| `jones3dTests` | `Jones3D`, `Jones3D.System` | Closest video mode lookup; control-scheme and keyboard-name regressions, fullscreen dialog font/icon scaling and store column layout; inventory theme ownership, paused sound clock and fading-icon depth policy; system suite: hidden native GDI windows, font/image-list layout, measured ListView columns and authored bitmap pixels | Available |
 
-Name CTest entries after the owning module when the executable covers that whole module, such as `std`. When an executable covers only a subarea, use the owning module first and a short area name second, separated by a dot, such as `j3dcore.Macros`. Use labels that match the owning module, such as `j3dcore`, `std`, `rdroid`, `sith`, `sound`, or `Jones3D`.
+Register one CTest entry per module executable, named after the module, such as `std`, that runs its unit suites (`--kind unit`), plus `<module>.System` for its system suites (`--kind system`) and `<module>.DisruptiveSystem` for disruptive ones. Run a single suite with `--suite`, for example `sithTests --suite sithFrameRate`, not with an extra CTest entry. Use labels that match the owning module, such as `j3dcore`, `std`, `rdroid`, `sith`, `sound`, or `Jones3D`.
 
 Backend-specific test builds should also label the CTest entry with the active backend, such as `DirectX6`, `DirectX9`, or later `OpenGL`, so filtered test runs can choose the intended API surface.
 
@@ -314,7 +314,7 @@ Tests that need fixed-address RTI globals or host-service assertion capture shou
 
 Every other fixed-address global that tested code reads must be redirected to local storage in a header force-included for the test target (`#undef <name>_ADDR` and `#define <name>_ADDR ((uintptr_t)&local)`, see `Libs/sith/Engine/Tests/sithEngineTestAddrs.h`), otherwise the code reads whatever the test process has at the retail address. This includes constants such as `rdroid_g_identMatrix34`, which `rdMatrix_Identity34` copies, and engine clock state such as `sithTime_g_msecGameTime`, `sithTime_g_frameTime` and `sithMain_g_frameNumber`.
 
-The world-state vector harness (`Libs/sith/Tests/Vec`) replaces the rotation and trigonometry functions with its own accurate math, so the same arithmetic runs in the capture harness and the tests. Its suites therefore can't detect errors in the engine's table math; test that math directly and through its users, like the `stdMath`, `rdMatrix` and `sith.Engine` frame-rate tests below.
+The world-state vector harness (`Libs/sith/Tests/Vec`) replaces the rotation and trigonometry functions with its own accurate math, so the same arithmetic runs in the capture harness and the tests. Its suites therefore can't detect errors in the engine's table math; test that math directly and through its users, like the `stdMath`, `rdMatrix` and `sithFrameRate` tests below.
 
 For header and macro tests, prefer stable behavior checks over release-specific value checks. For example, `j3d.h` macro tests should verify string/memory helpers, runtime guard behavior, platform flags, logging/assertion macros, and compile-time shape, but should not pin exact `J3D_VERSION_STRING` or `J3D_VERSION_FULL` values because those change with release numbers and suffixes.
 
@@ -690,15 +690,12 @@ Each profile enables `JONES3D_BUILD_TESTS` and disables
 `JONES3D_BUILD_SYSTEM_TESTS`. The MSVC Win32 build workflow uploads its build tree
 with the exact checked-out source revision and configuration. The reusable test
 workflow checks out that revision, restores the build at its original workspace
-path, discovers every registered CTest suite, and runs them all with finite
-timeouts, without a test-name filter. New suites registered in the CI build are
-included automatically. Discovery also requires the existing 18 suites:
+path, discovers every registered CTest entry, and runs them all with finite
+timeouts, without a test-name filter. Suites added to a module executable run
+with it automatically. Discovery also requires the 7 module entries: `j3dcore`,
+`rdroid`, `std`, `sound`, `smush`, `sith` and `Jones3D`.
 
-- `Jones3D.Config`, `Jones3D.Hud`, `j3dcore.Macros`, `rdroid.Math`, `rdroid.Model3`, `rdroid.Cache`, `std`, `sound`, and `smush`
-- `sith`, `sith.Engine`, `sith.DSS`, `sith.Multi`, and `sith.ThingQuetz`
-- `sith.AIInstinct`, `sith.AIInstinctFn`, `sith.AIMove`, and `sith.AIUtil`
-
-Test failures, missing required suites, and empty discovery fail the job.
+Test failures, missing required modules, and empty discovery fail the job.
 JUnit results and CTest logs are uploaded even when tests fail.
 
 Each build workflow calls its reusable test workflow with `needs: build` after
@@ -899,20 +896,19 @@ included in a full build. Use the matching target and CTest entry for a focused 
 
 ```bat
 cmake --build build\codex\dx9-win32 --config Debug --target rdroidTests
-ctest --test-dir build\codex\dx9-win32 -C Debug --output-on-failure -R "^rdroid\.Math$"
+ctest --test-dir build\codex\dx9-win32 -C Debug --output-on-failure -R "^rdroid$"
 cmake --build build\codex\dx9-win32 --config Debug --target soundTests
 ctest --test-dir build\codex\dx9-win32 -C Debug --output-on-failure -R "^sound$"
 cmake --build build\codex\dx9-win32 --config Debug --target smushTests
 ctest --test-dir build\codex\dx9-win32 -C Debug --output-on-failure -R "^smush$"
 cmake --build build\codex\dx9-win32 --config Debug --target sithTests
 ctest --test-dir build\codex\dx9-win32 -C Debug --output-on-failure -R "^sith$"
-ctest --test-dir build\codex\dx9-win32 -C Debug --output-on-failure -R "^sith\.DSS$"
 ```
 
 These focused commands supplement the validation selected under
 [Backend Validation Scope](#backend-validation-scope).
 
-The `rdroid.Math` suite compares vector normalization, reciprocal scaling,
+The `rdVector` and `rdMatrix` suites compare vector normalization, reciprocal scaling,
 axis-angle construction, and angle extraction against source-level arithmetic
 oracles transcribed from `Jones3DRE/v1.0-dbg/indy3d-dbg.exe.c`. It checks exact
 float representations (and NaN classification), including rounding-sensitive
@@ -921,7 +917,7 @@ existing near-axis guards. These oracles validate debug-source reconstruction,
 not execution of the original x87 binary or bitwise parity with optimized retail
 builds. They do not require game assets or invoke the original executable.
 
-The `rdroid.Model3` suite calls the actual mesh draw function with a synthetic
+The `rdModel3` suite calls the actual mesh draw function with a synthetic
 closed mesh and a queued-face recorder. It verifies that per-draw flags are
 copied to queued faces without changing shared assets, rejected or clipped draws
 do not leak flags, authored and fog flags compose, and nested ordinary draws
@@ -929,7 +925,7 @@ preserve the outer flag scope. These tests use no game assets or graphics device
 they do not establish that a particular bad GPU frame has been reproduced in the
 running game.
 
-The `rdroid.Cache` suite compiles the actual cache source with a draw recorder.
+The `rdCache` suite compiles the actual cache source with a draw recorder.
 It checks equal and signed-zero depths, infinity/NaN ordering, full vertex and
 triangle coverage across the 65,535-vertex batch limit, ordinary face sizes, the
 existing backend index budget, and alpha-queue ordering across a split. Source
@@ -1097,7 +1093,7 @@ leaves to the other parsers.
 
 ### 🧭 Sith Engine Regressions
 
-The `sith.Engine` suite calls the reconstructed sphere/plane intersection and
+The `sithIntersect` and `sithPathMove` suites call the reconstructed sphere/plane intersection and
 rotating-path helper directly. It covers finite contacts and misses, overlap
 flags, unordered dot/reach comparisons, NaN rotation clamping, completion flags
 and orientation callbacks. Path tests control the matrix/collision dependencies
@@ -1178,7 +1174,7 @@ records remain unchanged.
 
 ### 🎛️ Jones Configuration Regressions
 
-`Jones3D.Config` compiles the actual configuration module with controlled file,
+The `jonesConfig` suite compiles the actual configuration module with controlled file,
 localization and keyboard-name services. Cases cover eight bindings, rejection
 of a ninth before it can overwrite a neighboring row or scheme name, failure
 after a reordered action row, open failure, and key-name success/failure. QOL
@@ -1194,7 +1190,7 @@ case independently of the presentation ratio. Masked and unmasked bitmap tests
 check the complete source and destination bounds. These fixtures contain no
 retail dialog resources or images.
 
-The optional `Jones3D.ConfigSystem` suite creates hidden native Win32 controls,
+The `jonesConfigSystem` system suite creates hidden native Win32 controls,
 uses the host DPI and real GDI font/image-list operations, refits ListView columns
 after scrollbar changes, compares column widths against native header/item
 autosizing, and compares complete authored bitmap pixels. It does
@@ -1202,7 +1198,7 @@ not switch display modes or request input focus. Its three cases run serially
 with a 30-second process timeout. Exclusive-fullscreen presentation and visual
 sharpness still require a separate interactive check.
 
-`Jones3D.Hud` uses the actual HUD menu lifecycle, sound pause/resume clock and
+The `JonesHud` suite uses the actual HUD menu lifecycle, sound pause/resume clock and
 channel fades with a deterministic buffer backend. Cases cover long dialog
 cancellation, repeated menus, reopening during the close animation, completed
 fades, playback failure/retry, disabled or missing themes, and HUD close/shutdown.

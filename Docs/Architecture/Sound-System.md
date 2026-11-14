@@ -171,7 +171,7 @@ continue during gameplay. Starting a new menu session releases any stale owned
 theme; HUD close and HUD shutdown also release it. An open request during the
 current closing animation is ignored. Playback is never restarted while closing.
 
-The deterministic `Jones3D.Hud` suite runs the actual HUD lifecycle and sound
+The deterministic `JonesHud` suite runs the actual HUD lifecycle and sound
 pause/fade code against synthetic backend buffers and time, including a long
 dialog dwell followed by cancellation and repeated menu sessions.
 

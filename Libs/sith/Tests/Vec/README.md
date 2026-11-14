@@ -7,13 +7,13 @@ rules of [Docs/Testing.md](../../../../Docs/Testing.md).
 
 Suites:
 
-| Suite | Executable / CTest entry | Cases | Fixture and provenance |
+| Suite | `sithTests` suites | Cases | Fixture and provenance |
 | --- | --- | --- | --- |
-| sithThing Quetz (`sithThing_CreateQuetzUserBlock`, `sithThing_UpdateQuetzUserBlock`) | `sithTests` / `sith.ThingQuetz` | `World/Tests/sithThingVecQuetz.h` | [World/Tests/tv/sithThingQuetz](../../World/Tests/tv/sithThingQuetz/README.md) |
-| sithAIInstinct (`sithAIInstinct_InitInstincts`, `sithAI_RegisterInstinct`, `sithAI_FindInstinct`) | `sithTests` / `sith.AIInstinct` | `AI/Tests/sithAIInstinctVec.h` | [AI/Tests/tv/sithAIInstinct](../../AI/Tests/tv/sithAIInstinct/README.md) |
-| sithAIInstinct functions (`sithAIInstinct_Listen` ... `sithAIInstinct_SnakePlaySlitherSound`, all but `InitInstincts`) | `sithTests` / `sith.AIInstinctFn` | `AI/Tests/sithAIInstinctFnVec.h`, `AI/Tests/sithAIInstinctFnVecCases.inc` | [AI/Tests/tv/sithAIInstinctFn](../../AI/Tests/tv/sithAIInstinctFn/README.md) |
-| sithAIMove (all functions of `sithAIMove.c`: update, turn, move, look/move positions, special moves, head tracking, Quetzalcoatl strike) | `sithTests` / `sith.AIMove` | `AI/Tests/sithAIMoveVec.h`, `AI/Tests/sithAIMoveVecCases.h` | [AI/Tests/tv/sithAIMove](../../AI/Tests/tv/sithAIMove/README.md) |
-| sithAIUtil (waypoints, sight and distance, `AIFire`, path checks and point creation, things in view) | `sithTests` / `sith.AIUtil` | `AI/Tests/sithAIUtilVec.h` | [AI/Tests/tv/sithAIUtil](../../AI/Tests/tv/sithAIUtil/README.md) |
+| sithThing Quetz (`sithThing_CreateQuetzUserBlock`, `sithThing_UpdateQuetzUserBlock`) | `sithThingQuetz` | `World/Tests/sithThingVecQuetz.h` | [World/Tests/tv/sithThingQuetz](../../World/Tests/tv/sithThingQuetz/README.md) |
+| sithAIInstinct (`sithAIInstinct_InitInstincts`, `sithAI_RegisterInstinct`, `sithAI_FindInstinct`) | `sithAIInstinct` | `AI/Tests/sithAIInstinctVec.h` | [AI/Tests/tv/sithAIInstinct](../../AI/Tests/tv/sithAIInstinct/README.md) |
+| sithAIInstinct functions (`sithAIInstinct_Listen` ... `sithAIInstinct_SnakePlaySlitherSound`, all but `InitInstincts`) | `sithAIInstinctFn`, `sithAIInstinctFix` | `AI/Tests/sithAIInstinctFnVec.h`, `AI/Tests/sithAIInstinctFnVecCases.inc` | [AI/Tests/tv/sithAIInstinctFn](../../AI/Tests/tv/sithAIInstinctFn/README.md) |
+| sithAIMove (all functions of `sithAIMove.c`: update, turn, move, look/move positions, special moves, head tracking, Quetzalcoatl strike) | `sithAIMove`, `sithAIMoveFix` (QOL builds) | `AI/Tests/sithAIMoveVec.h`, `AI/Tests/sithAIMoveVecCases.h` | [AI/Tests/tv/sithAIMove](../../AI/Tests/tv/sithAIMove/README.md) |
+| sithAIUtil (waypoints, sight and distance, `AIFire`, path checks and point creation, things in view) | `sithAIUtil`, `sithAIUtilFix` | `AI/Tests/sithAIUtilVec.h` | [AI/Tests/tv/sithAIUtil](../../AI/Tests/tv/sithAIUtil/README.md) |
 
 ### How It Works
 
@@ -87,9 +87,9 @@ engine logic seams them to the shared math stubs, which both sides compute ident
      existing wrapper of the same suite already compiles that source).
    - `<suite>VecTest.c`: a Unity group per suite with `TestFixtureCoversAllCases` and one `TestOriginal<Function>`
      per function prefix (`sithVecTest_RunCases`).
-   - Register it in `sith_vec.cmake` with `sith_add_vec_suite()` and add its CTest entry `sith.<Area>` in
-     `Libs/sith/Tests/CMakeLists.txt`. The suite runs in `sithTests`; its sources get their own names, so it can
-     compile the same production sources as other suites with its own seams.
+   - Register it in `sith_vec.cmake` with `sith_add_vec_suite()`. The suite runs in `sithTests` (CTest `sith`,
+     or `sithTests --suite <suite>`); its sources get their own names, so it can compile the same production sources
+     as other suites with its own seams.
 3. Capture: the harness source is kept outside the repository (see the fixture READMEs for its hash). It includes the
    suite header and seams file named on its command line, patches the seams and `rand`, verifies the lookups, runs
    every case with both fills and writes `out\<suite>.tv` next to the DLL:

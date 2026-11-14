@@ -79,27 +79,15 @@ if (J3D_DIRECTX9)
     set(JONES3D_TEST_BACKEND_LABEL "DirectX9")
 endif()
 
-add_test(NAME Jones3D.Main COMMAND jones3dTests --suite JonesMain)
-set_tests_properties(Jones3D.Main PROPERTIES
-    LABELS "unit;Jones3D;${JONES3D_TEST_BACKEND_LABEL}"
-    TIMEOUT 60
-)
-
-add_test(NAME Jones3D.Config COMMAND jones3dTests --suite jonesConfig)
-set_tests_properties(Jones3D.Config PROPERTIES
-    LABELS "unit;Jones3D;${JONES3D_TEST_BACKEND_LABEL}"
-    TIMEOUT 60
-)
-
-add_test(NAME Jones3D.Hud COMMAND jones3dTests --suite JonesHud)
-set_tests_properties(Jones3D.Hud PROPERTIES
+add_test(NAME Jones3D COMMAND jones3dTests --kind unit)
+set_tests_properties(Jones3D PROPERTIES
     LABELS "unit;Jones3D;${JONES3D_TEST_BACKEND_LABEL}"
     TIMEOUT 60
 )
 
 if (JONES3D_BUILD_SYSTEM_TESTS)
-    add_test(NAME Jones3D.ConfigSystem COMMAND jones3dTests --kind system)
-    set_tests_properties(Jones3D.ConfigSystem PROPERTIES
+    add_test(NAME Jones3D.System COMMAND jones3dTests --kind system)
+    set_tests_properties(Jones3D.System PROPERTIES
         LABELS "system;Jones3D;${JONES3D_TEST_BACKEND_LABEL}"
         TIMEOUT 30
         RUN_SERIAL TRUE

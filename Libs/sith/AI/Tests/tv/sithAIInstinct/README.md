@@ -5,7 +5,7 @@ the complete observable result of the original `sithAIInstinct_InitInstincts` an
 of `sithAI.c` it uses and that look the instincts up (`sithAI_RegisterInstinct`, `sithAI_FindInstinct`), captured by
 executing them inside the retail `Indy3D.exe` with the world-state vector harness
 ([Libs/sith/Tests/Vec](../../../Tests/Vec/README.md)). They are consumed by `sithAIInstinctVecTest.c`
-(`sithTests`, CTest `sith.AIInstinct`), which never launches `Indy3D.exe`.
+(suite `sithAIInstinct` of `sithTests`), which never launches `Indy3D.exe`.
 
 ### Reference
 

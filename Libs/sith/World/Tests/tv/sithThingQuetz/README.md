@@ -4,7 +4,7 @@
 the complete observable result of the original `sithThing_CreateQuetzUserBlock` and
 `sithThing_UpdateQuetzUserBlock`, captured by executing them inside the retail `Indy3D.exe` on a synthetic engine
 state with the world-state vector harness ([Libs/sith/Tests/Vec](../../../Tests/Vec/README.md)). They are consumed
-by `sithThingQuetzVecTest.c` (`sithTests`, CTest `sith.ThingQuetz`), which never launches
+by `sithThingQuetzVecTest.c` (suite `sithThingQuetz` of `sithTests`), which never launches
 `Indy3D.exe`.
 
 ### Reference

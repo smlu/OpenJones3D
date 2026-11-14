@@ -73,20 +73,8 @@ source_group("Tests\\Math" FILES ${RDROID_MATH_TEST_SOURCES})
 source_group("Tests\\Model3" FILES ${RDROID_MODEL3_TEST_SOURCES} "${RDROID_SOURCE_DIR}/Primitives/Tests/rdModel3TestHost.h")
 source_group("Tests\\Cache" FILES ${RDROID_CACHE_TEST_SOURCES} "${RDROID_SOURCE_DIR}/Raster/Tests/rdCacheTestHost.h")
 
-add_test(NAME rdroid.Math COMMAND rdroidTests --suite rdVector,rdMatrix)
-set_tests_properties(rdroid.Math PROPERTIES
-    LABELS "unit;rdroid;math"
-    TIMEOUT 60
-)
-
-add_test(NAME rdroid.Model3 COMMAND rdroidTests --suite rdModel3)
-set_tests_properties(rdroid.Model3 PROPERTIES
-    LABELS "unit;rdroid;primitives"
-    TIMEOUT 60
-)
-
-add_test(NAME rdroid.Cache COMMAND rdroidTests --suite rdCache)
-set_tests_properties(rdroid.Cache PROPERTIES
-    LABELS "unit;rdroid;cache"
+add_test(NAME rdroid COMMAND rdroidTests --kind unit)
+set_tests_properties(rdroid PROPERTIES
+    LABELS "unit;rdroid"
     TIMEOUT 60
 )
