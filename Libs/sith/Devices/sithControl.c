@@ -449,7 +449,12 @@ float J3DAPI sithControl_GetKeyAsAxisNormalized(size_t axisId)
             axisValue = stdControl_ReadKeyAsAxis(pBinding->controlId);
         }
 
-        if ( (aControlBindings[axisId].aBindings[i].flags & SITHCONTROLBIND_AXIS_ENABLED) != 0 )
+        // Fixed: Scale only mouse axes by the frame rate. A mouse axis reads the movement since the last frame, which the
+        //        frame rate converts to a rate. A joystick axis reads its position, which is already a rate; scaling it by
+        //        the frame rate saturated it at any FPS.
+        if ( (aControlBindings[axisId].aBindings[i].flags & SITHCONTROLBIND_AXIS_ENABLED) != 0
+            && (bindflags & SITHCONTROLBIND_AXISCONTROL) != 0
+            && STDCONTROL_ISMOUSEAXIS(pBinding->controlId) )
         {
             axisValue = axisValue * sithTime_g_fps;
         }
