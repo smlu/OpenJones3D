@@ -46,9 +46,9 @@ int J3DAPI sithItem_PlayerCollisionHandler(SithThing* pItem, SithThing* pPlayer,
         return 0;
     }
 
-    if ( pItem->thingInfo.itemInfo.msecLastTouchTime < sithTime_g_msecGameTime )
+    if ( sithTime_IsDeadlinePassed(pItem->thingInfo.itemInfo.msecLastTouchTime) )
     {
-        pItem->thingInfo.itemInfo.msecLastTouchTime = sithTime_g_msecGameTime + 500;
+        pItem->thingInfo.itemInfo.msecLastTouchTime = sithTime_CalcDeadlineAfter(500); // Fixed: Deadline from sithTime_CalcDeadline
     }
 
     return 0;

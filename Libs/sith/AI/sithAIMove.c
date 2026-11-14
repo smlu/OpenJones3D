@@ -492,7 +492,7 @@ void J3DAPI sithAIMove_UpdateMove(SithAIControlBlock* pLocal, float secDeltaTime
         return;
     }
 
-    if ( sithTime_g_msecGameTime < pLocal->msecPauseMoveUntil )
+    if ( !sithTime_IsDeadlineReached(pLocal->msecPauseMoveUntil) )
     {
         return;
     }
@@ -2080,7 +2080,7 @@ void J3DAPI sithAIMove_AIJump(SithAIControlBlock* pLocal, rdVector3* movePos, fl
         sithPlayerActions_Jump(pLocal->pOwner, jumpDirection, 0);
     }
 
-    pLocal->msecPauseMoveUntil = sithTime_g_msecGameTime + 2000;
+    pLocal->msecPauseMoveUntil = sithTime_CalcDeadline(2000); // Fixed: Deadline from sithTime_CalcDeadline
     pLocal->mode |= SITHAI_MODE_MOVING;
 }
 

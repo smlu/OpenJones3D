@@ -16,6 +16,9 @@ SITHVEC_REDIRECT_DEFINE(size_t, sithMain_g_frameNumber);
 SITHVEC_REDIRECT_DEFINE(size_t, sithMain_g_curRenderTick);
 SITHVEC_REDIRECT_DEFINE(SithMode, sithMain_g_sith_mode);
 SITHVEC_REDIRECT_DEFINE(uint32_t, sithTime_g_msecGameTime);
+// The frame time of a 30 FPS frame: the original vectors were captured without one, and sithTime_CalcDeadline puts
+// deadlines on 30 FPS frames only for shorter frames, so the deadlines stay the original now + interval
+SITHVEC_REDIRECT_DEFINE(uint32_t, sithTime_g_frameTime) = 1000u / 30u;
 SITHVEC_REDIRECT_DEFINE(float, sithTime_g_secGameTime);
 SITHVEC_REDIRECT_DEFINE(float, sithTime_g_frameTimeFlex);
 SITHVEC_REDIRECT_DEFINE(SithThing*, sithPlayer_g_pLocalPlayerThing);

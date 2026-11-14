@@ -100,7 +100,7 @@ int J3DAPI sithEvent_CreateEvent(size_t taskId, SithEventParams* params, uint32_
     }
 
     pEvent->taskNum       = taskId;
-    pEvent->msecEventTime = when + sithTime_g_msecGameTime;
+    pEvent->msecEventTime = sithTime_CalcDeadlineAfter(when); // Fixed: Deadline from sithTime_CalcDeadlineAfter
     memcpy(&pEvent->params, params, sizeof(pEvent->params));
     sithEvent_AddEvent(pEvent);
     return 1;
@@ -139,7 +139,7 @@ void sithEvent_Process(void)
     for ( size_t i = 1; i < STD_ARRAYLEN(aTasks); ++i )
     {
         if ( aTasks[i].startMode == SITHEVENT_TASKINTERVAL
-            && sithTime_g_msecGameTime - aTasks[i].msecLastIntervalTime > aTasks[i].msecFrequency )
+            && sithTime_IsDeadlinePassed(aTasks[i].msecLastIntervalTime + aTasks[i].msecFrequency) )
         {
             if ( aTasks[i].pfProcess(sithTime_g_msecGameTime - aTasks[i].msecLastIntervalTime, NULL) )
             {
@@ -153,7 +153,7 @@ void sithEvent_Process(void)
     while ( 1 )
     {
         SithEvent* pEvent = sithEvent_g_pFirstQueuedEvent;
-        if ( !sithEvent_g_pFirstQueuedEvent || sithEvent_g_pFirstQueuedEvent->msecEventTime >= sithTime_g_msecGameTime )
+        if ( !sithEvent_g_pFirstQueuedEvent || !sithTime_IsDeadlinePassed(sithEvent_g_pFirstQueuedEvent->msecEventTime) )
         {
             break;
         }

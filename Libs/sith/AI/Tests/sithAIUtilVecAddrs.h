@@ -9,6 +9,7 @@ SITHVEC_REDIRECT_DECL(size_t, sithMain_g_frameNumber);
 SITHVEC_REDIRECT_DECL(size_t, sithMain_g_curRenderTick);
 SITHVEC_REDIRECT_DECL(SithMode, sithMain_g_sith_mode);
 SITHVEC_REDIRECT_DECL(uint32_t, sithTime_g_msecGameTime);
+SITHVEC_REDIRECT_DECL(uint32_t, sithTime_g_frameTime); // read by sithTime_CalcDeadline
 SITHVEC_REDIRECT_DECL(float, sithTime_g_secGameTime);
 SITHVEC_REDIRECT_DECL(float, sithTime_g_frameTimeFlex);
 SITHVEC_REDIRECT_DECL(SithThing*, sithPlayer_g_pLocalPlayerThing);
@@ -24,6 +25,8 @@ SITHVEC_REDIRECT_DECL(int, sithAIUtil_g_bRenderAIWpnts);
 #define sithMain_g_sith_mode_ADDR SITHVEC_REDIRECT_ADDR(sithMain_g_sith_mode)
 #undef sithTime_g_msecGameTime_ADDR
 #define sithTime_g_msecGameTime_ADDR SITHVEC_REDIRECT_ADDR(sithTime_g_msecGameTime)
+#undef sithTime_g_frameTime_ADDR
+#define sithTime_g_frameTime_ADDR SITHVEC_REDIRECT_ADDR(sithTime_g_frameTime)
 #undef sithTime_g_secGameTime_ADDR
 #define sithTime_g_secGameTime_ADDR SITHVEC_REDIRECT_ADDR(sithTime_g_secGameTime)
 #undef sithTime_g_frameTimeFlex_ADDR

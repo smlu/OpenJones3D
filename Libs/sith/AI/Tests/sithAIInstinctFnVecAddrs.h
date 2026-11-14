@@ -4,6 +4,7 @@
 #define SITH_AI_TESTS_SITHAIINSTINCTFNVECADDRS_H
 
 SITHVEC_REDIRECT_DECL(uint32_t, sithTime_g_msecGameTime);
+SITHVEC_REDIRECT_DECL(uint32_t, sithTime_g_frameTime); // read by sithTime_CalcDeadline
 SITHVEC_REDIRECT_DECL(float, sithTime_g_secGameTime);
 SITHVEC_REDIRECT_DECL(size_t, sithMain_g_frameNumber);
 SITHVEC_REDIRECT_DECL(SithMode, sithMain_g_sith_mode);
@@ -20,6 +21,8 @@ SITHVEC_REDIRECT_DECL(SithAIAwarenessSector*, sithAIAwareness_g_aSectors);
 #undef sithAIAwareness_g_aSectors_ADDR
 
 #define sithTime_g_msecGameTime_ADDR SITHVEC_REDIRECT_ADDR(sithTime_g_msecGameTime)
+#undef sithTime_g_frameTime_ADDR
+#define sithTime_g_frameTime_ADDR SITHVEC_REDIRECT_ADDR(sithTime_g_frameTime)
 #define sithTime_g_secGameTime_ADDR SITHVEC_REDIRECT_ADDR(sithTime_g_secGameTime)
 #define sithMain_g_frameNumber_ADDR SITHVEC_REDIRECT_ADDR(sithMain_g_frameNumber)
 #define sithMain_g_sith_mode_ADDR SITHVEC_REDIRECT_ADDR(sithMain_g_sith_mode)

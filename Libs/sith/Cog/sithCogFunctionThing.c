@@ -1692,8 +1692,8 @@ void J3DAPI sithCogFunctionThing_SetThingPulse(SithCog* pCog)
     {
         // Start pulse
         pThing->flags            |= SITH_TF_PULSESET;
-        pThing->msecPulseInterval = (uint32_t)(secPulse * 1000.0);
-        pThing->msecNextPulseTime = pThing->msecPulseInterval + sithTime_g_msecGameTime;
+        pThing->msecPulseInterval = (uint32_t)(secPulse * 1000.0f); // Float math like the original, so e.g. 0.01 sec is 10 msec
+        pThing->msecNextPulseTime = sithTime_CalcDeadline(pThing->msecPulseInterval); // Fixed: Deadline from sithTime_CalcDeadline
     }
 }
 
@@ -1718,7 +1718,7 @@ void J3DAPI sithCogFunctionThing_SetThingTimer(SithCog* pCog)
     {
         // Start timer
         pThing->flags |= SITH_TF_TIMERSET;
-        pThing->msecTimerTime = sithTime_g_msecGameTime + (uint32_t)(secTimer * 1000.0);
+        pThing->msecTimerTime = sithTime_CalcDeadline((tStdTime)(secTimer * 1000.0f)); // Fixed: Deadline from sithTime_CalcDeadline. Float math like the original
     }
 }
 

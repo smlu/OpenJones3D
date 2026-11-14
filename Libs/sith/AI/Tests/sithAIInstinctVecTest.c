@@ -7,6 +7,11 @@
 #include <sith/Gameplay/sithTime.h>
 
 SITHVEC_REDIRECT_DEFINE(uint32_t, sithTime_g_msecGameTime);
+// The frame time of a 30 FPS frame: the original vectors were captured without one, and sithTime_CalcDeadline puts
+// deadlines on 30 FPS frames only for shorter frames, so the deadlines stay the original now + interval
+SITHVEC_REDIRECT_DEFINE(uint32_t, sithTime_g_frameTime) = 1000u / 30u;
+
+void J3DAPI sithAI_InstinctUpdate(SithAIControlBlock* pLocal); // sithAI.c, no header declaration
 
 // Original-engine test vectors for sithAIInstinct_InitInstincts and the instinct registry functions of sithAI.c it uses
 // (sithAI_RegisterInstinct, sithAI_FindInstinct). The fixture in tv/sithAIInstinct holds, for every case of

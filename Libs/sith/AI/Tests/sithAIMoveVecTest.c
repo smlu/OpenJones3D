@@ -11,6 +11,9 @@
 // functions and compare. See tv/sithAIMove/README.md.
 
 SITHVEC_REDIRECT_DEFINE(uint32_t, sithTime_g_msecGameTime);
+// The frame time of a 30 FPS frame: the original vectors were captured without one, and sithTime_CalcDeadline puts
+// deadlines on 30 FPS frames only for shorter frames, so the deadlines stay the original now + interval
+SITHVEC_REDIRECT_DEFINE(uint32_t, sithTime_g_frameTime) = 1000u / 30u;
 SITHVEC_REDIRECT_DEFINE(size_t, sithMain_g_frameNumber);
 SITHVEC_REDIRECT_DEFINE(SithMode, sithMain_g_sith_mode);
 

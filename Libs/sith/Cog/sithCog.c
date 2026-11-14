@@ -342,13 +342,13 @@ void J3DAPI sithCog_FreeEntry(SithCog* pCog)
 
 void J3DAPI sithCog_UpdateThingTimer(SithThing* pThing)
 {
-    if ( (pThing->flags & SITH_TF_PULSESET) != 0 && pThing->msecNextPulseTime <= sithTime_g_msecGameTime )
+    if ( (pThing->flags & SITH_TF_PULSESET) != 0 && sithTime_IsDeadlineReached(pThing->msecNextPulseTime) )
     {
-        pThing->msecNextPulseTime = pThing->msecPulseInterval + sithTime_g_msecGameTime;
+        pThing->msecNextPulseTime = sithTime_CalcDeadline(pThing->msecPulseInterval); // Fixed: Deadline from sithTime_CalcDeadline
         sithCog_ThingSendMessage(pThing, pThing, SITHCOG_MSG_PULSE);
     }
 
-    if ( (pThing->flags & SITH_TF_TIMERSET) != 0 && pThing->msecTimerTime <= sithTime_g_msecGameTime )
+    if ( (pThing->flags & SITH_TF_TIMERSET) != 0 && sithTime_IsDeadlineReached(pThing->msecTimerTime) )
     {
         pThing->flags &= ~SITH_TF_TIMERSET;
         sithCog_ThingSendMessage(pThing, pThing, SITHCOG_MSG_TIMER);
@@ -1754,13 +1754,13 @@ void J3DAPI sithCog_ProcessCog(SithCog* pCog)
         return;
     }
 
-    if ( (pCog->flags & SITHCOG_PULSE_SET) != 0 && sithTime_g_msecGameTime >= pCog->msecNextPulseTime )
+    if ( (pCog->flags & SITHCOG_PULSE_SET) != 0 && sithTime_IsDeadlineReached(pCog->msecNextPulseTime) )
     {
-        pCog->msecNextPulseTime = pCog->msecPulseInterval + sithTime_g_msecGameTime;
+        pCog->msecNextPulseTime = sithTime_CalcDeadline(pCog->msecPulseInterval); // Fixed: Deadline from sithTime_CalcDeadline
         sithCog_SendMessage(pCog, SITHCOG_MSG_PULSE, SITHCOG_SYM_REF_NONE, 0, SITHCOG_SYM_REF_NONE, 0, 0);
     }
 
-    if ( (pCog->flags & SITHCOG_TIMER_SET) != 0 && sithTime_g_msecGameTime >= pCog->msecTimerTimeout )
+    if ( (pCog->flags & SITHCOG_TIMER_SET) != 0 && sithTime_IsDeadlineReached(pCog->msecTimerTimeout) )
     {
         pCog->flags  &= ~SITHCOG_TIMER_SET;
         pCog->msecTimerTimeout = 0;
@@ -1771,7 +1771,7 @@ void J3DAPI sithCog_ProcessCog(SithCog* pCog)
     {
         case SITHCOG_STATUS_SLEEPING:
         {
-            if ( (unsigned int)pCog->statusParams[0] >= sithTime_g_msecGameTime ) // Fixed: Make sure pCog->statusParams[0]  is unsigned when compare it to current time
+            if ( !sithTime_IsDeadlinePassed((tStdTime)pCog->statusParams[0]) ) // Fixed: Make sure pCog->statusParams[0] is unsigned when compared to the current time
             {
                 // Cog still needs to sleep
                 return;
@@ -1913,7 +1913,7 @@ void J3DAPI sithCog_ProcessCog(SithCog* pCog)
         case SITHCOG_STATUS_WAITING_ACTOR_WEAPON_DESELECT_FINISH:
         {
             if ( sithWorld_g_pCurrentWorld->aThings[pCog->statusParams[0]].thingInfo.actorInfo.weaponInfo.deselectedWeaponID != SITHWEAPON_NOWEAPONDESELECTED
-                || sithWeapon_GetMountWait() > (double)sithTime_g_secGameTime )
+                || !sithTime_IsDeadlineReachedSec(sithWeapon_GetMountWait()) )
             {
                 // Weapon still not deselected
                 return;

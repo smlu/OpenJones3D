@@ -218,7 +218,7 @@ void sithAI_Process(void)
             {
                 sithAI_ProcessAIStateChange(pLocal);
                 sithWeapon_UpdateActorWeapon(pLocal->pOwner);
-                if ( pLocal->msecNextUpdate <= sithTime_g_msecGameTime && sithAIMove_AIGetMoveState(pLocal) <= 0 )
+                if ( sithTime_IsDeadlineReached(pLocal->msecNextUpdate) && sithAIMove_AIGetMoveState(pLocal) <= 0 )
                 {
                     sithAI_InstinctUpdate(pLocal);
                 }
@@ -249,7 +249,7 @@ void J3DAPI sithAI_ProcessAIStateChange(SithAIControlBlock* pLocal)
         return;
     }
 
-    if ( pStateChange->type == SITHACTORSTATECHANGE_ANIMMOVE && sithTime_g_msecGameTime >= pLocal->msecPauseMoveUntil )
+    if ( pStateChange->type == SITHACTORSTATECHANGE_ANIMMOVE && sithTime_IsDeadlineReached(pLocal->msecPauseMoveUntil) )
     {
         sithAIMove_AISpecialMove(pLocal, pStateChange->params.moveFlags);
         sithCog_ThingSendMessageEx(pLocal->pOwner, 0, SITHCOG_MSG_STATECHANGE, pStateChange->type, pStateChange->params.moveFlags, 0, 0);
@@ -259,7 +259,7 @@ void J3DAPI sithAI_ProcessAIStateChange(SithAIControlBlock* pLocal)
 
 void J3DAPI sithAI_InstinctUpdate(SithAIControlBlock* pLocal)
 {
-    uint32_t msecNextUpdate = sithTime_g_msecGameTime + 5000;
+    tStdTime msecNextUpdate = sithTime_CalcDeadline(5000); // Fixed: Deadline from sithTime_CalcDeadline
     SithAIMode curMode = pLocal->mode;
 
 LABEL_2:
@@ -269,9 +269,9 @@ LABEL_2:
             && (pLocal->pClass->aInstincts[i].updateModes & pLocal->mode) != 0
             && (pLocal->pClass->aInstincts[i].updateBlockModes & pLocal->mode) == 0 )
         {
-            if ( pLocal->aInstinctStates[i].msecNextUpdate <= sithTime_g_msecGameTime )
+            if ( sithTime_IsDeadlineReached(pLocal->aInstinctStates[i].msecNextUpdate) )
             {
-                pLocal->aInstinctStates[i].msecNextUpdate = sithTime_g_msecGameTime + 1000;
+                pLocal->aInstinctStates[i].msecNextUpdate = sithTime_CalcDeadline(1000); // Fixed: Deadline from sithTime_CalcDeadline
                 int bHandled = pLocal->pClass->aInstincts[i].pfInstinct(pLocal, &pLocal->pClass->aInstincts[i], &pLocal->aInstinctStates[i], (SithAIEventType)0, 0);
 
                 if ( curMode != pLocal->mode )
@@ -326,7 +326,7 @@ int J3DAPI sithAI_ForceInstinctUpdate(SithAIControlBlock* pLocal, const char* pI
         return 0;
     }
 
-    pLocal->aInstinctStates[instIdx].msecNextUpdate = sithTime_g_msecGameTime + 1000;
+    pLocal->aInstinctStates[instIdx].msecNextUpdate = sithTime_CalcDeadline(1000); // Fixed: Deadline from sithTime_CalcDeadline
     pLocal->pClass->aInstincts[instIdx].pfInstinct(pLocal, &pLocal->pClass->aInstincts[instIdx], &pLocal->aInstinctStates[instIdx], (SithAIEventType)0, NULL);
 
     if ( !bSendModeChangeEvent )

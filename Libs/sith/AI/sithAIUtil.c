@@ -477,7 +477,7 @@ int J3DAPI sithAIUtil_AIFire(SithAIControlBlock* pLocal, float minDist, float ma
 
     if ( (flags & SITHAIUTIL_FIRE_DELAYED) == 0 )
     {
-        if ( pLocal->msecFireWaitTime > sithTime_g_msecGameTime )
+        if ( !sithTime_IsDeadlineReached(pLocal->msecFireWaitTime) )
         {
             goto postfire;
         }
@@ -639,7 +639,7 @@ postfire:
 
 void J3DAPI sithAIUtil_AIPauseMove(SithAIControlBlock* pLocal, int msecPause)
 {
-    pLocal->msecPauseMoveUntil = sithTime_g_msecGameTime + msecPause;
+    pLocal->msecPauseMoveUntil = sithTime_CalcDeadline((tStdTime)msecPause); // Fixed: Deadline from sithTime_CalcDeadline
 }
 
 void sithAIUtil_AIResetWaypoints(void)

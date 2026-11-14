@@ -126,7 +126,7 @@ void J3DAPI sithCogFunction_Sleep(SithCog* pCog)
     }
 
     pCog->status = SITHCOG_STATUS_SLEEPING;
-    pCog->statusParams[0] = (sithTime_g_msecGameTime + (uint32_t)(secWait * 1000.0f));
+    pCog->statusParams[0] = sithTime_CalcDeadlineAfter((tStdTime)(secWait * 1000.0f)); // Fixed: Deadline from sithTime_CalcDeadline
 }
 
 void J3DAPI sithCogFunction_Print(SithCog* pCog)
@@ -390,7 +390,7 @@ void J3DAPI sithCogFunction_SetPulse(SithCog* pCog)
 
         pCog->flags |= SITHCOG_PULSE_SET;
         pCog->msecPulseInterval = (uint32_t)(interval * 1000.0f);
-        pCog->msecNextPulseTime = pCog->msecPulseInterval + sithTime_g_msecGameTime;
+        pCog->msecNextPulseTime = sithTime_CalcDeadline(pCog->msecPulseInterval); // Fixed: Deadline from sithTime_CalcDeadline
     }
 }
 
@@ -415,7 +415,7 @@ void J3DAPI sithCogFunction_SetTimer(SithCog* pCog)
         }
 
         pCog->flags |= SITHCOG_TIMER_SET;
-        pCog->msecTimerTimeout = sithTime_g_msecGameTime + (uint32_t)(when * 1000.0f);
+        pCog->msecTimerTimeout = sithTime_CalcDeadline((tStdTime)(when * 1000.0f)); // Fixed: Deadline from sithTime_CalcDeadline
     }
 }
 

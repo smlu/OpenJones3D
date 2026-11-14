@@ -757,7 +757,7 @@ int J3DAPI sithAIInstinct_LookForTarget(SithAIControlBlock* pLocal, SithAIInstin
         return 0;
     }
 
-    pState->msecNextUpdate = sithTime_g_msecGameTime + SITHAIINSTINCT_LOOKFORTARGET_INTERVAL_INT(pInstinct);
+    pState->msecNextUpdate = sithTime_CalcDeadline(SITHAIINSTINCT_LOOKFORTARGET_INTERVAL_INT(pInstinct)); // Fixed: Deadline from sithTime_CalcDeadline
     if ( (pLocal->pOwner->thingInfo.actorInfo.flags & SITH_AF_BLIND) != 0 )
     {
         return 0;
@@ -828,7 +828,7 @@ int J3DAPI sithAIInstinct_SenseDanger(SithAIControlBlock* pLocal, SithAIInstinct
     SithAIAwarenessSector* pAISector = &sithAIAwareness_g_aSectors[sithSector_GetSectorIndex(pOwner->pInSector)];
     if ( !event && SITHAIINSTINCT_SENSEDANGER_INTERVAL(pInstance) )
     {
-        pState->msecNextUpdate = sithTime_g_msecGameTime + SITHAIINSTINCT_SENSEDANGER_INTERVAL(pInstance);
+        pState->msecNextUpdate = sithTime_CalcDeadline(SITHAIINSTINCT_SENSEDANGER_INTERVAL(pInstance)); // Fixed: Deadline from sithTime_CalcDeadline
     }
 
     if ( (pLocal->mode & SITHAI_MODE_FLEEING) != 0 )
@@ -982,7 +982,7 @@ int J3DAPI sithAIInstinct_Hop(SithAIControlBlock* pLocal, SithAIInstinct* pInsti
     J3D_UNUSED(pObject);
 
     float hopDelay = (float)SITHAIINSTINCT_HOP_DELAY(pInstinct);
-    pState->msecNextUpdate = sithTime_g_msecGameTime + (uint32_t)(hopDelay * SITH_RANDF());
+    pState->msecNextUpdate = sithTime_CalcDeadline((uint32_t)(hopDelay * SITH_RANDF())); // Fixed: Deadline from sithTime_CalcDeadline
     if ( !pLocal->pOwner->attach.flags )
     {
         return 0;
@@ -1017,7 +1017,7 @@ int J3DAPI sithAIInstinct_HoverDrift(SithAIControlBlock* pLocal, SithAIInstinct*
 
     float curSpread = SITHAIINSTINCT_HOVERDRIFT_INTERVAL(pInstinct);
     curSpread = (SITH_RANDF() - 0.5f) * curSpread + curSpread;
-    pState->msecNextUpdate = sithTime_g_msecGameTime + (uint32_t)curSpread;
+    pState->msecNextUpdate = sithTime_CalcDeadline((uint32_t)curSpread); // Fixed: Deadline from sithTime_CalcDeadline
     if ( (pLocal->mode & SITHAI_MODE_MOVING) != 0
          || (pLocal->pOwner->thingInfo.actorInfo.flags & SITH_AF_IMMOBILE) != 0 )
     {
@@ -1063,7 +1063,7 @@ int J3DAPI sithAIInstinct_Talk(SithAIControlBlock* pLocal, SithAIInstinct* pInst
             }
 
             delay = delay * 1000.0f;
-            pState->msecNextUpdate = sithTime_g_msecGameTime + (uint32_t)delay;
+            pState->msecNextUpdate = sithTime_CalcDeadline((uint32_t)delay); // Fixed: Deadline from sithTime_CalcDeadline
             if ( nextTalkTime > sithTime_g_secGameTime )
             {
                 return 0;
@@ -1199,11 +1199,11 @@ int J3DAPI sithAIInstinct_RandomTurn(SithAIControlBlock* pLocal, SithAIInstinct*
 
     if ( !SITHAIINSTINCT_RANDOMTURN_INTERVAL(pInstinct) )
     {
-        pState->msecNextUpdate = sithTime_g_msecGameTime + 5000;
+        pState->msecNextUpdate = sithTime_CalcDeadline(5000); // Fixed: Deadline from sithTime_CalcDeadline
     }
     else
     {
-        pState->msecNextUpdate = sithTime_g_msecGameTime + SITHAIINSTINCT_RANDOMTURN_INTERVAL(pInstinct);
+        pState->msecNextUpdate = sithTime_CalcDeadline(SITHAIINSTINCT_RANDOMTURN_INTERVAL(pInstinct)); // Fixed: Deadline from sithTime_CalcDeadline
     }
 
     if ( (pLocal->mode & SITHAI_MODE_SEARCHING) == 0 )
@@ -1253,7 +1253,7 @@ int J3DAPI sithAIInstinct_OpenDoors(SithAIControlBlock* pLocal, SithAIInstinct* 
 
     sithPlayerActions_Activate(pLocal->pOwner);
 
-    pState->msecNextUpdate = sithTime_g_msecGameTime + 1000;
+    pState->msecNextUpdate = sithTime_CalcDeadline(1000); // Fixed: Deadline from sithTime_CalcDeadline
     return 0;
 }
 
@@ -1285,12 +1285,12 @@ int J3DAPI sithAIInstinct_Jump(SithAIControlBlock* pLocal, SithAIInstinct* pInst
         return 0;
     }
 
-    if ( (double)sithTime_g_msecGameTime < SITHAIINSTINCT_STATE_JUMP_NEXTJUMPTIME(pState) )
+    if ( !sithTime_IsDeadlineReachedFlex(SITHAIINSTINCT_STATE_JUMP_NEXTJUMPTIME(pState)) )
     {
         return 0;
     }
 
-    SITHAIINSTINCT_STATE_JUMP_NEXTJUMPTIME(pState) = (float)((double)sithTime_g_msecGameTime + SITHAIINSTINCT_JUMP_DELAY(pInstinct));
+    SITHAIINSTINCT_STATE_JUMP_NEXTJUMPTIME(pState) = sithTime_CalcDeadlineFlex(SITHAIINSTINCT_JUMP_DELAY(pInstinct)); // Fixed: Deadline from sithTime_CalcDeadlineFlex
 
     switch ( event )
     {
@@ -1381,7 +1381,7 @@ int J3DAPI sithAIInstinct_LobFire(SithAIControlBlock* pLocal, SithAIInstinct* pI
 
     if ( sithPuppet_IsAnyModeOnTrack(pLocal->pOwner, SITHPUPPETSUBMODE_FIRE, SITHPUPPETSUBMODE_FIRE4) )
     {
-        pState->msecNextUpdate = sithTime_g_msecGameTime + 150;
+        pState->msecNextUpdate = sithTime_CalcDeadline(150); // Fixed: Deadline from sithTime_CalcDeadline
         return 0;
     }
 
@@ -1395,14 +1395,14 @@ int J3DAPI sithAIInstinct_LobFire(SithAIControlBlock* pLocal, SithAIInstinct* pI
 
     if ( sithAIUtil_AIFire(pLocal, SITHAIINSTINCT_LOBFIRE_MINDIST(pInstinct), SITHAIINSTINCT_LOBFIRE_MAXDIST(pInstinct), SITHAIINSTINCT_LOBFIRE_FIREDOT(pInstinct), SITHAIINSTINCT_LOBFIRE_AIMERROR(pInstinct), weaponNum, fireFlags, 1) )
     {
-        pState->msecNextUpdate = sithTime_g_msecGameTime + SITHAIINSTINCT_LOBFIRE_FIREDELAY(pInstinct);
-        pLocal->msecFireWaitTime = sithTime_g_msecGameTime + SITHAIINSTINCT_LOBFIRE_FIREDELAY(pInstinct);
+        pState->msecNextUpdate = sithTime_CalcDeadline(SITHAIINSTINCT_LOBFIRE_FIREDELAY(pInstinct)); // Fixed: Deadline from sithTime_CalcDeadline
+        pLocal->msecFireWaitTime = sithTime_CalcDeadline(SITHAIINSTINCT_LOBFIRE_FIREDELAY(pInstinct)); // Fixed: Deadline from sithTime_CalcDeadline
     }
     else
     {
         sithAIMove_AISetLookThing(pLocal, pTarget);
 
-        pState->msecNextUpdate = sithTime_g_msecGameTime + 500;
+        pState->msecNextUpdate = sithTime_CalcDeadline(500); // Fixed: Deadline from sithTime_CalcDeadline
     }
     return 0;
 }
@@ -1446,7 +1446,7 @@ int J3DAPI sithAIInstinct_PrimaryFire(SithAIControlBlock* pLocal, SithAIInstinct
 
     if ( sithPuppet_IsAnyModeOnTrack(pLocal->pOwner, SITHPUPPETSUBMODE_FIRE, SITHPUPPETSUBMODE_FIRE4) )
     {
-        pState->msecNextUpdate = sithTime_g_msecGameTime + 250;
+        pState->msecNextUpdate = sithTime_CalcDeadline(250); // Fixed: Deadline from sithTime_CalcDeadline
         return 0;
     }
 
@@ -1548,7 +1548,7 @@ int J3DAPI sithAIInstinct_PrimaryFire(SithAIControlBlock* pLocal, SithAIInstinct
         }
 
         float fireDelay = (SITH_RANDF() * 0.4f - 0.2f + 1.0f) * SITHAIINSTINCT_PRIMARYFIRE_FIREDELAY(pInstinct);
-        pState->msecNextUpdate = sithTime_g_msecGameTime + (uint32_t)fireDelay;
+        pState->msecNextUpdate = sithTime_CalcDeadline((uint32_t)fireDelay); // Fixed: Deadline from sithTime_CalcDeadline
         return 0;
     }
 
@@ -1579,7 +1579,7 @@ int J3DAPI sithAIInstinct_PrimaryFire(SithAIControlBlock* pLocal, SithAIInstinct
         }
     }
 
-    pState->msecNextUpdate = sithTime_g_msecGameTime + 750;
+    pState->msecNextUpdate = sithTime_CalcDeadline(750); // Fixed: Deadline from sithTime_CalcDeadline
     return 0;
 }
 
@@ -1599,13 +1599,13 @@ int J3DAPI sithAIInstinct_AlternateFire(SithAIControlBlock* pLocal, SithAIInstin
 
     if ( (pLocal->mode & SITHAI_MODE_ATTACKING) == 0 )
     {
-        pState->msecNextUpdate = sithTime_g_msecGameTime + SITHAIINSTINCT_ALTERNATEFIRE_RETRYDELAY(pInstinct);
+        pState->msecNextUpdate = sithTime_CalcDeadline(SITHAIINSTINCT_ALTERNATEFIRE_RETRYDELAY(pInstinct)); // Fixed: Deadline from sithTime_CalcDeadline
         return 0;
     }
 
     if ( sithPuppet_IsAnyModeOnTrack(pLocal->pOwner, SITHPUPPETSUBMODE_FIRE, SITHPUPPETSUBMODE_FIRE4) )
     {
-        pState->msecNextUpdate = sithTime_g_msecGameTime + 150;
+        pState->msecNextUpdate = sithTime_CalcDeadline(150); // Fixed: Deadline from sithTime_CalcDeadline
         return 0;
     }
 
@@ -1646,7 +1646,7 @@ int J3DAPI sithAIInstinct_AlternateFire(SithAIControlBlock* pLocal, SithAIInstin
     if ( sithAIUtil_AIFire(pLocal, SITHAIINSTINCT_ALTERNATEFIRE_MINDIST(pInstinct), SITHAIINSTINCT_ALTERNATEFIRE_MAXDIST(pInstinct), SITHAIINSTINCT_ALTERNATEFIRE_FIREDOT(pInstinct), SITHAIINSTINCT_ALTERNATEFIRE_AIMERROR(pInstinct), weaponNum, flags, burstCount) )
     {
         float currentfireDelay = (SITH_RANDF() * 0.4f - 0.2f + 1.0f) * SITHAIINSTINCT_ALTERNATEFIRE_FIREDELAY(pInstinct);
-        pState->msecNextUpdate = sithTime_g_msecGameTime + (uint32_t)currentfireDelay;
+        pState->msecNextUpdate = sithTime_CalcDeadline((uint32_t)currentfireDelay); // Fixed: Deadline from sithTime_CalcDeadline
     }
     else
     {
@@ -1663,7 +1663,7 @@ int J3DAPI sithAIInstinct_AlternateFire(SithAIControlBlock* pLocal, SithAIInstin
             sithAIMove_AISetLookPosEyeLevel(pLocal, &lookPos);
         }
 
-        pState->msecNextUpdate = sithTime_g_msecGameTime + SITHAIINSTINCT_ALTERNATEFIRE_RETRYDELAY(pInstinct);
+        pState->msecNextUpdate = sithTime_CalcDeadline(SITHAIINSTINCT_ALTERNATEFIRE_RETRYDELAY(pInstinct)); // Fixed: Deadline from sithTime_CalcDeadline
     }
 
     return 0;
@@ -1675,7 +1675,7 @@ int J3DAPI sithAIInstinct_CircleStrafe(SithAIControlBlock* pLocal, SithAIInstinc
     int result = 0;
     SITH_ASSERTREL(pLocal);
 
-    pState->msecNextUpdate = sithTime_g_msecGameTime + SITHAIINSTINCT_CIRCLESTRAFE_INTERVAL(pInstinct);
+    pState->msecNextUpdate = sithTime_CalcDeadline(SITHAIINSTINCT_CIRCLESTRAFE_INTERVAL(pInstinct)); // Fixed: Deadline from sithTime_CalcDeadline
     if ( (pLocal->mode & (SITHAI_MODE_UNKNOWN_1000000 | SITHAI_MODE_FLEEING | SITHAI_MODE_SEARCHING)) != 0 )
     {
         pLocal->mode &= ~SITHAI_MODE_CIRCLESTRAFING;
@@ -1699,7 +1699,7 @@ int J3DAPI sithAIInstinct_CircleStrafe(SithAIControlBlock* pLocal, SithAIInstinc
     if ( SITHAIINSTINCT_CIRCLESTRAFE_WAITFIRE(pInstinct) != 0.0f
          && sithPuppet_IsAnyModeOnTrack(pLocal->pOwner, SITHPUPPETSUBMODE_FIRE, SITHPUPPETSUBMODE_FIRE4) )
     {
-        pState->msecNextUpdate = sithTime_g_msecGameTime + 500;
+        pState->msecNextUpdate = sithTime_CalcDeadline(500); // Fixed: Deadline from sithTime_CalcDeadline
         return 0;
     }
 
@@ -1839,7 +1839,7 @@ int J3DAPI sithAIInstinct_CircleStrafe(SithAIControlBlock* pLocal, SithAIInstinc
             sithAIMove_AISetLookPosEyeLevel(pLocal, &nextPos);
         }
 
-        pState->msecNextUpdate = sithTime_g_msecGameTime + SITHAIINSTINCT_CIRCLESTRAFE_MOVEINTERVAL(pInstinct);
+        pState->msecNextUpdate = sithTime_CalcDeadline(SITHAIINSTINCT_CIRCLESTRAFE_MOVEINTERVAL(pInstinct)); // Fixed: Deadline from sithTime_CalcDeadline
     }
     else
     {
@@ -2157,7 +2157,7 @@ int J3DAPI sithAIInstinct_HitAndRun(SithAIControlBlock* pLocal, SithAIInstinct* 
                 if ( sithPuppet_IsAnyModeOnTrack(pLocal->pOwner, SITHPUPPETSUBMODE_FIRE, SITHPUPPETSUBMODE_FIRE4) )
                 {
                     pLocal->mode &= ~SITHAI_MODE_ATTACKING;
-                    pState->msecNextUpdate = sithTime_g_msecGameTime + 100;
+                    pState->msecNextUpdate = sithTime_CalcDeadline(100); // Fixed: Deadline from sithTime_CalcDeadline
                     return 0;
                 }
 
@@ -2175,7 +2175,7 @@ int J3DAPI sithAIInstinct_HitAndRun(SithAIControlBlock* pLocal, SithAIInstinct* 
             if ( SITH_RANDF() < SITHAIINSTINCT_HITANDRUN_FIRECHANCE(pInstinct) )
             {
                 SITHAIINSTINCT_STATE_HITANDRUN_FLEEPENDING(pState) = 1.0f;
-                pState->msecNextUpdate = sithTime_g_msecGameTime + 500;
+                pState->msecNextUpdate = sithTime_CalcDeadline(500); // Fixed: Deadline from sithTime_CalcDeadline
             }
             return 0;
         }
@@ -2211,12 +2211,12 @@ int J3DAPI sithAIInstinct_HitAndRun(SithAIControlBlock* pLocal, SithAIInstinct* 
         }
 
         SITHAIINSTINCT_STATE_HITANDRUN_ATTACKELAPSED(pState) = time;
-        pState->msecNextUpdate = sithTime_g_msecGameTime + 1000;
+        pState->msecNextUpdate = sithTime_CalcDeadline(1000); // Fixed: Deadline from sithTime_CalcDeadline
     }
     else
     {
         SITHAIINSTINCT_STATE_HITANDRUN_ATTACKELAPSED(pState) = 0.0f;
-        pState->msecNextUpdate = sithTime_g_msecGameTime + 1000;
+        pState->msecNextUpdate = sithTime_CalcDeadline(1000); // Fixed: Deadline from sithTime_CalcDeadline
     }
 
     return 0;
@@ -2227,7 +2227,7 @@ flee:
     SITHAIINSTINCT_STATE_HITANDRUN_FLEEPENDING(pState)   = 0.0f;
     SITHAIINSTINCT_STATE_HITANDRUN_HASFIRED(pState)      = 0.0f;
 
-    pState->msecNextUpdate = sithTime_g_msecGameTime + (int)SITHAIINSTINCT_HITANDRUN_FLEETIME(pInstinct);
+    pState->msecNextUpdate = sithTime_CalcDeadline((int)SITHAIINSTINCT_HITANDRUN_FLEETIME(pInstinct)); // Fixed: Deadline from sithTime_CalcDeadline
     return 0;
 }
 
@@ -2242,7 +2242,7 @@ int J3DAPI sithAIInstinct_Retreat(SithAIControlBlock* pLocal, SithAIInstinct* pI
 
     if ( !sithAIUtil_CanAttackTarget(pLocal->pTargetThing) )
     {
-        pState->msecNextUpdate = sithTime_g_msecGameTime + SITHAIINSTINCT_RETREAT_INTERVAL(pInstinct);
+        pState->msecNextUpdate = sithTime_CalcDeadline(SITHAIINSTINCT_RETREAT_INTERVAL(pInstinct)); // Fixed: Deadline from sithTime_CalcDeadline
         return 0;
     }
 
@@ -2283,7 +2283,7 @@ int J3DAPI sithAIInstinct_Retreat(SithAIControlBlock* pLocal, SithAIInstinct* pI
         }
     }
 
-    pState->msecNextUpdate = sithTime_g_msecGameTime + SITHAIINSTINCT_RETREAT_INTERVAL(pInstinct);
+    pState->msecNextUpdate = sithTime_CalcDeadline(SITHAIINSTINCT_RETREAT_INTERVAL(pInstinct)); // Fixed: Deadline from sithTime_CalcDeadline
     return 0;
 }
 
@@ -2336,7 +2336,7 @@ int J3DAPI sithAIInstinct_RandomMove(SithAIControlBlock* pLocal, SithAIInstinct*
         {
             delay = SITHAIINSTINCT_RANDOMMOVE_INTERVAL(pInstinct);
             delay += (int)((float)(uint32_t)delay * (SITH_RANDF() - 0.5f));
-            pState->msecNextUpdate = sithTime_g_msecGameTime + delay;
+            pState->msecNextUpdate = sithTime_CalcDeadline(delay); // Fixed: Deadline from sithTime_CalcDeadline
             if ( pLocal->targetSightState != SITHAI_SIGHT_VISIBLE )
             {
                 return 0;
@@ -2528,7 +2528,7 @@ int J3DAPI sithAIInstinct_HumanCombatMove(SithAIControlBlock* pLocal, SithAIInst
                     SITHAIINSTINCT_STATE_HUMANCOMBATMOVE_MOVECHANCE(pState) += 0.2f;
                 }
 
-                if ( SITHAIINSTINCT_STATE_HUMANCOMBATMOVE_NEXTMOVETIME(pState) > (float)sithTime_g_msecGameTime )
+                if ( !sithTime_IsDeadlineReachedFlex(SITHAIINSTINCT_STATE_HUMANCOMBATMOVE_NEXTMOVETIME(pState)) )
                 {
                     return 0;
                 }
@@ -2536,7 +2536,7 @@ int J3DAPI sithAIInstinct_HumanCombatMove(SithAIControlBlock* pLocal, SithAIInst
                 float arc = SITHAIINSTINCT_HUMANCOMBATMOVE_MOVEDELAY(pInstinct);
                 arc       = (SITH_RANDF() - 0.5f) * arc + arc;
 
-                SITHAIINSTINCT_STATE_HUMANCOMBATMOVE_NEXTMOVETIME(pState) = sithTime_g_msecGameTime + arc;
+                SITHAIINSTINCT_STATE_HUMANCOMBATMOVE_NEXTMOVETIME(pState) = sithTime_CalcDeadlineFlex(arc); // Fixed: Deadline from sithTime_CalcDeadlineFlex
                 if ( SITH_RANDF() > SITHAIINSTINCT_STATE_HUMANCOMBATMOVE_MOVECHANCE(pState) )
                 {
                     SITHAIINSTINCT_STATE_HUMANCOMBATMOVE_MOVECHANCE(pState) += 0.05f;
@@ -2757,7 +2757,7 @@ int J3DAPI sithAIInstinct_Roam(SithAIControlBlock* pLocal, SithAIInstinct* pInst
         SithAIMode prevMode = (SithAIMode)pThing;
         if ( (pLocal->mode & SITHAI_MODE_SEARCHING) != 0 && (prevMode & SITHAI_MODE_SEARCHING) == 0 )
         {
-            pState->msecNextUpdate = sithTime_g_msecGameTime + SITHAIINSTINCT_ROAM_INTERVAL(pInstinct);
+            pState->msecNextUpdate = sithTime_CalcDeadline(SITHAIINSTINCT_ROAM_INTERVAL(pInstinct)); // Fixed: Deadline from sithTime_CalcDeadline
             return 0;
         }
     }
@@ -2814,7 +2814,7 @@ int J3DAPI sithAIInstinct_Roam(SithAIControlBlock* pLocal, SithAIInstinct* pInst
 
         case (SithAIEventType)0:
         {
-            pState->msecNextUpdate = sithTime_g_msecGameTime + SITHAIINSTINCT_ROAM_INTERVAL(pInstinct);
+            pState->msecNextUpdate = sithTime_CalcDeadline(SITHAIINSTINCT_ROAM_INTERVAL(pInstinct)); // Fixed: Deadline from sithTime_CalcDeadline
             if ( (pLocal->mode & SITHAI_MODE_INSTINCTUSEWPNTS) != 0
                  && sithAIUtil_AIMoveToNextWpnt(pLocal, moveSpeed, 0.0f, 1) )
             {
@@ -2935,11 +2935,11 @@ int J3DAPI sithAIInstinct_Flee(SithAIControlBlock* pLocal, SithAIInstinct* pInst
 
     if ( SITHAIINSTINCT_FLEE_INTERVAL(pInstinct) )
     {
-        pState->msecNextUpdate = sithTime_g_msecGameTime + SITHAIINSTINCT_FLEE_INTERVAL(pInstinct);
+        pState->msecNextUpdate = sithTime_CalcDeadline(SITHAIINSTINCT_FLEE_INTERVAL(pInstinct)); // Fixed: Deadline from sithTime_CalcDeadline
     }
     else
     {
-        pState->msecNextUpdate = sithTime_g_msecGameTime + 5000;
+        pState->msecNextUpdate = sithTime_CalcDeadline(5000); // Fixed: Deadline from sithTime_CalcDeadline
     }
 
     rdVector3 direction;
@@ -3134,7 +3134,7 @@ int J3DAPI sithAIInstinct_BasicFallow(SithAIControlBlock* pLocal, SithAIInstinct
     if ( SITHAIINSTINCT_BASICFOLLOW_WAITFIRE(pInstinct)
          && sithPuppet_IsAnyModeOnTrack(pFoe, SITHPUPPETSUBMODE_FIRE, SITHPUPPETSUBMODE_FIRE4) )
     {
-        pState->msecNextUpdate = sithTime_g_msecGameTime + 500;
+        pState->msecNextUpdate = sithTime_CalcDeadline(500); // Fixed: Deadline from sithTime_CalcDeadline
         return 0;
     }
 
@@ -3255,7 +3255,7 @@ int J3DAPI sithAIInstinct_BasicFallow(SithAIControlBlock* pLocal, SithAIInstinct
         {
             if ( SITHAIINSTINCT_BASICFOLLOW_INTERVAL(pInstinct) )
             {
-                pState->msecNextUpdate = sithTime_g_msecGameTime + SITHAIINSTINCT_BASICFOLLOW_INTERVAL(pInstinct);
+                pState->msecNextUpdate = sithTime_CalcDeadline(SITHAIINSTINCT_BASICFOLLOW_INTERVAL(pInstinct)); // Fixed: Deadline from sithTime_CalcDeadline
             }
             break;
         }
@@ -3541,7 +3541,7 @@ int J3DAPI sithAIInstinct_WallCrawl(SithAIControlBlock* pLocal, SithAIInstinct* 
                     sithAIUtil_AIClearMode(pLocal, SITHAI_MODE_WALLCRAWLING);
                 }
 
-                pState->msecNextUpdate = sithTime_g_msecGameTime + 500;
+                pState->msecNextUpdate = sithTime_CalcDeadline(500); // Fixed: Deadline from sithTime_CalcDeadline
                 return 1;
             }
             break;
@@ -3770,7 +3770,7 @@ signed int J3DAPI sithAIInstinct_SnakeFollow(SithAIControlBlock* pLocal, SithAII
         return 0;
     }
 
-    pState->msecNextUpdate = sithTime_g_msecGameTime + 500;
+    pState->msecNextUpdate = sithTime_CalcDeadline(500); // Fixed: Deadline from sithTime_CalcDeadline
     sithAIUtil_UpdateGoalSight(pLocal);
     sithAIUtil_UpdateTargetSight(pLocal, 0);
 

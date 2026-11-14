@@ -1,6 +1,7 @@
 #ifndef SITH_SITHTIME_H
 #define SITH_SITHTIME_H
 #include <j3dcore/j3d.h>
+#include <math.h>
 #include <rdroid/types.h>
 #include <sith/types.h>
 #include <sith/Main/sithMain.h>
@@ -48,6 +49,17 @@ static inline uint32_t sithTime_GetReferenceFrame(uint32_t msecTime)
 }
 
 /**
+ * Returns the game time in msec at which a reference frame (at SITHTIME_FRAMECYCLE_FPS) starts, rounded up to a whole msec,
+ * so sithTime_GetReferenceFrame of it is the same frame again.
+ * @note new function
+ */
+static inline uint32_t sithTime_GetReferenceFrameTime(uint32_t frame)
+{
+    return (frame / SITHTIME_FRAMECYCLE_FPS) * 1000u
+        + ((frame % SITHTIME_FRAMECYCLE_FPS) * 1000u + SITHTIME_FRAMECYCLE_FPS - 1u) / SITHTIME_FRAMECYCLE_FPS;
+}
+
+/**
  * Time-based SITH_ISFRAMECYCLE. Returns true in the frame in which the game time passes a multiple of n reference frames
  * (at SITHTIME_FRAMECYCLE_FPS), so an effect that the original ran on every n-th frame runs as often at any FPS.
  * Below the reference rate it runs at most once per frame.
@@ -74,9 +86,112 @@ static inline bool sithTime_IsFrameCycle(uint32_t offset, uint32_t n)
 }
 
 #  define SITHTIME_ISFRAMECYCLE(offset, n) sithTime_IsFrameCycle((uint32_t)(offset), (n))
+
+// Longest interval sithTime_CalcDeadline puts on the 30 FPS frames. Longer ones gain nothing from it,
+// and the frame count of this interval doesn't overflow.
+#  define SITHTIME_MAX_FRAMEALIGNED_MSEC 60000u
 #else
 #  define SITHTIME_ISFRAMECYCLE(offset, n) (SITH_ISFRAMECYCLE(offset, n))
 #endif
+
+/**
+ * Deadlines: a deadline is a game time in msec, msecInterval from now, that the engine checks once per frame.
+ * Create one with sithTime_CalcDeadline (it is due when the game time reaches it: pulses, timers, waits) or
+ * sithTime_CalcDeadlineAfter (it is due when the game time is past it: sleeps, events), and test it with the matching
+ * sithTime_IsDeadlineReached or sithTime_IsDeadlinePassed.
+ *
+ * At 30 FPS, the frame rate the game was made for, an interval lasts whole frames. In QOL builds, while frames are shorter
+ * than a 30 FPS frame, the deadline is put on the start of the 30 FPS frame the original reached it in, so everything
+ * scheduled this way ticks as at 30 FPS at any higher frame rate. At 30 FPS and below it is now + msecInterval.
+ * @note new functions
+ */
+static inline tStdTime sithTime_CalcDeadlineEx(tStdTime msecInterval, bool bPast)
+{
+#ifdef J3D_QOL_IMPROVEMENTS
+    if ( sithTime_g_frameTime < 1000u / SITHTIME_FRAMECYCLE_FPS && msecInterval <= SITHTIME_MAX_FRAMEALIGNED_MSEC )
+    {
+        // 30 FPS frames the original waits: past the interval the frames past it, otherwise the frames to it (at least one)
+        uint32_t numFrames = bPast
+            ? msecInterval * SITHTIME_FRAMECYCLE_FPS / 1000u + 1u
+            : (msecInterval * SITHTIME_FRAMECYCLE_FPS + 999u) / 1000u;
+        numFrames = J3DMAX(numFrames, 1u);
+
+        // The start of that 30 FPS frame. Frames are shorter than a 30 FPS frame here, so the deadline is always handled
+        // in the 30 FPS frame it lies in, and counting from the current one keeps the 30 FPS rhythm without any state.
+        const tStdTime msecDeadline = sithTime_GetReferenceFrameTime(sithTime_GetReferenceFrame(sithTime_g_msecGameTime) + numFrames);
+        return bPast ? msecDeadline - 1u : msecDeadline; // A past deadline is due when the game time is past it
+    }
+#else
+    J3D_UNUSED(bPast);
+#endif
+
+    return sithTime_g_msecGameTime + msecInterval;
+}
+
+static inline tStdTime sithTime_CalcDeadline(tStdTime msecInterval)
+{
+    return sithTime_CalcDeadlineEx(msecInterval, /*bPast=*/false);
+}
+
+static inline tStdTime sithTime_CalcDeadlineAfter(tStdTime msecInterval)
+{
+    return sithTime_CalcDeadlineEx(msecInterval, /*bPast=*/true);
+}
+
+static inline bool sithTime_IsDeadlineReached(tStdTime msecDeadline)
+{
+    return sithTime_g_msecGameTime >= msecDeadline;
+}
+
+static inline bool sithTime_IsDeadlinePassed(tStdTime msecDeadline)
+{
+    return sithTime_g_msecGameTime > msecDeadline;
+}
+
+// The same for code that keeps its deadline as float msec with a fraction (AI combat move and jump): the original float sum
+// below 30 FPS, so the stored value is the original's; a whole msec on the 30 FPS frames above it
+static inline float sithTime_CalcDeadlineFlex(float msecInterval)
+{
+#ifdef J3D_QOL_IMPROVEMENTS
+    if ( msecInterval > 0.0f && sithTime_g_frameTime < 1000u / SITHTIME_FRAMECYCLE_FPS )
+    {
+        const tStdTime msecWhole = (tStdTime)ceilf(msecInterval); // Due at the first whole msec after the interval, like the float sum
+        if ( msecWhole <= SITHTIME_MAX_FRAMEALIGNED_MSEC )
+        {
+            return (float)sithTime_CalcDeadline(msecWhole);
+        }
+    }
+#endif
+
+    return (float)sithTime_g_msecGameTime + msecInterval;
+}
+
+static inline bool sithTime_IsDeadlineReachedFlex(float msecDeadline)
+{
+    return (float)sithTime_g_msecGameTime >= msecDeadline;
+}
+
+// The same for code that keeps its deadlines in seconds (sithTime_g_secGameTime is the game time in msec * 0.001f)
+static inline float sithTime_CalcDeadlineSec(float secInterval)
+{
+#ifdef J3D_QOL_IMPROVEMENTS
+    if ( secInterval > 0.0f && sithTime_g_frameTime < 1000u / SITHTIME_FRAMECYCLE_FPS )
+    {
+        const tStdTime msecInterval = (tStdTime)(secInterval * 1000.0f + 0.5f);
+        if ( msecInterval <= SITHTIME_MAX_FRAMEALIGNED_MSEC )
+        {
+            return (float)sithTime_CalcDeadline(msecInterval) * 0.001f; // Like sithTime_g_secGameTime, so the deadline frame compares equal
+        }
+    }
+#endif
+
+    return sithTime_g_secGameTime + secInterval; // The original float sum, so the plain deadline is bit-exact
+}
+
+static inline bool sithTime_IsDeadlineReachedSec(float secDeadline)
+{
+    return sithTime_g_secGameTime >= secDeadline;
+}
 
 void sithTime_Advance(void);
 void sithTime_Pause(void);

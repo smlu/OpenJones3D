@@ -13,6 +13,9 @@
 
 // Engine globals the instincts read (redirected, see sithAIInstinctFnVecAddrs.h)
 SITHVEC_REDIRECT_DEFINE(uint32_t, sithTime_g_msecGameTime);
+// The frame time of a 30 FPS frame: the original vectors were captured without one, and sithTime_CalcDeadline puts
+// deadlines on 30 FPS frames only for shorter frames, so the deadlines stay the original now + interval
+SITHVEC_REDIRECT_DEFINE(uint32_t, sithTime_g_frameTime) = 1000u / 30u;
 SITHVEC_REDIRECT_DEFINE(float, sithTime_g_secGameTime);
 SITHVEC_REDIRECT_DEFINE(size_t, sithMain_g_frameNumber);
 SITHVEC_REDIRECT_DEFINE(SithMode, sithMain_g_sith_mode);
@@ -69,6 +72,58 @@ SITHAIFN_TEST(CircleStrafe)
 SITHAIFN_TEST(Dodge)
 SITHAIFN_TEST(HitAndRun)
 SITHAIFN_TEST(Retreat)
+
+#ifdef J3D_QOL_IMPROVEMENTS
+#include <sith/Gameplay/sithTime.h>
+
+// Runs a case and returns the deadline it leaves: the jump and combat-move instincts keep it in state param 0 (float msec),
+// lob fire in the AI's fire wait time
+static float sithAIInstinctFnVecTest_RunForDeadline(const SithVecCase* pCase, uint32_t msecFrameTime, int bFireWait)
+{
+    sithVecTest_g_sithTime_g_frameTime = msecFrameTime;
+    SithVecBuf rec = { 0 };
+    char aWhy[128];
+    const int bStable = sithVec_RunCase(pCase, &rec, aWhy, sizeof(aWhy));
+    sithVecB_Free(&rec);
+    TEST_ASSERT_TRUE_MESSAGE(bStable, pCase->pName);
+    return bFireWait ? (float)SITHAIFN_BLOCK->msecFireWaitTime : SITHAIFN_USER->state.aParams[0];
+}
+
+TEST(sithAIInstinctFn, TestDeadlinesLandOn30FpsFramesAtHigherFrameRates)
+{
+    // At 144 FPS the next jump time, the next combat move time and the lob-fire wait the real instincts set lie on the start
+    // of a 30 FPS frame, within a 30 FPS frame of the deadline they set at 30 FPS (where the vectors prove them original).
+    static const struct { const char* pPrefix; int bFireWait; } aChecks[] = { { "Jump_", 0 }, { "HumanCombatMove_", 0 }, { "LobFire_", 1 } };
+    unsigned int numChanged = 0;
+    for ( size_t c = 0; c < STD_ARRAYLEN(aChecks); ++c )
+    {
+        for ( size_t k = 0; k < sithAIFnVec_suite.numCases; ++k )
+        {
+            const SithVecCase* pCase = &sithAIFnVec_suite.aCases[k];
+            if ( strncmp(pCase->pName, aChecks[c].pPrefix, strlen(aChecks[c].pPrefix)) != 0 )
+            {
+                continue;
+            }
+
+            const float at30Fps  = sithAIInstinctFnVecTest_RunForDeadline(pCase, 1000u / 30u, aChecks[c].bFireWait);
+            const float at144Fps = sithAIInstinctFnVecTest_RunForDeadline(pCase, 7u, aChecks[c].bFireWait);
+            if ( at30Fps == at144Fps )
+            {
+                continue; // The case didn't set the deadline, or set a whole number of 30 FPS frames
+            }
+
+            ++numChanged;
+            TEST_ASSERT_FLOAT_WITHIN_MESSAGE(34.0f, at30Fps, at144Fps, pCase->pName);
+            const uint32_t msecDeadline = (uint32_t)at144Fps;
+            TEST_ASSERT_EQUAL_FLOAT_MESSAGE((float)msecDeadline, at144Fps, pCase->pName); // a whole msec
+            TEST_ASSERT_EQUAL_UINT32_MESSAGE(sithTime_GetReferenceFrameTime(sithTime_GetReferenceFrame(msecDeadline)), msecDeadline, pCase->pName); // a 30 FPS frame start
+        }
+    }
+
+    sithVecTest_g_sithTime_g_frameTime = 1000u / 30u;
+    TEST_ASSERT_TRUE(numChanged > 0);
+}
+#endif // J3D_QOL_IMPROVEMENTS
 SITHAIFN_TEST(RandomMove)
 SITHAIFN_TEST(HumanCombatMove)
 SITHAIFN_TEST(Roam)
@@ -101,6 +156,9 @@ TEST_GROUP_RUNNER(sithAIInstinctFn)
     RUN_TEST_CASE(sithAIInstinctFn, TestOriginalDodge);
     RUN_TEST_CASE(sithAIInstinctFn, TestOriginalHitAndRun);
     RUN_TEST_CASE(sithAIInstinctFn, TestOriginalRetreat);
+#ifdef J3D_QOL_IMPROVEMENTS
+    RUN_TEST_CASE(sithAIInstinctFn, TestDeadlinesLandOn30FpsFramesAtHigherFrameRates);
+#endif
     RUN_TEST_CASE(sithAIInstinctFn, TestOriginalRandomMove);
     RUN_TEST_CASE(sithAIInstinctFn, TestOriginalHumanCombatMove);
     RUN_TEST_CASE(sithAIInstinctFn, TestOriginalRoam);
