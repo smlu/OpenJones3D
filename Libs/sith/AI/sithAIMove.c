@@ -2375,6 +2375,9 @@ void J3DAPI sithAIMove_UpdateHeadTrackLookPos(SithAIControlBlock* pLocal, float 
 
     float yaw = rdMath_DeltaAngleNormalized(&pOwner->orient.lvec, &projDir, &pOwner->orient.uvec);
     float deltaYaw = yaw - pActorInfo->headPYR.y;
+#ifdef J3D_QOL_IMPROVEMENTS
+    const float remainingYaw = deltaYaw; // Added
+#endif
     deltaYaw = STDMATH_CLAMP(deltaYaw, -yawRate, yawRate);
     headPYR.y = STDMATH_CLAMP(headPYR.y + deltaYaw, -pActorInfo->maxHeadYaw, pActorInfo->maxHeadYaw);
 
@@ -2387,12 +2390,23 @@ void J3DAPI sithAIMove_UpdateHeadTrackLookPos(SithAIControlBlock* pLocal, float 
     }
 
     float deltaPitch = pitch - pActorInfo->headPYR.x;
+#ifdef J3D_QOL_IMPROVEMENTS
+    const float remainingPitch = deltaPitch; // Added
+#endif
     deltaPitch = STDMATH_CLAMP(deltaPitch, -pitchRate, pitchRate);
     headPYR.x = STDMATH_CLAMP(headPYR.x + deltaPitch, pActorInfo->minHeadPitch, pActorInfo->maxHeadPitch);
 
     sithActor_SetHeadPYR(pLocal->pOwner, &headPYR);
 
+#ifdef J3D_QOL_IMPROVEMENTS
+    // Fixed: Done when the angles left to the look position are within the done angle. The original compared this frame's
+    //        step, which is at most maxHeadVelocity * frame time, so above 2 * maxHeadVelocity FPS (200 FPS for heads turning
+    //        100 degrees/sec) the first step was already under the done angle and the head stopped after one frame.
+    //        At the frame rates the original was made for, both checks end the look in the same frame.
+    if ( fabsf(remainingYaw) <= sithAIMove_headTrackDoneAngle && fabsf(remainingPitch) <= sithAIMove_headTrackDoneAngle )
+#else
     if ( fabsf(deltaYaw) <= sithAIMove_headTrackDoneAngle && fabsf(deltaPitch) <= sithAIMove_headTrackDoneAngle )
+#endif
     {
         pLocal->mode &= ~SITHAI_MODE_LOOKING;
     }
