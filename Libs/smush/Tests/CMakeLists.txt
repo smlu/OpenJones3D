@@ -14,8 +14,19 @@ include(smush_core.cmake)    # Core/Bitmap: SmushPlay, LecShare, Timer, Memory, 
 include(smush_asm.cmake)     # Assembly translations: Bloc16Asm, DecodeAsm, MixerAsm, BlitAsm, MemCopy, MemFill (original-engine vectors)
 include(smush_vec.cmake)     # C modules: Mixer, D_bloc16, Decode, LecShare, Framestream, Stdfile, Zfilio (original-engine vectors)
 
+set(SMUSH_SYSTEM_TEST_SOURCES "")
+set(SMUSH_SYSTEM_SUITES "")
+if (JONES3D_BUILD_SYSTEM_TESTS)
+    set(SMUSH_SYSTEM_TEST_SOURCES SmushSystemTest.c)
+    set(SMUSH_SYSTEM_SUITES SmushSystem)
+    set_source_files_properties(SmushSystemTest.c PROPERTIES
+        COMPILE_DEFINITIONS SMUSH_PLAY_TV_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tv/SmushPlay"
+    )
+endif()
+
 add_executable(smushTests
     ${SMUSH_TEST_SOURCES}
+    ${SMUSH_SYSTEM_TEST_SOURCES}
     ${SMUSH_TESTED_SOURCES}
 )
 
@@ -28,11 +39,27 @@ target_compile_definitions(smushTests PRIVATE
     J3D_TEST
 )
 
+jones3d_add_test_suites(smushTests
+    CHILD_HANDLER SmushTest_HandleChildMode
+    UNIT
+        SmushSound
+        SmushCodec
+        SmushStream
+        SmushZlib
+        SmushCore
+        SmushPlay
+        SmushAsm
+        SmushVec
+    SYSTEM
+        ${SMUSH_SYSTEM_SUITES}
+)
+
 set_target_properties(smushTests PROPERTIES
     FOLDER "Tests/Libs/smush"
 )
 
 source_group("Tests" FILES ${SMUSH_TEST_SOURCES})
+source_group("System Tests" FILES ${SMUSH_SYSTEM_TEST_SOURCES})
 source_group("Tested Sources" FILES ${SMUSH_TESTED_SOURCES})
 
 set(SMUSH_TEST_BACKEND_LABEL "")
@@ -42,7 +69,7 @@ elseif (J3D_DIRECTX9)
     set(SMUSH_TEST_BACKEND_LABEL "DirectX9")
 endif()
 
-add_test(NAME smush COMMAND smushTests)
+add_test(NAME smush COMMAND smushTests --kind unit)
 # The in-memory suites normally finish in under a second; thread tests (timer, sound) may need more on slow hosts.
 set_tests_properties(smush PROPERTIES
     LABELS "unit;smush;${SMUSH_TEST_BACKEND_LABEL}"
@@ -50,15 +77,7 @@ set_tests_properties(smush PROPERTIES
 )
 
 if (JONES3D_BUILD_SYSTEM_TESTS)
-    add_executable(smushSystemTests SmushSystemTest.c)
-    target_link_libraries(smushSystemTests PRIVATE smush unity)
-    target_compile_definitions(smushSystemTests PRIVATE
-        SMUSH_PLAY_TV_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tv/SmushPlay"
-    )
-    set_target_properties(smushSystemTests PROPERTIES FOLDER "Tests/Libs/smush")
-    source_group("System Tests" FILES SmushSystemTest.c)
-
-    add_test(NAME smush.System COMMAND smushSystemTests)
+    add_test(NAME smush.System COMMAND smushTests --kind system)
     set_tests_properties(smush.System PROPERTIES
         LABELS "system;audio;device;smush;${SMUSH_TEST_BACKEND_LABEL}"
         TIMEOUT 20

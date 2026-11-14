@@ -1,5 +1,4 @@
 set(SOUND_TEST_SOURCES
-    soundTestRunner.c
     AudioLibTest.c
     SoundTest.c
 )
@@ -16,6 +15,12 @@ add_executable(soundTests
 target_link_libraries(soundTests PRIVATE
     sound
     unity
+)
+
+jones3d_add_test_suites(soundTests
+    UNIT
+        AudioLib
+        Sound
 )
 
 target_compile_definitions(soundTests PRIVATE

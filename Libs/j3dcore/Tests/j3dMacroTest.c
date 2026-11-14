@@ -353,15 +353,3 @@ TEST_GROUP_RUNNER(j3dMacros)
     RUN_TEST_CASE(j3dMacros, TestLoggingMacros);
     RUN_TEST_CASE(j3dMacros, TestAssertMacros);
 }
-
-void TEST_j3dMacros_GROUP_RUNNER(void);
-
-static void runAllTests(void)
-{
-    TEST_j3dMacros_GROUP_RUNNER();
-}
-
-int main(int argc, const char* argv[])
-{
-    return UnityMain(argc, argv, runAllTests);
-}

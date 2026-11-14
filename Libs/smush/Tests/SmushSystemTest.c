@@ -173,16 +173,6 @@ TEST(SmushSystem, OwnedConfiguredDevicePlaysSyntheticMoviesAcrossRestart)
 
 TEST_GROUP_RUNNER(SmushSystem)
 {
-    RUN_TEST_CASE(SmushSystem, OwnedConfiguredDevicePlaysSyntheticMoviesAcrossRestart);
-}
-
-static void SmushSystem_RunAllTests(void)
-{
-    TEST_SmushSystem_GROUP_RUNNER();
-}
-
-int main(int argc, const char* argv[])
-{
     SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX | SEM_NOOPENFILEERRORBOX);
-    return UnityMain(argc, argv, SmushSystem_RunAllTests);
+    RUN_TEST_CASE(SmushSystem, OwnedConfiguredDevicePlaysSyntheticMoviesAcrossRestart);
 }

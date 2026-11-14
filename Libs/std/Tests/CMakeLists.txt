@@ -9,16 +9,8 @@ set(STD_TEST_SUPPORT_SOURCES
     stdGeneralTest.c
 )
 
+# Shared by the system and disruptive system suites
 set(STD_SYSTEM_TEST_SUPPORT_SOURCES
-    stdSystemTestRunner.c
-    stdGeneralTest.c
-    "${STD_WIN95_TEST_DIR}/std3DSystemTestSupport.c"
-    "${STD_WIN95_TEST_DIR}/stdWin95SystemTestSupport.c"
-)
-
-set(STD_DISRUPTIVE_SYSTEM_TEST_SUPPORT_SOURCES
-    "${STD_WIN95_TEST_DIR}/stdDisruptiveSystemTestRunner.c"
-    stdGeneralTest.c
     "${STD_WIN95_TEST_DIR}/std3DSystemTestSupport.c"
     "${STD_WIN95_TEST_DIR}/stdWin95SystemTestSupport.c"
 )
@@ -44,7 +36,6 @@ set(STD_GENERAL_TEST_SOURCES
 )
 
 set(STD_WIN95_TEST_SOURCES
-    "${STD_WIN95_TEST_DIR}/stdWin95TestSuite.c"
     "${STD_WIN95_TEST_DIR}/stdGobTest.c"
     "${STD_WIN95_TEST_DIR}/std3DTest.c"
     "${STD_WIN95_TEST_DIR}/std3DTestVectorTest.c"
@@ -67,8 +58,54 @@ elseif(J3D_DIRECTX6)
     )
 endif()
 
+set(STD_GENERAL_SUITES
+    std
+    stdMemory
+    stdUtil
+    stdMath
+    stdFnames
+    stdLinkList
+    stdHashtbl
+    stdEffect
+    stdColor
+    stdCircBuf
+    stdConffile
+    stdConfig
+    stdFileUtil
+    stdJSON
+    stdBmp
+    stdPlatform
+    stdStrTable
+)
+
+set(STD_WIN95_SUITES
+    stdGob
+    std3D
+    std3DTestVector
+)
+if (J3D_DIRECTX9)
+    list(APPEND STD_WIN95_SUITES stdComm)
+elseif(J3D_DIRECTX6)
+    list(APPEND STD_WIN95_SUITES stdCommDX6)
+endif()
+list(APPEND STD_WIN95_SUITES
+    stdConsole
+    stdControl
+    stdDisplay
+    stdShader
+    stdWin95
+)
+if (J3D_DIRECTX9)
+    list(APPEND STD_WIN95_SUITES stdWin95DirectX9)
+elseif(J3D_DIRECTX6)
+    list(APPEND STD_WIN95_SUITES stdWin95DirectX6)
+endif()
+
 set(STD_WIN95_SYSTEM_TEST_SOURCES
     "${STD_WIN95_TEST_DIR}/stdWin95SystemTest.c"
+)
+set(STD_WIN95_SYSTEM_SUITES
+    stdWin95System
 )
 
 set(STD_DIRECTX_TEST_LABEL "")
@@ -80,6 +117,12 @@ if (J3D_DIRECTX9)
         "${STD_WIN95_TEST_DIR}/std3DX9SystemTest.c"
         "${STD_WIN95_TEST_DIR}/stdShaderDX9SystemTest.c"
     )
+    list(APPEND STD_WIN95_SYSTEM_SUITES
+        stdControlDX9System
+        stdDisplayDX9System
+        std3DX9System
+        stdShaderDX9System
+    )
 elseif(J3D_DIRECTX6)
     set(STD_DIRECTX_TEST_LABEL "DirectX6")
     list(APPEND STD_WIN95_SYSTEM_TEST_SOURCES
@@ -87,17 +130,38 @@ elseif(J3D_DIRECTX6)
         "${STD_WIN95_TEST_DIR}/stdDisplayDX6SystemTest.c"
         "${STD_WIN95_TEST_DIR}/std3DX6SystemTest.c"
     )
+    list(APPEND STD_WIN95_SYSTEM_SUITES
+        stdControlDX6System
+        stdDisplayDX6System
+        std3DX6System
+    )
 endif()
 
 set(STD_WIN95_DISRUPTIVE_SYSTEM_TEST_SOURCES "")
+set(STD_WIN95_DISRUPTIVE_SYSTEM_SUITES "")
 if (J3D_DIRECTX9)
     list(APPEND STD_WIN95_DISRUPTIVE_SYSTEM_TEST_SOURCES
         "${STD_WIN95_TEST_DIR}/stdDisplayDX9DisruptiveSystemTest.c"
     )
+    list(APPEND STD_WIN95_DISRUPTIVE_SYSTEM_SUITES stdDisplayDX9DisruptiveSystem)
 elseif(J3D_DIRECTX6)
     list(APPEND STD_WIN95_DISRUPTIVE_SYSTEM_TEST_SOURCES
         "${STD_WIN95_TEST_DIR}/stdDisplayDX6DisruptiveSystemTest.c"
     )
+    list(APPEND STD_WIN95_DISRUPTIVE_SYSTEM_SUITES stdDisplayDX6DisruptiveSystem)
+endif()
+
+# The system and disruptive suites are part of stdTests when they are built
+set(STD_SYSTEM_TESTS_SOURCES "")
+set(STD_SYSTEM_SUITES "")
+set(STD_DISRUPTIVE_SUITES "")
+if (JONES3D_BUILD_SYSTEM_TESTS)
+    list(APPEND STD_SYSTEM_TESTS_SOURCES ${STD_SYSTEM_TEST_SUPPORT_SOURCES} ${STD_WIN95_SYSTEM_TEST_SOURCES})
+    set(STD_SYSTEM_SUITES ${STD_WIN95_SYSTEM_SUITES})
+endif()
+if (JONES3D_BUILD_DISRUPTIVE_SYSTEM_TESTS)
+    list(APPEND STD_SYSTEM_TESTS_SOURCES ${STD_WIN95_DISRUPTIVE_SYSTEM_TEST_SOURCES})
+    set(STD_DISRUPTIVE_SUITES ${STD_WIN95_DISRUPTIVE_SYSTEM_SUITES})
 endif()
 
 set(STD_TESTED_SOURCES
@@ -148,7 +212,19 @@ add_executable(stdTests
     ${STD_TEST_SUPPORT_SOURCES}
     ${STD_GENERAL_TEST_SOURCES}
     ${STD_WIN95_TEST_SOURCES}
+    ${STD_SYSTEM_TESTS_SOURCES}
     ${STD_TESTED_SOURCES}
+)
+
+jones3d_add_test_suites(stdTests
+    CHILD_HANDLER StdTest_HandleChildMode
+    UNIT
+        ${STD_GENERAL_SUITES}
+        ${STD_WIN95_SUITES}
+    SYSTEM
+        ${STD_SYSTEM_SUITES}
+    DISRUPTIVE
+        ${STD_DISRUPTIVE_SUITES}
 )
 
 target_compile_definitions(stdTests PRIVATE
@@ -195,122 +271,23 @@ set_target_properties(stdTests PROPERTIES
 source_group("Test Support" FILES ${STD_TEST_SUPPORT_SOURCES})
 source_group("Tests" FILES ${STD_GENERAL_TEST_SOURCES})
 source_group("Tests\\Win95" FILES ${STD_WIN95_TEST_SOURCES})
+source_group("System Tests\\Win95" FILES ${STD_SYSTEM_TESTS_SOURCES})
 source_group("Tested Sources" FILES ${STD_TESTED_SOURCES})
 
-add_test(NAME std COMMAND stdTests)
+add_test(NAME std COMMAND stdTests --kind unit)
 set_tests_properties(std PROPERTIES
     LABELS "unit;std;${STD_DIRECTX_TEST_LABEL}"
 )
 
 if (JONES3D_BUILD_SYSTEM_TESTS)
-    add_executable(stdSystemTests
-        ${STD_SYSTEM_TEST_SUPPORT_SOURCES}
-        ${STD_WIN95_SYSTEM_TEST_SOURCES}
-        ${STD_TESTED_SOURCES}
-    )
-
-    target_compile_definitions(stdSystemTests PRIVATE
-        J3D_TEST
-        J3D_LOCAL_RTI
-        STD_GENERAL_TEST_TV_DIR="${STD_GENERAL_TEST_DIR}/tv"
-        STD_WIN95_TEST_TV_DIR="${STD_WIN95_TEST_DIR}/tv"
-    )
-
-    target_include_directories(stdSystemTests PRIVATE
-        "${CMAKE_CURRENT_SOURCE_DIR}"
-    )
-
-    target_link_libraries(stdSystemTests PRIVATE
-        j3dcore
-        j3dTestSupport
-        jansson::jansson
-        Dbghelp
-        Gdi32
-        Ole32
-        Winmm
-    )
-
-    if (J3D_DIRECTX6)
-        target_link_libraries(stdSystemTests PRIVATE
-            DirectX61c
-        )
-    elseif(J3D_DIRECTX9)
-        target_link_libraries(stdSystemTests PRIVATE
-            d3d9
-            d3dcompiler
-            dinput8
-            dxguid
-            Xinput
-            wbemuuid
-            OleAut32
-        )
-    endif()
-
-    set_target_properties(stdSystemTests PROPERTIES
-        FOLDER "Tests/Libs/std"
-    )
-
-    source_group("System Test Support" FILES ${STD_SYSTEM_TEST_SUPPORT_SOURCES})
-    source_group("System Tests\\Win95" FILES ${STD_WIN95_SYSTEM_TEST_SOURCES})
-
-    add_test(NAME std.System COMMAND stdSystemTests)
+    add_test(NAME std.System COMMAND stdTests --kind system)
     set_tests_properties(std.System PROPERTIES
         LABELS "system;std;Win95;device;${STD_DIRECTX_TEST_LABEL}"
     )
 endif()
 
 if (JONES3D_BUILD_DISRUPTIVE_SYSTEM_TESTS)
-    add_executable(stdDisruptiveSystemTests
-        ${STD_DISRUPTIVE_SYSTEM_TEST_SUPPORT_SOURCES}
-        ${STD_WIN95_DISRUPTIVE_SYSTEM_TEST_SOURCES}
-        ${STD_TESTED_SOURCES}
-    )
-
-    target_compile_definitions(stdDisruptiveSystemTests PRIVATE
-        J3D_TEST
-        J3D_LOCAL_RTI
-        STD_GENERAL_TEST_TV_DIR="${STD_GENERAL_TEST_DIR}/tv"
-        STD_WIN95_TEST_TV_DIR="${STD_WIN95_TEST_DIR}/tv"
-    )
-
-    target_include_directories(stdDisruptiveSystemTests PRIVATE
-        "${CMAKE_CURRENT_SOURCE_DIR}"
-    )
-
-    target_link_libraries(stdDisruptiveSystemTests PRIVATE
-        j3dcore
-        j3dTestSupport
-        jansson::jansson
-        Dbghelp
-        Gdi32
-        Ole32
-        Winmm
-    )
-
-    if (J3D_DIRECTX6)
-        target_link_libraries(stdDisruptiveSystemTests PRIVATE
-            DirectX61c
-        )
-    elseif(J3D_DIRECTX9)
-        target_link_libraries(stdDisruptiveSystemTests PRIVATE
-            d3d9
-            d3dcompiler
-            dinput8
-            dxguid
-            Xinput
-            wbemuuid
-            OleAut32
-        )
-    endif()
-
-    set_target_properties(stdDisruptiveSystemTests PROPERTIES
-        FOLDER "Tests/Libs/std"
-    )
-
-    source_group("Disruptive System Test Support" FILES ${STD_DISRUPTIVE_SYSTEM_TEST_SUPPORT_SOURCES})
-    source_group("Disruptive System Tests\\Win95" FILES ${STD_WIN95_DISRUPTIVE_SYSTEM_TEST_SOURCES})
-
-    add_test(NAME std.DisruptiveSystem COMMAND stdDisruptiveSystemTests)
+    add_test(NAME std.DisruptiveSystem COMMAND stdTests --kind disruptive)
     set_tests_properties(std.DisruptiveSystem PROPERTIES
         LABELS "system;disruptive;std;Win95;device;${STD_DIRECTX_TEST_LABEL}"
     )

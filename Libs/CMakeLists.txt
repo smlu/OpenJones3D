@@ -18,6 +18,11 @@ add_subdirectory(external)
 # Create an interface library to represent all Libs
 add_library(${PROJECT_NAME} INTERFACE)
 
+if (JONES3D_BUILD_TESTS)
+    # jones3d_add_test_suites() for the module test executables, j3dcore's included
+    include(j3dcore/Tests/J3DTestSuites.cmake)
+endif()
+
 # First, add j3dcore as it's a dependency for other modules
 add_subdirectory(j3dcore)
 target_link_libraries(${PROJECT_NAME} INTERFACE j3dcore)
@@ -26,6 +31,8 @@ if (JONES3D_BUILD_TESTS)
     add_library(j3dTestSupport STATIC
         j3dcore/Tests/j3dTest.c
         j3dcore/Tests/j3dTest.h
+        j3dcore/Tests/j3dTestRunner.c
+        j3dcore/Tests/j3dTestRunner.h
     )
 
     target_include_directories(j3dTestSupport PUBLIC
@@ -49,6 +56,8 @@ if (JONES3D_BUILD_TESTS)
     source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR}/j3dcore/Tests FILES
         j3dcore/Tests/j3dTest.c
         j3dcore/Tests/j3dTest.h
+        j3dcore/Tests/j3dTestRunner.c
+        j3dcore/Tests/j3dTestRunner.h
     )
 endif()
 

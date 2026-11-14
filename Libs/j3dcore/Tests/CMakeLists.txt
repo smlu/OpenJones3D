@@ -7,6 +7,11 @@ target_link_libraries(j3dcoreTests PRIVATE
     unity
 )
 
+jones3d_add_test_suites(j3dcoreTests
+    UNIT
+        j3dMacros
+)
+
 set_target_properties(j3dcoreTests PROPERTIES
     FOLDER "Tests/Libs/j3dcore"
 )

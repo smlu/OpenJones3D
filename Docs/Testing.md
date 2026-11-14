@@ -220,8 +220,27 @@ Name system test source files after the exact module or backend they exercise, f
 
 ### 🧩 Test Executables And Registration
 
-Prefer one executable per source area or module boundary, with shared fixture
-startup and a stable module-level CTest entry.
+Prefer one executable per module, with shared fixture startup and a stable
+module-level CTest entry. A module executable registers its suites with
+`jones3d_add_test_suites` (`Libs/j3dcore/Tests/J3DTestSuites.cmake`). A suite is
+a Unity group runner (`TEST_GROUP_RUNNER(<suite>)`) of kind `UNIT`, `SYSTEM` or
+`DISRUPTIVE`; the function generates the executable's `main()`, so adding a
+suite needs no runner edit. Every suite runs by default, including the system
+suites that are built. The shared runner (`j3dTestRunner.c`) takes:
+
+- `--suite A,B`: run only these suites (exact names, can be repeated);
+- `--exclude-suite C,D`: run all but these suites;
+- `--kind unit,system,disruptive`: run only suites of these kinds; the CTest
+  entries use it, for example `std` runs `stdTests --kind unit` and
+  `std.System` runs `stdTests --kind system`;
+- `--exclude-system`: skip the system and disruptive suites;
+- `--list`: print the suites and their kind.
+
+Other arguments go to Unity, so `-v`, `-g`, `-n` and `-r` still work, for
+example `stdTests --suite stdMath -n Tan`. An unknown suite name exits with
+code 2 and lists the suites. Child process modes of the tests, such as the
+`stdPlatform` death tests, go through the `CHILD_HANDLER` function, which
+`main()` calls before the suites run.
 
 | Executable | CTest entry | Coverage | Integration |
 | --- | --- | --- | --- |
@@ -229,12 +248,9 @@ startup and a stable module-level CTest entry.
 | `rdroidTests` | `rdroid.Math` | Vector and matrix debug-source numerical fidelity, rotation matrices against the C library | Available |
 | `rdModel3Tests` | `rdroid.Model3` | Per-draw face-flag scoping and deferred face flags | Available |
 | `rdCacheTests` | `rdroid.Cache` | Alpha comparator ordering and 16-bit batch boundaries with recorded source-face coverage | Available |
-| `stdTests` | `std` | General and deterministic Win95 services | Available |
-| `stdSystemTests` | `std.System` | Win95 windows and DirectX devices | Available |
-| `stdDisruptiveSystemTests` | `std.DisruptiveSystem` | Opt-in fullscreen/device changes | Available |
+| `stdTests` | `std`, `std.System`, `std.DisruptiveSystem` | General and deterministic Win95 services; system suites: Win95 windows and DirectX devices; disruptive suites: opt-in fullscreen/device changes | Available |
 | `soundTests` | `sound` | Deterministic lip-sync generation and lookup, AudioLib codec and header vectors | Available |
-| `smushTests` | `smush` | INSANE movie player: core, bitmap, codec, sound, stream areas and original-engine assembly vectors | Available |
-| `smushSystemTests` | `smush.System` | Native configured DirectSound movie startup, synthetic frame playback and restart | Optional system suite |
+| `smushTests` | `smush`, `smush.System` | INSANE movie player: core, bitmap, codec, sound, stream areas and original-engine assembly vectors; system suite: native configured DirectSound movie startup, synthetic frame playback and restart | Available |
 | `sithTests` | `sith` | World thing/template I/O and voice lip-sync | Available |
 | `sithEngineTests` | `sith.Engine` | Sphere/plane intersection, rotating paths, fixed-step player physics and frame-rate regressions (with original-engine vectors of the COG timing and per-frame damage) | Available |
 | `jonesConfigTests` | `Jones3D.Config` | Control-scheme and keyboard-name regressions, fullscreen dialog font/icon scaling and store column layout | Available |
@@ -351,7 +367,7 @@ The `stdBmp` tests include generated vectors plus selected public-domain images 
 
 ### 🖥️ System And Device Tests
 
-System tests are integration-style tests that touch host or device services such as Win32 windows, DirectInput, DirectDraw, Direct3D, OpenGL, audio devices, or filesystem locations outside small test vectors. Keep them in separate executables from deterministic unit tests and label them with `system`; add more specific labels such as `device`, `Win95`, `DirectX`, `OpenGL`, `audio`, or `gui` as appropriate.
+System tests are integration-style tests that touch host or device services such as Win32 windows, DirectInput, DirectDraw, Direct3D, OpenGL, audio devices, or filesystem locations outside small test vectors. Register them as `SYSTEM` suites of the module executable (`DISRUPTIVE` for the disruptive ones), so `--exclude-system` and `--kind unit` leave them out, and give them their own `<module>.System` CTest entry labeled `system`; add more specific labels such as `device`, `Win95`, `DirectX`, `OpenGL`, `audio`, or `gui` as appropriate.
 
 System/device tests may use Unity ignore results when the host cannot provide the needed service, for example a headless CI worker without a render device. They should still fail normally when the service was available and the engine behavior is wrong.
 
@@ -633,7 +649,7 @@ cmake -S . -B build\codex\dx9-win32-disruptive -G "Visual Studio 18 2026" -A Win
   -DJONES3D_USE_DIRECTX9=ON -DJONES3D_BUILD_PROGRAMS=OFF ^
   -DJONES3D_BUILD_TESTS=ON -DJONES3D_BUILD_SYSTEM_TESTS=ON ^
   -DJONES3D_BUILD_DISRUPTIVE_SYSTEM_TESTS=ON
-cmake --build build\codex\dx9-win32-disruptive --config Debug --target stdDisruptiveSystemTests
+cmake --build build\codex\dx9-win32-disruptive --config Debug --target stdTests
 ctest --test-dir build\codex\dx9-win32-disruptive -C Debug --output-on-failure -R "^std\.DisruptiveSystem$"
 ```
 
@@ -642,7 +658,7 @@ cmake -S . -B build\codex\dx6-win32-disruptive -G "Visual Studio 18 2026" -A Win
   -DJONES3D_USE_DIRECTX9=OFF -DJONES3D_BUILD_PROGRAMS=OFF ^
   -DJONES3D_BUILD_TESTS=ON -DJONES3D_BUILD_SYSTEM_TESTS=ON ^
   -DJONES3D_BUILD_DISRUPTIVE_SYSTEM_TESTS=ON
-cmake --build build\codex\dx6-win32-disruptive --config Debug --target stdDisruptiveSystemTests
+cmake --build build\codex\dx6-win32-disruptive --config Debug --target stdTests
 ctest --test-dir build\codex\dx6-win32-disruptive -C Debug --output-on-failure -R "^std\.DisruptiveSystem$"
 ```
 
