@@ -48,6 +48,7 @@ target_include_directories(Jones3D_DLL PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)
 # Link against Libs project
 target_link_libraries(Jones3D_DLL PRIVATE Libs)
 target_link_libraries(Jones3D_DLL PRIVATE Comctl32.lib)
+target_link_libraries(Jones3D_DLL PRIVATE xBRZ) # Dialog image upscaling
 
 # Organize source files in Visual Studio
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${JONES3D_DLL_SOURCES} ${JONES3D_DLL_HEADERS})

@@ -187,6 +187,7 @@ Controls how software-mixed positional sounds lose volume between their minimum 
 | `graphics.anisotropicFilter` | bool | `true` | DirectX 9 only. Disabled automatically if unsupported by the device. |
 | `graphics.msaa.enabled` | bool | `true` | DirectX 9 only. |
 | `graphics.msaa.samples` | int | `16` | DirectX 9 only. Clamped to `2`, `4`, `8`, or `16`, with runtime fallback if unsupported. |
+| `graphics.upscaleDialogImages` | bool | `true` | Upscales the icons and images in the game dialogs with the xBRZ pixel-art filter when they are enlarged for the display scale. Set it to `false` to have Windows resize them as before. Takes effect the next time a dialog opens. |
 
 ## Renderer, world, and engine options
 

@@ -1,6 +1,7 @@
 #include <unity_fixture.h>
 #include <Jones3D/Display/jonesConfig.h>
 #include <std/General/std.h>
+#include <std/General/stdConfig.h>
 #include <std/Win95/stdDisplay.h>
 #include <commctrl.h>
 #include <stdint.h>
@@ -9,19 +10,31 @@
 
 static void J3DAPI jonesConfigSystem_GetBackBufferSize(uint32_t* pWidth, uint32_t* pHeight);
 static HICON WINAPI jonesConfigSystem_LoadIconA(HINSTANCE hInstance, LPCSTR pName);
+static bool J3DAPI jonesConfigSystem_GetConfigBool(const char* pKey, bool defaultValue);
 
 // The application supplies its render dimensions and localization. All window,
 // font, image-list and raster operations below use the real Win32 APIs. The icon
 // resource input is authored in memory, so no retail executable is required.
 #define stdDisplay_GetBackBufferSize jonesConfigSystem_GetBackBufferSize
 #define LoadIconA jonesConfigSystem_LoadIconA
+#define stdConfig_GetBool jonesConfigSystem_GetConfigBool
 #undef STDLOG_STATUS
 #undef STDLOG_ERROR
+#undef STDLOG_DEBUG
 #define STDLOG_STATUS(...) ((void)0)
 #define STDLOG_ERROR(...) ((void)0)
+#define STDLOG_DEBUG(...) ((void)0)
+// The tests run without std host services, so engine allocations use the C heap.
+#include <stdlib.h>
+#include <std/General/stdMemory.h>
+#undef STDMALLOC
+#undef STDFREE
+#define STDMALLOC(size) malloc(size)
+#define STDFREE(pData) free(pData)
 #include "../jonesConfig.c"
 #undef stdDisplay_GetBackBufferSize
 #undef LoadIconA
+#undef stdConfig_GetBool
 
 static HWND jonesConfigSystem_hDialog;
 static HWND jonesConfigSystem_hList;
@@ -41,6 +54,17 @@ static HGDIOBJ jonesConfigSystem_hOldDest;
 static HBITMAP jonesConfigSystem_hImage;
 static HBITMAP jonesConfigSystem_hMask;
 static HBITMAP jonesConfigSystem_hDestination;
+static int jonesConfigSystem_upscalingDisabled;
+
+static bool J3DAPI jonesConfigSystem_GetConfigBool(const char* pKey, bool defaultValue)
+{
+    // The config file isn't loaded; only the dialog image upscaling option is controlled
+    if ( strcmp(pKey, JONESCONFIG_CFG_GRAPHICS_UPSCALEDIALOGIMAGES) == 0 )
+    {
+        return !jonesConfigSystem_upscalingDisabled;
+    }
+    return defaultValue;
+}
 
 static void J3DAPI jonesConfigSystem_GetBackBufferSize(uint32_t* pWidth, uint32_t* pHeight)
 {
@@ -256,6 +280,8 @@ TEST_SETUP(jonesConfigSystem)
     jonesConfigSystem_hSourceDC = jonesConfigSystem_hDestDC = NULL;
     jonesConfigSystem_hOldSource = jonesConfigSystem_hOldDest = NULL;
     jonesConfigSystem_hImage = jonesConfigSystem_hMask = jonesConfigSystem_hDestination = NULL;
+    jonesConfigSystem_upscalingDisabled = 0;
+    jonesConfig_FreeScaledMaskedImages();
     jonesConfigSystem_previousDpi = SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
     if ( !jonesConfigSystem_previousDpi ) TEST_IGNORE_MESSAGE("Per-monitor V2 thread DPI context is unavailable.");
 
@@ -341,6 +367,10 @@ TEST(jonesConfigSystem, NativeStoreColumnsFitAfterScrollbarChanges)
     jonesConfigSystem_renderHeight = jonesConfigSystem_desktopHeight / 2;
     float scale;
     HFONT hFont = jonesConfigSystem_CreateFont(0, 190, &scale);
+    JonesDialogFontInfo layout = { 0 };
+    layout.fontScaleX = layout.fontScaleY = scale; // fullscreen layout
+    layout.dialogID = 190;
+    jonesConfig_SaveDialogImageScale(jonesConfigSystem_hDialog, &layout);
     // Reproduce the observed 1080p store's actual 12-pixel font independent of
     // the host's template rounding; the separate font case covers that path.
     LOGFONTA storeFont;
@@ -366,7 +396,9 @@ TEST(jonesConfigSystem, NativeStoreColumnsFitAfterScrollbarChanges)
     TEST_ASSERT_TRUE(iconsReady);
     int iconWidth, iconHeight;
     TEST_ASSERT_TRUE(ImageList_GetIconSize(jonesConfigSystem_hImages, &iconWidth, &iconHeight));
-    TEST_ASSERT_INT_WITHIN(1, 24, iconWidth);
+    // 48px at JONESCONFIG_IMAGE_REFDPI, scaled by the dialog DPI and the layout scale
+    int expectedIconSize = (int)floor(48.0 * GetDpiForWindow(jonesConfigSystem_hDialog) / JONESCONFIG_IMAGE_REFDPI * scale + 0.5);
+    TEST_ASSERT_INT_WITHIN(1, expectedIconSize, iconWidth);
     TEST_ASSERT_EQUAL_INT(iconWidth, iconHeight);
     ListView_SetImageList(jonesConfigSystem_hList, jonesConfigSystem_hImages, LVSIL_SMALL);
 
@@ -441,6 +473,8 @@ TEST(jonesConfigSystem, NativeStoreColumnsFitAfterScrollbarChanges)
 
 TEST(jonesConfigSystem, NativeBitmapDrawingPreservesMaskAndControlBounds)
 {
+    // The original drawing, as used with the upscaling option turned off
+    jonesConfigSystem_upscalingDisabled = 1;
     HWND hImageControl = CreateWindowExA(0, "STATIC", "", WS_CHILD, 0, 0, 4, 4,
         jonesConfigSystem_hDialog, (HMENU)(INT_PTR)1182, GetModuleHandleA(NULL), NULL);
     TEST_ASSERT_NOT_NULL(hImageControl);
@@ -492,11 +526,340 @@ TEST(jonesConfigSystem, NativeBitmapDrawingPreservesMaskAndControlBounds)
     }
 }
 
+static void jonesConfigSystem_PrepareDrawing(int imageSize, int destWidth, int destHeight, uint32_t** ppImage, uint32_t** ppMask, uint32_t** ppDestination)
+{
+    jonesConfigSystem_hImage = jonesConfigSystem_CreateDIB(imageSize, imageSize, ppImage);
+    jonesConfigSystem_hMask = jonesConfigSystem_CreateDIB(imageSize, imageSize, ppMask);
+    jonesConfigSystem_hDestination = jonesConfigSystem_CreateDIB(destWidth, destHeight, ppDestination);
+    TEST_ASSERT_NOT_NULL(jonesConfigSystem_hImage);
+    TEST_ASSERT_NOT_NULL(jonesConfigSystem_hMask);
+    TEST_ASSERT_NOT_NULL(jonesConfigSystem_hDestination);
+    jonesConfigSystem_hSourceDC = CreateCompatibleDC(NULL);
+    jonesConfigSystem_hDestDC = CreateCompatibleDC(NULL);
+    TEST_ASSERT_NOT_NULL(jonesConfigSystem_hSourceDC);
+    TEST_ASSERT_NOT_NULL(jonesConfigSystem_hDestDC);
+    jonesConfigSystem_hOldSource = SelectObject(jonesConfigSystem_hSourceDC, jonesConfigSystem_hImage);
+    jonesConfigSystem_hOldDest = SelectObject(jonesConfigSystem_hDestDC, jonesConfigSystem_hDestination);
+    TEST_ASSERT_NOT_NULL(jonesConfigSystem_hOldSource);
+    TEST_ASSERT_NOT_NULL(jonesConfigSystem_hOldDest);
+    TEST_ASSERT_NOT_EQUAL_INT(0, SetStretchBltMode(jonesConfigSystem_hDestDC, COLORONCOLOR));
+}
+
+static uint32_t jonesConfigSystem_BrushPixel(HBRUSH hBrush)
+{
+    LOGBRUSH brush = { 0 };
+    TEST_ASSERT_EQUAL_INT(sizeof(brush), GetObjectA(hBrush, sizeof(brush), &brush));
+    return ((uint32_t)GetRValue(brush.lbColor) << 16) | ((uint32_t)GetGValue(brush.lbColor) << 8) | GetBValue(brush.lbColor);
+}
+
+TEST(jonesConfigSystem, NativeMaskedImagesAreUpscaledOverTheDialogBackground)
+{
+    HWND hImageControl = CreateWindowExA(0, "STATIC", "", WS_CHILD, 0, 0, 24, 24,
+        jonesConfigSystem_hDialog, (HMENU)(INT_PTR)1182, GetModuleHandleA(NULL), NULL);
+    TEST_ASSERT_NOT_NULL(hImageControl);
+    uint32_t *pImage, *pMask, *pDestination;
+    jonesConfigSystem_PrepareDrawing(8, 32, 28, &pImage, &pMask, &pDestination);
+
+    // An opaque red square in the middle of a transparent 8x8 image, enlarged 3x
+    for ( int y = 0; y < 8; ++y )
+    {
+        for ( int x = 0; x < 8; ++x )
+        {
+            int bInside = x >= 2 && x < 6 && y >= 2 && y < 6;
+            pImage[y * 8 + x] = bInside ? 0x00FF0000u : 0u;
+            pMask[y * 8 + x] = bInside ? 0u : 0x00FFFFFFu;
+        }
+    }
+
+    const uint32_t background = 0x00123456;
+    for ( int i = 0; i < 32 * 28; ++i ) pDestination[i] = background;
+    TEST_ASSERT_TRUE(jonesConfig_DrawImageOnDialogItem(jonesConfigSystem_hDialog,
+        jonesConfigSystem_hSourceDC, jonesConfigSystem_hDestDC, 1182, jonesConfigSystem_hImage, jonesConfigSystem_hMask));
+    TEST_ASSERT_TRUE(GdiFlush());
+
+    // Transparent areas show the dialog's control background instead of a previous image
+    HBRUSH hBrush = (HBRUSH)SendMessageA(jonesConfigSystem_hDialog, WM_CTLCOLORSTATIC, (WPARAM)jonesConfigSystem_hDestDC, (LPARAM)hImageControl);
+    uint32_t dialogBackground = jonesConfigSystem_BrushPixel(hBrush ? hBrush : GetSysColorBrush(COLOR_BTNFACE));
+    for ( int y = 0; y < 28; ++y )
+    {
+        for ( int x = 0; x < 32; ++x )
+        {
+            uint32_t pixel = pDestination[y * 32 + x] & 0x00FFFFFF;
+            if ( x >= 24 || y >= 24 )
+            {
+                TEST_ASSERT_EQUAL_HEX32(background, pixel); // outside the control
+            }
+            else if ( x >= 8 && x < 16 && y >= 8 && y < 16 )
+            {
+                TEST_ASSERT_EQUAL_HEX32(0x00FF0000, pixel); // inside the enlarged square
+            }
+            else if ( (x < 4 || x >= 20) && (y < 4 || y >= 20) )
+            {
+                TEST_ASSERT_EQUAL_HEX32(dialogBackground, pixel); // far from the square
+            }
+        }
+    }
+}
+
+TEST(jonesConfigSystem, NativeColorFilterMasksKeepTheOriginalDrawing)
+{
+    // The IQ image draws its points into the mask, which the original ANDs with the background
+    HWND hImageControl = CreateWindowExA(0, "STATIC", "", WS_CHILD, 0, 0, 4, 4,
+        jonesConfigSystem_hDialog, (HMENU)(INT_PTR)1182, GetModuleHandleA(NULL), NULL);
+    TEST_ASSERT_NOT_NULL(hImageControl);
+    uint32_t *pImage, *pMask, *pDestination;
+    jonesConfigSystem_PrepareDrawing(2, 4, 4, &pImage, &pMask, &pDestination);
+    const uint32_t aImage[4] = { 0x00FF0000, 0, 0x000000FF, 0 };
+    const uint32_t aMask[4] = { 0, 0x00808080, 0, 0x00FFFFFF };
+    memcpy(pImage, aImage, sizeof(aImage));
+    memcpy(pMask, aMask, sizeof(aMask));
+
+    const uint32_t background = 0x00F0E0D0;
+    for ( int i = 0; i < 16; ++i ) pDestination[i] = background;
+    TEST_ASSERT_TRUE(jonesConfig_DrawImageOnDialogItem(jonesConfigSystem_hDialog,
+        jonesConfigSystem_hSourceDC, jonesConfigSystem_hDestDC, 1182, jonesConfigSystem_hImage, jonesConfigSystem_hMask));
+    TEST_ASSERT_TRUE(GdiFlush());
+    for ( int y = 0; y < 4; ++y )
+    {
+        for ( int x = 0; x < 4; ++x )
+        {
+            int source = (y / 2) * 2 + x / 2;
+            uint32_t expected = (background & aMask[source]) | aImage[source]; // SRCAND, then SRCPAINT
+            TEST_ASSERT_EQUAL_HEX32(expected, pDestination[y * 4 + x] & 0x00FFFFFF);
+        }
+    }
+}
+
+TEST(jonesConfigSystem, NativeChildDialogGrowsInPlaceInsideItsParent)
+{
+    // Off the screen origin, so screen and parent client coordinates differ
+    TEST_ASSERT_TRUE(MoveWindow(jonesConfigSystem_hDialog, 200, 150, 600, 400, FALSE));
+
+    // A child dialog like the load/save template inside the file dialog
+    HWND hChild = CreateWindowExA(0, "STATIC", "", WS_CHILD, 10, 20, 100, 80,
+        jonesConfigSystem_hDialog, NULL, GetModuleHandleA(NULL), NULL);
+    TEST_ASSERT_NOT_NULL(hChild);
+    HWND hCtrl = CreateWindowExA(0, "STATIC", "", WS_CHILD, 5, 5, 40, 30,
+        hChild, (HMENU)(INT_PTR)1500, GetModuleHandleA(NULL), NULL);
+    TEST_ASSERT_NOT_NULL(hCtrl);
+
+    JonesDialogFontInfo fontInfo = { 0 };
+    fontInfo.fontScaleX = fontInfo.fontScaleY = 3.0f; // fullscreen layout
+    fontInfo.dialogID = 211;
+    jonesConfig_SetWindowFontAndPosition(hCtrl, &fontInfo);
+
+    RECT ctrlRect;
+    TEST_ASSERT_TRUE(GetWindowRect(hCtrl, &ctrlRect));
+    MapWindowPoints(HWND_DESKTOP, hChild, (LPPOINT)&ctrlRect, 2);
+    TEST_ASSERT_EQUAL_INT(15, ctrlRect.left);
+    TEST_ASSERT_EQUAL_INT(15, ctrlRect.top);
+    TEST_ASSERT_EQUAL_INT(120, ctrlRect.right - ctrlRect.left);
+    TEST_ASSERT_EQUAL_INT(90, ctrlRect.bottom - ctrlRect.top);
+
+    // The child grows to fit the control and stays where it was in its parent
+    RECT childRect;
+    TEST_ASSERT_TRUE(GetWindowRect(hChild, &childRect));
+    MapWindowPoints(HWND_DESKTOP, jonesConfigSystem_hDialog, (LPPOINT)&childRect, 2);
+    TEST_ASSERT_EQUAL_INT(10, childRect.left);
+    TEST_ASSERT_EQUAL_INT(20, childRect.top);
+    TEST_ASSERT_EQUAL_INT(135, childRect.right - childRect.left);
+    TEST_ASSERT_EQUAL_INT(105, childRect.bottom - childRect.top);
+}
+
+static RECT jonesConfigSystem_GetChildRect(HWND hCtrl)
+{
+    RECT rect;
+    TEST_ASSERT_TRUE(GetWindowRect(hCtrl, &rect));
+    MapWindowPoints(HWND_DESKTOP, GetParent(hCtrl), (LPPOINT)&rect, 2);
+    return rect;
+}
+
+TEST(jonesConfigSystem, NativeFilmIconMovesDownWithTheThumbnailOnlyWhenBelowIt)
+{
+    TEST_ASSERT_TRUE(MoveWindow(jonesConfigSystem_hDialog, 200, 150, 600, 400, FALSE));
+    HWND hBelow = CreateWindowExA(0, "STATIC", "", WS_CHILD, 10, 100, 32, 32,
+        jonesConfigSystem_hDialog, (HMENU)(INT_PTR)1117, GetModuleHandleA(NULL), NULL);
+    HWND hAbove = CreateWindowExA(0, "STATIC", "", WS_CHILD, 10, 20, 32, 32,
+        jonesConfigSystem_hDialog, (HMENU)(INT_PTR)1115, GetModuleHandleA(NULL), NULL);
+    TEST_ASSERT_NOT_NULL(hBelow);
+    TEST_ASSERT_NOT_NULL(hAbove);
+
+    // Thumbnail bottom at client y 60 (screen 210), enlarged by 25 pixels
+    LONG thumbBottom = 150 + 60;
+    jonesConfig_MoveBelowThumbnail(jonesConfigSystem_hDialog, hBelow, thumbBottom, 25);
+    jonesConfig_MoveBelowThumbnail(jonesConfigSystem_hDialog, hAbove, thumbBottom, 25);
+
+    RECT below = jonesConfigSystem_GetChildRect(hBelow);
+    TEST_ASSERT_EQUAL_INT(10, below.left);
+    TEST_ASSERT_EQUAL_INT(125, below.top);
+    TEST_ASSERT_EQUAL_INT(32, below.bottom - below.top);
+    RECT above = jonesConfigSystem_GetChildRect(hAbove);
+    TEST_ASSERT_EQUAL_INT(20, above.top);
+
+    // No growth, no move
+    jonesConfig_MoveBelowThumbnail(jonesConfigSystem_hDialog, hBelow, thumbBottom, 0);
+    TEST_ASSERT_EQUAL_INT(125, jonesConfigSystem_GetChildRect(hBelow).top);
+}
+
+TEST(jonesConfigSystem, NativeSliderThumbScalesOnceWithTheDialogDpi)
+{
+    INITCOMMONCONTROLSEX controls = { sizeof(controls), ICC_BAR_CLASSES };
+    TEST_ASSERT_TRUE(InitCommonControlsEx(&controls));
+    UINT dpi = GetDpiForWindow(jonesConfigSystem_hDialog);
+    HWND hSlider = CreateWindowExA(0, TRACKBAR_CLASSA, "", WS_CHILD | TBS_HORZ | TBS_AUTOTICKS,
+        0, 0, 200, MulDiv(60, dpi, USER_DEFAULT_SCREEN_DPI), jonesConfigSystem_hDialog, (HMENU)(INT_PTR)1216, GetModuleHandleA(NULL), NULL);
+    TEST_ASSERT_NOT_NULL(hSlider);
+    UINT baseLength = (UINT)SendMessageA(hSlider, TBM_GETTHUMBLENGTH, 0, 0);
+    TEST_ASSERT_GREATER_THAN_UINT(0, baseLength);
+
+    RECT client;
+    TEST_ASSERT_TRUE(GetClientRect(hSlider, &client));
+    LONG expected = (LONG)floor((double)baseLength * dpi / USER_DEFAULT_SCREEN_DPI + 0.5);
+    if ( expected > client.bottom ) expected = client.bottom;
+
+    // Windowed layout at 1.0 doesn't resize the slider, so only the dialog DPI applies
+    JonesDialogFontInfo fontInfo = { 0 };
+    fontInfo.bWindowMode = 1;
+    fontInfo.fontScaleX = fontInfo.fontScaleY = 1.0f;
+    fontInfo.dialogID = 148;
+    for ( int pass = 0; pass < 2; ++pass ) // a second layout pass must not scale it again
+    {
+        jonesConfig_ScaleTrackbarThumb(hSlider, &fontInfo);
+        TEST_ASSERT_EQUAL_INT(expected, (LONG)SendMessageA(hSlider, TBM_GETTHUMBLENGTH, 0, 0));
+    }
+    TEST_ASSERT_TRUE(GetWindowLongPtrA(hSlider, GWL_STYLE) & TBS_FIXEDLENGTH);
+
+    DWORD_PTR data = 0;
+    TEST_ASSERT_TRUE(GetWindowSubclass(hSlider, jonesConfig_DataSubclassProc, JONESCONFIG_SUBCLASSID, &data));
+    TEST_ASSERT_EQUAL_UINT(baseLength, (UINT)data); // the native length is kept, not the scaled one
+    TEST_ASSERT_TRUE(DestroyWindow(hSlider));
+}
+
+TEST(jonesConfigSystem, NativeCheckBoxHookDrawsTheBoxAtTheFontSize)
+{
+    HWND hCheckBox = CreateWindowExA(0, "BUTTON", "Option", WS_CHILD | BS_AUTOCHECKBOX,
+        0, 0, 200, 40, jonesConfigSystem_hDialog, (HMENU)(INT_PTR)1053, GetModuleHandleA(NULL), NULL);
+    TEST_ASSERT_NOT_NULL(hCheckBox);
+    LOGFONTA font = { 0 };
+    font.lfHeight = -24;
+    STD_STRCPY(font.lfFaceName, "Segoe UI");
+    jonesConfigSystem_aFonts[0] = CreateFontIndirectA(&font);
+    TEST_ASSERT_NOT_NULL(jonesConfigSystem_aFonts[0]);
+    SendMessageA(hCheckBox, WM_SETFONT, (WPARAM)jonesConfigSystem_aFonts[0], FALSE);
+
+    jonesConfig_InstallCheckBoxHook(hCheckBox);
+    jonesConfig_InstallCheckBoxHook(hCheckBox); // installed once
+    DWORD_PTR data = 0;
+    TEST_ASSERT_TRUE(GetWindowSubclass(hCheckBox, jonesConfig_CheckBoxSubclassProc, JONESCONFIG_SUBCLASSID, &data));
+
+    // Windows still keeps the check state
+    SendMessageA(hCheckBox, BM_SETCHECK, BST_CHECKED, 0);
+    TEST_ASSERT_EQUAL_INT(BST_CHECKED, (int)SendMessageA(hCheckBox, BM_GETCHECK, 0, 0));
+
+    uint32_t* pPixels;
+    jonesConfigSystem_hDestination = jonesConfigSystem_CreateDIB(200, 40, &pPixels);
+    TEST_ASSERT_NOT_NULL(jonesConfigSystem_hDestination);
+    jonesConfigSystem_hDestDC = CreateCompatibleDC(NULL);
+    TEST_ASSERT_NOT_NULL(jonesConfigSystem_hDestDC);
+    jonesConfigSystem_hOldDest = SelectObject(jonesConfigSystem_hDestDC, jonesConfigSystem_hDestination);
+    SendMessageA(hCheckBox, WM_PRINTCLIENT, (WPARAM)jonesConfigSystem_hDestDC, PRF_CLIENT);
+    TEST_ASSERT_TRUE(GdiFlush());
+
+    // The box starts at the left edge; its width is the first run of pixels that differ
+    // from the background in the middle row
+    HGDIOBJ hOldFont = SelectObject(jonesConfigSystem_hDestDC, jonesConfigSystem_aFonts[0]);
+    TEXTMETRICA metrics;
+    TEST_ASSERT_TRUE(GetTextMetricsA(jonesConfigSystem_hDestDC, &metrics));
+    SelectObject(jonesConfigSystem_hDestDC, hOldFont);
+    int expectedBox = metrics.tmHeight < 40 ? metrics.tmHeight : 40;
+
+    const uint32_t* pRow = &pPixels[20 * 200];
+    uint32_t background = pRow[199] & 0x00FFFFFF; // right of the short text
+    int boxWidth = 0;
+    while ( boxWidth < 200 && (pRow[boxWidth] & 0x00FFFFFF) != background )
+    {
+        ++boxWidth;
+    }
+    TEST_ASSERT_INT_WITHIN(1, expectedBox, boxWidth);
+    TEST_ASSERT_TRUE(DestroyWindow(hCheckBox));
+}
+
+static HICON jonesConfigSystem_CreateAlphaIcon(int size, bool bTriangle)
+{
+    uint32_t* pColor;
+    HBITMAP hColor = jonesConfigSystem_CreateDIB(size, size, &pColor);
+    HBITMAP hMask = CreateBitmap(size, size, 1, 1, NULL);
+    TEST_ASSERT_NOT_NULL(hColor);
+    TEST_ASSERT_NOT_NULL(hMask);
+    for ( int y = 0; y < size; ++y )
+    {
+        for ( int x = 0; x < size; ++x )
+        {
+            bool bInside = bTriangle ? x <= y : (x >= size / 4 && x < size * 3 / 4 && y >= size / 4 && y < size * 3 / 4);
+            pColor[y * size + x] = bInside ? 0xFFFF0000u : 0u;
+        }
+    }
+    ICONINFO info = { 0 };
+    info.fIcon = TRUE;
+    info.hbmColor = hColor;
+    info.hbmMask = hMask;
+    HICON hIcon = CreateIconIndirect(&info);
+    DeleteObject(hColor);
+    DeleteObject(hMask);
+    TEST_ASSERT_NOT_NULL(hIcon);
+    return hIcon;
+}
+
+TEST(jonesConfigSystem, NativeUpscaledIconsKeepTheirAlphaOrBlendIntoTheListBackground)
+{
+    // Kept alpha, enlarged 3x
+    HICON hSquare = jonesConfigSystem_CreateAlphaIcon(16, false);
+    HICON hScaled = jonesConfig_UpscaleIcon(hSquare, 48, 48, CLR_NONE);
+    TEST_ASSERT_NOT_NULL(hScaled);
+    int width = 0, height = 0;
+    uint32_t* pPixels = jonesConfig_GetIconPixels(hScaled, &width, &height);
+    TEST_ASSERT_NOT_NULL(pPixels);
+    TEST_ASSERT_EQUAL_INT(48, width);
+    TEST_ASSERT_EQUAL_INT(48, height);
+    TEST_ASSERT_EQUAL_HEX32(0xFFFF0000u, pPixels[24 * 48 + 24]); // center
+    TEST_ASSERT_EQUAL_HEX32(0u, pPixels[0] >> 24);               // corner stays transparent
+    free(pPixels);
+    DestroyIcon(hScaled);
+    DestroyIcon(hSquare);
+
+    // Blended into a white list background at the same size: smooth but only fully opaque or transparent
+    HICON hTriangle = jonesConfigSystem_CreateAlphaIcon(16, true);
+    hScaled = jonesConfig_UpscaleIcon(hTriangle, 16, 16, RGB(255, 255, 255));
+    TEST_ASSERT_NOT_NULL(hScaled);
+    pPixels = jonesConfig_GetIconPixels(hScaled, &width, &height);
+    TEST_ASSERT_NOT_NULL(pPixels);
+    TEST_ASSERT_EQUAL_INT(16, width);
+    int numBlended = 0;
+    for ( int i = 0; i < 16 * 16; ++i )
+    {
+        uint32_t a = pPixels[i] >> 24;
+        TEST_ASSERT_TRUE(a == 0 || a == 0xFF);
+        uint32_t rgb = pPixels[i] & 0x00FFFFFFu;
+        numBlended += a == 0xFF && rgb != 0x00FF0000u; // red mixed with white along the diagonal
+    }
+    free(pPixels);
+    TEST_ASSERT_GREATER_THAN_INT(0, numBlended);
+    DestroyIcon(hScaled);
+    DestroyIcon(hTriangle);
+}
+
 TEST_GROUP_RUNNER(jonesConfigSystem)
 {
     RUN_TEST_CASE(jonesConfigSystem, NativeFontsFollowTheFullscreenPresentationScale);
     RUN_TEST_CASE(jonesConfigSystem, NativeStoreColumnsFitAfterScrollbarChanges);
     RUN_TEST_CASE(jonesConfigSystem, NativeBitmapDrawingPreservesMaskAndControlBounds);
+    RUN_TEST_CASE(jonesConfigSystem, NativeMaskedImagesAreUpscaledOverTheDialogBackground);
+    RUN_TEST_CASE(jonesConfigSystem, NativeColorFilterMasksKeepTheOriginalDrawing);
+    RUN_TEST_CASE(jonesConfigSystem, NativeChildDialogGrowsInPlaceInsideItsParent);
+    RUN_TEST_CASE(jonesConfigSystem, NativeFilmIconMovesDownWithTheThumbnailOnlyWhenBelowIt);
+    RUN_TEST_CASE(jonesConfigSystem, NativeSliderThumbScalesOnceWithTheDialogDpi);
+    RUN_TEST_CASE(jonesConfigSystem, NativeCheckBoxHookDrawsTheBoxAtTheFontSize);
+    RUN_TEST_CASE(jonesConfigSystem, NativeUpscaledIconsKeepTheirAlphaOrBlendIntoTheListBackground);
 }
 
 static void jonesConfigSystem_RunAll(void)

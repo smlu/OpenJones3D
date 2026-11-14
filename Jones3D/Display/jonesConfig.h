@@ -26,6 +26,8 @@ J3D_EXTERN_C_START
 #define JONESCONFIG_CFG_GAMEPLAY_DEFAULTRUN "gameplay.defaultRun"
 #define JONESCONFIG_CFG_GAMEPLAY_STARTLEVEL "gameplay.startLevel"
 
+#define JONESCONFIG_CFG_GRAPHICS_UPSCALEDIALOGIMAGES "graphics.upscaleDialogImages" // Added: Upscale dialog icons and images with xBRZ
+
 #define JONESCONFIG_CFG_LOG_MODE            "log.mode"
 #define JONESCONFIG_CFG_LOG_LEVEL           "log.level"
 

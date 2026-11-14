@@ -22,6 +22,7 @@ target_link_libraries(jones3dTests PRIVATE
     Libs
     unity
     comctl32
+    xBRZ # jonesConfig.c dialog image upscaling
 )
 
 set_target_properties(jones3dTests PROPERTIES

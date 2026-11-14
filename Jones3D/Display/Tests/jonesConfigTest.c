@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include <std/General/std.h>
+#include <std/General/stdConfig.h>
 #include <std/Win95/stdDisplay.h>
 #include <commctrl.h>
 
@@ -31,6 +32,14 @@ static HGDIOBJ WINAPI jonesConfigTest_SelectObject(HDC hDC, HGDIOBJ hObject);
 static BOOL WINAPI jonesConfigTest_StretchBlt(HDC hDest, int x, int y, int width, int height,
     HDC hSource, int sourceX, int sourceY, int sourceWidth, int sourceHeight, DWORD operation);
 static void J3DAPI jonesConfigTest_GetBackBufferSize(uint32_t* pWidth, uint32_t* pHeight);
+static HRSRC WINAPI jonesConfigTest_FindResourceA(HMODULE hModule, LPCSTR pName, LPCSTR pType);
+static HANDLE WINAPI jonesConfigTest_LoadImageA(HINSTANCE hInstance, LPCSTR pName, UINT type, int width, int height, UINT flags);
+static BOOL WINAPI jonesConfigTest_DestroyIcon(HICON hIcon);
+static BOOL WINAPI jonesConfigTest_SetWindowSubclass(HWND hWnd, SUBCLASSPROC pfnSubclass, UINT_PTR id, DWORD_PTR data);
+static BOOL WINAPI jonesConfigTest_GetWindowSubclass(HWND hWnd, SUBCLASSPROC pfnSubclass, UINT_PTR id, DWORD_PTR* pData);
+static BOOL WINAPI jonesConfigTest_RemoveWindowSubclass(HWND hWnd, SUBCLASSPROC pfnSubclass, UINT_PTR id);
+static LRESULT WINAPI jonesConfigTest_DefSubclassProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+static bool J3DAPI jonesConfigTest_GetConfigBool(const char* pKey, bool defaultValue);
 
 #define GetClientRect jonesConfigTest_GetClientRect
 #define GetWindowRect jonesConfigTest_GetWindowRect
@@ -53,10 +62,28 @@ static void J3DAPI jonesConfigTest_GetBackBufferSize(uint32_t* pWidth, uint32_t*
 #define SelectObject jonesConfigTest_SelectObject
 #define StretchBlt jonesConfigTest_StretchBlt
 #define stdDisplay_GetBackBufferSize jonesConfigTest_GetBackBufferSize
+#define FindResourceA jonesConfigTest_FindResourceA
+#define LoadImageA jonesConfigTest_LoadImageA
+#define DestroyIcon jonesConfigTest_DestroyIcon
+#define SetWindowSubclass jonesConfigTest_SetWindowSubclass
+#define GetWindowSubclass jonesConfigTest_GetWindowSubclass
+#define RemoveWindowSubclass jonesConfigTest_RemoveWindowSubclass
+#define DefSubclassProc jonesConfigTest_DefSubclassProc
+#define stdConfig_GetBool jonesConfigTest_GetConfigBool
 #undef STDLOG_STATUS
 #undef STDLOG_ERROR
+#undef STDLOG_DEBUG
 #define STDLOG_STATUS(...) ((void)0)
 #define STDLOG_ERROR(...) ((void)0)
+#define STDLOG_DEBUG(...) ((void)0)
+
+// The tests run without std host services, so engine allocations use the C heap.
+#include <stdlib.h>
+#include <std/General/stdMemory.h>
+#undef STDMALLOC
+#undef STDFREE
+#define STDMALLOC(size) malloc(size)
+#define STDFREE(pData) free(pData)
 
 // Compile the actual module so its private action/key tables drive synthetic
 // input. Only file, localization and window dependencies are replaced.
@@ -158,6 +185,23 @@ static LONG jonesConfigTest_imageStyle;
 static int jonesConfigTest_imageX, jonesConfigTest_imageY;
 static int jonesConfigTest_imageWidth, jonesConfigTest_imageHeight;
 static unsigned jonesConfigTest_numImageMoves;
+static unsigned jonesConfigTest_numResourceLookups;
+static unsigned jonesConfigTest_numImageLoads;
+static int jonesConfigTest_imageLoadWidth;
+static int jonesConfigTest_imageLoadHeight;
+static unsigned jonesConfigTest_numIconDestroys;
+static int jonesConfigTest_upscalingDisabled;
+
+typedef struct sJonesConfigTestSubclass
+{
+    HWND hWnd;
+    SUBCLASSPROC pfnSubclass;
+    UINT_PTR id;
+    DWORD_PTR data;
+} JonesConfigTestSubclass;
+
+static JonesConfigTestSubclass jonesConfigTest_aSubclasses[8];
+static unsigned jonesConfigTest_numSubclasses;
 
 static void jonesConfigTest_ResetLayout(void)
 {
@@ -195,6 +239,12 @@ static void jonesConfigTest_ResetLayout(void)
     jonesConfigTest_imageX = jonesConfigTest_imageY = 0;
     jonesConfigTest_imageWidth = jonesConfigTest_imageHeight = 0;
     jonesConfigTest_numImageMoves = 0;
+    jonesConfigTest_numResourceLookups = jonesConfigTest_numImageLoads = jonesConfigTest_numIconDestroys = 0;
+    jonesConfigTest_imageLoadWidth = jonesConfigTest_imageLoadHeight = 0;
+    jonesConfigTest_upscalingDisabled = 0;
+    memset(jonesConfigTest_aSubclasses, 0, sizeof(jonesConfigTest_aSubclasses));
+    jonesConfigTest_numSubclasses = 0;
+    jonesConfig_FreeScaledMaskedImages();
 }
 
 static BOOL WINAPI jonesConfigTest_GetClientRect(HWND hWnd, LPRECT pRect)
@@ -385,7 +435,7 @@ static HIMAGELIST WINAPI jonesConfigTest_ImageListCreate(int width, int height, 
 {
     jonesConfigTest_iconWidth = width;
     jonesConfigTest_iconHeight = height;
-    TEST_ASSERT_EQUAL_UINT32(ILC_MASK | ILC_COLOR8, flags);
+    TEST_ASSERT_EQUAL_UINT32(ILC_MASK | ILC_COLOR32, flags);
     TEST_ASSERT_EQUAL_INT(14, initial);
     TEST_ASSERT_EQUAL_INT(0, growth);
     return jonesConfigTest_imageListFails ? NULL : JONESCONFIGTEST_IMAGE_LIST;
@@ -410,6 +460,10 @@ static int WINAPI jonesConfigTest_ImageListReplaceIcon(HIMAGELIST hList, int ind
 static HWND WINAPI jonesConfigTest_GetDlgItem(HWND hWnd, int id)
 {
     TEST_ASSERT_EQUAL_PTR(JONESCONFIGTEST_DIALOG, hWnd);
+    if ( id == 1005 ) // store item list, whose background the icon edges blend into
+    {
+        return NULL;
+    }
     TEST_ASSERT_EQUAL_INT(1182, id);
     return JONESCONFIGTEST_CONTROL;
 }
@@ -435,6 +489,111 @@ static void J3DAPI jonesConfigTest_GetBackBufferSize(uint32_t* pWidth, uint32_t*
 {
     *pWidth = jonesConfigTest_renderWidth;
     *pHeight = jonesConfigTest_renderHeight;
+}
+
+// No retail icon resources are available to the tests, so upscaling falls back to the
+// sized LoadImage path; the pixel pipeline itself is covered by the buffer tests below.
+static HRSRC WINAPI jonesConfigTest_FindResourceA(HMODULE hModule, LPCSTR pName, LPCSTR pType)
+{
+    TEST_ASSERT_EQUAL_PTR(JONESCONFIGTEST_INSTANCE, hModule);
+    TEST_ASSERT_TRUE(IS_INTRESOURCE(pName));
+    TEST_ASSERT_EQUAL_PTR(RT_GROUP_ICON, pType);
+    ++jonesConfigTest_numResourceLookups;
+    return NULL;
+}
+
+static HANDLE WINAPI jonesConfigTest_LoadImageA(HINSTANCE hInstance, LPCSTR pName, UINT type, int width, int height, UINT flags)
+{
+    TEST_ASSERT_EQUAL_PTR(JONESCONFIGTEST_INSTANCE, hInstance);
+    TEST_ASSERT_TRUE(IS_INTRESOURCE(pName));
+    TEST_ASSERT_EQUAL_UINT(IMAGE_ICON, type);
+    TEST_ASSERT_EQUAL_UINT(LR_DEFAULTCOLOR, flags);
+    ++jonesConfigTest_numImageLoads;
+    jonesConfigTest_imageLoadWidth = width;
+    jonesConfigTest_imageLoadHeight = height;
+    return (HANDLE)(uintptr_t)(0x9000 + (uintptr_t)pName);
+}
+
+static BOOL WINAPI jonesConfigTest_DestroyIcon(HICON hIcon)
+{
+    TEST_ASSERT_NOT_NULL(hIcon);
+    ++jonesConfigTest_numIconDestroys;
+    return TRUE;
+}
+
+static JonesConfigTestSubclass* jonesConfigTest_FindSubclass(HWND hWnd, SUBCLASSPROC pfnSubclass, UINT_PTR id)
+{
+    for ( unsigned i = 0; i < jonesConfigTest_numSubclasses; ++i )
+    {
+        JonesConfigTestSubclass* pEntry = &jonesConfigTest_aSubclasses[i];
+        if ( pEntry->hWnd == hWnd && pEntry->pfnSubclass == pfnSubclass && pEntry->id == id )
+        {
+            return pEntry;
+        }
+    }
+    return NULL;
+}
+
+static BOOL WINAPI jonesConfigTest_SetWindowSubclass(HWND hWnd, SUBCLASSPROC pfnSubclass, UINT_PTR id, DWORD_PTR data)
+{
+    JonesConfigTestSubclass* pEntry = jonesConfigTest_FindSubclass(hWnd, pfnSubclass, id);
+    if ( !pEntry )
+    {
+        TEST_ASSERT_LESS_THAN_UINT(STD_ARRAYLEN(jonesConfigTest_aSubclasses), jonesConfigTest_numSubclasses);
+        pEntry = &jonesConfigTest_aSubclasses[jonesConfigTest_numSubclasses++];
+        pEntry->hWnd = hWnd;
+        pEntry->pfnSubclass = pfnSubclass;
+        pEntry->id = id;
+    }
+    pEntry->data = data; // like comctl32, an existing subclass only gets its data updated
+    return TRUE;
+}
+
+static BOOL WINAPI jonesConfigTest_GetWindowSubclass(HWND hWnd, SUBCLASSPROC pfnSubclass, UINT_PTR id, DWORD_PTR* pData)
+{
+    JonesConfigTestSubclass* pEntry = jonesConfigTest_FindSubclass(hWnd, pfnSubclass, id);
+    if ( !pEntry )
+    {
+        return FALSE;
+    }
+    *pData = pEntry->data;
+    return TRUE;
+}
+
+static BOOL WINAPI jonesConfigTest_RemoveWindowSubclass(HWND hWnd, SUBCLASSPROC pfnSubclass, UINT_PTR id)
+{
+    JonesConfigTestSubclass* pEntry = jonesConfigTest_FindSubclass(hWnd, pfnSubclass, id);
+    if ( !pEntry )
+    {
+        return FALSE;
+    }
+    *pEntry = jonesConfigTest_aSubclasses[--jonesConfigTest_numSubclasses];
+    return TRUE;
+}
+
+static LRESULT WINAPI jonesConfigTest_DefSubclassProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    J3D_UNUSED(hWnd); J3D_UNUSED(message); J3D_UNUSED(wParam); J3D_UNUSED(lParam);
+    return 0;
+}
+
+static bool J3DAPI jonesConfigTest_GetConfigBool(const char* pKey, bool defaultValue)
+{
+    if ( strcmp(pKey, JONESCONFIG_CFG_GRAPHICS_UPSCALEDIALOGIMAGES) == 0 )
+    {
+        return !jonesConfigTest_upscalingDisabled;
+    }
+    return defaultValue;
+}
+
+// Saves a layout scale on the test dialog the way jonesConfig_InitDialog does after its layout pass
+static void jonesConfigTest_SaveLayoutScale(int bWindowMode, float fontScale, int dialogID)
+{
+    JonesDialogFontInfo fontInfo = { 0 };
+    fontInfo.bWindowMode = bWindowMode;
+    fontInfo.fontScaleX  = fontInfo.fontScaleY = fontScale;
+    fontInfo.dialogID    = dialogID;
+    jonesConfig_SaveDialogImageScale(JONESCONFIGTEST_DIALOG, &fontInfo);
 }
 
 static const char* const jonesConfigTest_aKeys[9] = { "A", "S", "D", "F", "G", "H", "J", "K", "L" };
@@ -855,6 +1014,10 @@ TEST(jonesConfig, StoreIconsFollowTheSameFullscreenResolutionProportions)
         const JonesConfigTestResolution* pCase = &jonesConfigTest_aResolutions[i];
         jonesConfigTest_renderWidth = pCase->width;
         jonesConfigTest_renderHeight = pCase->height;
+        // The store creates its icons after the layout pass, which saves the applied scale
+        float scale = 0.0f;
+        TEST_ASSERT_NOT_NULL(jonesConfig_CreateDialogFont(JONESCONFIGTEST_DIALOG, 0, 211, &scale));
+        jonesConfigTest_SaveLayoutScale(0, scale, 211);
         tStoreCartState cart = { 0 };
         TEST_ASSERT_TRUE(jonesConfig_StoreInitItemIcons(JONESCONFIGTEST_DIALOG, &cart));
         TEST_ASSERT_EQUAL_PTR(JONESCONFIGTEST_IMAGE_LIST, cart.hList);
@@ -862,6 +1025,12 @@ TEST(jonesConfig, StoreIconsFollowTheSameFullscreenResolutionProportions)
         TEST_ASSERT_EQUAL_INT(pCase->iconSize, jonesConfigTest_iconHeight);
         TEST_ASSERT_EQUAL_UINT(14, jonesConfigTest_numIconLoads);
         TEST_ASSERT_EQUAL_UINT(14, jonesConfigTest_numIconCopies);
+        // Each icon is looked up for upscaling, then loaded at the cell size and freed after the copy
+        TEST_ASSERT_EQUAL_UINT(14, jonesConfigTest_numResourceLookups);
+        TEST_ASSERT_EQUAL_UINT(14, jonesConfigTest_numImageLoads);
+        TEST_ASSERT_EQUAL_INT(pCase->iconSize, jonesConfigTest_imageLoadWidth);
+        TEST_ASSERT_EQUAL_INT(pCase->iconSize, jonesConfigTest_imageLoadHeight);
+        TEST_ASSERT_EQUAL_UINT(14, jonesConfigTest_numIconDestroys);
         for ( size_t icon = 0; icon < STD_ARRAYLEN(cart.aItemIcons); ++icon )
         {
             TEST_ASSERT_NOT_NULL(cart.aItemIcons[icon]);
@@ -877,6 +1046,7 @@ TEST(jonesConfig, TinyFullscreenStillUsesNonzeroFontAndIconPixels)
     TEST_ASSERT_NOT_NULL(jonesConfig_CreateDialogFont(JONESCONFIGTEST_DIALOG, 0, 211, &scale));
     TEST_ASSERT_EQUAL_INT(-1, jonesConfigTest_createdFont.lfHeight);
     TEST_ASSERT_GREATER_THAN_FLOAT(0.0f, scale);
+    jonesConfigTest_SaveLayoutScale(0, scale, 211);
     tStoreCartState cart = { 0 };
     TEST_ASSERT_TRUE(jonesConfig_StoreInitItemIcons(JONESCONFIGTEST_DIALOG, &cart));
     TEST_ASSERT_EQUAL_INT(1, jonesConfigTest_iconWidth);
@@ -989,7 +1159,7 @@ TEST(jonesConfig, UnmaskedDialogBitmapReturnsTheGdiCopyResult)
 }
 
 
-TEST(jonesConfig, StoreIconsKeepTheirNativeSizeOutsideStartedFullscreen)
+TEST(jonesConfig, StoreIconsWithoutALayoutScaleFollowTheDialogDpiAndDontQueryTheMonitor)
 {
     for ( int profile = 0; profile < 3; ++profile )
     {
@@ -1001,9 +1171,41 @@ TEST(jonesConfig, StoreIconsKeepTheirNativeSizeOutsideStartedFullscreen)
         if ( profile == 2 ) { jonesConfigTest_missingSettings = 1; }
         tStoreCartState cart = { 0 };
         TEST_ASSERT_TRUE(jonesConfig_StoreInitItemIcons(JONESCONFIGTEST_DIALOG, &cart));
-        TEST_ASSERT_EQUAL_INT(48, jonesConfigTest_iconWidth);
-        TEST_ASSERT_EQUAL_INT(48, jonesConfigTest_iconHeight);
+        // 48px at 216 DPI, so 32px at the 144 DPI of the test dialog
+        TEST_ASSERT_EQUAL_INT(32, jonesConfigTest_iconWidth);
+        TEST_ASSERT_EQUAL_INT(32, jonesConfigTest_iconHeight);
         TEST_ASSERT_EQUAL_UINT(0, jonesConfigTest_monitorQueries);
+    }
+}
+
+TEST(jonesConfig, StoreIconsScaleWithTheDialogDpiAndTheAppliedLayoutScale)
+{
+    // 48px at JONESCONFIG_IMAGE_REFDPI (216) before layout scaling; windowed layouts at or above
+    // 1.0 don't resize the controls, so only the dialog DPI applies to them.
+    static const struct { UINT dpi; int bWindowMode; float fontScale; int bSaved; int iconSize; } aCases[] =
+    {
+        { 216, 1, 1.6f,  1,  48 },
+        {  96, 1, 1.0f,  1,  21 },
+        { 144, 1, 1.2f,  1,  32 },
+        {  96, 1, 0.8f,  1,  17 },
+        { 144, 0, 1.5f,  1,  48 },
+        { 216, 0, 2.25f, 1, 108 },
+        {  96, 0, 0.5f,  1,  11 },
+        { 144, 0, 2.0f,  0,  32 }
+    };
+    for ( size_t i = 0; i < STD_ARRAYLEN(aCases); ++i )
+    {
+        jonesConfigTest_ResetLayout();
+        jonesConfigTest_dpi = aCases[i].dpi;
+        if ( aCases[i].bSaved )
+        {
+            jonesConfigTest_SaveLayoutScale(aCases[i].bWindowMode, aCases[i].fontScale, 190);
+        }
+        tStoreCartState cart = { 0 };
+        TEST_ASSERT_TRUE(jonesConfig_StoreInitItemIcons(JONESCONFIGTEST_DIALOG, &cart));
+        TEST_ASSERT_EQUAL_INT(aCases[i].iconSize, jonesConfigTest_iconWidth);
+        TEST_ASSERT_EQUAL_INT(aCases[i].iconSize, jonesConfigTest_iconHeight);
+        TEST_ASSERT_EQUAL_INT(aCases[i].iconSize, jonesConfigTest_imageLoadWidth);
     }
 }
 
@@ -1061,6 +1263,7 @@ TEST(jonesConfig, FullscreenDialogDpiChangesDoNotApplyTheDesktopScaleTwice)
         TEST_ASSERT_NOT_NULL(jonesConfig_CreateDialogFont(JONESCONFIGTEST_DIALOG, 0, 211, &scale));
         TEST_ASSERT_EQUAL_INT(aCases[i].fontHeight, jonesConfigTest_createdFont.lfHeight);
         TEST_ASSERT_FLOAT_WITHIN(0.000001f, aCases[i].geometryScale, scale);
+        jonesConfigTest_SaveLayoutScale(0, scale, 211);
         tStoreCartState cart = { 0 };
         TEST_ASSERT_TRUE(jonesConfig_StoreInitItemIcons(JONESCONFIGTEST_DIALOG, &cart));
         TEST_ASSERT_EQUAL_INT(aCases[i].iconSize, jonesConfigTest_iconWidth);
@@ -1096,17 +1299,20 @@ TEST(jonesConfig, MissingSavedDesktopDpiFallsBackToTheDialogDpi)
 }
 
 
-TEST(jonesConfig, ExitImageUsesDesktopDpiSizeAndKeepsItsAxesAndOwnerDrawStyle)
+TEST(jonesConfig, ExitImageScalesWithTheDialogDpiAndKeepsItsAxesAndOwnerDrawStyle)
 {
+    // 96px at JONESCONFIG_IMAGE_REFDPI (216); the shared layout pass applies the layout scale.
+    // Neither the saved desktop DPI nor the display mode change it.
     static const struct { UINT desktopDpi, dialogDpi; int started, windowed, expectedSize; } aCases[] =
     {
-        { 144,  96, 1, 0,  64 },
-        { 144, 144, 1, 0,  96 },
-        { 144, 192, 1, 0, 128 },
-        {   0,  96, 1, 0,  96 },
-        { 144,   0, 1, 0,  96 },
-        { 144,  96, 1, 1,  96 },
-        { 144,  96, 0, 0,  96 }
+        { 144,  96, 1, 0, 43 },
+        { 144, 144, 1, 0, 64 },
+        { 144, 192, 1, 0, 85 },
+        { 144, 216, 1, 0, 96 },
+        {   0,  96, 1, 0, 43 },
+        { 144,   0, 1, 0, 96 },
+        { 144,  96, 1, 1, 43 },
+        { 144,  96, 0, 0, 43 }
     };
     for ( size_t i = 0; i < STD_ARRAYLEN(aCases); ++i )
     {
@@ -1183,6 +1389,309 @@ TEST(jonesConfig, LargerPresentationPaddingStillWinsOverTheControlMinimum)
     TEST_ASSERT_EQUAL_INT(104, jonesConfigTest_columns[1].cx);
 }
 
+TEST(jonesConfig, TrackbarThumbLengthScalesAndStaysInsideTheSlider)
+{
+    TEST_ASSERT_EQUAL_INT(45, jonesConfig_CalcTrackbarThumbLength(20, 2.25, 100));
+    TEST_ASSERT_EQUAL_INT(32, jonesConfig_CalcTrackbarThumbLength(21, 1.5, 100));
+    TEST_ASSERT_EQUAL_INT(50, jonesConfig_CalcTrackbarThumbLength(20, 6.0, 50));  // limited to the slider
+    TEST_ASSERT_EQUAL_INT(1, jonesConfig_CalcTrackbarThumbLength(20, 0.01, 50));  // never zero
+    TEST_ASSERT_EQUAL_INT(60, jonesConfig_CalcTrackbarThumbLength(20, 3.0, 0));   // unknown extent
+}
+
+TEST(jonesConfig, ControlImageScaleFollowsTheDialogDpiAndTheAppliedLayoutScale)
+{
+    jonesConfigTest_ResetLayout();
+    JonesDialogFontInfo fontInfo = { 0 };
+
+    // Windowed layouts at or above 1.0 keep the template control sizes
+    fontInfo.bWindowMode = 1;
+    fontInfo.fontScaleX = fontInfo.fontScaleY = 1.6f;
+    fontInfo.dialogID = 112;
+    TEST_ASSERT_FLOAT_WITHIN(0.000001f, 1.5f, (float)jonesConfig_GetControlImageScale(JONESCONFIGTEST_DIALOG, &fontInfo));
+
+    // Smaller windowed layouts are applied to the controls
+    fontInfo.fontScaleX = fontInfo.fontScaleY = 0.8f;
+    TEST_ASSERT_FLOAT_WITHIN(0.000001f, 1.2f, (float)jonesConfig_GetControlImageScale(JONESCONFIGTEST_DIALOG, &fontInfo));
+
+    // Fullscreen layouts are always applied
+    fontInfo.bWindowMode = 0;
+    fontInfo.fontScaleX = fontInfo.fontScaleY = 2.0f;
+    TEST_ASSERT_FLOAT_WITHIN(0.000001f, 3.0f, (float)jonesConfig_GetControlImageScale(JONESCONFIGTEST_DIALOG, &fontInfo));
+
+    // The file dialog pass of the load/save dialogs doesn't lay out the controls
+    fontInfo.dialogID = JONESCONFIG_NOFONTSCALE(159);
+    TEST_ASSERT_FLOAT_WITHIN(0.000001f, 1.5f, (float)jonesConfig_GetControlImageScale(JONESCONFIGTEST_DIALOG, &fontInfo));
+
+    // A failed DPI query uses 96 DPI
+    jonesConfigTest_dpi = 0;
+    fontInfo.dialogID = 112;
+    fontInfo.bWindowMode = 1;
+    fontInfo.fontScaleX = fontInfo.fontScaleY = 1.0f;
+    TEST_ASSERT_FLOAT_WITHIN(0.000001f, 1.0f, (float)jonesConfig_GetControlImageScale(JONESCONFIGTEST_DIALOG, &fontInfo));
+}
+
+TEST(jonesConfig, DialogImageScaleIsKeptOnTheDialogAndUpdatedByLaterLayoutPasses)
+{
+    jonesConfigTest_ResetLayout();
+
+    // Before the layout pass only the dialog DPI is known
+    TEST_ASSERT_FLOAT_WITHIN(0.000001f, 1.5f, (float)jonesConfig_GetDialogImageScale(JONESCONFIGTEST_DIALOG));
+
+    jonesConfigTest_SaveLayoutScale(0, 2.0f, 190);
+    TEST_ASSERT_FLOAT_WITHIN(0.000001f, 3.0f, (float)jonesConfig_GetDialogImageScale(JONESCONFIGTEST_DIALOG));
+
+    jonesConfigTest_SaveLayoutScale(0, 0.5f, 190);
+    TEST_ASSERT_FLOAT_WITHIN(0.000001f, 0.75f, (float)jonesConfig_GetDialogImageScale(JONESCONFIGTEST_DIALOG));
+
+    // The file dialog pass doesn't overwrite it
+    jonesConfigTest_SaveLayoutScale(0, 4.0f, JONESCONFIG_NOFONTSCALE(159));
+    TEST_ASSERT_FLOAT_WITHIN(0.000001f, 0.75f, (float)jonesConfig_GetDialogImageScale(JONESCONFIGTEST_DIALOG));
+
+    // One hook per dialog, holding the value as its data
+    TEST_ASSERT_EQUAL_UINT(1, jonesConfigTest_numSubclasses);
+    TEST_ASSERT_EQUAL_PTR(JONESCONFIGTEST_DIALOG, jonesConfigTest_aSubclasses[0].hWnd);
+    TEST_ASSERT_EQUAL_PTR(jonesConfig_DataSubclassProc, jonesConfigTest_aSubclasses[0].pfnSubclass);
+}
+
+TEST(jonesConfig, CheckBoxBoxFollowsTheFontSizeAndTheButtonAlignment)
+{
+    const RECT client = { 0, 0, 200, 40 };
+    RECT box;
+    int gap = -1;
+
+    jonesConfig_CalcCheckBoxLayout(&client, BS_AUTOCHECKBOX, 20, &box, &gap);
+    TEST_ASSERT_EQUAL_INT(0, box.left);
+    TEST_ASSERT_EQUAL_INT(10, box.top);   // vertically centered by default
+    TEST_ASSERT_EQUAL_INT(20, box.right);
+    TEST_ASSERT_EQUAL_INT(30, box.bottom);
+    TEST_ASSERT_EQUAL_INT(6, gap);
+
+    jonesConfig_CalcCheckBoxLayout(&client, BS_AUTOCHECKBOX, 13, &box, &gap);
+    TEST_ASSERT_EQUAL_INT(13, box.right - box.left);
+    TEST_ASSERT_EQUAL_INT(4, gap);        // native gap for the 13px box
+
+    jonesConfig_CalcCheckBoxLayout(&client, BS_AUTORADIOBUTTON | BS_RIGHTBUTTON, 20, &box, &gap);
+    TEST_ASSERT_EQUAL_INT(180, box.left);
+    TEST_ASSERT_EQUAL_INT(200, box.right);
+
+    jonesConfig_CalcCheckBoxLayout(&client, BS_AUTOCHECKBOX | BS_TOP, 20, &box, &gap);
+    TEST_ASSERT_EQUAL_INT(0, box.top);
+    jonesConfig_CalcCheckBoxLayout(&client, BS_AUTOCHECKBOX | BS_BOTTOM, 20, &box, &gap);
+    TEST_ASSERT_EQUAL_INT(20, box.top);
+    TEST_ASSERT_EQUAL_INT(40, box.bottom);
+
+    // Never larger than the control, and the control height without a font
+    jonesConfig_CalcCheckBoxLayout(&client, BS_AUTOCHECKBOX, 60, &box, &gap);
+    TEST_ASSERT_EQUAL_INT(40, box.bottom - box.top);
+    jonesConfig_CalcCheckBoxLayout(&client, BS_AUTOCHECKBOX, 0, &box, &gap);
+    TEST_ASSERT_EQUAL_INT(40, box.bottom - box.top);
+    const RECT narrow = { 0, 0, 10, 40 };
+    jonesConfig_CalcCheckBoxLayout(&narrow, BS_AUTOCHECKBOX, 20, &box, &gap);
+    TEST_ASSERT_EQUAL_INT(10, box.right - box.left);
+}
+
+TEST(jonesConfig, ValueColumnFitsItsTextAndKeepsRoomForTheActionNames)
+{
+    TEST_ASSERT_EQUAL_INT(116, jonesConfig_CalcValueColumnWidth(100, 16, 500));
+    TEST_ASSERT_EQUAL_INT(16, jonesConfig_CalcValueColumnWidth(0, 16, 500));
+    TEST_ASSERT_EQUAL_INT(300, jonesConfig_CalcValueColumnWidth(400, 16, 500)); // 40% kept for the names
+    TEST_ASSERT_EQUAL_INT(0, jonesConfig_CalcValueColumnWidth(100, 16, 0));
+}
+
+TEST(jonesConfig, GamePlayButtonsMoveScalesTheOffsetsAndClearsTheLastCheckBox)
+{
+    int moveY = 0, growY = 0;
+
+    // 96 DPI keeps the original 48px button offset and 66px dialog growth
+    jonesConfig_CalcGamePlayButtonsMove(23, 96, 0, &moveY, &growY);
+    TEST_ASSERT_EQUAL_INT(11 + 48, moveY);
+    TEST_ASSERT_EQUAL_INT(66, growY);
+
+    // Scaled by the dialog DPI
+    jonesConfig_CalcGamePlayButtonsMove(52, 216, 0, &moveY, &growY);
+    TEST_ASSERT_EQUAL_INT(26 + 108, moveY);
+    TEST_ASSERT_EQUAL_INT(149, growY);
+
+    // Further down when the last check box would still overlap; the dialog grows by the extra move
+    jonesConfig_CalcGamePlayButtonsMove(52, 216, 200, &moveY, &growY);
+    TEST_ASSERT_EQUAL_INT(200, moveY);
+    TEST_ASSERT_EQUAL_INT(149 + 200 - 134, growY);
+}
+
+TEST(jonesConfig, OnlyBlackAndWhiteMasksBecomeTransparency)
+{
+    const uint32_t aBinary[] = { 0x00000000u, 0x00FFFFFFu, 0xFF000000u, 0xFFFFFFFFu }; // alpha byte is ignored
+    TEST_ASSERT_TRUE(jonesConfig_IsBinaryMask(aBinary, 4));
+
+    // The IQ image draws its points into the mask as a color filter
+    const uint32_t aColor[] = { 0x00000000u, 0x00808080u, 0x00FFFFFFu };
+    TEST_ASSERT_FALSE(jonesConfig_IsBinaryMask(aColor, 3));
+
+    uint32_t aImage[] = { 0x00112233u, 0x00445566u };
+    const uint32_t aMask[] = { 0x00000000u, 0x00FFFFFFu };
+    jonesConfig_ApplyTransparencyMask(aImage, aMask, 2);
+    TEST_ASSERT_EQUAL_HEX32(0xFF112233u, aImage[0]); // black mask: opaque
+    TEST_ASSERT_EQUAL_HEX32(0x00000000u, aImage[1]); // white mask: transparent
+}
+
+TEST(jonesConfig, PremultipliedAlphaScalesTheColorByTheAlpha)
+{
+    uint32_t aPixels[] = { 0x80FF0000u, 0xFF00FF00u, 0x00FFFFFFu };
+    jonesConfig_PremultiplyAlpha(aPixels, 3);
+    TEST_ASSERT_EQUAL_HEX32(0x80800000u, aPixels[0]);
+    TEST_ASSERT_EQUAL_HEX32(0xFF00FF00u, aPixels[1]);
+    TEST_ASSERT_EQUAL_HEX32(0x00000000u, aPixels[2]);
+}
+
+TEST(jonesConfig, IconEdgesBlendIntoTheMatteOrKeepTheirAlpha)
+{
+    // Transparent, opaque red and half transparent red
+    uint32_t aPixels[] = { 0x00FFFFFFu, 0xFFFF0000u, 0x80FF0000u };
+    uint8_t aMask[2] = { 0 };
+    jonesConfig_ApplyIconMatte(aPixels, 3, 1, RGB(255, 255, 255), aMask, 2);
+    TEST_ASSERT_EQUAL_HEX32(0x00000000u, aPixels[0]); // black under the mask
+    TEST_ASSERT_EQUAL_HEX32(0xFFFF0000u, aPixels[1]);
+    TEST_ASSERT_EQUAL_HEX32(0xFFFF7F7Fu, aPixels[2]); // blended over white and made opaque
+    TEST_ASSERT_EQUAL_HEX8(0x80, aMask[0]);           // only the first pixel is transparent
+
+    uint32_t aAlpha[] = { 0x00FFFFFFu, 0x7FFF0000u, 0x80FF0000u };
+    uint8_t aAlphaMask[2] = { 0 };
+    jonesConfig_ApplyIconMatte(aAlpha, 3, 1, CLR_NONE, aAlphaMask, 2);
+    TEST_ASSERT_EQUAL_HEX32(0x7FFF0000u, aAlpha[1]); // alpha kept
+    TEST_ASSERT_EQUAL_HEX32(0x80FF0000u, aAlpha[2]);
+    TEST_ASSERT_EQUAL_HEX8(0xC0, aAlphaMask[0]);     // below half alpha is transparent in the mask
+}
+
+TEST(jonesConfig, AreaResampleAveragesInPremultipliedAlpha)
+{
+    // A transparent pixel doesn't darken its opaque neighbor
+    const uint32_t aQuad[] = { 0xFFFF0000u, 0x00000000u, 0x00000000u, 0x00000000u };
+    uint32_t out = 0;
+    jonesConfig_AreaResample(aQuad, 2, 2, &out, 1, 1);
+    TEST_ASSERT_EQUAL_HEX32(0x40FF0000u, out);
+
+    // Fractional coverage
+    const uint32_t aRow[] = { 0xFF000000u, 0xFFFFFFFFu, 0xFF000000u };
+    uint32_t aOut[2] = { 0 };
+    jonesConfig_AreaResample(aRow, 3, 1, aOut, 2, 1);
+    TEST_ASSERT_EQUAL_HEX32(0xFF555555u, aOut[0]);
+    TEST_ASSERT_EQUAL_HEX32(0xFF555555u, aOut[1]);
+
+    // Same size copies
+    uint32_t copy = 0;
+    const uint32_t pixel = 0xC0336699u;
+    jonesConfig_AreaResample(&pixel, 1, 1, &copy, 1, 1);
+    TEST_ASSERT_EQUAL_HEX32(pixel, copy);
+}
+
+static void jonesConfigTest_FillPixels(uint32_t* pPixels, int count, uint32_t color)
+{
+    for ( int i = 0; i < count; ++i )
+    {
+        pPixels[i] = color;
+    }
+}
+
+static void jonesConfigTest_AssertPixels(const uint32_t* pPixels, int count, uint32_t color)
+{
+    for ( int i = 0; i < count; ++i )
+    {
+        TEST_ASSERT_EQUAL_HEX32(color, pPixels[i]);
+    }
+}
+
+TEST(jonesConfig, UpscaledPixelsKeepFlatAreasAndTransparency)
+{
+    jonesConfigTest_ResetLayout();
+    uint32_t aSrc[16];
+
+    // Flat color stays exactly the same when enlarged, kept at the same size, or enlarged past 6x
+    jonesConfigTest_FillPixels(aSrc, 16, 0xFF336699u);
+    static const int aSizes[] = { 10, 4, 3, 30 };
+    for ( size_t i = 0; i < STD_ARRAYLEN(aSizes); ++i )
+    {
+        uint32_t* pDst = jonesConfig_UpscalePixels(aSrc, 4, 4, aSizes[i], aSizes[i], true);
+        TEST_ASSERT_NOT_NULL(pDst);
+        jonesConfigTest_AssertPixels(pDst, aSizes[i] * aSizes[i], 0xFF336699u);
+        free(pDst);
+    }
+
+    // Transparency stays transparent
+    jonesConfigTest_FillPixels(aSrc, 16, 0x00000000u);
+    uint32_t* pDst = jonesConfig_UpscalePixels(aSrc, 4, 4, 12, 12, true);
+    TEST_ASSERT_NOT_NULL(pDst);
+    jonesConfigTest_AssertPixels(pDst, 12 * 12, 0x00000000u);
+    free(pDst);
+
+    // Images without alpha come out opaque
+    jonesConfigTest_FillPixels(aSrc, 16, 0x00336699u);
+    pDst = jonesConfig_UpscalePixels(aSrc, 4, 4, 8, 8, false);
+    TEST_ASSERT_NOT_NULL(pDst);
+    jonesConfigTest_AssertPixels(pDst, 8 * 8, 0xFF336699u);
+    free(pDst);
+}
+
+TEST(jonesConfig, UpscalingSmoothsJaggedEdgesAlsoAtTheSameSize)
+{
+    jonesConfigTest_ResetLayout();
+
+    // A staircase edge between an opaque and a transparent half
+    uint32_t aSrc[8 * 8];
+    for ( int y = 0; y < 8; ++y )
+    {
+        for ( int x = 0; x < 8; ++x )
+        {
+            aSrc[y * 8 + x] = x <= y ? 0xFF000000u : 0x00000000u;
+        }
+    }
+
+    uint32_t* pDst = jonesConfig_UpscalePixels(aSrc, 8, 8, 8, 8, true);
+    TEST_ASSERT_NOT_NULL(pDst);
+    int numSoft = 0;
+    for ( int i = 0; i < 64; ++i )
+    {
+        uint32_t a = pDst[i] >> 24;
+        numSoft += a != 0 && a != 0xFF;
+    }
+    free(pDst);
+    TEST_ASSERT_GREATER_THAN_INT(0, numSoft); // the diagonal got partially transparent pixels
+}
+
+TEST(jonesConfig, UpscalingIsSkippedWhenDisabledOrForMuchSmallerImages)
+{
+    jonesConfigTest_ResetLayout();
+    uint32_t aSrc[64];
+    jonesConfigTest_FillPixels(aSrc, 64, 0xFF336699u);
+
+    // Below half the size Windows picks a smaller resource image
+    TEST_ASSERT_NULL(jonesConfig_UpscalePixels(aSrc, 8, 8, 3, 3, true));
+    uint32_t* pDst = jonesConfig_UpscalePixels(aSrc, 8, 8, 4, 4, true);
+    TEST_ASSERT_NOT_NULL(pDst);
+    free(pDst);
+
+    TEST_ASSERT_NULL(jonesConfig_UpscalePixels(aSrc, 8, 8, 0, 8, true));
+    TEST_ASSERT_NULL(jonesConfig_UpscalePixels(NULL, 8, 8, 16, 16, true));
+
+    // The opt-out sends every image back to Windows' resizing
+    jonesConfigTest_upscalingDisabled = 1;
+    TEST_ASSERT_NULL(jonesConfig_UpscalePixels(aSrc, 8, 8, 16, 16, true));
+    TEST_ASSERT_FALSE(jonesConfig_IsImageUpscalingEnabled());
+}
+
+TEST(jonesConfig, EnlargedMaskedImageFallsBackToTheOriginalDrawingWhenItCantBeRead)
+{
+    jonesConfigTest_ResetLayout();
+    // The test DCs can't be read, so upscaling fails and the original stretch draws the image
+    jonesConfigTest_controlRect = (RECT){ 0, 0, 96, 80 };
+    TEST_ASSERT_TRUE(jonesConfig_DrawImageOnDialogItem(JONESCONFIGTEST_DIALOG,
+        JONESCONFIGTEST_SOURCE_DC, JONESCONFIGTEST_DEST_DC, 1182, JONESCONFIGTEST_IMAGE, JONESCONFIGTEST_MASK));
+    TEST_ASSERT_EQUAL_UINT(2, jonesConfigTest_numStretches);
+    TEST_ASSERT_EQUAL_UINT32(SRCAND, jonesConfigTest_stretches[0].operation);
+    TEST_ASSERT_EQUAL_UINT32(SRCPAINT, jonesConfigTest_stretches[1].operation);
+    TEST_ASSERT_EQUAL_INT(96, jonesConfigTest_stretches[1].width);
+    TEST_ASSERT_EQUAL_INT(80, jonesConfigTest_stretches[1].height);
+}
+
 TEST_GROUP_RUNNER(jonesConfig)
 {
     RUN_TEST_CASE(jonesConfig, EightBindingsFitTheActionRow);
@@ -1203,16 +1712,31 @@ TEST_GROUP_RUNNER(jonesConfig)
     RUN_TEST_CASE(jonesConfig, NarrowAndEmptyStoreListsNeverProduceNegativeColumnWidths);
     RUN_TEST_CASE(jonesConfig, DialogBitmapMaskAndImageUseTheFinalControlBounds);
     RUN_TEST_CASE(jonesConfig, UnmaskedDialogBitmapReturnsTheGdiCopyResult);
-    RUN_TEST_CASE(jonesConfig, StoreIconsKeepTheirNativeSizeOutsideStartedFullscreen);
+    RUN_TEST_CASE(jonesConfig, StoreIconsWithoutALayoutScaleFollowTheDialogDpiAndDontQueryTheMonitor);
+    RUN_TEST_CASE(jonesConfig, StoreIconsScaleWithTheDialogDpiAndTheAppliedLayoutScale);
     RUN_TEST_CASE(jonesConfig, StoreColumnsReserveTheWidestPriceWhenItsHeadingIsMissing);
     RUN_TEST_CASE(jonesConfig, FailedStoreClientAndTextQueriesKeepColumnWidthsBounded);
     RUN_TEST_CASE(jonesConfig, FullscreenDialogDpiChangesDoNotApplyTheDesktopScaleTwice);
     RUN_TEST_CASE(jonesConfig, LargerDialogDpiAlsoNormalizesAgainstTheSavedDesktopDpi);
     RUN_TEST_CASE(jonesConfig, MissingSavedDesktopDpiFallsBackToTheDialogDpi);
-    RUN_TEST_CASE(jonesConfig, ExitImageUsesDesktopDpiSizeAndKeepsItsAxesAndOwnerDrawStyle);
+    RUN_TEST_CASE(jonesConfig, ExitImageScalesWithTheDialogDpiAndKeepsItsAxesAndOwnerDrawStyle);
     RUN_TEST_CASE(jonesConfig, StoreColumnsKeepNativeControlInsetsAtSmallFullscreenResolutions);
     RUN_TEST_CASE(jonesConfig, StoreColumnInsetsUseControlDpiWithA96DpiFailureFallback);
     RUN_TEST_CASE(jonesConfig, LargerPresentationPaddingStillWinsOverTheControlMinimum);
+    RUN_TEST_CASE(jonesConfig, TrackbarThumbLengthScalesAndStaysInsideTheSlider);
+    RUN_TEST_CASE(jonesConfig, ControlImageScaleFollowsTheDialogDpiAndTheAppliedLayoutScale);
+    RUN_TEST_CASE(jonesConfig, DialogImageScaleIsKeptOnTheDialogAndUpdatedByLaterLayoutPasses);
+    RUN_TEST_CASE(jonesConfig, CheckBoxBoxFollowsTheFontSizeAndTheButtonAlignment);
+    RUN_TEST_CASE(jonesConfig, ValueColumnFitsItsTextAndKeepsRoomForTheActionNames);
+    RUN_TEST_CASE(jonesConfig, GamePlayButtonsMoveScalesTheOffsetsAndClearsTheLastCheckBox);
+    RUN_TEST_CASE(jonesConfig, OnlyBlackAndWhiteMasksBecomeTransparency);
+    RUN_TEST_CASE(jonesConfig, PremultipliedAlphaScalesTheColorByTheAlpha);
+    RUN_TEST_CASE(jonesConfig, IconEdgesBlendIntoTheMatteOrKeepTheirAlpha);
+    RUN_TEST_CASE(jonesConfig, AreaResampleAveragesInPremultipliedAlpha);
+    RUN_TEST_CASE(jonesConfig, UpscaledPixelsKeepFlatAreasAndTransparency);
+    RUN_TEST_CASE(jonesConfig, UpscalingSmoothsJaggedEdgesAlsoAtTheSameSize);
+    RUN_TEST_CASE(jonesConfig, UpscalingIsSkippedWhenDisabledOrForMuchSmallerImages);
+    RUN_TEST_CASE(jonesConfig, EnlargedMaskedImageFallsBackToTheOriginalDrawingWhenItCantBeRead);
 }
 
 static void JonesConfigTest_RunAllTests(void)

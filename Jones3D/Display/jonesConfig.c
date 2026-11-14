@@ -45,6 +45,8 @@
 #include <math.h>
 #include <windowsx.h>
 
+#include <xbrz_capi.h> // Added: Dialog image upscaling
+
 // Joystick AXIS key IDs
 #define JONESCONFIG_JOYAXISKID_UP       0x8000u
 #define JONESCONFIG_JOYAXISKID_RIGHT    0x8001u
@@ -59,6 +61,10 @@
 #define JONESCONFIG_CONTROLSTRING_MAXLEN 256u
 
 #define JONESCONFIG_NOFONTSCALEMASK 1119
+
+// Added: Control ID of the "Smooth Dialog Images" check box in the advanced display settings dialog,
+//        outside the range of the dialog template IDs
+#define JONESCONFIG_IDC_UPSCALEDIALOGIMAGES 1300
 #define JONESCONFIG_NOFONTSCALE(dlgID) MAKELONG(dlgID, JONESCONFIG_NOFONTSCALEMASK)
 
 typedef struct sJonesConfigControlAction
@@ -885,6 +891,8 @@ void J3DAPI jonesConfig_FreeControlScheme(JonesControlsScheme* pScheme);
 void J3DAPI jonesConfig_FreeControlConfigEntry(JonesControlsConfig* pConfig);
 
 static float jonesConfig_GetFullscreenDialogScale(HWND hWnd, uint32_t* pDesktopWidth, uint32_t* pDesktopHeight);
+static HICON jonesConfig_LoadScaledIcon(HMODULE hModule, LPCSTR pName, int width, int height, COLORREF matteColor); // Added
+static void jonesConfig_FreeScaledMaskedImages(void); // Added
 HFONT J3DAPI jonesConfig_InitDialog(HWND hWnd, HFONT hFont, int dlgID);
 HFONT J3DAPI jonesConfig_CreateDialogFont(HWND hWnd, int bWindowMode, int dlgResNum, float* pFontScale);
 void J3DAPI jonesConfig_ResetDialogFont(HWND hWndParent, HFONT hFont);
@@ -1403,6 +1411,7 @@ int jonesConfig_InitKeyActions(void)
 void jonesConfig_Shutdown(void)
 {
     jonesConfig_FreeControlConfigEntry(&jonesConfig_controlOptions_curControlConfig);
+    jonesConfig_FreeScaledMaskedImages(); // Added
 
     for ( size_t i = 0; i < 2; i++ ) // TODO: Bug? Why only 2?
     {
@@ -1862,7 +1871,7 @@ BOOL CALLBACK jonesConfig_MessageDialogProc(HWND hwnd, UINT uMsg, WPARAM wParam,
                 {
                     HICON hCurIcon = Static_GetIcon(hIconCtrl, NULL);
                     Static_SetIcon(hIconCtrl, pData->hPrevIcon);
-                    DeleteObject(hCurIcon);
+                    DestroyIcon(hCurIcon); // Fixed: Was DeleteObject
                 }
             }
 
@@ -1893,16 +1902,45 @@ void J3DAPI jonesConfig_InitMessageDialogIcon(HWND hWnd, JonesMessageDialogData*
     HINSTANCE hInstance = (HINSTANCE)GetWindowLongPtr(hWnd, GWL_HINSTANCE);
     if ( pData )
     {
-        HANDLE hImage = LoadImage(hInstance, MAKEINTRESOURCE(pData->iconID), IMAGE_ICON, 64, 64, LR_DEFAULTCOLOR);
         HWND hImageCtrl = GetDlgItem(hWnd, 1201);
+
+        // Fixed: The 64px icon didn't follow the DPI. Scale it by the dialog DPI; the second
+        //        call, after the layout pass, uses the size the layout gave the control.
+        UINT dpi = GetDpiForWindow(hWnd);
+        int iconSize = MulDiv(64, dpi ? dpi : USER_DEFAULT_SCREEN_DPI, USER_DEFAULT_SCREEN_DPI);
+        if ( hImageCtrl && pData->hPrevIcon )
+        {
+            RECT rect;
+            GetClientRect(hImageCtrl, &rect);
+            int size = min(rect.right - rect.left, rect.bottom - rect.top);
+            if ( size > 0 )
+            {
+                iconSize = size;
+            }
+        }
+
+        // Fixed: Upscale the icon with xBRZ instead of stretching it
+        HANDLE hImage = jonesConfig_LoadScaledIcon(hInstance, MAKEINTRESOURCE(pData->iconID), iconSize, iconSize, /*matteColor=*/CLR_NONE);
         if ( hImageCtrl )
         {
             if ( hImage )
             {
-                HICON hIcon = Static_GetIcon(hImageCtrl, 0);
-                Static_SetIcon(hImageCtrl, hImage);
-                pData->hPrevIcon = hIcon;
+                // Fixed: Keep the template icon in hPrevIcon. The second call overwrote it with the
+                //        icon loaded by the first call, so WM_DESTROY restored and leaked that one.
+                HICON hIcon = Static_SetIcon(hImageCtrl, hImage);
+                if ( !pData->hPrevIcon )
+                {
+                    pData->hPrevIcon = hIcon;
+                }
+                else if ( hIcon && hIcon != pData->hPrevIcon )
+                {
+                    DestroyIcon(hIcon); // Fixed: Free the icon loaded by the first call
+                }
             }
+        }
+        else if ( hImage )
+        {
+            DestroyIcon((HICON)hImage); // Fixed: Free unused icon
         }
     }
 }
@@ -1995,42 +2033,38 @@ int J3DAPI jonesConfig_SetTextControl(HWND hDlg, HWND hTextCtrl, const char* aTe
     LONG yOffset = numLines * (jonesConfig_textMetric.tmExternalLeading + jonesConfig_textMetric.tmHeight) - (rectWnd.bottom - rectWnd.top);
     if ( yOffset > 0 )
     {
-        int heightCaption = GetSystemMetrics(SM_CYCAPTION);
-        int frameSize = 2 * GetSystemMetrics(SM_CYDLGFRAME);
-
+        // Fixed: Convert the control positions to dialog client coordinates directly. The
+        //        original subtracted the system caption and frame sizes, which are for the
+        //        system DPI and not the dialog DPI (fullscreen), and ignored the frame width in X.
         HWND hOkBtn = GetDlgItem(hDlg, 1);
         RECT rectBtn;
         GetWindowRect(hOkBtn, &rectBtn);
-        rectBtn.top += yOffset;
+        MapWindowPoints(HWND_DESKTOP, hDlg, (LPPOINT)&rectBtn, 2);
+        OffsetRect(&rectBtn, 0, yOffset);
+
+        RECT rectText = rectWnd;
+        MapWindowPoints(HWND_DESKTOP, hDlg, (LPPOINT)&rectText, 2);
+        rectText.bottom += yOffset;
+
+        HWND hNoBtn = GetDlgItem(hDlg, 2);
+        RECT rectNoBtn = { 0 };
+        if ( hNoBtn )
+        {
+            GetWindowRect(hNoBtn, &rectNoBtn);
+            MapWindowPoints(HWND_DESKTOP, hDlg, (LPPOINT)&rectNoBtn, 2);
+            OffsetRect(&rectNoBtn, 0, yOffset);
+        }
 
         RECT rectDlg;
         GetWindowRect(hDlg, &rectDlg);
-
-        int btnX = rectBtn.left - rectDlg.left;
-        int btnY = rectBtn.top - rectDlg.top - (frameSize + heightCaption);
-
-        int textX = rectWnd.left - rectDlg.left;
-        int textY = rectWnd.top - rectDlg.top - (frameSize + heightCaption);
-
         rectDlg.bottom += yOffset;
-        rectBtn.bottom += yOffset;
-        rectWnd.bottom += yOffset;
 
         MoveWindow(hDlg, dlgX, dlgY, rectDlg.right - rectDlg.left, rectDlg.bottom - rectDlg.top, 1);
-        MoveWindow(hOkBtn, btnX, btnY, rectBtn.right - rectBtn.left, rectBtn.bottom - rectBtn.top, 1);
-        MoveWindow(hTextCtrl, textX, textY, rectWnd.right - rectWnd.left, rectWnd.bottom - rectWnd.top, 1);
-
-        HWND hNoBtn = GetDlgItem(hDlg, 2);
+        MoveWindow(hOkBtn, rectBtn.left, rectBtn.top, rectBtn.right - rectBtn.left, rectBtn.bottom - rectBtn.top, 1);
+        MoveWindow(hTextCtrl, rectText.left, rectText.top, rectText.right - rectText.left, rectText.bottom - rectText.top, 1);
         if ( hNoBtn )
         {
-            RECT rectNoBtn;
-            GetWindowRect(hNoBtn, &rectNoBtn);
-            rectNoBtn.top += yOffset;
-
-            int btnNoY = rectNoBtn.top - rectDlg.top - (frameSize + heightCaption);
-
-            rectNoBtn.bottom += yOffset;
-            MoveWindow(hNoBtn, rectNoBtn.left - rectDlg.left, btnNoY, rectNoBtn.right - rectNoBtn.left, rectNoBtn.bottom - rectNoBtn.top, 1);
+            MoveWindow(hNoBtn, rectNoBtn.left, rectNoBtn.top, rectNoBtn.right - rectNoBtn.left, rectNoBtn.bottom - rectNoBtn.top, 1);
         }
     }
 
@@ -2972,6 +3006,75 @@ void J3DAPI jonesConfig_BindJoystickControl(SithControlFunction functionId, size
     }
 }
 
+static double jonesConfig_GetControlImageScale(HWND hCtrl, const JonesDialogFontInfo* pFontInfo);
+
+// Added: Hooks installed by the layout pass use comctl32 window subclassing (SetWindowSubclass).
+//        Each hook keeps its data as the subclass reference data and removes itself when its
+//        window is destroyed, so no window properties are left behind.
+#define JONESCONFIG_SUBCLASSID 0x4A334421u
+
+// Keeps a value on a window (slider native thumb length, dialog layout scale)
+static LRESULT CALLBACK jonesConfig_DataSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData)
+{
+    J3D_UNUSED(dwRefData);
+    if ( uMsg == WM_NCDESTROY )
+    {
+        RemoveWindowSubclass(hWnd, jonesConfig_DataSubclassProc, uIdSubclass);
+    }
+    return DefSubclassProc(hWnd, uMsg, wParam, lParam);
+}
+
+static bool jonesConfig_GetWindowData(HWND hWnd, DWORD_PTR* pData)
+{
+    *pData = 0;
+    return hWnd && GetWindowSubclass(hWnd, jonesConfig_DataSubclassProc, JONESCONFIG_SUBCLASSID, pData);
+}
+
+static bool jonesConfig_SetWindowData(HWND hWnd, DWORD_PTR data)
+{
+    // Updates the data if the hook is already installed
+    return hWnd && SetWindowSubclass(hWnd, jonesConfig_DataSubclassProc, JONESCONFIG_SUBCLASSID, data);
+}
+
+// Added: DPI at which the fixed-size store icon and exit image look right with the dialog
+//        text; at other DPIs they're scaled together with the dialog controls.
+#define JONESCONFIG_IMAGE_REFDPI 216
+
+// Added: Saves the scale applied to the dialog controls by the layout pass,
+//        for images created after the pass (e.g. store item icons).
+static void jonesConfig_SaveDialogImageScale(HWND hDlg, const JonesDialogFontInfo* pFontInfo)
+{
+    // Not for the file dialog of load/save dialogs; it doesn't lay out its controls
+    if ( HIWORD(pFontInfo->dialogID) == JONESCONFIG_NOFONTSCALEMASK )
+    {
+        return;
+    }
+
+    float scale = (float)jonesConfig_GetControlImageScale(hDlg, pFontInfo);
+    uint32_t bits;
+    memcpy(&bits, &scale, sizeof(bits));
+    jonesConfig_SetWindowData(hDlg, (DWORD_PTR)bits);
+}
+
+static double jonesConfig_GetDialogImageScale(HWND hDlg)
+{
+    DWORD_PTR data = 0;
+    uint32_t bits = jonesConfig_GetWindowData(hDlg, &data) ? (uint32_t)data : 0u;
+    if ( bits )
+    {
+        float scale;
+        memcpy(&scale, &bits, sizeof(scale));
+        if ( scale > 0.0f )
+        {
+            return scale;
+        }
+    }
+
+    // Not laid out; use only the dialog DPI
+    UINT dpi = GetDpiForWindow(hDlg);
+    return (double)(dpi ? dpi : USER_DEFAULT_SCREEN_DPI) / USER_DEFAULT_SCREEN_DPI;
+}
+
 HFONT J3DAPI jonesConfig_InitDialog(HWND hWnd, HFONT hFont, int dlgID)
 {
     JonesDialogFontInfo fontInfo;
@@ -3004,6 +3107,7 @@ HFONT J3DAPI jonesConfig_InitDialog(HWND hWnd, HFONT hFont, int dlgID)
 
     fontInfo.dialogID = dlgID; // Use the original dlgID with potential NOFONTSCALE mask
     EnumChildWindows(hWnd, jonesConfig_SetPositionAndTextCallback, (LPARAM)&fontInfo);
+    jonesConfig_SaveDialogImageScale(hWnd, &fontInfo); // Added
     return fontInfo.hFont;
 }
 
@@ -3252,6 +3356,1172 @@ BOOL CALLBACK jonesConfig_ResetWindowFontCallback(HWND hWnd, LPARAM lparam)
     return TRUE;
 }
 
+// Added: Returns the scale from 96-DPI pixels to the control's pixels after the layout
+//        pass, i.e. the dialog DPI scale times the layout scale applied to the control
+//        by jonesConfig_SetWindowFontAndPosition.
+static double jonesConfig_GetControlImageScale(HWND hCtrl, const JonesDialogFontInfo* pFontInfo)
+{
+    UINT dpi = GetDpiForWindow(hCtrl);
+    if ( !dpi )
+    {
+        dpi = USER_DEFAULT_SCREEN_DPI;
+    }
+
+    double scale = (double)dpi / USER_DEFAULT_SCREEN_DPI;
+    if ( (!pFontInfo->bWindowMode || pFontInfo->fontScaleX < 1.0f || pFontInfo->fontScaleY < 1.0f)
+        && HIWORD(pFontInfo->dialogID) != JONESCONFIG_NOFONTSCALEMASK )
+    {
+        scale *= pFontInfo->fontScaleX; // Control height was scaled by fontScaleX
+    }
+    return scale;
+}
+
+// Added: Pure layout and pixel helpers of the DPI scaling and image upscaling below;
+//        kept free of window and GDI calls so they can be unit tested.
+
+// Thumb length of a classic slider scaled from its native length, limited to the slider extent
+static LONG jonesConfig_CalcTrackbarThumbLength(UINT baseLength, double scale, LONG extent)
+{
+    LONG length = (LONG)floor((double)baseLength * scale + 0.5);
+    if ( extent > 0 && length > extent )
+    {
+        length = extent;
+    }
+    if ( length < 1 )
+    {
+        length = 1;
+    }
+    return length;
+}
+
+// Box of a check box or radio button sized to the control font, and the gap before its text
+static void jonesConfig_CalcCheckBoxLayout(const RECT* pClient, LONG style, int fontHeight, RECT* pBox, int* pGap)
+{
+    int width  = pClient->right - pClient->left;
+    int height = pClient->bottom - pClient->top;
+
+    int boxSize = fontHeight > 0 ? fontHeight : height;
+    if ( boxSize > height ) boxSize = height;
+    if ( boxSize > width ) boxSize = width;
+    if ( boxSize < 1 ) boxSize = 1;
+
+    pBox->left = (style & BS_RIGHTBUTTON) ? pClient->right - boxSize : pClient->left;
+    switch ( style & BS_VCENTER )
+    {
+        case BS_TOP:    pBox->top = pClient->top; break;
+        case BS_BOTTOM: pBox->top = pClient->bottom - boxSize; break;
+        default:        pBox->top = pClient->top + (height - boxSize) / 2; break;
+    }
+    pBox->right  = pBox->left + boxSize;
+    pBox->bottom = pBox->top + boxSize;
+
+    *pGap = (boxSize * 4 + 6) / 13; // Native gap is ~4px for a 13px box
+}
+
+// Width of the value column of a two-column list; keeps at least 40% of the width for the first column
+static int jonesConfig_CalcValueColumnWidth(int maxTextWidth, int padding, int clientWidth)
+{
+    int valueWidth = maxTextWidth + padding;
+    int maxValueWidth = clientWidth - (clientWidth * 2) / 5;
+    if ( valueWidth > maxValueWidth )
+    {
+        valueWidth = maxValueWidth;
+    }
+    return valueWidth;
+}
+
+// How far the gameplay options dialog moves its OK/Cancel buttons down and grows for the added
+// check boxes. minMoveY is the move that puts the buttons one gap below the last check box.
+static void jonesConfig_CalcGamePlayButtonsMove(int buttonHeight, UINT dpi, int minMoveY, int* pMoveY, int* pGrowY)
+{
+    int moveY = buttonHeight / 2 + MulDiv(48, dpi, USER_DEFAULT_SCREEN_DPI);
+    int growY = MulDiv(66, dpi, USER_DEFAULT_SCREEN_DPI);
+    if ( minMoveY > moveY )
+    {
+        growY += minMoveY - moveY;
+        moveY  = minMoveY;
+    }
+
+    *pMoveY = moveY;
+    *pGrowY = growY;
+}
+
+// Whether a mask (0x00RRGGBB pixels) only has black (opaque) and white (transparent) pixels
+static bool jonesConfig_IsBinaryMask(const uint32_t* pMask, int count)
+{
+    for ( int i = 0; i < count; ++i )
+    {
+        uint32_t m = pMask[i] & 0x00FFFFFFu;
+        if ( m != 0 && m != 0x00FFFFFFu )
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+// Sets straight alpha from a mask: transparent (0) where the mask is not black, opaque elsewhere
+static void jonesConfig_ApplyTransparencyMask(uint32_t* pImage, const uint32_t* pMask, int count)
+{
+    for ( int i = 0; i < count; ++i )
+    {
+        pImage[i] = (pMask[i] & 0x00FFFFFFu) ? 0u : (pImage[i] | 0xFF000000u);
+    }
+}
+
+static void jonesConfig_PremultiplyAlpha(uint32_t* pPixels, int count)
+{
+    for ( int i = 0; i < count; ++i )
+    {
+        uint32_t px = pPixels[i];
+        uint32_t a  = px >> 24;
+        uint32_t r  = (((px >> 16) & 0xFF) * a + 127) / 255;
+        uint32_t g  = (((px >> 8) & 0xFF) * a + 127) / 255;
+        uint32_t b  = ((px & 0xFF) * a + 127) / 255;
+        pPixels[i]  = (a << 24) | (r << 16) | (g << 8) | b;
+    }
+}
+
+// Builds the 1bpp icon mask (set = transparent) of straight-alpha pixels; pMask is zeroed by the caller.
+// With a matte color the soft edge pixels are blended over it and made opaque, for drawing that only
+// uses the mask (comctl32 v5 image lists). With CLR_NONE the alpha channel is kept.
+static void jonesConfig_ApplyIconMatte(uint32_t* pPixels, int width, int height, COLORREF matteColor, uint8_t* pMask, int maskStride)
+{
+    for ( int y = 0; y < height; ++y )
+    {
+        for ( int x = 0; x < width; ++x )
+        {
+            uint32_t* pPx = &pPixels[y * width + x];
+            uint32_t a = *pPx >> 24;
+            if ( matteColor == CLR_NONE )
+            {
+                if ( a < 128 )
+                {
+                    pMask[y * maskStride + x / 8] |= (uint8_t)(0x80u >> (x % 8)); // transparent
+                }
+            }
+            else if ( a == 0 )
+            {
+                pMask[y * maskStride + x / 8] |= (uint8_t)(0x80u >> (x % 8)); // transparent
+                *pPx = 0; // black where the mask is set
+            }
+            else
+            {
+                uint32_t r = (((*pPx >> 16) & 0xFF) * a + GetRValue(matteColor) * (255 - a) + 127) / 255;
+                uint32_t g = (((*pPx >> 8) & 0xFF) * a + GetGValue(matteColor) * (255 - a) + 127) / 255;
+                uint32_t b = ((*pPx & 0xFF) * a + GetBValue(matteColor) * (255 - a) + 127) / 255;
+                *pPx = 0xFF000000u | (r << 16) | (g << 8) | b;
+            }
+        }
+    }
+}
+
+// Added: Classic (comctl32 v5) trackbars keep a fixed 96-DPI thumb length regardless
+//        of the control size. Scale it by the dialog DPI and by the layout scale
+//        applied to the control in jonesConfig_SetWindowFontAndPosition.
+static void jonesConfig_ScaleTrackbarThumb(HWND hCtrl, const JonesDialogFontInfo* pFontInfo)
+{
+    CHAR aClassName[64] = { 0 };
+    GetClassName(hCtrl, aClassName, STD_ARRAYLEN(aClassName));
+    if ( !strneqi(aClassName, TRACKBAR_CLASSA, STD_ARRAYLEN(aClassName)) )
+    {
+        return;
+    }
+
+    // Remember the native length so a repeated layout pass doesn't scale it twice
+    DWORD_PTR data = 0;
+    UINT baseLength = jonesConfig_GetWindowData(hCtrl, &data) ? (UINT)data : 0u;
+    if ( !baseLength )
+    {
+        baseLength = (UINT)SendMessage(hCtrl, TBM_GETTHUMBLENGTH, 0, 0);
+        if ( !baseLength )
+        {
+            return;
+        }
+        jonesConfig_SetWindowData(hCtrl, (DWORD_PTR)baseLength);
+    }
+
+    UINT dpi = GetDpiForWindow(hCtrl);
+    double scale = jonesConfig_GetControlImageScale(hCtrl, pFontInfo);
+
+    LONG style = (LONG)GetWindowLongPtr(hCtrl, GWL_STYLE);
+    RECT rect;
+    GetClientRect(hCtrl, &rect);
+    LONG extent = (style & TBS_VERT) ? rect.right - rect.left : rect.bottom - rect.top;
+
+    LONG length = jonesConfig_CalcTrackbarThumbLength(baseLength, scale, extent);
+
+    STDLOG_DEBUG("Trackbar %d thumb: base:%u dpi:%u scale:%f length:%ld extent:%ld\n",
+        GetDlgCtrlID(hCtrl), baseLength, dpi, scale, length, extent);
+
+    SetWindowLongPtr(hCtrl, GWL_STYLE, style | TBS_FIXEDLENGTH); // Required by TBM_SETTHUMBLENGTH
+    SendMessage(hCtrl, TBM_SETTHUMBLENGTH, (WPARAM)length, 0);
+    InvalidateRect(hCtrl, NULL, TRUE);
+}
+
+// Added: Dialog image upscaling. The game's dialog icons and bitmaps are 16-64px, and
+//        enlarging them with StretchBlt or CopyImage makes them jagged or blurry. Upscale
+//        them with xBRZ by the smallest integer factor that covers the target size, then
+//        resample to the exact size with an area filter. Done in memory when a dialog opens.
+//        The pixel buffers are short-lived, so they use the CRT allocator, not stdMemory.
+
+// Reads a bitmap as 32-bit top-down pixels (0xAARRGGBB). Returns a malloc'd buffer or NULL.
+static uint32_t* jonesConfig_GetBitmapPixels(HBITMAP hBmp, int* pWidth, int* pHeight)
+{
+    BITMAP bm = { 0 };
+    if ( !hBmp || !GetObject(hBmp, sizeof(bm), &bm) || bm.bmWidth <= 0 || bm.bmHeight == 0 )
+    {
+        return NULL;
+    }
+
+    int width  = bm.bmWidth;
+    int height = abs(bm.bmHeight);
+    uint32_t* pPixels = (uint32_t*)STDMALLOC(sizeof(uint32_t) * (size_t)width * (size_t)height);
+    if ( !pPixels )
+    {
+        return NULL;
+    }
+
+    BITMAPINFO bmi = { 0 };
+    bmi.bmiHeader.biSize        = sizeof(BITMAPINFOHEADER);
+    bmi.bmiHeader.biWidth       = width;
+    bmi.bmiHeader.biHeight      = -height; // top-down
+    bmi.bmiHeader.biPlanes      = 1;
+    bmi.bmiHeader.biBitCount    = 32;
+    bmi.bmiHeader.biCompression = BI_RGB;
+
+    HDC hdc = GetDC(NULL);
+    int numLines = hdc ? GetDIBits(hdc, hBmp, 0, (UINT)height, pPixels, &bmi, DIB_RGB_COLORS) : 0;
+    if ( hdc )
+    {
+        ReleaseDC(NULL, hdc);
+    }
+
+    if ( numLines != height )
+    {
+        STDFREE(pPixels);
+        return NULL;
+    }
+
+    *pWidth  = width;
+    *pHeight = height;
+    return pPixels;
+}
+
+// Reads an icon as straight-alpha 32-bit pixels; icons without an alpha channel get their
+// alpha from the mask. Returns a malloc'd buffer or NULL (also for monochrome icons).
+static uint32_t* jonesConfig_GetIconPixels(HICON hIcon, int* pWidth, int* pHeight)
+{
+    ICONINFO info = { 0 };
+    if ( !hIcon || !GetIconInfo(hIcon, &info) )
+    {
+        return NULL;
+    }
+
+    uint32_t* pPixels = NULL;
+    int width = 0, height = 0;
+    if ( info.hbmColor )
+    {
+        pPixels = jonesConfig_GetBitmapPixels(info.hbmColor, &width, &height);
+
+        BITMAP bm = { 0 };
+        GetObject(info.hbmColor, sizeof(bm), &bm);
+        bool bHasAlpha = false;
+        if ( pPixels && bm.bmBitsPixel == 32 )
+        {
+            for ( int i = 0; i < width * height; ++i )
+            {
+                if ( pPixels[i] >> 24 )
+                {
+                    bHasAlpha = true;
+                    break;
+                }
+            }
+        }
+
+        if ( pPixels && !bHasAlpha )
+        {
+            int maskWidth = 0, maskHeight = 0;
+            uint32_t* pMask = jonesConfig_GetBitmapPixels(info.hbmMask, &maskWidth, &maskHeight);
+            if ( pMask && maskWidth == width && maskHeight >= height )
+            {
+                jonesConfig_ApplyTransparencyMask(pPixels, pMask, width * height); // white mask = transparent
+            }
+            else
+            {
+                for ( int i = 0; i < width * height; ++i )
+                {
+                    pPixels[i] |= 0xFF000000u;
+                }
+            }
+
+            if ( pMask )
+            {
+                STDFREE(pMask);
+            }
+        }
+    }
+
+    if ( info.hbmColor ) DeleteObject(info.hbmColor);
+    if ( info.hbmMask ) DeleteObject(info.hbmMask);
+
+    if ( !pPixels )
+    {
+        return NULL;
+    }
+
+    *pWidth  = width;
+    *pHeight = height;
+    return pPixels;
+}
+
+// Resamples straight-alpha pixels to a smaller or equal size with an area (box) filter.
+// Averages in premultiplied alpha so transparent pixels don't darken the edges.
+static void jonesConfig_AreaResample(const uint32_t* pSrc, int srcWidth, int srcHeight, uint32_t* pDst, int dstWidth, int dstHeight)
+{
+    double scaleX = (double)srcWidth / dstWidth;
+    double scaleY = (double)srcHeight / dstHeight;
+    for ( int dy = 0; dy < dstHeight; ++dy )
+    {
+        double y0 = dy * scaleY;
+        double y1 = y0 + scaleY;
+        for ( int dx = 0; dx < dstWidth; ++dx )
+        {
+            double x0 = dx * scaleX;
+            double x1 = x0 + scaleX;
+
+            double sumA = 0, sumR = 0, sumG = 0, sumB = 0, area = 0;
+            for ( int sy = (int)y0; sy < srcHeight && sy < y1; ++sy )
+            {
+                double wy = fmin(y1, sy + 1.0) - fmax(y0, (double)sy);
+                if ( wy <= 0 )
+                {
+                    continue;
+                }
+
+                for ( int sx = (int)x0; sx < srcWidth && sx < x1; ++sx )
+                {
+                    double wx = fmin(x1, sx + 1.0) - fmax(x0, (double)sx);
+                    if ( wx <= 0 )
+                    {
+                        continue;
+                    }
+
+                    double w = wx * wy;
+                    uint32_t px = pSrc[sy * srcWidth + sx];
+                    double a = (double)(px >> 24) / 255.0;
+                    sumA += w * a;
+                    sumR += w * a * (double)((px >> 16) & 0xFF);
+                    sumG += w * a * (double)((px >> 8) & 0xFF);
+                    sumB += w * a * (double)(px & 0xFF);
+                    area += w;
+                }
+            }
+
+            uint32_t out = 0;
+            if ( area > 0 && sumA > 0 )
+            {
+                uint32_t a = (uint32_t)fmin(255.0, floor(sumA / area * 255.0 + 0.5));
+                uint32_t r = (uint32_t)fmin(255.0, floor(sumR / sumA + 0.5)); // un-premultiply
+                uint32_t g = (uint32_t)fmin(255.0, floor(sumG / sumA + 0.5));
+                uint32_t b = (uint32_t)fmin(255.0, floor(sumB / sumA + 0.5));
+                out = (a << 24) | (r << 16) | (g << 8) | b;
+            }
+            pDst[dy * dstWidth + dx] = out;
+        }
+    }
+}
+
+// Opt-out: with the option off, every image is resized by Windows as before
+static bool jonesConfig_IsImageUpscalingEnabled(void)
+{
+    return stdConfig_GetBool(JONESCONFIG_CFG_GRAPHICS_UPSCALEDIALOGIMAGES, true);
+}
+
+// Resamples straight-alpha pixels to dstWidth x dstHeight: xBRZ by at least 2x, then the area filter.
+// Also used at the same or a smaller size, where it smooths the jagged edges of the original
+// pixel art; flat areas stay the same. Returns a malloc'd buffer, or NULL if the target is
+// below half the source size (Windows picks a smaller resource image then), upscaling is off or on failure.
+static uint32_t* jonesConfig_UpscalePixels(const uint32_t* pSrc, int srcWidth, int srcHeight, int dstWidth, int dstHeight, bool bAlpha)
+{
+    if ( !jonesConfig_IsImageUpscalingEnabled() )
+    {
+        return NULL;
+    }
+
+    if ( !pSrc || srcWidth <= 0 || srcHeight <= 0 || dstWidth <= 0 || dstHeight <= 0
+        || dstWidth * 2 < srcWidth || dstHeight * 2 < srcHeight )
+    {
+        return NULL;
+    }
+
+    int factorX = (dstWidth + srcWidth - 1) / srcWidth;
+    int factorY = (dstHeight + srcHeight - 1) / srcHeight;
+    int factor  = factorX > factorY ? factorX : factorY;
+    if ( factor < XBRZ_CAPI_MIN_SCALE ) factor = XBRZ_CAPI_MIN_SCALE;
+    if ( factor > XBRZ_CAPI_MAX_SCALE ) factor = XBRZ_CAPI_MAX_SCALE;
+
+    // xBRZ treats the area outside the image as transparent, which fades opaque pixels at the
+    // image border. Extend the source by its edge pixels over the 2-pixel xBRZ neighborhood,
+    // scale that, and crop the scaled extension off again.
+    const int pad = 2;
+    int padWidth  = srcWidth + 2 * pad;
+    int padHeight = srcHeight + 2 * pad;
+    int bigWidth  = srcWidth * factor;
+    int bigHeight = srcHeight * factor;
+    uint32_t* pPadded = (uint32_t*)STDMALLOC(sizeof(uint32_t) * (size_t)padWidth * (size_t)padHeight);
+    uint32_t* pPadBig = (uint32_t*)STDMALLOC(sizeof(uint32_t) * (size_t)padWidth * factor * (size_t)padHeight * factor);
+    uint32_t* pBig    = (uint32_t*)STDMALLOC(sizeof(uint32_t) * (size_t)bigWidth * (size_t)bigHeight);
+    uint32_t* pDst    = (uint32_t*)STDMALLOC(sizeof(uint32_t) * (size_t)dstWidth * (size_t)dstHeight);
+    bool bScaled = false;
+    if ( pPadded && pPadBig && pBig && pDst )
+    {
+        for ( int y = 0; y < padHeight; ++y )
+        {
+            int sy = y - pad < 0 ? 0 : (y - pad >= srcHeight ? srcHeight - 1 : y - pad);
+            for ( int x = 0; x < padWidth; ++x )
+            {
+                int sx = x - pad < 0 ? 0 : (x - pad >= srcWidth ? srcWidth - 1 : x - pad);
+                pPadded[y * padWidth + x] = pSrc[sy * srcWidth + sx];
+            }
+        }
+
+        bScaled = xbrz_Scale(factor, pPadded, pPadBig, padWidth, padHeight, bAlpha ? XBRZ_COLORFORMAT_ARGB : XBRZ_COLORFORMAT_RGB) != 0;
+        if ( bScaled )
+        {
+            for ( int y = 0; y < bigHeight; ++y )
+            {
+                memcpy(&pBig[y * bigWidth], &pPadBig[(y + pad * factor) * padWidth * factor + pad * factor], sizeof(uint32_t) * (size_t)bigWidth);
+            }
+        }
+    }
+
+    if ( pPadded ) STDFREE(pPadded);
+    if ( pPadBig ) STDFREE(pPadBig);
+    if ( !bScaled )
+    {
+        if ( pBig ) STDFREE(pBig);
+        if ( pDst ) STDFREE(pDst);
+        return NULL;
+    }
+
+    if ( !bAlpha )
+    {
+        for ( int i = 0; i < bigWidth * bigHeight; ++i )
+        {
+            pBig[i] |= 0xFF000000u; // RGB output leaves the upper 8 bits unused
+        }
+    }
+
+    bool bResampled = true;
+    if ( bigWidth >= dstWidth && bigHeight >= dstHeight )
+    {
+        jonesConfig_AreaResample(pBig, bigWidth, bigHeight, pDst, dstWidth, dstHeight);
+    }
+    else
+    {
+        // Target beyond the maximum xBRZ factor
+        bResampled = xbrz_BilinearScale(pBig, bigWidth, bigHeight, pDst, dstWidth, dstHeight) != 0;
+    }
+
+    STDFREE(pBig);
+    if ( !bResampled )
+    {
+        STDFREE(pDst);
+        return NULL;
+    }
+    return pDst;
+}
+
+static HBITMAP jonesConfig_CreateDibFromPixels(const uint32_t* pPixels, int width, int height)
+{
+    BITMAPINFO bmi = { 0 };
+    bmi.bmiHeader.biSize        = sizeof(BITMAPINFOHEADER);
+    bmi.bmiHeader.biWidth       = width;
+    bmi.bmiHeader.biHeight      = -height; // top-down
+    bmi.bmiHeader.biPlanes      = 1;
+    bmi.bmiHeader.biBitCount    = 32;
+    bmi.bmiHeader.biCompression = BI_RGB;
+
+    void* pBits = NULL;
+    HDC hdc = GetDC(NULL);
+    HBITMAP hBmp = hdc ? CreateDIBSection(hdc, &bmi, DIB_RGB_COLORS, &pBits, NULL, 0) : NULL;
+    if ( hdc )
+    {
+        ReleaseDC(NULL, hdc);
+    }
+
+    if ( hBmp && pBits )
+    {
+        memcpy(pBits, pPixels, sizeof(uint32_t) * (size_t)width * (size_t)height);
+        GdiFlush();
+    }
+    return hBmp;
+}
+
+// Creates an icon from straight-alpha pixels.
+// For drawing that only uses the mask (comctl32 v5 image lists), pass the background color in
+// matteColor: soft edge pixels are blended over it and made opaque, so the edges stay smooth on
+// that background. Pass CLR_NONE to keep the alpha channel.
+static HICON jonesConfig_CreateIconFromPixels(uint32_t* pPixels, int width, int height, COLORREF matteColor)
+{
+    int maskStride = ((width + 15) / 16) * 2; // CreateBitmap rows are WORD aligned
+    uint8_t* pMask = (uint8_t*)STDMALLOC((size_t)maskStride * (size_t)height);
+    if ( !pMask )
+    {
+        return NULL;
+    }
+    memset(pMask, 0, (size_t)maskStride * (size_t)height);
+    jonesConfig_ApplyIconMatte(pPixels, width, height, matteColor, pMask, maskStride);
+
+    HBITMAP hColor = jonesConfig_CreateDibFromPixels(pPixels, width, height);
+    HBITMAP hMask  = CreateBitmap(width, height, 1, 1, pMask);
+    STDFREE(pMask);
+
+    HICON hIcon = NULL;
+    if ( hColor && hMask )
+    {
+        ICONINFO info = { 0 };
+        info.fIcon    = TRUE;
+        info.hbmMask  = hMask;
+        info.hbmColor = hColor;
+        hIcon = CreateIconIndirect(&info);
+    }
+
+    if ( hColor ) DeleteObject(hColor);
+    if ( hMask ) DeleteObject(hMask);
+    return hIcon;
+}
+
+// Returns an xBRZ-resampled copy of the icon at width x height, or NULL on failure
+static HICON jonesConfig_UpscaleIcon(HICON hIcon, int width, int height, COLORREF matteColor)
+{
+    int srcWidth = 0, srcHeight = 0;
+    uint32_t* pSrc = jonesConfig_GetIconPixels(hIcon, &srcWidth, &srcHeight);
+    if ( !pSrc )
+    {
+        return NULL;
+    }
+
+    uint32_t* pDst = jonesConfig_UpscalePixels(pSrc, srcWidth, srcHeight, width, height, /*bAlpha=*/true);
+    STDFREE(pSrc);
+    if ( !pDst )
+    {
+        return NULL;
+    }
+
+    HICON hScaled = jonesConfig_CreateIconFromPixels(pDst, width, height, matteColor);
+    STDFREE(pDst);
+    return hScaled;
+}
+
+// Loads the largest image of an icon resource at its own size, so it is enlarged from
+// the original pixels and not from an image Windows already stretched.
+static HICON jonesConfig_LoadLargestIconResource(HMODULE hModule, LPCSTR pName)
+{
+    HRSRC hGroupRes = hModule ? FindResource(hModule, pName, RT_GROUP_ICON) : NULL;
+    HGLOBAL hGroupData = hGroupRes ? LoadResource(hModule, hGroupRes) : NULL;
+    PBYTE pGroupDir = hGroupData ? (PBYTE)LockResource(hGroupData) : NULL;
+    if ( !pGroupDir )
+    {
+        return NULL;
+    }
+
+    int iconId = LookupIconIdFromDirectoryEx(pGroupDir, TRUE, 256, 256, LR_DEFAULTCOLOR);
+    HRSRC hIconRes = iconId ? FindResource(hModule, MAKEINTRESOURCE(iconId), RT_ICON) : NULL;
+    HGLOBAL hIconData = hIconRes ? LoadResource(hModule, hIconRes) : NULL;
+    PBYTE pIconBits = hIconData ? (PBYTE)LockResource(hIconData) : NULL;
+    if ( !pIconBits )
+    {
+        return NULL;
+    }
+
+    // Zero size without LR_DEFAULTSIZE uses the resource's own size
+    return CreateIconFromResourceEx(pIconBits, SizeofResource(hModule, hIconRes), TRUE, 0x00030000, 0, 0, LR_DEFAULTCOLOR);
+}
+
+// Loads an icon resource at width x height, resampled with xBRZ
+static HICON jonesConfig_LoadScaledIcon(HMODULE hModule, LPCSTR pName, int width, int height, COLORREF matteColor)
+{
+    HICON hScaled = NULL;
+    HICON hLargest = jonesConfig_LoadLargestIconResource(hModule, pName);
+    if ( hLargest )
+    {
+        hScaled = jonesConfig_UpscaleIcon(hLargest, width, height, matteColor);
+        DestroyIcon(hLargest);
+    }
+
+    if ( !hScaled ) // Much smaller or failed; let Windows pick and resize the closest image
+    {
+        hScaled = (HICON)LoadImage(hModule, pName, IMAGE_ICON, width, height, LR_DEFAULTCOLOR);
+    }
+    return hScaled;
+}
+
+// Returns a copy of a (shared) resource icon at width x height, resampled with xBRZ
+static HICON jonesConfig_ScaleResourceIcon(HICON hIcon, int width, int height)
+{
+    HICON hScaled = NULL;
+    ICONINFOEXA info = { 0 };
+    info.cbSize = sizeof(info);
+    if ( GetIconInfoExA(hIcon, &info) )
+    {
+        if ( info.hbmColor ) DeleteObject(info.hbmColor);
+        if ( info.hbmMask ) DeleteObject(info.hbmMask);
+
+        HMODULE hModule = info.szModName[0] ? GetModuleHandleA(info.szModName) : NULL;
+        if ( hModule && (info.szResName[0] || info.wResID) )
+        {
+            LPCSTR pName = info.szResName[0] ? info.szResName : MAKEINTRESOURCE(info.wResID);
+            HICON hLargest = jonesConfig_LoadLargestIconResource(hModule, pName);
+            if ( hLargest )
+            {
+                hScaled = jonesConfig_UpscaleIcon(hLargest, width, height, /*matteColor=*/CLR_NONE);
+                DestroyIcon(hLargest);
+            }
+        }
+    }
+
+    if ( !hScaled ) // Much smaller or not a resource icon; reload the closest image from the resource
+    {
+        hScaled = (HICON)CopyImage(hIcon, IMAGE_ICON, width, height, LR_COPYFROMRESOURCE);
+    }
+    return hScaled;
+}
+
+// Added: Template icons (SS_ICON) and bitmaps (SS_BITMAP) keep the size they were loaded
+//        at when the dialog was created, regardless of the control size. Replace them with
+//        a copy scaled by the dialog DPI and layout scale. The original image is restored
+//        and the copy freed when the control is destroyed.
+typedef struct sJonesScaledStaticImage
+{
+    HANDLE hOrig; // control's own image
+    HANDLE hCopy; // scaled copy shown instead
+} JonesScaledStaticImage;
+
+static LRESULT CALLBACK jonesConfig_ScaledImageSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData)
+{
+    JonesScaledStaticImage* pImage = (JonesScaledStaticImage*)dwRefData;
+    if ( uMsg == WM_DESTROY && pImage && pImage->hCopy )
+    {
+        // Give the control back its own image, so it frees it as usual
+        if ( (GetWindowLongPtr(hWnd, GWL_STYLE) & SS_TYPEMASK) == SS_ICON )
+        {
+            if ( (HANDLE)SendMessage(hWnd, STM_GETICON, 0, 0) == pImage->hCopy )
+            {
+                SendMessage(hWnd, STM_SETICON, (WPARAM)pImage->hOrig, 0);
+            }
+            DestroyIcon((HICON)pImage->hCopy);
+        }
+        else
+        {
+            if ( (HANDLE)SendMessage(hWnd, STM_GETIMAGE, IMAGE_BITMAP, 0) == pImage->hCopy )
+            {
+                SendMessage(hWnd, STM_SETIMAGE, IMAGE_BITMAP, (LPARAM)pImage->hOrig);
+            }
+            DeleteObject(pImage->hCopy);
+        }
+        pImage->hCopy = NULL;
+    }
+    else if ( uMsg == WM_NCDESTROY )
+    {
+        RemoveWindowSubclass(hWnd, jonesConfig_ScaledImageSubclassProc, uIdSubclass);
+        if ( pImage )
+        {
+            STDFREE(pImage);
+        }
+    }
+
+    return DefSubclassProc(hWnd, uMsg, wParam, lParam);
+}
+
+static HBITMAP jonesConfig_StretchBitmap(HBITMAP hSrc, int srcWidth, int srcHeight, int width, int height)
+{
+    // Enlarge with xBRZ
+    if ( width > srcWidth || height > srcHeight )
+    {
+        int pixWidth = 0, pixHeight = 0;
+        uint32_t* pSrc = jonesConfig_GetBitmapPixels(hSrc, &pixWidth, &pixHeight);
+        uint32_t* pDst = pSrc ? jonesConfig_UpscalePixels(pSrc, pixWidth, pixHeight, width, height, /*bAlpha=*/false) : NULL;
+        HBITMAP hScaled = pDst ? jonesConfig_CreateDibFromPixels(pDst, width, height) : NULL;
+        if ( pSrc ) STDFREE(pSrc);
+        if ( pDst ) STDFREE(pDst);
+        if ( hScaled )
+        {
+            return hScaled;
+        }
+    }
+
+    // Shrink, or fall back to halftone stretching
+    HDC hdcScreen = GetDC(NULL);
+    HDC hdcSrc    = CreateCompatibleDC(hdcScreen);
+    HDC hdcDst    = CreateCompatibleDC(hdcScreen);
+    HBITMAP hDst  = CreateCompatibleBitmap(hdcScreen, width, height);
+    if ( hdcSrc && hdcDst && hDst )
+    {
+        HGDIOBJ hPrevSrc = SelectObject(hdcSrc, hSrc);
+        HGDIOBJ hPrevDst = SelectObject(hdcDst, hDst);
+        SetStretchBltMode(hdcDst, HALFTONE);
+        SetBrushOrgEx(hdcDst, 0, 0, NULL);
+        StretchBlt(hdcDst, 0, 0, width, height, hdcSrc, 0, 0, srcWidth, srcHeight, SRCCOPY);
+        SelectObject(hdcDst, hPrevDst);
+        SelectObject(hdcSrc, hPrevSrc);
+    }
+    else if ( hDst )
+    {
+        DeleteObject(hDst);
+        hDst = NULL;
+    }
+
+    if ( hdcDst ) DeleteDC(hdcDst);
+    if ( hdcSrc ) DeleteDC(hdcSrc);
+    ReleaseDC(NULL, hdcScreen);
+    return hDst;
+}
+
+static void jonesConfig_ScaleStaticImage(HWND hCtrl, const JonesDialogFontInfo* pFontInfo)
+{
+    CHAR aClassName[16] = { 0 };
+    GetClassName(hCtrl, aClassName, STD_ARRAYLEN(aClassName));
+    if ( !strneqi(aClassName, "STATIC", STD_ARRAYLEN(aClassName)) )
+    {
+        return;
+    }
+
+    DWORD_PTR refData = 0;
+    if ( GetWindowSubclass(hCtrl, jonesConfig_ScaledImageSubclassProc, JONESCONFIG_SUBCLASSID, &refData) )
+    {
+        return; // Already scaled by a previous layout pass
+    }
+
+    // Message dialog icon is loaded and sized by jonesConfig_InitMessageDialogIcon
+    if ( LOWORD(pFontInfo->dialogID) == 121 && GetDlgCtrlID(hCtrl) == 1201 )
+    {
+        return;
+    }
+
+    // Skip the pass over the file dialog of load/save dialogs; it doesn't lay out
+    // the template controls, which are scaled in the following pass over the template.
+    if ( HIWORD(pFontInfo->dialogID) == JONESCONFIG_NOFONTSCALEMASK )
+    {
+        return;
+    }
+
+    LONG style = (LONG)GetWindowLongPtr(hCtrl, GWL_STYLE);
+    LONG type  = style & SS_TYPEMASK;
+    if ( type != SS_ICON && type != SS_BITMAP )
+    {
+        return;
+    }
+
+    double scale = jonesConfig_GetControlImageScale(hCtrl, pFontInfo);
+
+    HANDLE hOrig = NULL;
+    HANDLE hCopy = NULL;
+    int curWidth = 0, curHeight = 0, width = 0, height = 0;
+    if ( type == SS_ICON )
+    {
+        HICON hIcon = (HICON)SendMessage(hCtrl, STM_GETICON, 0, 0);
+        ICONINFO info = { 0 };
+        if ( !hIcon || !GetIconInfo(hIcon, &info) )
+        {
+            return;
+        }
+
+        BITMAP bm = { 0 };
+        if ( info.hbmColor && GetObject(info.hbmColor, sizeof(bm), &bm) )
+        {
+            curWidth  = bm.bmWidth;
+            curHeight = bm.bmHeight;
+        }
+        else if ( info.hbmMask && GetObject(info.hbmMask, sizeof(bm), &bm) )
+        {
+            curWidth  = bm.bmWidth;
+            curHeight = bm.bmHeight / 2;
+        }
+        if ( info.hbmColor ) DeleteObject(info.hbmColor);
+        if ( info.hbmMask ) DeleteObject(info.hbmMask);
+        if ( curWidth <= 0 || curHeight <= 0 )
+        {
+            return;
+        }
+
+        // Icons from dialog templates are loaded at the default icon size of the system DPI
+        double nativeWidth = curWidth, nativeHeight = curHeight;
+        UINT systemDpi = GetDpiForSystem();
+        if ( systemDpi && curWidth == GetSystemMetrics(SM_CXICON) && curHeight == GetSystemMetrics(SM_CYICON) )
+        {
+            nativeWidth  = (double)curWidth * USER_DEFAULT_SCREEN_DPI / systemDpi;
+            nativeHeight = (double)curHeight * USER_DEFAULT_SCREEN_DPI / systemDpi;
+        }
+
+        width  = (int)floor(nativeWidth * scale + 0.5);
+        height = (int)floor(nativeHeight * scale + 0.5);
+        if ( width < 1 ) width = 1;
+        if ( height < 1 ) height = 1;
+        if ( width == curWidth && height == curHeight )
+        {
+            return;
+        }
+
+        // Reload from the icon resource at the new size, upscaled with xBRZ when enlarged;
+        // this only works for shared (template) icons
+        hCopy = jonesConfig_ScaleResourceIcon(hIcon, width, height);
+        hOrig = hIcon;
+    }
+    else
+    {
+        HBITMAP hBmp = (HBITMAP)SendMessage(hCtrl, STM_GETIMAGE, IMAGE_BITMAP, 0);
+        BITMAP bm = { 0 };
+        if ( !hBmp || !GetObject(hBmp, sizeof(bm), &bm) || bm.bmWidth <= 0 || bm.bmHeight == 0 )
+        {
+            return;
+        }
+
+        curWidth  = bm.bmWidth;
+        curHeight = abs(bm.bmHeight);
+        width  = (int)floor((double)curWidth * scale + 0.5);
+        height = (int)floor((double)curHeight * scale + 0.5);
+        if ( width < 1 ) width = 1;
+        if ( height < 1 ) height = 1;
+        if ( width == curWidth && height == curHeight )
+        {
+            return;
+        }
+
+        hCopy = jonesConfig_StretchBitmap(hBmp, curWidth, curHeight, width, height);
+        hOrig = hBmp;
+    }
+
+    STDLOG_DEBUG("Static %d image: type:%ld size:%dx%d -> %dx%d scale:%f copy:%p\n",
+        GetDlgCtrlID(hCtrl), type, curWidth, curHeight, width, height, scale, hCopy);
+
+    if ( !hCopy )
+    {
+        return;
+    }
+
+    JonesScaledStaticImage* pImage = (JonesScaledStaticImage*)STDMALLOC(sizeof(JonesScaledStaticImage));
+    if ( pImage )
+    {
+        pImage->hOrig = hOrig;
+        pImage->hCopy = hCopy;
+    }
+
+    if ( !pImage || !SetWindowSubclass(hCtrl, jonesConfig_ScaledImageSubclassProc, JONESCONFIG_SUBCLASSID, (DWORD_PTR)pImage) )
+    {
+        if ( pImage )
+        {
+            STDFREE(pImage);
+        }
+
+        if ( type == SS_ICON )
+        {
+            DestroyIcon((HICON)hCopy);
+        }
+        else
+        {
+            DeleteObject(hCopy);
+        }
+        return;
+    }
+
+    if ( type == SS_ICON )
+    {
+        SendMessage(hCtrl, STM_SETICON, (WPARAM)hCopy, 0);
+    }
+    else
+    {
+        SendMessage(hCtrl, STM_SETIMAGE, IMAGE_BITMAP, (LPARAM)hCopy);
+    }
+
+    // Keep the laid-out top-left position, as the control draws the image from there
+    if ( !(style & (SS_CENTERIMAGE | SS_REALSIZECONTROL)) )
+    {
+        SetWindowPos(hCtrl, NULL, 0, 0, width, height, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
+    }
+    InvalidateRect(hCtrl, NULL, TRUE);
+}
+
+// Added: Classic check boxes and radio buttons draw their box at the size Windows
+//        picks from the window DPI, regardless of the control size or font. In fullscreen
+//        the dialog DPI follows the display mode while the dialog layout follows the
+//        desktop DPI, so the box gets too small. The hook paints the control with a box
+//        sized to the control font. Windows still handles input and the check state.
+static bool jonesConfig_IsCheckBoxOrRadio(HWND hCtrl)
+{
+    CHAR aClassName[16] = { 0 };
+    GetClassName(hCtrl, aClassName, STD_ARRAYLEN(aClassName));
+    if ( !strneqi(aClassName, "BUTTON", STD_ARRAYLEN(aClassName)) )
+    {
+        return false;
+    }
+
+    LONG style = (LONG)GetWindowLongPtr(hCtrl, GWL_STYLE);
+    if ( style & BS_PUSHLIKE )
+    {
+        return false;
+    }
+
+    switch ( style & BS_TYPEMASK )
+    {
+        case BS_CHECKBOX:
+        case BS_AUTOCHECKBOX:
+        case BS_RADIOBUTTON:
+        case BS_AUTORADIOBUTTON:
+        case BS_3STATE:
+        case BS_AUTO3STATE:
+            return true;
+        default:
+            return false;
+    }
+}
+
+static void jonesConfig_PaintCheckBox(HWND hWnd, HDC hdcTarget)
+{
+    RECT rc;
+    GetClientRect(hWnd, &rc);
+    int width  = rc.right - rc.left;
+    int height = rc.bottom - rc.top;
+    if ( width <= 0 || height <= 0 )
+    {
+        return;
+    }
+
+    // Paint into a memory DC to avoid flicker
+    HDC hdc = CreateCompatibleDC(hdcTarget);
+    HBITMAP hBmp = CreateCompatibleBitmap(hdcTarget, width, height);
+    if ( !hdc || !hBmp )
+    {
+        if ( hBmp ) DeleteObject(hBmp);
+        if ( hdc ) DeleteDC(hdc);
+        return;
+    }
+    HGDIOBJ hPrevBmp = SelectObject(hdc, hBmp);
+
+    LONG style   = (LONG)GetWindowLongPtr(hWnd, GWL_STYLE);
+    LONG type    = style & BS_TYPEMASK;
+    LRESULT state = SendMessage(hWnd, BM_GETSTATE, 0, 0);
+    bool bEnabled = IsWindowEnabled(hWnd) != FALSE;
+    LRESULT uiState = SendMessage(hWnd, WM_QUERYUISTATE, 0, 0);
+
+    HFONT hFont = (HFONT)SendMessage(hWnd, WM_GETFONT, 0, 0);
+    HGDIOBJ hPrevFont = hFont ? SelectObject(hdc, hFont) : NULL;
+
+    // Background and text color as for the native control (WM_CTLCOLORSTATIC)
+    SetTextColor(hdc, GetSysColor(COLOR_WINDOWTEXT));
+    SetBkColor(hdc, GetSysColor(COLOR_BTNFACE));
+    HBRUSH hbr = (HBRUSH)SendMessage(GetParent(hWnd), WM_CTLCOLORSTATIC, (WPARAM)hdc, (LPARAM)hWnd);
+    if ( !hbr )
+    {
+        hbr = GetSysColorBrush(COLOR_BTNFACE);
+    }
+    FillRect(hdc, &rc, hbr);
+
+    TEXTMETRIC tm = { 0 };
+    GetTextMetrics(hdc, &tm);
+
+    RECT rcBox;
+    int gap;
+    jonesConfig_CalcCheckBoxLayout(&rc, style, tm.tmHeight, &rcBox, &gap);
+    bool bRightButton = (style & BS_RIGHTBUTTON) != 0;
+
+    UINT boxFlags;
+    LRESULT check = state & (BST_CHECKED | BST_INDETERMINATE);
+    if ( type == BS_RADIOBUTTON || type == BS_AUTORADIOBUTTON )
+    {
+        boxFlags = DFCS_BUTTONRADIO | (check == BST_CHECKED ? DFCS_CHECKED : 0);
+    }
+    else if ( check == BST_INDETERMINATE )
+    {
+        boxFlags = DFCS_BUTTON3STATE | DFCS_CHECKED;
+    }
+    else
+    {
+        boxFlags = DFCS_BUTTONCHECK | (check == BST_CHECKED ? DFCS_CHECKED : 0);
+    }
+    if ( state & BST_PUSHED ) boxFlags |= DFCS_PUSHED;
+    if ( !bEnabled ) boxFlags |= DFCS_INACTIVE;
+    DrawFrameControl(hdc, &rcBox, DFC_BUTTON, boxFlags);
+
+    // Text
+    CHAR aText[256] = { 0 };
+    GetWindowText(hWnd, aText, STD_ARRAYLEN(aText));
+    if ( aText[0] )
+    {
+        RECT rcText = rc;
+        if ( bRightButton )
+        {
+            rcText.right = rcBox.left - gap;
+        }
+        else
+        {
+            rcText.left = rcBox.right + gap;
+        }
+
+        UINT dtFlags = DT_NOCLIP;
+        switch ( style & BS_CENTER )
+        {
+            case BS_RIGHT:  dtFlags |= DT_RIGHT; break;
+            case BS_CENTER: dtFlags |= DT_CENTER; break;
+            default:        dtFlags |= DT_LEFT; break;
+        }
+        dtFlags |= (style & BS_MULTILINE) ? DT_WORDBREAK : DT_SINGLELINE;
+        if ( uiState & UISF_HIDEACCEL )
+        {
+            dtFlags |= DT_HIDEPREFIX;
+        }
+
+        // Vertical alignment
+        RECT rcCalc = rcText;
+        DrawText(hdc, aText, -1, &rcCalc, dtFlags | DT_CALCRECT);
+        int textHeight = rcCalc.bottom - rcCalc.top;
+        switch ( style & BS_VCENTER )
+        {
+            case BS_TOP:    break;
+            case BS_BOTTOM: rcText.top = rcText.bottom - textHeight; break;
+            default:        rcText.top += (rcText.bottom - rcText.top - textHeight) / 2; break;
+        }
+        rcText.bottom = rcText.top + textHeight;
+
+        SetBkMode(hdc, TRANSPARENT);
+        if ( bEnabled )
+        {
+            DrawText(hdc, aText, -1, &rcText, dtFlags);
+        }
+        else
+        {
+            // Classic embossed disabled text
+            COLORREF prevColor = SetTextColor(hdc, GetSysColor(COLOR_3DHILIGHT));
+            OffsetRect(&rcText, 1, 1);
+            DrawText(hdc, aText, -1, &rcText, dtFlags);
+            OffsetRect(&rcText, -1, -1);
+            SetTextColor(hdc, GetSysColor(COLOR_GRAYTEXT));
+            DrawText(hdc, aText, -1, &rcText, dtFlags);
+            SetTextColor(hdc, prevColor);
+        }
+
+        if ( GetFocus() == hWnd && !(uiState & UISF_HIDEFOCUS) )
+        {
+            // Focus rect around the text
+            RECT rcFocus = rcText;
+            int textWidth = rcCalc.right - rcCalc.left;
+            if ( (dtFlags & DT_RIGHT) )
+            {
+                rcFocus.left = rcFocus.right - textWidth;
+            }
+            else if ( (dtFlags & DT_CENTER) )
+            {
+                rcFocus.left += ((rcFocus.right - rcFocus.left) - textWidth) / 2;
+                rcFocus.right = rcFocus.left + textWidth;
+            }
+            else
+            {
+                rcFocus.right = rcFocus.left + textWidth;
+            }
+            InflateRect(&rcFocus, 1, 1);
+            IntersectRect(&rcFocus, &rcFocus, &rc);
+            SetTextColor(hdc, GetSysColor(COLOR_WINDOWTEXT));
+            SetBkColor(hdc, GetSysColor(COLOR_BTNFACE));
+            DrawFocusRect(hdc, &rcFocus);
+        }
+    }
+
+    BitBlt(hdcTarget, 0, 0, width, height, hdc, 0, 0, SRCCOPY);
+
+    if ( hPrevFont ) SelectObject(hdc, hPrevFont);
+    SelectObject(hdc, hPrevBmp);
+    DeleteObject(hBmp);
+    DeleteDC(hdc);
+}
+
+static LRESULT CALLBACK jonesConfig_CheckBoxSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData)
+{
+    J3D_UNUSED(dwRefData);
+
+    switch ( uMsg )
+    {
+        case WM_PAINT:
+        {
+            PAINTSTRUCT ps;
+            HDC hdc = BeginPaint(hWnd, &ps);
+            if ( hdc )
+            {
+                jonesConfig_PaintCheckBox(hWnd, hdc);
+            }
+            EndPaint(hWnd, &ps);
+            return 0;
+        }
+        case WM_PRINTCLIENT:
+            jonesConfig_PaintCheckBox(hWnd, (HDC)wParam);
+            return 0;
+
+        case WM_ERASEBKGND:
+            return 1; // Painted in WM_PAINT
+
+        case WM_NCDESTROY:
+            RemoveWindowSubclass(hWnd, jonesConfig_CheckBoxSubclassProc, uIdSubclass);
+            return DefSubclassProc(hWnd, uMsg, wParam, lParam);
+
+        case WM_MOUSEMOVE:
+        {
+            // Native control redraws itself when the pushed state changes while dragging
+            LRESULT prevState = SendMessage(hWnd, BM_GETSTATE, 0, 0);
+            LRESULT result = DefSubclassProc(hWnd, uMsg, wParam, lParam);
+            if ( IsWindow(hWnd) && SendMessage(hWnd, BM_GETSTATE, 0, 0) != prevState )
+            {
+                RedrawWindow(hWnd, NULL, NULL, RDW_INVALIDATE | RDW_UPDATENOW);
+            }
+            return result;
+        }
+
+        // Messages on which the native control draws itself directly, bypassing WM_PAINT
+        case WM_SETFOCUS:
+        case WM_KILLFOCUS:
+        case WM_LBUTTONDOWN:
+        case WM_LBUTTONDBLCLK:
+        case WM_LBUTTONUP:
+        case WM_CAPTURECHANGED:
+        case WM_KEYDOWN:
+        case WM_KEYUP:
+        case WM_ENABLE:
+        case WM_SETTEXT:
+        case WM_SETFONT:
+        case WM_UPDATEUISTATE:
+        case WM_SYSCOLORCHANGE:
+        case BM_SETCHECK:
+        case BM_SETSTATE:
+        case BM_SETSTYLE:
+        case BM_CLICK:
+        {
+            LRESULT result = DefSubclassProc(hWnd, uMsg, wParam, lParam);
+            if ( IsWindow(hWnd) && IsWindowVisible(hWnd) )
+            {
+                RedrawWindow(hWnd, NULL, NULL, RDW_INVALIDATE | RDW_UPDATENOW);
+            }
+            return result;
+        }
+
+        default:
+            return DefSubclassProc(hWnd, uMsg, wParam, lParam);
+    }
+}
+
+static void jonesConfig_InstallCheckBoxHook(HWND hCtrl)
+{
+    DWORD_PTR refData = 0;
+    if ( !hCtrl || !jonesConfig_IsCheckBoxOrRadio(hCtrl)
+        || GetWindowSubclass(hCtrl, jonesConfig_CheckBoxSubclassProc, JONESCONFIG_SUBCLASSID, &refData) )
+    {
+        return;
+    }
+
+    if ( SetWindowSubclass(hCtrl, jonesConfig_CheckBoxSubclassProc, JONESCONFIG_SUBCLASSID, 0) )
+    {
+        InvalidateRect(hCtrl, NULL, TRUE);
+    }
+}
+
 BOOL CALLBACK jonesConfig_SetPositionAndTextCallback(HWND hCtrl, LPARAM lparam)
 {
     // Function resize control by scale, sets font and
@@ -3276,6 +4546,10 @@ BOOL CALLBACK jonesConfig_SetPositionAndTextCallback(HWND hCtrl, LPARAM lparam)
         // Scale and set font
         jonesConfig_SetWindowFontAndPosition(hCtrl, pFontInfo);
     }
+
+    jonesConfig_ScaleTrackbarThumb(hCtrl, pFontInfo); // Added
+    jonesConfig_InstallCheckBoxHook(hCtrl);           // Added
+    jonesConfig_ScaleStaticImage(hCtrl, pFontInfo);   // Added
 
     if ( pFontInfo->dialogID == 154 || pFontInfo->dialogID == 159 ) // Load/Save dialogs
     {
@@ -3442,20 +4716,29 @@ void J3DAPI jonesConfig_SetWindowFontAndPosition(HWND hCtrl, JonesDialogFontInfo
             int dlgWidth  = rectDlgWindow.right - rectDlgWindow.left;
             int dlgHeight = rectDlgWindow.bottom - rectDlgWindow.top;
 
+            // Fixed: MoveWindow takes parent client coordinates for child windows, e.g. the
+            //        load/save dialog template inside the file dialog. Using its screen position
+            //        moved it out of the file dialog on every resize.
+            POINT dlgPos = { rectDlgWindow.left, rectDlgWindow.top };
+            if ( (GetWindowLongPtr(hParent, GWL_STYLE) & WS_CHILD) && GetParent(hParent) )
+            {
+                ScreenToClient(GetParent(hParent), &dlgPos);
+            }
+
             if ( rectWindow.bottom - rectDlgWindow.bottom <= 0 || dDlgWinX <= 0 )
             {
                 if ( dDlgWinY <= 0 )
                 {
-                    MoveWindow(hParent, rectDlgWindow.left, rectDlgWindow.top, dDlgWinX + dlgWidth, dlgHeight, 1);
+                    MoveWindow(hParent, dlgPos.x, dlgPos.y, dDlgWinX + dlgWidth, dlgHeight, 1);
                 }
                 else
                 {
-                    MoveWindow(hParent, rectDlgWindow.left, rectDlgWindow.top, dlgWidth, dDlgWinY + dlgHeight, 1);
+                    MoveWindow(hParent, dlgPos.x, dlgPos.y, dlgWidth, dDlgWinY + dlgHeight, 1);
                 }
             }
             else
             {
-                MoveWindow(hParent, rectDlgWindow.left, rectDlgWindow.top, dDlgWinX + dlgWidth, dDlgWinY + dlgHeight, 1);
+                MoveWindow(hParent, dlgPos.x, dlgPos.y, dDlgWinX + dlgWidth, dDlgWinY + dlgHeight, 1);
             }
 
             return;
@@ -3864,6 +5147,26 @@ UINT_PTR CALLBACK jonesConfig_SaveGameDialogHookProc(HWND hDlg, UINT uMsg, WPARA
     return 0;
 }
 
+// Added: Moves a control placed below the thumbnail down by the thumbnail's growth,
+//        so the enlarged thumbnail doesn't overlap it.
+static void jonesConfig_MoveBelowThumbnail(HWND hDlg, HWND hCtrl, LONG thumbBottom, LONG dy)
+{
+    if ( !hCtrl || dy == 0 )
+    {
+        return;
+    }
+
+    RECT rect;
+    GetWindowRect(hCtrl, &rect);
+    if ( rect.top < thumbBottom )
+    {
+        return;
+    }
+
+    MapWindowPoints(HWND_DESKTOP, hDlg, (LPPOINT)&rect, 2);
+    MoveWindow(hCtrl, rect.left, rect.top + dy, rect.right - rect.left, rect.bottom - rect.top, TRUE);
+}
+
 int J3DAPI jonesConfig_SaveGameDialogInit(HWND hDlg, int a2, LPOPENFILENAME lpOfn)
 {
     J3D_UNUSED(a2);
@@ -3923,6 +5226,9 @@ int J3DAPI jonesConfig_SaveGameDialogInit(HWND hDlg, int a2, LPOPENFILENAME lpOf
             thumbHeight + thumbWndRect.bottom - thumbWndRect.top,
             TRUE
         );
+
+        // Fixed: Move the film icon down with the enlarged thumbnail
+        jonesConfig_MoveBelowThumbnail(hDlg, GetDlgItem(hDlg, 1115), thumbWndRect.bottom, thumbHeight);
     }
 
     HWND h1152 = GetDlgItem(GetParent(hDlg), 1152);  // some other dlgItem
@@ -4495,6 +5801,9 @@ BOOL J3DAPI jonesConfig_LoadGameDialogInit(HWND hDlg, int a2, LPOPENFILENAME pof
         1
     );
 
+    // Fixed: Move the film icon down with the button and the enlarged thumbnail
+    jonesConfig_MoveBelowThumbnail(hDlg, hIcon, thumbWinRect.bottom, thmbHeight);
+
     // TODO: dead code as the button is not hooked to any code
     char aPath[128] = { 0 };
     jonesConfig_LoadGameGetLastSavedGamePath(aPath, sizeof(aPath));
@@ -4709,6 +6018,9 @@ int J3DAPI jonesConfig_GamePlayOptionsInitDlg(HWND hDlg)
     int x = pt.x;
     int y = pt.y + (rectCBShowText.bottom - rectCBShowText.top) + spacing;
 
+    // Fixed: Scale the sizes by the dialog DPI like the template controls; raw pixels clipped the text at high DPI
+    int cbHeight = MulDiv(20, dpi, USER_DEFAULT_SCREEN_DPI);
+
     // Create the reticle checkbox
     HWND hCBReticle = CreateWindow(
         "BUTTON",               // Class name for button/checkbox
@@ -4716,8 +6028,8 @@ int J3DAPI jonesConfig_GamePlayOptionsInitDlg(HWND hDlg)
         WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX,
         x,
         y,
-        150,                   // Width
-        20,                    // Height
+        MulDiv(150, dpi, USER_DEFAULT_SCREEN_DPI), // Width  // Fixed: Scaled by the dialog DPI, was raw 150px
+        cbHeight,                                  // Height // Fixed: Scaled by the dialog DPI, was raw 20px
         hDlg,                  // Parent window handle (the dialog)
         (HMENU)1053,           // Control ID
         GetModuleHandle(NULL), // Instance handle
@@ -4726,6 +6038,7 @@ int J3DAPI jonesConfig_GamePlayOptionsInitDlg(HWND hDlg)
     J3D_UNUSED(hCBReticle);
 
     CheckDlgButton(hDlg, 1053, JonesReticle_IsEnabled());
+    jonesConfig_InstallCheckBoxHook(hCBReticle); // Added
 
     // Added: Check box "Blood Splatter Effect"
     CreateWindow(
@@ -4733,9 +6046,9 @@ int J3DAPI jonesConfig_GamePlayOptionsInitDlg(HWND hDlg)
         "Blood Splatter Effect",
         WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX,
         x,
-        y + 20 + spacing,
-        200,                   // Width
-        20,                    // Height
+        y + cbHeight + spacing,                    // Fixed: Scaled by the dialog DPI, was raw 20px
+        MulDiv(200, dpi, USER_DEFAULT_SCREEN_DPI), // Width  // Fixed: Scaled by the dialog DPI, was raw 200px
+        cbHeight,                                  // Height // Fixed: Scaled by the dialog DPI, was raw 20px
         hDlg,                  // Parent window handle (the dialog)
         (HMENU)1054,           // Control ID
         GetModuleHandle(NULL), // Instance handle
@@ -4743,6 +6056,7 @@ int J3DAPI jonesConfig_GamePlayOptionsInitDlg(HWND hDlg)
     );
 
     CheckDlgButton(hDlg, 1054, sithWeapon_IsBloodSplatterEnabled());
+    jonesConfig_InstallCheckBoxHook(GetDlgItem(hDlg, 1054)); // Added
 
     // Difficulty slider and text
     HWND hDifSlider = GetDlgItem(hDlg, 1050); // Difficulty slider control
@@ -4793,23 +6107,32 @@ int J3DAPI jonesConfig_GamePlayOptionsInitDlg(HWND hDlg)
         SetWindowText(hDifText, pDifficultyStr);
     }
 
+    // Fixed: Scale the button offset and dialog growth by the dialog DPI like the new check boxes,
+    //        and keep the buttons below the last check box; the raw 48px/66px let it overlap
+    //        the buttons at high DPI.
+    HWND hBtnOk     = GetDlgItem(hDlg, 1);
+    HWND hBtnCancel = GetDlgItem(hDlg, 2);
+
+    RECT rectBtnOk;
+    GetWindowRect(hBtnOk, &rectBtnOk);
+    RECT rectCBBlood;
+    GetWindowRect(GetDlgItem(hDlg, 1054), &rectCBBlood);
+    int moveY, growY;
+    jonesConfig_CalcGamePlayButtonsMove(rectBtnOk.bottom - rectBtnOk.top, dpi, rectCBBlood.bottom + spacing - rectBtnOk.top, &moveY, &growY);
+
     // Added: Resize dialog to fit in new check boxes
     RECT rectDlg;
     GetWindowRect(hDlg, &rectDlg);
-    SetWindowPos(hDlg, NULL, 0, 0, rectDlg.right - rectDlg.left, (rectDlg.bottom - rectDlg.top) + 66, SWP_NOZORDER | SWP_NOMOVE | SWP_NOACTIVATE);
+    SetWindowPos(hDlg, NULL, 0, 0, rectDlg.right - rectDlg.left, (rectDlg.bottom - rectDlg.top) + growY, SWP_NOZORDER | SWP_NOMOVE | SWP_NOACTIVATE);
 
     // Added: Move OK & Cancel buttons down
-    HWND hBtnOk     = GetDlgItem(hDlg, 1);
-    RECT rectBtnOk;
-    GetWindowRect(hBtnOk, &rectBtnOk);
-    POINT ptBtnOk = { rectBtnOk.left, rectBtnOk.top + (rectBtnOk.bottom - rectBtnOk.top) / 2 + 48 };
+    POINT ptBtnOk = { rectBtnOk.left, rectBtnOk.top + moveY };
     ScreenToClient(hDlg, &ptBtnOk);
     SetWindowPos(hBtnOk, NULL, ptBtnOk.x, ptBtnOk.y, 0, 0, SWP_NOZORDER | SWP_NOSIZE | SWP_NOACTIVATE);
 
-    HWND hBtnCancel = GetDlgItem(hDlg, 2);
     RECT rectBtnCancel;
     GetWindowRect(hBtnCancel, &rectBtnCancel);
-    POINT ptBtnCancel = { rectBtnCancel.left, rectBtnCancel.top + (rectBtnCancel.bottom - rectBtnCancel.top) / 2 + 48 };
+    POINT ptBtnCancel = { rectBtnCancel.left, rectBtnCancel.top + moveY };
     ScreenToClient(hDlg, &ptBtnCancel);
     SetWindowPos(hBtnCancel, NULL, ptBtnCancel.x, ptBtnCancel.y, 0, 0, SWP_NOZORDER | SWP_NOSIZE | SWP_NOACTIVATE);
 
@@ -6152,6 +7475,57 @@ int J3DAPI jonesConfig_InitEditControlSchemeDlg(HWND hDlg, int a2, JonesEditCont
     return 1;
 }
 
+// Added: The mapped control column had a fixed 105px width, which doesn't follow the DPI
+//        or the text. Fit it to the widest control name and its header, measured with the
+//        list's font, and give the action column the rest of the client width.
+static void jonesConfig_EditControlScheme_FitListColumns(HWND hList)
+{
+    if ( !hList || Header_GetItemCount(ListView_GetHeader(hList)) < 2 )
+    {
+        return;
+    }
+
+    CHAR aText[256] = { 0 };
+    LVCOLUMNA col = { 0 };
+    col.mask       = LVCF_TEXT;
+    col.pszText    = aText;
+    col.cchTextMax = STD_ARRAYLEN(aText);
+    int valueWidth = 0;
+    if ( ListView_GetColumn(hList, 1, &col) )
+    {
+        valueWidth = ListView_GetStringWidth(hList, aText);
+    }
+
+    int numItems = ListView_GetItemCount(hList);
+    for ( int i = 0; i < numItems; ++i )
+    {
+        aText[0] = '\0';
+        ListView_GetItemText(hList, i, 1, aText, STD_ARRAYLEN(aText));
+        int textWidth = ListView_GetStringWidth(hList, aText);
+        if ( textWidth > valueWidth )
+        {
+            valueWidth = textWidth;
+        }
+    }
+
+    // Client width excludes a visible scrollbar
+    RECT rect;
+    GetClientRect(hList, &rect);
+    int width = rect.right - rect.left;
+    if ( width <= 0 )
+    {
+        return;
+    }
+
+    // Native header/item text insets; keep at least 40% of the width for the action names
+    UINT dpi = GetDpiForWindow(hList);
+    int padding = MulDiv(16, dpi ? dpi : USER_DEFAULT_SCREEN_DPI, USER_DEFAULT_SCREEN_DPI);
+    valueWidth = jonesConfig_CalcValueColumnWidth(valueWidth, padding, width);
+
+    ListView_SetColumnWidth(hList, 0, width - valueWidth);
+    ListView_SetColumnWidth(hList, 1, valueWidth);
+}
+
 void J3DAPI jonesConfig_EditControlScheme_SetListColumn(HWND hCtrl, const char* pJSText)
 {
     RECT rect;
@@ -6239,6 +7613,8 @@ void J3DAPI jonesConfig_EditControlScheme_SetListScheme(HWND hCtrl, int ctrlID, 
             ListView_SetItemText(hCtrl, itemNum++, 1, aControlText);
         }
     }
+
+    jonesConfig_EditControlScheme_FitListColumns(hCtrl); // Added
 }
 void J3DAPI jonesConfig_EditControlScheme_Handle_WM_COMMAND(HWND hDlg, int ctrlID)
 {
@@ -6355,6 +7731,7 @@ void J3DAPI jonesConfig_EditControlScheme_EditAssignment(HWND hDlg, HWND hListCt
         // The original tests the address of the action row here, which is never NULL, so the key is always assigned
         itemIdx = ListView_GetNextItem(hListCtrl, -1, LVNI_SELECTED); // TODO: why do another call, and not use value of itemIdx returned by above func?
         ListView_SetItemText(hListCtrl, itemIdx, 1, assignkeyData.aControlName);
+        jonesConfig_EditControlScheme_FitListColumns(hListCtrl); // Added
 
         LVITEM item;
         item.mask     = LVIF_PARAM;
@@ -6530,6 +7907,7 @@ void J3DAPI jonesConfig_EditControlScheme_AddAssignment(HWND hDlg, HWND hListCtr
 
         ListView_SetItemState(hListCtrl, item.iItem, 3, 3);
         ListView_SetItemText(hListCtrl, item.iItem, 1, data.aControlName);
+        jonesConfig_EditControlScheme_FitListColumns(hListCtrl); // Added
 
        // Assign nex key binding
         STD_ASSERT(data.actionId < JONESCONTROL_ACTION_NUMACTIONS); // Added
@@ -6583,6 +7961,7 @@ void jonesConfig_EditControlScheme_DeleteAssignment(HWND hDlg, HWND hListCtrl, i
             {
                 ListView_DeleteItem(hListCtrl, itemIdx);
             }
+            jonesConfig_EditControlScheme_FitListColumns(hListCtrl); // Added
 
             STD_ASSERT(actionIdx < JONESCONTROL_ACTION_NUMACTIONS); // Added
             for ( size_t i = bndIdx + 1; i < JONESCONTROL_ACTION_GETNUMBINDS(pScheme->aActions[actionIdx]); ++i )
@@ -7157,6 +8536,7 @@ void J3DAPI jonesConfig_ReassignKeyDlg_HandleWM_COMMAND(HWND hWnd, unsigned int 
         {
             ListView_DeleteItem(hList, pData->index);
         }
+        jonesConfig_EditControlScheme_FitListColumns(hList); // Added
 
         for ( size_t i = pData->offset + 1; i < JONESCONTROL_ACTION_GETNUMBINDS(pScheme->aActions[pData->actionId]); ++i )
         {
@@ -7892,6 +9272,7 @@ int J3DAPI jonesConfig_InitAdvanceDisplaySettingsDialog(HWND hDlg, int a2, Jones
         ShowWindow(hCbMSAA, SW_SHOW);
         EnableWindow(hCbMSAA, TRUE);
         SetWindowPos(hCbMSAA, NULL, x, y, w, h, SWP_NOZORDER | SWP_NOREDRAW);
+        jonesConfig_InstallCheckBoxHook(hCbMSAA); // Added
         CheckDlgButton(hDlg, 1053, stdConfig_GetBool(STD3D_CFG_MSAAENABLED, true));
     }
     else if ( hCbMSAA )
@@ -7928,6 +9309,7 @@ int J3DAPI jonesConfig_InitAdvanceDisplaySettingsDialog(HWND hDlg, int a2, Jones
         ShowWindow(hCbMipmapAutoGen, SW_SHOW);
         EnableWindow(hCbMipmapAutoGen, TRUE);
         SetWindowPos(hCbMipmapAutoGen, NULL, x, y, w, h, SWP_NOZORDER | SWP_NOREDRAW);
+        jonesConfig_InstallCheckBoxHook(hCbMipmapAutoGen); // Added
         CheckDlgButton(hDlg, 1054, stdConfig_GetBool(STD3D_CFG_MIPMAPAUTOGEN, true));
     }
     else if ( hCbMipmapAutoGen )
@@ -7964,12 +9346,42 @@ int J3DAPI jonesConfig_InitAdvanceDisplaySettingsDialog(HWND hDlg, int a2, Jones
         ShowWindow(hCbAnisotropic, SW_SHOW);
         EnableWindow(hCbAnisotropic, TRUE);
         SetWindowPos(hCbAnisotropic, NULL, x, y, w, h, SWP_NOZORDER | SWP_NOREDRAW);
+        jonesConfig_InstallCheckBoxHook(hCbAnisotropic); // Added
         CheckDlgButton(hDlg, 1055, stdConfig_GetBool(STD3D_CFG_ANISOTROPICFILTER, true));
     }
     else if ( hCbAnisotropic )
     {
         ShowWindow(hCbAnisotropic, SW_HIDE);
         EnableWindow(hCbAnisotropic, FALSE);
+    }
+
+    // Added: Adds check box for upscaling dialog icons and images with xBRZ
+    {
+        y += MulDiv(spacing, dpi, USER_DEFAULT_SCREEN_DPI);
+        int w = MulDiv(120, dpi, USER_DEFAULT_SCREEN_DPI);
+
+        // Reuse the check box when the dialog is reinitialized
+        HWND hCbUpscale = GetDlgItem(hDlg, JONESCONFIG_IDC_UPSCALEDIALOGIMAGES);
+        if ( !hCbUpscale )
+        {
+            hCbUpscale = CreateWindow(
+                "Button",
+                "Smooth Dialog Images",
+                WS_CHILD | BS_AUTOCHECKBOX | BS_VCENTER | WS_VISIBLE | WS_GROUP | WS_TABSTOP,
+                x,
+                y,
+                w,
+                h,
+                hDlg,                                         // Parent window handle
+                (HMENU)JONESCONFIG_IDC_UPSCALEDIALOGIMAGES,   // Control ID
+                GetModuleHandle(NULL),
+                NULL                                          // Additional creation config
+            );
+        }
+
+        SetWindowPos(hCbUpscale, NULL, x, y, w, h, SWP_NOZORDER | SWP_NOREDRAW);
+        jonesConfig_InstallCheckBoxHook(hCbUpscale);
+        CheckDlgButton(hDlg, JONESCONFIG_IDC_UPSCALEDIALOGIMAGES, stdConfig_GetBool(JONESCONFIG_CFG_GRAPHICS_UPSCALEDIALOGIMAGES, true));
     }
 
     // Added: Enable and init HiPoly check button
@@ -8094,6 +9506,9 @@ void J3DAPI jonesConfig_AdvanceDisplaySettings_HandleWM_COMMAND(HWND hDlg, int c
             // Altered: Original was set to bilinear
             CheckRadioButton(hDlg, 1088, 1090, 1090);
             jonesConfig_advanceDisplaySettings_curFilterMode = STD3D_MIPMAPFILTER_TRILINEAR;
+
+            // Added: Smooth dialog images on by default
+            CheckDlgButton(hDlg, JONESCONFIG_IDC_UPSCALEDIALOGIMAGES, BST_CHECKED);
             break;
         }
 
@@ -8166,6 +9581,11 @@ void J3DAPI jonesConfig_AdvanceDisplaySettings_HandleWM_COMMAND(HWND hDlg, int c
                 int bAniso = IsDlgButtonChecked(hDlg, 1055);
                 stdConfig_SetBool(STD3D_CFG_ANISOTROPICFILTER, !!bAniso);
             }
+
+            // Added: Grab smooth dialog images option; applies to dialogs opened afterwards
+            int bUpscale = IsDlgButtonChecked(hDlg, JONESCONFIG_IDC_UPSCALEDIALOGIMAGES);
+            stdConfig_SetBool(JONESCONFIG_CFG_GRAPHICS_UPSCALEDIALOGIMAGES, !!bUpscale);
+            jonesConfig_FreeScaledMaskedImages(); // Drop images upscaled with the previous setting
 
             // Close dialog
             EndDialog(hDlg, ctrlID);
@@ -8780,6 +10200,156 @@ void jonesConfig_UpdateCurrentLevelNum(void)
     jonesConfig_gameStatistics_curLevelNum = JonesMain_GetCurrentLevelNum();
 }
 
+// Added: Masked dialog images (exit, IQ) enlarged with xBRZ and drawn with alpha blending,
+//        instead of stretching the image and mask with StretchBlt on every repaint.
+//        Cached per image, mask and size; freed when the images change.
+typedef struct sJonesScaledMaskedImage
+{
+    HBITMAP hImage;
+    HBITMAP hMask;
+    int width;
+    int height;
+    bool bUsed;
+    HBITMAP hScaled; // premultiplied 32bpp DIB, NULL if the image is drawn as originally
+} JonesScaledMaskedImage;
+
+static JonesScaledMaskedImage jonesConfig_aScaledMaskedImages[4];
+static size_t jonesConfig_nextScaledMaskedImage = 0;
+
+static void jonesConfig_FreeScaledMaskedImages(void)
+{
+    for ( size_t i = 0; i < STD_ARRAYLEN(jonesConfig_aScaledMaskedImages); ++i )
+    {
+        if ( jonesConfig_aScaledMaskedImages[i].hScaled )
+        {
+            DeleteObject(jonesConfig_aScaledMaskedImages[i].hScaled);
+        }
+    }
+
+    memset(jonesConfig_aScaledMaskedImages, 0, sizeof(jonesConfig_aScaledMaskedImages));
+    jonesConfig_nextScaledMaskedImage = 0;
+}
+
+// Reads a bitmap through a DC, as it may be selected into hdcSrc (GetDIBits requires it not to be).
+// Leaves hBmp selected into hdcSrc. Returns a malloc'd buffer or NULL.
+static uint32_t* jonesConfig_ReadBitmapThroughDC(HDC hdcSrc, HBITMAP hBmp, int width, int height)
+{
+    BITMAPINFO bmi = { 0 };
+    bmi.bmiHeader.biSize        = sizeof(BITMAPINFOHEADER);
+    bmi.bmiHeader.biWidth       = width;
+    bmi.bmiHeader.biHeight      = -height; // top-down
+    bmi.bmiHeader.biPlanes      = 1;
+    bmi.bmiHeader.biBitCount    = 32;
+    bmi.bmiHeader.biCompression = BI_RGB;
+
+    SelectObject(hdcSrc, hBmp);
+    void* pBits = NULL;
+    HDC hdcMem  = CreateCompatibleDC(hdcSrc);
+    HBITMAP hDib = CreateDIBSection(hdcSrc, &bmi, DIB_RGB_COLORS, &pBits, NULL, 0);
+
+    uint32_t* pPixels = NULL;
+    if ( hdcMem && hDib && pBits )
+    {
+        HGDIOBJ hPrev = SelectObject(hdcMem, hDib);
+        if ( BitBlt(hdcMem, 0, 0, width, height, hdcSrc, 0, 0, SRCCOPY) )
+        {
+            GdiFlush();
+            pPixels = (uint32_t*)STDMALLOC(sizeof(uint32_t) * (size_t)width * (size_t)height);
+            if ( pPixels )
+            {
+                memcpy(pPixels, pBits, sizeof(uint32_t) * (size_t)width * (size_t)height);
+            }
+        }
+        SelectObject(hdcMem, hPrev);
+    }
+
+    if ( hDib ) DeleteObject(hDib);
+    if ( hdcMem ) DeleteDC(hdcMem);
+    return pPixels;
+}
+
+static HBITMAP jonesConfig_GetScaledMaskedImage(HDC hdcSrc, HBITMAP hImage, HBITMAP hMask, int srcWidth, int srcHeight, int width, int height)
+{
+    for ( size_t i = 0; i < STD_ARRAYLEN(jonesConfig_aScaledMaskedImages); ++i )
+    {
+        JonesScaledMaskedImage* pEntry = &jonesConfig_aScaledMaskedImages[i];
+        if ( pEntry->bUsed && pEntry->hImage == hImage && pEntry->hMask == hMask && pEntry->width == width && pEntry->height == height )
+        {
+            return pEntry->hScaled;
+        }
+    }
+
+    uint32_t* pMask  = jonesConfig_ReadBitmapThroughDC(hdcSrc, hMask, srcWidth, srcHeight);
+    uint32_t* pImage = jonesConfig_ReadBitmapThroughDC(hdcSrc, hImage, srcWidth, srcHeight);
+    uint32_t* pScaled = NULL;
+    if ( pMask && pImage )
+    {
+        // Only a black & white mask is a transparency mask. Other masks are AND-ed with
+        // the background as a color filter (e.g. IQ image with the IQ points drawn into
+        // its mask), which alpha can't represent; those are drawn as originally.
+        if ( jonesConfig_IsBinaryMask(pMask, srcWidth * srcHeight) )
+        {
+            jonesConfig_ApplyTransparencyMask(pImage, pMask, srcWidth * srcHeight); // white mask = transparent
+            pScaled = jonesConfig_UpscalePixels(pImage, srcWidth, srcHeight, width, height, /*bAlpha=*/true);
+        }
+    }
+
+    if ( pMask ) STDFREE(pMask);
+    if ( pImage ) STDFREE(pImage);
+
+    HBITMAP hScaled = NULL;
+    if ( pScaled )
+    {
+        jonesConfig_PremultiplyAlpha(pScaled, width * height); // for AlphaBlend
+
+        hScaled = jonesConfig_CreateDibFromPixels(pScaled, width, height);
+        STDFREE(pScaled);
+    }
+
+    // Remember the result, also when the image is drawn as originally, to not read it again on every repaint
+    JonesScaledMaskedImage* pEntry = &jonesConfig_aScaledMaskedImages[jonesConfig_nextScaledMaskedImage];
+    jonesConfig_nextScaledMaskedImage = (jonesConfig_nextScaledMaskedImage + 1) % STD_ARRAYLEN(jonesConfig_aScaledMaskedImages);
+    if ( pEntry->hScaled )
+    {
+        DeleteObject(pEntry->hScaled);
+    }
+
+    pEntry->hImage  = hImage;
+    pEntry->hMask   = hMask;
+    pEntry->width   = width;
+    pEntry->height  = height;
+    pEntry->bUsed   = true;
+    pEntry->hScaled = hScaled;
+    return hScaled;
+}
+
+static bool jonesConfig_DrawScaledMaskedImage(HWND hCtrl, HDC hdcWnd, HDC hdcCtrl, HBITMAP hImage, HBITMAP hMask, int srcWidth, int srcHeight, int width, int height)
+{
+    HBITMAP hScaled = jonesConfig_GetScaledMaskedImage(hdcWnd, hImage, hMask, srcWidth, srcHeight, width, height);
+    if ( !hScaled )
+    {
+        return false;
+    }
+
+    HDC hdcMem = CreateCompatibleDC(hdcCtrl);
+    if ( !hdcMem )
+    {
+        return false;
+    }
+
+    // Paint the background first; blending over the previous image would harden the soft edges
+    RECT rect = { 0, 0, width, height };
+    HBRUSH hbr = (HBRUSH)SendMessage(GetParent(hCtrl), WM_CTLCOLORSTATIC, (WPARAM)hdcCtrl, (LPARAM)hCtrl);
+    FillRect(hdcCtrl, &rect, hbr ? hbr : GetSysColorBrush(COLOR_BTNFACE));
+
+    HGDIOBJ hPrev = SelectObject(hdcMem, hScaled);
+    BLENDFUNCTION blend = { AC_SRC_OVER, 0, 255, AC_SRC_ALPHA };
+    BOOL bDrawn = GdiAlphaBlend(hdcCtrl, 0, 0, width, height, hdcMem, 0, 0, width, height, blend);
+    SelectObject(hdcMem, hPrev);
+    DeleteDC(hdcMem);
+    return bDrawn != FALSE;
+}
+
 int J3DAPI jonesConfig_DrawImageOnDialogItem(HWND hDlg, HDC hdcWnd, HDC hdcCtrl, int nIDDlgItem, HBITMAP hImage, HBITMAP hMask)
 {
     RECT rect;
@@ -8788,6 +10358,14 @@ int J3DAPI jonesConfig_DrawImageOnDialogItem(HWND hDlg, HDC hdcWnd, HDC hdcCtrl,
 
     BITMAP bmp;
     GetObject(hImage, sizeof(BITMAP), &bmp);
+
+    // Added: Enlarge masked images with xBRZ. Unmasked ones are savegame thumbnails
+    //        (screenshots), which a pixel-art filter would distort.
+    if ( hMask && (rect.right - rect.left > bmp.bmWidth || rect.bottom - rect.top > bmp.bmHeight)
+        && jonesConfig_DrawScaledMaskedImage(hDlgItem, hdcWnd, hdcCtrl, hImage, hMask, bmp.bmWidth, bmp.bmHeight, rect.right - rect.left, rect.bottom - rect.top) )
+    {
+        return TRUE;
+    }
 
     if ( hMask )
     {
@@ -8960,6 +10538,8 @@ void J3DAPI jonesConfig_DrawStatisticDialogIQPoints(HWND hwnd, JonesDialogImageI
     // Draw IQ mask bmp
     SelectObject(pImageInfo->hdcFront, (HGDIOBJ)jonesConfig_apDialogIcons[1]);
     BitBlt(pImageInfo->hdcFront, x, y, width, height, pImageInfo->hdcBack, 0, 0, SRCCOPY);
+
+    jonesConfig_FreeScaledMaskedImages(); // Added: IQ image changed, drop its upscaled copy
 }
 
 int J3DAPI jonesConfig_InitStatisticDialog(HWND hDlg, int a2, int* pData)
@@ -9032,23 +10612,15 @@ static void jonesConfig_InitExitGameDialogImage(HWND hWnd)
     HWND hIcon = GetDlgItem(hWnd, 1182);
     SetWindowLongPtr(hIcon, GWL_STYLE, (GetWindowLongPtr(hIcon, GWL_STYLE) & ~SS_TYPEMASK) | SS_OWNERDRAW);
 
-    int iconSize = 96;
-    JonesDisplaySettings* pSettings = JonesMain_GetDisplaySettings();
-    if ( JonesMain_HasStarted() && pSettings && !pSettings->bWindowMode )
+    // Fixed: The 96px image had a fixed size, so it was too big for the text at low DPI and
+    //        too small at high DPI. Scale it by the dialog DPI like the template controls;
+    //        96px is its size at JONESCONFIG_IMAGE_REFDPI. The common layout pass then applies
+    //        the same layout scale as to the other controls.
+    UINT dialogDPI = GetDpiForWindow(hWnd);
+    int iconSize = MulDiv(96, dialogDPI ? dialogDPI : JONESCONFIG_IMAGE_REFDPI, JONESCONFIG_IMAGE_REFDPI);
+    if ( iconSize < 1 )
     {
-        UINT desktopDPI = JonesDisplay_GetDesktopDpi();
-        UINT dialogDPI = GetDpiForWindow(hWnd);
-        if ( desktopDPI && dialogDPI )
-        {
-            // Fixed: Unlike template controls, this raw-pixel size has not
-            // followed the dialog DPI. Normalize it before common layout
-            // applies the desktop-to-dialog DPI ratio.
-            iconSize = MulDiv(iconSize, dialogDPI, desktopDPI);
-            if ( iconSize < 1 )
-            {
-                iconSize = 1;
-            }
-        }
+        iconSize = 1;
     }
 
     RECT rectWndIcon;
@@ -9466,16 +11038,17 @@ int J3DAPI jonesConfig_InitStoreDialog(HWND hDlg, int a2, tStoreCartState* pCart
 
 int J3DAPI jonesConfig_StoreInitItemIcons(HWND hWnd, tStoreCartState* pCart)
 {
-    uint32_t desktopWidth, desktopHeight;
-    float scale = jonesConfig_GetFullscreenDialogScale(hWnd, &desktopWidth, &desktopHeight);
-    int iconSize = (int)floorf(48.0f * scale + 0.5f);
+    // Fixed: The 48px cells had a fixed size (scaled only by the fullscreen presentation ratio),
+    //        so they were too big for the text at low DPI and too small at high DPI. Scale them
+    //        with the dialog controls instead; 48px is their size at JONESCONFIG_IMAGE_REFDPI
+    //        without layout scaling. The image list is created after the layout pass.
+    double scale = jonesConfig_GetDialogImageScale(hWnd);
+    int iconSize = (int)floor(48.0 * USER_DEFAULT_SCREEN_DPI / JONESCONFIG_IMAGE_REFDPI * scale + 0.5);
     if ( iconSize < 1 )
     {
         iconSize = 1;
     }
-    // Fixed: Image lists are created after dialog layout, so apply its
-    // fullscreen presentation ratio to their native-desktop 48-pixel cells.
-    pCart->hList = ImageList_Create(iconSize, iconSize, ILC_MASK | ILC_COLOR8, STD_ARRAYLEN(JonesHud_aStoreItems), 0);
+    pCart->hList = ImageList_Create(iconSize, iconSize, ILC_MASK | ILC_COLOR32, STD_ARRAYLEN(JonesHud_aStoreItems), 0); // Fixed: 32bpp from 8bpp; scaled icons lost colors to the 8bpp palette
     if ( !pCart->hList )
     {
         return 0;
@@ -9483,10 +11056,30 @@ int J3DAPI jonesConfig_StoreInitItemIcons(HWND hWnd, tStoreCartState* pCart)
 
     HINSTANCE hInstance = (HINSTANCE)GetWindowLongPtr(hWnd, GWL_HINSTANCE);
     int result = hInstance != NULL;
+
+    // Added: Background of the item lists, for blending the icon edges
+    HWND hItemList = GetDlgItem(hWnd, 1005); // available items list
+    COLORREF listBkColor = hItemList ? ListView_GetBkColor(hItemList) : CLR_NONE;
+    if ( listBkColor == CLR_NONE )
+    {
+        listBkColor = GetSysColor(COLOR_WINDOW);
+    }
+
     for ( size_t i = 0; i < STD_ARRAYLEN(JonesHud_aStoreItems); ++i )
     {
         pCart->aItemIcons[i] = LoadIconA(hInstance, MAKEINTRESOURCE(JonesHud_aStoreItems[i].iconID));
-        result = ImageList_ReplaceIcon(pCart->hList, -1, pCart->aItemIcons[i]);
+
+        // Added: Load the icon at the cell size, upscaled with xBRZ, instead of letting the image list
+        //        stretch the 32px icon. The image list only uses the mask, so blend the soft edges
+        //        over the list background.
+        HICON hSized = pCart->aItemIcons[i]
+            ? jonesConfig_LoadScaledIcon(hInstance, MAKEINTRESOURCE(JonesHud_aStoreItems[i].iconID), iconSize, iconSize, listBkColor)
+            : NULL;
+        result = ImageList_ReplaceIcon(pCart->hList, -1, hSized ? hSized : pCart->aItemIcons[i]);
+        if ( hSized )
+        {
+            DestroyIcon(hSized);
+        }
     }
 
     return result;
