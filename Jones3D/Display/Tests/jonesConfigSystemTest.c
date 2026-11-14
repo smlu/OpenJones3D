@@ -895,13 +895,3 @@ TEST_GROUP_RUNNER(jonesConfigSystem)
     RUN_TEST_CASE(jonesConfigSystem, NativeCheckBoxHookDrawsTheBoxAtTheFontSize);
     RUN_TEST_CASE(jonesConfigSystem, NativeUpscaledIconsKeepTheirAlphaOrBlendIntoTheListBackground);
 }
-
-static void jonesConfigSystem_RunAll(void)
-{
-    RUN_TEST_GROUP(jonesConfigSystem);
-}
-
-int main(int argc, const char* argv[])
-{
-    return UnityMain(argc, argv, jonesConfigSystem_RunAll);
-}

@@ -242,6 +242,16 @@ code 2 and lists the suites. Child process modes of the tests, such as the
 `stdPlatform` death tests, go through the `CHILD_HANDLER` function, which
 `main()` calls before the suites run.
 
+All suites of a module link into one executable, so a test must not replace a
+production function by defining one with the same name; the real function of
+another suite would collide with it. Rename the calls instead, with a macro
+seam in the test translation unit before it includes the tested source, for
+example `#define jonesConfig_ShowMessageDialog JonesHudTest_jonesConfig_ShowMessageDialog`
+in `JonesHudTest.c`. A test that compiles a production source a second time
+renames that copy's external symbols: `jonesConfigSystemTest.c` force-includes
+`jonesConfigSystemRenames.h`, which `Jones3D/Tests/CMakeLists.txt` generates
+from `jonesConfig.c`.
+
 | Executable | CTest entry | Coverage | Integration |
 | --- | --- | --- | --- |
 | `j3dcoreTests` | `j3dcore.Macros` | Core macros | Available |
@@ -251,9 +261,7 @@ code 2 and lists the suites. Child process modes of the tests, such as the
 | `smushTests` | `smush`, `smush.System` | INSANE movie player: core, bitmap, codec, sound, stream areas and original-engine assembly vectors; system suite: native configured DirectSound movie startup, synthetic frame playback and restart | Available |
 | `sithTests` | `sith` | World thing/template I/O and voice lip-sync | Available |
 | `sithEngineTests` | `sith.Engine` | Sphere/plane intersection, rotating paths, fixed-step player physics and frame-rate regressions (with original-engine vectors of the COG timing and per-frame damage) | Available |
-| `jonesConfigTests` | `Jones3D.Config` | Control-scheme and keyboard-name regressions, fullscreen dialog font/icon scaling and store column layout | Available |
-| `jonesHudTests` | `Jones3D.Hud` | Inventory theme ownership, paused sound clock and fading-icon depth policy | Available |
-| `jonesConfigSystemTests` | `Jones3D.ConfigSystem` | Hidden native GDI windows, font/image-list layout, measured ListView columns and authored bitmap pixels | Optional system suite |
+| `jones3dTests` | `Jones3D.Main`, `Jones3D.Config`, `Jones3D.Hud`, `Jones3D.ConfigSystem` | Closest video mode lookup; control-scheme and keyboard-name regressions, fullscreen dialog font/icon scaling and store column layout; inventory theme ownership, paused sound clock and fading-icon depth policy; system suite: hidden native GDI windows, font/image-list layout, measured ListView columns and authored bitmap pixels | Available |
 | `sithThingQuetzVecTests` | `sith.ThingQuetz` | Original-engine vectors of the Quetz tail functions (world-state harness, `Libs/sith/Tests/Vec`) | Available |
 | `sithAIInstinctVecTests` | `sith.AIInstinct` | Original-engine vectors of the instinct registration (world-state harness) | Available |
 | `sithAIInstinctFnVecTests` | `sith.AIInstinctFn` | Original-engine vectors of the instinct functions (world-state harness) | Available |

@@ -1033,13 +1033,3 @@ TEST_GROUP_RUNNER(JonesHud)
     RUN_TEST_CASE(JonesHud, ConflictingAnimationsRetainDefaultOpacityAndDepthWrites);
     RUN_TEST_CASE(JonesHud, DisabledFadeComparesItsFinalAlphaWithDisabledOpacity);
 }
-
-static void JonesHudTest_RunAllTests(void)
-{
-    RUN_TEST_GROUP(JonesHud);
-}
-
-int main(int argc, const char* argv[])
-{
-    return UnityMain(argc, argv, JonesHudTest_RunAllTests);
-}

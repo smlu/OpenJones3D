@@ -1772,13 +1772,3 @@ TEST_GROUP_RUNNER(jonesConfig)
     RUN_TEST_CASE(jonesConfig, UpscalingIsSkippedWhenDisabledOrForMuchSmallerImages);
     RUN_TEST_CASE(jonesConfig, EnlargedMaskedImageFallsBackToTheOriginalDrawingWhenItCantBeRead);
 }
-
-static void JonesConfigTest_RunAllTests(void)
-{
-    RUN_TEST_GROUP(jonesConfig);
-}
-
-int main(int argc, const char* argv[])
-{
-    return UnityMain(argc, argv, JonesConfigTest_RunAllTests);
-}

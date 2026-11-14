@@ -110,6 +110,5 @@ endif()
 # )
 
 if (JONES3D_BUILD_TESTS)
-    add_subdirectory(Main/Tests)
-    add_subdirectory(Display/Tests)
+    add_subdirectory(Tests)
 endif()
