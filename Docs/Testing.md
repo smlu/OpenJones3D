@@ -245,9 +245,7 @@ code 2 and lists the suites. Child process modes of the tests, such as the
 | Executable | CTest entry | Coverage | Integration |
 | --- | --- | --- | --- |
 | `j3dcoreTests` | `j3dcore.Macros` | Core macros | Available |
-| `rdroidTests` | `rdroid.Math` | Vector and matrix debug-source numerical fidelity, rotation matrices against the C library | Available |
-| `rdModel3Tests` | `rdroid.Model3` | Per-draw face-flag scoping and deferred face flags | Available |
-| `rdCacheTests` | `rdroid.Cache` | Alpha comparator ordering and 16-bit batch boundaries with recorded source-face coverage | Available |
+| `rdroidTests` | `rdroid.Math`, `rdroid.Model3`, `rdroid.Cache` | Vector and matrix debug-source numerical fidelity, rotation matrices against the C library; per-draw face-flag scoping and deferred face flags; alpha comparator ordering and 16-bit batch boundaries with recorded source-face coverage | Available |
 | `stdTests` | `std`, `std.System`, `std.DisruptiveSystem` | General and deterministic Win95 services; system suites: Win95 windows and DirectX devices; disruptive suites: opt-in fullscreen/device changes | Available |
 | `soundTests` | `sound` | Deterministic lip-sync generation and lookup, AudioLib codec and header vectors | Available |
 | `smushTests` | `smush`, `smush.System` | INSANE movie player: core, bitmap, codec, sound, stream areas and original-engine assembly vectors; system suite: native configured DirectSound movie startup, synthetic frame playback and restart | Available |

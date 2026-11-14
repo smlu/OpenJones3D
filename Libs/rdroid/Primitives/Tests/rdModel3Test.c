@@ -11,7 +11,6 @@
 
 #include <math.h>
 
-tHostServices* rdModel3Test_pHS;
 rdCamera* rdModel3Test_pCamera;
 rdMatrix34 rdModel3Test_cameraMatrix;
 rdMatrix34 rdModel3Test_identity = { {1,0,0}, {0,1,0}, {0,0,1}, {0,0,0} };
@@ -283,14 +282,4 @@ TEST_GROUP_RUNNER(rdModel3)
     RUN_TEST_CASE(rdModel3, TestRejectedDrawAndClippedFacesDoNotLeakFlags);
     RUN_TEST_CASE(rdModel3, TestDrawFlagsCoexistWithFogAndAuthoredFlags);
     RUN_TEST_CASE(rdModel3, TestNestedOrdinaryDrawClearsAndRestoresOuterFlags);
-}
-
-static void rdModel3Test_RunAll(void)
-{
-    RUN_TEST_GROUP(rdModel3);
-}
-
-int main(int argc, const char* argv[])
-{
-    return UnityMain(argc, argv, rdModel3Test_RunAll);
 }

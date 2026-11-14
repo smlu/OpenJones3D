@@ -4,11 +4,6 @@
 
 #include <rdroid/Math/rdMatrix.h>
 
-// Identity matrix redirected in rdMathTestHost.h
-const rdMatrix34 rdMathTest_identMatrix34 = {
-    { 1.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }, { 0.0f, 0.0f, 1.0f }, { 0.0f, 0.0f, 0.0f }
-};
-
 TEST_GROUP(rdMatrix);
 
 TEST_SETUP(rdMatrix)

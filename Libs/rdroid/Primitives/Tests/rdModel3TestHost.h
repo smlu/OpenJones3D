@@ -2,12 +2,11 @@
 #define RDROID_TESTS_RDMODEL3TESTHOST_H
 
 #include <rdroid/Main/rdroid.h>
+#include <rdroid/Tests/rdroidTestHost.h>
 #include <rdroid/Engine/rdCamera.h>
 
-extern tHostServices* rdModel3Test_pHS;
 extern rdCamera* rdModel3Test_pCamera;
 extern rdMatrix34 rdModel3Test_cameraMatrix;
-extern rdMatrix34 rdModel3Test_identity;
 extern rdRoidFlags rdModel3Test_renderOptions;
 extern rdLightMode rdModel3Test_lightingMode;
 extern int rdModel3Test_numDrawnFaces;
@@ -15,14 +14,10 @@ extern int rdModel3Test_numDrawnAlphaFaces;
 
 // Relocate only the test translation units before inline helpers expand RTI
 // addresses. Production renderer/math bindings retain their original contract.
-#undef rdroid_g_pHS_ADDR
-#define rdroid_g_pHS_ADDR ((uintptr_t)&rdModel3Test_pHS)
 #undef rdCamera_g_pCurCamera_ADDR
 #define rdCamera_g_pCurCamera_ADDR ((uintptr_t)&rdModel3Test_pCamera)
 #undef rdCamera_g_camMatrix_ADDR
 #define rdCamera_g_camMatrix_ADDR ((uintptr_t)&rdModel3Test_cameraMatrix)
-#undef rdroid_g_identMatrix34_ADDR
-#define rdroid_g_identMatrix34_ADDR ((uintptr_t)&rdModel3Test_identity)
 #undef rdroid_g_curRenderOptions_ADDR
 #define rdroid_g_curRenderOptions_ADDR ((uintptr_t)&rdModel3Test_renderOptions)
 #undef rdroid_g_curLightingMode_ADDR

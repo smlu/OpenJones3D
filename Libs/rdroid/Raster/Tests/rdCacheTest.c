@@ -12,7 +12,6 @@
 
 extern int J3DAPI rdCache_ProcFaceDistanceCompare(const rdCacheProcEntry*, const rdCacheProcEntry*);
 
-tHostServices* rdCacheTest_pHS;
 rdLightMode rdCacheTest_lighting;
 rdGeometryMode rdCacheTest_geometry;
 size_t std3D_g_maxVertices;
@@ -292,6 +291,3 @@ TEST_GROUP_RUNNER(rdCache)
     RUN_TEST_CASE(rdCache, AlphaSortOrdersFiniteDepthsBeforeNaNsWithoutLosingFaces);
     RUN_TEST_CASE(rdCache, EmptyFaceListDoesNotDraw);
 }
-
-static void rdCacheTest_RunAll(void) { TEST_rdCache_GROUP_RUNNER(); }
-int main(int argc, const char* argv[]) { return UnityMain(argc, argv, rdCacheTest_RunAll); }
