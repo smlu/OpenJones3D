@@ -2124,8 +2124,8 @@ void J3DAPI sithPlayerControls_ProcessSwimMove(SithThing* pThing, float secDelta
                 // Apply underwater endurance penalty
                 pThing->thingInfo.actorInfo.endurance.msecUnderwater += (tStdTime)(enduranceRate * secDeltaTime * 1000.0f);
 
-                // Puff some bubblez
-                if ( SITH_RAND() < 0.30000001f )
+                // Puff some bubblez. Fixed: One roll per 30 FPS frame, so the bubbles don't multiply with FPS
+                if ( SITHTIME_ISFRAMECYCLE(pThing->idx, 1) && SITH_RAND() < 0.30000001f )
                 {
                     sithFX_CreateBubble(pThing);
                 }

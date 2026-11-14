@@ -1153,9 +1153,16 @@ void J3DAPI sithFX_UpdatePolyline(SithThing* pThing)
         if ( streq(pThing->aName, "+lightning") )
         {
             rdPolyline* pPolyline = pThing->renderData.data.pPolyline;
-            pPolyline->face.texVertOffset.y = (SITH_RANDF() - 0.69999999f) * 0.079999998f + pPolyline->face.texVertOffset.y;
+        #ifdef J3D_QOL_IMPROVEMENTS
+            // Fixed: Scale the random texture scroll step by frame time at 30 FPS and pick a new cel as often as every 4th frame
+            //        at 30 FPS. The original stepped every frame, so the lightning scrolled and flickered faster as FPS went up.
+            const float scrollScale = sithTime_g_frameTimeFlex * (float)SITHTIME_FRAMECYCLE_FPS;
+        #else
+            const float scrollScale = 1.0f;
+        #endif
+            pPolyline->face.texVertOffset.y = (SITH_RANDF() - 0.69999999f) * 0.079999998f * scrollScale + pPolyline->face.texVertOffset.y;
             size_t numCels = pThing->renderData.data.pPolyline->face.pMaterial->numCels;
-            if ( numCels > 1 && SITH_ISFRAMECYCLE(pThing->idx, 4) ) // On every 4th frame random select new cel
+            if ( numCels > 1 && SITHTIME_ISFRAMECYCLE(pThing->idx, 4) ) // On every 4th frame random select new cel
             {
                 pThing->renderData.data.pPolyline->face.matCelNum = (int32_t)(SITH_RAND() * (double)numCels);
             }

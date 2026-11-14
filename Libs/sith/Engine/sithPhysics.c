@@ -681,7 +681,7 @@ void J3DAPI sithPhysics_UpdateThing(SithThing* pThing, float secDeltaTime)
     else if ( (pPhysics->flags & SITH_PF_JEEP) != 0 )
     {
         sithPhysics_UpdateJeepPhysics(pThing, secDeltaTime);
-        if ( SITH_ISFRAMECYCLE(pThing->idx, 4) ) // every 4th frames
+        if ( SITHTIME_ISFRAMECYCLE(pThing->idx, 4) ) // every 4th frames. Fixed: as often as at 30 FPS at any FPS, so the AI awareness event queue doesn't overflow
         {
             sithAIAwareness_CreateTransmittingEvent(pThing->pInSector, &pThing->pos, 2, 4.0f, pThing);
         }
@@ -690,7 +690,7 @@ void J3DAPI sithPhysics_UpdateThing(SithThing* pThing, float secDeltaTime)
     else if ( (pPhysics->flags & SITH_PF_MINECAR) != 0 && (pThing->attach.flags & SITH_ATTACH_SURFACE) != 0 )
     {
         sithPhysics_UpdateMineCarPhysics(pThing, secDeltaTime);
-        if ( SITH_ISFRAMECYCLE(pThing->idx, 8) ) // every 8th frames
+        if ( SITHTIME_ISFRAMECYCLE(pThing->idx, 8) ) // every 8th frames. Fixed: as often as at 30 FPS at any FPS, so the AI awareness event queue doesn't overflow
         {
             sithAIAwareness_CreateTransmittingEvent(pThing->pInSector, &pThing->pos, 2, 2.0f, pThing);
         }
@@ -2669,6 +2669,13 @@ void J3DAPI sithPhysics_UpdateMineCarChassis(SithThing* pThing, const SithVehicl
 
 void J3DAPI sithPhysics_UpdateExhaustFx(SithThing* pThing, const SithVehicleExhaustInfo* pExhaustInfo, float secDeltaTime)
 {
+    // Fixed: Spawn exhaust smoke at most once per 30 FPS frame. The original spawned at least one puff every frame,
+    //        so the smoke got denser (and used more things) as FPS went up.
+    if ( !SITHTIME_ISFRAMECYCLE(pThing->idx, 1) )
+    {
+        return;
+    }
+
     SithPhysicsInfo* pPhysics = &pThing->moveInfo.physics;
 
     if ( !pExhaustInfo->bEnabled

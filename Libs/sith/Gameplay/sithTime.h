@@ -30,6 +30,54 @@ J3D_EXTERN_C_START
 #define sithTime_g_bPaused J3D_DECL_FAR_VAR(sithTime_g_bPaused, int)
 // extern int sithTime_g_bPaused;
 
+#ifdef J3D_QOL_IMPROVEMENTS
+/**
+ * Reference frame rate of SITHTIME_ISFRAMECYCLE: effects that the original engine ran on every n-th frame
+ * run as often as they did at this frame rate, at any FPS. The game was designed for 30 FPS.
+ */
+#  define SITHTIME_FRAMECYCLE_FPS 30u
+
+/**
+ * Returns the number of reference frames (at SITHTIME_FRAMECYCLE_FPS) in a game time.
+ * Splits off whole seconds, so it doesn't overflow and only divides by constants, which compile to multiplications.
+ * @note new function
+ */
+static inline uint32_t sithTime_GetReferenceFrame(uint32_t msecTime)
+{
+    return (msecTime / 1000u) * SITHTIME_FRAMECYCLE_FPS + (msecTime % 1000u) * SITHTIME_FRAMECYCLE_FPS / 1000u;
+}
+
+/**
+ * Time-based SITH_ISFRAMECYCLE. Returns true in the frame in which the game time passes a multiple of n reference frames
+ * (at SITHTIME_FRAMECYCLE_FPS), so an effect that the original ran on every n-th frame runs as often at any FPS.
+ * Below the reference rate it runs at most once per frame.
+ * @param offset - Phase offset in reference frames, e.g. the thing index, so things don't all run in the same frame
+ * @param n      - Cycle length in reference frames, a power of two like in SITH_ISFRAMECYCLE
+ * @note new function
+ */
+static inline bool sithTime_IsFrameCycle(uint32_t offset, uint32_t n)
+{
+    // A cycle of one runs once per reference frame. A frame as long as a reference frame or longer runs it every frame,
+    // like the original: whole msec frames (33, 34) don't always cross a reference frame boundary (every 33.33 msec).
+    if ( n == 1u && sithTime_g_frameTime >= 1000u / SITHTIME_FRAMECYCLE_FPS )
+    {
+        return true;
+    }
+
+    const uint32_t msecPrev  = sithTime_g_msecGameTime >= sithTime_g_frameTime ? sithTime_g_msecGameTime - sithTime_g_frameTime : 0u;
+    const uint32_t frameNow  = sithTime_GetReferenceFrame(sithTime_g_msecGameTime) + offset;
+    const uint32_t framePrev = sithTime_GetReferenceFrame(msecPrev) + offset;
+
+    // A multiple of n was passed if the frame numbers differ above the low bits
+    const uint32_t cycleMask = ~(n - 1u);
+    return (frameNow & cycleMask) != (framePrev & cycleMask);
+}
+
+#  define SITHTIME_ISFRAMECYCLE(offset, n) sithTime_IsFrameCycle((uint32_t)(offset), (n))
+#else
+#  define SITHTIME_ISFRAMECYCLE(offset, n) (SITH_ISFRAMECYCLE(offset, n))
+#endif
+
 void sithTime_Advance(void);
 void sithTime_Pause(void);
 void sithTime_Resume(void);

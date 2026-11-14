@@ -476,6 +476,10 @@ void J3DAPI sithPathMove_UpdateMove(SithThing* pThing, float simTime)
 {
     SithPathMoveInfo* pPath = &pThing->moveInfo.pathMovement;
 
+    // Fixed: Count blocked moves and resend the blocked message once per 30 FPS frame, so the message comes after the same
+    //        time and as often as at 30 FPS at any FPS. The original counted and sent every frame (every frame at 30 FPS and below).
+    const bool bBlockedTick = SITHTIME_ISFRAMECYCLE(0, 1);
+
     float timeDelta = simTime;
     if ( pPath->moveTimeRemaining <= (double)simTime )
     {
@@ -497,7 +501,10 @@ void J3DAPI sithPathMove_UpdateMove(SithThing* pThing, float simTime)
                 timeDelta = 0.0f;
             }
 
-            ++pPath->numBlockedMoves;
+            if ( bBlockedTick )
+            {
+                ++pPath->numBlockedMoves;
+            }
         }
     }
 
@@ -506,7 +513,7 @@ void J3DAPI sithPathMove_UpdateMove(SithThing* pThing, float simTime)
     {
         pPath->mode &= ~SITH_PATHMOVE_MOVE;
     }
-    else if ( pPath->numBlockedMoves > 2u )
+    else if ( pPath->numBlockedMoves > 2u && bBlockedTick )
     {
         sithPathMove_SendMessageBlocked(pThing);
     }

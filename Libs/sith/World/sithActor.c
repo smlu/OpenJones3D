@@ -15,6 +15,7 @@
 #include <sith/Engine/sithPuppet.h>
 #include <sith/Gameplay/sithInventory.h>
 #include <sith/Gameplay/sithPlayer.h>
+#include <sith/Gameplay/sithTime.h>
 #include <sith/Gameplay/sithVehicleControls.h>
 #include <sith/Main/sithMain.h>
 #include <sith/RTI/symbols.h>
@@ -150,10 +151,12 @@ void J3DAPI sithActor_Update(SithThing* pThing, unsigned int msecDeltaTime)
 
             if ( pThing->thingInfo.actorInfo.endurance.msecUnderwater > (SITHACTOR_MAX_UNDERWATER_MSEC - 10000) )
             {
-                if ( !SITH_ISFRAMECYCLE(pThing->idx, 16) ) // Not on every 16th frame
+                // Fixed: SITHTIME_ISFRAMECYCLE plays the breath and gasp sounds as often as every n-th frame at 30 FPS.
+                //        The original counted frames, so the sounds restarted more often as FPS went up.
+                if ( !SITHTIME_ISFRAMECYCLE(pThing->idx, 16) ) // Not on every 16th frame
                 {
                     if ( pThing->thingInfo.actorInfo.endurance.msecUnderwater > (SITHACTOR_MAX_UNDERWATER_MSEC / 2) // TODO: ???, verify this if statement
-                        && SITH_ISFRAMECYCLE(pThing->idx, 8) ) // On every 8th frame
+                        && SITHTIME_ISFRAMECYCLE(pThing->idx, 8) ) // On every 8th frame
                     {
                         sithSoundClass_PlayModeRandom(pThing, SITHSOUNDCLASS_BREATH);
                     }
@@ -474,7 +477,9 @@ void J3DAPI sithActor_PlayDamageSoundFx(SithThing* pThing, SithDamageType damage
     }
     else if ( damageType == SITH_DAMAGE_DROWN )
     {
-        if ( SITH_ISFRAMECYCLE(pThing->idx, 16) ) // On every 16th frame make drawning sound fx
+        // Fixed: SITHTIME_ISFRAMECYCLE plays the drowning sound as often as on every 16th frame at 30 FPS. The original counted
+        //        frames, so the sound restarted more often as FPS went up (and the fixed drowning damage deals a point in more frames).
+        if ( SITHTIME_ISFRAMECYCLE(pThing->idx, 16) ) // On every 16th frame make drowning sound fx
         {
             sithSoundClass_PlayModeRandom(pThing, SITHSOUNDCLASS_DROWNING);
         }

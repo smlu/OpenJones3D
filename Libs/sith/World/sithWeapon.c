@@ -355,7 +355,8 @@ void J3DAPI sithWeapon_Update(SithThing* pThing, float secDeltaTime)
         }
     }
 
-    if ( (pThing->thingInfo.weaponInfo.flags & SITH_WF_DECAYEMITSOUNDAWARENESSEVENT) != 0 && SITH_ISFRAMECYCLE(pThing->idx, 8) ) // on every 8th frame
+    // Fixed: SITHTIME_ISFRAMECYCLE emits the event as often as on every 8th frame at 30 FPS, so the AI awareness event queue doesn't overflow at high FPS
+    if ( (pThing->thingInfo.weaponInfo.flags & SITH_WF_DECAYEMITSOUNDAWARENESSEVENT) != 0 && SITHTIME_ISFRAMECYCLE(pThing->idx, 8) ) // on every 8th frame
     {
         sithAIAwareness_CreateTransmittingEvent(pThing->pInSector, &pThing->pos, 2, 0.5f, pThing);
     }
