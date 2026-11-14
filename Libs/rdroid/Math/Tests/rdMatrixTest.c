@@ -4,6 +4,11 @@
 
 #include <rdroid/Math/rdMatrix.h>
 
+// Identity matrix redirected in rdMathTestHost.h
+const rdMatrix34 rdMathTest_identMatrix34 = {
+    { 1.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }, { 0.0f, 0.0f, 1.0f }, { 0.0f, 0.0f, 0.0f }
+};
+
 TEST_GROUP(rdMatrix);
 
 TEST_SETUP(rdMatrix)
@@ -225,10 +230,193 @@ TEST(rdMatrix, TestExtractAngleBoundaries)
     }
 }
 
+// Rotation matrix tests against double precision sin and cos. They also cover stdMath_SinCos through its main users:
+// rdMatrix_BuildRotate34 turns things every frame (physics angular velocity, AI turns, rdMatrix_PreRotate34/PostRotate34).
+
+// stdMath_SinCos is within 1e-6 of sin and cos; a matrix element sums products of up to three of them, so 4e-6 bounds it.
+// The original stdMath_SinCos mirror error was up to 3.8e-4.
+#define RDMATRIX_TEST_ROTATE_TOLERANCE 4e-6f
+
+// rdMatrix_BuildRotate34 formula with double precision sin and cos
+static void rdMatrixTest_StdLibRotate34(rdMatrix34* pMat, const rdVector3* pPyr)
+{
+    const double toRadians = 3.14159265358979323846 / 180.0;
+    const double xs = sin(pPyr->x * toRadians), xc = cos(pPyr->x * toRadians);
+    const double ys = sin(pPyr->y * toRadians), yc = cos(pPyr->y * toRadians);
+    const double zs = sin(pPyr->z * toRadians), zc = cos(pPyr->z * toRadians);
+
+    pMat->rvec = (rdVector3){ (float)(-(ys * zs) * xs + yc * zc), (float)((yc * zs) * xs + ys * zc), (float)(-zs * xc) };
+    pMat->lvec = (rdVector3){ (float)(-ys * xc), (float)(yc * xc), (float)xs };
+    pMat->uvec = (rdVector3){ (float)((ys * zc) * xs + yc * zs), (float)(-xs * (yc * zc) + ys * zs), (float)(zc * xc) };
+    pMat->dvec = (rdVector3){ 0.0f, 0.0f, 0.0f };
+}
+
+static void rdMatrixTest_AssertVector3Near(float tolerance, const rdVector3* pExpected, const rdVector3* pActual)
+{
+    TEST_ASSERT_FLOAT_WITHIN(tolerance, pExpected->x, pActual->x);
+    TEST_ASSERT_FLOAT_WITHIN(tolerance, pExpected->y, pActual->y);
+    TEST_ASSERT_FLOAT_WITHIN(tolerance, pExpected->z, pActual->z);
+}
+
+static void rdMatrixTest_AssertRotationNear(float tolerance, const rdMatrix34* pExpected, const rdMatrix34* pActual)
+{
+    rdMatrixTest_AssertVector3Near(tolerance, &pExpected->rvec, &pActual->rvec);
+    rdMatrixTest_AssertVector3Near(tolerance, &pExpected->lvec, &pActual->lvec);
+    rdMatrixTest_AssertVector3Near(tolerance, &pExpected->uvec, &pActual->uvec);
+}
+
+TEST(rdMatrix, TestBuildRotate34MatchesStdLib)
+{
+    // Every pitch, yaw and roll combination in 15 degree steps over a full turn, then small per-frame steps both ways
+    for ( int32_t pitch = -12; pitch <= 12; ++pitch )
+    {
+        for ( int32_t yaw = -12; yaw <= 12; ++yaw )
+        {
+            for ( int32_t roll = -12; roll <= 12; ++roll )
+            {
+                rdVector3 pyr = { (float)pitch * 15.0f, (float)yaw * 15.0f, (float)roll * 15.0f };
+                rdMatrix34 expected;
+                rdMatrix34 actual;
+                rdMatrixTest_StdLibRotate34(&expected, &pyr);
+                rdMatrix_BuildRotate34(&actual, &pyr);
+                rdMatrixTest_AssertRotationNear(RDMATRIX_TEST_ROTATE_TOLERANCE, &expected, &actual);
+                rdMathTest_AssertVector3(&rdroid_g_zeroVector3, &actual.dvec);
+            }
+        }
+    }
+
+    const float aSteps[] = { -0.5f, -0.03f, -0.01f, -0.001f, 0.001f, 0.01f, 0.03f, 0.5f };
+    for ( size_t i = 0; i < STD_ARRAYLEN(aSteps); ++i )
+    {
+        const float a = aSteps[i];
+        const rdVector3 aPyr[] = { { a, 0.0f, 0.0f }, { 0.0f, a, 0.0f }, { 0.0f, 0.0f, a }, { a, a, a }, { a, -a, 45.0f } };
+        for ( size_t j = 0; j < STD_ARRAYLEN(aPyr); ++j )
+        {
+            rdMatrix34 expected;
+            rdMatrix34 actual;
+            rdMatrixTest_StdLibRotate34(&expected, &aPyr[j]);
+            rdMatrix_BuildRotate34(&actual, &aPyr[j]);
+            rdMatrixTest_AssertRotationNear(RDMATRIX_TEST_ROTATE_TOLERANCE, &expected, &actual);
+        }
+    }
+}
+
+TEST(rdMatrix, TestBuild34IsBuildRotate34WithTranslation)
+{
+    const rdVector3 aPyr[] = { { 0.0f, 0.0f, 0.0f }, { 15.0f, -30.0f, 45.0f }, { -0.03f, 0.03f, -179.5f }, { 90.0f, 270.0f, -90.0f } };
+    const rdVector3 pos = { 1.5f, -2.25f, 3.0f };
+    for ( size_t i = 0; i < STD_ARRAYLEN(aPyr); ++i )
+    {
+        rdMatrix34 expected;
+        rdMatrix34 actual;
+        rdMatrix_BuildRotate34(&expected, &aPyr[i]);
+        expected.dvec = pos;
+        rdMatrix_Build34(&actual, &aPyr[i], &pos);
+        rdMatrixTest_AssertMatrix(&expected, &actual);
+    }
+}
+
+TEST(rdMatrix, TestSmallRotationStepsAddUp)
+{
+    // Regression: things turn by a small step every frame. The original stdMath_SinCos lost 0.022 degrees in every
+    // negative step, so 9000 steps of -0.01 degrees didn't turn at all and 3000 steps of -0.03 degrees turned 24 instead of 90.
+    // The remaining error comes from the table rounding, the same in every step: 0.004 (0.23 degrees) bounds it.
+    const float aSteps[] = { 0.01f, 0.03f, 0.5f };
+    for ( size_t axis = 0; axis < 3; ++axis )
+    {
+        for ( int32_t sign = -1; sign <= 1; sign += 2 )
+        {
+            for ( size_t i = 0; i < STD_ARRAYLEN(aSteps); ++i )
+            {
+                rdVector3 step   = { 0.0f, 0.0f, 0.0f };
+                rdVector3 target = { 0.0f, 0.0f, 0.0f };
+                (&step.x)[axis]   = (float)sign * aSteps[i];
+                (&target.x)[axis] = (float)sign * 90.0f;
+
+                rdMatrix34 pre;
+                rdMatrix34 post;
+                rdMatrix_Identity34(&pre);
+                rdMatrix_Identity34(&post);
+                const int32_t numSteps = (int32_t)(90.0f / aSteps[i] + 0.5f);
+                for ( int32_t n = 0; n < numSteps; ++n )
+                {
+                    rdMatrix_PreRotate34(&pre, &step);
+                    rdMatrix_Normalize34(&pre);
+                    rdMatrix_PostRotate34(&post, &step);
+                    rdMatrix_Normalize34(&post);
+                }
+
+                rdMatrix34 expected;
+                rdMatrixTest_StdLibRotate34(&expected, &target);
+                rdMatrixTest_AssertRotationNear(0.004f, &expected, &pre);
+                rdMatrixTest_AssertRotationNear(0.004f, &expected, &post);
+            }
+        }
+    }
+}
+
+static float rdMatrixTest_Dot3(const rdVector3* a, const rdVector3* b)
+{
+    return a->x * b->x + a->y * b->y + a->z * b->z;
+}
+
+TEST(rdMatrix, TestBuildFromVectorAngle34RotatesAroundTheAxis)
+{
+    // Checks that don't depend on the matrix layout: the axis stays fixed, the trace is 1 + 2 cos(angle),
+    // the matrix is orthonormal, and the matrix of -angle is the transpose. The formula divides by 1 - z^2,
+    // so its float rounding is larger than BuildRotate34's: 2e-5. The original mirror error was up to 3.8e-4.
+    const float tolerance = 2e-5f;
+    const rdVector3 aAxes[] = {
+        { 1.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }, { 0.0f, 0.0f, 1.0f }, { 0.0f, 0.0f, -1.0f },
+        { 0.57735026f, 0.57735026f, 0.57735026f }, { 0.3f, -0.4f, 0.8660254f }, { -0.6f, 0.0f, 0.8f },
+    };
+    const float aAngles[] = { -179.0f, -90.0f, -30.0f, -0.5f, -0.03f, -0.01f, 0.01f, 0.03f, 0.5f, 30.0f, 90.0f, 179.0f };
+    for ( size_t i = 0; i < STD_ARRAYLEN(aAxes); ++i )
+    {
+        const rdVector3* pAxis = &aAxes[i];
+        for ( size_t j = 0; j < STD_ARRAYLEN(aAngles); ++j )
+        {
+            rdMatrix34 m;
+            rdMatrix34 inverse;
+            rdMatrix_BuildFromVectorAngle34(&m, pAxis, aAngles[j]);
+            rdMatrix_BuildFromVectorAngle34(&inverse, pAxis, -aAngles[j]);
+
+            const rdVector3 rotatedAxis = {
+                m.rvec.x * pAxis->x + m.lvec.x * pAxis->y + m.uvec.x * pAxis->z,
+                m.rvec.y * pAxis->x + m.lvec.y * pAxis->y + m.uvec.y * pAxis->z,
+                m.rvec.z * pAxis->x + m.lvec.z * pAxis->y + m.uvec.z * pAxis->z,
+            };
+            rdMatrixTest_AssertVector3Near(tolerance, pAxis, &rotatedAxis);
+
+            const double radians = (double)aAngles[j] * 3.14159265358979323846 / 180.0;
+            TEST_ASSERT_FLOAT_WITHIN(tolerance, (float)(1.0 + 2.0 * cos(radians)), m.rvec.x + m.lvec.y + m.uvec.z);
+
+            TEST_ASSERT_FLOAT_WITHIN(tolerance, 1.0f, rdMatrixTest_Dot3(&m.rvec, &m.rvec));
+            TEST_ASSERT_FLOAT_WITHIN(tolerance, 1.0f, rdMatrixTest_Dot3(&m.lvec, &m.lvec));
+            TEST_ASSERT_FLOAT_WITHIN(tolerance, 1.0f, rdMatrixTest_Dot3(&m.uvec, &m.uvec));
+            TEST_ASSERT_FLOAT_WITHIN(tolerance, 0.0f, rdMatrixTest_Dot3(&m.rvec, &m.lvec));
+            TEST_ASSERT_FLOAT_WITHIN(tolerance, 0.0f, rdMatrixTest_Dot3(&m.rvec, &m.uvec));
+            TEST_ASSERT_FLOAT_WITHIN(tolerance, 0.0f, rdMatrixTest_Dot3(&m.lvec, &m.uvec));
+
+            // inverse = transpose of m
+            const rdVector3 transposedR = { m.rvec.x, m.lvec.x, m.uvec.x };
+            const rdVector3 transposedL = { m.rvec.y, m.lvec.y, m.uvec.y };
+            const rdVector3 transposedU = { m.rvec.z, m.lvec.z, m.uvec.z };
+            rdMatrixTest_AssertVector3Near(tolerance, &transposedR, &inverse.rvec);
+            rdMatrixTest_AssertVector3Near(tolerance, &transposedL, &inverse.lvec);
+            rdMatrixTest_AssertVector3Near(tolerance, &transposedU, &inverse.uvec);
+        }
+    }
+}
+
 TEST_GROUP_RUNNER(rdMatrix)
 {
     RUN_TEST_CASE(rdMatrix, TestAxisAnglePrecision);
     RUN_TEST_CASE(rdMatrix, TestNearAxisGuards);
     RUN_TEST_CASE(rdMatrix, TestExtractAnglesPrecision);
     RUN_TEST_CASE(rdMatrix, TestExtractAngleBoundaries);
+    RUN_TEST_CASE(rdMatrix, TestBuildRotate34MatchesStdLib);
+    RUN_TEST_CASE(rdMatrix, TestBuild34IsBuildRotate34WithTranslation);
+    RUN_TEST_CASE(rdMatrix, TestSmallRotationStepsAddUp);
+    RUN_TEST_CASE(rdMatrix, TestBuildFromVectorAngle34RotatesAroundTheAxis);
 }

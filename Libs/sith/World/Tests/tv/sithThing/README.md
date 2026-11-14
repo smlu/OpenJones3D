@@ -42,3 +42,13 @@ Tests compare those calculated fields within `0.00001` degrees to permit small
 evaluation-rounding differences. Every other serialized byte remains an exact
 comparison with the unchanged vectors. Dedicated math tests pin the arithmetic
 separately from the binary format.
+
+Known difference: the camera thing in `all_fields.bin` and `core.bin` is rotated
+by pitch 15, yaw -30 and roll 45 degrees. Its angles in the vectors carry the
+retail `stdMath_SinCos` error (the mirrored table lookups were one entry off), so
+the retail writer stored them as 15.0575, -29.9892 and 45.0429. The
+reconstruction fixes `stdMath_SinCos`, so the tests compare the camera's
+calculated angles with the angles its orientation was built from, within `0.02`
+degrees for the writer's approximate inverse trig (15.0001, -30.0057 and 44.9883),
+and check that the vector's angles are within `0.1` degrees of them. The vectors
+are unchanged.

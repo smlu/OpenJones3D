@@ -226,7 +226,7 @@ startup and a stable module-level CTest entry.
 | Executable | CTest entry | Coverage | Integration |
 | --- | --- | --- | --- |
 | `j3dcoreTests` | `j3dcore.Macros` | Core macros | Available |
-| `rdroidTests` | `rdroid.Math` | Vector and matrix debug-source numerical fidelity | Available |
+| `rdroidTests` | `rdroid.Math` | Vector and matrix debug-source numerical fidelity, rotation matrices against the C library | Available |
 | `rdModel3Tests` | `rdroid.Model3` | Per-draw face-flag scoping and deferred face flags | Available |
 | `rdCacheTests` | `rdroid.Cache` | Alpha comparator ordering and 16-bit batch boundaries with recorded source-face coverage | Available |
 | `stdTests` | `std` | General and deterministic Win95 services | Available |
@@ -921,7 +921,19 @@ against standalone binary fixtures, third-quadrant tangent interpolation,
 finite-angle normalization across exponent ranges, inverse-trig polynomial
 rounding, negative-power subnormals and signed zero, and damping with extreme
 finite endpoints. Its inverse-trig cases pin binary32 C arithmetic, not x87
-runtime parity. Reference provenance belongs in the
+runtime parity.
+
+`stdMath_SinCos` and `stdMath_Tan` read the mirrored quadrants of their tables at
+the right index; the original read them one entry (0.022 degrees) off, which a
+probe injected into the retail v1.0 executable confirmed. Their tests compare with
+the C library in every table interval, in a 0.01 degree sweep of two turns each
+way, around every quadrant boundary or pole and for large angles, with the error
+budgets documented beside the tolerances (1.5e-6 for sine and cosine,
+1e-6 + 2.5e-4 x |tan| for tangent away from the poles). The decompiled originals
+(`stdMathTest_OriginalSinCos`, `stdMathTest_OriginalTan`) pin bit-identical
+results wherever the original read the table directly. The `rdMatrix` group in
+`rdroidTests` checks rotation matrices against double precision sine and cosine
+and that small per-frame rotation steps add up. Reference provenance belongs in the
 [math fixture documentation](../Libs/std/General/Tests/tv/stdMath/README.md),
 not in test names or binary-address comments. Normal runs do not require the
 original executable.
@@ -1049,6 +1061,9 @@ performance filtering, wrapper serialization, binary restoration, runtime ID
 assignment, and wrapper failure propagation without loading game assets.
 Recalculated Euler angles use an absolute tolerance of `0.00001` degrees;
 all other serialized fields remain byte-exact against the unchanged vectors.
+The camera thing's angles in the retail vectors carry the retail `stdMath_SinCos`
+error, so they are compared with the angles its orientation was built from (see
+the [fixture README](../Libs/sith/World/Tests/tv/sithThing/README.md)).
 The math suites separately validate the numerical evaluation and constants.
 
 The `sithThingParseArg` group covers `sithThing_ParseThingArg` argument by

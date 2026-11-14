@@ -88,6 +88,9 @@ enum
     SITHTHING_TEST_NUMCOUNTS
 };
 
+// Angles the camera thing's orientation is built from in sithThingTest_InitThings
+static const rdVector3 sithThingTest_cameraPyr = { .pitch = 15.0f, .yaw = -30.0f, .roll = 45.0f };
+
 static SithThingTestFile sithThingTest_file;
 static uint8_t sithThingTest_aGoldenData[SITHTHING_TEST_FILE_CAPACITY];
 static size_t sithThingTest_numAllocCalls;
@@ -646,9 +649,26 @@ static void sithThingTest_AssertMatchesGolden(const char* pFileName, size_t numT
         rdVector3 expectedAngles, actualAngles;
         STD_COPYMEM(&expectedAngles, &sithThingTest_aGoldenData[anglePos], sizeof(expectedAngles));
         STD_COPYMEM(&actualAngles, &sithThingTest_file.aData[anglePos], sizeof(actualAngles));
-        TEST_ASSERT_FLOAT_WITHIN_MESSAGE(0.00001f, expectedAngles.x, actualAngles.x, pFileName);
-        TEST_ASSERT_FLOAT_WITHIN_MESSAGE(0.00001f, expectedAngles.y, actualAngles.y, pFileName);
-        TEST_ASSERT_FLOAT_WITHIN_MESSAGE(0.00001f, expectedAngles.z, actualAngles.z, pFileName);
+
+        if ( i == SITH_THING_CAMERA && numThings == STD_ARRAYLEN(sithThingTest_aThings) )
+        {
+            // Known difference: the retail writer's angles of the rotated camera carry the retail stdMath_SinCos error
+            // (the mirrored lookups were one table entry off): (15, -30, 45) was written as (15.0575, -29.9892, 45.0429).
+            // The reconstruction fixed it, so compare with the angles the orientation was built from. 0.02 degrees covers
+            // the writer's approximate inverse trig, (15.0001, -30.0057, 44.9883) here; 0.1 degrees covers the retail error.
+            TEST_ASSERT_FLOAT_WITHIN_MESSAGE(0.02f, sithThingTest_cameraPyr.x, actualAngles.x, pFileName);
+            TEST_ASSERT_FLOAT_WITHIN_MESSAGE(0.02f, sithThingTest_cameraPyr.y, actualAngles.y, pFileName);
+            TEST_ASSERT_FLOAT_WITHIN_MESSAGE(0.02f, sithThingTest_cameraPyr.z, actualAngles.z, pFileName);
+            TEST_ASSERT_FLOAT_WITHIN_MESSAGE(0.1f, sithThingTest_cameraPyr.x, expectedAngles.x, pFileName);
+            TEST_ASSERT_FLOAT_WITHIN_MESSAGE(0.1f, sithThingTest_cameraPyr.y, expectedAngles.y, pFileName);
+            TEST_ASSERT_FLOAT_WITHIN_MESSAGE(0.1f, sithThingTest_cameraPyr.z, expectedAngles.z, pFileName);
+        }
+        else
+        {
+            TEST_ASSERT_FLOAT_WITHIN_MESSAGE(0.00001f, expectedAngles.x, actualAngles.x, pFileName);
+            TEST_ASSERT_FLOAT_WITHIN_MESSAGE(0.00001f, expectedAngles.y, actualAngles.y, pFileName);
+            TEST_ASSERT_FLOAT_WITHIN_MESSAGE(0.00001f, expectedAngles.z, actualAngles.z, pFileName);
+        }
         pos = anglePos + sizeof(expectedAngles);
     }
 
@@ -914,9 +934,7 @@ static void sithThingTest_InitThings(int bUseResources, int bUseSector)
         }
     }
 
-    rdVector3 cameraPyr;
-    sithThingTest_SetVector3(&cameraPyr, 15.0f, -30.0f, 45.0f);
-    rdMatrix_BuildRotate34(&sithThingTest_aThings[SITH_THING_CAMERA].orient, &cameraPyr);
+    rdMatrix_BuildRotate34(&sithThingTest_aThings[SITH_THING_CAMERA].orient, &sithThingTest_cameraPyr);
 
     SithPhysicsInfo* pActorPhysics = &sithThingTest_aThings[SITH_THING_ACTOR].moveInfo.physics;
     sithThingTest_aThings[SITH_THING_ACTOR].moveType = SITH_MT_PHYSICS;

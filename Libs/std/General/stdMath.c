@@ -12,17 +12,19 @@
 #define SIN_TABLE_SIZE STD_ARRAYLEN(stdMath_aSinTable)
 static_assert(SIN_TABLE_SIZE == 4096, "SIN_TABLE_SIZE == 4096");
 
-#define SIN_TABLE_LAST_IDX (SIN_TABLE_SIZE - 1)
+// Fixed: Removed SIN_TABLE_LAST_IDX and SIN_TABLE_GET_REVERSE, which mirrored the table one entry off (table[4095 - i] instead of table[4096 - i]).
+//        SIN_TABLE_COUNT is the signed table size for the full-circle index math in stdMath_GetSinTableValue.
+#define SIN_TABLE_COUNT ((int32_t)SIN_TABLE_SIZE)
 #define SIN_TABLE_GET(idx) stdMath_aSinTable[((idx) )]
-#define SIN_TABLE_GET_REVERSE(idx) stdMath_aSinTable[SIN_TABLE_LAST_IDX - ((idx) % SIN_TABLE_SIZE)]
 #define SIN_TABLE_DEGREES_TO_INDEX ((float)SIN_TABLE_SIZE / 90.0f) // STD_ARRAYLEN(stdMath_aSinTable) over 90 degrees.
 
 #define TAN_TABLE_SIZE STD_ARRAYLEN(stdMath_aTanTable)
 static_assert(TAN_TABLE_SIZE == 4096, "TAN_TABLE_SIZE == 4096");
 
-#define TAN_TABLE_LAST_IDX (TAN_TABLE_SIZE - 1)
+// Fixed: Removed TAN_TABLE_LAST_IDX and TAN_TABLE_GET_REVERSE, which mirrored the table one entry off (table[4095 - i] instead of table[4096 - i]).
+//        TAN_TABLE_COUNT is the signed table size for the index math in stdMath_GetTanTableValue.
+#define TAN_TABLE_COUNT ((int32_t)TAN_TABLE_SIZE)
 #define TAN_TABLE_GET(idx) stdMath_aTanTable[(idx) % TAN_TABLE_SIZE]
-#define TAN_TABLE_GET_REVERSE(idx) stdMath_aTanTable[TAN_TABLE_LAST_IDX - ((idx) % TAN_TABLE_SIZE)]
 #define TAN_TABLE_FULL_CYCLE_SIZE (4 * TAN_TABLE_SIZE) // 4 * STD_ARRAYLEN(stdMath_aTanTable) covers 360 degrees.
 
 // The arc-sine functions approximate asin(x) with odd polynomials on [0, sqrt(1/2)].
@@ -169,6 +171,33 @@ float J3DAPI stdMath_NormalizeAngleAcute(float angle)
     return normAngle;
 }
 
+// Fixed: New helper for stdMath_SinCos, replaces the original per-quadrant lookups that mirrored the table one entry off.
+/**
+ * Returns sin(index * 90 / 4096 degrees) for a table index on the full circle.
+ * The table holds the first quadrant, the others use sin(90 + x) = sin(90 - x) and sin(180 + x) = -sin(x).
+ * @note new function
+ */
+static inline float stdMath_GetSinTableValue(int32_t index)
+{
+    index %= 4 * SIN_TABLE_COUNT;
+    const int32_t quadrant = index / SIN_TABLE_COUNT; // Fixed: Quadrant of the table index, the original took it from the angle
+    const int32_t offset   = index % SIN_TABLE_COUNT;
+
+    float value;
+    if ( (quadrant & 1) == 0 )
+    {
+        value = SIN_TABLE_GET(offset);
+    }
+    else
+    {
+        // Fixed: Mirror at 4096 - offset and use 1.0 for sin(90), which is not in the table.
+        //        The original read 4095 - offset, the next table entry, and table[4095] in place of 1.0.
+        value = offset == 0 ? 1.0f : SIN_TABLE_GET(SIN_TABLE_COUNT - offset);
+    }
+
+    return quadrant >= 2 ? -value : value;
+}
+
 void stdMath_SinCos(float angle, float* pSinOut, float* pCosOut)
 {
     // Added: Guard for optional output pointers.
@@ -192,130 +221,41 @@ void stdMath_SinCos(float angle, float* pSinOut, float* pCosOut)
 
     float normAngle = stdMath_NormalizeAngle(angle);
 
-    // Split the normalized angle into a quadrant; each quadrant maps to the same sin table.
-    int32_t quadrant = 0;
-    if ( normAngle >= 270.0f )
-    {
-        quadrant = 3;
-    }
-    else if ( normAngle >= 180.0f )
-    {
-        quadrant = 2;
-    }
-    else if ( normAngle >= 90.0f )
-    {
-        quadrant = 1;
-    }
-
     // Convert degrees to a fractional table index, then linearly interpolate adjacent samples.
     float indexFloat  = normAngle * SIN_TABLE_DEGREES_TO_INDEX;
     float fracPart    = indexFloat - floorf(indexFloat);
     int32_t index     = (int32_t)indexFloat;
-    int32_t nextIndex = index + 1;
 
-    float sinLookup = 0.0f, sinValue = 0.0f,
-        cosLookup   = 0.0f, cosValue = 0.0f;
-    switch ( quadrant )
-    {
-        case 0:
-        {
-            sinLookup = SIN_TABLE_GET(index);
-            if ( nextIndex < SIN_TABLE_SIZE )
-            {
-                sinValue = SIN_TABLE_GET(nextIndex);
-            }
-            else
-            {
-                sinValue = SIN_TABLE_GET_REVERSE(index - SIN_TABLE_LAST_IDX);
-            }
-
-            cosLookup = SIN_TABLE_GET_REVERSE(index);
-            if ( nextIndex < SIN_TABLE_SIZE )
-            {
-                cosValue = SIN_TABLE_GET_REVERSE(nextIndex);
-            }
-            else
-            {
-                cosValue = -SIN_TABLE_GET(nextIndex - SIN_TABLE_SIZE);
-            }
-        }
-        break;
-
-        case 1:
-        {
-            sinLookup = SIN_TABLE_GET_REVERSE(index - SIN_TABLE_SIZE);
-            if ( nextIndex < 2 * SIN_TABLE_SIZE )
-            {
-                sinValue = SIN_TABLE_GET_REVERSE(index - SIN_TABLE_LAST_IDX);
-            }
-            else
-            {
-                sinValue = -SIN_TABLE_GET(nextIndex - 2 * SIN_TABLE_SIZE);
-            }
-
-            cosLookup = -SIN_TABLE_GET(index - SIN_TABLE_SIZE);
-            if ( nextIndex < 2 * SIN_TABLE_SIZE )
-            {
-                cosValue = -SIN_TABLE_GET(nextIndex - SIN_TABLE_SIZE);
-            }
-            else
-            {
-                cosValue = -SIN_TABLE_GET_REVERSE((index - (2 * SIN_TABLE_SIZE - 1)));
-            }
-        }
-        break;
-
-        case 2:
-        {
-            sinLookup = -SIN_TABLE_GET(index - 2 * SIN_TABLE_SIZE);
-            if ( nextIndex < 3 * SIN_TABLE_SIZE )
-            {
-                sinValue = -SIN_TABLE_GET(nextIndex - 2 * SIN_TABLE_SIZE);
-            }
-            else
-            {
-                sinValue = -SIN_TABLE_GET_REVERSE((index - (3 * SIN_TABLE_SIZE - 1)));
-            }
-
-            cosLookup = -SIN_TABLE_GET_REVERSE((index - 2 * SIN_TABLE_SIZE));
-            if ( nextIndex < 3 * SIN_TABLE_SIZE )
-            {
-                cosValue = -SIN_TABLE_GET_REVERSE((index - (2 * SIN_TABLE_SIZE - 1)));
-            }
-            else
-            {
-                cosValue = SIN_TABLE_GET(nextIndex - 3 * SIN_TABLE_SIZE);
-            }
-        }
-        break;
-
-        case 3:
-        {
-            sinLookup = -SIN_TABLE_GET_REVERSE((index - 3 * SIN_TABLE_SIZE));
-            if ( nextIndex < 4 * SIN_TABLE_SIZE )
-            {
-                sinValue = -SIN_TABLE_GET_REVERSE((index - (3 * SIN_TABLE_SIZE - 1)));
-            }
-            else
-            {
-                sinValue = SIN_TABLE_GET(nextIndex - 4 * SIN_TABLE_SIZE);
-            }
-
-            cosLookup = SIN_TABLE_GET(index - 3 * SIN_TABLE_SIZE);
-            if ( nextIndex < 4 * SIN_TABLE_SIZE )
-            {
-                cosValue = SIN_TABLE_GET(nextIndex - 3 * SIN_TABLE_SIZE);
-            }
-            else
-            {
-                cosValue = SIN_TABLE_GET_REVERSE(index - (4 * SIN_TABLE_SIZE - 1));
-            }
-        }
-        break;
-    }
+    // Fixed: Read the mirrored quadrants (sin in 90-180 and 270-360 degrees, cos in 0-90 and 180-270 degrees) at the right table index.
+    //        The original read them one table entry (0.022 degrees) off, so e.g. a -0.03 degree rotation turned only -0.008 degrees
+    //        and a rotation under 0.022 degrees didn't turn at all. Small per-frame turns got slower as FPS went up or stopped,
+    //        e.g. the 02_riv parachute cutscene stalled above about 650 FPS.
+    //        Replaces the original quadrant split and per-quadrant switch; the table, index and interpolation are unchanged.
+    float sinLookup = stdMath_GetSinTableValue(index);                       // Fixed
+    float sinValue  = stdMath_GetSinTableValue(index + 1);                   // Fixed
+    float cosLookup = stdMath_GetSinTableValue(index + SIN_TABLE_COUNT);     // Fixed: cos(x) = sin(x + 90)
+    float cosValue  = stdMath_GetSinTableValue(index + SIN_TABLE_COUNT + 1); // Fixed
 
     *pSinOut = (sinValue - sinLookup) * fracPart + sinLookup;
     *pCosOut = (cosValue - cosLookup) * fracPart + cosLookup;
+}
+
+// Fixed: New helper for stdMath_Tan, replaces the original per-quadrant lookups that mirrored the table one entry off.
+/**
+ * Returns tan(index * 90 / 4096 degrees) for a table index on the full circle, except at the poles (90 and 270 degrees).
+ * The table holds the first quadrant; tan repeats every 180 degrees and tan(90 + x) = -tan(90 - x).
+ * @note new function
+ */
+static inline float stdMath_GetTanTableValue(int32_t index)
+{
+    index %= 2 * TAN_TABLE_COUNT;
+    if ( index < TAN_TABLE_COUNT )
+    {
+        return TAN_TABLE_GET(index);
+    }
+
+    // Fixed: Mirror at 4096 - offset. The original read 4095 - offset, the next table entry.
+    return -TAN_TABLE_GET(2 * TAN_TABLE_COUNT - index);
 }
 
 float J3DAPI stdMath_Tan(float angle)
@@ -334,87 +274,35 @@ float J3DAPI stdMath_Tan(float angle)
 
     float normAngle = stdMath_NormalizeAngle(angle);
 
-    // Split the normalized angle into a quadrant; tangent mirrors/sign-flips the same table.
-    int32_t quadrant = 0;
-    if ( normAngle >= 270.0f )
-    {
-        quadrant = 3;
-    }
-    else if ( normAngle >= 180.0f )
-    {
-        quadrant = 2;
-    }
-    else if ( normAngle >= 90.0f )
-    {
-        quadrant = 1;
-    }
-
     // Map the full 360-degree cycle into four table-sized quadrants and interpolate.
     float indexFloat  = normAngle / 360.0f * (float)TAN_TABLE_FULL_CYCLE_SIZE;
     float fracPart    = indexFloat - floorf(indexFloat);
     int32_t index     = (int32_t)indexFloat;
-    int32_t nextIndex = index + 1;
+    int32_t offset    = index % (2 * TAN_TABLE_COUNT); // Fixed: tan repeats every 180 degrees
 
-    float tanValue = 0.0f, baseLookup = 0.0f;
-    switch ( quadrant )
+    // Fixed: The table intervals next to the poles at 90 and 270 degrees interpolate cot = 1/tan, which goes linearly to 0
+    //        at the pole, as tan can't be interpolated towards infinity. The original interpolated tan towards the mirrored
+    //        entry -tan(89.978) instead, so tan turned negative just below the pole (e.g. tan(89.99) was -234).
+    if ( offset == TAN_TABLE_COUNT - 1 )
     {
-        case 0:
-        {
-            baseLookup = TAN_TABLE_GET(index);
-            if ( nextIndex < TAN_TABLE_SIZE )
-            {
-                tanValue = TAN_TABLE_GET(nextIndex);
-            }
-            else
-            {
-                tanValue = -TAN_TABLE_GET_REVERSE((index - TAN_TABLE_LAST_IDX));
-            }
-        }
-        break;
-
-        case 1:
-        {
-            baseLookup = -TAN_TABLE_GET_REVERSE((index - TAN_TABLE_SIZE));
-            if ( nextIndex < 2 * TAN_TABLE_SIZE )
-            {
-                tanValue = -TAN_TABLE_GET_REVERSE((index - TAN_TABLE_LAST_IDX));
-            }
-            else
-            {
-                tanValue = TAN_TABLE_GET(nextIndex - 2 * TAN_TABLE_SIZE);
-            }
-        }
-        break;
-
-        case 2:
-        {
-            baseLookup = TAN_TABLE_GET(index - 2 * TAN_TABLE_SIZE);
-            if ( nextIndex < 3 * TAN_TABLE_SIZE )
-            {
-                tanValue = TAN_TABLE_GET(nextIndex - 2 * TAN_TABLE_SIZE);
-            }
-            else
-            {
-                tanValue = -TAN_TABLE_GET_REVERSE((index - (3 * TAN_TABLE_SIZE - 1)));
-            }
-        }
-        break;
-
-        case 3:
-        {
-            baseLookup = -TAN_TABLE_GET_REVERSE((index - 3 * TAN_TABLE_SIZE));
-            if ( nextIndex < 4 * TAN_TABLE_SIZE )
-            {
-                tanValue = -TAN_TABLE_GET_REVERSE((index - (3 * TAN_TABLE_SIZE - 1)));
-            }
-            else
-            {
-                tanValue = TAN_TABLE_GET(nextIndex - 4 * TAN_TABLE_SIZE);
-            }
-        }
-        break;
+        return TAN_TABLE_GET(TAN_TABLE_COUNT - 1) / (1.0f - fracPart); // Fixed
     }
 
+    if ( offset == TAN_TABLE_COUNT )
+    {
+        if ( fracPart == 0.0f )
+        {
+            return INFINITY; // Fixed: Exactly at the pole, the limit from below. The original returned -tan(89.978).
+        }
+
+        return -TAN_TABLE_GET(TAN_TABLE_COUNT - 1) / fracPart; // Fixed
+    }
+
+    // Fixed: Read the mirrored quadrants (90-180 and 270-360 degrees) at the right table index.
+    //        The original read them one table entry (0.022 degrees) off, e.g. tan(135) was -0.999233.
+    //        Replaces the original quadrant split and per-quadrant switch; the table, index and interpolation are unchanged.
+    float baseLookup = stdMath_GetTanTableValue(index);     // Fixed
+    float tanValue   = stdMath_GetTanTableValue(index + 1); // Fixed
     return (tanValue - baseLookup) * fracPart + baseLookup;
 }
 

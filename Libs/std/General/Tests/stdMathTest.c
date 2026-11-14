@@ -36,8 +36,10 @@ TEST_TEAR_DOWN(stdMath)
     StdGeneralTest_Shutdown();
 }
 
-// A separate traversal checks quadrant boundaries and interpolation independently.
-static void stdMathTest_ReferenceSinCos(float angle, float* pSinOut, float* pCosOut)
+// Decompiled original stdMath_SinCos. It reads the mirrored quadrants (sin in 90-180 and 270-360 degrees,
+// cos in 0-90 and 180-270 degrees) one table entry too far; the reconstruction fixes this.
+// Calling the retail v1.0 function and the reconstruction on the same angles gave bit-identical results before the fix.
+static void stdMathTest_OriginalSinCos(float angle, float* pSinOut, float* pCosOut)
 {
     float normalized;
     float v4;
@@ -157,7 +159,46 @@ static void stdMathTest_ReferenceSinCos(float angle, float* pSinOut, float* pCos
 }
 
 // The third quadrant uses the same forward samples as the first quadrant.
-static float stdMathTest_ReferenceTan(float angle)
+// Table value for sin(index * 90 / 4096 degrees) on the full circle, from the quadrant symmetries of sine
+static float stdMathTest_SinTableValue(int32_t index)
+{
+    const int32_t size = (int32_t)STDMATH_TEST_SIN_TABLE_SIZE;
+    index %= 4 * size;
+    switch ( index / size )
+    {
+        case 0:
+            return stdMath_aSinTable[index];
+        case 1: // sin(90 + x) = sin(90 - x); sin(90) is not in the table
+            return index == size ? 1.0f : stdMath_aSinTable[2 * size - index];
+        case 2: // sin(180 + x) = -sin(x)
+            return -stdMath_aSinTable[index - 2 * size];
+        default: // sin(270 + x) = -sin(90 - x)
+            return index == 3 * size ? -1.0f : -stdMath_aSinTable[4 * size - index];
+    }
+}
+
+// A separate traversal checks quadrant boundaries and interpolation independently.
+// Same table and interpolation as the original, with the mirrored quadrants read at the right index.
+static void stdMathTest_ReferenceSinCos(float angle, float* pSinOut, float* pCosOut)
+{
+    const int32_t size     = (int32_t)STDMATH_TEST_SIN_TABLE_SIZE;
+    const float normalized = stdMath_NormalizeAngle(angle);
+    const float a1         = normalized * STDMATH_TEST_SIN_INDEX_SCALE;
+    const float fraction   = a1 - floorf(a1);
+    const int32_t index    = (int32_t)a1;
+
+    const float sin0 = stdMathTest_SinTableValue(index);
+    const float sin1 = stdMathTest_SinTableValue(index + 1);
+    const float cos0 = stdMathTest_SinTableValue(index + size); // cos(x) = sin(x + 90)
+    const float cos1 = stdMathTest_SinTableValue(index + size + 1);
+
+    *pSinOut = (sin1 - sin0) * fraction + sin0;
+    *pCosOut = (cos1 - cos0) * fraction + cos0;
+}
+
+// Decompiled original stdMath_Tan. It reads the mirrored quadrants (90-180 and 270-360 degrees) one table entry too far,
+// and interpolates towards -tan(89.978) in the table intervals just below 90 and 270 degrees; the reconstruction fixes both.
+static float stdMathTest_OriginalTan(float angle)
 {
     double v1;
     float v3;
@@ -243,6 +284,41 @@ static float stdMathTest_ReferenceTan(float angle)
     }
 
     return v9;
+}
+
+// Table value for tan(index * 90 / 4096 degrees) on the full circle except the poles: tan repeats every 180 degrees
+// and tan(90 + x) = -tan(90 - x)
+static float stdMathTest_TanTableValue(int32_t index)
+{
+    const int32_t size = (int32_t)STDMATH_TEST_TAN_TABLE_SIZE;
+    index %= 2 * size;
+    return index < size ? stdMath_aTanTable[index] : -stdMath_aTanTable[2 * size - index];
+}
+
+// Same table and interpolation as the original, with the mirrored quadrants read at the right index.
+// Next to the poles it interpolates cot = 1/tan, which goes linearly to 0 at the pole.
+static float stdMathTest_ReferenceTan(float angle)
+{
+    const int32_t size     = (int32_t)STDMATH_TEST_TAN_TABLE_SIZE;
+    const float normalized = stdMath_NormalizeAngle(angle);
+    const float a1         = normalized / 360.0f * (float)STDMATH_TEST_TAN_FULL_CYCLE_SIZE;
+    const float fraction   = a1 - floorf(a1);
+    const int32_t index    = (int32_t)a1;
+
+    const int32_t offset = index % (2 * size);
+    if ( offset == size - 1 ) // just below 90 or 270 degrees
+    {
+        return stdMath_aTanTable[size - 1] / (1.0f - fraction);
+    }
+
+    if ( offset == size ) // at or just above 90 or 270 degrees
+    {
+        return fraction == 0.0f ? INFINITY : -stdMath_aTanTable[size - 1] / fraction;
+    }
+
+    const float tan0 = stdMathTest_TanTableValue(index);
+    const float tan1 = stdMathTest_TanTableValue(index + 1);
+    return (tan1 - tan0) * fraction + tan0;
 }
 
 static float stdMathTest_SinAngleForIndex(float index)
@@ -627,6 +703,168 @@ TEST(stdMath, TestSinCosHalfDegreeSweep)
     }
 }
 
+// Error budget of the lookup: the table stores sine to about 6 decimals (largest error 5.5e-7), a negative or large angle
+// is rounded to float once reduced to 0-360 degrees (up to 2.7e-7), the float table index rounds (up to 1.9e-7) and
+// interpolating between adjacent entries adds less than 2e-8: 1.04e-6 together, e.g. cos(-83.3). 1.5e-6 bounds it.
+// The original mirror error was up to 3.8e-4 (one table entry).
+#define STDMATH_TEST_SINCOS_TOLERANCE 1.5e-6
+
+static void stdMathTest_AssertSinCosNearStdLib(float angle)
+{
+    float actualSin;
+    float actualCos;
+    stdMath_SinCos(angle, &actualSin, &actualCos);
+
+    // fmod of a float in double is exact, so large angles get the exact expected value as well
+    const double radians     = fmod((double)angle, 360.0) * 3.14159265358979323846 / 180.0;
+    const double expectedSin = sin(radians);
+    const double expectedCos = cos(radians);
+    if ( fabs(expectedSin - actualSin) > STDMATH_TEST_SINCOS_TOLERANCE || fabs(expectedCos - actualCos) > STDMATH_TEST_SINCOS_TOLERANCE )
+    {
+        char aMessage[160];
+        STD_FORMAT(aMessage, "angle %.9g: sin %.9g expected %.9g, cos %.9g expected %.9g", angle, actualSin, expectedSin, actualCos, expectedCos);
+        TEST_FAIL_MESSAGE(aMessage);
+    }
+}
+
+TEST(stdMath, TestSinCosMatchesStdLibInEveryTableInterval)
+{
+    // NOTE: The original failed this in the mirrored quadrants, see stdMathTest_OriginalSinCos.
+    // Every table interval of the full turn, positive and negative, at its start, inside and just before its end
+    const float fractions[] = { 0.0f, 0.125f, 0.25f, 0.375f, 0.5f, 0.625f, 0.75f, 0.875f, 0.999f };
+    for ( int32_t index = 0; index < STDMATH_TEST_SIN_FULL_CYCLE_SIZE; ++index )
+    {
+        for ( size_t i = 0; i < STD_ARRAYLEN(fractions); ++i )
+        {
+            const float angle = stdMathTest_SinAngleForIndex((float)index + fractions[i]);
+            stdMathTest_AssertSinCosNearStdLib(angle);
+            stdMathTest_AssertSinCosNearStdLib(-angle);
+        }
+    }
+}
+
+TEST(stdMath, TestSinCosMatchesStdLibInDegreeSweep)
+{
+    // Two full turns each way in 0.01 degree steps. The steps don't line up with the 90/4096 degree table entries,
+    // so they land at every position within an entry and check the angle reduction of angles past 360 degrees.
+    for ( int32_t hundredths = -72000; hundredths <= 72000; ++hundredths )
+    {
+        stdMathTest_AssertSinCosNearStdLib((float)hundredths / 100.0f);
+    }
+}
+
+TEST(stdMath, TestSinCosMatchesStdLibAroundQuadrantBoundaries)
+{
+    // Around every multiple of 90 degrees in two turns each way, where the table is mirrored: the neighbouring floats,
+    // under one table entry (0.0219727 degrees), exactly one and two entries, and further away.
+    // The original was one entry off exactly here.
+    const float aOffsets[] = { 0.0001f, 0.001f, 0.01f, 0.02f, 0.021f, 0.02197266f, 0.03f, 0.04394531f, 0.05f, 0.5f, 1.0f };
+    for ( int32_t quadrant = -8; quadrant <= 8; ++quadrant )
+    {
+        const float boundary = (float)quadrant * 90.0f;
+        stdMathTest_AssertSinCosNearStdLib(nextafterf(boundary, -INFINITY));
+        stdMathTest_AssertSinCosNearStdLib(boundary);
+        stdMathTest_AssertSinCosNearStdLib(nextafterf(boundary, INFINITY));
+        for ( size_t i = 0; i < STD_ARRAYLEN(aOffsets); ++i )
+        {
+            stdMathTest_AssertSinCosNearStdLib(boundary - aOffsets[i]);
+            stdMathTest_AssertSinCosNearStdLib(boundary + aOffsets[i]);
+        }
+    }
+}
+
+TEST(stdMath, TestSinCosExactAtQuadrantBoundaries)
+{
+    // Multiples of 90 degrees are table entries, or sin(90), which is not in the table, so the results are exact.
+    // The original read table[4095] for sin(90) and cos(0); that entry is stored as 1.0, so it was exact here too.
+    const float aSin[] = { 0.0f, 1.0f, 0.0f, -1.0f };
+    const float aCos[] = { 1.0f, 0.0f, -1.0f, 0.0f };
+    for ( int32_t quadrant = -8; quadrant <= 8; ++quadrant )
+    {
+        float actualSin;
+        float actualCos;
+        stdMath_SinCos((float)quadrant * 90.0f, &actualSin, &actualCos);
+
+        const int32_t i = ((quadrant % 4) + 4) % 4;
+        TEST_ASSERT_TRUE(actualSin == aSin[i]); // == also accepts -0.0
+        TEST_ASSERT_TRUE(actualCos == aCos[i]);
+    }
+}
+
+TEST(stdMath, TestSinCosMatchesStdLibForLargeAngles)
+{
+    // Large angles are reduced to 0-360 degrees in double before the lookup, up to the largest floats
+    const float aAngles[] = {
+        3600.25f, -3600.25f, 12345.67f, -12345.67f, 123456.79f, -123456.79f, 1000000.5f, -1000000.5f,
+        16777216.0f, -16777216.0f, 1.0e10f, -1.0e10f, 3.0e38f, -3.0e38f, FLT_MAX, -FLT_MAX
+    };
+    for ( size_t i = 0; i < STD_ARRAYLEN(aAngles); ++i )
+    {
+        stdMathTest_AssertSinCosNearStdLib(aAngles[i]);
+    }
+}
+
+TEST(stdMath, TestSinCosSmallNegativeAngles)
+{
+    // Regression: per-frame turns at high FPS are tiny negative angles. The original returned sin(-0.03) as sin(-0.008)
+    // and sin(-0.01) as 0, so small right turns got slower as FPS went up or stopped (02_riv parachute cutscene).
+    const float aAngles[] = { 0.001f, 0.01f, 0.02f, 0.021f, 0.022f, 0.03f, 0.044f, 0.5f, 1.0f, 45.0f };
+    for ( size_t i = 0; i < STD_ARRAYLEN(aAngles); ++i )
+    {
+        float posSin;
+        float posCos;
+        float negSin;
+        float negCos;
+        stdMath_SinCos(aAngles[i], &posSin, &posCos);
+        stdMath_SinCos(-aAngles[i], &negSin, &negCos);
+
+        stdMathTest_AssertSinCosNearStdLib(-aAngles[i]);
+        TEST_ASSERT_TRUE(negSin < 0.0f);
+
+        // sin(-x) = -sin(x) and cos(-x) = cos(x), up to the rounding of 360 - x
+        stdMathTest_AssertDoubleWithin(STDMATH_TEST_SINCOS_TOLERANCE, -posSin, negSin);
+        stdMathTest_AssertDoubleWithin(STDMATH_TEST_SINCOS_TOLERANCE, posCos, negCos);
+    }
+}
+
+TEST(stdMath, TestSinCosMatchesOriginalOutsideMirroredQuadrants)
+{
+    // The fix changes only the mirrored lookups: sin in 0-90 and 180-270 degrees and cos in 90-180 and 270-360 degrees
+    // read the table directly and stay bit-identical to the original. The last interval of a quadrant interpolates
+    // towards +-1 (sin 90, cos 180 ...), which the original took from the mirrored table, so it is skipped.
+    const int32_t size      = (int32_t)STDMATH_TEST_SIN_TABLE_SIZE;
+    const float fractions[] = { 0.0f, 0.25f, 0.5f, 0.75f };
+    for ( int32_t index = 0; index < STDMATH_TEST_SIN_FULL_CYCLE_SIZE; ++index )
+    {
+        if ( index % size == size - 1 )
+        {
+            continue;
+        }
+
+        const bool bDirectSin = ((index / size) & 1) == 0;
+        for ( size_t i = 0; i < STD_ARRAYLEN(fractions); ++i )
+        {
+            const float angle = stdMathTest_SinAngleForIndex((float)index + fractions[i]);
+
+            float originalSin;
+            float originalCos;
+            float actualSin;
+            float actualCos;
+            stdMathTest_OriginalSinCos(angle, &originalSin, &originalCos);
+            stdMath_SinCos(angle, &actualSin, &actualCos);
+
+            if ( bDirectSin )
+            {
+                stdMathTest_AssertFloatBitsEqual(originalSin, actualSin);
+            }
+            else
+            {
+                stdMathTest_AssertFloatBitsEqual(originalCos, actualCos);
+            }
+        }
+    }
+}
+
 TEST(stdMath, TestSinCosStdLibApprox)
 {
     const float angles[] = {
@@ -792,6 +1030,130 @@ TEST(stdMath, TestTanQuadrants)
         stdMathTest_AssertTanMatchesReference(nextafterf(aCenters[i], -INFINITY));
         stdMathTest_AssertTanMatchesReference(aCenters[i]);
         stdMathTest_AssertTanMatchesReference(nextafterf(aCenters[i], INFINITY));
+    }
+}
+
+// Error budget away from the poles: the table stores tan to about 8 significant digits (relative error up to 2e-4 near
+// the poles, absolute 5e-7 near 0), and interpolating between entries adds under 1.2e-4 relative beyond 1 degree from a pole.
+// Closer to a pole the linear interpolation of the steep tan curve is coarse, as in the original's first quadrant.
+// The original mirror error was 7.7e-4 relative or more in the mirrored quadrants (one table entry).
+#define STDMATH_TEST_TAN_ABS_TOLERANCE 1e-6
+#define STDMATH_TEST_TAN_REL_TOLERANCE 2.5e-4
+
+static void stdMathTest_AssertTanNearStdLib(float angle, double relTolerance)
+{
+    // fmod of a float in double is exact, so large angles get the exact expected value as well
+    const double expected = tan(fmod((double)angle, 360.0) * 3.14159265358979323846 / 180.0);
+    const float actual    = stdMath_Tan(angle);
+    if ( fabs(expected - actual) > STDMATH_TEST_TAN_ABS_TOLERANCE + relTolerance * fabs(expected) )
+    {
+        char aMessage[128];
+        STD_FORMAT(aMessage, "angle %.9g: tan %.9g expected %.9g", angle, actual, expected);
+        TEST_FAIL_MESSAGE(aMessage);
+    }
+}
+
+// True if the angle is within 1 degree of a pole (90 or 270 degrees)
+static bool stdMathTest_IsNearTanPole(float angle)
+{
+    const double halfTurn = fmod(fabs(fmod((double)angle, 180.0)), 180.0);
+    return fabs(halfTurn - 90.0) < 1.0;
+}
+
+TEST(stdMath, TestTanMatchesStdLibInEveryTableInterval)
+{
+    // NOTE: The original failed this in the mirrored quadrants, see stdMathTest_OriginalTan.
+    // Every table interval of the full turn, positive and negative, except within 1 degree of the poles
+    const float fractions[] = { 0.0f, 0.125f, 0.25f, 0.375f, 0.5f, 0.625f, 0.75f, 0.875f, 0.999f };
+    for ( int32_t index = 0; index < (int32_t)STDMATH_TEST_TAN_INDEX_COUNT; ++index )
+    {
+        for ( size_t i = 0; i < STD_ARRAYLEN(fractions); ++i )
+        {
+            const float angle = stdMathTest_TanAngleForIndex((float)index + fractions[i]);
+            if ( !stdMathTest_IsNearTanPole(angle) )
+            {
+                stdMathTest_AssertTanNearStdLib(angle, STDMATH_TEST_TAN_REL_TOLERANCE);
+                stdMathTest_AssertTanNearStdLib(-angle, STDMATH_TEST_TAN_REL_TOLERANCE);
+            }
+        }
+    }
+}
+
+TEST(stdMath, TestTanMatchesStdLibInDegreeSweep)
+{
+    // Two full turns each way in 0.01 degree steps, except within 1 degree of the poles
+    for ( int32_t hundredths = -72000; hundredths <= 72000; ++hundredths )
+    {
+        const float angle = (float)hundredths / 100.0f;
+        if ( !stdMathTest_IsNearTanPole(angle) )
+        {
+            stdMathTest_AssertTanNearStdLib(angle, STDMATH_TEST_TAN_REL_TOLERANCE);
+        }
+    }
+}
+
+TEST(stdMath, TestTanNextToThePoles)
+{
+    // Regression: in the table interval next to a pole the original interpolated towards the mirrored entry, so tan just below
+    // 90 and 270 degrees was negative (tan(89.99) = -234). Interpolating cot there is accurate to the table's relative error
+    // of 2e-4 at its last entry; 3e-4 bounds it. Near a pole tan(x) is about 1/e for a distance e from it, so rounding the
+    // angle by d changes tan by d/e relative. Near 270 degrees the float angle reduction, the division by 360 and the float
+    // table index each round by up to 1.1-1.5e-5 degrees, so 4e-5 / e is added (the closest offsets mainly check the sign).
+    // Exactly at a pole the result is +infinity, the limit from below.
+    const float aOffsets[] = { 0.0001f, 0.001f, 0.005f, 0.01f, 0.02f, 0.0219f };
+    const float aPoles[]   = { -270.0f, -90.0f, 90.0f, 270.0f, 450.0f, 630.0f };
+    for ( size_t i = 0; i < STD_ARRAYLEN(aPoles); ++i )
+    {
+        TEST_ASSERT_TRUE(isinf(stdMath_Tan(aPoles[i])) && stdMath_Tan(aPoles[i]) > 0.0f);
+        for ( size_t j = 0; j < STD_ARRAYLEN(aOffsets); ++j )
+        {
+            const float below = aPoles[i] - aOffsets[j];
+            const float above = aPoles[i] + aOffsets[j];
+            TEST_ASSERT_TRUE(stdMath_Tan(below) > 0.0f);
+            TEST_ASSERT_TRUE(stdMath_Tan(above) < 0.0f);
+
+            const double relTolerance = 3e-4 + 4e-5 / aOffsets[j];
+            stdMathTest_AssertTanNearStdLib(below, relTolerance);
+            stdMathTest_AssertTanNearStdLib(above, relTolerance);
+        }
+    }
+}
+
+TEST(stdMath, TestTanExactAtMultiplesOf45Degrees)
+{
+    // tan(0) and tan(45) are table entries stored as exactly 0 and 1, so every multiple of 45 degrees away from the poles
+    // is exact. The original returned -0.999233 for tan(135) and tan(315).
+    const float aTan[] = { 0.0f, 1.0f, 0.0f, -1.0f }; // 0, 45, 90 (pole, skipped), 135
+    for ( int32_t eighth = -16; eighth <= 16; ++eighth )
+    {
+        const int32_t i = ((eighth % 4) + 4) % 4;
+        if ( i == 2 )
+        {
+            continue;
+        }
+
+        TEST_ASSERT_TRUE(stdMath_Tan((float)eighth * 45.0f) == aTan[i]); // == also accepts -0.0
+    }
+}
+
+TEST(stdMath, TestTanMatchesOriginalOutsideMirroredQuadrants)
+{
+    // The fix changes only the mirrored quadrants (90-180 and 270-360 degrees) and the intervals next to the poles:
+    // 0-90 and 180-270 degrees read the table directly and stay bit-identical to the original.
+    const int32_t size      = (int32_t)STDMATH_TEST_TAN_TABLE_SIZE;
+    const float fractions[] = { 0.0f, 0.25f, 0.5f, 0.75f };
+    for ( int32_t index = 0; index < (int32_t)STDMATH_TEST_TAN_INDEX_COUNT; ++index )
+    {
+        if ( ((index / size) & 1) != 0 || index % size == size - 1 )
+        {
+            continue;
+        }
+
+        for ( size_t i = 0; i < STD_ARRAYLEN(fractions); ++i )
+        {
+            const float angle = stdMathTest_TanAngleForIndex((float)index + fractions[i]);
+            stdMathTest_AssertFloatBitsEqual(stdMathTest_OriginalTan(angle), stdMath_Tan(angle));
+        }
     }
 }
 
@@ -1053,6 +1415,13 @@ TEST_GROUP_RUNNER(stdMath)
     RUN_TEST_CASE(stdMath, TestNormalizeAngleAcute);
     RUN_TEST_CASE(stdMath, TestSinCosTableSweep);
     RUN_TEST_CASE(stdMath, TestSinCosHalfDegreeSweep);
+    RUN_TEST_CASE(stdMath, TestSinCosMatchesStdLibInEveryTableInterval);
+    RUN_TEST_CASE(stdMath, TestSinCosMatchesStdLibInDegreeSweep);
+    RUN_TEST_CASE(stdMath, TestSinCosMatchesStdLibAroundQuadrantBoundaries);
+    RUN_TEST_CASE(stdMath, TestSinCosExactAtQuadrantBoundaries);
+    RUN_TEST_CASE(stdMath, TestSinCosMatchesStdLibForLargeAngles);
+    RUN_TEST_CASE(stdMath, TestSinCosSmallNegativeAngles);
+    RUN_TEST_CASE(stdMath, TestSinCosMatchesOriginalOutsideMirroredQuadrants);
     RUN_TEST_CASE(stdMath, TestSinCosStdLibApprox);
     RUN_TEST_CASE(stdMath, TestSinCosNonFinite);
 #ifdef J3D_RUNTIME_GUARDS
@@ -1062,6 +1431,11 @@ TEST_GROUP_RUNNER(stdMath)
     RUN_TEST_CASE(stdMath, TestTanHalfDegreeSweep);
     RUN_TEST_CASE(stdMath, TestTanStdLibApprox);
     RUN_TEST_CASE(stdMath, TestTanQuadrants);
+    RUN_TEST_CASE(stdMath, TestTanMatchesStdLibInEveryTableInterval);
+    RUN_TEST_CASE(stdMath, TestTanMatchesStdLibInDegreeSweep);
+    RUN_TEST_CASE(stdMath, TestTanNextToThePoles);
+    RUN_TEST_CASE(stdMath, TestTanExactAtMultiplesOf45Degrees);
+    RUN_TEST_CASE(stdMath, TestTanMatchesOriginalOutsideMirroredQuadrants);
     RUN_TEST_CASE(stdMath, TestTanNonFinite);
     RUN_TEST_CASE(stdMath, TestArcSinClamp);
     RUN_TEST_CASE(stdMath, TestArcSinPrecision);
