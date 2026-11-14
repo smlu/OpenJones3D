@@ -21,6 +21,8 @@ void TEST_stdPlatform_GROUP_RUNNER(void);
 void TEST_stdStrTable_GROUP_RUNNER(void);
 void StdWin95Test_RunAllTests(void);
 int StdPlatformTest_RunDeathChild(void);
+int StdPlatformTest_RunStackOverflowChild(void);
+int StdPlatformTest_RunNoCrashChild(void);
 int StdConsoleTest_RunConsoleChild(void);
 
 static void runAllTests(void)
@@ -50,6 +52,16 @@ int main(int argc, const char* argv[])
     if ( argc == 2 && strcmp(argv[1], "--std-platform-death-child") == 0 )
     {
         return StdPlatformTest_RunDeathChild();
+    }
+
+    if ( argc == 2 && strcmp(argv[1], "--std-platform-stack-overflow-child") == 0 )
+    {
+        return StdPlatformTest_RunStackOverflowChild();
+    }
+
+    if ( argc == 2 && strcmp(argv[1], "--std-platform-no-crash-child") == 0 )
+    {
+        return StdPlatformTest_RunNoCrashChild();
     }
 
     if ( argc == 2 && strcmp(argv[1], "--std-console-child") == 0 )

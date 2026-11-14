@@ -192,20 +192,68 @@ bool J3DAPI stdPlatform_DirExists(const char* pPath)
     return (dwAttrib != INVALID_FILE_ATTRIBUTES && (dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
 }
 
-static LONG WINAPI WinMiniDumpExceptionFilter(LPEXCEPTION_POINTERS ExceptionInfo)
+// Writes the dump outside of WinMiniDumpExceptionFilter so it can run on a helper thread and be called by tests.
+// threadId is the crashed thread.
+bool stdPlatform_WriteMiniDump(const char* pPath, DWORD threadId, LPEXCEPTION_POINTERS ExceptionInfo)
 {
-    HANDLE hFile = CreateFile("core.dmp", GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-    if ( hFile != INVALID_HANDLE_VALUE )
+    HANDLE hFile = CreateFile(pPath, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+    if ( hFile == INVALID_HANDLE_VALUE )
     {
-        MINIDUMP_EXCEPTION_INFORMATION exceptionInfo;
-        exceptionInfo.ThreadId          = GetCurrentThreadId();
-        exceptionInfo.ExceptionPointers = ExceptionInfo;
-        exceptionInfo.ClientPointers    = FALSE;
-
-        MiniDumpWriteDump(GetCurrentProcess(), GetCurrentProcessId(), hFile, MiniDumpNormal, &exceptionInfo, NULL, NULL);
-        CloseHandle(hFile);
+        return false;
     }
 
+    MINIDUMP_EXCEPTION_INFORMATION exceptionInfo;
+    exceptionInfo.ThreadId          = threadId; // The crashed thread, which is not the current thread when called from the helper thread
+    exceptionInfo.ExceptionPointers = ExceptionInfo;
+    exceptionInfo.ClientPointers    = FALSE;
+
+    BOOL bWritten = MiniDumpWriteDump(GetCurrentProcess(), GetCurrentProcessId(), hFile, MiniDumpNormal, &exceptionInfo, NULL, NULL);
+    CloseHandle(hFile);
+
+    // Delete the empty or partial dump file when the dump couldn't be written
+    if ( !bWritten )
+    {
+        DeleteFile(pPath);
+    }
+
+    return bWritten != FALSE;
+}
+
+// Dump job for the helper thread
+typedef struct sStdPlatformMiniDumpJob
+{
+    DWORD threadId;
+    LPEXCEPTION_POINTERS pExceptionInfo;
+} StdPlatformMiniDumpJob;
+
+// Helper thread entry, writes the dump on its own stack
+static DWORD WINAPI stdPlatform_MiniDumpThread(LPVOID pParam)
+{
+    const StdPlatformMiniDumpJob* pJob = (const StdPlatformMiniDumpJob*)pParam;
+    return stdPlatform_WriteMiniDump("core.dmp", pJob->threadId, pJob->pExceptionInfo) ? 1 : 0;
+}
+
+static LONG WINAPI WinMiniDumpExceptionFilter(LPEXCEPTION_POINTERS ExceptionInfo)
+{
+    // On stack overflow MiniDumpWriteDump crashed on the remaining stack of the crashed thread after core.dmp had been created,
+    // which left an empty core.dmp. The dump is now written from a new thread. CreateThread fails while the process exits
+    // (e.g. crash in DLL detach), in that case the dump is written on the crashed thread as before.
+    if ( ExceptionInfo && ExceptionInfo->ExceptionRecord && ExceptionInfo->ExceptionRecord->ExceptionCode == EXCEPTION_STACK_OVERFLOW )
+    {
+        StdPlatformMiniDumpJob job;
+        job.threadId       = GetCurrentThreadId();
+        job.pExceptionInfo = ExceptionInfo;
+
+        HANDLE hThread = CreateThread(NULL, 0, stdPlatform_MiniDumpThread, &job, 0, NULL);
+        if ( hThread )
+        {
+            WaitForSingleObject(hThread, 60000u); // Bounded so a crash under the loader lock can't hang the process
+            CloseHandle(hThread);
+            return EXCEPTION_EXECUTE_HANDLER;
+        }
+    }
+
+    stdPlatform_WriteMiniDump("core.dmp", GetCurrentThreadId(), ExceptionInfo);
     return EXCEPTION_EXECUTE_HANDLER;
 }
 

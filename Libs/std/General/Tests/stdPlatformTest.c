@@ -16,6 +16,7 @@
 #include "stdGeneralTest.h"
 
 bool CheckStackFrameStringArg(uintptr_t ptr, bool* bWide, char* outAnsiBuf, size_t ansiBufSize, wchar_t* outWideBuf, size_t wideBufSize, size_t* readLen);
+bool stdPlatform_WriteMiniDump(const char* pPath, DWORD threadId, LPEXCEPTION_POINTERS ExceptionInfo);
 void stdPlatform_InitHighResTimer(void);
 extern LARGE_INTEGER stdPlatform_perfCounterFreq;
 extern LARGE_INTEGER stdPlatform_perfCounterStart;
@@ -41,6 +42,126 @@ int StdPlatformTest_RunDeathChild(void)
     stdPlatform_InstallSignalHandler();
     RaiseException(EXCEPTION_ACCESS_VIOLATION, EXCEPTION_NONCONTINUABLE, 0u, NULL);
     return EXIT_FAILURE;
+}
+
+static volatile int stdPlatformTest_bRecurse = 1;
+
+static int stdPlatformTest_Recurse(int depth)
+{
+    volatile char aBuf[1024];
+    aBuf[0] = (char)depth;
+    if ( stdPlatformTest_bRecurse )
+    {
+        return stdPlatformTest_Recurse(depth + 1) + aBuf[0];
+    }
+
+    return aBuf[0];
+}
+
+// Real stack overflow: the filter runs on the exhausted stack of this thread.
+int StdPlatformTest_RunStackOverflowChild(void)
+{
+    SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX | SEM_NOOPENFILEERRORBOX);
+    stdPlatform_InstallSignalHandler();
+    stdPlatformTest_Recurse(0);
+    return EXIT_FAILURE;
+}
+
+// Normal run without a crash: install the handler, init and clear services, exit the process.
+int StdPlatformTest_RunNoCrashChild(void)
+{
+    SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX | SEM_NOOPENFILEERRORBOX);
+    stdPlatform_InstallSignalHandler();
+
+    tHostServices services;
+    STD_ZEROMEM(&services, sizeof(services));
+    stdPlatform_InitServices(&services);
+    stdPlatform_ClearServices(&services);
+    return EXIT_SUCCESS;
+}
+
+static void stdPlatformTest_MakeDeathTestDir(void)
+{
+    char aTempPath[MAX_PATH];
+    DWORD tempPathLen = GetTempPathA(STD_ARRAYLEN(aTempPath), aTempPath);
+    TEST_ASSERT_TRUE(tempPathLen > 0u && tempPathLen < STD_ARRAYLEN(aTempPath));
+    TEST_ASSERT_NOT_EQUAL_UINT(0u, GetTempFileNameA(aTempPath, "OJD", 0u, stdPlatformTest_aDeathTestDir));
+    TEST_ASSERT_TRUE(DeleteFileA(stdPlatformTest_aDeathTestDir));
+    TEST_ASSERT_TRUE(CreateDirectoryA(stdPlatformTest_aDeathTestDir, NULL));
+}
+
+// Runs this test executable with pArg in the death test dir and returns the child's exit code.
+static DWORD stdPlatformTest_RunChild(const char* pArg)
+{
+    stdPlatformTest_MakeDeathTestDir();
+
+    char aExecutablePath[MAX_PATH];
+    DWORD executablePathLen = GetModuleFileNameA(NULL, aExecutablePath, STD_ARRAYLEN(aExecutablePath));
+    TEST_ASSERT_TRUE(executablePathLen > 0u && executablePathLen < STD_ARRAYLEN(aExecutablePath));
+
+    char aCommandLine[MAX_PATH * 2u];
+    STD_FORMAT(aCommandLine, "\"%s\" %s", aExecutablePath, pArg);
+
+    STARTUPINFOA startupInfo;
+    PROCESS_INFORMATION processInfo;
+    STD_ZEROMEM(&startupInfo, sizeof(startupInfo));
+    STD_ZEROMEM(&processInfo, sizeof(processInfo));
+    startupInfo.cb = sizeof(startupInfo);
+
+    BOOL bCreated = CreateProcessA(
+        aExecutablePath,
+        aCommandLine,
+        NULL,
+        NULL,
+        FALSE,
+        CREATE_NO_WINDOW,
+        NULL,
+        stdPlatformTest_aDeathTestDir,
+        &startupInfo,
+        &processInfo
+    );
+    TEST_ASSERT_TRUE(bCreated);
+
+    DWORD waitResult = WaitForSingleObject(processInfo.hProcess, 30000u);
+    if ( waitResult == WAIT_TIMEOUT )
+    {
+        TerminateProcess(processInfo.hProcess, ERROR_TIMEOUT);
+        WaitForSingleObject(processInfo.hProcess, 5000u);
+    }
+
+    DWORD exitCode    = 0u;
+    BOOL bGotExitCode = GetExitCodeProcess(processInfo.hProcess, &exitCode);
+    CloseHandle(processInfo.hThread);
+    CloseHandle(processInfo.hProcess);
+    TEST_ASSERT_TRUE(bGotExitCode);
+    TEST_ASSERT_EQUAL_UINT32(WAIT_OBJECT_0, waitResult);
+    return exitCode;
+}
+
+static void stdPlatformTest_AssertValidMiniDump(const char* pDumpPath)
+{
+    HANDLE hDump = CreateFileA(pDumpPath, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    TEST_ASSERT_TRUE(hDump != INVALID_HANDLE_VALUE);
+
+    LARGE_INTEGER dumpSize;
+    MINIDUMP_HEADER header;
+    DWORD numRead    = 0u;
+    BOOL bGotSize    = GetFileSizeEx(hDump, &dumpSize);
+    BOOL bReadHeader = ReadFile(hDump, &header, sizeof(header), &numRead, NULL);
+    CloseHandle(hDump);
+
+    TEST_ASSERT_TRUE(bGotSize);
+    TEST_ASSERT_TRUE(dumpSize.QuadPart > (LONGLONG)sizeof(MINIDUMP_HEADER));
+    TEST_ASSERT_TRUE(bReadHeader);
+    TEST_ASSERT_EQUAL_UINT32(sizeof(header), numRead);
+    TEST_ASSERT_EQUAL_HEX32(MINIDUMP_SIGNATURE, header.Signature);
+    TEST_ASSERT_EQUAL_UINT16((uint16_t)MINIDUMP_VERSION, (uint16_t)(header.Version & 0xFFFFu));
+    TEST_ASSERT_TRUE(header.NumberOfStreams > 0u);
+    TEST_ASSERT_TRUE(header.StreamDirectoryRva >= sizeof(header));
+    TEST_ASSERT_TRUE(
+        (uint64_t)header.StreamDirectoryRva + (uint64_t)header.NumberOfStreams * sizeof(MINIDUMP_DIRECTORY)
+        <= (uint64_t)dumpSize.QuadPart
+    );
 }
 
 static void J3DAPI stdPlatformTest_CaptureStackTrace(const char* pText, ...)
@@ -230,79 +351,53 @@ TEST(stdPlatform, TestInstallSignalHandlerAndZeroFrameStackTrace)
 
 TEST(stdPlatform, TestUnhandledExceptionWritesMiniDump)
 {
-    char aTempPath[MAX_PATH];
-    DWORD tempPathLen = GetTempPathA(STD_ARRAYLEN(aTempPath), aTempPath);
-    TEST_ASSERT_TRUE(tempPathLen > 0u && tempPathLen < STD_ARRAYLEN(aTempPath));
-    TEST_ASSERT_NOT_EQUAL_UINT(0u, GetTempFileNameA(aTempPath, "OJD", 0u, stdPlatformTest_aDeathTestDir));
-    TEST_ASSERT_TRUE(DeleteFileA(stdPlatformTest_aDeathTestDir));
-    TEST_ASSERT_TRUE(CreateDirectoryA(stdPlatformTest_aDeathTestDir, NULL));
-
-    char aExecutablePath[MAX_PATH];
-    DWORD executablePathLen = GetModuleFileNameA(NULL, aExecutablePath, STD_ARRAYLEN(aExecutablePath));
-    TEST_ASSERT_TRUE(executablePathLen > 0u && executablePathLen < STD_ARRAYLEN(aExecutablePath));
-
-    char aCommandLine[MAX_PATH * 2u];
-    STD_FORMAT(aCommandLine, "\"%s\" --std-platform-death-child", aExecutablePath);
-
-    STARTUPINFOA startupInfo;
-    PROCESS_INFORMATION processInfo;
-    STD_ZEROMEM(&startupInfo, sizeof(startupInfo));
-    STD_ZEROMEM(&processInfo, sizeof(processInfo));
-    startupInfo.cb = sizeof(startupInfo);
-
-    BOOL bCreated = CreateProcessA(
-        aExecutablePath,
-        aCommandLine,
-        NULL,
-        NULL,
-        FALSE,
-        CREATE_NO_WINDOW,
-        NULL,
-        stdPlatformTest_aDeathTestDir,
-        &startupInfo,
-        &processInfo
-    );
-    TEST_ASSERT_TRUE(bCreated);
-
-    DWORD waitResult = WaitForSingleObject(processInfo.hProcess, 30000u);
-    if ( waitResult == WAIT_TIMEOUT )
-    {
-        TerminateProcess(processInfo.hProcess, ERROR_TIMEOUT);
-        WaitForSingleObject(processInfo.hProcess, 5000u);
-    }
-
-    DWORD exitCode    = 0u;
-    BOOL bGotExitCode = GetExitCodeProcess(processInfo.hProcess, &exitCode);
-    CloseHandle(processInfo.hThread);
-    CloseHandle(processInfo.hProcess);
-    TEST_ASSERT_TRUE(bGotExitCode);
-    TEST_ASSERT_EQUAL_UINT32(WAIT_OBJECT_0, waitResult);
-    TEST_ASSERT_EQUAL_HEX32(EXCEPTION_ACCESS_VIOLATION, exitCode);
+    TEST_ASSERT_EQUAL_HEX32(EXCEPTION_ACCESS_VIOLATION, stdPlatformTest_RunChild("--std-platform-death-child"));
 
     char aDumpPath[MAX_PATH + sizeof("\\core.dmp")];
     STD_FORMAT(aDumpPath, "%s\\core.dmp", stdPlatformTest_aDeathTestDir);
-    HANDLE hDump = CreateFileA(aDumpPath, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-    TEST_ASSERT_TRUE(hDump != INVALID_HANDLE_VALUE);
+    stdPlatformTest_AssertValidMiniDump(aDumpPath);
+}
 
-    LARGE_INTEGER dumpSize;
-    MINIDUMP_HEADER header;
-    DWORD numRead    = 0u;
-    BOOL bGotSize    = GetFileSizeEx(hDump, &dumpSize);
-    BOOL bReadHeader = ReadFile(hDump, &header, sizeof(header), &numRead, NULL);
-    CloseHandle(hDump);
+TEST(stdPlatform, TestStackOverflowWritesNonEmptyMiniDump)
+{
+    TEST_ASSERT_EQUAL_HEX32(EXCEPTION_STACK_OVERFLOW, stdPlatformTest_RunChild("--std-platform-stack-overflow-child"));
 
-    TEST_ASSERT_TRUE(bGotSize);
-    TEST_ASSERT_TRUE(dumpSize.QuadPart > (LONGLONG)sizeof(MINIDUMP_HEADER));
-    TEST_ASSERT_TRUE(bReadHeader);
-    TEST_ASSERT_EQUAL_UINT32(sizeof(header), numRead);
-    TEST_ASSERT_EQUAL_HEX32(MINIDUMP_SIGNATURE, header.Signature);
-    TEST_ASSERT_EQUAL_UINT16((uint16_t)MINIDUMP_VERSION, (uint16_t)(header.Version & 0xFFFFu));
-    TEST_ASSERT_TRUE(header.NumberOfStreams > 0u);
-    TEST_ASSERT_TRUE(header.StreamDirectoryRva >= sizeof(header));
-    TEST_ASSERT_TRUE(
-        (uint64_t)header.StreamDirectoryRva + (uint64_t)header.NumberOfStreams * sizeof(MINIDUMP_DIRECTORY)
-        <= (uint64_t)dumpSize.QuadPart
-    );
+    char aDumpPath[MAX_PATH + sizeof("\\core.dmp")];
+    STD_FORMAT(aDumpPath, "%s\\core.dmp", stdPlatformTest_aDeathTestDir);
+    stdPlatformTest_AssertValidMiniDump(aDumpPath);
+}
+
+TEST(stdPlatform, TestNoMiniDumpWithoutCrash)
+{
+    TEST_ASSERT_EQUAL_UINT32(EXIT_SUCCESS, stdPlatformTest_RunChild("--std-platform-no-crash-child"));
+
+    char aDumpPath[MAX_PATH + sizeof("\\core.dmp")];
+    STD_FORMAT(aDumpPath, "%s\\core.dmp", stdPlatformTest_aDeathTestDir);
+    TEST_ASSERT_EQUAL_HEX32(INVALID_FILE_ATTRIBUTES, GetFileAttributesA(aDumpPath));
+}
+
+TEST(stdPlatform, TestWriteMiniDumpCreatesDumpFile)
+{
+    stdPlatformTest_MakeDeathTestDir();
+
+    char aDumpPath[MAX_PATH + sizeof("\\core.dmp")];
+    STD_FORMAT(aDumpPath, "%s\\core.dmp", stdPlatformTest_aDeathTestDir);
+    TEST_ASSERT_EQUAL_HEX32(INVALID_FILE_ATTRIBUTES, GetFileAttributesA(aDumpPath));
+
+    EXCEPTION_RECORD record;
+    CONTEXT context;
+    EXCEPTION_POINTERS pointers;
+    STD_ZEROMEM(&record, sizeof(record));
+    STD_ZEROMEM(&context, sizeof(context));
+    record.ExceptionCode    = EXCEPTION_ACCESS_VIOLATION;
+    record.ExceptionFlags   = EXCEPTION_NONCONTINUABLE;
+    record.ExceptionAddress = (PVOID)(uintptr_t)stdPlatformTest_Recurse;
+    RtlCaptureContext(&context);
+    pointers.ExceptionRecord = &record;
+    pointers.ContextRecord   = &context;
+
+    TEST_ASSERT_TRUE(stdPlatform_WriteMiniDump(aDumpPath, GetCurrentThreadId(), &pointers));
+    stdPlatformTest_AssertValidMiniDump(aDumpPath);
 }
 
 TEST(stdPlatform, TestOneFrameStackTraceProducesFrameOutput)
@@ -323,5 +418,8 @@ TEST_GROUP_RUNNER(stdPlatform)
     RUN_TEST_CASE(stdPlatform, TestCheckStackFrameStringArgRejectsNonPrintableAndUnterminatedStrings);
     RUN_TEST_CASE(stdPlatform, TestInstallSignalHandlerAndZeroFrameStackTrace);
     RUN_TEST_CASE(stdPlatform, TestUnhandledExceptionWritesMiniDump);
+    RUN_TEST_CASE(stdPlatform, TestStackOverflowWritesNonEmptyMiniDump);
+    RUN_TEST_CASE(stdPlatform, TestNoMiniDumpWithoutCrash);
+    RUN_TEST_CASE(stdPlatform, TestWriteMiniDumpCreatesDumpFile);
     RUN_TEST_CASE(stdPlatform, TestOneFrameStackTraceProducesFrameOutput);
 }
