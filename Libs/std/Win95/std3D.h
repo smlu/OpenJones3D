@@ -16,6 +16,9 @@
 #define STD3D_CFG_MSAAENABLED "graphics.msaa.enabled"
 #define STD3D_CFG_MSAASAMPLES "graphics.msaa.samples"
 
+#define STD3D_CFG_MINREFRESHRATE "graphics.minRefreshRate"
+#define STD3D_CFG_MAXREFRESHRATE "graphics.maxRefreshRate"
+
 J3D_EXTERN_C_START
 
 #ifdef J3D_LOCAL_RTI

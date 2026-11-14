@@ -11,6 +11,7 @@
 #include <std/General/stdUtil.h>
 #include <std/RTI/symbols.h>
 
+// Default refresh rate range of the enumerated video modes, see STD3D_CFG_MINREFRESHRATE and STD3D_CFG_MAXREFRESHRATE
 #define STDDISPLAY_MINFRAMERATE 30
 #define STDDISPLAY_MAXFRAMERATE 256
 
@@ -27,6 +28,9 @@ static bool stdDisplay_bNoSync     = false;
 static bool stdDisplay_bDeviceLost = false;
 static bool stdDisplay_bDeviceResourcesInvalid = false;
 static bool stdDisplay_bPresentationBufferDirty = false;
+
+static UINT stdDisplay_minRefreshRate = STDDISPLAY_MINFRAMERATE;
+static UINT stdDisplay_maxRefreshRate = STDDISPLAY_MAXFRAMERATE;
 
 static LPDIRECT3D9 stdDisplay_pD3D9;
 
@@ -447,6 +451,22 @@ static void stdDisplay_ValidateMSAASettings(UINT adapter, D3DFORMAT adapterForma
     }
 }
 
+static void stdDisplay_InitRefreshRateLimits(void)
+{
+    // Read the refresh rate range of the enumerated video modes from config
+    int minRefreshRate = stdConfig_GetInt(STD3D_CFG_MINREFRESHRATE, STDDISPLAY_MINFRAMERATE);
+    int maxRefreshRate = stdConfig_GetInt(STD3D_CFG_MAXREFRESHRATE, STDDISPLAY_MAXFRAMERATE);
+    if ( minRefreshRate < 1 || maxRefreshRate < minRefreshRate )
+    {
+        STDLOG_WARNING("Invalid refresh rate range %d-%d Hz, using %d-%d Hz\n", minRefreshRate, maxRefreshRate, STDDISPLAY_MINFRAMERATE, STDDISPLAY_MAXFRAMERATE);
+        minRefreshRate = STDDISPLAY_MINFRAMERATE;
+        maxRefreshRate = STDDISPLAY_MAXFRAMERATE;
+    }
+
+    stdDisplay_minRefreshRate = (UINT)minRefreshRate;
+    stdDisplay_maxRefreshRate = (UINT)maxRefreshRate;
+}
+
 int stdDisplay_Startup(void)
 {
     STDLOG_STATUS("Starting display system using DirectX 9 GAPI ...\n");
@@ -476,6 +496,7 @@ int stdDisplay_Startup(void)
 
     // Initialize MSAA settings from config
     stdDisplay_InitMSAASettings();
+    stdDisplay_InitRefreshRateLimits();
 
     // Enumerate devices and display modes
     if ( !stdDisplay_EnumerateDevices() )
@@ -550,6 +571,16 @@ int J3DAPI stdDisplay_Open(size_t deviceNum)
     // Enumerate display modes for this adapter
     stdDisplay_numVideoModes = 0;
     stdDisplay_EnumerateVideoModes(stdDisplay_curAdapter);
+    if ( stdDisplay_numVideoModes == 0
+        && (stdDisplay_minRefreshRate != STDDISPLAY_MINFRAMERATE || stdDisplay_maxRefreshRate != STDDISPLAY_MAXFRAMERATE) )
+    {
+        // No mode is in the configured range; the game can't start without one, so use the default range
+        STDLOG_WARNING("No video modes within %u-%u Hz, using %d-%d Hz\n", stdDisplay_minRefreshRate, stdDisplay_maxRefreshRate, STDDISPLAY_MINFRAMERATE, STDDISPLAY_MAXFRAMERATE);
+        stdDisplay_minRefreshRate = STDDISPLAY_MINFRAMERATE;
+        stdDisplay_maxRefreshRate = STDDISPLAY_MAXFRAMERATE;
+        stdDisplay_EnumerateVideoModes(stdDisplay_curAdapter);
+    }
+
     qsort(
         stdDisplay_aVideoModes,
         stdDisplay_numVideoModes,
@@ -1658,7 +1689,7 @@ static int J3DAPI stdDisplay_EnumerateVideoModes(UINT adapter)
 
             int bpp = stdDisplay_BppFromD3DFormat(mode.Format);
             // Fixed: RefreshRate 0 means the adapter default in D3D9. Rejecting it left no modes and crashed JonesMain_LoadSettings.
-            if ( bpp < 16 || (mode.RefreshRate != 0 && (mode.RefreshRate < STDDISPLAY_MINFRAMERATE || mode.RefreshRate > STDDISPLAY_MAXFRAMERATE)) )
+            if ( bpp < 16 || (mode.RefreshRate != 0 && (mode.RefreshRate < stdDisplay_minRefreshRate || mode.RefreshRate > stdDisplay_maxRefreshRate)) )
             {
                 continue;
             }

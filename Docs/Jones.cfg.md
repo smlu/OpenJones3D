@@ -182,6 +182,8 @@ Controls how software-mixed positional sounds lose volume between their minimum 
 | `graphics.height` | int | `480` | Requested render height. |
 | `graphics.bpp` | int | `32` | Requested color depth. |
 | `graphics.refreshRate` | int | `60` | Requested refresh rate. If the display doesn't offer that rate, the closest available rate at the configured size and bit depth is used. |
+| `graphics.minRefreshRate` | int | `30` | DirectX 9 only. Lowest refresh rate, in Hz, of the fullscreen modes the game offers. Modes without a reported rate are always offered. If no mode is in range, the default range is used. |
+| `graphics.maxRefreshRate` | int | `256` | DirectX 9 only. Highest refresh rate, in Hz, of the fullscreen modes the game offers. Set it to `100` or lower to avoid frame-rate problems above 100 FPS with vertical sync on. It doesn't limit the frame rate in windowed mode. |
 | `graphics.performanceLevel` | int | `4` | Performance preset used by the display dialog. |
 | `graphics.mipmapAutoGen` | bool | `true` | DirectX 9 only. Disabled automatically if unsupported by the device. |
 | `graphics.anisotropicFilter` | bool | `true` | DirectX 9 only. Disabled automatically if unsupported by the device. |
